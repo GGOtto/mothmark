@@ -4,7 +4,7 @@
 
 This document gives future agents and contributors a shared design target for Mothmark.
 
-Mothmark is not just a name swap from Mapwright. The name changed the center of gravity of the project. Future work should treat Mothmark as a quiet, tactile, old-paper-and-ink authoring tool for text adventures, not as a generic SaaS app, AI writing app, or shiny dashboard.
+Mothmark is not just a name swap from Mapwright. The name changed the center of gravity of the project. Future work should treat Mothmark as a quiet, tactile, night-archive authoring tool for text adventures, not as a generic SaaS app, AI writing app, or shiny dashboard.
 
 Use this document when making decisions about UI, copy, layout, colors, component style, naming, and product feel.
 
@@ -15,11 +15,17 @@ This section exists to block generic generated design. Future contributors shoul
 Reference these sources when making design decisions:
 
 - [USWDS design principles](https://designsystem.digital.gov/design-principles/) for real user needs, trust, accessibility, and continuity.
+- [USWDS color guidance](https://designsystem.digital.gov/design-tokens/color/overview/) for limiting color families, starting from function, and avoiding color-only meaning.
 - [USWDS button guidance](https://designsystem.digital.gov/components/button/) for keeping actions clear, short, verb-led, and limited in number.
 - [GOV.UK service design guidance](https://www.gov.uk/service-manual/design/making-your-service-look-like-govuk) for reusing tested patterns and requiring research evidence before inventing new ones.
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for accessibility baseline decisions, especially contrast, focus, readable structure, and operable controls.
 - [Carbon content guidance](https://carbondesignsystem.com/guidelines/content/overview/) for product copy that is clear, consistent, and easy to translate.
 - [Carbon accessibility guidance](https://carbondesignsystem.com/guidelines/accessibility/overview/) and [Fluent accessibility guidance](https://fluent2.microsoft.design/accessibility) for low cognitive load, keyboard use, logical order, and meaningful text.
+- [Library of Congress map collections](https://www.loc.gov/maps/collections/) for real map, survey, military, railroad, and exploration references rather than invented parchment fantasy.
+- [British Library digitised manuscripts and archives](https://www.bl.uk/collection) for restrained manuscript material references: ink, rubrics, marginalia, vellum, annotation, and aging.
+- [Aseprite](https://www.aseprite.org/) for compact creative-tool density: palettes, layers, frames, and work-object-first interface structure.
+- [React Icons](https://react-icons.github.io/react-icons/) only as a package source when the project needs common UI glyphs. Use icons as labels for known actions, not as brand decoration.
+- [Game-icons.net](https://game-icons.net/) only for small adventure/object symbols when a generic UI icon cannot describe the concept clearly. Keep usage sparse.
 
 Practical interpretation for Mothmark:
 
@@ -165,7 +171,18 @@ It should not feel like:
 
 ## Visual direction
 
-Use a quiet, tactile, old-paper-and-ink style.
+Use a quiet, tactile, night-archive style.
+
+The interface should feel like a modern editor opened over an old research table:
+dark enough for long writing sessions, specific enough to evoke maps and
+manuscripts, and practical enough that the author never feels trapped in a
+theme. The key shift is away from "parchment UI" and toward "archive desk":
+blackened ink, oxidized copper, indigo wash, red-lead warning marks, cream
+paper, stamped labels, and visible drafting lines.
+
+Mothmark should not look old because the UI is fake-medieval. It should look
+old because its work objects resemble real artifacts: map labels, survey lines,
+rubric marks, index cards, room records, command transcripts, and field notes.
 
 Good references:
 
@@ -174,7 +191,11 @@ Good references:
 - ink grids
 - moth-eaten paper
 - charcoal marks
-- brass keys
+- oxidized copper and verdigris
+- indigo wash and blue-black ink
+- red-lead rubric marks
+- worn cream stock
+- clipped index labels
 - dim lamplight
 - dungeon-room diagrams
 - hand-annotated margins
@@ -182,6 +203,7 @@ Good references:
 - parser adventure transcripts
 - old notebooks and marginalia
 - folded paper, worn labels, stamped symbols
+- compact pixel/art tools where palettes, layers, coordinates, and timelines are visible work objects
 
 Avoid:
 
@@ -191,6 +213,7 @@ Avoid:
 - cheerful cartoon fantasy
 - over-rendered parchment backgrounds
 - fake medieval UI
+- sepia filters over everything
 - huge marketing hero sections
 - cute bug mascots
 - overusing moth imagery
@@ -240,36 +263,57 @@ Reject or revise a design when you see:
 
 ## Color palette
 
-Current working palette:
+Do not derive new implementation work from the old palette. The Mothmark color
+system is now **night archive with artifact accents**:
+
+- Near-black and green-black grounds for the working surface.
+- Cream stock for readable text and selected paper-like objects.
+- Verdigris as the primary interactive accent because it suggests aged copper,
+  map pins, and constructive editing without becoming fantasy gold.
+- Indigo for preview, floor/layer, and transcript-adjacent states.
+- Ochre for saved/checkpoint and focus emphasis.
+- Red lead / madder for validation warnings and destructive states.
+
+The palette is intentionally multi-material. It should not collapse into
+"brown app," "blue app," or "gold fantasy app."
+
+Core swatches:
 
 ```txt
-Soot black        #11100e
-Deep paper black  #15130f
-Ink panel         #1d1a15
-Grid line         #242019
-Border brown      #2a2722
-Muted ash         #6f675d
-Faded ink         #8e8678
-Old paper         #c7bcaa
-Bone white        #eee8dc
-Warm highlight    #f4eddf
-Dull brass        #d2b46f
-Bright brass      #e4c77f
-Burnt umber       #7a4e2d
-Warning ember     #b86b3c
-Danger red-brown  #9f4f3f
+Night ink         #11130f
+Archive board     #1b1a16
+Charcoal panel    #24221d
+Lifted panel      #2c2922
+Rule line         #3a352b
+Draft grid        #312d26
+Dry ink           #766e5f
+Field note        #b8ad97
+Cream stock       #f2e5c8
+Quiet paper       #d8c6a3
+Verdigris         #70a58d
+Deep verdigris    #3f6f60
+Indigo wash       #7f91bf
+Deep indigo       #4d5e86
+Ochre mark        #c8a962
+Red lead          #d36d3f
+Madder seal       #9e3f33
 ```
 
 ### Color usage
 
 Use:
 
-- warm dark backgrounds instead of pure black
-- paper/bone text instead of pure white
-- subtle brown-gray borders
-- dull brass for primary action and selected states
-- low-contrast grid lines
-- muted warning tones instead of neon red
+- `Night ink` as the app background and `Archive board` / `Charcoal panel` for panels.
+- `Cream stock` for primary text on dark surfaces.
+- `Field note` for secondary text that still needs to pass normal-text contrast.
+- `Dry ink` only for disabled or nonessential metadata, never body copy.
+- `Verdigris` for primary creation actions, selected nodes, active exits, and positive "connected" states.
+- `Indigo wash` for preview, player view, floor/layer controls, and transcript-related affordances.
+- `Ochre mark` for focus rings, saved checkpoints, pins, and small emphasis marks.
+- `Red lead` for warnings that require author attention.
+- `Madder seal` for destructive or blocked actions.
+- `Quiet paper` for selected room cards or editable paper-like surfaces when a light inset is useful.
+- `Rule line` and `Draft grid` for map structure. These should be visible but never compete with room labels.
 
 Do not use:
 
@@ -277,28 +321,98 @@ Do not use:
 - bright white text on black everywhere
 - saturated blue as the primary brand color
 - purple AI-app gradients
-- large areas of brass
+- large areas of ochre, gold, red, or parchment
+- monochrome sepia surfaces
 - high-contrast red warnings unless absolutely necessary
+- green as the only state signal
+- color without text, icon shape, or position as a backup signal
+
+### Contrast notes
+
+The dark-mode defaults were checked against WCAG-style contrast ratios for
+normal text:
+
+```txt
+Cream stock on Night ink     14.96:1
+Field note on Night ink       8.42:1
+Verdigris on Night ink        6.63:1
+Ochre mark on Night ink       8.28:1
+Red lead on Night ink         5.36:1
+Indigo wash on Night ink      5.97:1
+```
+
+Still verify final CSS combinations after implementation. Thin borders, small
+labels, disabled states, translucent overlays, gradients, and textured
+backgrounds can all reduce practical readability even when base swatches pass.
 
 ### Suggested semantic tokens
 
 ```ts
 const colors = {
-  background: "#11100e",
-  backgroundRaised: "#15130f",
-  panel: "#1d1a15",
-  panelSoft: "#191611",
-  border: "#2a2722",
-  grid: "#242019",
-  text: "#eee8dc",
-  textMuted: "#8e8678",
-  textFaint: "#6f675d",
-  accent: "#d2b46f",
-  accentBright: "#e4c77f",
-  warning: "#b86b3c",
-  danger: "#9f4f3f",
+  bg: "#11130f",
+  bgRaised: "#1b1a16",
+  panel: "#24221d",
+  panelRaised: "#2c2922",
+  border: "#3a352b",
+  grid: "#312d26",
+  text: "#f2e5c8",
+  textMuted: "#b8ad97",
+  textFaint: "#766e5f",
+  paper: "#d8c6a3",
+  accent: "#70a58d",
+  accentDeep: "#3f6f60",
+  preview: "#7f91bf",
+  previewDeep: "#4d5e86",
+  focus: "#c8a962",
+  warning: "#d36d3f",
+  danger: "#9e3f33",
 };
 ```
+
+Suggested semantic mapping:
+
+```ts
+const semanticColors = {
+  appBackground: colors.bg,
+  workspaceBackground: colors.bgRaised,
+  inspectorBackground: colors.panel,
+  selectedRoomBackground: colors.paper,
+  selectedRoomText: colors.bg,
+  roomBorder: colors.border,
+  mapGrid: colors.grid,
+  primaryAction: colors.accent,
+  primaryActionHover: "#86b9a2",
+  activeExit: colors.accent,
+  previewState: colors.preview,
+  checkpointState: colors.focus,
+  warningState: colors.warning,
+  destructiveState: colors.danger,
+  focusRing: colors.focus,
+};
+```
+
+### Texture and material
+
+Texture should be structural, not decorative.
+
+Use:
+
+- 1px drafting grids and rule lines
+- slightly uneven but CSS-native borders
+- small stamped labels for metadata
+- paper insets only for selected room cards, note fields, and export/read views
+- light grain only if it is subtle enough that small text remains crisp
+- shadows only to separate overlapping inspector/map layers
+
+Avoid:
+
+- full-screen parchment backgrounds
+- bitmap paper texture behind dense text
+- burned edges
+- curled corners
+- heavy vignette
+- fantasy leather, metal, gem, or candle UI
+- texture that makes disabled, warning, or focus states harder to read
 
 ## Typography
 
@@ -346,13 +460,13 @@ For now, use a text-only wordmark.
 Other acceptable temporary wordmark treatments:
 
 ```tsx
-<span className="font-mono text-sm tracking-[0.18em] text-[#eee8dc] uppercase">
+<span className="font-mono text-sm tracking-[0.18em] text-[#f2e5c8] uppercase">
   Mothmark
 </span>
 ```
 
 ```tsx
-<span className="font-serif text-base tracking-wide text-[#eee8dc]">
+<span className="font-serif text-base tracking-wide text-[#f2e5c8]">
   Mothmark
 </span>
 ```
@@ -446,11 +560,14 @@ Avoid:
 
 ### Buttons
 
-Primary buttons can use dull brass.
+Primary creation buttons should use verdigris.
 
 Secondary buttons should be dark with a border.
 
-Danger buttons should be muted red-brown, not bright red.
+Checkpoint/save emphasis can use ochre, but only when the action is about
+preserving state.
+
+Danger buttons should be madder red-brown, not bright red.
 
 Button copy should be specific:
 
@@ -504,6 +621,28 @@ CHECKPOINT
 LIVE PREVIEW
 ```
 
+### Icons
+
+Icons are allowed, but they should behave like tool glyphs and map marks, not
+illustrations.
+
+Use:
+
+- common UI icons from a package such as `react-icons` when they map to familiar controls like save, play, warning, settings, search, close, plus, arrow, undo, redo, and external link
+- icon-plus-text buttons for primary commands unless the icon is universally understood in context
+- sparse adventure/object symbols from a source such as Game-icons.net only when the symbol clarifies a text-adventure concept better than a generic UI icon
+- consistent stroke weight, size, and color tokens
+- tooltips or visible labels for icon-only controls
+
+Avoid:
+
+- moth icons as decoration
+- ornate fantasy icons
+- mixed icon packs in the same toolbar
+- icon-only commands that require guessing
+- decorative icons inside every card or heading
+- using icons as a substitute for clear room, exit, warning, or command copy
+
 ## Map canvas
 
 The map canvas is the heart of the product.
@@ -524,7 +663,7 @@ Good visual language:
 
 - faint square grid
 - room cards with hard borders
-- brass selected outline
+- verdigris selected outline
 - thin connector lines
 - compass labels
 - small warning marks
@@ -545,11 +684,11 @@ Suggested states:
 
 ```txt
 Default room: dark panel, thin border
-Selected room: brass border or brass corner mark
+Selected room: verdigris border or corner mark
 Unreachable room: muted/faded opacity plus warning label
-Room with issue: small ember warning mark
-Start room: subtle brass origin mark
-Preview/current room: faint highlight or live marker
+Room with issue: small red-lead warning mark
+Start room: subtle ochre origin mark
+Preview/current room: indigo live marker
 ```
 
 ### Exit connectors
@@ -558,8 +697,8 @@ Suggested style:
 
 ```txt
 Valid exit: thin faded-ink line
-Selected exit: dull brass line
-Broken exit: dashed warning-ember line
+Selected exit: verdigris line
+Broken exit: dashed red-lead line
 One-way exit: small directional tick
 Locked/conditional exit: tiny notch or ward mark
 ```
@@ -793,6 +932,8 @@ Good icon directions:
 - tiny document/note icons
 - branch/connector symbols
 - terminal prompt symbol
+- save/checkpoint glyphs
+- floor/layer glyphs
 
 Avoid:
 
@@ -866,37 +1007,37 @@ Avoid default gray-heavy Tailwind styling.
 Good base classes might use arbitrary colors:
 
 ```tsx
-className="min-h-screen bg-[#11100e] text-[#eee8dc]"
+className="min-h-screen bg-[#11130f] text-[#f2e5c8]"
 ```
 
 Panel:
 
 ```tsx
-className="border border-[#2a2722] bg-[#1d1a15]"
+className="border border-[#3a352b] bg-[#24221d]"
 ```
 
 Muted text:
 
 ```tsx
-className="text-[#8e8678]"
+className="text-[#b8ad97]"
 ```
 
 Accent:
 
 ```tsx
-className="text-[#d2b46f]"
+className="text-[#70a58d]"
 ```
 
 Primary button:
 
 ```tsx
-className="border border-[#d2b46f] bg-[#d2b46f] text-[#11100e] hover:bg-[#e4c77f]"
+className="border border-[#70a58d] bg-[#70a58d] text-[#11130f] hover:bg-[#86b9a2]"
 ```
 
 Secondary button:
 
 ```tsx
-className="border border-[#2a2722] bg-[#15130f] text-[#eee8dc] hover:border-[#d2b46f]"
+className="border border-[#3a352b] bg-[#1b1a16] text-[#f2e5c8] hover:border-[#70a58d]"
 ```
 
 Grid background idea:
@@ -904,7 +1045,7 @@ Grid background idea:
 ```tsx
 style={{
   backgroundImage:
-    "linear-gradient(#242019 1px, transparent 1px), linear-gradient(90deg, #242019 1px, transparent 1px)",
+    "linear-gradient(#312d26 1px, transparent 1px), linear-gradient(90deg, #312d26 1px, transparent 1px)",
   backgroundSize: "32px 32px",
 }}
 ```
@@ -971,9 +1112,10 @@ Do:
 
 - keep the app practical
 - keep the mood tactile and quiet
-- use warm dark colors
-- use paper/bone text
-- use dull brass sparingly
+- use night-archive colors
+- use cream-stock text
+- use verdigris for creation and selection
+- use ochre sparingly for focus and checkpoint emphasis
 - use monospace for commands and metadata
 - make the map canvas central
 - keep copy concrete
