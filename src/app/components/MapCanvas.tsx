@@ -228,22 +228,38 @@ export function Map() {
     const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
     const handleLength = 15;
 
+    // position of the start handle (relative to the start point)
+    const startHandle: Point = {
+        x: handleLength * startDirectionVector.x,
+        y: handleLength * startDirectionVector.y,
+    }
+
+    // position of the end handle (relative to the end point)
+    const endHandle: Point = {
+        x: -handleLength * endDirectionVector.x,
+        y: -handleLength * endDirectionVector.y,
+    }
+
     return [
       {
-        x: startPoint.x + handleLength * startDirectionVector.x,
-        y: startPoint.y + handleLength * startDirectionVector.y,
+        x: startPoint.x + startHandle.x,
+        y: startPoint.y + startHandle.y,
+      },
+    //   {
+    //     x: startPoint.x + xChange,
+    //     y: startPoint.y + yChange,
+    //   },
+    //   {
+    //     x: endPoint.x - xChange,
+    //     y: endPoint.y - yChange,
+    //   },
+      {
+        x: (startPoint.x + endPoint.x) / 2 + startHandle.x + endHandle.x,
+        y: (startPoint.y + endPoint.y) / 2 + startHandle.y + endHandle.y,
       },
       {
-        x: startPoint.x + xChange,
-        y: startPoint.y + yChange,
-      },
-      {
-        x: endPoint.x - xChange,
-        y: endPoint.y - yChange,
-      },
-      {
-        x: endPoint.x - handleLength * endDirectionVector.x,
-        y: endPoint.y - handleLength * endDirectionVector.y,
+        x: endPoint.x + endHandle.x,
+        y: endPoint.y + endHandle.y,
       },
     ];
   }
