@@ -1,52 +1,9 @@
 "use client";
 
 import { useState } from "react";
-
-type Direction = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
-
-const DIRECTION_VECTORS: Record<Direction, { x: number; y: number }> = {
-  n: { x: 0, y: -1 },
-  ne: { x: 1, y: -1 },
-  e: { x: 1, y: 0 },
-  se: { x: 1, y: 1 },
-  s: { x: 0, y: 1 },
-  sw: { x: -1, y: 1 },
-  w: { x: -1, y: 0 },
-  nw: { x: -1, y: -1 },
-};
-
-const REVERSE_DIRECTION: Record<Direction, Direction> = {
-  n: "s",
-  ne: "sw",
-  e: "w",
-  se: "nw",
-  s: "n",
-  sw: "ne",
-  w: "e",
-  nw: "se",
-};
-
-type Point = {
-  x: number;
-  y: number;
-};
-
-type Room = {
-  id: string;
-  name: string;
-  position: Point;
-};
-
-type Connection = {
-  id: string;
-  fromRoomId: string;
-  toRoomId: string;
-  controlPoints?: Point[];
-  direction?: Direction;
-  returnDirection?: Direction;
-  specialCommands?: string[];
-  returnSpecialCommands?: string[];
-};
+import type {Point, Room, Connection, Direction} from "../types/MapTypes";
+import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/MapTypes";
+import {addPoints, subtractPoints, getMidpoint, scalePoint} from "../utils/mapUtils";
 
 type DragState = {
   roomId: string;
@@ -161,16 +118,9 @@ function getPath(points: Point[]) {
     const p2 = points[i + 1];
     const p3 = points[i + 2] ?? p2;
 
-    const control1 = {
-      x: p1.x + (p2.x - p0.x) / 6,
-      y: p1.y + (p2.y - p0.y) / 6,
-    };
-
-    const control2 = {
-      x: p2.x - (p3.x - p1.x) / 6,
-      y: p2.y - (p3.y - p1.y) / 6,
-    };
-
+    const control1 = addPoints(p1, scalePoint(subtractPoints(p2, p0), 1/6)); 
+    const control2 = subtractPoints(p2, scalePoint(subtractPoints(p3, p1), 1/6));
+    
     path += ` C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${p2.x} ${p2.y}`;
   }
 
@@ -188,12 +138,13 @@ export function Map() {
     // adjust based on direction if provided
     if (room && direction) {
       const vector = DIRECTION_VECTORS[direction];
+      const connectionPoint: Point = {
+        x: (vector.x * ROOM_WIDTH) / 2.1,
+        y: (vector.y * ROOM_HEIGHT) / 2.1,
+      }
       return {
         ...room,
-        position: {
-          x: room.position.x + (vector.x * ROOM_WIDTH) / 2.1,
-          y: room.position.y + (vector.y * ROOM_HEIGHT) / 2.1,
-        },
+        position: addPoints(room.position, connectionPoint),
       };
     }
 
@@ -206,20 +157,6 @@ export function Map() {
     startDirection?: Direction,
     endDirection?: Direction
   ): Point[] {
-    const xDiff = endPoint.x - startPoint.x;
-    const yDiff = endPoint.y - startPoint.y;
-
-    // the shorter distance gets halved and the longer side gets divided into thirds
-    let xChange, yChange;
-    if (Math.abs(xDiff) < Math.abs(yDiff)) {
-      xChange = xDiff / 2;
-      yChange = yDiff / 3;
-    } else {
-      xChange = xDiff / 3;
-      yChange = yDiff / 3;
-    }
-    // TODO: what happens if they're equal?
-
     // TODO: currently needs both start and return directions, change that
     if (!startDirection || !endDirection) {
       throw Error("needs both directions in a connectioin for now");
@@ -229,38 +166,15 @@ export function Map() {
     const handleLength = 15;
 
     // position of the start handle (relative to the start point)
-    const startHandle: Point = {
-        x: handleLength * startDirectionVector.x,
-        y: handleLength * startDirectionVector.y,
-    }
+    const startHandle: Point = scalePoint(startDirectionVector, handleLength);
 
     // position of the end handle (relative to the end point)
-    const endHandle: Point = {
-        x: -handleLength * endDirectionVector.x,
-        y: -handleLength * endDirectionVector.y,
-    }
+    const endHandle: Point = scalePoint(endDirectionVector, -handleLength);
 
     return [
-      {
-        x: startPoint.x + startHandle.x,
-        y: startPoint.y + startHandle.y,
-      },
-    //   {
-    //     x: startPoint.x + xChange,
-    //     y: startPoint.y + yChange,
-    //   },
-    //   {
-    //     x: endPoint.x - xChange,
-    //     y: endPoint.y - yChange,
-    //   },
-      {
-        x: (startPoint.x + endPoint.x) / 2 + startHandle.x + endHandle.x,
-        y: (startPoint.y + endPoint.y) / 2 + startHandle.y + endHandle.y,
-      },
-      {
-        x: endPoint.x + endHandle.x,
-        y: endPoint.y + endHandle.y,
-      },
+      addPoints(startPoint, startHandle),
+      addPoints(getMidpoint(startPoint, endPoint), addPoints(startHandle, endHandle)),
+      addPoints(endPoint, endHandle),
     ];
   }
 
@@ -283,10 +197,7 @@ export function Map() {
 
     setDragState({
       roomId: room.id,
-      offset: {
-        x: pointer.x - room.position.x,
-        y: pointer.y - room.position.y,
-      },
+      offset: subtractPoints(pointer, room.position),
     });
   }
 
@@ -306,10 +217,7 @@ export function Map() {
 
         return {
           ...room,
-          position: {
-            x: pointer.x - dragState.offset.x,
-            y: pointer.y - dragState.offset.y,
-          },
+          position: subtractPoints(pointer, dragState.offset),
         };
       })
     );
