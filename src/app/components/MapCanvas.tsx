@@ -16,14 +16,14 @@ const DIRECTION_VECTORS: Record<Direction, { x: number; y: number }> = {
 };
 
 const REVERSE_DIRECTION: Record<Direction, Direction> = {
-    n: "s",
-    ne: "sw",
-    e: "w",
-    se: "nw",
-    s: "n",
-    sw: "ne",
-    w: "e",
-    nw: "se",
+  n: "s",
+  ne: "sw",
+  e: "w",
+  se: "nw",
+  s: "n",
+  sw: "ne",
+  w: "e",
+  nw: "se",
 };
 
 type Point = {
@@ -46,6 +46,11 @@ type Connection = {
   returnDirection?: Direction;
   specialCommands?: string[];
   returnSpecialCommands?: string[];
+};
+
+type DragState = {
+  roomId: string;
+  offset: Point;
 };
 
 const GRID_SIZE = 48;
@@ -137,7 +142,7 @@ const initialConnections: Connection[] = [
     returnDirection: "n",
   },
   {
-    id: "connection-7",
+    id: "connection-8",
     fromRoomId: "room-4",
     toRoomId: "room-6",
     direction: "se",
@@ -173,71 +178,137 @@ function getPath(points: Point[]) {
 }
 
 export function Map() {
-  const [rooms] = useState<Room[]>(initialRooms);
+  const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [connections] = useState<Connection[]>(initialConnections);
+  const [dragState, setDragState] = useState<DragState | null>(null);
 
   function getRoom(roomId: string, direction?: Direction) {
     const room = rooms.find((room) => room.id === roomId);
 
     // adjust based on direction if provided
     if (room && direction) {
-        const vector = DIRECTION_VECTORS[direction];
-        return {
-            ...room,
-            position: {
-                x: room.position.x + vector.x * ROOM_WIDTH / 2.1,
-                y: room.position.y + vector.y * ROOM_HEIGHT / 2.1, 
-            }
-        };
+      const vector = DIRECTION_VECTORS[direction];
+      return {
+        ...room,
+        position: {
+          x: room.position.x + (vector.x * ROOM_WIDTH) / 2.1,
+          y: room.position.y + (vector.y * ROOM_HEIGHT) / 2.1,
+        },
+      };
     }
 
     return room;
   }
 
-  function getControlPoints(startPoint: Point, endPoint: Point, startDirection?: Direction, endDirection?: Direction): Point[] {
+  function getControlPoints(
+    startPoint: Point,
+    endPoint: Point,
+    startDirection?: Direction,
+    endDirection?: Direction
+  ): Point[] {
     const xDiff = endPoint.x - startPoint.x;
     const yDiff = endPoint.y - startPoint.y;
-    
+
     // the shorter distance gets halved and the longer side gets divided into thirds
     let xChange, yChange;
     if (Math.abs(xDiff) < Math.abs(yDiff)) {
-        xChange = xDiff / 2;
-        yChange = yDiff / 3;
+      xChange = xDiff / 2;
+      yChange = yDiff / 3;
     } else {
-        xChange = xDiff / 3;
-        yChange = yDiff / 3;
+      xChange = xDiff / 3;
+      yChange = yDiff / 3;
     }
     // TODO: what happens if they're equal?
 
     // TODO: currently needs both start and return directions, change that
-    if (!startDirection || !endDirection) { throw Error("needs both directions in a connectioin for now"); }
+    if (!startDirection || !endDirection) {
+      throw Error("needs both directions in a connectioin for now");
+    }
     const startDirectionVector = DIRECTION_VECTORS[startDirection];
     const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
     const handleLength = 15;
 
-
     return [
-        {
-            x: startPoint.x + handleLength * startDirectionVector.x,
-            y: startPoint.y + handleLength * startDirectionVector.y,
-        },
-        {
-            x: startPoint.x + xChange,
-            y: startPoint.y + yChange,
-        },
-        {
-            x: endPoint.x - xChange,
-            y: endPoint.y - yChange,
-        },
-        {
-            x: endPoint.x - handleLength * endDirectionVector.x,
-            y: endPoint.y - handleLength * endDirectionVector.y,
-        },
-    ]
+      {
+        x: startPoint.x + handleLength * startDirectionVector.x,
+        y: startPoint.y + handleLength * startDirectionVector.y,
+      },
+      {
+        x: startPoint.x + xChange,
+        y: startPoint.y + yChange,
+      },
+      {
+        x: endPoint.x - xChange,
+        y: endPoint.y - yChange,
+      },
+      {
+        x: endPoint.x - handleLength * endDirectionVector.x,
+        y: endPoint.y - handleLength * endDirectionVector.y,
+      },
+    ];
+  }
+
+  function handleRoomPointerDown(
+    event: React.PointerEvent<HTMLButtonElement>,
+    room: Room
+  ) {
+    const mapElement = event.currentTarget.closest("[data-map]");
+
+    if (!mapElement) return;
+
+    const bounds = mapElement.getBoundingClientRect();
+
+    const pointer = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    setDragState({
+      roomId: room.id,
+      offset: {
+        x: pointer.x - room.position.x,
+        y: pointer.y - room.position.y,
+      },
+    });
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!dragState) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+
+    const pointer = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+
+    setRooms((rooms) =>
+      rooms.map((room) => {
+        if (room.id !== dragState.roomId) return room;
+
+        return {
+          ...room,
+          position: {
+            x: pointer.x - dragState.offset.x,
+            y: pointer.y - dragState.offset.y,
+          },
+        };
+      })
+    );
+  }
+
+  function handlePointerUp() {
+    setDragState(null);
   }
 
   return (
     <div
+      data-map
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       style={{
         position: "relative",
         width: 720,
@@ -250,6 +321,7 @@ export function Map() {
         `,
         backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
         overflow: "hidden",
+        touchAction: "none",
       }}
     >
       <svg
@@ -267,7 +339,12 @@ export function Map() {
 
           if (!fromRoom || !toRoom) return null;
 
-          const curvePoints = getControlPoints(fromRoom.position, toRoom.position, connection.direction, connection.returnDirection);
+          const curvePoints = getControlPoints(
+            fromRoom.position,
+            toRoom.position,
+            connection.direction,
+            connection.returnDirection
+          );
 
           const pathPoints = [
             fromRoom.position,
@@ -293,6 +370,7 @@ export function Map() {
         <button
           key={room.id}
           type="button"
+          onPointerDown={(event) => handleRoomPointerDown(event, room)}
           style={{
             position: "absolute",
             left: room.position.x,
@@ -304,6 +382,9 @@ export function Map() {
             background: "#d8ceb4",
             color: "#241f18",
             fontSize: 12,
+            cursor: dragState?.roomId === room.id ? "grabbing" : "grab",
+            userSelect: "none",
+            touchAction: "none",
           }}
         >
           {room.name}
