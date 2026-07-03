@@ -1,26 +1,25 @@
-import type { Room } from "../types/MapTypes";
+import type { Room as RoomType } from "../../types/MapTypes";
 
-type MapRoomProps = {
-  room: Room;
+type RoomProps = {
+  room: RoomType;
   width: number;
   height: number;
   isDragging: boolean;
   onPointerDown: (
     event: React.PointerEvent<HTMLButtonElement>,
-    room: Room
+    room: RoomType
   ) => void;
 };
 
-export function MapRoom({
+export function Room({
   room,
   width,
   height,
   isDragging,
   onPointerDown,
-}: MapRoomProps) {
+}: RoomProps) {
   return (
     <button
-      key={room.id}
       type="button"
       onPointerDown={(event) => onPointerDown(event, room)}
       style={{

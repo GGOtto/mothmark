@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Point, Room, Connection, Direction } from "../types/MapTypes";
-import { DIRECTION_VECTORS } from "../types/MapTypes";
-import { addPoints, subtractPoints } from "../utils/mapUtils";
-import { MapRoom } from "./MapRoom";
-import { MapConnection } from "./MapConnection";
+import type { Point, Room as RoomType, Connection as ConnectionType, Direction } from "../../types/MapTypes";
+import { DIRECTION_VECTORS } from "../../types/MapTypes";
+import { addPoints, subtractPoints } from "../../utils/mapUtils";
+import { Room } from "./Room";
+import { Connection } from "./Connection";
 
 type DragState = {
   roomId: string;
@@ -16,7 +16,7 @@ const GRID_SIZE = 48;
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 
-const initialRooms: Room[] = [
+const initialRooms: RoomType[] = [
   {
     id: "room-1",
     name: "Room 1",
@@ -49,7 +49,7 @@ const initialRooms: Room[] = [
   },
 ];
 
-const initialConnections: Connection[] = [
+const initialConnections: ConnectionType[] = [
   {
     id: "connection-1",
     fromRoomId: "room-1",
@@ -110,8 +110,8 @@ const initialConnections: Connection[] = [
 ];
 
 export function Map() {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [connections] = useState<Connection[]>(initialConnections);
+  const [rooms, setRooms] = useState<RoomType[]>(initialRooms);
+  const [connections] = useState<ConnectionType[]>(initialConnections);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
   function getRoom(roomId: string, direction?: Direction) {
@@ -136,7 +136,7 @@ export function Map() {
 
   function handleRoomPointerDown(
     event: React.PointerEvent<HTMLButtonElement>,
-    room: Room
+    room: RoomType
   ) {
     const mapElement = event.currentTarget.closest("[data-map]");
 
@@ -223,7 +223,7 @@ export function Map() {
           if (!fromRoom || !toRoom) return null;
 
           return (
-            <MapConnection
+            <Connection
               key={connection.id}
               connection={connection}
               fromRoom={fromRoom}
@@ -234,7 +234,7 @@ export function Map() {
       </svg>
 
       {rooms.map((room) => (
-        <MapRoom
+        <Room
           key={room.id}
           room={room}
           width={ROOM_WIDTH}

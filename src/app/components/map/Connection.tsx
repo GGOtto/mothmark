@@ -1,16 +1,19 @@
-// components/MapConnection.tsx
-
-import type { Connection, Direction, Point, Room } from "../types/MapTypes";
-import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../types/MapTypes";
+import type {
+  Connection as ConnectionType,
+  Direction,
+  Point,
+  Room,
+} from "../../types/MapTypes";
+import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/MapTypes";
 import {
   addPoints,
   subtractPoints,
   getMidpoint,
   scalePoint,
-} from "../utils/mapUtils";
+} from "../../utils/mapUtils";
 
-type MapConnectionProps = {
-  connection: Connection;
+type ConnectionProps = {
+  connection: ConnectionType;
   fromRoom: Room;
   toRoom: Room;
 };
@@ -66,11 +69,11 @@ function getControlPoints(
   ];
 }
 
-export function MapConnection({
+export function Connection({
   connection,
   fromRoom,
   toRoom,
-}: MapConnectionProps) {
+}: ConnectionProps) {
   const curvePoints = getControlPoints(
     fromRoom.position,
     toRoom.position,
