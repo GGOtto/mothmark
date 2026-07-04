@@ -1,4 +1,4 @@
-import type {Connection, Point} from "../schemas/worldSchema";
+import type {Connection, Point, Direction} from "../schemas/worldSchema";
 
 export function canTravelForward(connection: Connection) {
 	return Boolean(connection.direction);
@@ -56,12 +56,18 @@ export function getDistance(a: Point, b: Point) {
 	return Math.hypot(b.x - a.x, b.y - a.y);
 }
 
-export function isConnectionFromRoom(roomId: string, connections: Connection[]) {
+export function isConnectionFromRoom(
+	roomId: string,
+	direction: Direction,
+	connections: Connection[],
+) {
 	return connections.some((connection) => {
 		return (
 			(connection.fromRoomId === roomId &&
+				connection.direction === direction &&
 				(connection.pathway === "forwards" || connection.pathway === "two-way")) ||
 			(connection.toRoomId === roomId &&
+				connection.returnDirection === direction &&
 				(connection.pathway === "backwards" || connection.pathway === "two-way"))
 		);
 	});
