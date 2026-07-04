@@ -473,7 +473,7 @@ describe("getPathwayForNewDrop", () => {
 		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", [])).toBe("two-way");
 	});
 
-	it("returns forwards when the source node is occupied", () => {
+	it("returns backwards when the source node is occupied", () => {
 		const connections = [
 			connection({
 				fromRoomId: "room-1",
@@ -483,7 +483,7 @@ describe("getPathwayForNewDrop", () => {
 			}),
 		];
 
-		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", connections)).toBe("forwards");
+		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", connections)).toBe("backwards");
 	});
 
 	it("returns forwards when the target node is occupied", () => {

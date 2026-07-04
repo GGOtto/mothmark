@@ -177,7 +177,11 @@ export function getPathwayForNewDrop(
 		return "no-way";
 	}
 
-	if (sourceConnection || targetConnection) {
+	if (sourceConnection) {
+		return "backwards";
+	}
+
+	if (targetConnection) {
 		return "forwards";
 	}
 

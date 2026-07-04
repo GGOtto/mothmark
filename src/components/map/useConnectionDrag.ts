@@ -7,7 +7,6 @@ import {
 	getDuplicateConnectionByShape,
 	getNearestNodeInRadius,
 	getNodeSelectionKey,
-	getPathwayForEditedDrop,
 	getPathwayForNewDrop,
 	type MovingConnectionSide,
 	type SnapTarget,
@@ -230,52 +229,55 @@ export function useConnectionDrag({
 				return connections;
 			}
 
-			const pathway = getPathwayForEditedDrop(
-				targetRoom.id,
-				targetDirection,
-				connections,
-				connectionId,
+			const connectionsWithoutRedrawnConnection = connections.filter(
+				(connection) => connection.id !== connectionId,
 			);
 
-			const redrawnConnection: ConnectionType =
+			const redrawnConnectionWithoutPathway: ConnectionType =
 				sideToRedraw === "from"
 					? {
 							...connectionToRedraw,
+							id: createConnectionId(),
 							fromRoomId: targetRoom.id,
 							direction: targetDirection,
-							pathway,
 						}
 					: {
 							...connectionToRedraw,
+							id: createConnectionId(),
 							toRoomId: targetRoom.id,
 							returnDirection: targetDirection,
-							pathway,
 						};
 
+			const pathway = getPathwayForNewDrop(
+				redrawnConnectionWithoutPathway.fromRoomId,
+				redrawnConnectionWithoutPathway.direction,
+				redrawnConnectionWithoutPathway.toRoomId,
+				redrawnConnectionWithoutPathway.returnDirection,
+				connectionsWithoutRedrawnConnection,
+			);
+
+			const redrawnConnection: ConnectionType = {
+				...redrawnConnectionWithoutPathway,
+				pathway,
+			};
+
 			const duplicateConnection = getDuplicateConnectionByShape(
-				connections,
+				connectionsWithoutRedrawnConnection,
 				redrawnConnection,
-				connectionId,
 			);
 
 			if (duplicateConnection) {
-				return connections
-					.filter((connection) => connection.id !== connectionId)
-					.map((connection) => {
-						if (connection.id !== duplicateConnection.id) return connection;
+				return connectionsWithoutRedrawnConnection.map((connection) => {
+					if (connection.id !== duplicateConnection.id) return connection;
 
-						return {
-							...connection,
-							pathway,
-						};
-					});
+					return {
+						...connection,
+						pathway,
+					};
+				});
 			}
 
-			return connections.map((connection) => {
-				if (connection.id !== connectionId) return connection;
-
-				return redrawnConnection;
-			});
+			return [...connectionsWithoutRedrawnConnection, redrawnConnection];
 		});
 	}
 

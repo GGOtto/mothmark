@@ -2,10 +2,6 @@ import {z} from "zod";
 
 export const DirectionSchema = z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw"]);
 
-export const PathwaySchema = z
-	.enum(["no-way", "two-way", "forwards", "backwards"])
-	.default("two-way");
-
 export const PointSchema = z.object({
 	x: z.number(),
 	y: z.number(),
@@ -24,7 +20,7 @@ export const ConnectionSchema = z.object({
 	direction: DirectionSchema,
 	returnDirection: DirectionSchema,
 	controlPoints: z.array(PointSchema).optional(),
-	pathway: PathwaySchema,
+	pathway: z.enum(["no-way", "two-way", "forwards", "backwards"]).default("two-way"),
 });
 
 export const WorldSchema = z
@@ -87,7 +83,6 @@ export const WorldSchema = z
 	});
 
 export type Direction = z.infer<typeof DirectionSchema>;
-export type Pathway = z.infer<typeof PathwaySchema>;
 export type Point = z.infer<typeof PointSchema>;
 export type Room = z.infer<typeof RoomSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
