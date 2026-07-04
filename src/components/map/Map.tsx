@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import type { Point, Room, Connection as ConnectionType, Direction } from "../../types/mapTypes";
+import type {
+  Point,
+  Room,
+  Connection as ConnectionType,
+  Direction,
+} from "../../types/mapTypes";
 import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/mapTypes";
 import { addPoints, subtractPoints } from "../../utils/MapUtils";
 import { RoomCard } from "./Room";
 import { Connection } from "./Connection";
-
+import {
+  initialRooms,
+  initialConnections,
+} from "../../data/worlds/exampleWorld";
 type DragState = {
   roomId: string;
   offset: Point;
@@ -16,110 +24,10 @@ const GRID_SIZE = 48;
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 
-const initialRooms: Room[] = [
-  {
-    id: "room-1",
-    name: "Room 1",
-    position: { x: 180, y: 160 },
-  },
-  {
-    id: "room-2",
-    name: "Room 2",
-    position: { x: 340, y: 160 },
-  },
-  {
-    id: "room-3",
-    name: "Room 3",
-    position: { x: 460, y: 260 },
-  },
-  {
-    id: "room-4",
-    name: "Room 4",
-    position: { x: 340, y: 60 },
-  },
-  {
-    id: "room-5",
-    name: "Room 5",
-    position: { x: 340, y: 260 },
-  },
-  {
-    id: "room-6",
-    name: "Room 6",
-    position: { x: 340 + ROOM_WIDTH / 2 + 100, y: 160 },
-  },
-];
-
-const initialConnections: ConnectionType[] = [
-  {
-    id: "connection-1",
-    fromRoomId: "room-1",
-    toRoomId: "room-2",
-    direction: "e",
-    returnDirection: "w",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-2",
-    fromRoomId: "room-2",
-    toRoomId: "room-3",
-    controlPoints: [{ x: 500, y: 220 }],
-    direction: "s",
-    returnDirection: "n",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-3",
-    fromRoomId: "room-1",
-    toRoomId: "room-4",
-    direction: "ne",
-    returnDirection: "sw",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-4",
-    fromRoomId: "room-2",
-    toRoomId: "room-4",
-    direction: "n",
-    returnDirection: "s",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-5",
-    fromRoomId: "room-1",
-    toRoomId: "room-5",
-    direction: "s",
-    returnDirection: "nw",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-6",
-    fromRoomId: "room-5",
-    toRoomId: "room-3",
-    direction: "se",
-    returnDirection: "sw",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-7",
-    fromRoomId: "room-4",
-    toRoomId: "room-6",
-    direction: "e",
-    returnDirection: "n",
-    pathway: "two-way"
-  },
-  {
-    id: "connection-8",
-    fromRoomId: "room-4",
-    toRoomId: "room-6",
-    direction: "se",
-    returnDirection: "nw",
-    pathway: "two-way"
-  },
-];
-
 export function Map() {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [connections, setConnections] = useState<ConnectionType[]>(initialConnections);
+  const [connections, setConnections] =
+    useState<ConnectionType[]>(initialConnections);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
   function getRoom(roomId: string, direction?: Direction) {
@@ -220,7 +128,7 @@ export function Map() {
         (connection) =>
           connection.fromRoomId === newConnection.fromRoomId &&
           connection.toRoomId === newConnection.toRoomId &&
-          connection.direction === newConnection.direction
+          connection.direction === newConnection.direction,
       );
 
       if (connectionAlreadyExists) return connections;
@@ -231,7 +139,7 @@ export function Map() {
 
   function handleRoomPointerDown(
     event: React.PointerEvent<HTMLButtonElement>,
-    room: Room
+    room: Room,
   ) {
     const mapElement = event.currentTarget.closest("[data-map]");
 
@@ -270,7 +178,7 @@ export function Map() {
           ...room,
           position: subtractPoints(pointer, dragState.offset),
         };
-      })
+      }),
     );
   }
 
@@ -312,7 +220,7 @@ export function Map() {
           const fromRoom = getRoom(connection.fromRoomId, connection.direction);
           const toRoom = getRoom(
             connection.toRoomId,
-            connection.returnDirection
+            connection.returnDirection,
           );
 
           if (!fromRoom || !toRoom) return null;
