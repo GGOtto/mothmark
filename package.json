@@ -9,28 +9,39 @@
 		"lint": "eslint",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"prepare": "husky"
+		"prepare": "husky",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,json,css,scss,md,mdx}": "prettier --write"
 	},
 	"dependencies": {
+		"@types/jest": "^30.0.0",
 		"next": "16.2.9",
 		"react": "19.2.4",
 		"react-dom": "19.2.4",
+		"save-dev": "0.0.1-security",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
 		"@tailwindcss/postcss": "^4",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.1",
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
 		"eslint": "^9",
 		"eslint-config-next": "16.2.9",
 		"husky": "^9.1.7",
+		"jest": "^30.4.2",
+		"jest-environment-jsdom": "^30.4.1",
 		"lint-staged": "^17.0.8",
 		"prettier": "^3.9.4",
 		"tailwindcss": "^4",
+		"ts-node": "^10.9.2",
 		"typescript": "^5"
 	}
 }
