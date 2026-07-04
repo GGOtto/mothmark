@@ -2,7 +2,9 @@ import {z} from "zod";
 
 export const DirectionSchema = z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw"]);
 
-export const PathwaySchema = z.enum(["no-way", "two-way", "forwards", "backwards"]);
+export const PathwaySchema = z
+	.enum(["no-way", "two-way", "forwards", "backwards"])
+	.default("two-way");
 
 export const PointSchema = z.object({
 	x: z.number(),

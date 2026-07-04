@@ -97,7 +97,6 @@ const rawWorld = {
 			toRoomId: "room-6",
 			direction: "se",
 			returnDirection: "nw",
-			pathway: "two-way",
 		},
 	],
 };
