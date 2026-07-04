@@ -19,6 +19,17 @@ type BuildAddConnectionResult = {
 	roomToAdd?: Room;
 };
 
+export type SnapTarget = {
+	room: Room;
+	direction: Direction;
+	point: Point;
+	distance: number;
+};
+
+export type MovingConnectionSide = "from" | "to";
+
+const DIRECTIONS: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+
 export function isConnectionFromRoom(
 	roomId: string,
 	direction: Direction,
@@ -34,6 +45,159 @@ export function isConnectionFromRoom(
 				(connection.pathway === "backwards" || connection.pathway === "two-way"))
 		);
 	});
+}
+
+export function connectionUsesNode(connection: Connection, roomId: string, direction: Direction) {
+	return (
+		(connection.fromRoomId === roomId && connection.direction === direction) ||
+		(connection.toRoomId === roomId && connection.returnDirection === direction)
+	);
+}
+
+export function getConnectionOnNode(
+	connections: Connection[],
+	roomId: string,
+	direction: Direction,
+	ignoredConnectionId?: string,
+) {
+	return connections.find((connection) => {
+		if (connection.id === ignoredConnectionId) return false;
+
+		return connectionUsesNode(connection, roomId, direction);
+	});
+}
+
+export function getConnectionsOnNode(
+	connections: Connection[],
+	roomId: string,
+	direction: Direction,
+	ignoredConnectionId?: string,
+) {
+	return connections.filter((connection) => {
+		if (connection.id === ignoredConnectionId) return false;
+
+		return connectionUsesNode(connection, roomId, direction);
+	});
+}
+
+export function getConnectionSide(
+	connection: Connection,
+	roomId: string,
+	direction: Direction,
+): MovingConnectionSide | null {
+	if (connection.fromRoomId === roomId && connection.direction === direction) {
+		return "from";
+	}
+
+	if (connection.toRoomId === roomId && connection.returnDirection === direction) {
+		return "to";
+	}
+
+	return null;
+}
+
+export function isSameConnectionShape(connection: Connection, candidate: Connection) {
+	return (
+		connection.fromRoomId === candidate.fromRoomId &&
+		connection.toRoomId === candidate.toRoomId &&
+		connection.direction === candidate.direction &&
+		connection.returnDirection === candidate.returnDirection
+	);
+}
+
+export function getDuplicateConnectionByShape(
+	connections: Connection[],
+	candidate: Connection,
+	ignoredConnectionId?: string,
+) {
+	return connections.find((connection) => {
+		if (connection.id === ignoredConnectionId) return false;
+
+		return isSameConnectionShape(connection, candidate);
+	});
+}
+
+export function getNodeSelectionKey(roomId: string, direction: Direction) {
+	return `${roomId}:${direction}`;
+}
+
+export function getNearestNodeInRadius({
+	pointer,
+	rooms,
+	getRoomConnectionPoint,
+	snapDistance,
+	ignoredRoomId,
+	lockedRoomId,
+}: {
+	pointer: Point;
+	rooms: Room[];
+	getRoomConnectionPoint: (room: Room, direction: Direction) => Point;
+	snapDistance: number;
+	ignoredRoomId?: string;
+	lockedRoomId?: string;
+}): SnapTarget | null {
+	let nearestTarget: SnapTarget | null = null;
+
+	for (const room of rooms) {
+		if (room.id === ignoredRoomId) continue;
+		if (room.id === lockedRoomId) continue;
+
+		for (const direction of DIRECTIONS) {
+			const point = getRoomConnectionPoint(room, direction);
+			const distance = Math.hypot(pointer.x - point.x, pointer.y - point.y);
+
+			if (distance > snapDistance) continue;
+
+			if (!nearestTarget || distance < nearestTarget.distance) {
+				nearestTarget = {
+					room,
+					direction,
+					point,
+					distance,
+				};
+			}
+		}
+	}
+
+	return nearestTarget;
+}
+
+export function getPathwayForNewDrop(
+	sourceRoomId: string,
+	sourceDirection: Direction,
+	targetRoomId: string,
+	targetDirection: Direction,
+	currentConnections: Connection[],
+): Connection["pathway"] {
+	const sourceConnection = getConnectionOnNode(currentConnections, sourceRoomId, sourceDirection);
+
+	const targetConnection = getConnectionOnNode(currentConnections, targetRoomId, targetDirection);
+
+	if (sourceConnection && targetConnection) {
+		return "no-way";
+	}
+
+	if (sourceConnection || targetConnection) {
+		return "forwards";
+	}
+
+	return "two-way";
+}
+
+export function getPathwayForEditedDrop(
+	targetRoomId: string,
+	targetDirection: Direction,
+	currentConnections: Connection[],
+	ignoredConnectionId: string,
+): Connection["pathway"] {
+	const targetConnection = getConnectionOnNode(
+		currentConnections,
+		targetRoomId,
+		targetDirection,
+		ignoredConnectionId,
+	);
+
+	return targetConnection ? "forwards" : "two-way";
 }
 
 function getTargetPosition(

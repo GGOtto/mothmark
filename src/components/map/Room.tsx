@@ -10,9 +10,28 @@ type RoomProps = {
 	isDragging: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, room: Room) => void;
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
+	onConnectionDragStart: (
+		event: React.PointerEvent<HTMLDivElement>,
+		fromRoom: Room,
+		direction: Direction,
+	) => void;
+	onConnectionDragMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onConnectionDragEnd: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onConnectionDragCancel: () => void;
 };
 
-export function RoomCard({room, width, height, isDragging, onPointerDown, onNodeClick}: RoomProps) {
+export function RoomCard({
+	room,
+	width,
+	height,
+	isDragging,
+	onPointerDown,
+	onNodeClick,
+	onConnectionDragStart,
+	onConnectionDragMove,
+	onConnectionDragEnd,
+	onConnectionDragCancel,
+}: RoomProps) {
 	function buildNode(direction: Direction): RoomNode {
 		const vector = DIRECTION_VECTORS[direction];
 
@@ -53,7 +72,16 @@ export function RoomCard({room, width, height, isDragging, onPointerDown, onNode
 			}}
 		>
 			{nodes.map((node) => (
-				<Node room={room} node={node} key={node.direction} onNodeClick={onNodeClick} />
+				<Node
+					room={room}
+					node={node}
+					key={node.direction}
+					onNodeClick={onNodeClick}
+					onConnectionDragStart={onConnectionDragStart}
+					onConnectionDragMove={onConnectionDragMove}
+					onConnectionDragEnd={onConnectionDragEnd}
+					onConnectionDragCancel={onConnectionDragCancel}
+				/>
 			))}
 
 			{room.name}

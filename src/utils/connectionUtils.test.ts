@@ -1,5 +1,19 @@
-import type {Connection, Direction, Room} from "../schemas/worldSchema";
-import {buildAddConnectionResult, isConnectionFromRoom} from "./connectionUtils";
+import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
+import {DIRECTION_VECTORS} from "../types/mapTypes";
+import {
+	buildAddConnectionResult,
+	connectionUsesNode,
+	getConnectionOnNode,
+	getConnectionsOnNode,
+	getConnectionSide,
+	getDuplicateConnectionByShape,
+	getNearestNodeInRadius,
+	getNodeSelectionKey,
+	getPathwayForEditedDrop,
+	getPathwayForNewDrop,
+	isConnectionFromRoom,
+	isSameConnectionShape,
+} from "./connectionUtils";
 
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
@@ -48,6 +62,15 @@ function buildOptions({
 		connectorLength: CONNECTOR_LENGTH,
 		minConnectorLength: MIN_CONNECTOR_LENGTH,
 		connectorStep: CONNECTOR_STEP,
+	};
+}
+
+function getRoomConnectionPoint(room: Room, direction: Direction): Point {
+	const vector = DIRECTION_VECTORS[direction];
+
+	return {
+		x: room.position.x + vector.x * 10,
+		y: room.position.y + vector.y * 10,
 	};
 }
 
@@ -127,14 +150,407 @@ describe("isConnectionFromRoom", () => {
 			connection({
 				fromRoomId: "room-1",
 				toRoomId: "room-2",
-				direction: undefined,
-				returnDirection: undefined,
+				direction: "e",
+				returnDirection: "w",
 				pathway: "no-way",
 			}),
 		];
 
 		expect(isConnectionFromRoom("room-1", "e", connections)).toBe(false);
 		expect(isConnectionFromRoom("room-2", "w", connections)).toBe(false);
+	});
+});
+
+describe("connectionUsesNode", () => {
+	it("returns true when the connection starts at the given node", () => {
+		const existingConnection = connection({
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(connectionUsesNode(existingConnection, "room-1", "e")).toBe(true);
+	});
+
+	it("returns true when the connection ends at the given node", () => {
+		const existingConnection = connection({
+			toRoomId: "room-2",
+			returnDirection: "w",
+		});
+
+		expect(connectionUsesNode(existingConnection, "room-2", "w")).toBe(true);
+	});
+
+	it("returns false when the room matches but the direction does not", () => {
+		const existingConnection = connection({
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(connectionUsesNode(existingConnection, "room-1", "n")).toBe(false);
+	});
+});
+
+describe("getConnectionOnNode", () => {
+	it("returns the first connection that uses the node", () => {
+		const matchingConnection = connection({
+			id: "connection-1",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		const connections = [
+			connection({
+				id: "connection-2",
+				fromRoomId: "room-2",
+				direction: "n",
+			}),
+			matchingConnection,
+		];
+
+		expect(getConnectionOnNode(connections, "room-1", "e")).toBe(matchingConnection);
+	});
+
+	it("ignores the connection with the ignored id", () => {
+		const ignoredConnection = connection({
+			id: "connection-1",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		const matchingConnection = connection({
+			id: "connection-2",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(
+			getConnectionOnNode([ignoredConnection, matchingConnection], "room-1", "e", "connection-1"),
+		).toBe(matchingConnection);
+	});
+
+	it("returns undefined when no connection uses the node", () => {
+		const connections = [
+			connection({
+				fromRoomId: "room-1",
+				direction: "e",
+			}),
+		];
+
+		expect(getConnectionOnNode(connections, "room-1", "n")).toBeUndefined();
+	});
+});
+
+describe("getConnectionsOnNode", () => {
+	it("returns all connections that use the node", () => {
+		const firstConnection = connection({
+			id: "connection-1",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		const secondConnection = connection({
+			id: "connection-2",
+			fromRoomId: "room-1",
+			direction: "e",
+			toRoomId: "room-3",
+		});
+
+		const nonMatchingConnection = connection({
+			id: "connection-3",
+			fromRoomId: "room-1",
+			direction: "n",
+		});
+
+		expect(
+			getConnectionsOnNode([firstConnection, secondConnection, nonMatchingConnection], "room-1", "e"),
+		).toEqual([firstConnection, secondConnection]);
+	});
+
+	it("excludes the ignored connection", () => {
+		const ignoredConnection = connection({
+			id: "connection-1",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		const matchingConnection = connection({
+			id: "connection-2",
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(
+			getConnectionsOnNode([ignoredConnection, matchingConnection], "room-1", "e", "connection-1"),
+		).toEqual([matchingConnection]);
+	});
+});
+
+describe("getConnectionSide", () => {
+	it("returns from when the given node is the connection's from side", () => {
+		const existingConnection = connection({
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(getConnectionSide(existingConnection, "room-1", "e")).toBe("from");
+	});
+
+	it("returns to when the given node is the connection's to side", () => {
+		const existingConnection = connection({
+			toRoomId: "room-2",
+			returnDirection: "w",
+		});
+
+		expect(getConnectionSide(existingConnection, "room-2", "w")).toBe("to");
+	});
+
+	it("returns null when the connection does not use the given node", () => {
+		const existingConnection = connection({
+			fromRoomId: "room-1",
+			direction: "e",
+		});
+
+		expect(getConnectionSide(existingConnection, "room-1", "n")).toBeNull();
+	});
+});
+
+describe("isSameConnectionShape", () => {
+	it("returns true when room ids and directions match", () => {
+		const firstConnection = connection({
+			id: "connection-1",
+			pathway: "two-way",
+		});
+
+		const secondConnection = connection({
+			id: "connection-2",
+			pathway: "forwards",
+		});
+
+		expect(isSameConnectionShape(firstConnection, secondConnection)).toBe(true);
+	});
+
+	it("returns false when one of the shape fields differs", () => {
+		const firstConnection = connection({
+			fromRoomId: "room-1",
+			toRoomId: "room-2",
+			direction: "e",
+			returnDirection: "w",
+		});
+
+		const secondConnection = connection({
+			fromRoomId: "room-1",
+			toRoomId: "room-3",
+			direction: "e",
+			returnDirection: "w",
+		});
+
+		expect(isSameConnectionShape(firstConnection, secondConnection)).toBe(false);
+	});
+});
+
+describe("getDuplicateConnectionByShape", () => {
+	it("returns a connection with the same shape", () => {
+		const duplicateConnection = connection({
+			id: "connection-1",
+			pathway: "two-way",
+		});
+
+		const candidate = connection({
+			id: "connection-2",
+			pathway: "forwards",
+		});
+
+		expect(getDuplicateConnectionByShape([duplicateConnection], candidate)).toBe(duplicateConnection);
+	});
+
+	it("ignores the connection with the ignored id", () => {
+		const ignoredConnection = connection({
+			id: "connection-1",
+		});
+
+		const candidate = connection({
+			id: "connection-2",
+		});
+
+		expect(
+			getDuplicateConnectionByShape([ignoredConnection], candidate, "connection-1"),
+		).toBeUndefined();
+	});
+
+	it("returns undefined when no connection has the same shape", () => {
+		const existingConnection = connection({
+			fromRoomId: "room-1",
+			toRoomId: "room-2",
+			direction: "e",
+			returnDirection: "w",
+		});
+
+		const candidate = connection({
+			fromRoomId: "room-1",
+			toRoomId: "room-3",
+			direction: "e",
+			returnDirection: "w",
+		});
+
+		expect(getDuplicateConnectionByShape([existingConnection], candidate)).toBeUndefined();
+	});
+});
+
+describe("getNodeSelectionKey", () => {
+	it("combines the room id and direction into a stable key", () => {
+		expect(getNodeSelectionKey("room-1", "ne")).toBe("room-1:ne");
+	});
+});
+
+describe("getNearestNodeInRadius", () => {
+	it("returns the nearest node within the snap distance", () => {
+		const firstRoom = room("room-1", 100, 100);
+		const secondRoom = room("room-2", 200, 100);
+
+		const result = getNearestNodeInRadius({
+			pointer: {x: 210, y: 100},
+			rooms: [firstRoom, secondRoom],
+			getRoomConnectionPoint,
+			snapDistance: 24,
+		});
+
+		expect(result).toMatchObject({
+			room: secondRoom,
+			direction: "e",
+			point: {
+				x: 210,
+				y: 100,
+			},
+			distance: 0,
+		});
+	});
+
+	it("returns null when no node is within the snap distance", () => {
+		const firstRoom = room("room-1", 100, 100);
+
+		const result = getNearestNodeInRadius({
+			pointer: {x: 300, y: 300},
+			rooms: [firstRoom],
+			getRoomConnectionPoint,
+			snapDistance: 24,
+		});
+
+		expect(result).toBeNull();
+	});
+
+	it("ignores the ignored room", () => {
+		const ignoredRoom = room("room-1", 100, 100);
+		const allowedRoom = room("room-2", 200, 100);
+
+		const result = getNearestNodeInRadius({
+			pointer: {x: 110, y: 100},
+			rooms: [ignoredRoom, allowedRoom],
+			getRoomConnectionPoint,
+			snapDistance: 24,
+			ignoredRoomId: "room-1",
+		});
+
+		expect(result).toBeNull();
+	});
+
+	it("ignores the locked room", () => {
+		const lockedRoom = room("room-1", 100, 100);
+
+		const result = getNearestNodeInRadius({
+			pointer: {x: 110, y: 100},
+			rooms: [lockedRoom],
+			getRoomConnectionPoint,
+			snapDistance: 24,
+			lockedRoomId: "room-1",
+		});
+
+		expect(result).toBeNull();
+	});
+});
+
+describe("getPathwayForNewDrop", () => {
+	it("returns two-way when neither the source nor target node is occupied", () => {
+		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", [])).toBe("two-way");
+	});
+
+	it("returns forwards when the source node is occupied", () => {
+		const connections = [
+			connection({
+				fromRoomId: "room-1",
+				toRoomId: "room-3",
+				direction: "e",
+				returnDirection: "w",
+			}),
+		];
+
+		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", connections)).toBe("forwards");
+	});
+
+	it("returns forwards when the target node is occupied", () => {
+		const connections = [
+			connection({
+				fromRoomId: "room-3",
+				toRoomId: "room-2",
+				direction: "e",
+				returnDirection: "w",
+			}),
+		];
+
+		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", connections)).toBe("forwards");
+	});
+
+	it("returns no-way when both the source and target nodes are occupied", () => {
+		const connections = [
+			connection({
+				id: "connection-1",
+				fromRoomId: "room-1",
+				toRoomId: "room-3",
+				direction: "e",
+				returnDirection: "w",
+			}),
+			connection({
+				id: "connection-2",
+				fromRoomId: "room-4",
+				toRoomId: "room-2",
+				direction: "e",
+				returnDirection: "w",
+			}),
+		];
+
+		expect(getPathwayForNewDrop("room-1", "e", "room-2", "w", connections)).toBe("no-way");
+	});
+});
+
+describe("getPathwayForEditedDrop", () => {
+	it("returns two-way when the target node is not occupied by another connection", () => {
+		const connections = [
+			connection({
+				id: "connection-1",
+				toRoomId: "room-2",
+				returnDirection: "w",
+			}),
+		];
+
+		expect(getPathwayForEditedDrop("room-2", "w", connections, "connection-1")).toBe("two-way");
+	});
+
+	it("returns forwards when the target node is occupied by another connection", () => {
+		const connections = [
+			connection({
+				id: "connection-1",
+				toRoomId: "room-2",
+				returnDirection: "w",
+			}),
+			connection({
+				id: "connection-2",
+				fromRoomId: "room-2",
+				toRoomId: "room-3",
+				direction: "w",
+				returnDirection: "e",
+			}),
+		];
+
+		expect(getPathwayForEditedDrop("room-2", "w", connections, "connection-1")).toBe("forwards");
 	});
 });
 
@@ -355,7 +771,7 @@ describe("buildAddConnectionResult", () => {
 		});
 	});
 
-	it("shrinks the connector length when the original target position overlaps but a shorter position is free", () => {
+	it("connects to the overlapping room when the target position is occupied", () => {
 		const fromRoom = room("room-1", 100, 100);
 
 		const blockingRoom = room("blocking-room", 212, 100);
@@ -375,7 +791,7 @@ describe("buildAddConnectionResult", () => {
 		expect(result?.connection.toRoomId).toBe("blocking-room");
 	});
 
-	it("creates a new room at the first shorter free position when nearby rooms block the longer target", () => {
+	it("creates a new room at the default target position when no nearby room blocks that direction", () => {
 		const fromRoom = room("room-1", 100, 100);
 
 		const blockingRoom = room("blocking-room", 212, 100);

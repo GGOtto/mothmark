@@ -12,6 +12,7 @@ type ConnectionProps = {
 	connection: ConnectionType;
 	fromRoom: Room;
 	toRoom: Room;
+	isEditing?: boolean;
 };
 
 function getPath(points: Point[]) {
@@ -27,8 +28,6 @@ function getPath(points: Point[]) {
 
 		const segmentLength = getDistance(p1, p2);
 
-		// Keeps controls from getting huge when rooms are far apart.
-		// Tweak these two numbers for feel.
 		const tension = 1 / 6;
 		const maxControlLength = Math.min(segmentLength * 0.45, 40);
 
@@ -42,7 +41,6 @@ function getPath(points: Point[]) {
 		const control2Length = Math.min(outgoingLength * tension, maxControlLength);
 
 		const control1 = addPoints(p1, scalePoint(incoming, control1Length / incomingLength));
-
 		const control2 = subtractPoints(p2, scalePoint(outgoing, control2Length / outgoingLength));
 
 		path += ` C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${p2.x} ${p2.y}`;
@@ -61,10 +59,7 @@ function getControlPoints(
 	const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
 	const handleLength = 15;
 
-	// position of the start handle (relative to the start point)
 	const startHandle: Point = scalePoint(startDirectionVector, handleLength);
-
-	// position of the end handle (relative to the end point)
 	const endHandle: Point = scalePoint(endDirectionVector, -handleLength);
 
 	return [
@@ -74,7 +69,7 @@ function getControlPoints(
 	];
 }
 
-export function Connection({connection, fromRoom, toRoom}: ConnectionProps) {
+export function Connection({connection, fromRoom, toRoom, isEditing = false}: ConnectionProps) {
 	const curvePoints = getControlPoints(
 		fromRoom.position,
 		toRoom.position,
@@ -82,13 +77,53 @@ export function Connection({connection, fromRoom, toRoom}: ConnectionProps) {
 		connection.returnDirection,
 	);
 
-	const pathPoints = [
-		fromRoom.position,
-		...curvePoints,
-		// TODO: build control points in that also use curve points/
-		// ...(connection.controlPoints ?? []),
-		toRoom.position,
-	];
+	const pathPoints = [fromRoom.position, ...curvePoints, toRoom.position];
 
-	return <path d={getPath(pathPoints)} fill="none" stroke="#2f2920" strokeWidth="2" />;
+	const path = getPath(pathPoints);
+
+	const stroke = isEditing ? "#8f8a80" : "#2f2920";
+	const strokeWidth = isEditing ? 3 : 2;
+
+	if (connection.pathway === "two-way") {
+		return (
+			<path d={path} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+		);
+	}
+
+	if (connection.pathway === "no-way") {
+		return (
+			<path
+				d={path}
+				fill="none"
+				stroke={stroke}
+				strokeWidth={strokeWidth}
+				strokeLinecap="round"
+				strokeDasharray="4 5"
+			/>
+		);
+	}
+
+	return (
+		<>
+			<path
+				d={path}
+				fill="none"
+				stroke={stroke}
+				strokeWidth={strokeWidth}
+				strokeLinecap="round"
+				strokeDasharray="4 5"
+			/>
+
+			<path
+				d={path}
+				pathLength={100}
+				fill="none"
+				stroke={stroke}
+				strokeWidth={strokeWidth}
+				strokeLinecap="round"
+				strokeDasharray="50 50"
+				strokeDashoffset={connection.pathway === "backwards" ? -50 : 0}
+			/>
+		</>
+	);
 }

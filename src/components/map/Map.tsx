@@ -1,14 +1,15 @@
 "use client";
 
 import {useState} from "react";
+import type React from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
-import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
+import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
 import {world} from "../../data/worlds/exampleWorld";
-import {isConnectionFromRoom} from "../../utils/connectionUtils";
 import {buildAddConnectionResult} from "../../utils/connectionUtils";
+import {useConnectionDrag} from "./useConnectionDrag";
 
 type DragState = {
 	roomId: string;
@@ -24,25 +25,43 @@ export function Map() {
 	const [connections, setConnections] = useState<ConnectionType[]>(world.connections);
 	const [dragState, setDragState] = useState<DragState | null>(null);
 
+	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
+		const vector = DIRECTION_VECTORS[direction];
+
+		return addPoints(room.position, {
+			x: (vector.x * ROOM_WIDTH) / 2.1,
+			y: (vector.y * ROOM_HEIGHT) / 2.1,
+		});
+	}
+
 	function getRoom(roomId: string, direction?: Direction) {
 		const room = rooms.find((room) => room.id === roomId);
 
-		// adjust based on direction if provided
 		if (room && direction) {
-			const vector = DIRECTION_VECTORS[direction];
-			const connectionPoint: Point = {
-				x: (vector.x * ROOM_WIDTH) / 2.1,
-				y: (vector.y * ROOM_HEIGHT) / 2.1,
-			};
-
 			return {
 				...room,
-				position: addPoints(room.position, connectionPoint),
+				position: getRoomConnectionPoint(room, direction),
 			};
 		}
 
 		return room;
 	}
+
+	const {
+		mapRef,
+		connectionDragState,
+		editedConnectionId,
+		addOrUpdateConnectionByShape,
+		handleConnectionDragStart,
+		handleConnectionDragMove,
+		handleConnectionDragEnd,
+		handleConnectionDragCancel,
+	} = useConnectionDrag({
+		rooms,
+		connections,
+		setConnections,
+		getRoomConnectionPoint,
+	});
 
 	function addConnection(fromRoom: Room, direction: Direction) {
 		const result = buildAddConnectionResult({
@@ -65,10 +84,12 @@ export function Map() {
 			setRooms([...rooms, result.roomToAdd]);
 		}
 
-		setConnections((connections) => [...connections, result.connection]);
+		addOrUpdateConnectionByShape(result.connection);
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
+		if (event.button !== 0) return;
+
 		const mapElement = event.currentTarget.closest("[data-map]");
 
 		if (!mapElement) return;
@@ -116,10 +137,12 @@ export function Map() {
 
 	return (
 		<div
+			ref={mapRef}
 			data-map
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
+			onContextMenu={(event) => event.preventDefault()}
 			style={{
 				position: "relative",
 				width: 720,
@@ -151,9 +174,37 @@ export function Map() {
 					if (!fromRoom || !toRoom) return null;
 
 					return (
-						<Connection key={connection.id} connection={connection} fromRoom={fromRoom} toRoom={toRoom} />
+						<Connection
+							key={connection.id}
+							connection={connection}
+							fromRoom={fromRoom}
+							toRoom={toRoom}
+							isEditing={editedConnectionId === connection.id}
+						/>
 					);
 				})}
+
+				{connectionDragState?.hasDragged ? (
+					<path
+						d={`M ${connectionDragState.startPoint.x} ${connectionDragState.startPoint.y} L ${connectionDragState.currentPoint.x} ${connectionDragState.currentPoint.y}`}
+						fill="none"
+						stroke="#2f2920"
+						strokeWidth={2}
+						strokeLinecap="round"
+						strokeDasharray="4 5"
+					/>
+				) : null}
+
+				{connectionDragState?.snapTarget ? (
+					<circle
+						cx={connectionDragState.snapTarget.point.x}
+						cy={connectionDragState.snapTarget.point.y}
+						r={8}
+						fill="none"
+						stroke="#2f2920"
+						strokeWidth={2}
+					/>
+				) : null}
 			</svg>
 
 			{rooms.map((room) => (
@@ -165,6 +216,10 @@ export function Map() {
 					isDragging={dragState?.roomId === room.id}
 					onPointerDown={handleRoomPointerDown}
 					onNodeClick={addConnection}
+					onConnectionDragStart={handleConnectionDragStart}
+					onConnectionDragMove={handleConnectionDragMove}
+					onConnectionDragEnd={handleConnectionDragEnd}
+					onConnectionDragCancel={handleConnectionDragCancel}
 				/>
 			))}
 		</div>
