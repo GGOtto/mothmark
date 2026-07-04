@@ -45,9 +45,10 @@ export type Connection = {
   id: string;
   fromRoomId: string;
   toRoomId: string;
+  direction: Direction;
+  returnDirection: Direction;
+  pathway: "forward" | "backward" | "two-way"
   controlPoints?: Point[];
-  direction?: Direction;
-  returnDirection?: Direction;
   specialCommands?: string[];
   returnSpecialCommands?: string[];
 };

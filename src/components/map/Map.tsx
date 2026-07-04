@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Point, Room, Connection as ConnectionType, Direction } from "../../types/MapTypes";
-import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/MapTypes";
+import type { Point, Room, Connection as ConnectionType, Direction } from "../../types/mapTypes";
+import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/mapTypes";
 import { addPoints, subtractPoints } from "../../utils/MapUtils";
 import { RoomCard } from "./Room";
 import { Connection } from "./Connection";
@@ -56,6 +56,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-2",
     direction: "e",
     returnDirection: "w",
+    pathway: "two-way"
   },
   {
     id: "connection-2",
@@ -64,6 +65,7 @@ const initialConnections: ConnectionType[] = [
     controlPoints: [{ x: 500, y: 220 }],
     direction: "s",
     returnDirection: "n",
+    pathway: "two-way"
   },
   {
     id: "connection-3",
@@ -71,6 +73,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-4",
     direction: "ne",
     returnDirection: "sw",
+    pathway: "two-way"
   },
   {
     id: "connection-4",
@@ -78,6 +81,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-4",
     direction: "n",
     returnDirection: "s",
+    pathway: "two-way"
   },
   {
     id: "connection-5",
@@ -85,6 +89,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-5",
     direction: "s",
     returnDirection: "nw",
+    pathway: "two-way"
   },
   {
     id: "connection-6",
@@ -92,6 +97,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-3",
     direction: "se",
     returnDirection: "sw",
+    pathway: "two-way"
   },
   {
     id: "connection-7",
@@ -99,6 +105,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-6",
     direction: "e",
     returnDirection: "n",
+    pathway: "two-way"
   },
   {
     id: "connection-8",
@@ -106,6 +113,7 @@ const initialConnections: ConnectionType[] = [
     toRoomId: "room-6",
     direction: "se",
     returnDirection: "nw",
+    pathway: "two-way"
   },
 ];
 
@@ -200,6 +208,7 @@ export function Map() {
       toRoomId: toRoom.id,
       direction,
       returnDirection: REVERSE_DIRECTION[sourceDirection],
+      pathway: "two-way",
     };
 
     if (!overlappingRoom) {

@@ -1,4 +1,4 @@
-import type { RoomNode, Room, Direction } from "../../types/MapTypes";
+import type { RoomNode, Room, Direction } from "../../types/mapTypes";
 
 type NodeProps = {
   room: Room;

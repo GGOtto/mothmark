@@ -1,5 +1,5 @@
-import type { Room, Direction, RoomNode } from "../../types/MapTypes";
-import { DIRECTION_VECTORS } from "../../types/MapTypes";
+import type { Room, Direction, RoomNode } from "../../types/mapTypes";
+import { DIRECTION_VECTORS } from "../../types/mapTypes";
 import { Node } from "./Node";
 
 type RoomProps = {

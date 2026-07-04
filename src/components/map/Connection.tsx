@@ -3,8 +3,8 @@ import type {
   Direction,
   Point,
   Room,
-} from "../../types/MapTypes";
-import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/MapTypes";
+} from "../../types/mapTypes";
+import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/mapTypes";
 import {
   addPoints,
   subtractPoints,
@@ -65,14 +65,9 @@ function getPath(points: Point[]) {
 function getControlPoints(
   startPoint: Point,
   endPoint: Point,
-  startDirection?: Direction,
-  endDirection?: Direction
+  startDirection: Direction,
+  endDirection: Direction
 ): Point[] {
-  // TODO: currently needs both start and return directions, change that
-  if (!startDirection || !endDirection) {
-    throw Error("needs both directions in a connectioin for now");
-  }
-
   const startDirectionVector = DIRECTION_VECTORS[startDirection];
   const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
   const handleLength = 15;

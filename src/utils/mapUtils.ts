@@ -1,4 +1,4 @@
-import type {Connection, Point} from "../types/MapTypes";
+import type {Connection, Point} from "../types/mapTypes";
 
 export function canTravelForward(connection: Connection) {
   return Boolean(connection.direction);
