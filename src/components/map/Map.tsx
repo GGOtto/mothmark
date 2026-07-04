@@ -3,7 +3,7 @@
 import {useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
-import {addPoints, subtractPoints} from "../../utils/mapUtils";
+import {addPoints, subtractPoints} from "../../utils/connectionUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
 import {exampleWorld} from "../../data/worlds/exampleWorld";

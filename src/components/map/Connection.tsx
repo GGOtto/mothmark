@@ -6,7 +6,7 @@ import {
 	getMidpoint,
 	scalePoint,
 	getDistance,
-} from "../../utils/mapUtils";
+} from "../../utils/connectionUtils";
 
 type ConnectionProps = {
 	connection: ConnectionType;
