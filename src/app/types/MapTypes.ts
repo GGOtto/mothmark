@@ -31,7 +31,14 @@ export type Room = {
   id: string;
   name: string;
   position: Point;
+  description?: string;
 };
+
+export type RoomNode = {
+  direction: Direction;
+  position: Point;
+  isConnected?: boolean;
+}
 
 export type Connection = {
   id: string;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Point, Room as RoomType, Connection as ConnectionType, Direction } from "../../types/MapTypes";
+import type { Point, Room, Connection as ConnectionType, Direction } from "../../types/MapTypes";
 import { DIRECTION_VECTORS } from "../../types/MapTypes";
 import { addPoints, subtractPoints } from "../../utils/mapUtils";
-import { Room } from "./Room";
+import { RoomCard } from "./Room";
 import { Connection } from "./Connection";
 
 type DragState = {
@@ -16,7 +16,7 @@ const GRID_SIZE = 48;
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 
-const initialRooms: RoomType[] = [
+const initialRooms: Room[] = [
   {
     id: "room-1",
     name: "Room 1",
@@ -110,7 +110,7 @@ const initialConnections: ConnectionType[] = [
 ];
 
 export function Map() {
-  const [rooms, setRooms] = useState<RoomType[]>(initialRooms);
+  const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [connections] = useState<ConnectionType[]>(initialConnections);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
@@ -136,7 +136,7 @@ export function Map() {
 
   function handleRoomPointerDown(
     event: React.PointerEvent<HTMLButtonElement>,
-    room: RoomType
+    room: Room
   ) {
     const mapElement = event.currentTarget.closest("[data-map]");
 
@@ -234,7 +234,7 @@ export function Map() {
       </svg>
 
       {rooms.map((room) => (
-        <Room
+        <RoomCard
           key={room.id}
           room={room}
           width={ROOM_WIDTH}

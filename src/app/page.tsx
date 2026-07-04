@@ -1,4 +1,4 @@
-import { Map } from "./components/MapCanvas";
+import { Map } from "./components/map/Map";
 
 export default function EditorPage() {
   return (

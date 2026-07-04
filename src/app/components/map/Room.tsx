@@ -1,23 +1,41 @@
-import type { Room as RoomType } from "../../types/MapTypes";
+import type { Room, Direction, RoomNode } from "../../types/MapTypes";
+import { DIRECTION_VECTORS } from "../../types/MapTypes";
+import { Node } from "./Node";
 
 type RoomProps = {
-  room: RoomType;
+  room: Room;
   width: number;
   height: number;
   isDragging: boolean;
   onPointerDown: (
     event: React.PointerEvent<HTMLButtonElement>,
-    room: RoomType
+    room: Room
   ) => void;
 };
 
-export function Room({
+export function RoomCard({
   room,
   width,
   height,
   isDragging,
   onPointerDown,
 }: RoomProps) {
+  function buildNode(direction: Direction): RoomNode {
+    const vector = DIRECTION_VECTORS[direction];
+
+    return {
+      direction,
+      position: {
+        x: (vector.x * width) / 2,
+        y: (vector.y * height) / 2,
+      },
+      isConnected: false,
+    };
+  }
+
+  const directions: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+  const nodes = directions.map((direction) => buildNode(direction));
+
   return (
     <button
       type="button"
@@ -29,15 +47,21 @@ export function Room({
         transform: "translate(-50%, -50%)",
         width,
         height,
-        border: "1px solid #2f2920",
+        border: "2px solid #2f2920",
         background: "#d8ceb4",
         color: "#241f18",
         fontSize: 12,
         cursor: isDragging ? "grabbing" : "grab",
         userSelect: "none",
         touchAction: "none",
+        zIndex: 1,
+        overflow: "visible",
       }}
     >
+      {nodes.map((node) => (
+        <Node node={node} key={node.direction} />
+      ))}
+
       {room.name}
     </button>
   );
