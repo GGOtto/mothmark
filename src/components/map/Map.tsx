@@ -3,10 +3,12 @@
 import {useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
-import {addPoints, subtractPoints} from "../../utils/connectionUtils";
+import {addPoints, subtractPoints} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
-import {exampleWorld} from "../../data/worlds/exampleWorld";
+import {world} from "../../data/worlds/exampleWorld";
+import {isConnectionFromRoom} from "../../utils/connectionUtils";
+import {buildAddConnectionResult} from "../../utils/connectionUtils";
 
 type DragState = {
 	roomId: string;
@@ -18,8 +20,8 @@ const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 
 export function Map() {
-	const [rooms, setRooms] = useState<Room[]>(exampleWorld.rooms);
-	const [connections, setConnections] = useState<ConnectionType[]>(exampleWorld.connections);
+	const [rooms, setRooms] = useState<Room[]>(world.rooms);
+	const [connections, setConnections] = useState<ConnectionType[]>(world.connections);
 	const [dragState, setDragState] = useState<DragState | null>(null);
 
 	function getRoom(roomId: string, direction?: Direction) {
@@ -42,84 +44,28 @@ export function Map() {
 		return room;
 	}
 
-	function addRoom(fromRoom?: Room, direction?: Direction) {
-		if (!fromRoom || !direction) return;
-
-		const sourceRoom = fromRoom;
-		const sourceDirection = direction;
-
-		const vector = DIRECTION_VECTORS[sourceDirection];
-
-		const connectorLength = 40;
-		const minConnectorLength = 12;
-		const connectorStep = 4;
-
-		function getTargetPosition(length: number): Point {
-			return {
-				x: sourceRoom.position.x + vector.x * (length + ROOM_WIDTH),
-				y: sourceRoom.position.y + vector.y * (length + ROOM_HEIGHT),
-			};
-		}
-
-		function getOverlappingRoom(position: Point) {
-			return rooms.find((room) => {
-				if (room.id === sourceRoom.id) return false;
-
-				const dx = Math.abs(room.position.x - position.x);
-				const dy = Math.abs(room.position.y - position.y);
-
-				return dx < ROOM_WIDTH + minConnectorLength && dy < ROOM_HEIGHT + minConnectorLength;
-			});
-		}
-
-		let targetPosition = getTargetPosition(connectorLength);
-		let overlappingRoom = getOverlappingRoom(targetPosition);
-
-		for (let length = connectorLength; length >= minConnectorLength; length -= connectorStep) {
-			const position = getTargetPosition(length);
-			const overlap = getOverlappingRoom(position);
-
-			if (!overlap) {
-				targetPosition = position;
-				overlappingRoom = undefined;
-				break;
-			}
-
-			targetPosition = position;
-			overlappingRoom = overlap;
-		}
-
-		const toRoom = overlappingRoom ?? {
-			id: `room-${rooms.length + 1}`,
-			name: `Room ${rooms.length + 1}`,
-			position: targetPosition,
-		};
-
-		const newConnection: ConnectionType = {
-			id: `connection-${connections.length + 1}`,
-			fromRoomId: sourceRoom.id,
-			toRoomId: toRoom.id,
+	function addConnection(fromRoom: Room, direction: Direction) {
+		const result = buildAddConnectionResult({
+			fromRoom,
 			direction,
-			returnDirection: REVERSE_DIRECTION[sourceDirection],
-			pathway: "two-way",
-		};
+			rooms,
+			connections,
+			roomWidth: ROOM_WIDTH,
+			roomHeight: ROOM_HEIGHT,
+			connectorLength: 40,
+			minConnectorLength: 12,
+			connectorStep: 4,
+		});
 
-		if (!overlappingRoom) {
-			setRooms((rooms) => [...rooms, toRoom]);
+		if (!result) {
+			return;
 		}
 
-		setConnections((connections) => {
-			const connectionAlreadyExists = connections.some(
-				(connection) =>
-					connection.fromRoomId === newConnection.fromRoomId &&
-					connection.toRoomId === newConnection.toRoomId &&
-					connection.direction === newConnection.direction,
-			);
+		if (result.roomToAdd) {
+			setRooms([...rooms, result.roomToAdd]);
+		}
 
-			if (connectionAlreadyExists) return connections;
-
-			return [...connections, newConnection];
-		});
+		setConnections((connections) => [...connections, result.connection]);
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
@@ -218,7 +164,7 @@ export function Map() {
 					height={ROOM_HEIGHT}
 					isDragging={dragState?.roomId === room.id}
 					onPointerDown={handleRoomPointerDown}
-					onNodeClick={addRoom}
+					onNodeClick={addConnection}
 				/>
 			))}
 		</div>

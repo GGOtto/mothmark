@@ -4,7 +4,7 @@ import type {Room, Direction} from "../../schemas/worldSchema";
 type NodeProps = {
 	room: Room;
 	node: RoomNode;
-	onNodeClick: (fromRoom?: Room, direction?: Direction) => void;
+	onNodeClick: (fromRoom: Room, direction: Direction) => void;
 };
 
 export function Node({room, node, onNodeClick}: NodeProps) {

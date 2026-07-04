@@ -9,7 +9,7 @@ type RoomProps = {
 	height: number;
 	isDragging: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, room: Room) => void;
-	onNodeClick: (fromRoom?: Room, direction?: Direction) => void;
+	onNodeClick: (fromRoom: Room, direction: Direction) => void;
 };
 
 export function RoomCard({room, width, height, isDragging, onPointerDown, onNodeClick}: RoomProps) {

@@ -101,4 +101,4 @@ const rawWorld = {
 	],
 };
 
-export const exampleWorld = WorldSchema.parse(rawWorld);
+export const world = WorldSchema.parse(rawWorld);
