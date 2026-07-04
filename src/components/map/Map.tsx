@@ -145,8 +145,8 @@ export function Map() {
 			onContextMenu={(event) => event.preventDefault()}
 			style={{
 				position: "relative",
-				width: 720,
-				height: 420,
+				width: "100%",
+				height: "100%",
 				border: "1px solid #2f2920",
 				backgroundColor: "#c9bea3",
 				backgroundImage: `

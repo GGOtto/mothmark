@@ -1,5 +1,6 @@
 import type {Metadata} from "next";
 import "./globals.css";
+import {Header} from "../components/header/Header";
 
 export const metadata: Metadata = {
 	title: "Mothmark",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" className="h-full antialiased">
-			<body className="min-h-full flex flex-col">{children}</body>
+			<body className="flex h-full flex-col overflow-hidden">
+				<Header children={children} />
+				{children}
+			</body>
 		</html>
 	);
 }
