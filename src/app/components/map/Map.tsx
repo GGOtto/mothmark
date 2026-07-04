@@ -137,25 +137,58 @@ export function Map() {
   function addRoom(fromRoom?: Room, direction?: Direction) {
     if (!fromRoom || !direction) return;
 
-    const vector = DIRECTION_VECTORS[direction];
+    const sourceRoom = fromRoom;
+    const sourceDirection = direction;
 
-    const connectorWidth = 40;
-    const targetPosition: Point = {
-      x: fromRoom.position.x + vector.x * (connectorWidth + ROOM_WIDTH),
-      y: fromRoom.position.y + vector.y * (connectorWidth + ROOM_HEIGHT),
-    };
+    const vector = DIRECTION_VECTORS[sourceDirection];
 
-    const nearbyRoom = rooms.find((room) => {
-      if (room.id === fromRoom.id) return false;
+    const connectorLength = 40;
+    const minConnectorLength = 12;
+    const connectorStep = 4;
 
-      const dx = room.position.x - targetPosition.x;
-      const dy = room.position.y - targetPosition.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    function getTargetPosition(length: number): Point {
+      return {
+        x: sourceRoom.position.x + vector.x * (length + ROOM_WIDTH),
+        y: sourceRoom.position.y + vector.y * (length + ROOM_HEIGHT),
+      };
+    }
 
-      return distance < GRID_SIZE;
-    });
+    function getOverlappingRoom(position: Point) {
+      return rooms.find((room) => {
+        if (room.id === sourceRoom.id) return false;
 
-    const toRoom = nearbyRoom ?? {
+        const dx = Math.abs(room.position.x - position.x);
+        const dy = Math.abs(room.position.y - position.y);
+
+        return (
+          dx < ROOM_WIDTH + minConnectorLength &&
+          dy < ROOM_HEIGHT + minConnectorLength
+        );
+      });
+    }
+
+    let targetPosition = getTargetPosition(connectorLength);
+    let overlappingRoom = getOverlappingRoom(targetPosition);
+
+    for (
+      let length = connectorLength;
+      length >= minConnectorLength;
+      length -= connectorStep
+    ) {
+      const position = getTargetPosition(length);
+      const overlap = getOverlappingRoom(position);
+
+      if (!overlap) {
+        targetPosition = position;
+        overlappingRoom = undefined;
+        break;
+      }
+
+      targetPosition = position;
+      overlappingRoom = overlap;
+    }
+
+    const toRoom = overlappingRoom ?? {
       id: `room-${rooms.length + 1}`,
       name: `Room ${rooms.length + 1}`,
       position: targetPosition,
@@ -163,13 +196,13 @@ export function Map() {
 
     const newConnection: ConnectionType = {
       id: `connection-${connections.length + 1}`,
-      fromRoomId: fromRoom.id,
+      fromRoomId: sourceRoom.id,
       toRoomId: toRoom.id,
       direction,
-      returnDirection: REVERSE_DIRECTION[direction],
+      returnDirection: REVERSE_DIRECTION[sourceDirection],
     };
 
-    if (!nearbyRoom) {
+    if (!overlappingRoom) {
       setRooms((rooms) => [...rooms, toRoom]);
     }
 
