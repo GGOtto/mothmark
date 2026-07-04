@@ -1,4 +1,4 @@
-import type {Connection as ConnectionType, Direction, Point, Room} from "../../types/mapTypes";
+import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
 import {
 	addPoints,

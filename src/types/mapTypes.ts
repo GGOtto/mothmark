@@ -1,6 +1,6 @@
-export type Direction = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
+import type {Direction, Point, Room} from "../schemas/worldSchema";
 
-export const DIRECTION_VECTORS: Record<Direction, {x: number; y: number}> = {
+export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	n: {x: 0, y: -1},
 	ne: {x: 1, y: -1},
 	e: {x: 1, y: 0},
@@ -22,33 +22,9 @@ export const REVERSE_DIRECTION: Record<Direction, Direction> = {
 	nw: "se",
 };
 
-export type Point = {
-	x: number;
-	y: number;
-};
-
-export type Room = {
-	id: string;
-	name: string;
-	position: Point;
-	description?: string;
-};
-
 export type RoomNode = {
 	room: Room;
 	direction: Direction;
 	position: Point;
 	isConnected?: boolean;
-};
-
-export type Connection = {
-	id: string;
-	fromRoomId: string;
-	toRoomId: string;
-	direction: Direction;
-	returnDirection: Direction;
-	pathway: "forward" | "backward" | "two-way";
-	controlPoints?: Point[];
-	specialCommands?: string[];
-	returnSpecialCommands?: string[];
 };

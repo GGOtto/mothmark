@@ -1,4 +1,4 @@
-import type {Connection, Point} from "../types/mapTypes";
+import type {Connection, Point} from "../schemas/worldSchema";
 
 export function canTravelForward(connection: Connection) {
 	return Boolean(connection.direction);

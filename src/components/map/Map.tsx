@@ -1,12 +1,12 @@
 "use client";
 
 import {useState} from "react";
-import type {Point, Room, Connection as ConnectionType, Direction} from "../../types/mapTypes";
+import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
 import {addPoints, subtractPoints} from "../../utils/mapUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
-import {initialRooms, initialConnections} from "../../data/worlds/exampleWorld";
+import {exampleWorld} from "../../data/worlds/exampleWorld";
 
 type DragState = {
 	roomId: string;
@@ -18,8 +18,8 @@ const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 
 export function Map() {
-	const [rooms, setRooms] = useState<Room[]>(initialRooms);
-	const [connections, setConnections] = useState<ConnectionType[]>(initialConnections);
+	const [rooms, setRooms] = useState<Room[]>(exampleWorld.rooms);
+	const [connections, setConnections] = useState<ConnectionType[]>(exampleWorld.connections);
 	const [dragState, setDragState] = useState<DragState | null>(null);
 
 	function getRoom(roomId: string, direction?: Direction) {

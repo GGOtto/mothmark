@@ -1,4 +1,5 @@
-import type {Room, Direction, RoomNode} from "../../types/mapTypes";
+import type {RoomNode} from "../../types/mapTypes";
+import type {Room, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {Node} from "./Node";
 
