@@ -1,9 +1,9 @@
 # Spec Plan: Map-First Text Adventure Studio
 
-*The dynamic map isn't a visualization bolted onto the editor anymore —
+_The dynamic map isn't a visualization bolted onto the editor anymore —
 it's the primary way a game gets built. This doc folds the save/edit/run
 plan, the admin review workflow, and the Quest positioning into one spec
-organized around that idea. No AI anywhere in this.*
+organized around that idea. No AI anywhere in this._
 
 ## 1. The core idea
 
@@ -23,7 +23,7 @@ actions get filled in through a panel that opens right there, without
 ever leaving the map.
 
 This is the flagship idea for the whole product, not a Phase 2 polish
-item. It changes what the editor *is*: not a text editor with a map
+item. It changes what the editor _is_: not a text editor with a map
 feature, but a map with a text editor folded into each node.
 
 ## 2. What this looks like to build
@@ -72,7 +72,7 @@ single-floor game never has to think about it at all.
 
 **Live updates.** There's no "generate map" step. Every room or exit
 added, removed, or renamed reflects on the canvas the moment it happens,
-because the canvas *is* the underlying structure, not a report on it.
+because the canvas _is_ the underlying structure, not a report on it.
 That's what makes it dynamic rather than a static diagram.
 
 **Validation, in place.** Orphaned rooms, dead ends, and exits pointing
@@ -93,7 +93,7 @@ as the player actually moves through the game, fog-of-war style. It
 never shows a room the player hasn't visited. This is a direct payoff of
 the exploration identity the engine already had — worth calling out as
 the single most visible way this product doesn't feel like Quest or
-Twine to a *player*, not just an author.
+Twine to a _player_, not just an author.
 
 ## 3. Handling the awkward cases
 
@@ -132,7 +132,7 @@ One more piece worth locking in: **JSON is the canonical, stored, saved
 format for a world.** Not the bracket syntax from the original engine,
 not anything the map or form editor happen to show — `world_data` in
 every `GameVersion` is JSON, full stop. Everything else — the map, the
-inspector panel, the bracket-style code view — is a *representation* of
+inspector panel, the bracket-style code view — is a _representation_ of
 that JSON, generated from it and compiled back into it. None of them are
 the source of truth themselves.
 
@@ -193,7 +193,7 @@ influence `x`, `y`, or `floor`.
 `GameVersion` already gives real revision history — this was called out
 as a differentiator against Quest's overwrite-only publishing, and it
 carries over unchanged. A version diff now also means being able to
-show *layout* changes (a room moved, a floor added) alongside content
+show _layout_ changes (a room moved, a floor added) alongside content
 changes, which is a natural extension once positions are part of the
 stored data.
 
@@ -209,10 +209,10 @@ stored data.
   game — the guarantee that made the admin-review promise meaningful in
   the first place, and it's untouched by anything in this doc.
 - **Admin review & oversight**: the same state machine (`draft →
-  pending_review → approved/rejected`), the admin's unconditional
+pending_review → approved/rejected`), the admin's unconditional
   visibility into every saved game regardless of status, and a
   structured review note — now something that can point at a specific
-  room *on the map* rather than just a written comment, which is a nice
+  room _on the map_ rather than just a written comment, which is a nice
   small upgrade the map gives this feature for free.
 - **No AI, anywhere in the product.**
 
@@ -223,7 +223,7 @@ left deliberately vague — "forking," "ratings/comments" — because the
 actual design goal here is more specific than "add social features."
 Given we can't out-scale Quest's built-in audience on day one, the
 honest value we can offer instead is that showing up with three plays
-here should feel *better* than showing up with three plays anywhere
+here should feel _better_ than showing up with three plays anywhere
 else. Every mechanic below serves one goal: a creator with one player
 should feel just as good about their game as a creator with a thousand.
 
@@ -251,7 +251,7 @@ of the next point.
 number that matters is something like a creator's highest view count
 over a recent rolling window, not a running lifetime total — so a game
 that was popular last month but has gone quiet lately throttles back
-*up* toward individual per-view notifications rather than staying stuck
+_up_ toward individual per-view notifications rather than staying stuck
 in digest mode just because it once crossed some threshold. Momentum
 earns the batching, not history. Even at the most personal tier, there's
 still some rate-limiting so a sudden burst of views doesn't turn into a
@@ -270,7 +270,7 @@ the owning creator's own view of their own game.
 
 **Popularity still shapes discovery — quietly.** Hiding counts doesn't
 mean popularity has no effect on what a player sees; it means
-popularity isn't *announced*. A few games can surface as suggestions
+popularity isn't _announced_. A few games can surface as suggestions
 without ever being labeled "trending" or "most played" — just presented
 as recommendations. A dedicated discovery page can lean on popularity
 as one real input while mixing in enough randomness that a smaller game
@@ -287,9 +287,9 @@ are, not as a dashboard of raw analytics.
 **Achievements give both sides something to chase.** Separate from the
 notification system, players and creators each have their own
 achievement track, and likes/follows feed both: a player earns progress
-for the likes and follows they *give* (liking games, following
+for the likes and follows they _give_ (liking games, following
 creators, finishing a certain number of games), and a creator earns
-progress for the likes and follows they *receive* (a first like, a
+progress for the likes and follows they _receive_ (a first like, a
 first follower, a first returning player, round-number milestones from
 there). It's a second, slower-burn reward loop alongside the immediate
 notification one — less about a single moment and more about a sense of
@@ -306,7 +306,8 @@ Notification      { id, recipient_id, type (view | like | follow |
 Achievement       { id, key, name, description, side (player | creator) }
 AchievementUnlock { id, user_id, achievement_id, unlocked_at }
 ```
-No separate `View` table needed — a view *is* a new `PlayThrough`, and
+
+No separate `View` table needed — a view _is_ a new `PlayThrough`, and
 its existing `state` field is already the source for "how far they
 got."
 
@@ -317,7 +318,7 @@ several advantages over Quest. This spec promotes it to the reason the
 product exists: Quest's connections are freeform labeled links between
 objects, so it has no spatial data to visualize even if it wanted to,
 and nothing in Twine's or Inform's model is spatial either. Building
-*by* placing rooms on a grid — not just looking at a graph of what's
+_by_ placing rooms on a grid — not just looking at a graph of what's
 already written — isn't something any of them offer, because it isn't
 something any of their underlying data supports. Every other
 differentiator from that doc (safe action language, real versioning,
@@ -328,7 +329,7 @@ center.
 ## 8. Revised phasing
 
 **Phase 1 — MVP**
-The map-first canvas *is* the editor from day one — single floor,
+The map-first canvas _is_ the editor from day one — single floor,
 strict-by-default adjacency with the grid reflowing to fit new rooms,
 manual drag-to-reposition, inspector panel for room detail, raw code
 view as an escape hatch. JS-ported engine for live preview and player
@@ -360,7 +361,7 @@ stating it outright.
 
 - Should a view notification name the player ("Jordan reached the
   vault") or stay anonymous ("someone reached the vault")? Naming them
-  is more personal but is itself a design decision about the *player's*
+  is more personal but is itself a design decision about the _player's_
   privacy, not just the creator's dopamine.
 - What's the actual rolling-window length for "recent momentum" (last
   7 days? 30?), what's the rate-limit cap on individual notifications,

@@ -1,11 +1,11 @@
 # Build Plan: Step-by-Step
 
-*Every step below should be small enough to finish and check off in a
+_Every step below should be small enough to finish and check off in a
 sitting. Treat this as a backlog, not a rigid script — reorder within a
 phase as needed, but try not to jump ahead a phase, since later steps
 generally lean on earlier ones (the canvas needs `Game`/`GameVersion`
 endpoints before it has anything to save to, the automap needs
-`PlayThrough` before it has anything to reveal).*
+`PlayThrough` before it has anything to reveal)._
 
 ## Assumed stack (adjust freely — this just makes the steps concrete)
 
@@ -17,8 +17,8 @@ endpoints before it has anything to save to, the automap needs
   and client components. One codebase, one deploy.
 - **"Backend" below means**: Route Handlers and/or Server Actions plus
   the data layer — not a separate service. Kept as its own section in
-  this doc because it's a distinct *concern* (data, validation,
-  authorization), even though it's not a distinct *deployment* anymore.
+  this doc because it's a distinct _concern_ (data, validation,
+  authorization), even though it's not a distinct _deployment_ anymore.
 - **"Website" below means**: pages, layouts, and client components —
   everything a browser actually renders and interacts with.
 - **Database**: PostgreSQL via Neon (serverless, scale-to-zero — see
@@ -43,12 +43,13 @@ endpoints before it has anything to save to, the automap needs
 
 ## Packages & tools
 
-*Grouped by concern. None of these are mandatory — they're here because
+_Grouped by concern. None of these are mandatory — they're here because
 each one removes a chunk of undifferentiated work (auth, drag-and-drop,
 diffing, rate limiting) that has nothing to do with what makes this
-product distinct, so there's little reason to build it by hand.*
+product distinct, so there's little reason to build it by hand._
 
 **Hosting & cost control**
+
 - `@opennextjs/cloudflare` — the current, actively-developed way to run
   a real Next.js app (Server Actions, Route Handlers, the Node.js
   runtime, not just Edge) on Cloudflare Workers. Cloudflare's usage-based
@@ -73,6 +74,7 @@ product distinct, so there's little reason to build it by hand.*
   wave.
 
 **Database & validation**
+
 - **Drizzle ORM** (+ Drizzle Kit for migrations) — a fraction of
   Prisma's bundle size with no code-generation step, which matters
   concretely on Cloudflare Workers given the free tier's 3 MB (gzipped)
@@ -87,6 +89,7 @@ product distinct, so there's little reason to build it by hand.*
   between two `GameVersion`s for the version-history/diff viewer.
 
 **Map canvas & interaction (Website)**
+
 - **dnd-kit** — drag-and-drop for repositioning rooms and for dragging
   template tiles onto the grid; accessible out of the box, which a
   hand-rolled drag implementation usually isn't without real effort.
@@ -102,6 +105,7 @@ product distinct, so there's little reason to build it by hand.*
   mode for the bracket-style syntax.
 
 **UI components & design system**
+
 - **Tailwind CSS** + **shadcn/ui** (Radix-based, copy-in components,
   not a runtime dependency) — a fast way to turn the Phase 0 design
   tokens into real, accessible components (forms, dialogs, dropdowns)
@@ -109,6 +113,7 @@ product distinct, so there's little reason to build it by hand.*
 - **lucide-react** — icon set that pairs with shadcn by default.
 
 **Background jobs & scheduling**
+
 - **Inngest** or **Trigger.dev** — for the digest-notification compile
   job and any periodic recalculation, without standing up separate
   worker infrastructure; both have usable free tiers and hook directly
@@ -118,6 +123,7 @@ product distinct, so there's little reason to build it by hand.*
   experience.
 
 **Rate limiting, caching & the momentum calculation**
+
 - **Upstash Redis** — serverless, pay-per-request, with a real free
   tier. A natural fit for both API rate limiting and for the rolling
   recent-view counters that drive the notification-tier logic in the
@@ -127,6 +133,7 @@ product distinct, so there's little reason to build it by hand.*
   specifically for endpoint rate limiting (auth routes especially).
 
 **Email**
+
 - **Resend** — a modern email API with a generous free tier and good
   Next.js-specific docs, for verification, password reset, and later
   the digest-notification emails.
@@ -134,6 +141,7 @@ product distinct, so there's little reason to build it by hand.*
   of hand-rolled HTML strings.
 
 **Testing & reliability**
+
 - **Vitest** — unit tests.
 - **Playwright** — end-to-end tests; worth having specifically because
   the map canvas is interaction-heavy (clicks, drags, reflows) in ways
@@ -142,6 +150,7 @@ product distinct, so there's little reason to build it by hand.*
   SDK; free tier is generally enough at MVP scale.
 
 **Docs content (Phase 2)**
+
 - Next.js's built-in **MDX** support (or `react-markdown` if something
   lighter-weight is preferred) for writing and rendering the searchable
   docs/reference panel content, rather than inventing a custom format
@@ -159,6 +168,7 @@ monthly floor.
 ## Phase 0 — Foundations
 
 ### Backend
+
 - [ ] Initialize the Next.js project (App Router, TypeScript, ESLint).
 - [ ] Stand up a local Postgres instance (docker-compose for dev), plus
       a Neon project for staging/preview branches.
@@ -175,6 +185,7 @@ monthly floor.
       ship together.
 
 ### Website
+
 - [ ] Set up the base App Router structure (root layout, a placeholder
       home route).
 - [ ] Set up Tailwind CSS and install shadcn/ui as the component base.
@@ -189,6 +200,7 @@ monthly floor.
       correctly.
 
 ### Design
+
 - [ ] Settle the product's basic visual identity: name treatment,
       color palette, typeface(s).
 - [ ] Turn that into a small design-token set (colors, spacing scale,
@@ -204,6 +216,7 @@ monthly floor.
 ## Phase 1 — MVP
 
 ### Backend
+
 - [ ] Write migrations for `User`, `Game`, `GameVersion`,
       `PlayThrough` (per the spec's data model).
 - [ ] Implement sign-up / log-in / session handling with Better Auth
@@ -231,6 +244,7 @@ monthly floor.
 - [ ] Add Upstash Redis + Upstash Ratelimit on auth endpoints.
 
 ### Website
+
 - [ ] Build sign-up / log-in pages.
 - [ ] Build the "My Games" dashboard (list, create new, open existing).
 - [ ] Render a single room node on the map canvas — no interactivity
@@ -263,6 +277,7 @@ monthly floor.
       forkable starting point for new accounts.
 
 ### Design
+
 - [ ] High-fidelity design for the room-node card (name, description
       preview, compass-arrow targets), using the Phase 0 tokens.
 - [ ] Design the inspector panel layout and its form fields.
@@ -282,6 +297,7 @@ monthly floor.
 ## Phase 2 — Depth
 
 ### Backend
+
 - [ ] Add floor-aware helpers (e.g. list distinct floors for a game)
       if the flat `Room.floor` field needs any server-side rollup.
 - [ ] Extend exit data/validation to accept and tolerate an
@@ -292,6 +308,7 @@ monthly floor.
       (list + diff + restore).
 
 ### Website
+
 - [ ] Build the floor switcher and the secondary floor-overview panel.
 - [ ] Add the UI affordance to mark an exit as intentionally
       inconsistent, and render it with the distinct low-key connector
@@ -313,6 +330,7 @@ monthly floor.
       on the fast-json-patch output, restore button).
 
 ### Design
+
 - [ ] Design the floor-overview panel — secondary, not attention-
       grabbing.
 - [ ] Design the non-Euclidean connector style (distinct, but subtle).
@@ -331,6 +349,7 @@ monthly floor.
 ## Phase 3 — Publishing & Community
 
 ### Backend
+
 - [ ] Write migrations for `Like`, `Follow`, `Notification`,
       `Achievement`, `AchievementUnlock`.
 - [ ] Implement like/unlike and follow/unfollow endpoints.
@@ -354,6 +373,7 @@ monthly floor.
       reference a specific room id.
 
 ### Website
+
 - [ ] Build the public gallery/browse page — no visible counts,
       popularity-influenced-but-randomized ordering.
 - [ ] Build the public game page (like button, follow button, no
@@ -374,6 +394,7 @@ monthly floor.
       end to end.
 
 ### Design
+
 - [ ] Design the gallery/browse page (cards, filters, no numeric
       badges anywhere).
 - [ ] Design like/follow button states as small satisfying micro-

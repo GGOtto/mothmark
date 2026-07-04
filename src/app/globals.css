@@ -1,31 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #11100e;
-  --foreground: #eee8dc;
+	--background: #11100e;
+	--foreground: #eee8dc;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: Arial, Helvetica, sans-serif;
+	--font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+	background: var(--background);
+	color: var(--foreground);
+	font-family: Arial, Helvetica, sans-serif;
 }
 
 ::selection {
-  background: #d2b46f;
-  color: #11100e;
+	background: #d2b46f;
+	color: #11100e;
 }
 
 a,
 button,
 input,
 textarea {
-  outline-color: #d2b46f;
+	outline-color: #d2b46f;
 }

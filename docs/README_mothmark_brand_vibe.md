@@ -452,23 +452,17 @@ The logo is out of scope unless explicitly requested.
 For now, use a text-only wordmark.
 
 ```tsx
-<span className="font-mono text-xs uppercase tracking-[0.24em]">
-  Mothmark
-</span>
+<span className="font-mono text-xs uppercase tracking-[0.24em]">Mothmark</span>
 ```
 
 Other acceptable temporary wordmark treatments:
 
 ```tsx
-<span className="font-mono text-sm tracking-[0.18em] text-[#f2e5c8] uppercase">
-  Mothmark
-</span>
+<span className="font-mono text-sm tracking-[0.18em] text-[#f2e5c8] uppercase">Mothmark</span>
 ```
 
 ```tsx
-<span className="font-serif text-base tracking-wide text-[#f2e5c8]">
-  Mothmark
-</span>
+<span className="font-serif text-base tracking-wide text-[#f2e5c8]">Mothmark</span>
 ```
 
 Only use the serif version if the surrounding UI remains practical and restrained.
@@ -1007,37 +1001,37 @@ Avoid default gray-heavy Tailwind styling.
 Good base classes might use arbitrary colors:
 
 ```tsx
-className="min-h-screen bg-[#11130f] text-[#f2e5c8]"
+className = "min-h-screen bg-[#11130f] text-[#f2e5c8]";
 ```
 
 Panel:
 
 ```tsx
-className="border border-[#3a352b] bg-[#24221d]"
+className = "border border-[#3a352b] bg-[#24221d]";
 ```
 
 Muted text:
 
 ```tsx
-className="text-[#b8ad97]"
+className = "text-[#b8ad97]";
 ```
 
 Accent:
 
 ```tsx
-className="text-[#70a58d]"
+className = "text-[#70a58d]";
 ```
 
 Primary button:
 
 ```tsx
-className="border border-[#70a58d] bg-[#70a58d] text-[#11130f] hover:bg-[#86b9a2]"
+className = "border border-[#70a58d] bg-[#70a58d] text-[#11130f] hover:bg-[#86b9a2]";
 ```
 
 Secondary button:
 
 ```tsx
-className="border border-[#3a352b] bg-[#1b1a16] text-[#f2e5c8] hover:border-[#70a58d]"
+className = "border border-[#3a352b] bg-[#1b1a16] text-[#f2e5c8] hover:border-[#70a58d]";
 ```
 
 Grid background idea:
