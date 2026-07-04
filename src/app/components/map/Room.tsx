@@ -11,6 +11,10 @@ type RoomProps = {
     event: React.PointerEvent<HTMLButtonElement>,
     room: Room
   ) => void;
+  onNodeClick: (
+    fromRoom?: Room,
+    direction?: Direction,
+  ) => void;
 };
 
 export function RoomCard({
@@ -19,11 +23,13 @@ export function RoomCard({
   height,
   isDragging,
   onPointerDown,
+  onNodeClick,
 }: RoomProps) {
   function buildNode(direction: Direction): RoomNode {
     const vector = DIRECTION_VECTORS[direction];
 
     return {
+      room,
       direction,
       position: {
         x: (vector.x * width) / 2,
@@ -59,7 +65,7 @@ export function RoomCard({
       }}
     >
       {nodes.map((node) => (
-        <Node node={node} key={node.direction} />
+        <Node room={room} node={node} key={node.direction} onNodeClick={onNodeClick}/>
       ))}
 
       {room.name}

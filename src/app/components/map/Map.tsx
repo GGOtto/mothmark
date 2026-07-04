@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { Point, Room, Connection as ConnectionType, Direction } from "../../types/MapTypes";
-import { DIRECTION_VECTORS } from "../../types/MapTypes";
-import { addPoints, subtractPoints } from "../../utils/mapUtils";
+import { DIRECTION_VECTORS, REVERSE_DIRECTION } from "../../types/MapTypes";
+import { addPoints, subtractPoints } from "../../utils/MapUtils";
 import { RoomCard } from "./Room";
 import { Connection } from "./Connection";
 
@@ -111,7 +111,7 @@ const initialConnections: ConnectionType[] = [
 
 export function Map() {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [connections] = useState<ConnectionType[]>(initialConnections);
+  const [connections, setConnections] = useState<ConnectionType[]>(initialConnections);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
   function getRoom(roomId: string, direction?: Direction) {
@@ -132,6 +132,59 @@ export function Map() {
     }
 
     return room;
+  }
+
+  function addRoom(fromRoom?: Room, direction?: Direction) {
+    if (!fromRoom || !direction) return;
+
+    const vector = DIRECTION_VECTORS[direction];
+
+    const connectorWidth = 40;
+    const targetPosition: Point = {
+      x: fromRoom.position.x + vector.x * (connectorWidth + ROOM_WIDTH),
+      y: fromRoom.position.y + vector.y * (connectorWidth + ROOM_HEIGHT),
+    };
+
+    const nearbyRoom = rooms.find((room) => {
+      if (room.id === fromRoom.id) return false;
+
+      const dx = room.position.x - targetPosition.x;
+      const dy = room.position.y - targetPosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      return distance < GRID_SIZE;
+    });
+
+    const toRoom = nearbyRoom ?? {
+      id: `room-${rooms.length + 1}`,
+      name: `Room ${rooms.length + 1}`,
+      position: targetPosition,
+    };
+
+    const newConnection: ConnectionType = {
+      id: `connection-${connections.length + 1}`,
+      fromRoomId: fromRoom.id,
+      toRoomId: toRoom.id,
+      direction,
+      returnDirection: REVERSE_DIRECTION[direction],
+    };
+
+    if (!nearbyRoom) {
+      setRooms((rooms) => [...rooms, toRoom]);
+    }
+
+    setConnections((connections) => {
+      const connectionAlreadyExists = connections.some(
+        (connection) =>
+          connection.fromRoomId === newConnection.fromRoomId &&
+          connection.toRoomId === newConnection.toRoomId &&
+          connection.direction === newConnection.direction
+      );
+
+      if (connectionAlreadyExists) return connections;
+
+      return [...connections, newConnection];
+    });
   }
 
   function handleRoomPointerDown(
@@ -241,6 +294,7 @@ export function Map() {
           height={ROOM_HEIGHT}
           isDragging={dragState?.roomId === room.id}
           onPointerDown={handleRoomPointerDown}
+          onNodeClick={addRoom}
         />
       ))}
     </div>

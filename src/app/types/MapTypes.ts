@@ -35,6 +35,7 @@ export type Room = {
 };
 
 export type RoomNode = {
+  room: Room;
   direction: Direction;
   position: Point;
   isConnected?: boolean;

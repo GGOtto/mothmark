@@ -1,10 +1,15 @@
-import type { RoomNode } from "../../types/MapTypes";
+import type { RoomNode, Room, Direction } from "../../types/MapTypes";
 
 type NodeProps = {
+  room: Room;
   node: RoomNode;
+  onNodeClick: (
+      fromRoom?: Room,
+      direction?: Direction,
+    ) => void;
 };
 
-export function Node({ node }: NodeProps) {
+export function Node({ room, node, onNodeClick }: NodeProps) {
   return (
     <div
       style={{
@@ -17,10 +22,21 @@ export function Node({ node }: NodeProps) {
         borderRadius: "50%",
         border: "2px solid #2f2920",
         background: "#ffffff",
-        pointerEvents: "none",
+        pointerEvents: "auto",
         userSelect: "none",
         touchAction: "none",
         zIndex: 3,
+        cursor: "pointer",
+      }}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
+      onPointerUp={(event) => {
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onNodeClick(room, node.direction);
       }}
     />
   );

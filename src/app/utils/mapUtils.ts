@@ -51,3 +51,7 @@ export function multiplyPoints(p1: Point, p2: Point): Point {
 export function getMidpoint(p1: Point, p2: Point): Point {
   return scalePoint(addPoints(p1, p2), 0.5);
 }
+
+export function getDistance(a: Point, b: Point) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
