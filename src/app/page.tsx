@@ -6,20 +6,36 @@ import {LeftSideBar} from "../components/editor/LeftSideBar";
 import {RightSideBar} from "../components/editor/RightSideBar";
 import {Map} from "../components/map/Map";
 import {world} from "../data/worlds/exampleWorld";
-import type {Room} from "../schemas/worldSchema";
+import type {Room, Connection} from "../schemas/worldSchema";
 
 export default function EditorPage() {
 	const [rooms, setRooms] = useState<Room[]>(world.rooms);
-	const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+	const [connections, setConnections] = useState<Connection[]>(world.connections);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [isConnectionSelected, setIsConnectionSelected] = useState<boolean>(false);
 
-	const selectedRoom = rooms.find((room) => room.id === selectedRoomId) ?? null;
+	const selectedRoom = !isConnectionSelected
+		? (rooms.find((room) => room.id === selectedId) ?? null)
+		: null;
+
+	const selectedConnection = isConnectionSelected
+		? (connections.find((connection) => connection.id === selectedId) ?? null)
+		: null;
 
 	function updateRoom(updatedRoom: Room) {
 		setRooms((rooms) =>
 			rooms.map((room) => {
 				if (room.id !== updatedRoom.id) return room;
-
 				return updatedRoom;
+			}),
+		);
+	}
+
+	function updateConnection(updatedConnection: Connection) {
+		setConnections((connections) =>
+			connections.map((connection) => {
+				if (connection.id !== updatedConnection.id) return connection;
+				return updatedConnection;
 			}),
 		);
 	}
@@ -35,13 +51,22 @@ export default function EditorPage() {
 					<Map
 						rooms={rooms}
 						setRooms={setRooms}
-						selectedRoomId={selectedRoomId}
-						setSelectedRoomId={setSelectedRoomId}
+						connections={connections}
+						setConnections={setConnections}
+						selectedId={selectedId}
+						setSelectedId={setSelectedId}
+						isConnectionSelected={isConnectionSelected}
+						setIsConnectionSelected={setIsConnectionSelected}
 					/>
 				</div>
 			</section>
 
-			<RightSideBar selectedRoom={selectedRoom} onRoomChange={updateRoom} />
+			<RightSideBar
+				selectedRoom={selectedRoom}
+				selectedConnection={selectedConnection}
+				onRoomChange={updateRoom}
+				onConnectionChange={updateConnection}
+			/>
 		</main>
 	);
 }

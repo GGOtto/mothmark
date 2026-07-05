@@ -229,24 +229,22 @@ export function useConnectionDrag({
 				return connections;
 			}
 
-			const connectionsWithoutRedrawnConnection = connections.filter(
-				(connection) => connection.id !== connectionId,
-			);
-
 			const redrawnConnectionWithoutPathway: ConnectionType =
 				sideToRedraw === "from"
 					? {
 							...connectionToRedraw,
-							id: createConnectionId(),
 							fromRoomId: targetRoom.id,
 							direction: targetDirection,
 						}
 					: {
 							...connectionToRedraw,
-							id: createConnectionId(),
 							toRoomId: targetRoom.id,
 							returnDirection: targetDirection,
 						};
+
+			const connectionsWithoutRedrawnConnection = connections.filter(
+				(connection) => connection.id !== connectionId,
+			);
 
 			const pathway = getPathwayForNewDrop(
 				redrawnConnectionWithoutPathway.fromRoomId,
@@ -267,17 +265,20 @@ export function useConnectionDrag({
 			);
 
 			if (duplicateConnection) {
-				return connectionsWithoutRedrawnConnection.map((connection) => {
-					if (connection.id !== duplicateConnection.id) return connection;
+				return connections
+					.filter((connection) => connection.id !== duplicateConnection.id)
+					.map((connection) => {
+						if (connection.id !== connectionId) return connection;
 
-					return {
-						...connection,
-						pathway,
-					};
-				});
+						return redrawnConnection;
+					});
 			}
 
-			return [...connectionsWithoutRedrawnConnection, redrawnConnection];
+			return connections.map((connection) => {
+				if (connection.id !== connectionId) return connection;
+
+				return redrawnConnection;
+			});
 		});
 	}
 

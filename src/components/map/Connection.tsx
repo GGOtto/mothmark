@@ -1,3 +1,4 @@
+import type React from "react";
 import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
 import {
@@ -12,7 +13,9 @@ type ConnectionProps = {
 	connection: ConnectionType;
 	fromRoom: Room;
 	toRoom: Room;
+	selectConnection: (connection?: ConnectionType) => void;
 	isEditing?: boolean;
+	isSelected?: boolean;
 };
 
 function getPath(points: Point[]) {
@@ -69,7 +72,14 @@ function getControlPoints(
 	];
 }
 
-export function Connection({connection, fromRoom, toRoom, isEditing = false}: ConnectionProps) {
+export function Connection({
+	connection,
+	fromRoom,
+	toRoom,
+	selectConnection,
+	isEditing = false,
+	isSelected = false,
+}: ConnectionProps) {
 	const curvePoints = getControlPoints(
 		fromRoom.position,
 		toRoom.position,
@@ -78,33 +88,74 @@ export function Connection({connection, fromRoom, toRoom, isEditing = false}: Co
 	);
 
 	const pathPoints = [fromRoom.position, ...curvePoints, toRoom.position];
-
 	const path = getPath(pathPoints);
 
-	const stroke = isEditing ? "#8f8a80" : "#2f2920";
+	let stroke = "#2f2920";
+	if (isEditing) {
+		stroke = "#796d5ab3";
+	} else if (isSelected) {
+		stroke = "#f00";
+	}
+
 	const strokeWidth = isEditing ? 3 : 2;
+
+	function handleSelect(event: React.MouseEvent<SVGPathElement>) {
+		event.stopPropagation();
+		selectConnection(connection);
+	}
+
+	const clickTarget = (
+		<path
+			d={path}
+			fill="none"
+			stroke="transparent"
+			strokeWidth={18}
+			strokeLinecap="round"
+			pointerEvents="stroke"
+			className="cursor-pointer"
+			onClick={handleSelect}
+		/>
+	);
 
 	if (connection.pathway === "two-way") {
 		return (
-			<path d={path} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+			<g>
+				{clickTarget}
+
+				<path
+					d={path}
+					fill="none"
+					stroke={stroke}
+					strokeWidth={strokeWidth}
+					strokeLinecap="round"
+					pointerEvents="none"
+				/>
+			</g>
 		);
 	}
 
 	if (connection.pathway === "no-way") {
 		return (
-			<path
-				d={path}
-				fill="none"
-				stroke={stroke}
-				strokeWidth={strokeWidth}
-				strokeLinecap="round"
-				strokeDasharray="4 5"
-			/>
+			<g>
+				{clickTarget}
+
+				<path
+					d={path}
+					fill="none"
+					stroke={stroke}
+					strokeWidth={strokeWidth}
+					strokeLinecap="round"
+					strokeDasharray="4 5"
+					pointerEvents="none"
+				/>
+			</g>
 		);
 	}
 
 	return (
-		<>
+		<g>
+			{clickTarget}
+
 			<path
 				d={path}
 				fill="none"
@@ -112,6 +163,7 @@ export function Connection({connection, fromRoom, toRoom, isEditing = false}: Co
 				strokeWidth={strokeWidth}
 				strokeLinecap="round"
 				strokeDasharray="4 5"
+				pointerEvents="none"
 			/>
 
 			<path
@@ -123,7 +175,8 @@ export function Connection({connection, fromRoom, toRoom, isEditing = false}: Co
 				strokeLinecap="round"
 				strokeDasharray="50 50"
 				strokeDashoffset={connection.pathway === "backwards" ? -50 : 0}
+				pointerEvents="none"
 			/>
-		</>
+		</g>
 	);
 }

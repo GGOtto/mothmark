@@ -7,7 +7,6 @@ import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
-import {world} from "../../data/worlds/exampleWorld";
 import {buildAddConnectionResult} from "../../utils/connectionUtils";
 import {useConnectionDrag} from "./useConnectionDrag";
 
@@ -21,8 +20,12 @@ type DragState = {
 type MapProps = {
 	rooms: Room[];
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	selectedRoomId: string | null;
-	setSelectedRoomId: React.Dispatch<React.SetStateAction<string | null>>;
+	connections: ConnectionType[];
+	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
+	selectedId: string | null;
+	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
+	isConnectionSelected: boolean;
+	setIsConnectionSelected: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const GRID_SIZE = 48;
@@ -30,12 +33,26 @@ const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 const ROOM_DRAG_THRESHOLD = 2;
 
-export function Map({rooms, setRooms, selectedRoomId, setSelectedRoomId}: MapProps) {
-	const [connections, setConnections] = useState<ConnectionType[]>(world.connections);
+export function Map({
+	rooms,
+	setRooms,
+	connections,
+	setConnections,
+	selectedId,
+	setSelectedId,
+	isConnectionSelected,
+	setIsConnectionSelected,
+}: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
 
 	function selectRoom(room?: Room) {
-		setSelectedRoomId(room ? room.id : null);
+		setSelectedId(room ? room.id : null);
+		setIsConnectionSelected(false);
+	}
+
+	function selectConnection(connection?: ConnectionType) {
+		setSelectedId(connection ? connection.id : null);
+		setIsConnectionSelected(true);
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
@@ -99,13 +116,10 @@ export function Map({rooms, setRooms, selectedRoomId, setSelectedRoomId}: MapPro
 		}
 
 		addOrUpdateConnectionByShape(result.connection);
-
-		addOrUpdateConnectionByShape(result.connection);
 	}
 
 	function handleMapClick(event: React.MouseEvent<HTMLDivElement>) {
 		if (event.target !== event.currentTarget) return;
-
 		selectRoom();
 	}
 
@@ -226,7 +240,9 @@ export function Map({rooms, setRooms, selectedRoomId, setSelectedRoomId}: MapPro
 							connection={connection}
 							fromRoom={fromRoom}
 							toRoom={toRoom}
+							selectConnection={selectConnection}
 							isEditing={editedConnectionId === connection.id}
+							isSelected={isConnectionSelected && connection.id === selectedId}
 						/>
 					);
 				})}
@@ -260,7 +276,7 @@ export function Map({rooms, setRooms, selectedRoomId, setSelectedRoomId}: MapPro
 					room={room}
 					width={ROOM_WIDTH}
 					height={ROOM_HEIGHT}
-					isSelected={selectedRoomId === room.id}
+					isSelected={!isConnectionSelected && selectedId === room.id}
 					isDragging={dragState?.roomId === room.id && dragState.hasDragged}
 					onPointerDown={handleRoomPointerDown}
 					onNodeClick={addConnection}
