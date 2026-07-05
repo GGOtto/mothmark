@@ -8,6 +8,7 @@ type RoomProps = {
 	width: number;
 	height: number;
 	isDragging: boolean;
+	isSelected: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, room: Room) => void;
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
 	onConnectionDragStart: (
@@ -25,6 +26,7 @@ export function RoomCard({
 	width,
 	height,
 	isDragging,
+	isSelected,
 	onPointerDown,
 	onNodeClick,
 	onConnectionDragStart,
@@ -61,7 +63,7 @@ export function RoomCard({
 				width,
 				height,
 				border: "2px solid #2f2920",
-				background: "#d8ceb4",
+				background: isSelected ? "#aea07d" : "#d8ceb4",
 				color: "#241f18",
 				fontSize: 12,
 				cursor: isDragging ? "grabbing" : "grab",

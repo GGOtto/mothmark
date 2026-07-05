@@ -1,10 +1,10 @@
 "use client";
 
-import {useState} from "react";
 import type React from "react";
+import {useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
-import {addPoints, subtractPoints} from "../../utils/pointUtils";
+import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
 import {world} from "../../data/worlds/exampleWorld";
@@ -14,16 +14,29 @@ import {useConnectionDrag} from "./useConnectionDrag";
 type DragState = {
 	roomId: string;
 	offset: Point;
+	startPointer: Point;
+	hasDragged: boolean;
+};
+
+type MapProps = {
+	rooms: Room[];
+	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
+	selectedRoomId: string | null;
+	setSelectedRoomId: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
 const GRID_SIZE = 48;
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
+const ROOM_DRAG_THRESHOLD = 2;
 
-export function Map() {
-	const [rooms, setRooms] = useState<Room[]>(world.rooms);
+export function Map({rooms, setRooms, selectedRoomId, setSelectedRoomId}: MapProps) {
 	const [connections, setConnections] = useState<ConnectionType[]>(world.connections);
 	const [dragState, setDragState] = useState<DragState | null>(null);
+
+	function selectRoom(room?: Room) {
+		setSelectedRoomId(room ? room.id : null);
+	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
 		const vector = DIRECTION_VECTORS[direction];
@@ -81,10 +94,19 @@ export function Map() {
 		}
 
 		if (result.roomToAdd) {
-			setRooms([...rooms, result.roomToAdd]);
+			const roomToAdd = result.roomToAdd;
+			setRooms((rooms) => [...rooms, roomToAdd]);
 		}
 
 		addOrUpdateConnectionByShape(result.connection);
+
+		addOrUpdateConnectionByShape(result.connection);
+	}
+
+	function handleMapClick(event: React.MouseEvent<HTMLDivElement>) {
+		if (event.target !== event.currentTarget) return;
+
+		selectRoom();
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
@@ -106,6 +128,8 @@ export function Map() {
 		setDragState({
 			roomId: room.id,
 			offset: subtractPoints(pointer, room.position),
+			startPointer: pointer,
+			hasDragged: false,
 		});
 	}
 
@@ -118,6 +142,16 @@ export function Map() {
 			x: event.clientX - bounds.left,
 			y: event.clientY - bounds.top,
 		};
+
+		const hasDragged =
+			dragState.hasDragged || getDistance(pointer, dragState.startPointer) >= ROOM_DRAG_THRESHOLD;
+
+		if (!hasDragged) return;
+
+		setDragState({
+			...dragState,
+			hasDragged,
+		});
 
 		setRooms((rooms) =>
 			rooms.map((room) => {
@@ -132,6 +166,18 @@ export function Map() {
 	}
 
 	function handlePointerUp() {
+		if (!dragState) return;
+
+		const selectedRoom = rooms.find((room) => room.id === dragState.roomId);
+
+		if (selectedRoom && !dragState.hasDragged) {
+			selectRoom(selectedRoom);
+		}
+
+		setDragState(null);
+	}
+
+	function handlePointerCancel() {
 		setDragState(null);
 	}
 
@@ -139,9 +185,10 @@ export function Map() {
 		<div
 			ref={mapRef}
 			data-map
+			onClick={handleMapClick}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
-			onPointerCancel={handlePointerUp}
+			onPointerCancel={handlePointerCancel}
 			onContextMenu={(event) => event.preventDefault()}
 			style={{
 				position: "relative",
@@ -213,7 +260,8 @@ export function Map() {
 					room={room}
 					width={ROOM_WIDTH}
 					height={ROOM_HEIGHT}
-					isDragging={dragState?.roomId === room.id}
+					isSelected={selectedRoomId === room.id}
+					isDragging={dragState?.roomId === room.id && dragState.hasDragged}
 					onPointerDown={handleRoomPointerDown}
 					onNodeClick={addConnection}
 					onConnectionDragStart={handleConnectionDragStart}
