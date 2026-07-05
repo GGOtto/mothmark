@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The command system currently supports developer-defined commands in commands.ts, such as look, examine, take, use, put, give, unlock, go, and help.
+The command system currently supports developer-defined commands in `commands.ts`, such as `look`, `examine`, `take`, `use`, `put`, `give`, `unlock`, `go`, and `help`.
 
 Those coded commands are powerful, but they require TypeScript. Authors building worlds through the editor should be able to define custom command behavior without writing real code.
 
@@ -27,19 +27,19 @@ The engine should support two kinds of commands:
 
 ## 1. Coded Commands
 
-These are developer-defined in commands.ts.
+These are developer-defined in `commands.ts`.
 
 Examples:
 
-- look
-- examine
-- take
-- use
-- put
-- give
-- unlock
-- go
-- help
+- `look`
+- `examine`
+- `take`
+- `use`
+- `put`
+- `give`
+- `unlock`
+- `go`
+- `help`
 
 Coded commands are regular TypeScript and can do anything the developer allows.
 
@@ -82,7 +82,34 @@ An authored command behaves like a rule:
 
 An authored command should be edited through a form that feels like this:
 
-md Command: Put Apple On Table  When the player types: - put apple on table - place apple on table - set apple on table  Or matches this command: - verb: put/place/set - object: apple - connector: on - target: table  Only if: - player has apple - current room is kitchen - table exists in current room - flag table.hasApple is false  Then: - remove apple from inventory - place apple on table - set flag table.hasApple = true - set flag kitchen.appleOnTable = true - schedule event ratsArrive in 3 turns - show message: "You set the apple on the table. Its red skin gleams in the dim kitchen light." 
+```md
+Command: Put Apple On Table
+
+When the player types:
+- put apple on table
+- place apple on table
+- set apple on table
+
+Or matches this command:
+- verb: put/place/set
+- object: apple
+- connector: on
+- target: table
+
+Only if:
+- player has apple
+- current room is kitchen
+- table exists in current room
+- flag table.hasApple is false
+
+Then:
+- remove apple from inventory
+- place apple on table
+- set flag table.hasApple = true
+- set flag kitchen.appleOnTable = true
+- schedule event ratsArrive in 3 turns
+- show message: "You set the apple on the table. Its red skin gleams in the dim kitchen light."
+```
 
 The UI should hide the underlying structure, but the saved world JSON should be structured and predictable.
 
@@ -96,19 +123,31 @@ Authors should not write arbitrary code.
 
 Instead of this:
 
-ts if (gameState.flags["table.hasApple"]) {   ... } 
+```ts
+if (gameState.flags["table.hasApple"]) {
+  ...
+}
+```
 
 Authors should configure this:
 
-md Condition: Flag table.hasApple is true 
+```md
+Condition:
+Flag table.hasApple is true
+```
 
 Instead of this:
 
-ts gameState.inventory.push("apple") 
+```ts
+gameState.inventory.push("apple")
+```
 
 Authors should configure this:
 
-md Effect: Add apple to inventory 
+```md
+Effect:
+Add apple to inventory
+```
 
 ## 2. Everything Is Data
 
@@ -159,7 +198,7 @@ The command language should heavily use state:
 
 ## 5. Authored Commands Should Layer on Top of Generic Commands
 
-The generic put command can say:
+The generic `put` command can say:
 
 > You put the apple on the table.
 
@@ -179,15 +218,33 @@ The system should allow authored commands to:
 
 # Required Engine Additions
 
-The current GameState has:
+The current `GameState` has:
 
-md currentRoomId flags inventory messages 
+```md
+currentRoomId
+flags
+inventory
+messages
+```
 
 To support richer authored behavior, we should eventually add more state concepts.
 
 ## Recommended GameState Expansion
 
-md currentRoomId flags inventory messages turnCount itemLocations npcLocations objectStates counters scheduledEvents recentCommands knownTopics 
+```md
+currentRoomId
+flags
+inventory
+messages
+turnCount
+itemLocations
+npcLocations
+objectStates
+counters
+scheduledEvents
+recentCommands
+knownTopics
+```
 
 Each addition is described below.
 
@@ -199,13 +256,30 @@ Flags are boolean state values.
 
 Current examples:
 
-md room:kitchen.visited room:kitchen.viewed feature:kitchen.table.examined 
+```md
+room:kitchen.visited
+room:kitchen.viewed
+feature:kitchen.table.examined
+```
 
 We should keep these, but expand the flag system so authors can create custom flags.
 
 ## Flag Examples
 
-md room:kitchen.visited room:kitchen.viewed feature:kitchen.table.examined item:apple.taken item:apple.onTable npc:ratKing.met npc:guard.distracted door:cellar.unlocked quest:findLantern.started quest:findLantern.completed world:ratsReleased world:stormStarted 
+```md
+room:kitchen.visited
+room:kitchen.viewed
+feature:kitchen.table.examined
+item:apple.taken
+item:apple.onTable
+npc:ratKing.met
+npc:guard.distracted
+door:cellar.unlocked
+quest:findLantern.started
+quest:findLantern.completed
+world:ratsReleased
+world:stormStarted
+```
 
 ## Author-Created Flags
 
@@ -213,19 +287,36 @@ Authors should be able to define custom flags from the UI.
 
 Examples:
 
-md kitchen.applePlacedOnTable pantry.ratsAttracted guard.hasSeenPlayer mirror.hasBeenBroken lantern.isLit bell.hasBeenRung 
+```md
+kitchen.applePlacedOnTable
+pantry.ratsAttracted
+guard.hasSeenPlayer
+mirror.hasBeenBroken
+lantern.isLit
+bell.hasBeenRung
+```
 
 ## Flag Condition Types
 
 Authors should be able to check:
 
-md Flag is true Flag is false Flag exists Flag does not exist 
+```md
+Flag is true
+Flag is false
+Flag exists
+Flag does not exist
+```
 
 ## Flag Effect Types
 
 Authors should be able to:
 
-md Set flag true Set flag false Toggle flag Clear flag 
+```md
+Set flag true
+Set flag false
+Toggle flag
+Clear flag
+```
 
 ---
 
@@ -235,29 +326,76 @@ Flags are useful for yes/no states, but authors also need numbers.
 
 Counters allow state like:
 
-md ratsFedCount = 2 doorKnockCount = 3 torchBurnTurns = 5 guardSuspicion = 40 playerNoise = 7 
+```md
+ratsFedCount = 2
+doorKnockCount = 3
+torchBurnTurns = 5
+guardSuspicion = 40
+playerNoise = 7
+```
 
 ## Counter Conditions
 
 Authors should be able to check:
 
-md Counter equals value Counter does not equal value Counter is greater than value Counter is greater than or equal to value Counter is less than value Counter is less than or equal to value Counter is between two values 
+```md
+Counter equals value
+Counter does not equal value
+Counter is greater than value
+Counter is greater than or equal to value
+Counter is less than value
+Counter is less than or equal to value
+Counter is between two values
+```
 
 ## Counter Effects
 
 Authors should be able to:
 
-md Set counter to value Increase counter by value Decrease counter by value Reset counter Clamp counter between min and max 
+```md
+Set counter to value
+Increase counter by value
+Decrease counter by value
+Reset counter
+Clamp counter between min and max
+```
 
 ## Counter Scenario Examples
 
 ### Repeatedly Knocking on a Door
 
-md Command: knock on door  Effects: - Increase counter cellarDoor.knocks by 1  If cellarDoor.knocks is 1: - Message: "You knock once. The sound vanishes into the house."  If cellarDoor.knocks is 3: - Message: "Something knocks back."  If cellarDoor.knocks is 5: - Set flag cellarDoor.openedFromInside true - Message: "The door creaks open by itself." 
+```md
+Command:
+knock on door
+
+Effects:
+- Increase counter cellarDoor.knocks by 1
+
+If cellarDoor.knocks is 1:
+- Message: "You knock once. The sound vanishes into the house."
+
+If cellarDoor.knocks is 3:
+- Message: "Something knocks back."
+
+If cellarDoor.knocks is 5:
+- Set flag cellarDoor.openedFromInside true
+- Message: "The door creaks open by itself."
+```
 
 ### Guard Suspicion
 
-md Command: sneak past guard  If playerNoise greater than 5: - Increase counter guard.suspicion by 20 - Message: "The guard turns sharply toward the sound."  If guard.suspicion greater than or equal to 100: - Move player to jail - Message: "The guard catches you." 
+```md
+Command:
+sneak past guard
+
+If playerNoise greater than 5:
+- Increase counter guard.suspicion by 20
+- Message: "The guard turns sharply toward the sound."
+
+If guard.suspicion greater than or equal to 100:
+- Move player to jail
+- Message: "The guard catches you."
+```
 
 ---
 
@@ -267,15 +405,33 @@ The current inventory is a list of item IDs. That supports simple take/drop logi
 
 Recommended:
 
-md itemLocations: Record<ItemId, ItemLocation> 
+```md
+itemLocations: Record<ItemId, ItemLocation>
+```
 
 Possible locations:
 
-md inventory room container surface npc hidden destroyed 
+```md
+inventory
+room
+container
+surface
+npc
+hidden
+destroyed
+```
 
 ## Item Location Examples
 
-md apple is in player inventory apple is in room kitchen apple is on table apple is inside cabinet apple is held by npc cook apple is hidden under bed apple is destroyed 
+```md
+apple is in player inventory
+apple is in room kitchen
+apple is on table
+apple is inside cabinet
+apple is held by npc cook
+apple is hidden under bed
+apple is destroyed
+```
 
 ## Why This Matters
 
@@ -283,19 +439,48 @@ The apple-on-table example requires knowing that the apple is specifically on th
 
 This lets later logic check:
 
-md If apple is on table If rats are not already present If 3 turns have passed Then move rats to kitchen 
+```md
+If apple is on table
+If rats are not already present
+If 3 turns have passed
+Then move rats to kitchen
+```
 
 ## Item Location Conditions
 
 Authors should be able to check:
 
-md Player has item Player does not have item Item is in current room Item is in specific room Item is on surface Item is in container Item is held by NPC Item is hidden Item is destroyed Item is visible to player Item is reachable by player 
+```md
+Player has item
+Player does not have item
+Item is in current room
+Item is in specific room
+Item is on surface
+Item is in container
+Item is held by NPC
+Item is hidden
+Item is destroyed
+Item is visible to player
+Item is reachable by player
+```
 
 ## Item Location Effects
 
 Authors should be able to:
 
-md Add item to inventory Remove item from inventory Move item to room Move item to current room Place item on surface Place item in container Give item to NPC Hide item Reveal item Destroy item Duplicate item 
+```md
+Add item to inventory
+Remove item from inventory
+Move item to room
+Move item to current room
+Place item on surface
+Place item in container
+Give item to NPC
+Hide item
+Reveal item
+Destroy item
+Duplicate item
+```
 
 ---
 
@@ -305,25 +490,81 @@ Objects, features, doors, containers, and items need states beyond flags.
 
 Examples:
 
-md door is open door is closed door is locked door is unlocked lamp is lit lamp is unlit table is clean table is sticky mirror is broken chest is sealed apple is fresh apple is rotten 
+```md
+door is open
+door is closed
+door is locked
+door is unlocked
+lamp is lit
+lamp is unlit
+table is clean
+table is sticky
+mirror is broken
+chest is sealed
+apple is fresh
+apple is rotten
+```
 
 These could technically be flags, but first-class states make authoring much cleaner.
 
 ## Object State Examples
 
-md objectStates: {   "door:cellar": {     open: false,     locked: true   },   "item:lantern": {     lit: false,     fuel: 4   },   "feature:kitchen.table": {     surfaceItems: ["apple"],     clean: false   } } 
+```md
+objectStates: {
+  "door:cellar": {
+    open: false,
+    locked: true
+  },
+  "item:lantern": {
+    lit: false,
+    fuel: 4
+  },
+  "feature:kitchen.table": {
+    surfaceItems: ["apple"],
+    clean: false
+  }
+}
+```
 
 ## Object State Conditions
 
 Authors should be able to check:
 
-md Object is open Object is closed Object is locked Object is unlocked Object is lit Object is unlit Object is broken Object is intact Container is empty Container contains item Surface has item Surface does not have item 
+```md
+Object is open
+Object is closed
+Object is locked
+Object is unlocked
+Object is lit
+Object is unlit
+Object is broken
+Object is intact
+Container is empty
+Container contains item
+Surface has item
+Surface does not have item
+```
 
 ## Object State Effects
 
 Authors should be able to:
 
-md Open object Close object Lock object Unlock object Light object Extinguish object Break object Repair object Clean object Dirty object Add item to container Remove item from container Add item to surface Remove item from surface 
+```md
+Open object
+Close object
+Lock object
+Unlock object
+Light object
+Extinguish object
+Break object
+Repair object
+Clean object
+Dirty object
+Add item to container
+Remove item from container
+Add item to surface
+Remove item from surface
+```
 
 ---
 
@@ -331,19 +572,54 @@ md Open object Close object Lock object Unlock object Light object Extinguish ob
 
 NPCs should eventually support:
 
-md location mood disposition awareness inventory conversation state hostility trust schedule 
+```md
+location
+mood
+disposition
+awareness
+inventory
+conversation state
+hostility
+trust
+schedule
+```
 
 ## NPC Conditions
 
 Authors should be able to check:
 
-md NPC is in current room NPC is in specific room NPC has item NPC mood is value NPC trust is greater than value NPC has met player NPC is hostile NPC is friendly NPC is asleep NPC is awake NPC can see player 
+```md
+NPC is in current room
+NPC is in specific room
+NPC has item
+NPC mood is value
+NPC trust is greater than value
+NPC has met player
+NPC is hostile
+NPC is friendly
+NPC is asleep
+NPC is awake
+NPC can see player
+```
 
 ## NPC Effects
 
 Authors should be able to:
 
-md Move NPC to room Move NPC to current room Remove NPC from world Set NPC mood Increase NPC trust Decrease NPC trust Give item to NPC Take item from NPC Make NPC hostile Make NPC friendly Start dialogue End dialogue 
+```md
+Move NPC to room
+Move NPC to current room
+Remove NPC from world
+Set NPC mood
+Increase NPC trust
+Decrease NPC trust
+Give item to NPC
+Take item from NPC
+Make NPC hostile
+Make NPC friendly
+Start dialogue
+End dialogue
+```
 
 ---
 
@@ -355,13 +631,30 @@ The command itself should not need to immediately spawn rats. It should be able 
 
 ## Scheduled Event Examples
 
-md ratsArrive in 3 turns stormStarts in 5 turns guardReturns in 2 turns appleRots in 10 turns candleBurnsOut in 4 turns 
+```md
+ratsArrive in 3 turns
+stormStarts in 5 turns
+guardReturns in 2 turns
+appleRots in 10 turns
+candleBurnsOut in 4 turns
+```
 
 ## Scheduled Event Data
 
 A scheduled event should include:
 
-md id eventId triggerType triggerAtTurn remainingTurns conditions effects message repeat cancelIf 
+```md
+id
+eventId
+triggerType
+triggerAtTurn
+remainingTurns
+conditions
+effects
+message
+repeat
+cancelIf
+```
 
 ## Time Types
 
@@ -369,7 +662,17 @@ The engine may start with turn-based timing.
 
 Recommended timing options:
 
-md After N turns At turn number N When player enters room When player leaves room When flag becomes true When item reaches location Every N turns Once per room visit Immediately after command 
+```md
+After N turns
+At turn number N
+When player enters room
+When player leaves room
+When flag becomes true
+When item reaches location
+Every N turns
+Once per room visit
+Immediately after command
+```
 
 Real-time timers are probably unnecessary for the first version.
 
@@ -379,11 +682,31 @@ Scheduled events should still check conditions before firing.
 
 Example:
 
-md Event: ratsArrive  After: 3 turns  Only if: - apple is on kitchen table - rats are not already in kitchen - player has not cleaned table  Then: - Move rats to kitchen - Set flag kitchen.ratsPresent true - Show message if player is in kitchen:   "You hear skittering under the floorboards. Rats pour into the kitchen, drawn by the apple." 
+```md
+Event:
+ratsArrive
+
+After:
+3 turns
+
+Only if:
+- apple is on kitchen table
+- rats are not already in kitchen
+- player has not cleaned table
+
+Then:
+- Move rats to kitchen
+- Set flag kitchen.ratsPresent true
+- Show message if player is in kitchen:
+  "You hear skittering under the floorboards. Rats pour into the kitchen, drawn by the apple."
+```
 
 If the player removes the apple before the event fires:
 
-md Cancel if: - apple is not on kitchen table 
+```md
+Cancel if:
+- apple is not on kitchen table
+```
 
 ## Scheduled Event Effects
 
@@ -391,7 +714,19 @@ Events should use the same effect system as commands.
 
 That means scheduled events can:
 
-md Set flags Move items Move NPCs Change object states Show messages Unlock exits Change room descriptions Start quests End quests Schedule more events Cancel events 
+```md
+Set flags
+Move items
+Move NPCs
+Change object states
+Show messages
+Unlock exits
+Change room descriptions
+Start quests
+End quests
+Schedule more events
+Cancel events
+```
 
 ---
 
@@ -401,25 +736,60 @@ Some interactions depend on what the player just did.
 
 Examples:
 
-md If previous command was "sing" If player examined mirror before touching it If player knocked three times in a row If player said the password after reading the inscription 
+```md
+If previous command was "sing"
+If player examined mirror before touching it
+If player knocked three times in a row
+If player said the password after reading the inscription
+```
 
 Recommended:
 
-md recentCommands: ParsedCommandHistory[] 
+```md
+recentCommands: ParsedCommandHistory[]
+```
 
 Each entry might include:
 
-md rawCommand normalizedInput commandName matchedAlias targetText connector turnNumber roomId resolvedObjects 
+```md
+rawCommand
+normalizedInput
+commandName
+matchedAlias
+targetText
+connector
+turnNumber
+roomId
+resolvedObjects
+```
 
 ## Recent Command Conditions
 
 Authors should be able to check:
 
-md Previous command was command Previous command target was object Player used command within last N turns Player has never used command Player repeated command N times 
+```md
+Previous command was command
+Previous command target was object
+Player used command within last N turns
+Player has never used command
+Player repeated command N times
+```
 
 ## Scenario Example: Ritual Sequence
 
-md Required sequence: 1. light candle 2. ring bell 3. speak name  If player does these in order: - Open hidden door  If player does them out of order: - Extinguish candle - Message: "The room seems to forget what you were trying to do." 
+```md
+Required sequence:
+1. light candle
+2. ring bell
+3. speak name
+
+If player does these in order:
+- Open hidden door
+
+If player does them out of order:
+- Extinguish candle
+- Message: "The room seems to forget what you were trying to do."
+```
 
 ---
 
@@ -430,7 +800,7 @@ The current parser does several useful things:
 - Normalizes input
 - Supports aliases
 - Supports multi-word aliases
-- Supports connectors like on, with, to, in, into
+- Supports connectors like `on`, `with`, `to`, `in`, `into`
 - Sorts aliases longest-first
 - Supports custom coded matching
 - Strips optional leading articles from target names
@@ -443,33 +813,55 @@ Authored commands should build on this system.
 
 An authored command should include:
 
-md id name enabled priority scope aliases connectors patterns conditions effects elseEffects message failureMessage consumeTurn stopProcessing 
+```md
+id
+name
+enabled
+priority
+scope
+aliases
+connectors
+patterns
+conditions
+effects
+elseEffects
+message
+failureMessage
+consumeTurn
+stopProcessing
+```
 
 ## Field Details
 
-### id
+### `id`
 
 Stable unique identifier.
 
 Example:
 
-md putAppleOnTable 
+```md
+putAppleOnTable
+```
 
-### name
+### `name`
 
 Human-readable editor name.
 
 Example:
 
-md Put Apple On Table 
+```md
+Put Apple On Table
+```
 
-### enabled
+### `enabled`
 
 Allows authors to disable a rule without deleting it.
 
-md enabled: true 
+```md
+enabled: true
+```
 
-### priority
+### `priority`
 
 Determines which authored command wins when multiple match.
 
@@ -477,43 +869,79 @@ Higher priority should run first.
 
 Example:
 
-md priority: 100 
+```md
+priority: 100
+```
 
-### scope
+### `scope`
 
 Where the command can run.
 
 Possible values:
 
-md global room item feature npc quest 
+```md
+global
+room
+item
+feature
+npc
+quest
+```
 
 Examples:
 
-md Global command: "pray" Room command: "touch mural" only in chapel Item command: "eat apple" wherever the apple is visible NPC command: "ask cook about rats" 
+```md
+Global command: "pray"
+Room command: "touch mural" only in chapel
+Item command: "eat apple" wherever the apple is visible
+NPC command: "ask cook about rats"
+```
 
-### aliases
+### `aliases`
 
 Player-facing trigger words.
 
 Example:
 
-md put place set 
+```md
+put
+place
+set
+```
 
-### connectors
+### `connectors`
 
 Words used to split the command target.
 
 Example:
 
-md on in into with to under behind near beside through at 
+```md
+on
+in
+into
+with
+to
+under
+behind
+near
+beside
+through
+at
+```
 
-### patterns
+### `patterns`
 
 Structured command shapes.
 
 Examples:
 
-md verb object verb object connector target verb target direction only speak phrase 
+```md
+verb object
+verb object connector target
+verb target
+direction only
+speak phrase
+```
 
 For the UI, authors should not need to type a formal grammar. They should select a pattern type.
 
@@ -525,53 +953,122 @@ For the UI, authors should not need to type a formal grammar. They should select
 
 Used for commands like:
 
-md look wait listen pray sleep 
+```md
+look
+wait
+listen
+pray
+sleep
+```
 
 Pattern:
 
-md verb only 
+```md
+verb only
+```
 
 Example:
 
-md Aliases: - listen  Conditions: - current room is forest  Effects: - Show message: "Wind moves through the trees like whispered speech." 
+```md
+Aliases:
+- listen
+
+Conditions:
+- current room is forest
+
+Effects:
+- Show message: "Wind moves through the trees like whispered speech."
+```
 
 ## 2. Verb + Target
 
 Used for:
 
-md examine apple take key eat bread touch mirror read inscription 
+```md
+examine apple
+take key
+eat bread
+touch mirror
+read inscription
+```
 
 Pattern:
 
-md verb target 
+```md
+verb target
+```
 
 Example:
 
-md Aliases: - read - inspect  Target: - inscription  Effects: - Set flag inscription.read true - Show message: "The inscription says: Below hunger, teeth gather." 
+```md
+Aliases:
+- read
+- inspect
+
+Target:
+- inscription
+
+Effects:
+- Set flag inscription.read true
+- Show message: "The inscription says: Below hunger, teeth gather."
+```
 
 ## 3. Verb + Object + Connector + Target
 
 Used for:
 
-md put apple on table use key with lock unlock door with brass key give apple to cook throw stone at window hide coin under rug 
+```md
+put apple on table
+use key with lock
+unlock door with brass key
+give apple to cook
+throw stone at window
+hide coin under rug
+```
 
 Pattern:
 
-md verb object connector target 
+```md
+verb object connector target
+```
 
 Example:
 
-md Aliases: - put - place - set  Object: - apple  Connector: - on  Target: - table 
+```md
+Aliases:
+- put
+- place
+- set
+
+Object:
+- apple
+
+Connector:
+- on
+
+Target:
+- table
+```
 
 ## 4. Speech Command
 
 Used for:
 
-md say password speak friend whisper mothmark tell guard about rats ask cook about apple 
+```md
+say password
+speak friend
+whisper mothmark
+tell guard about rats
+ask cook about apple
+```
 
 Pattern options:
 
-md say phrase tell npc about topic ask npc about topic 
+```md
+say phrase
+tell npc about topic
+ask npc about topic
+```
 
 Speech needs special handling because the target text may not resolve to a physical object.
 
@@ -579,13 +1076,24 @@ Speech needs special handling because the target text may not resolve to a physi
 
 Used for:
 
-md north go north enter cellar climb ladder crawl through tunnel 
+```md
+north
+go north
+enter cellar
+climb ladder
+crawl through tunnel
+```
 
 Some of this remains coded, but authored movement-like commands should be possible.
 
 Examples:
 
-md climb ladder enter mirror crawl under fence cross bridge 
+```md
+climb ladder
+enter mirror
+crawl under fence
+cross bridge
+```
 
 ## 6. Meta or Debug Command
 
@@ -593,7 +1101,13 @@ Probably developer-only.
 
 Examples:
 
-md help inventory save load debug flags 
+```md
+help
+inventory
+save
+load
+debug flags
+```
 
 Authors should usually not override these unless explicitly allowed.
 
@@ -609,31 +1123,65 @@ Example:
 
 Player types:
 
-md put red apple on old table 
+```md
+put red apple on old table
+```
 
 The parser finds:
 
-md left = red apple connector = on right = old table 
+```md
+left = red apple
+connector = on
+right = old table
+```
 
 The resolver should match:
 
-md left -> item:apple right -> feature:kitchen.table 
+```md
+left -> item:apple
+right -> feature:kitchen.table
+```
 
 ## Resolvable Entity Types
 
 The engine should be able to resolve text to:
 
-md room exit item feature container surface npc topic direction 
+```md
+room
+exit
+item
+feature
+container
+surface
+npc
+topic
+direction
+```
 
 ## Matching Names and Aliases
 
 Each entity should support:
 
-md name aliases description visibleWhen takeableWhen usableWhen 
+```md
+name
+aliases
+description
+visibleWhen
+takeableWhen
+usableWhen
+```
 
 Example:
 
-md Item: id: apple name: apple aliases: - red apple - fruit - shiny apple 
+```md
+Item:
+id: apple
+name: apple
+aliases:
+- red apple
+- fruit
+- shiny apple
+```
 
 ## Ambiguous Targets
 
@@ -641,15 +1189,23 @@ If multiple objects match, the engine should ask a clarification or choose the m
 
 Example:
 
-md take key 
+```md
+take key
+```
 
 But the room contains:
 
-md silver key brass key iron key 
+```md
+silver key
+brass key
+iron key
+```
 
 Response:
 
-md Which key do you mean: the silver key, the brass key, or the iron key? 
+```md
+Which key do you mean: the silver key, the brass key, or the iron key?
+```
 
 This can be later. For the first version, the engine can prefer:
 
@@ -667,7 +1223,12 @@ Conditions decide whether a command or event can run.
 
 Authors should be able to combine conditions with:
 
-md All of these are true Any of these are true None of these are true Custom condition group 
+```md
+All of these are true
+Any of these are true
+None of these are true
+Custom condition group
+```
 
 This gives us AND / OR / NOT without exposing code.
 
@@ -677,93 +1238,203 @@ This gives us AND / OR / NOT without exposing code.
 
 ### Current Room
 
-md Player is in room Player is not in room Current room has tag Current room does not have tag 
+```md
+Player is in room
+Player is not in room
+Current room has tag
+Current room does not have tag
+```
 
 Examples:
 
-md Player is in kitchen Player is not in cellar Current room has tag outdoors 
+```md
+Player is in kitchen
+Player is not in cellar
+Current room has tag outdoors
+```
 
 ### Room History
 
-md Room has been visited Room has not been visited Room has been viewed Room has not been viewed 
+```md
+Room has been visited
+Room has not been visited
+Room has been viewed
+Room has not been viewed
+```
 
 Examples:
 
-md Kitchen has been visited Cellar has not been viewed 
+```md
+Kitchen has been visited
+Cellar has not been viewed
+```
 
 ### Feature History
 
-md Feature has been examined Feature has not been examined 
+```md
+Feature has been examined
+Feature has not been examined
+```
 
 Examples:
 
-md Kitchen table has been examined Mirror has not been examined 
+```md
+Kitchen table has been examined
+Mirror has not been examined
+```
 
 ### Inventory
 
-md Player has item Player does not have item Player has all items Player has any item Player inventory contains tag Player inventory count equals value 
+```md
+Player has item
+Player does not have item
+Player has all items
+Player has any item
+Player inventory contains tag
+Player inventory count equals value
+```
 
 Examples:
 
-md Player has apple Player does not have lantern Player has any item tagged food 
+```md
+Player has apple
+Player does not have lantern
+Player has any item tagged food
+```
 
 ### Item Location
 
-md Item is in inventory Item is in room Item is in current room Item is on surface Item is in container Item is held by NPC Item is hidden Item is destroyed Item is visible Item is reachable 
+```md
+Item is in inventory
+Item is in room
+Item is in current room
+Item is on surface
+Item is in container
+Item is held by NPC
+Item is hidden
+Item is destroyed
+Item is visible
+Item is reachable
+```
 
 Examples:
 
-md Apple is on table Key is inside drawer Lantern is in inventory 
+```md
+Apple is on table
+Key is inside drawer
+Lantern is in inventory
+```
 
 ### Object State
 
-md Object is open Object is closed Object is locked Object is unlocked Object is lit Object is unlit Object is broken Object is intact Object contains item Object does not contain item Surface has item Surface does not have item 
+```md
+Object is open
+Object is closed
+Object is locked
+Object is unlocked
+Object is lit
+Object is unlit
+Object is broken
+Object is intact
+Object contains item
+Object does not contain item
+Surface has item
+Surface does not have item
+```
 
 Examples:
 
-md Door is locked Lantern is lit Table has apple 
+```md
+Door is locked
+Lantern is lit
+Table has apple
+```
 
 ### Flags
 
-md Flag is true Flag is false 
+```md
+Flag is true
+Flag is false
+```
 
 Examples:
 
-md kitchen.applePlacedOnTable is true rats.haveArrived is false 
+```md
+kitchen.applePlacedOnTable is true
+rats.haveArrived is false
+```
 
 ### Counters
 
-md Counter equals value Counter greater than value Counter less than value Counter between values 
+```md
+Counter equals value
+Counter greater than value
+Counter less than value
+Counter between values
+```
 
 Examples:
 
-md guard.suspicion greater than 50 door.knocks equals 3 
+```md
+guard.suspicion greater than 50
+door.knocks equals 3
+```
 
 ### NPC State
 
-md NPC is in current room NPC is in room NPC has item NPC mood is value NPC trust greater than value NPC is hostile NPC is friendly NPC is asleep NPC is awake 
+```md
+NPC is in current room
+NPC is in room
+NPC has item
+NPC mood is value
+NPC trust greater than value
+NPC is hostile
+NPC is friendly
+NPC is asleep
+NPC is awake
+```
 
 Examples:
 
-md Cook is in kitchen Guard suspicion greater than 70 Rat King is hostile 
+```md
+Cook is in kitchen
+Guard suspicion greater than 70
+Rat King is hostile
+```
 
 ### Command History
 
-md Previous command was Previous command target was Player has used command before Player used command within last N turns Player repeated command N times 
+```md
+Previous command was
+Previous command target was
+Player has used command before
+Player used command within last N turns
+Player repeated command N times
+```
 
 Examples:
 
-md Previous command was examine mirror Player said password within last 3 turns Player knocked on door 3 times 
+```md
+Previous command was examine mirror
+Player said password within last 3 turns
+Player knocked on door 3 times
+```
 
 ### Random Chance
 
 Authors should be able to use chance carefully.
 
-md Random chance succeeds Random chance fails 
+```md
+Random chance succeeds
+Random chance fails
+```
 
 Examples:
 
-md 25% chance rats appear 50% chance guard hears player 
+```md
+25% chance rats appear
+50% chance guard hears player
+```
 
 This should be deterministic if the engine later supports seeded saves.
 
@@ -771,11 +1442,20 @@ This should be deterministic if the engine later supports seeded saves.
 
 Eventually useful:
 
-md Quest has not started Quest is active Quest is completed Quest failed Objective is complete 
+```md
+Quest has not started
+Quest is active
+Quest is completed
+Quest failed
+Objective is complete
+```
 
 Examples:
 
-md Quest Find the Lantern is active Objective Bring apple to cook is complete 
+```md
+Quest Find the Lantern is active
+Objective Bring apple to cook is complete
+```
 
 ---
 
@@ -789,83 +1469,207 @@ They should be reusable across authored commands and scheduled events.
 
 ## Message Effects
 
-md Show system message Show room message Show error message Show random message from list Show conditional message Append text to current room description 
+```md
+Show system message
+Show room message
+Show error message
+Show random message from list
+Show conditional message
+Append text to current room description
+```
 
 Examples:
 
-md Show: "You place the apple on the table." Show one of: - "Something scratches in the walls." - "A faint skittering follows." - "You feel watched from below." 
+```md
+Show: "You place the apple on the table."
+Show one of:
+- "Something scratches in the walls."
+- "A faint skittering follows."
+- "You feel watched from below."
+```
 
 ## Flag Effects
 
-md Set flag true Set flag false Toggle flag Clear flag 
+```md
+Set flag true
+Set flag false
+Toggle flag
+Clear flag
+```
 
 Examples:
 
-md Set kitchen.appleOnTable true Set rats.attracted true 
+```md
+Set kitchen.appleOnTable true
+Set rats.attracted true
+```
 
 ## Counter Effects
 
-md Set counter Increase counter Decrease counter Reset counter Clamp counter 
+```md
+Set counter
+Increase counter
+Decrease counter
+Reset counter
+Clamp counter
+```
 
 Examples:
 
-md Increase guard.suspicion by 10 Set apple.rotTurns to 0 
+```md
+Increase guard.suspicion by 10
+Set apple.rotTurns to 0
+```
 
 ## Inventory Effects
 
-md Add item to inventory Remove item from inventory Remove all items with tag Replace inventory item 
+```md
+Add item to inventory
+Remove item from inventory
+Remove all items with tag
+Replace inventory item
+```
 
 Examples:
 
-md Remove apple from inventory Add rustyKey to inventory Replace unlitLantern with litLantern 
+```md
+Remove apple from inventory
+Add rustyKey to inventory
+Replace unlitLantern with litLantern
+```
 
 ## Item Location Effects
 
-md Move item to room Move item to current room Place item on surface Place item in container Give item to NPC Take item from NPC Hide item Reveal item Destroy item Create item 
+```md
+Move item to room
+Move item to current room
+Place item on surface
+Place item in container
+Give item to NPC
+Take item from NPC
+Hide item
+Reveal item
+Destroy item
+Create item
+```
 
 Examples:
 
-md Place apple on table Move rats to kitchen Hide brass key Reveal trapdoor Destroy rotten apple 
+```md
+Place apple on table
+Move rats to kitchen
+Hide brass key
+Reveal trapdoor
+Destroy rotten apple
+```
 
 ## Object State Effects
 
-md Open object Close object Lock object Unlock object Light object Extinguish object Break object Repair object Clean object Dirty object Set custom object state 
+```md
+Open object
+Close object
+Lock object
+Unlock object
+Light object
+Extinguish object
+Break object
+Repair object
+Clean object
+Dirty object
+Set custom object state
+```
 
 Examples:
 
-md Unlock cellar door Break mirror Light lantern Dirty table 
+```md
+Unlock cellar door
+Break mirror
+Light lantern
+Dirty table
+```
 
 ## Room Effects
 
-md Move player to room Change current room description variant Reveal exit Hide exit Lock exit Unlock exit Add room tag Remove room tag Mark room visited Mark room viewed 
+```md
+Move player to room
+Change current room description variant
+Reveal exit
+Hide exit
+Lock exit
+Unlock exit
+Add room tag
+Remove room tag
+Mark room visited
+Mark room viewed
+```
 
 Examples:
 
-md Reveal exit from kitchen to cellar Move player to cellar Set kitchen description variant to ratsPresent 
+```md
+Reveal exit from kitchen to cellar
+Move player to cellar
+Set kitchen description variant to ratsPresent
+```
 
 ## NPC Effects
 
-md Move NPC to room Move NPC to current room Remove NPC Set NPC mood Increase NPC trust Decrease NPC trust Give item to NPC Take item from NPC Make NPC hostile Make NPC friendly Start dialogue 
+```md
+Move NPC to room
+Move NPC to current room
+Remove NPC
+Set NPC mood
+Increase NPC trust
+Decrease NPC trust
+Give item to NPC
+Take item from NPC
+Make NPC hostile
+Make NPC friendly
+Start dialogue
+```
 
 Examples:
 
-md Move rats to kitchen Set cook mood to disgusted Increase guard suspicion by 20 
+```md
+Move rats to kitchen
+Set cook mood to disgusted
+Increase guard suspicion by 20
+```
 
 ## Scheduled Event Effects
 
-md Schedule event Cancel scheduled event Cancel events with tag Delay event Repeat event 
+```md
+Schedule event
+Cancel scheduled event
+Cancel events with tag
+Delay event
+Repeat event
+```
 
 Examples:
 
-md Schedule ratsArrive after 3 turns Cancel ratsArrive if apple is removed Schedule appleRots after 10 turns 
+```md
+Schedule ratsArrive after 3 turns
+Cancel ratsArrive if apple is removed
+Schedule appleRots after 10 turns
+```
 
 ## Command Flow Effects
 
-md Stop processing command Continue to next matching command Run generic command afterward Prevent turn from being consumed Consume extra turn 
+```md
+Stop processing command
+Continue to next matching command
+Run generic command afterward
+Prevent turn from being consumed
+Consume extra turn
+```
 
 Examples:
 
-md Stop processing after custom apple-on-table behavior Run generic put command after setting flag Do not consume a turn for failed command 
+```md
+Stop processing after custom apple-on-table behavior
+Run generic put command after setting flag
+Do not consume a turn for failed command
+```
 
 ---
 
@@ -905,39 +1709,58 @@ Recommended order:
 
 Some commands should not be overridden by authors unless explicitly allowed:
 
-md help save load debug inventory settings 
+```md
+help
+save
+load
+debug
+inventory
+settings
+```
 
 ## Priority Examples
 
 ### Specific beats generic
 
-md put apple on table 
+```md
+put apple on table
+```
 
 Should beat:
 
-md put [any item] on [any surface] 
+```md
+put [any item] on [any surface]
+```
 
 ### Room-specific beats global
 
 In the kitchen:
 
-md listen 
+```md
+listen
+```
 
 Should trigger kitchen-specific ambience.
 
 Elsewhere:
 
-md listen 
+```md
+listen
+```
 
 May trigger generic listen behavior.
 
 ### Exact object match beats tag match
 
-md eat apple 
+```md
+eat apple
+```
 
 Should beat:
 
-md eat any food 
+```md
+eat any food
+```
 
 ---
 
@@ -951,7 +1774,13 @@ Available everywhere.
 
 Examples:
 
-md pray sing wait listen inventory 
+```md
+pray
+sing
+wait
+listen
+inventory
+```
 
 ## Room Commands
 
@@ -959,7 +1788,12 @@ Only available in a specific room.
 
 Examples:
 
-md touch mural listen at door open curtains crawl under bed 
+```md
+touch mural
+listen at door
+open curtains
+crawl under bed
+```
 
 ## Feature Commands
 
@@ -967,7 +1801,12 @@ Attached to room features.
 
 Examples:
 
-md examine table clean table move painting read inscription 
+```md
+examine table
+clean table
+move painting
+read inscription
+```
 
 ## Item Commands
 
@@ -975,7 +1814,12 @@ Attached to items.
 
 Examples:
 
-md eat apple light lantern shake bottle wind music box 
+```md
+eat apple
+light lantern
+shake bottle
+wind music box
+```
 
 ## NPC Commands
 
@@ -983,7 +1827,12 @@ Attached to NPCs.
 
 Examples:
 
-md ask cook about rats give apple to cook threaten guard comfort child 
+```md
+ask cook about rats
+give apple to cook
+threaten guard
+comfort child
+```
 
 ## Quest Commands
 
@@ -991,7 +1840,11 @@ Available only during specific quest states.
 
 Examples:
 
-md report back to captain pledge oath place crown on altar 
+```md
+report back to captain
+pledge oath
+place crown on altar
+```
 
 ---
 
@@ -1001,19 +1854,61 @@ The current system supports command connectors.
 
 Current examples:
 
-md on with to in into in front of 
+```md
+on
+with
+to
+in
+into
+in front of
+```
 
 We should expand supported connectors for authored commands.
 
 ## Recommended Connector List
 
-md on onto in into inside with using to at through under beneath behind beside near against from out of off over across between about 
+```md
+on
+onto
+in
+into
+inside
+with
+using
+to
+at
+through
+under
+beneath
+behind
+beside
+near
+against
+from
+out of
+off
+over
+across
+between
+about
+```
 
 ## Connector Examples
 
-md put apple on table place coin under rug use key with lock throw stone at window take key from drawer ask cook about rats pour water into basin hang coat on hook push table against door crawl through tunnel 
+```md
+put apple on table
+place coin under rug
+use key with lock
+throw stone at window
+take key from drawer
+ask cook about rats
+pour water into basin
+hang coat on hook
+push table against door
+crawl through tunnel
+```
 
-Connectors should be sorted longest-first, like aliases, so out of is checked before of, and in front of is checked before of.
+Connectors should be sorted longest-first, like aliases, so `out of` is checked before `of`, and `in front of` is checked before `of`.
 
 ---
 
@@ -1023,25 +1918,69 @@ Tags make authoring much more flexible.
 
 Entities should support tags:
 
-md food weapon key container surface flammable metal wooden fragile heavy npc animal rat lightSource valuable questItem 
+```md
+food
+weapon
+key
+container
+surface
+flammable
+metal
+wooden
+fragile
+heavy
+npc
+animal
+rat
+lightSource
+valuable
+questItem
+```
 
 ## Tag Conditions
 
-md Target has tag Object has tag Inventory contains item with tag Room contains item with tag NPC has item with tag 
+```md
+Target has tag
+Object has tag
+Inventory contains item with tag
+Room contains item with tag
+NPC has item with tag
+```
 
 ## Tag Effects
 
-md Remove all items with tag Move all items with tag Reveal all objects with tag Hide all objects with tag 
+```md
+Remove all items with tag
+Move all items with tag
+Reveal all objects with tag
+Hide all objects with tag
+```
 
 ## Scenario Example: Any Food Attracts Rats
 
 Instead of only apple:
 
-md Command: put [food] on table  Conditions: - object has tag food - target is kitchen table  Effects: - Place object on table - Set flag kitchen.foodOnTable true - Schedule ratsArrive after 3 turns 
+```md
+Command:
+put [food] on table
+
+Conditions:
+- object has tag food
+- target is kitchen table
+
+Effects:
+- Place object on table
+- Set flag kitchen.foodOnTable true
+- Schedule ratsArrive after 3 turns
+```
 
 This supports:
 
-md put apple on table put cheese on table put bread on table 
+```md
+put apple on table
+put cheese on table
+put bread on table
+```
 
 ---
 
@@ -1055,15 +1994,21 @@ Authors need a UI for conditional descriptions.
 
 Default:
 
-md The kitchen is cold and narrow. A scarred table sits beneath a dusty window. 
+```md
+The kitchen is cold and narrow. A scarred table sits beneath a dusty window.
+```
 
 If apple is on table:
 
-md The kitchen is cold and narrow. A red apple rests on the scarred table beneath the dusty window. 
+```md
+The kitchen is cold and narrow. A red apple rests on the scarred table beneath the dusty window.
+```
 
 If rats are present:
 
-md The kitchen is alive with movement. Rats swarm over the scarred table and vanish beneath the cabinets. 
+```md
+The kitchen is alive with movement. Rats swarm over the scarred table and vanish beneath the cabinets.
+```
 
 ## Description Variant Conditions
 
@@ -1073,7 +2018,18 @@ The first matching description is used.
 
 Example:
 
-md Kitchen description priority 100: If rats are present: "The kitchen is alive with movement..."  Kitchen description priority 50: If apple is on table: "A red apple rests on the scarred table..."  Kitchen description priority 0: Default description. 
+```md
+Kitchen description priority 100:
+If rats are present:
+"The kitchen is alive with movement..."
+
+Kitchen description priority 50:
+If apple is on table:
+"A red apple rests on the scarred table..."
+
+Kitchen description priority 0:
+Default description.
+```
 
 ---
 
@@ -1083,11 +2039,18 @@ Authors need control over what happens when a command matches but conditions fai
 
 Example:
 
-md unlock door with brass key 
+```md
+unlock door with brass key
+```
 
 Possible failures:
 
-md Player does not have brass key Door is already unlocked Door is not visible Wrong room 
+```md
+Player does not have brass key
+Door is already unlocked
+Door is not visible
+Wrong room
+```
 
 Each should be able to show a different message.
 
@@ -1095,11 +2058,22 @@ Each should be able to show a different message.
 
 An authored command can have multiple failure cases:
 
-md If player does not have brass key: - Message: "You do not have the brass key."  If door is already unlocked: - Message: "The cellar door is already unlocked."  If player is not in kitchen: - Message: "There is no cellar door here." 
+```md
+If player does not have brass key:
+- Message: "You do not have the brass key."
+
+If door is already unlocked:
+- Message: "The cellar door is already unlocked."
+
+If player is not in kitchen:
+- Message: "There is no cellar door here."
+```
 
 If no failure case matches:
 
-md Message: "That does not work." 
+```md
+Message: "That does not work."
+```
 
 ---
 
@@ -1107,7 +2081,13 @@ md Message: "That does not work."
 
 Success behavior should include:
 
-md Message Effects Whether command consumes a turn Whether command can happen again Whether generic command should also run 
+```md
+Message
+Effects
+Whether command consumes a turn
+Whether command can happen again
+Whether generic command should also run
+```
 
 ## Once-Only Commands
 
@@ -1115,15 +2095,22 @@ Some commands should only work once.
 
 Example:
 
-md take gem from statue 
+```md
+take gem from statue
+```
 
 After success:
 
-md Set flag statue.gemTaken true 
+```md
+Set flag statue.gemTaken true
+```
 
 Then future attempts:
 
-md If statue.gemTaken true: - Message: "The statue's eye socket is already empty." 
+```md
+If statue.gemTaken true:
+- Message: "The statue's eye socket is already empty."
+```
 
 ## Repeatable Commands
 
@@ -1131,7 +2118,9 @@ Some commands can happen repeatedly.
 
 Example:
 
-md listen 
+```md
+listen
+```
 
 May show a random message each time.
 
@@ -1143,7 +2132,23 @@ Authors need branching inside one command.
 
 The UI could support branches like:
 
-md When command matches:  Branch 1: If player has apple and table is empty: - Place apple on table - Schedule rats - Message: "You place the apple on the table."  Branch 2: If player has apple and table already has food: - Message: "There is already something on the table."  Branch 3: If player does not have apple: - Message: "You do not have the apple." 
+```md
+When command matches:
+
+Branch 1:
+If player has apple and table is empty:
+- Place apple on table
+- Schedule rats
+- Message: "You place the apple on the table."
+
+Branch 2:
+If player has apple and table already has food:
+- Message: "There is already something on the table."
+
+Branch 3:
+If player does not have apple:
+- Message: "You do not have the apple."
+```
 
 This prevents authors from needing three separate command rules.
 
@@ -1155,33 +2160,61 @@ Authors should be able to insert resolved object names into messages.
 
 Example:
 
-md You put {object.name} on {target.name}. 
+```md
+You put {object.name} on {target.name}.
+```
 
 For:
 
-md put apple on table 
+```md
+put apple on table
+```
 
 The message becomes:
 
-md You put the apple on the table. 
+```md
+You put the apple on the table.
+```
 
 ## Useful Message Variables
 
-md {object.name} {object.displayName} {target.name} {target.displayName} {npc.name} {room.name} {item.name} {connector} {rawCommand} {counter.guardSuspicion} 
+```md
+{object.name}
+{object.displayName}
+{target.name}
+{target.displayName}
+{npc.name}
+{room.name}
+{item.name}
+{connector}
+{rawCommand}
+{counter.guardSuspicion}
+```
 
 ## Article Formatting
 
 The engine already has article formatting like:
 
-md the apple the old table 
+```md
+the apple
+the old table
+```
 
 The message system should support:
 
-md {object.theName} {object.aName} {target.theName} {target.aName} 
+```md
+{object.theName}
+{object.aName}
+{target.theName}
+{target.aName}
+```
 
 Examples:
 
-md You put {object.theName} on {target.theName}. You see {object.aName}. 
+```md
+You put {object.theName} on {target.theName}.
+You see {object.aName}.
+```
 
 ---
 
@@ -1191,15 +2224,25 @@ Authors should be able to define random text responses.
 
 Example:
 
-md listen in forest 
+```md
+listen in forest
+```
 
 Messages:
 
-md - "Leaves whisper above you." - "A bird calls once, then falls silent." - "Branches creak in the wind." 
+```md
+- "Leaves whisper above you."
+- "A bird calls once, then falls silent."
+- "Branches creak in the wind."
+```
 
 Options:
 
-md Random each time Random without repeating until exhausted Weighted random 
+```md
+Random each time
+Random without repeating until exhausted
+Weighted random
+```
 
 ---
 
@@ -1209,15 +2252,35 @@ Not every command should consume a turn.
 
 ## Usually Consumes a Turn
 
-md move take put use wait unlock give eat attack 
+```md
+move
+take
+put
+use
+wait
+unlock
+give
+eat
+attack
+```
 
 ## Usually Does Not Consume a Turn
 
-md help inventory look examine failed commands debug commands settings 
+```md
+help
+inventory
+look
+examine
+failed commands
+debug commands
+settings
+```
 
 Authors should be able to configure:
 
-md Consumes turn: yes/no 
+```md
+Consumes turn: yes/no
+```
 
 This matters because scheduled events may fire after turns.
 
@@ -1227,7 +2290,7 @@ This matters because scheduled events may fire after turns.
 
 After each turn-consuming command:
 
-1. Increment turnCount.
+1. Increment `turnCount`.
 2. Decrease remaining turns on scheduled events.
 3. Check event conditions.
 4. Fire ready events.
@@ -1241,11 +2304,15 @@ Some events should only show messages if the player can witness them.
 
 Example:
 
-md Rats arrive in kitchen. 
+```md
+Rats arrive in kitchen.
+```
 
 If player is in kitchen:
 
-md "You hear skittering under the floorboards. Rats pour into the kitchen." 
+```md
+"You hear skittering under the floorboards. Rats pour into the kitchen."
+```
 
 If player is not in kitchen:
 
@@ -1267,23 +2334,48 @@ The purpose is to stress-test the design.
 
 Player command:
 
-md put apple on table 
+```md
+put apple on table
+```
 
 Conditions:
 
-md Player has apple Player is in kitchen Table is visible Apple is not already on table 
+```md
+Player has apple
+Player is in kitchen
+Table is visible
+Apple is not already on table
+```
 
 Effects:
 
-md Remove apple from inventory Place apple on kitchen table Set kitchen.appleOnTable true Schedule ratsArrive after 3 turns Message: "You set the apple on the table." 
+```md
+Remove apple from inventory
+Place apple on kitchen table
+Set kitchen.appleOnTable true
+Schedule ratsArrive after 3 turns
+Message: "You set the apple on the table."
+```
 
 Scheduled event:
 
-md ratsArrive After 3 turns Only if apple is still on kitchen table Then: - Move rats to kitchen - Set kitchen.ratsPresent true - Message if player is in kitchen: "Rats pour from beneath the cabinets, drawn by the apple." 
+```md
+ratsArrive
+After 3 turns
+Only if apple is still on kitchen table
+Then:
+- Move rats to kitchen
+- Set kitchen.ratsPresent true
+- Message if player is in kitchen: "Rats pour from beneath the cabinets, drawn by the apple."
+```
 
 Cancel if:
 
-md Apple is removed from table Table is cleaned Rats are already present 
+```md
+Apple is removed from table
+Table is cleaned
+Rats are already present
+```
 
 ---
 
@@ -1291,15 +2383,25 @@ md Apple is removed from table Table is cleaned Rats are already present
 
 Player command:
 
-md take apple from table 
+```md
+take apple from table
+```
 
 Conditions:
 
-md Apple is on kitchen table Rats have not arrived 
+```md
+Apple is on kitchen table
+Rats have not arrived
+```
 
 Effects:
 
-md Move apple to inventory Set kitchen.appleOnTable false Cancel ratsArrive Message: "You take the apple back. The scratching in the walls fades." 
+```md
+Move apple to inventory
+Set kitchen.appleOnTable false
+Cancel ratsArrive
+Message: "You take the apple back. The scratching in the walls fades."
+```
 
 ---
 
@@ -1307,15 +2409,26 @@ md Move apple to inventory Set kitchen.appleOnTable false Cancel ratsArrive Mess
 
 Player command:
 
-md put cheese on table put bread on table put apple on table 
+```md
+put cheese on table
+put bread on table
+put apple on table
+```
 
 Conditions:
 
-md Object has tag food Target is kitchen table 
+```md
+Object has tag food
+Target is kitchen table
+```
 
 Effects:
 
-md Place object on table Set kitchen.foodOnTable true Schedule ratsArrive after 3 turns 
+```md
+Place object on table
+Set kitchen.foodOnTable true
+Schedule ratsArrive after 3 turns
+```
 
 ---
 
@@ -1323,15 +2436,24 @@ md Place object on table Set kitchen.foodOnTable true Schedule ratsArrive after 
 
 Player command:
 
-md put rotten apple on table 
+```md
+put rotten apple on table
+```
 
 Conditions:
 
-md Object has tag rottenFood Target is kitchen table 
+```md
+Object has tag rottenFood
+Target is kitchen table
+```
 
 Effects:
 
-md Place rotten apple on table Schedule largeRatSwarm after 2 turns Message: "The rotten apple lands with a soft, unpleasant sound." 
+```md
+Place rotten apple on table
+Schedule largeRatSwarm after 2 turns
+Message: "The rotten apple lands with a soft, unpleasant sound."
+```
 
 ---
 
@@ -1339,15 +2461,27 @@ md Place rotten apple on table Schedule largeRatSwarm after 2 turns Message: "Th
 
 Player command:
 
-md clean table 
+```md
+clean table
+```
 
 Conditions:
 
-md Player has rag Player is in kitchen Table has food 
+```md
+Player has rag
+Player is in kitchen
+Table has food
+```
 
 Effects:
 
-md Remove food from table Set kitchen.foodOnTable false Set table.clean true Cancel ratsArrive Message: "You clean the table. Whatever was coming loses interest." 
+```md
+Remove food from table
+Set kitchen.foodOnTable false
+Set table.clean true
+Cancel ratsArrive
+Message: "You clean the table. Whatever was coming loses interest."
+```
 
 ---
 
@@ -1355,15 +2489,25 @@ md Remove food from table Set kitchen.foodOnTable false Set table.clean true Can
 
 Scheduled or player-triggered:
 
-md ratsArrive 
+```md
+ratsArrive
+```
 
 Conditions:
 
-md Cook is in kitchen Rats are present 
+```md
+Cook is in kitchen
+Rats are present
+```
 
 Effects:
 
-md Move cook to pantry Set cook.mood frightened Set cook.trust -10 Message: "The cook shrieks and flees into the pantry." 
+```md
+Move cook to pantry
+Set cook.mood frightened
+Set cook.trust -10
+Message: "The cook shrieks and flees into the pantry."
+```
 
 ---
 
@@ -1371,15 +2515,24 @@ md Move cook to pantry Set cook.mood frightened Set cook.trust -10 Message: "The
 
 Event:
 
-md ratsArrive 
+```md
+ratsArrive
+```
 
 Conditions:
 
-md Guard is in kitchen Rats are present 
+```md
+Guard is in kitchen
+Rats are present
+```
 
 Effects:
 
-md Set guard.distracted true Unlock north exit Message: "The guard curses and turns toward the rats, leaving the north door unattended." 
+```md
+Set guard.distracted true
+Unlock north exit
+Message: "The guard curses and turns toward the rats, leaving the north door unattended."
+```
 
 ---
 
@@ -1387,19 +2540,38 @@ md Set guard.distracted true Unlock north exit Message: "The guard curses and tu
 
 Player command:
 
-md unlock cellar door with brass key 
+```md
+unlock cellar door with brass key
+```
 
 Conditions:
 
-md Player has brass key Cellar door is locked Player is in kitchen 
+```md
+Player has brass key
+Cellar door is locked
+Player is in kitchen
+```
 
 Effects:
 
-md Unlock cellar door Set cellarDoor.unlocked true Message: "The brass key turns with a tired click." 
+```md
+Unlock cellar door
+Set cellarDoor.unlocked true
+Message: "The brass key turns with a tired click."
+```
 
 Failure cases:
 
-md If player does not have brass key: "You do not have the brass key."  If cellar door is already unlocked: "The cellar door is already unlocked."  If player is not in kitchen: "There is no cellar door here." 
+```md
+If player does not have brass key:
+"You do not have the brass key."
+
+If cellar door is already unlocked:
+"The cellar door is already unlocked."
+
+If player is not in kitchen:
+"There is no cellar door here."
+```
 
 ---
 
@@ -1407,15 +2579,25 @@ md If player does not have brass key: "You do not have the brass key."  If cella
 
 Player command:
 
-md unlock cellar door with iron key 
+```md
+unlock cellar door with iron key
+```
 
 Conditions:
 
-md Player has iron key Cellar door is locked Iron key is fragile 
+```md
+Player has iron key
+Cellar door is locked
+Iron key is fragile
+```
 
 Effects:
 
-md Destroy iron key Set cellarDoor.jammed true Message: "The iron key snaps in the lock." 
+```md
+Destroy iron key
+Set cellarDoor.jammed true
+Message: "The iron key snaps in the lock."
+```
 
 ---
 
@@ -1423,19 +2605,37 @@ md Destroy iron key Set cellarDoor.jammed true Message: "The iron key snaps in t
 
 Player command:
 
-md light lantern 
+```md
+light lantern
+```
 
 Conditions:
 
-md Player has lantern Lantern is unlit Lantern fuel greater than 0 
+```md
+Player has lantern
+Lantern is unlit
+Lantern fuel greater than 0
+```
 
 Effects:
 
-md Set lantern.lit true Schedule lanternBurnsOut after 5 turns Message: "The lantern catches with a warm glow." 
+```md
+Set lantern.lit true
+Schedule lanternBurnsOut after 5 turns
+Message: "The lantern catches with a warm glow."
+```
 
 Scheduled event:
 
-md lanternBurnsOut After 5 turns Only if lantern is lit Then: - Set lantern.lit false - Set lantern fuel to 0 - Message: "The lantern gutters and dies." 
+```md
+lanternBurnsOut
+After 5 turns
+Only if lantern is lit
+Then:
+- Set lantern.lit false
+- Set lantern fuel to 0
+- Message: "The lantern gutters and dies."
+```
 
 ---
 
@@ -1443,27 +2643,44 @@ md lanternBurnsOut After 5 turns Only if lantern is lit Then: - Set lantern.lit 
 
 Player command:
 
-md read inscription 
+```md
+read inscription
+```
 
 Conditions:
 
-md Player is in chapel Inscription is visible 
+```md
+Player is in chapel
+Inscription is visible
+```
 
 Effects:
 
-md Set inscription.read true Add known topic password:mothmark Message: "The inscription reads: Speak Mothmark where the stone has no shadow." 
+```md
+Set inscription.read true
+Add known topic password:mothmark
+Message: "The inscription reads: Below hunger, teeth gather."
+```
 
 Later:
 
-md say mothmark 
+```md
+say mothmark
+```
 
 Conditions:
 
-md Player is in shadowless chamber inscription.read true 
+```md
+Player is in shadowless chamber
+inscription.read true
+```
 
 Effects:
 
-md Reveal hidden door Message: "The wall exhales. A hidden door opens." 
+```md
+Reveal hidden door
+Message: "The wall exhales. A hidden door opens."
+```
 
 ---
 
@@ -1471,15 +2688,21 @@ md Reveal hidden door Message: "The wall exhales. A hidden door opens."
 
 Player command:
 
-md say mothmark 
+```md
+say mothmark
+```
 
 Conditions:
 
-md Player is not in shadowless chamber 
+```md
+Player is not in shadowless chamber
+```
 
 Effects:
 
-md Message: "The word feels heavy, but nothing answers." 
+```md
+Message: "The word feels heavy, but nothing answers."
+```
 
 ---
 
@@ -1487,15 +2710,24 @@ md Message: "The word feels heavy, but nothing answers."
 
 Player command:
 
-md touch mirror 
+```md
+touch mirror
+```
 
 Branch 1:
 
-md If mirror has been examined: - Reveal hidden handprint - Message: "Because you know where to press, the mirror slides aside." 
+```md
+If mirror has been examined:
+- Reveal hidden handprint
+- Message: "Because you know where to press, the mirror slides aside."
+```
 
 Branch 2:
 
-md If mirror has not been examined: - Message: "Your fingers leave streaks on the cold glass." 
+```md
+If mirror has not been examined:
+- Message: "Your fingers leave streaks on the cold glass."
+```
 
 ---
 
@@ -1503,15 +2735,25 @@ md If mirror has not been examined: - Message: "Your fingers leave streaks on th
 
 Player command:
 
-md break mirror with hammer 
+```md
+break mirror with hammer
+```
 
 Conditions:
 
-md Player has hammer Mirror is intact 
+```md
+Player has hammer
+Mirror is intact
+```
 
 Effects:
 
-md Set mirror.broken true Reveal item silverShard Change room description variant Message: "The mirror breaks into bright, accusing pieces." 
+```md
+Set mirror.broken true
+Reveal item silverShard
+Change room description variant
+Message: "The mirror breaks into bright, accusing pieces."
+```
 
 ---
 
@@ -1519,27 +2761,44 @@ md Set mirror.broken true Reveal item silverShard Change room description varian
 
 Player command:
 
-md give bone to dog 
+```md
+give bone to dog
+```
 
 Conditions:
 
-md Player has bone Dog is in current room Dog mood is hungry 
+```md
+Player has bone
+Dog is in current room
+Dog mood is hungry
+```
 
 Effects:
 
-md Remove bone from inventory Set dog mood friendly Increase dog trust by 50 Message: "The dog takes the bone and thumps its tail against the floor." 
+```md
+Remove bone from inventory
+Set dog mood friendly
+Increase dog trust by 50
+Message: "The dog takes the bone and thumps its tail against the floor."
+```
 
 Later:
 
-md go north 
+```md
+go north
+```
 
 Condition:
 
-md Dog mood friendly 
+```md
+Dog mood friendly
+```
 
 Effect:
 
-md Dog allows passage 
+```md
+Dog allows passage
+```
 
 ---
 
@@ -1547,15 +2806,24 @@ md Dog allows passage
 
 Player command:
 
-md give apple to guard 
+```md
+give apple to guard
+```
 
 Conditions:
 
-md Guard is in current room Guard does not want apple 
+```md
+Guard is in current room
+Guard does not want apple
+```
 
 Effects:
 
-md Decrease guard trust by 5 Increase guard suspicion by 10 Message: "The guard looks at the apple, then back at you. 'Why?'" 
+```md
+Decrease guard trust by 5
+Increase guard suspicion by 10
+Message: "The guard looks at the apple, then back at you. 'Why?'"
+```
 
 ---
 
@@ -1563,15 +2831,28 @@ md Decrease guard trust by 5 Increase guard suspicion by 10 Message: "The guard 
 
 Player command:
 
-md leave coin on shrine 
+```md
+leave coin on shrine
+```
 
 Effects:
 
-md Place coin on shrine Schedule shrineSpiritTakesCoin after 2 turns Message: "You leave the coin on the shrine." 
+```md
+Place coin on shrine
+Schedule shrineSpiritTakesCoin after 2 turns
+Message: "You leave the coin on the shrine."
+```
 
 Event:
 
-md shrineSpiritTakesCoin Only if coin is still on shrine Then: - Destroy coin - Set shrine.blessed true - Message if player is in shrine: "The coin vanishes with a soft chime." 
+```md
+shrineSpiritTakesCoin
+Only if coin is still on shrine
+Then:
+- Destroy coin
+- Set shrine.blessed true
+- Message if player is in shrine: "The coin vanishes with a soft chime."
+```
 
 ---
 
@@ -1579,15 +2860,28 @@ md shrineSpiritTakesCoin Only if coin is still on shrine Then: - Destroy coin - 
 
 Player command:
 
-md break window 
+```md
+break window
+```
 
 Effects:
 
-md Set window.broken true Increase guard.suspicion by 30 Schedule guardInvestigates after 2 turns Message: "Glass crashes across the floor." 
+```md
+Set window.broken true
+Increase guard.suspicion by 30
+Schedule guardInvestigates after 2 turns
+Message: "Glass crashes across the floor."
+```
 
 Event:
 
-md guardInvestigates Only if guard is not distracted Then: - Move guard to current room or window room - Message: "Heavy boots approach." 
+```md
+guardInvestigates
+Only if guard is not distracted
+Then:
+- Move guard to current room or window room
+- Message: "Heavy boots approach."
+```
 
 ---
 
@@ -1595,19 +2889,33 @@ md guardInvestigates Only if guard is not distracted Then: - Move guard to curre
 
 Player command:
 
-md hide letter under rug 
+```md
+hide letter under rug
+```
 
 Conditions:
 
-md Player has letter Rug is in current room 
+```md
+Player has letter
+Rug is in current room
+```
 
 Effects:
 
-md Move letter under rug Set letter.hidden true Message: "You slip the letter beneath the rug." 
+```md
+Move letter under rug
+Set letter.hidden true
+Message: "You slip the letter beneath the rug."
+```
 
 Later NPC search:
 
-md If letter is hidden under rug and guard search skill > 50: - Guard finds letter Else: - Guard misses letter 
+```md
+If letter is hidden under rug and guard search skill > 50:
+- Guard finds letter
+Else:
+- Guard misses letter
+```
 
 ---
 
@@ -1615,15 +2923,29 @@ md If letter is hidden under rug and guard search skill > 50: - Guard finds lett
 
 Player command:
 
-md wait 
+```md
+wait
+```
 
 Effects:
 
-md Increase currentRoom.waitCount by 1 
+```md
+Increase currentRoom.waitCount by 1
+```
 
 Branches:
 
-md If waitCount is 1: "Time passes."  If waitCount is 3: "You hear something moving nearby."  If waitCount is 5: "Something enters the room." Move shadowNpc to current room 
+```md
+If waitCount is 1:
+"Time passes."
+
+If waitCount is 3:
+"You hear something moving nearby."
+
+If waitCount is 5:
+"Something enters the room."
+Move shadowNpc to current room
+```
 
 ---
 
@@ -1631,21 +2953,35 @@ md If waitCount is 1: "Time passes."  If waitCount is 3: "You hear something mov
 
 Commands:
 
-md light candle ring bell say mothmark 
+```md
+light candle
+ring bell
+say mothmark
+```
 
 The engine tracks recent command history.
 
 Conditions:
 
-md Player performed commands in required order within last 5 turns 
+```md
+Player performed commands in required order within last 5 turns
+```
 
 Effects:
 
-md Open ritual door Message: "The candle bends toward the bell. The door opens." 
+```md
+Open ritual door
+Message: "The candle bends toward the bell. The door opens."
+```
 
 Failure:
 
-md If sequence broken: - Extinguish candle - Reset ritual progress - Message: "The ritual collapses into silence." 
+```md
+If sequence broken:
+- Extinguish candle
+- Reset ritual progress
+- Message: "The ritual collapses into silence."
+```
 
 ---
 
@@ -1653,23 +2989,36 @@ md If sequence broken: - Extinguish candle - Reset ritual progress - Message: "T
 
 Player command:
 
-md examine bookshelf 
+```md
+examine bookshelf
+```
 
 Effects:
 
-md Set bookshelf.examined true Reveal object looseBook Message: "One book sits slightly forward from the others." 
+```md
+Set bookshelf.examined true
+Reveal object looseBook
+Message: "One book sits slightly forward from the others."
+```
 
 Then:
 
-md pull loose book 
+```md
+pull loose book
+```
 
 Conditions:
 
-md looseBook is visible 
+```md
+looseBook is visible
+```
 
 Effects:
 
-md Reveal hidden passage Message: "The book tilts. Somewhere inside the wall, a latch releases." 
+```md
+Reveal hidden passage
+Message: "The book tilts. Somewhere inside the wall, a latch releases."
+```
 
 ---
 
@@ -1677,27 +3026,44 @@ md Reveal hidden passage Message: "The book tilts. Somewhere inside the wall, a 
 
 Player command:
 
-md open drawer 
+```md
+open drawer
+```
 
 Effects:
 
-md Set drawer.open true Reveal drawer contents Message: "The drawer slides open." 
+```md
+Set drawer.open true
+Reveal drawer contents
+Message: "The drawer slides open."
+```
 
 Player command:
 
-md take key from drawer 
+```md
+take key from drawer
+```
 
 Conditions:
 
-md Drawer is open Key is inside drawer 
+```md
+Drawer is open
+Key is inside drawer
+```
 
 Effects:
 
-md Move key to inventory Message: "You take the key from the drawer." 
+```md
+Move key to inventory
+Message: "You take the key from the drawer."
+```
 
 Failure:
 
-md If drawer is closed: "The drawer is closed." 
+```md
+If drawer is closed:
+"The drawer is closed."
+```
 
 ---
 
@@ -1705,19 +3071,30 @@ md If drawer is closed: "The drawer is closed."
 
 Player command:
 
-md take nail 
+```md
+take nail
+```
 
 Failure:
 
-md If player does not have pliers: "The nail is wedged too deeply to pull free." 
+```md
+If player does not have pliers:
+"The nail is wedged too deeply to pull free."
+```
 
 Success:
 
-md take nail with pliers 
+```md
+take nail with pliers
+```
 
 Effects:
 
-md Add nail to inventory Set board.hasNail false Message: "You work the nail loose with the pliers." 
+```md
+Add nail to inventory
+Set board.hasNail false
+Message: "You work the nail loose with the pliers."
+```
 
 ---
 
@@ -1725,19 +3102,34 @@ md Add nail to inventory Set board.hasNail false Message: "You work the nail loo
 
 Player command:
 
-md light curtain with candle 
+```md
+light curtain with candle
+```
 
 Conditions:
 
-md Curtain is flammable Candle is lit 
+```md
+Curtain is flammable
+Candle is lit
+```
 
 Effects:
 
-md Set curtain.onFire true Schedule fireSpreads after 2 turns Message: "The curtain catches quickly." 
+```md
+Set curtain.onFire true
+Schedule fireSpreads after 2 turns
+Message: "The curtain catches quickly."
+```
 
 Event:
 
-md fireSpreads If curtain.onFire true: - Set room.onFire true - Damage exits or block path - Message: "Fire crawls across the room." 
+```md
+fireSpreads
+If curtain.onFire true:
+- Set room.onFire true
+- Damage exits or block path
+- Message: "Fire crawls across the room."
+```
 
 ---
 
@@ -1745,19 +3137,31 @@ md fireSpreads If curtain.onFire true: - Set room.onFire true - Damage exits or 
 
 Event:
 
-md stormStarts After 10 turns 
+```md
+stormStarts
+After 10 turns
+```
 
 Effects:
 
-md Set world.stormStarted true Change outdoor room descriptions Lock or make dangerous some exits Message if outdoors: "Rain begins to hammer the ground." 
+```md
+Set world.stormStarted true
+Change outdoor room descriptions
+Lock or make dangerous some exits
+Message if outdoors: "Rain begins to hammer the ground."
+```
 
 Command interaction:
 
-md go north 
+```md
+go north
+```
 
 If stormStarted and path is flooded:
 
-md "You cannot cross the flooded path." 
+```md
+"You cannot cross the flooded path."
+```
 
 ---
 
@@ -1765,15 +3169,28 @@ md "You cannot cross the flooded path."
 
 Player command:
 
-md place crown on altar 
+```md
+place crown on altar
+```
 
 Conditions:
 
-md Player has crown Player is in throneRoom Altar is empty 
+```md
+Player has crown
+Player is in throneRoom
+Altar is empty
+```
 
 Effects:
 
-md Remove crown from inventory Place crown on altar Set throneRoom.restored true Change room description Reveal east exit Message: "The room seems to remember that it was once beautiful." 
+```md
+Remove crown from inventory
+Place crown on altar
+Set throneRoom.restored true
+Change room description
+Reveal east exit
+Message: "The room seems to remember that it was once beautiful."
+```
 
 ---
 
@@ -1781,15 +3198,24 @@ md Remove crown from inventory Place crown on altar Set throneRoom.restored true
 
 Player command:
 
-md take sword 
+```md
+take sword
+```
 
 Branch 1:
 
-md If player has oathAccepted: - Add sword to inventory - Message: "The sword comes free." 
+```md
+If player has oathAccepted:
+- Add sword to inventory
+- Message: "The sword comes free."
+```
 
 Branch 2:
 
-md If player does not have oathAccepted: - Message: "The sword will not move." 
+```md
+If player does not have oathAccepted:
+- Message: "The sword will not move."
+```
 
 ---
 
@@ -1797,15 +3223,25 @@ md If player does not have oathAccepted: - Message: "The sword will not move."
 
 Player command:
 
-md eat mushroom 
+```md
+eat mushroom
+```
 
 Conditions:
 
-md Player has mushroom Mushroom has tag poisonous 
+```md
+Player has mushroom
+Mushroom has tag poisonous
+```
 
 Effects:
 
-md Remove mushroom from inventory Set player.poisoned true Schedule poisonWorsens after 3 turns Message: "The mushroom tastes like rainwater and pennies." 
+```md
+Remove mushroom from inventory
+Set player.poisoned true
+Schedule poisonWorsens after 3 turns
+Message: "The mushroom tastes like rainwater and pennies."
+```
 
 ---
 
@@ -1813,23 +3249,34 @@ md Remove mushroom from inventory Set player.poisoned true Schedule poisonWorsen
 
 Player command:
 
-md wear mask 
+```md
+wear mask
+```
 
 Effects:
 
-md Set mask.worn true Message: "The mask settles over your face." 
+```md
+Set mask.worn true
+Message: "The mask settles over your face."
+```
 
 Later:
 
-md talk to spirits 
+```md
+talk to spirits
+```
 
 Condition:
 
-md mask.worn true 
+```md
+mask.worn true
+```
 
 Effects:
 
-md Start spirit dialogue 
+```md
+Start spirit dialogue
+```
 
 ---
 
@@ -1837,15 +3284,23 @@ md Start spirit dialogue
 
 Player command:
 
-md approach statue 
+```md
+approach statue
+```
 
 Branch 1:
 
-md If player has silverShard: - Statue speaks 
+```md
+If player has silverShard:
+- Statue speaks
+```
 
 Branch 2:
 
-md If player does not have silverShard: - Statue remains silent 
+```md
+If player does not have silverShard:
+- Statue remains silent
+```
 
 ---
 
@@ -1853,19 +3308,37 @@ md If player does not have silverShard: - Statue remains silent
 
 Player command:
 
-md open moon door 
+```md
+open moon door
+```
 
 Conditions:
 
-md Moon gem is in socket Lantern is lit Player has read inscription 
+```md
+Moon gem is in socket
+Lantern is lit
+Player has read inscription
+```
 
 Effects:
 
-md Open moon door Message: "Moonlight spills through the seam as the door opens." 
+```md
+Open moon door
+Message: "Moonlight spills through the seam as the door opens."
+```
 
 Failure messages:
 
-md If moon gem is missing: "The door's empty socket watches you."  If lantern is unlit: "The symbols are too dark to read."  If inscription has not been read: "You do not understand the markings." 
+```md
+If moon gem is missing:
+"The door's empty socket watches you."
+
+If lantern is unlit:
+"The symbols are too dark to read."
+
+If inscription has not been read:
+"You do not understand the markings."
+```
 
 ---
 
@@ -1873,11 +3346,19 @@ md If moon gem is missing: "The door's empty socket watches you."  If lantern is
 
 Player command:
 
-md take idol 
+```md
+take idol
+```
 
 Effects:
 
-md Add idol to inventory Set temple.idolTaken true Set priest.hostile true Schedule priestArrives after 2 turns Message: "The idol is heavier than it looks." 
+```md
+Add idol to inventory
+Set temple.idolTaken true
+Set priest.hostile true
+Schedule priestArrives after 2 turns
+Message: "The idol is heavier than it looks."
+```
 
 ---
 
@@ -1885,15 +3366,24 @@ md Add idol to inventory Set temple.idolTaken true Set priest.hostile true Sched
 
 Player command:
 
-md push crate 
+```md
+push crate
+```
 
 Conditions:
 
-md Crate is in cellar Crate has not been moved 
+```md
+Crate is in cellar
+Crate has not been moved
+```
 
 Effects:
 
-md Set crate.moved true Reveal trapdoor Message: "The crate scrapes aside, revealing a trapdoor." 
+```md
+Set crate.moved true
+Reveal trapdoor
+Message: "The crate scrapes aside, revealing a trapdoor."
+```
 
 ---
 
@@ -1901,15 +3391,28 @@ md Set crate.moved true Reveal trapdoor Message: "The crate scrapes aside, revea
 
 Player command:
 
-md take ice key 
+```md
+take ice key
+```
 
 Effects:
 
-md Add iceKey to inventory Schedule iceKeyMelts after 6 turns Message: "The ice key numbs your hand." 
+```md
+Add iceKey to inventory
+Schedule iceKeyMelts after 6 turns
+Message: "The ice key numbs your hand."
+```
 
 Event:
 
-md iceKeyMelts Only if player has iceKey Then: - Remove iceKey from inventory - Add puddle to current room - Message: "The ice key melts away." 
+```md
+iceKeyMelts
+Only if player has iceKey
+Then:
+- Remove iceKey from inventory
+- Add puddle to current room
+- Message: "The ice key melts away."
+```
 
 ---
 
@@ -1917,23 +3420,34 @@ md iceKeyMelts Only if player has iceKey Then: - Remove iceKey from inventory - 
 
 Player command:
 
-md light lantern 
+```md
+light lantern
+```
 
 Effects:
 
-md Set lantern.lit true 
+```md
+Set lantern.lit true
+```
 
 Room description variant:
 
-md If lantern.lit true and player is in cellar: "You can now see scratches on the far wall." 
+```md
+If lantern.lit true and player is in cellar:
+"You can now see scratches on the far wall."
+```
 
 Available command:
 
-md examine scratches 
+```md
+examine scratches
+```
 
 Only if:
 
-md lantern.lit true 
+```md
+lantern.lit true
+```
 
 ---
 
@@ -1941,15 +3455,26 @@ md lantern.lit true
 
 Player command:
 
-md ring bell 
+```md
+ring bell
+```
 
 Effects:
 
-md Set bell.rung true Schedule echoReturns after 1 turn Message: "The bell rings once." 
+```md
+Set bell.rung true
+Schedule echoReturns after 1 turn
+Message: "The bell rings once."
+```
 
 Event:
 
-md echoReturns If player is in cavern: - Message: "The echo returns from the north." - Set cavern.echoDirection north 
+```md
+echoReturns
+If player is in cavern:
+- Message: "The echo returns from the north."
+- Set cavern.echoDirection north
+```
 
 ---
 
@@ -1957,23 +3482,35 @@ md echoReturns If player is in cavern: - Message: "The echo returns from the nor
 
 Player command:
 
-md ask cook about rats 
+```md
+ask cook about rats
+```
 
 Conditions:
 
-md Cook is in current room 
+```md
+Cook is in current room
+```
 
 Effects:
 
-md Set topic.rats.known true Message: "'They hate mint,' the cook says." 
+```md
+Set topic.rats.known true
+Message: "'They hate mint,' the cook says."
+```
 
 Later:
 
-md put mint on table 
+```md
+put mint on table
+```
 
 Effects:
 
-md Prevent ratsArrive Message: "The sharp scent of mint keeps the rats away." 
+```md
+Prevent ratsArrive
+Message: "The sharp scent of mint keeps the rats away."
+```
 
 ---
 
@@ -1981,27 +3518,40 @@ md Prevent ratsArrive Message: "The sharp scent of mint keeps the rats away."
 
 Scheduled repeating event:
 
-md guardPatrol Every 4 turns 
+```md
+guardPatrol
+Every 4 turns
+```
 
 Effects:
 
-md Move guard to next patrol room 
+```md
+Move guard to next patrol room
+```
 
 Command:
 
-md sneak through hall 
+```md
+sneak through hall
+```
 
 Condition:
 
-md Guard is not in hall 
+```md
+Guard is not in hall
+```
 
 Success:
 
-md Move player to hall 
+```md
+Move player to hall
+```
 
 Failure:
 
-md Guard catches player 
+```md
+Guard catches player
+```
 
 ---
 
@@ -2009,11 +3559,22 @@ md Guard catches player
 
 Player command:
 
-md open final door 
+```md
+open final door
+```
 
 Branches:
 
-md If player saved cook and rats are peaceful: - Ending: "The house wakes gently."  If player burned kitchen: - Ending: "Smoke follows you into the morning."  If guard is hostile: - Ending: "You escape, but not unseen." 
+```md
+If player saved cook and rats are peaceful:
+- Ending: "The house wakes gently."
+
+If player burned kitchen:
+- Ending: "Smoke follows you into the morning."
+
+If guard is hostile:
+- Ending: "You escape, but not unseen."
+```
 
 ---
 
@@ -2027,59 +3588,120 @@ Shows all authored commands.
 
 Columns:
 
-md Name Scope Trigger Priority Enabled 
+```md
+Name
+Scope
+Trigger
+Priority
+Enabled
+```
 
 Actions:
 
-md Create command Duplicate command Disable command Delete command Search commands Filter by room/item/NPC/global 
+```md
+Create command
+Duplicate command
+Disable command
+Delete command
+Search commands
+Filter by room/item/NPC/global
+```
 
 ## Command Editor Panel
 
 Sections:
 
-md Basics Triggers Targets Conditions Effects Failure cases Scheduling Advanced 
+```md
+Basics
+Triggers
+Targets
+Conditions
+Effects
+Failure cases
+Scheduling
+Advanced
+```
 
 ## Basics
 
 Fields:
 
-md Name ID Enabled Scope Priority Consumes turn Stop processing 
+```md
+Name
+ID
+Enabled
+Scope
+Priority
+Consumes turn
+Stop processing
+```
 
 ## Triggers
 
 Authors can add:
 
-md Aliases Example phrases Connector patterns Speech patterns 
+```md
+Aliases
+Example phrases
+Connector patterns
+Speech patterns
+```
 
 ## Target Binding
 
 For commands with object/target slots:
 
-md Object slot must match item Object slot must match tag Object slot must be in inventory Object slot must be visible Target slot must match feature Target slot must match surface Target slot must match NPC 
+```md
+Object slot must match item
+Object slot must match tag
+Object slot must be in inventory
+Object slot must be visible
+Target slot must match feature
+Target slot must match surface
+Target slot must match NPC
+```
 
 ## Conditions UI
 
 Should support groups:
 
-md All of these Any of these None of these 
+```md
+All of these
+Any of these
+None of these
+```
 
 Each condition should be a row:
 
-md [Type] [Entity] [Operator] [Value] 
+```md
+[Type] [Entity] [Operator] [Value]
+```
 
 Example:
 
-md Inventory | Player has item | Apple Flag | kitchen.ratsPresent | is false Location | Apple | is on | Table 
+```md
+Inventory | Player has item | Apple
+Flag | kitchen.ratsPresent | is false
+Location | Apple | is on | Table
+```
 
 ## Effects UI
 
 Effects should be added as rows:
 
-md [Effect Type] [Entity] [Value] 
+```md
+[Effect Type] [Entity] [Value]
+```
 
 Example:
 
-md Inventory | Remove item | Apple Location | Place item | Apple | on | Table Flag | Set | kitchen.appleOnTable | true Event | Schedule | ratsArrive | after 3 turns Message | Show | "You set the apple on the table." 
+```md
+Inventory | Remove item | Apple
+Location | Place item | Apple | on | Table
+Flag | Set | kitchen.appleOnTable | true
+Event | Schedule | ratsArrive | after 3 turns
+Message | Show | "You set the apple on the table."
+```
 
 ## Failure Cases UI
 
@@ -2087,7 +3709,11 @@ Failure cases should look like mini condition/effect blocks.
 
 Example:
 
-md Failure Case: If player does not have apple Then show: "You do not have the apple." 
+```md
+Failure Case:
+If player does not have apple
+Then show: "You do not have the apple."
+```
 
 ## Event Editor Panel
 
@@ -2095,7 +3721,15 @@ Scheduled events should be editable separately.
 
 Fields:
 
-md Event name Trigger timing Conditions Effects Cancel conditions Repeat behavior Message visibility 
+```md
+Event name
+Trigger timing
+Conditions
+Effects
+Cancel conditions
+Repeat behavior
+Message visibility
+```
 
 ---
 
@@ -2103,21 +3737,34 @@ md Event name Trigger timing Conditions Effects Cancel conditions Repeat behavio
 
 The world schema should eventually include:
 
-md authoredCommands authoredEvents items npcs objectStates descriptionVariants topics tags 
+```md
+authoredCommands
+authoredEvents
+items
+npcs
+objectStates
+descriptionVariants
+topics
+tags
+```
 
 ## Authored Commands Collection
 
-md world.authoredCommands 
+```md
+world.authoredCommands
+```
 
 Stores all commands created in the UI.
 
 ## Authored Events Collection
 
-md world.authoredEvents 
+```md
+world.authoredEvents
+```
 
 Stores reusable scheduled event definitions.
 
-Scheduled instances live in gameState.scheduledEvents.
+Scheduled instances live in `gameState.scheduledEvents`.
 
 ## Items
 
@@ -2125,7 +3772,17 @@ Items should become first-class world entities, not just inventory IDs.
 
 Each item should have:
 
-md id name aliases description tags portable visibleWhen usableWhen initialLocation 
+```md
+id
+name
+aliases
+description
+tags
+portable
+visibleWhen
+usableWhen
+initialLocation
+```
 
 ## Features
 
@@ -2133,23 +3790,55 @@ Room features already exist, but should support more fields.
 
 Recommended:
 
-md id name aliases description tags states commands visibleWhen 
+```md
+id
+name
+aliases
+description
+tags
+states
+commands
+visibleWhen
+```
 
 ## NPCs
 
 NPCs should support:
 
-md id name aliases description tags initialRoomId initialMood inventory commands dialogue 
+```md
+id
+name
+aliases
+description
+tags
+initialRoomId
+initialMood
+inventory
+commands
+dialogue
+```
 
 ## Topics
 
 For speech and dialogue:
 
-md id name aliases knownWhen responses 
+```md
+id
+name
+aliases
+knownWhen
+responses
+```
 
 Examples:
 
-md rats apple password guard storm 
+```md
+rats
+apple
+password
+guard
+storm
+```
 
 ---
 
@@ -2157,46 +3846,63 @@ md rats apple password guard storm
 
 The command engine should expose a unified command list made from:
 
-md coded commands authored commands compiled into command definitions 
+```md
+coded commands
+authored commands compiled into command definitions
+```
 
 Authored commands can be converted into safe command definitions internally.
 
-The developer can still define commands in commands.ts.
+The developer can still define commands in `commands.ts`.
 
 Authored commands should not replace coded commands directly unless their priority and settings allow it.
 
 ## Recommended Integration Strategy
 
-1. Keep commands.ts for coded commands.
-2. Add authoredCommands to world.
-3. Build a function that converts authored command data into CommandDefinition-like objects.
-4. Merge coded and authored commands before calling findCommand.
-5. Preserve coded customMatch for special cases like directions.
+1. Keep `commands.ts` for coded commands.
+2. Add `authoredCommands` to `world`.
+3. Build a function that converts authored command data into `CommandDefinition`-like objects.
+4. Merge coded and authored commands before calling `findCommand`.
+5. Preserve coded `customMatch` for special cases like directions.
 6. Add command priority support so exact authored interactions beat generic coded responses.
 7. Add target resolution before running authored effects.
-8. Add effect runner to mutate GameState.
+8. Add effect runner to mutate `GameState`.
 
 ---
 
 # Help Text
 
-The current buildHelpText uses coded command descriptions.
+The current `buildHelpText` uses coded command descriptions.
 
 For authored commands, help should be smarter.
 
 ## Help Should Include
 
-md Core commands Relevant room commands Relevant item commands Relevant NPC commands Known special commands 
+```md
+Core commands
+Relevant room commands
+Relevant item commands
+Relevant NPC commands
+Known special commands
+```
 
 ## Help Should Avoid Spoilers
 
 Commands should have help visibility settings:
 
-md always show show after discovered show when conditions pass never show developer only 
+```md
+always show
+show after discovered
+show when conditions pass
+never show
+developer only
+```
 
 Example:
 
-md "say mothmark" should not appear in help until the player has read the inscription. 
+```md
+"say mothmark" should not appear in help until the player has read the inscription.
+```
 
 ---
 
@@ -2206,13 +3912,49 @@ Because authored rules can get complicated, the editor should eventually include
 
 ## Useful Debug Views
 
-md Current flags Current counters Current room Inventory Item locations NPC locations Scheduled events Last parsed command Matched command rule Failed conditions Effects applied 
+```md
+Current flags
+Current counters
+Current room
+Inventory
+Item locations
+NPC locations
+Scheduled events
+Last parsed command
+Matched command rule
+Failed conditions
+Effects applied
+```
 
 ## Command Tester
 
 The editor should have a command test box:
 
-md Input: put apple on table  Parser result: Command: put Object: apple Connector: on Target: table  Matched rules: 1. Put Apple On Table 2. Generic Put  Condition result: Player has apple: true Current room is kitchen: true Table visible: true  Effects preview: Remove apple from inventory Place apple on table Schedule ratsArrive after 3 turns Show message 
+```md
+Input:
+put apple on table
+
+Parser result:
+Command: put
+Object: apple
+Connector: on
+Target: table
+
+Matched rules:
+1. Put Apple On Table
+2. Generic Put
+
+Condition result:
+Player has apple: true
+Current room is kitchen: true
+Table visible: true
+
+Effects preview:
+Remove apple from inventory
+Place apple on table
+Schedule ratsArrive after 3 turns
+Show message
+```
 
 This will be extremely useful, especially once authors build many interactions.
 
@@ -2224,13 +3966,30 @@ The editor should prevent invalid authored commands.
 
 ## Validation Rules
 
-md Every command must have a name Every command must have at least one trigger Every referenced room/item/NPC/feature must exist Every scheduled event ID must exist Every condition must be complete Every effect must be complete No duplicate IDs No circular event loops without repeat limits No unreachable command warnings No ambiguous target warnings where possible 
+```md
+Every command must have a name
+Every command must have at least one trigger
+Every referenced room/item/NPC/feature must exist
+Every scheduled event ID must exist
+Every condition must be complete
+Every effect must be complete
+No duplicate IDs
+No circular event loops without repeat limits
+No unreachable command warnings
+No ambiguous target warnings where possible
+```
 
 ## Warnings
 
 Examples:
 
-md This command references an item that does not exist. This event schedules itself every turn forever. This command can never run because its conditions conflict. This command has lower priority than a broader command and may never be reached. This message uses {object.name}, but the command has no object target. 
+```md
+This command references an item that does not exist.
+This event schedules itself every turn forever.
+This command can never run because its conditions conflict.
+This command has lower priority than a broader command and may never be reached.
+This message uses {object.name}, but the command has no object target.
+```
 
 ---
 
@@ -2242,19 +4001,55 @@ A strong first version would support:
 
 ## GameState Additions
 
-md turnCount itemLocations scheduledEvents counters 
+```md
+turnCount
+itemLocations
+scheduledEvents
+counters
+```
 
 ## Authored Command Features
 
-md Aliases Connectors Exact item/feature/NPC matching Current room conditions Flag conditions Inventory conditions Item location conditions Basic effects Scheduled events after N turns Failure messages Priority Consumes turn 
+```md
+Aliases
+Connectors
+Exact item/feature/NPC matching
+Current room conditions
+Flag conditions
+Inventory conditions
+Item location conditions
+Basic effects
+Scheduled events after N turns
+Failure messages
+Priority
+Consumes turn
+```
 
 ## First Effects
 
-md Show message Set flag Add/remove inventory item Move item to location Schedule event Cancel event Move NPC to room Reveal/hide feature Open/close/lock/unlock object 
+```md
+Show message
+Set flag
+Add/remove inventory item
+Move item to location
+Schedule event
+Cancel event
+Move NPC to room
+Reveal/hide feature
+Open/close/lock/unlock object
+```
 
 ## First Scenarios to Support
 
-md put apple on table attracts rats remove apple cancels rats unlock door with key read inscription unlocks password give item to NPC changes mood light lantern burns out after turns push crate reveals trapdoor 
+```md
+put apple on table attracts rats
+remove apple cancels rats
+unlock door with key
+read inscription unlocks password
+give item to NPC changes mood
+light lantern burns out after turns
+push crate reveals trapdoor
+```
 
 This would give us a powerful foundation without overbuilding.
 
@@ -2264,11 +4059,19 @@ This would give us a powerful foundation without overbuilding.
 
 Possible names for the author-facing system:
 
-md Command Rules Story Rules Interaction Rules World Rules Action Rules 
+```md
+Command Rules
+Story Rules
+Interaction Rules
+World Rules
+Action Rules
+```
 
 Recommended name:
 
-md Interaction Rules 
+```md
+Interaction Rules
+```
 
 Why:
 
@@ -2280,21 +4083,37 @@ Why:
 
 Examples:
 
-md Create Interaction Rule Edit Interaction Rule Rule Conditions Rule Effects Rule Priority 
+```md
+Create Interaction Rule
+Edit Interaction Rule
+Rule Conditions
+Rule Effects
+Rule Priority
+```
 
 ---
 
 # Final Recommendation
 
-Build the system around Interaction Rules.
+Build the system around **Interaction Rules**.
 
 Each rule is:
 
-md Trigger + Conditions + Effects 
+```md
+Trigger + Conditions + Effects
+```
 
 Use the existing command parser as the foundation, then add:
 
-md Target resolution Authored command definitions Condition evaluator Effect runner Scheduled event processor Expanded GameState Editor UI for rules 
+```md
+Target resolution
+Authored command definitions
+Condition evaluator
+Effect runner
+Scheduled event processor
+Expanded GameState
+Editor UI for rules
+```
 
 The apple-on-table-rats scenario should be treated as the benchmark feature.
 
@@ -2302,7 +4121,15 @@ If the system can cleanly support that scenario, including cancellation, delayed
 
 The target design should let an author express:
 
-md When the player puts food on the kitchen table, if rats are not already present, place the food on the table, remember that food is there, and after 3 turns, if the food is still there, bring rats into the kitchen. 
+```md
+When the player puts food on the kitchen table,
+if rats are not already present,
+place the food on the table,
+remember that food is there,
+and after 3 turns,
+if the food is still there,
+bring rats into the kitchen.
+```
 
 Without writing code.
 
