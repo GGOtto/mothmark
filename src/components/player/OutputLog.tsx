@@ -1,3 +1,6 @@
+"use client";
+
+import {useEffect, useRef} from "react";
 import type {GameMessage} from "../../engine/gameState";
 
 type OutputLogProps = {
@@ -12,8 +15,16 @@ function getMessageClassName(type: GameMessage["type"]) {
 }
 
 export function OutputLog({messages}: OutputLogProps) {
+	const bottomRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		bottomRef.current?.scrollIntoView({
+			block: "end",
+		});
+	}, [messages]);
+
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex w-full flex-col gap-4">
 			{messages.map((message) => (
 				<p
 					key={message.id}
@@ -22,6 +33,8 @@ export function OutputLog({messages}: OutputLogProps) {
 					{message.text}
 				</p>
 			))}
+
+			<div ref={bottomRef} />
 		</div>
 	);
 }

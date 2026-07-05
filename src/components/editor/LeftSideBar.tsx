@@ -8,8 +8,6 @@ export function LeftSideBar() {
 				padding: "16px",
 				boxSizing: "border-box",
 			}}
-		>
-			Hello
-		</aside>
+		></aside>
 	);
 }

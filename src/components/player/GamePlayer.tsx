@@ -25,19 +25,21 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 
+		if (!command.trim()) return;
+
 		setGameState((currentState) => runCommand(world, currentState, command));
 		setCommand("");
 	}
 
 	return (
-		<main className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100">
-			<section className="flex-1 overflow-y-auto p-6">
+		<section className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-neutral-950 text-neutral-100">
+			<div className="min-h-0 flex-1 overflow-y-auto p-6">
 				<div className="mx-auto max-w-3xl">
 					<OutputLog messages={gameState.messages} />
 				</div>
-			</section>
+			</div>
 
 			<CommandInput command={command} setCommand={setCommand} submitCommand={submitCommand} />
-		</main>
+		</section>
 	);
 }

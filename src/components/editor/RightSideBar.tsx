@@ -1,4 +1,5 @@
 import type {Room, Connection, Pathway} from "../../schemas/worldSchema";
+import {AdjustableBox} from "../ui/AdjustableBox";
 
 type RightSideBarProps = {
 	selectedRoom: Room | null;
@@ -46,14 +47,12 @@ export function RightSideBar({
 	onConnectionChange,
 }: RightSideBarProps) {
 	return (
-		<aside
-			style={{
-				width: "33%",
-				height: "100%",
-				borderLeft: "1px solid #ddd",
-				padding: "16px",
-				boxSizing: "border-box",
-			}}
+		<AdjustableBox
+			width="33%"
+			maxWidth="100%"
+			minWidth="120px"
+			className="h-full box-border border-l border-[#ddd] p-4"
+			adjustableEdges={["left"]}
 		>
 			{selectedRoom ? (
 				<RoomEditor selectedRoom={selectedRoom} onRoomChange={onRoomChange} />
@@ -65,7 +64,7 @@ export function RightSideBar({
 			) : (
 				<p style={{margin: 0, color: "#777"}}>Select a room or connection</p>
 			)}
-		</aside>
+		</AdjustableBox>
 	);
 }
 

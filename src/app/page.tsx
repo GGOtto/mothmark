@@ -4,7 +4,7 @@ import {useState} from "react";
 import {Toolbar} from "@/components/editor/ToolBar";
 import {LeftSideBar} from "../components/editor/LeftSideBar";
 import {RightSideBar} from "../components/editor/RightSideBar";
-import {CommandLine} from "@/components/command-line/CommandLine";
+import {CommandLine} from "@/components/player/CommandLine";
 import {Map} from "../components/map/Map";
 import {world} from "../data/worlds/exampleWorld";
 import type {Room, Connection} from "../schemas/worldSchema";

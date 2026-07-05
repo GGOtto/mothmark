@@ -3,7 +3,6 @@ import {resolveDescription} from "./descriptions";
 import {getRoomViewedFlag, getRoomVisitedFlag} from "./flags";
 import type {GameState, GameMessage} from "./gameState";
 import {createGameMessage} from "./gameState";
-import {de} from "zod/locales";
 
 export function getRoom(world: World, roomId: string): Room {
 	const room = world.rooms.find((room) => room.id === roomId);
@@ -16,7 +15,7 @@ export function getRoom(world: World, roomId: string): Room {
 }
 
 export function buildRoomDescription(room: Room, gameState: GameState): GameMessage {
-	let text = room.name + "\n\n";
+	let text = room.name + "\n";
 
 	// print out the room's description
 	const description = resolveDescription(room.description, gameState);
