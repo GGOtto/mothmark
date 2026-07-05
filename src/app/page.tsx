@@ -4,6 +4,7 @@ import {useState} from "react";
 import {Toolbar} from "@/components/editor/ToolBar";
 import {LeftSideBar} from "../components/editor/LeftSideBar";
 import {RightSideBar} from "../components/editor/RightSideBar";
+import {CommandLine} from "@/components/command-line/CommandLine";
 import {Map} from "../components/map/Map";
 import {world} from "../data/worlds/exampleWorld";
 import type {Room, Connection} from "../schemas/worldSchema";
@@ -59,6 +60,8 @@ export default function EditorPage() {
 						setIsConnectionSelected={setIsConnectionSelected}
 					/>
 				</div>
+
+				<CommandLine />
 			</section>
 
 			<RightSideBar

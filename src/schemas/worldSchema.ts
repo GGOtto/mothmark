@@ -1,5 +1,15 @@
 import {z} from "zod";
 
+export const ConditionSchema = z.object({
+	flag: z.string().min(1),
+	value: z.boolean().default(true),
+});
+
+export const ConditionalTextSchema = z.object({
+	text: z.string().min(1),
+	when: z.array(ConditionSchema).default([]),
+});
+
 export const DirectionSchema = z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw"]);
 
 export const PathwaySchema = z
@@ -11,10 +21,44 @@ export const PointSchema = z.object({
 	y: z.number(),
 });
 
+export const DescriptionSchema = z.object({
+	default: z
+		.string()
+		.default("")
+		.describe("The description that will be displayed if no other conditions are met."),
+	variants: z
+		.array(ConditionalTextSchema)
+		.default([])
+		.describe("Description variants that can replace the description if conditions are met."),
+});
+
+export const RoomFeatureSchema = z
+	.object({
+		id: z.string().min(1),
+		name: z.string().min(1),
+		aliases: z.array(z.string().min(1)).default([]),
+		description: DescriptionSchema,
+		listedInRoom: z
+			.boolean()
+			.default(false)
+			.describe(
+				"Controls whether the feature is listed in the room. Features can still be interacted with even if this is false. Defaults to false, since you would normally want to mention these in the room description.",
+			),
+		activeWhen: z
+			.array(ConditionSchema)
+			.default([])
+			.describe("Item isn't listed or interacted with unless all of these conditions are true."),
+	})
+	.describe(
+		"Room features are like items in the room that you can interact with. Unlike items, however, you can't pick them up.",
+	);
+
 export const RoomSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(1),
 	position: PointSchema,
+	description: DescriptionSchema,
+	features: z.array(RoomFeatureSchema).optional(),
 });
 
 export const ConnectionSchema = z.object({
@@ -23,7 +67,6 @@ export const ConnectionSchema = z.object({
 	toRoomId: z.string().min(1),
 	direction: DirectionSchema,
 	returnDirection: DirectionSchema,
-	controlPoints: z.array(PointSchema).optional(),
 	pathway: PathwaySchema,
 });
 
@@ -92,3 +135,7 @@ export type Pathway = z.infer<typeof PathwaySchema>;
 export type Room = z.infer<typeof RoomSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
 export type World = z.infer<typeof WorldSchema>;
+export type Condition = z.infer<typeof ConditionSchema>;
+export type ConditionalText = z.infer<typeof ConditionalTextSchema>;
+export type RoomFeature = z.infer<typeof RoomFeatureSchema>;
+export type Description = z.infer<typeof DescriptionSchema>;
