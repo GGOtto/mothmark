@@ -256,7 +256,7 @@ const commands: CommandDefinition[] = [
 		aliases: ["examine", "inspect", "look at", "x"],
 		description: "Examine something more closely.",
 		connectors: ["in front of"],
-		run: ({gameState, parsed}) => {
+		run: ({world, gameState, parsed}) => {
 			const targetText = parsed.targetText;
 
 			if (!targetText) {
