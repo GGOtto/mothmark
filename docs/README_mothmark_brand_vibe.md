@@ -24,7 +24,7 @@ Reference these sources when making design decisions:
 - [Library of Congress map collections](https://www.loc.gov/maps/collections/) for real map, survey, military, railroad, and exploration references rather than invented parchment fantasy.
 - [British Library digitised manuscripts and archives](https://www.bl.uk/collection) for restrained manuscript material references: ink, rubrics, marginalia, vellum, annotation, and aging.
 - [Aseprite](https://www.aseprite.org/) for compact creative-tool density: palettes, layers, frames, and work-object-first interface structure.
-- [React Icons](https://react-icons.github.io/react-icons/) only as a package source when the project needs common UI glyphs. Use icons as labels for known actions, not as brand decoration.
+- [Lucide](https://lucide.dev/) is the current icon source through `lucide-react`. Use icons as labels for known actions, not as brand decoration.
 - [Game-icons.net](https://game-icons.net/) only for small adventure/object symbols when a generic UI icon cannot describe the concept clearly. Keep usage sparse.
 
 Practical interpretation for Mothmark:
@@ -76,15 +76,31 @@ Mothmark is an authoring tool for parser-style and room-based text adventures.
 
 The user is not simply creating content. They are arranging rooms, testing commands, hiding keys, checking exits, naming checkpoints, and building a little world that can be explored.
 
-The interface should support:
+The current repo already has the beginnings of this workbench:
 
-- room maps
-- compass exits
-- room descriptions
-- command testing
-- live preview
-- draft versions
-- named checkpoints
+- a Next app with `/`, `/editor`, `/starter`, and `/api/health`
+- a map-first editor shell with left navigation, central workspace, right inspector, and bottom command line
+- draggable room cards on a gridded canvas
+- compass-style exits and curved connectors
+- creating new rooms by dragging or clicking room-side connection handles
+- selecting rooms and connections
+- editing room name, room ID, room description, existing room features, aliases, and listed state
+- warning when the selected room ID is duplicated
+- editing a selected connection pathway and deleting connections
+- a command/player surface that can sync to the selected room
+- parser commands for look, movement, examine, take, use, put, help, and aliases
+- Zod world schemas for rooms, descriptions, room features, flags, conditions, connections, directions, and pathways
+- starter JSON generation from the current world schema
+
+The current repo does not yet have persistent project storage, checkpoint UI, a full issues panel, room creation from the inspector, feature creation from the UI, object resolution for command targets, published playthroughs, player automaps, or fully wired world/logic/settings tabs. Do not write product copy or docs as though those pieces already exist.
+
+The interface should grow toward:
+
+- stronger room-map editing
+- compass exits with clearer state
+- room descriptions and feature editing
+- command testing and live preview
+- draft versions and named checkpoints
 - validation warnings
 - notes attached to rooms
 - broken-exit detection
@@ -93,7 +109,7 @@ The interface should support:
 - dead-end detection
 - eventually, player-facing automaps and published playthroughs
 
-The editor should feel like a tool, not a landing page.
+The editor should feel like a tool, not a landing page. When reality and ambition differ, name the ambition as future work.
 
 ## Name
 
@@ -276,6 +292,21 @@ system is now **night archive with artifact accents**:
 
 The palette is intentionally multi-material. It should not collapse into
 "brown app," "blue app," or "gold fantasy app."
+
+### Current CSS alignment
+
+The current UI is partly aligned but not finished:
+
+- The map canvas already uses a paper-toned surface, drafting grid, hard-edged room cards, and ink-like connector lines. Preserve that work-object-first feeling.
+- The right inspector already uses cream paper inputs, compact uppercase labels, visible focus rings, and warning text. Preserve the practicality.
+- The editor shell, placeholder panels, command line, and homepage still lean on generic `#111`, `#161616`, bright white, centered cards, and broad shadows. Future styling passes should replace those with the semantic tokens below.
+- Selected connections currently use bright red. Change future selected-exit styling to verdigris; reserve red lead or madder for warnings, broken exits, and destructive actions.
+- The left rail active marker currently uses white. Prefer verdigris for active tool/navigation state, with ochre reserved for keyboard focus or checkpoint emphasis.
+- Rounded placeholder cards should be treated as temporary scaffolding. Keep repeated cards compact and useful, and avoid turning page sections into floating SaaS panels.
+
+Do not make a large restyle unless the user asks for implementation work. For
+ordinary feature changes, move touched components toward the palette below
+without churning unrelated CSS.
 
 Core swatches:
 
@@ -622,7 +653,7 @@ illustrations.
 
 Use:
 
-- common UI icons from a package such as `react-icons` when they map to familiar controls like save, play, warning, settings, search, close, plus, arrow, undo, redo, and external link
+- common UI icons from `lucide-react` when they map to familiar controls like save, play, warning, settings, search, close, plus, arrow, undo, redo, and external link
 - icon-plus-text buttons for primary commands unless the icon is universally understood in context
 - sparse adventure/object symbols from a source such as Game-icons.net only when the symbol clarifies a text-adventure concept better than a generic UI icon
 - consistent stroke weight, size, and color tokens
@@ -672,6 +703,21 @@ Do not make the canvas look like:
 - a tactical RPG map
 - a fantasy board game
 
+Current map behavior to protect:
+
+- Room cards can be selected and dragged.
+- New rooms and exits can be created from existing room connection handles.
+- Existing connectors can be selected and edited.
+- The map uses an SVG layer for connections over a gridded room workspace.
+- The selected room drives the inspector and can sync the preview to that room.
+
+Current map behavior to improve when touched:
+
+- Make selected room and selected connection states verdigris instead of muted tan or bright red.
+- Add non-color state cues where practical, such as line weight, corner marks, labels, or warning symbols.
+- Keep room nodes compact and fixed-size so dragging and selection do not resize the map.
+- Use clear empty/invalid states for missing connection endpoints instead of silently hiding important authoring problems.
+
 ### Room node states
 
 Suggested states:
@@ -718,6 +764,18 @@ The passage narrows. Something glints under the ash.
 The command prompt should be visually distinct and probably monospace.
 
 Avoid making it feel like a chatbot.
+
+Current preview behavior:
+
+- The bottom command line embeds the game player.
+- It syncs to the selected room with `Sync Room` and on selected-room changes.
+- It supports command history and parser output.
+- Movement follows current connections and pathway direction.
+- Feature/object commands currently return generic responses instead of resolving real features.
+
+Treat feature/object command resolution as future engine work unless the task
+explicitly asks for it. Copy should not imply that inventory, item pickup, or
+feature-specific interactions are finished.
 
 ## Copy style
 
@@ -766,13 +824,17 @@ The homepage should not feel like a generic marketing page.
 
 It should feel like opening the cover of a tool.
 
+The current homepage is a temporary centered card that points to `/editor`.
+That is acceptable as scaffolding, but it should not become the product's
+lasting first impression.
+
 Preferred structure:
 
 - small wordmark
 - concise product description
-- preview of the map/editor
+- real preview of the current map/editor surface, not abstract feature cards
 - one primary action
-- maybe one secondary technical link
+- maybe one secondary technical link such as starter JSON or docs
 
 Avoid:
 
@@ -795,9 +857,21 @@ Draw the map. Test the room. Keep writing.
 
 This is better than trying to explain the whole product in one slogan.
 
+If the homepage remains a placeholder, keep it honest and small. Do not add
+fake product breadth, fake user proof, or claims about publishing/checkpoints
+until those features are real.
+
 ## App shell direction
 
-A good Mothmark app shell might include:
+The current app shell includes:
+
+- left icon rail with Map, World, Logic, Issues, World Settings, and Settings
+- central workspace with the map as the only fully implemented tab
+- placeholder workspaces for non-map tabs
+- resizable right inspector for selected rooms/connections
+- bottom resizable command/player panel
+
+A mature Mothmark app shell might include:
 
 - top-left text wordmark
 - small project/game switcher
@@ -808,18 +882,25 @@ A good Mothmark app shell might include:
 
 The app should feel like a practical editor used by someone making a game, not like a website trying to sell itself.
 
+Until the non-map tabs are wired, keep their copy plain and status-like. Good
+placeholder copy tells the author what will belong there without pretending the
+editor is complete.
+
 ## Navigation naming
 
 Prefer concrete labels:
 
 ```txt
-Games
 Map
-Rooms
-Preview
-Notes
-Checkpoints
+World
+Logic
+Issues
+World Settings
 Settings
+Starter World
+Preview
+Checkpoints
+Notes
 ```
 
 Avoid vague labels:
@@ -843,6 +924,8 @@ Use these terms consistently:
 Game
 Room
 Exit
+Connection
+Pathway
 Command
 Preview
 Checkpoint

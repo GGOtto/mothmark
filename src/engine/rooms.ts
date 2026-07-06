@@ -24,7 +24,9 @@ export function buildRoomDescription(room: Room, gameState: GameState): GameMess
 	// print out the room features that are available to list
 	if (room.features) {
 		for (const feature of room.features) {
-			text += resolveDescription(feature.description, gameState) + "\n";
+			if (feature.listedInRoom) {
+				text += resolveDescription(feature.description, gameState) + "\n";
+			}
 		}
 	}
 
