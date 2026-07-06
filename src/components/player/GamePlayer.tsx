@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import type {World} from "../../schemas/worldSchema";
 import {createInitialGameState} from "../../engine/gameState";
 import {lookAtRoom} from "../../engine/rooms";
@@ -24,6 +24,10 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState<number>(0);
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
+
+	useEffect(() => {
+		setGameState(initialState);
+	}, [initialState]);
 
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();

@@ -1,5 +1,6 @@
 import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/mapTypes";
+import {generateUniqueId} from "./idUtils";
 import {subtractPoints} from "./pointUtils";
 
 type BuildAddConnectionResultOptions = {
@@ -408,7 +409,7 @@ export function buildAddConnectionResult({
 
 	const roomToAdd =
 		overlappingRoom === undefined
-			? createDefaultRoom(`room-${rooms.length + 1}`, `Room ${rooms.length + 1}`, targetPosition)
+			? createDefaultRoom(generateUniqueId("room", rooms), `Room ${rooms.length + 1}`, targetPosition)
 			: undefined;
 	const toRoom = overlappingRoom ?? roomToAdd;
 
@@ -421,7 +422,7 @@ export function buildAddConnectionResult({
 		!overlappingRoom || !isConnectionFromRoom(overlappingRoom.id, targetReturnDirection, connections);
 
 	const connection = {
-		id: `connection-${connections.length + 1}`,
+		id: generateUniqueId("connection", connections),
 		fromRoomId: fromRoom.id,
 		toRoomId: toRoom.id,
 		direction,

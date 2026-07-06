@@ -382,7 +382,7 @@ describe("runCommand", () => {
 
 		const result = runCommand(world, gameState, "Pick Up Brass Key");
 
-		expect(getMessageTexts(result)[0]).toBe("> Pick Up Brass Key");
+		expect(getMessageTexts(result)[0]).toBe("Pick Up Brass Key");
 	});
 
 	it("runs look", () => {
@@ -392,7 +392,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "look");
 
 		expect(lookAtRoom).toHaveBeenCalledWith(world, expect.any(Object));
-		expect(getMessageTexts(result)).toEqual(["> look", "Looked around."]);
+		expect(getMessageTexts(result)).toEqual(["look", "Looked around."]);
 	});
 
 	it("runs examine with a multi-word target", () => {
@@ -402,7 +402,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "examine old wooden door");
 
 		expect(getMessageTexts(result)).toEqual([
-			"> examine old wooden door",
+			"examine old wooden door",
 			"You examine the old wooden door.",
 		]);
 	});
@@ -413,7 +413,7 @@ describe("runCommand", () => {
 
 		const result = runCommand(world, gameState, "pick up the brass key");
 
-		expect(getMessageTexts(result)).toEqual(["> pick up the brass key", "You take the brass key."]);
+		expect(getMessageTexts(result)).toEqual(["pick up the brass key", "You take the brass key."]);
 	});
 
 	it("runs use with one target", () => {
@@ -422,7 +422,7 @@ describe("runCommand", () => {
 
 		const result = runCommand(world, gameState, "use brass key");
 
-		expect(getMessageTexts(result)).toEqual(["> use brass key", "You use the brass key."]);
+		expect(getMessageTexts(result)).toEqual(["use brass key", "You use the brass key."]);
 	});
 
 	it("runs use with a connector target", () => {
@@ -432,7 +432,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "use brass key on old wooden door");
 
 		expect(getMessageTexts(result)).toEqual([
-			"> use brass key on old wooden door",
+			"use brass key on old wooden door",
 			"You use the brass key on the old wooden door.",
 		]);
 	});
@@ -444,7 +444,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "north");
 
 		expect(movePlayer).toHaveBeenCalledWith(world, expect.any(Object), "n");
-		expect(getMessageTexts(result)).toEqual(["> north", "Moved n."]);
+		expect(getMessageTexts(result)).toEqual(["north", "Moved n."]);
 	});
 
 	it("runs go movement", () => {
@@ -454,7 +454,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "go southwest");
 
 		expect(movePlayer).toHaveBeenCalledWith(world, expect.any(Object), "sw");
-		expect(getMessageTexts(result)).toEqual(["> go southwest", "Moved sw."]);
+		expect(getMessageTexts(result)).toEqual(["go southwest", "Moved sw."]);
 	});
 
 	it("shows a fallback for unknown commands", () => {
@@ -463,7 +463,7 @@ describe("runCommand", () => {
 
 		const result = runCommand(world, gameState, "sing at moon");
 
-		expect(getMessageTexts(result)).toEqual(["> sing at moon", "I don't understand that command."]);
+		expect(getMessageTexts(result)).toEqual(["sing at moon", "I don't understand that command."]);
 	});
 
 	it("shows help text from the provided command list", () => {
@@ -494,7 +494,7 @@ describe("runCommand", () => {
 		const result = runCommand(world, gameState, "help", testCommands);
 
 		expect(getMessageTexts(result)).toEqual([
-			"> help",
+			"help",
 			[
 				"test-one (test-one, one): First test command.",
 				"test-two (test-two, two words): Second test command.",
@@ -509,7 +509,7 @@ describe("runCommand", () => {
 
 		const result = runCommand(world, gameState, "take the brass key");
 
-		expect(getMessageTexts(result)).toEqual(["> take the brass key", "You take the brass key."]);
+		expect(getMessageTexts(result)).toEqual(["take the brass key", "You take the brass key."]);
 	});
 });
 

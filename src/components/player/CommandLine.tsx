@@ -2,10 +2,14 @@
 
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {GamePlayer} from "./GamePlayer";
-import {world} from "../../data/worlds/exampleWorld";
+import type {World} from "../../schemas/worldSchema";
 import "./CommandLine.scss";
 
-export function CommandLine() {
+type CommandLineProps = {
+	world: World;
+};
+
+export function CommandLine({world}: CommandLineProps) {
 	const startingRoomId = world.rooms[0]?.id ?? "";
 
 	return (

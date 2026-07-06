@@ -1,14 +1,14 @@
 "use client";
 
 import type React from "react";
-import {useMemo, useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 import {ToolBar} from "@/components/editor/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/editor/LeftSideBar";
-import {RightSideBar} from "@/components/editor/RightSideBar";
+import {RightSideBar} from "@/components/editor/right-side-bar/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map} from "@/components/map/Map";
-import {world} from "@/data/worlds/exampleWorld";
-import type {Connection, Room} from "@/schemas/worldSchema";
+import {world as initialWorld} from "@/data/worlds/exampleWorld";
+import type {Connection, Room, World} from "@/schemas/worldSchema";
 import "./page.scss";
 
 type EditorSelection = {
@@ -48,16 +48,39 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
+function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): T {
+	return typeof action === "function" ? (action as (value: T) => T)(currentValue) : action;
+}
+
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 
-	const [rooms, setRooms] = useState<Room[]>(world.rooms);
-	const [connections, setConnections] = useState<Connection[]>(world.connections);
+	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 
 	const [selection, setSelection] = useState<EditorSelection>({
 		selectedId: null,
 		isConnectionSelected: false,
 	});
+
+	const rooms = editorWorld.rooms;
+	const connections = editorWorld.connections;
+
+	const setRooms = useCallback<React.Dispatch<React.SetStateAction<Room[]>>>((roomsAction) => {
+		setEditorWorld((currentWorld) => ({
+			...currentWorld,
+			rooms: applyStateAction(roomsAction, currentWorld.rooms),
+		}));
+	}, []);
+
+	const setConnections = useCallback<React.Dispatch<React.SetStateAction<Connection[]>>>(
+		(connectionsAction) => {
+			setEditorWorld((currentWorld) => ({
+				...currentWorld,
+				connections: applyStateAction(connectionsAction, currentWorld.connections),
+			}));
+		},
+		[],
+	);
 
 	const selectedRoom = useMemo(() => {
 		if (selection.isConnectionSelected) return null;
@@ -85,12 +108,33 @@ export default function EditorPage() {
 		);
 	}
 
+	function deleteConnection(connectionToDelete: Connection) {
+		setConnections((currentConnections) =>
+			currentConnections.filter((connection) => connection.id !== connectionToDelete.id),
+		);
+
+		setSelection((currentSelection) => {
+			if (
+				currentSelection.isConnectionSelected &&
+				currentSelection.selectedId === connectionToDelete.id
+			) {
+				return {
+					selectedId: null,
+					isConnectionSelected: false,
+				};
+			}
+
+			return currentSelection;
+		});
+	}
+
 	return (
 		<main className="editorPage">
 			<LeftSideBar activeTab={activeTab} onTabChange={setActiveTab} />
 
 			<EditorMainPanel
 				activeTab={activeTab}
+				world={editorWorld}
 				rooms={rooms}
 				setRooms={setRooms}
 				connections={connections}
@@ -105,6 +149,7 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				onRoomChange={updateRoom}
 				onConnectionChange={updateConnection}
+				deleteConnection={deleteConnection}
 			/>
 		</main>
 	);
@@ -112,6 +157,7 @@ export default function EditorPage() {
 
 type EditorMainPanelProps = {
 	activeTab: EditorTab;
+	world: World;
 	rooms: Room[];
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	connections: Connection[];
@@ -122,6 +168,7 @@ type EditorMainPanelProps = {
 
 function EditorMainPanel({
 	activeTab,
+	world,
 	rooms,
 	setRooms,
 	connections,
@@ -145,7 +192,7 @@ function EditorMainPanel({
 				/>
 			</div>
 
-			<CommandLine />
+			<CommandLine world={world} />
 		</section>
 	);
 }
@@ -278,6 +325,7 @@ type EditorInspectorProps = {
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
 	onConnectionChange: (connection: Connection) => void;
+	deleteConnection: (connection: Connection) => void;
 };
 
 function EditorInspector({
@@ -286,6 +334,7 @@ function EditorInspector({
 	selectedConnection,
 	onRoomChange,
 	onConnectionChange,
+	deleteConnection,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -294,6 +343,7 @@ function EditorInspector({
 				selectedConnection={selectedConnection}
 				onRoomChange={onRoomChange}
 				onConnectionChange={onConnectionChange}
+				deleteConnection={deleteConnection}
 			/>
 		);
 	}
@@ -306,6 +356,7 @@ function EditorInspector({
 			selectedConnection={null}
 			onRoomChange={onRoomChange}
 			onConnectionChange={onConnectionChange}
+			deleteConnection={deleteConnection}
 			title={metadata.title}
 			description={metadata.description}
 		/>
