@@ -143,9 +143,6 @@ export function useConnectionDrag({
 			return null;
 		}
 
-		// TODO: Replace this cycling behavior with path selection.
-		// Ideally, SVG connections should be pointer-interactive with pointerEvents="stroke",
-		// so the user can select the exact path they want to edit before redrawing it.
 		const selectionKey = getNodeSelectionKey(roomId, direction);
 		const selectedConnectionIndex = nodeConnections.findIndex(
 			(connection) => connection.id === selectedConnectionIdRef.current,

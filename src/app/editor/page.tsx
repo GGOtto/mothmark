@@ -58,7 +58,7 @@ export default function EditorPage() {
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 
 	const [selection, setSelection] = useState<EditorSelection>({
-		selectedId: null,
+		selectedId: initialWorld.startRoomId,
 		isConnectionSelected: false,
 	});
 
@@ -141,6 +141,7 @@ export default function EditorPage() {
 				setConnections={setConnections}
 				selection={selection}
 				setSelection={setSelection}
+				selectedRoom={selectedRoom}
 			/>
 
 			<EditorInspector
@@ -164,6 +165,7 @@ type EditorMainPanelProps = {
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
+	selectedRoom: Room | null;
 };
 
 function EditorMainPanel({
@@ -175,6 +177,7 @@ function EditorMainPanel({
 	setConnections,
 	selection,
 	setSelection,
+	selectedRoom,
 }: EditorMainPanelProps) {
 	return (
 		<section className="editorMainPanel">
@@ -192,7 +195,7 @@ function EditorMainPanel({
 				/>
 			</div>
 
-			<CommandLine world={world} />
+			<CommandLine world={world} selectedRoomId={selectedRoom?.id ?? null} />
 		</section>
 	);
 }

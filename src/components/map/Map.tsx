@@ -113,6 +113,7 @@ export function Map({
 
 		if (result.roomToAdd) {
 			const roomToAdd = result.roomToAdd;
+			setSelectedId(roomToAdd.id);
 			setRooms((rooms) => [...rooms, roomToAdd]);
 		}
 

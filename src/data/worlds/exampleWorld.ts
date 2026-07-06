@@ -1,6 +1,7 @@
 import {WorldSchema} from "../../schemas/worldSchema";
 
 const rawWorld = {
+	startRoomId: "room-1",
 	rooms: [
 		{
 			id: "room-1",

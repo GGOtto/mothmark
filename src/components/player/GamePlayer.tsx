@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 import type {World} from "../../schemas/worldSchema";
-import {createInitialGameState} from "../../engine/gameState";
+import {createInitialGameState, type GameState} from "../../engine/gameState";
 import {lookAtRoom} from "../../engine/rooms";
 import {runCommand} from "../../engine/commands";
 import {OutputLog} from "./OutputLog";
@@ -12,9 +12,16 @@ import "./GamePlayer.scss";
 type GamePlayerProps = {
 	world: World;
 	startingRoomId: string;
+	syncedRoomId?: string | null;
+	syncVersion?: number;
 };
 
-export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
+export function GamePlayer({
+	world,
+	startingRoomId,
+	syncedRoomId,
+	syncVersion = 0,
+}: GamePlayerProps) {
 	const initialState = useMemo(() => {
 		const state = createInitialGameState(world, startingRoomId);
 		return lookAtRoom(world, state);
@@ -29,13 +36,42 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 		setGameState(initialState);
 	}, [initialState]);
 
+	useEffect(() => {
+		if (!syncedRoomId) return;
+
+		syncToRoom(syncedRoomId);
+	}, [syncedRoomId, syncVersion]);
+
+	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
+		setGameState((currentState) => updateGameState(currentState));
+	}
+
+	function syncToRoom(roomId: string) {
+		pushGameState((currentState) => {
+			const roomExists = world.rooms.some((room) => room.id === roomId);
+
+			if (!roomExists) {
+				return currentState;
+			}
+
+			return lookAtRoom(world, {
+				...currentState,
+				currentRoomId: roomId,
+				messages: [],
+			});
+		});
+	}
+
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 
-		if (!command.trim()) return;
+		const trimmedCommand = command.trim();
 
-		setGameState((currentState) => runCommand(world, currentState, command));
-		setCommandList((prevCommands) => [...prevCommands, command].slice(-20));
+		if (!trimmedCommand) return;
+
+		pushGameState((currentState) => runCommand(world, currentState, trimmedCommand));
+
+		setCommandList((prevCommands) => [...prevCommands, trimmedCommand].slice(-20));
 		setCommand("");
 		setCurrentCommandInHistory(0);
 	}

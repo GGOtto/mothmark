@@ -86,23 +86,27 @@ An authored command should be edited through a form that feels like this:
 Command: Put Apple On Table
 
 When the player types:
+
 - put apple on table
 - place apple on table
 - set apple on table
 
 Or matches this command:
+
 - verb: put/place/set
 - object: apple
 - connector: on
 - target: table
 
 Only if:
+
 - player has apple
 - current room is kitchen
 - table exists in current room
 - flag table.hasApple is false
 
 Then:
+
 - remove apple from inventory
 - place apple on table
 - set flag table.hasApple = true
@@ -139,7 +143,7 @@ Flag table.hasApple is true
 Instead of this:
 
 ```ts
-gameState.inventory.push("apple")
+gameState.inventory.push("apple");
 ```
 
 Authors should configure this:
@@ -369,15 +373,19 @@ Command:
 knock on door
 
 Effects:
+
 - Increase counter cellarDoor.knocks by 1
 
 If cellarDoor.knocks is 1:
+
 - Message: "You knock once. The sound vanishes into the house."
 
 If cellarDoor.knocks is 3:
+
 - Message: "Something knocks back."
 
 If cellarDoor.knocks is 5:
+
 - Set flag cellarDoor.openedFromInside true
 - Message: "The door creaks open by itself."
 ```
@@ -389,10 +397,12 @@ Command:
 sneak past guard
 
 If playerNoise greater than 5:
+
 - Increase counter guard.suspicion by 20
 - Message: "The guard turns sharply toward the sound."
 
 If guard.suspicion greater than or equal to 100:
+
 - Move player to jail
 - Message: "The guard catches you."
 ```
@@ -511,18 +521,18 @@ These could technically be flags, but first-class states make authoring much cle
 
 ```md
 objectStates: {
-  "door:cellar": {
-    open: false,
-    locked: true
-  },
-  "item:lantern": {
-    lit: false,
-    fuel: 4
-  },
-  "feature:kitchen.table": {
-    surfaceItems: ["apple"],
-    clean: false
-  }
+"door:cellar": {
+open: false,
+locked: true
+},
+"item:lantern": {
+lit: false,
+fuel: 4
+},
+"feature:kitchen.table": {
+surfaceItems: ["apple"],
+clean: false
+}
 }
 ```
 
@@ -690,11 +700,13 @@ After:
 3 turns
 
 Only if:
+
 - apple is on kitchen table
 - rats are not already in kitchen
 - player has not cleaned table
 
 Then:
+
 - Move rats to kitchen
 - Set flag kitchen.ratsPresent true
 - Show message if player is in kitchen:
@@ -705,6 +717,7 @@ If the player removes the apple before the event fires:
 
 ```md
 Cancel if:
+
 - apple is not on kitchen table
 ```
 
@@ -779,14 +792,17 @@ Player repeated command N times
 
 ```md
 Required sequence:
+
 1. light candle
 2. ring bell
 3. speak name
 
 If player does these in order:
+
 - Open hidden door
 
 If player does them out of order:
+
 - Extinguish candle
 - Message: "The room seems to forget what you were trying to do."
 ```
@@ -971,12 +987,15 @@ Example:
 
 ```md
 Aliases:
+
 - listen
 
 Conditions:
+
 - current room is forest
 
 Effects:
+
 - Show message: "Wind moves through the trees like whispered speech."
 ```
 
@@ -1002,13 +1021,16 @@ Example:
 
 ```md
 Aliases:
+
 - read
 - inspect
 
 Target:
+
 - inscription
 
 Effects:
+
 - Set flag inscription.read true
 - Show message: "The inscription says: Below hunger, teeth gather."
 ```
@@ -1036,17 +1058,21 @@ Example:
 
 ```md
 Aliases:
+
 - put
 - place
 - set
 
 Object:
+
 - apple
 
 Connector:
+
 - on
 
 Target:
+
 - table
 ```
 
@@ -1178,6 +1204,7 @@ Item:
 id: apple
 name: apple
 aliases:
+
 - red apple
 - fruit
 - shiny apple
@@ -1483,6 +1510,7 @@ Examples:
 ```md
 Show: "You place the apple on the table."
 Show one of:
+
 - "Something scratches in the walls."
 - "A faint skittering follows."
 - "You feel watched from below."
@@ -1965,10 +1993,12 @@ Command:
 put [food] on table
 
 Conditions:
+
 - object has tag food
 - target is kitchen table
 
 Effects:
+
 - Place object on table
 - Set flag kitchen.foodOnTable true
 - Schedule ratsArrive after 3 turns
@@ -2060,12 +2090,15 @@ An authored command can have multiple failure cases:
 
 ```md
 If player does not have brass key:
+
 - Message: "You do not have the brass key."
 
 If door is already unlocked:
+
 - Message: "The cellar door is already unlocked."
 
 If player is not in kitchen:
+
 - Message: "There is no cellar door here."
 ```
 
@@ -2109,6 +2142,7 @@ Then future attempts:
 
 ```md
 If statue.gemTaken true:
+
 - Message: "The statue's eye socket is already empty."
 ```
 
@@ -2137,16 +2171,19 @@ When command matches:
 
 Branch 1:
 If player has apple and table is empty:
+
 - Place apple on table
 - Schedule rats
 - Message: "You place the apple on the table."
 
 Branch 2:
 If player has apple and table already has food:
+
 - Message: "There is already something on the table."
 
 Branch 3:
 If player does not have apple:
+
 - Message: "You do not have the apple."
 ```
 
@@ -2364,6 +2401,7 @@ ratsArrive
 After 3 turns
 Only if apple is still on kitchen table
 Then:
+
 - Move rats to kitchen
 - Set kitchen.ratsPresent true
 - Message if player is in kitchen: "Rats pour from beneath the cabinets, drawn by the apple."
@@ -2632,6 +2670,7 @@ lanternBurnsOut
 After 5 turns
 Only if lantern is lit
 Then:
+
 - Set lantern.lit false
 - Set lantern fuel to 0
 - Message: "The lantern gutters and dies."
@@ -2718,6 +2757,7 @@ Branch 1:
 
 ```md
 If mirror has been examined:
+
 - Reveal hidden handprint
 - Message: "Because you know where to press, the mirror slides aside."
 ```
@@ -2726,6 +2766,7 @@ Branch 2:
 
 ```md
 If mirror has not been examined:
+
 - Message: "Your fingers leave streaks on the cold glass."
 ```
 
@@ -2849,6 +2890,7 @@ Event:
 shrineSpiritTakesCoin
 Only if coin is still on shrine
 Then:
+
 - Destroy coin
 - Set shrine.blessed true
 - Message if player is in shrine: "The coin vanishes with a soft chime."
@@ -2879,6 +2921,7 @@ Event:
 guardInvestigates
 Only if guard is not distracted
 Then:
+
 - Move guard to current room or window room
 - Message: "Heavy boots approach."
 ```
@@ -2912,8 +2955,9 @@ Later NPC search:
 
 ```md
 If letter is hidden under rug and guard search skill > 50:
+
 - Guard finds letter
-Else:
+  Else:
 - Guard misses letter
 ```
 
@@ -2978,6 +3022,7 @@ Failure:
 
 ```md
 If sequence broken:
+
 - Extinguish candle
 - Reset ritual progress
 - Message: "The ritual collapses into silence."
@@ -3126,6 +3171,7 @@ Event:
 ```md
 fireSpreads
 If curtain.onFire true:
+
 - Set room.onFire true
 - Damage exits or block path
 - Message: "Fire crawls across the room."
@@ -3206,6 +3252,7 @@ Branch 1:
 
 ```md
 If player has oathAccepted:
+
 - Add sword to inventory
 - Message: "The sword comes free."
 ```
@@ -3214,6 +3261,7 @@ Branch 2:
 
 ```md
 If player does not have oathAccepted:
+
 - Message: "The sword will not move."
 ```
 
@@ -3292,6 +3340,7 @@ Branch 1:
 
 ```md
 If player has silverShard:
+
 - Statue speaks
 ```
 
@@ -3299,6 +3348,7 @@ Branch 2:
 
 ```md
 If player does not have silverShard:
+
 - Statue remains silent
 ```
 
@@ -3409,6 +3459,7 @@ Event:
 iceKeyMelts
 Only if player has iceKey
 Then:
+
 - Remove iceKey from inventory
 - Add puddle to current room
 - Message: "The ice key melts away."
@@ -3472,6 +3523,7 @@ Event:
 ```md
 echoReturns
 If player is in cavern:
+
 - Message: "The echo returns from the north."
 - Set cavern.echoDirection north
 ```
@@ -3567,12 +3619,15 @@ Branches:
 
 ```md
 If player saved cook and rats are peaceful:
+
 - Ending: "The house wakes gently."
 
 If player burned kitchen:
+
 - Ending: "Smoke follows you into the morning."
 
 If guard is hostile:
+
 - Ending: "You escape, but not unseen."
 ```
 
@@ -3941,6 +3996,7 @@ Connector: on
 Target: table
 
 Matched rules:
+
 1. Put Apple On Table
 2. Generic Put
 

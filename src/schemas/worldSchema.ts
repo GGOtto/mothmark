@@ -72,6 +72,7 @@ export const ConnectionSchema = z.object({
 
 export const WorldSchema = z
 	.object({
+		startRoomId: z.string().min(1),
 		rooms: z.array(RoomSchema),
 		connections: z.array(ConnectionSchema),
 	})
@@ -94,6 +95,15 @@ export const WorldSchema = z
 			}
 
 			roomIds.add(room.id);
+		}
+
+		// Starting romm needs to exist
+		if (!roomIds.has(world.startRoomId)) {
+			ctx.addIssue({
+				code: "custom",
+				message: `Starting room id ${world.startRoomId} is not a real room.`,
+				path: ["world", "startRoomId"],
+			});
 		}
 
 		// Validate connection-level rules.
