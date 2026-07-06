@@ -71,7 +71,7 @@ export type NamedThing = {
 function addCommandMessage(gameState: GameState, command: string): GameState {
 	return {
 		...gameState,
-		messages: [...gameState.messages, createGameMessage(`> ${command}`, "command")],
+		messages: [...gameState.messages, createGameMessage(command, "command")],
 	};
 }
 

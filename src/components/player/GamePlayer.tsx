@@ -21,6 +21,8 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	}, [world, startingRoomId]);
 
 	const [gameState, setGameState] = useState(initialState);
+	const [currentCommandInHistory, setCurrentCommandInHistory] = useState<number>(0);
+	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
 
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
@@ -29,7 +31,9 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 		if (!command.trim()) return;
 
 		setGameState((currentState) => runCommand(world, currentState, command));
+		setCommandList((prevCommands) => [...prevCommands, command].slice(-20));
 		setCommand("");
+		setCurrentCommandInHistory(0);
 	}
 
 	return (
@@ -38,7 +42,14 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 				<OutputLog messages={gameState.messages} />
 			</div>
 
-			<CommandInput command={command} setCommand={setCommand} submitCommand={submitCommand} />
+			<CommandInput
+				command={command}
+				setCommand={setCommand}
+				submitCommand={submitCommand}
+				commandList={commandList}
+				currentCommandInHistory={currentCommandInHistory}
+				setCurrentCommandInHistory={setCurrentCommandInHistory}
+			/>
 		</section>
 	);
 }
