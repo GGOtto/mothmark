@@ -5,6 +5,7 @@ import {ConnectionEditor} from "./ConnectionEditor";
 import "./RightSideBar.scss";
 
 type RightSideBarProps = {
+	rooms?: Room[];
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
@@ -15,6 +16,7 @@ type RightSideBarProps = {
 };
 
 export function RightSideBar({
+	rooms = [],
 	selectedRoom,
 	selectedConnection,
 	onRoomChange,
@@ -25,14 +27,14 @@ export function RightSideBar({
 }: RightSideBarProps) {
 	return (
 		<AdjustableBox
-			width="33%"
+			width="20%"
 			maxWidth="100%"
 			minWidth="220px"
 			className="rightSideBar"
 			adjustableEdges={["left"]}
 		>
 			{selectedRoom ? (
-				<RoomEditor selectedRoom={selectedRoom} onRoomChange={onRoomChange} />
+				<RoomEditor selectedRoom={selectedRoom} rooms={rooms} onRoomChange={onRoomChange} />
 			) : selectedConnection ? (
 				<ConnectionEditor
 					selectedConnection={selectedConnection}

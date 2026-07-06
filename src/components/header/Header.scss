@@ -4,21 +4,65 @@
 	flex-shrink: 0;
 	box-sizing: border-box;
 	padding: 0 20px;
-	border-bottom: 1px solid #2a2620;
-	background: #0f0e0c;
-	color: #f4ecd8;
+	border-bottom: 1px solid #3a352b;
+	background: #11130f;
+	color: #f2e5c8;
 
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 
-	.headerTitle {
+	.headerLogo {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
 		color: inherit;
-		font-family: Georgia, "Times New Roman", serif;
-		font-size: 18px;
-		font-weight: 600;
-		letter-spacing: 0.025em;
 		text-decoration: none;
+
+		&:hover {
+			.headerLogoMark {
+				border-color: #70a58d;
+				color: #70a58d;
+			}
+
+			.headerTitle {
+				color: #f2e5c8;
+			}
+		}
+
+		&:focus-visible {
+			outline: 2px solid #c8a962;
+			outline-offset: 4px;
+		}
+	}
+
+	.headerLogoMark {
+		width: 26px;
+		height: 26px;
+		border: 1px solid #3a352b;
+		border-radius: 7px;
+		background: #1b1a16;
+		color: #b8ad97;
+
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+
+		transition:
+			color 120ms ease,
+			border-color 120ms ease,
+			background 120ms ease;
+	}
+
+	.headerTitle {
+		color: #f2e5c8;
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+			monospace;
+		font-size: 13px;
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
 	}
 
 	.headerNav {
@@ -29,11 +73,16 @@
 	}
 
 	.headerLink {
-		color: #9f927c;
+		color: #b8ad97;
 		text-decoration: none;
 
 		&:hover {
-			color: #f4ecd8;
+			color: #f2e5c8;
+		}
+
+		&:focus-visible {
+			outline: 2px solid #c8a962;
+			outline-offset: 4px;
 		}
 	}
 }

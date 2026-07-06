@@ -46,9 +46,6 @@ export function ConnectionEditor({
 					</option>
 				))}
 			</select>
-
-			<FieldLabel>Delete Connection</FieldLabel>
-
 			<button
 				type="button"
 				className="rightSideBarButton rightSideBarButtonDanger"
