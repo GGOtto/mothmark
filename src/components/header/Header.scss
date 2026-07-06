@@ -1,0 +1,39 @@
+.header {
+	height: 56px;
+	width: 100%;
+	flex-shrink: 0;
+	box-sizing: border-box;
+	padding: 0 20px;
+	border-bottom: 1px solid #2a2620;
+	background: #0f0e0c;
+	color: #f4ecd8;
+
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
+	.headerTitle {
+		color: inherit;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 18px;
+		font-weight: 600;
+		letter-spacing: 0.025em;
+		text-decoration: none;
+	}
+
+	.headerNav {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		font-size: 14px;
+	}
+
+	.headerLink {
+		color: #9f927c;
+		text-decoration: none;
+
+		&:hover {
+			color: #f4ecd8;
+		}
+	}
+}

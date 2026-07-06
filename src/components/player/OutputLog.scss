@@ -1,0 +1,21 @@
+.output-log {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.output-log__message {
+	margin: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+
+	color: #fff;
+}
+
+.output-log__message--error {
+	color: #ff6b6b;
+}
+
+.output-log__message--system {
+	color: #888;
+}

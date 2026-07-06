@@ -1,6 +1,7 @@
 import {useRef} from "react";
 import type {RoomNode} from "../../types/mapTypes";
 import type {Room, Direction, Point} from "../../schemas/worldSchema";
+import "./Node.scss";
 
 type NodeProps = {
 	room: Room;
@@ -42,21 +43,10 @@ export function Node({
 
 	return (
 		<div
+			className="node"
 			style={{
-				position: "absolute",
 				left: `calc(50% + ${node.position.x}px)`,
 				top: `calc(50% + ${node.position.y}px)`,
-				transform: "translate(-50%, -50%)",
-				width: 10,
-				height: 10,
-				borderRadius: "50%",
-				border: "2px solid #2f2920",
-				background: "#ffffff",
-				pointerEvents: "auto",
-				userSelect: "none",
-				touchAction: "none",
-				zIndex: 3,
-				cursor: "pointer",
 			}}
 			onContextMenu={(event) => {
 				event.preventDefault();

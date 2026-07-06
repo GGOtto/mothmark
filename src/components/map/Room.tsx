@@ -2,6 +2,7 @@ import type {RoomNode} from "../../types/mapTypes";
 import type {Room, Direction} from "../../schemas/worldSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {Node} from "./Node";
+import "./Room.scss";
 
 type RoomProps = {
 	room: Room;
@@ -51,26 +52,24 @@ export function RoomCard({
 	const directions: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 	const nodes = directions.map((direction) => buildNode(direction));
 
+	const className = [
+		"roomCard",
+		isSelected ? "roomCardSelected" : "",
+		isDragging ? "roomCardDragging" : "",
+	]
+		.filter(Boolean)
+		.join(" ");
+
 	return (
 		<button
 			type="button"
+			className={className}
 			onPointerDown={(event) => onPointerDown(event, room)}
 			style={{
-				position: "absolute",
 				left: room.position.x,
 				top: room.position.y,
-				transform: "translate(-50%, -50%)",
 				width,
 				height,
-				border: "2px solid #2f2920",
-				background: isSelected ? "#aea07d" : "#d8ceb4",
-				color: "#241f18",
-				fontSize: 12,
-				cursor: isDragging ? "grabbing" : "grab",
-				userSelect: "none",
-				touchAction: "none",
-				zIndex: 1,
-				overflow: "visible",
 			}}
 		>
 			{nodes.map((node) => (

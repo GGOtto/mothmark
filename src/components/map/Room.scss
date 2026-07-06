@@ -1,0 +1,21 @@
+.roomCard {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	border: 2px solid #2f2920;
+	background: #d8ceb4;
+	color: #241f18;
+	font-size: 12px;
+	cursor: grab;
+	user-select: none;
+	touch-action: none;
+	z-index: 1;
+	overflow: visible;
+
+	&.roomCardSelected {
+		background: #aea07d;
+	}
+
+	&.roomCardDragging {
+		cursor: grabbing;
+	}
+}

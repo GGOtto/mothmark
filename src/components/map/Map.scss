@@ -1,0 +1,30 @@
+.map {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	border: 1px solid #2f2920;
+	background-color: #c9bea3;
+	background-image:
+		linear-gradient(rgba(47, 41, 32, 0.18) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(47, 41, 32, 0.18) 1px, transparent 1px);
+	background-size: 48px 48px;
+	overflow: hidden;
+	touch-action: none;
+
+	.mapSvg {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.mapConnectionDragPath {
+		stroke: #2f2920;
+		stroke-width: 2;
+		stroke-dasharray: 4 5;
+	}
+
+	.mapSnapTarget {
+		stroke: #2f2920;
+		stroke-width: 2;
+	}
+}

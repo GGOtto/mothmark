@@ -3,15 +3,17 @@
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {GamePlayer} from "./GamePlayer";
 import {world} from "../../data/worlds/exampleWorld";
+import "./CommandLine.scss";
 
 export function CommandLine() {
-	const startingRoomId = world.rooms[0]?.id ?? ""; // TODO: add starting room to world data
+	const startingRoomId = world.rooms[0]?.id ?? "";
 
 	return (
 		<AdjustableBox
 			height="30%"
 			minHeight="120px"
-			className="w-full shrink-0 border border-[#ddd]"
+			maxHeight="60%"
+			className="command-line"
 			adjustableEdges={["top"]}
 		>
 			<GamePlayer world={world} startingRoomId={startingRoomId} />

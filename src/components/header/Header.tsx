@@ -1,5 +1,22 @@
-export function Header({children}: Readonly<{children: React.ReactNode}>) {
+import Link from "next/link";
+import "./Header.scss";
+
+export function Header() {
 	return (
-		<header className="h-25 w-full shrink-0 border-b border-zinc-200 bg-black">Mothmark</header>
+		<header className="header">
+			<Link href="/" className="headerTitle">
+				Mothmark
+			</Link>
+
+			<nav className="headerNav">
+				<Link href="/" className="headerLink">
+					Home
+				</Link>
+
+				<Link href="/editor" className="headerLink">
+					Editor
+				</Link>
+			</nav>
+		</header>
 	);
 }

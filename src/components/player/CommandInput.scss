@@ -1,0 +1,33 @@
+.command-input {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+
+	padding: 12px;
+
+	background: #000;
+	color: #fff;
+}
+
+.command-input__prompt {
+	margin-right: 8px;
+	user-select: none;
+}
+
+.command-input__field {
+	flex: 1;
+	min-width: 0;
+
+	margin: 0;
+	padding: 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	color: #fff;
+
+	font: inherit;
+}
+
+.command-input__field:focus {
+	outline: none;
+}

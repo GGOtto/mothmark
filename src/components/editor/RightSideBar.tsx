@@ -1,11 +1,14 @@
 import type {Room, Connection, Pathway} from "../../schemas/worldSchema";
 import {AdjustableBox} from "../ui/AdjustableBox";
+import "./RightSideBar.scss";
 
 type RightSideBarProps = {
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
 	onConnectionChange: (connection: Connection) => void;
+	title?: string;
+	description?: string;
 };
 
 const PATHWAY_OPTIONS: Pathway[] = ["two-way", "forwards", "backwards", "no-way"];
@@ -15,43 +18,23 @@ type FieldLabelProps = {
 };
 
 function FieldLabel({children}: FieldLabelProps) {
-	return (
-		<label
-			style={{
-				display: "block",
-				marginBottom: "8px",
-				fontSize: "12px",
-				fontWeight: 700,
-				textTransform: "uppercase",
-				letterSpacing: "0.08em",
-			}}
-		>
-			{children}
-		</label>
-	);
+	return <label className="rightSideBarFieldLabel">{children}</label>;
 }
-
-const inputStyle: React.CSSProperties = {
-	width: "100%",
-	boxSizing: "border-box",
-	padding: "8px",
-	border: "1px solid #2f2920",
-	background: "#f4ecd8",
-	color: "#2f2920",
-};
 
 export function RightSideBar({
 	selectedRoom,
 	selectedConnection,
 	onRoomChange,
 	onConnectionChange,
+	title,
+	description,
 }: RightSideBarProps) {
 	return (
 		<AdjustableBox
 			width="33%"
 			maxWidth="100%"
-			minWidth="120px"
-			className="h-full box-border border-l border-[#ddd] p-4"
+			minWidth="220px"
+			className="rightSideBar"
 			adjustableEdges={["left"]}
 		>
 			{selectedRoom ? (
@@ -61,10 +44,27 @@ export function RightSideBar({
 					selectedConnection={selectedConnection}
 					onConnectionChange={onConnectionChange}
 				/>
+			) : title ? (
+				<EmptyTabPanel title={title} description={description} />
 			) : (
-				<p style={{margin: 0, color: "#777"}}>Select a room or connection</p>
+				<p className="rightSideBarEmptyText">Select a room or connection</p>
 			)}
 		</AdjustableBox>
+	);
+}
+
+type EmptyTabPanelProps = {
+	title: string;
+	description?: string;
+};
+
+function EmptyTabPanel({title, description}: EmptyTabPanelProps) {
+	return (
+		<div className="rightSideBarEmptyPanel">
+			<p className="rightSideBarEmptyTitle">{title}</p>
+
+			{description ? <p className="rightSideBarEmptyDescription">{description}</p> : null}
+		</div>
 	);
 }
 
@@ -75,10 +75,11 @@ type RoomEditorProps = {
 
 function RoomEditor({selectedRoom, onRoomChange}: RoomEditorProps) {
 	return (
-		<div>
+		<div className="rightSideBarSection">
 			<FieldLabel>Room Name</FieldLabel>
 
 			<input
+				className="rightSideBarInput"
 				value={selectedRoom.name}
 				onChange={(event) =>
 					onRoomChange({
@@ -86,7 +87,6 @@ function RoomEditor({selectedRoom, onRoomChange}: RoomEditorProps) {
 						name: event.target.value,
 					})
 				}
-				style={inputStyle}
 			/>
 		</div>
 	);
@@ -99,13 +99,14 @@ type ConnectionEditorProps = {
 
 function ConnectionEditor({selectedConnection, onConnectionChange}: ConnectionEditorProps) {
 	return (
-		<div>
+		<div className="rightSideBarSection">
 			<FieldLabel>Connection</FieldLabel>
 
-			<div style={{marginBottom: "16px", color: "#777", fontSize: "13px"}}>
+			<div className="rightSideBarConnectionMeta">
 				<div>
 					<strong>From:</strong> {selectedConnection.fromRoomId} {selectedConnection.direction}
 				</div>
+
 				<div>
 					<strong>To:</strong> {selectedConnection.toRoomId} {selectedConnection.returnDirection}
 				</div>
@@ -114,6 +115,7 @@ function ConnectionEditor({selectedConnection, onConnectionChange}: ConnectionEd
 			<FieldLabel>Pathway</FieldLabel>
 
 			<select
+				className="rightSideBarInput"
 				value={selectedConnection.pathway}
 				onChange={(event) =>
 					onConnectionChange({
@@ -121,7 +123,6 @@ function ConnectionEditor({selectedConnection, onConnectionChange}: ConnectionEd
 						pathway: event.target.value as Pathway,
 					})
 				}
-				style={inputStyle}
 			>
 				{PATHWAY_OPTIONS.map((pathway) => (
 					<option key={pathway} value={pathway}>

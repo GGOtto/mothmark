@@ -1,0 +1,31 @@
+.connection {
+	.connectionClickTarget {
+		cursor: pointer;
+	}
+
+	.connectionPath {
+		stroke: #2f2920;
+		stroke-width: 2;
+	}
+
+	.connectionPathDashed {
+		stroke-dasharray: 4 5;
+	}
+
+	.connectionPathDirectional {
+		stroke-dasharray: 50 50;
+	}
+
+	&.connectionEditing {
+		.connectionPath {
+			stroke: #796d5ab3;
+			stroke-width: 3;
+		}
+	}
+
+	&.connectionSelected {
+		.connectionPath {
+			stroke: #f00;
+		}
+	}
+}

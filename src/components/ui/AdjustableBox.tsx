@@ -2,6 +2,7 @@
 
 import type React from "react";
 import {useEffect, useRef, useState} from "react";
+import "./AdjustableBox.scss";
 
 type AdjustableBoxEdge = "top" | "bottom" | "left" | "right";
 
@@ -122,10 +123,12 @@ export function AdjustableBox({
 		};
 	}
 
+	const boxClassName = ["adjustableBox", className].filter(Boolean).join(" ");
+
 	return (
 		<div
 			ref={containerRef}
-			className={`relative box-border min-h-0 min-w-0 ${className}`}
+			className={boxClassName}
 			style={{
 				width: toCssSize(currentWidth),
 				height: toCssSize(currentHeight),
@@ -137,44 +140,32 @@ export function AdjustableBox({
 		>
 			{adjustableEdges.includes("top") && (
 				<div
-					className="absolute left-0 top-0 z-10 w-full cursor-ns-resize touch-none"
-					style={{
-						height: HANDLE_SIZE,
-						transform: "translateY(-50%)",
-					}}
+					className="adjustableBoxHandle adjustableBoxHandleTop"
+					style={{height: HANDLE_SIZE}}
 					onPointerDown={startDrag("top")}
 				/>
 			)}
 
 			{adjustableEdges.includes("bottom") && (
 				<div
-					className="absolute bottom-0 left-0 z-10 w-full cursor-ns-resize touch-none"
-					style={{
-						height: HANDLE_SIZE,
-						transform: "translateY(50%)",
-					}}
+					className="adjustableBoxHandle adjustableBoxHandleBottom"
+					style={{height: HANDLE_SIZE}}
 					onPointerDown={startDrag("bottom")}
 				/>
 			)}
 
 			{adjustableEdges.includes("left") && (
 				<div
-					className="absolute left-0 top-0 z-10 h-full cursor-ew-resize touch-none"
-					style={{
-						width: HANDLE_SIZE,
-						transform: "translateX(-50%)",
-					}}
+					className="adjustableBoxHandle adjustableBoxHandleLeft"
+					style={{width: HANDLE_SIZE}}
 					onPointerDown={startDrag("left")}
 				/>
 			)}
 
 			{adjustableEdges.includes("right") && (
 				<div
-					className="absolute right-0 top-0 z-10 h-full cursor-ew-resize touch-none"
-					style={{
-						width: HANDLE_SIZE,
-						transform: "translateX(50%)",
-					}}
+					className="adjustableBoxHandle adjustableBoxHandleRight"
+					style={{width: HANDLE_SIZE}}
 					onPointerDown={startDrag("right")}
 				/>
 			)}

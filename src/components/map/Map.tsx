@@ -9,6 +9,7 @@ import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
 import {buildAddConnectionResult} from "../../utils/connectionUtils";
 import {useConnectionDrag} from "./useConnectionDrag";
+import "./Map.scss";
 
 type DragState = {
 	roomId: string;
@@ -199,35 +200,14 @@ export function Map({
 		<div
 			ref={mapRef}
 			data-map
+			className="map"
 			onClick={handleMapClick}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerCancel}
 			onContextMenu={(event) => event.preventDefault()}
-			style={{
-				position: "relative",
-				width: "100%",
-				height: "100%",
-				border: "1px solid #2f2920",
-				backgroundColor: "#c9bea3",
-				backgroundImage: `
-          linear-gradient(rgba(47, 41, 32, 0.18) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(47, 41, 32, 0.18) 1px, transparent 1px)
-        `,
-				backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-				overflow: "hidden",
-				touchAction: "none",
-			}}
 		>
-			<svg
-				width="100%"
-				height="100%"
-				style={{
-					position: "absolute",
-					inset: 0,
-					pointerEvents: "none",
-				}}
-			>
+			<svg className="mapSvg" width="100%" height="100%">
 				{connections.map((connection) => {
 					const fromRoom = getRoom(connection.fromRoomId, connection.direction);
 					const toRoom = getRoom(connection.toRoomId, connection.returnDirection);
@@ -249,23 +229,20 @@ export function Map({
 
 				{connectionDragState?.hasDragged ? (
 					<path
+						className="mapConnectionDragPath"
 						d={`M ${connectionDragState.startPoint.x} ${connectionDragState.startPoint.y} L ${connectionDragState.currentPoint.x} ${connectionDragState.currentPoint.y}`}
 						fill="none"
-						stroke="#2f2920"
-						strokeWidth={2}
 						strokeLinecap="round"
-						strokeDasharray="4 5"
 					/>
 				) : null}
 
 				{connectionDragState?.snapTarget ? (
 					<circle
+						className="mapSnapTarget"
 						cx={connectionDragState.snapTarget.point.x}
 						cy={connectionDragState.snapTarget.point.y}
 						r={8}
 						fill="none"
-						stroke="#2f2920"
-						strokeWidth={2}
 					/>
 				) : null}
 			</svg>

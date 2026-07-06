@@ -14,9 +14,10 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" className="h-full antialiased">
-			<body className="flex h-full flex-col overflow-hidden">
-				<Header children={children} />
-				{children}
+			<body className="flex h-dvh flex-col overflow-hidden bg-[#111]">
+				<Header />
+
+				<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
 			</body>
 		</html>
 	);

@@ -365,6 +365,21 @@ function connectionAlreadyExists(connectionToAdd: Connection, connections: Conne
 	});
 }
 
+// TODO: create a dedicated util file to create default rooms and have the tests validate them against the schema
+// Potentially use the schema to generate them
+function createDefaultRoom(id: string, name: string, position: Point): Room {
+	return {
+		id,
+		name,
+		position,
+		description: {
+			default: "",
+			variants: [],
+		},
+		features: [],
+	};
+}
+
 export function buildAddConnectionResult({
 	fromRoom,
 	direction,
@@ -393,11 +408,7 @@ export function buildAddConnectionResult({
 
 	const roomToAdd =
 		overlappingRoom === undefined
-			? ({
-					id: `room-${rooms.length + 1}`,
-					name: `Room ${rooms.length + 1}`,
-					position: targetPosition,
-				} satisfies Room)
+			? createDefaultRoom(`room-${rooms.length + 1}`, `Room ${rooms.length + 1}`, targetPosition)
 			: undefined;
 	const toRoom = overlappingRoom ?? roomToAdd;
 

@@ -3,6 +3,7 @@
 import {useMemo, useState} from "react";
 import {z} from "zod";
 import {WorldSchema} from "../../schemas/worldSchema";
+import "./page.scss";
 
 type CreateDefaultJsonOptions = {
 	includeOptionalFields?: boolean;
@@ -32,29 +33,24 @@ export default function StarterWorldPage() {
 	}
 
 	return (
-		<main className="min-h-full bg-zinc-950 px-8 py-8 text-zinc-100">
-			<div className="mx-auto flex max-w-5xl flex-col gap-6">
-				<header>
-					<h1 className="text-2xl font-bold">Starter World</h1>
-					<p className="mt-2 max-w-2xl text-sm text-zinc-400">
-						Copy this generated JSON and fill it out to create a new Mothmark world.
-					</p>
+		<main className="starterWorldPage">
+			<div className="starterWorldPageInner">
+				<header className="starterWorldHeader">
+					<h1>Starter World</h1>
+
+					<p>Copy this generated JSON and fill it out to create a new Mothmark world.</p>
 				</header>
 
-				<section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-lg">
-					<div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4 py-3">
-						<h2 className="text-sm font-semibold text-zinc-100">Starter world JSON</h2>
+				<section className="starterWorldJsonPanel">
+					<div className="starterWorldJsonPanelHeader">
+						<h2>Starter world JSON</h2>
 
-						<button
-							type="button"
-							onClick={copyJson}
-							className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-100 transition hover:bg-zinc-700"
-						>
+						<button type="button" onClick={copyJson}>
 							{hasCopied ? "Copied!" : "Copy"}
 						</button>
 					</div>
 
-					<pre className="max-h-[70vh] overflow-auto p-4 text-sm leading-6 text-zinc-100">
+					<pre>
 						<code>{starterWorldJson}</code>
 					</pre>
 				</section>

@@ -1,0 +1,44 @@
+.adjustableBox {
+	position: relative;
+	box-sizing: border-box;
+	min-width: 0;
+	min-height: 0;
+
+	.adjustableBoxHandle {
+		position: absolute;
+		z-index: 10;
+		touch-action: none;
+	}
+
+	.adjustableBoxHandleTop {
+		left: 0;
+		top: 0;
+		width: 100%;
+		cursor: ns-resize;
+		transform: translateY(-50%);
+	}
+
+	.adjustableBoxHandleBottom {
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		cursor: ns-resize;
+		transform: translateY(50%);
+	}
+
+	.adjustableBoxHandleLeft {
+		left: 0;
+		top: 0;
+		height: 100%;
+		cursor: ew-resize;
+		transform: translateX(-50%);
+	}
+
+	.adjustableBoxHandleRight {
+		right: 0;
+		top: 0;
+		height: 100%;
+		cursor: ew-resize;
+		transform: translateX(50%);
+	}
+}

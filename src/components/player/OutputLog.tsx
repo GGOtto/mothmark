@@ -2,16 +2,22 @@
 
 import {useEffect, useRef} from "react";
 import type {GameMessage} from "../../engine/gameState";
+import "./OutputLog.scss";
 
 type OutputLogProps = {
 	messages: GameMessage[];
 };
 
 function getMessageClassName(type: GameMessage["type"]) {
-	if (type === "command") return "text-neutral-400";
-	if (type === "error") return "text-red-300";
-	if (type === "system") return "text-neutral-300";
-	return "text-neutral-100";
+	if (type === "error") return "output-log__message output-log__message--error";
+	if (type === "system") return "output-log__message output-log__message--system";
+	return "output-log__message";
+}
+
+function getPrefix(type: GameMessage["type"]) {
+	if (type === "command") return "> ";
+	if (type === "error") return "error: ";
+	return "";
 }
 
 export function OutputLog({messages}: OutputLogProps) {
@@ -24,12 +30,10 @@ export function OutputLog({messages}: OutputLogProps) {
 	}, [messages]);
 
 	return (
-		<div className="flex w-full flex-col gap-4">
+		<div className="output-log">
 			{messages.map((message) => (
-				<p
-					key={message.id}
-					className={`whitespace-pre-wrap leading-7 ${getMessageClassName(message.type)}`}
-				>
+				<p key={message.id} className={getMessageClassName(message.type)}>
+					{getPrefix(message.type)}
 					{message.text}
 				</p>
 			))}

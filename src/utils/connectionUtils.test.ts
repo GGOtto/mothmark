@@ -26,6 +26,24 @@ function room(id: string, x: number, y: number): Room {
 		id,
 		name: id,
 		position: {x, y},
+		description: {
+			default: "",
+			variants: [],
+		},
+		features: [],
+	};
+}
+
+function generatedRoom(id: string, name: string, position: Point): Room {
+	return {
+		id,
+		name,
+		position,
+		description: {
+			default: "",
+			variants: [],
+		},
+		features: [],
 	};
 }
 
@@ -592,14 +610,12 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result).not.toBeNull();
 
-		expect(result?.roomToAdd).toEqual({
-			id: "room-2",
-			name: "Room 2",
-			position: {
+		expect(result?.roomToAdd).toEqual(
+			generatedRoom("room-2", "Room 2", {
 				x: 100 + ROOM_WIDTH + CONNECTOR_LENGTH,
 				y: 100,
-			},
-		});
+			}),
+		);
 
 		expect(result?.connection).toEqual({
 			id: "connection-1",
@@ -710,14 +726,12 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result?.connection.toRoomId).toBe("room-3");
 
-		expect(result?.roomToAdd).toEqual({
-			id: "room-3",
-			name: "Room 3",
-			position: {
+		expect(result?.roomToAdd).toEqual(
+			generatedRoom("room-3", "Room 3", {
 				x: 100 + ROOM_WIDTH + CONNECTOR_LENGTH,
 				y: 100,
-			},
-		});
+			}),
+		);
 	});
 
 	it("uses the next connection id based on the existing connection count", () => {
@@ -807,14 +821,12 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result).not.toBeNull();
 
-		expect(result?.roomToAdd).toEqual({
-			id: "room-3",
-			name: "Room 3",
-			position: {
+		expect(result?.roomToAdd).toEqual(
+			generatedRoom("room-3", "Room 3", {
 				x: 100,
 				y: 100 + ROOM_HEIGHT + CONNECTOR_LENGTH,
-			},
-		});
+			}),
+		);
 
 		expect(result?.connection).toMatchObject({
 			fromRoomId: "room-1",

@@ -8,6 +8,7 @@ import {
 	scalePoint,
 	getDistance,
 } from "../../utils/pointUtils";
+import "./Connection.scss";
 
 type ConnectionProps = {
 	connection: ConnectionType;
@@ -44,6 +45,7 @@ function getPath(points: Point[]) {
 		const control2Length = Math.min(outgoingLength * tension, maxControlLength);
 
 		const control1 = addPoints(p1, scalePoint(incoming, control1Length / incomingLength));
+
 		const control2 = subtractPoints(p2, scalePoint(outgoing, control2Length / outgoingLength));
 
 		path += ` C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${p2.x} ${p2.y}`;
@@ -90,14 +92,13 @@ export function Connection({
 	const pathPoints = [fromRoom.position, ...curvePoints, toRoom.position];
 	const path = getPath(pathPoints);
 
-	let stroke = "#2f2920";
-	if (isEditing) {
-		stroke = "#796d5ab3";
-	} else if (isSelected) {
-		stroke = "#f00";
-	}
-
-	const strokeWidth = isEditing ? 3 : 2;
+	const connectionClassNames = [
+		"connection",
+		isEditing ? "connectionEditing" : "",
+		isSelected ? "connectionSelected" : "",
+	]
+		.filter(Boolean)
+		.join(" ");
 
 	function handleSelect(event: React.MouseEvent<SVGPathElement>) {
 		event.stopPropagation();
@@ -112,21 +113,20 @@ export function Connection({
 			strokeWidth={18}
 			strokeLinecap="round"
 			pointerEvents="stroke"
-			className="cursor-pointer"
+			className="connectionClickTarget"
 			onClick={handleSelect}
 		/>
 	);
 
 	if (connection.pathway === "two-way") {
 		return (
-			<g>
+			<g className={connectionClassNames}>
 				{clickTarget}
 
 				<path
+					className="connectionPath"
 					d={path}
 					fill="none"
-					stroke={stroke}
-					strokeWidth={strokeWidth}
 					strokeLinecap="round"
 					pointerEvents="none"
 				/>
@@ -136,16 +136,14 @@ export function Connection({
 
 	if (connection.pathway === "no-way") {
 		return (
-			<g>
+			<g className={connectionClassNames}>
 				{clickTarget}
 
 				<path
+					className="connectionPath connectionPathDashed"
 					d={path}
 					fill="none"
-					stroke={stroke}
-					strokeWidth={strokeWidth}
 					strokeLinecap="round"
-					strokeDasharray="4 5"
 					pointerEvents="none"
 				/>
 			</g>
@@ -153,27 +151,23 @@ export function Connection({
 	}
 
 	return (
-		<g>
+		<g className={connectionClassNames}>
 			{clickTarget}
 
 			<path
+				className="connectionPath connectionPathDashed"
 				d={path}
 				fill="none"
-				stroke={stroke}
-				strokeWidth={strokeWidth}
 				strokeLinecap="round"
-				strokeDasharray="4 5"
 				pointerEvents="none"
 			/>
 
 			<path
+				className="connectionPath connectionPathDirectional"
 				d={path}
 				pathLength={100}
 				fill="none"
-				stroke={stroke}
-				strokeWidth={strokeWidth}
 				strokeLinecap="round"
-				strokeDasharray="50 50"
 				strokeDashoffset={connection.pathway === "backwards" ? -50 : 0}
 				pointerEvents="none"
 			/>

@@ -1,0 +1,59 @@
+.rightSideBar {
+	height: 100%;
+	flex-shrink: 0;
+	overflow: auto;
+	box-sizing: border-box;
+	padding: 16px;
+	border-left: 1px solid rgba(255, 255, 255, 0.1);
+	background: #111;
+
+	.rightSideBarSection {
+		width: 100%;
+	}
+
+	.rightSideBarFieldLabel {
+		display: block;
+		margin-bottom: 8px;
+		font-size: 12px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #f4ecd8;
+	}
+
+	.rightSideBarInput {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 8px;
+		border: 1px solid #2f2920;
+		background: #f4ecd8;
+		color: #2f2920;
+	}
+
+	.rightSideBarEmptyText {
+		margin: 0;
+		color: #777;
+	}
+
+	.rightSideBarEmptyPanel {
+		.rightSideBarEmptyTitle {
+			margin: 0;
+			color: #fff;
+			font-size: 14px;
+			font-weight: 700;
+		}
+
+		.rightSideBarEmptyDescription {
+			margin: 8px 0 0;
+			color: rgba(255, 255, 255, 0.52);
+			font-size: 13px;
+			line-height: 1.5;
+		}
+	}
+
+	.rightSideBarConnectionMeta {
+		margin-bottom: 16px;
+		color: #777;
+		font-size: 13px;
+	}
+}

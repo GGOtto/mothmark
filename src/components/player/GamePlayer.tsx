@@ -7,6 +7,7 @@ import {lookAtRoom} from "../../engine/rooms";
 import {runCommand} from "../../engine/commands";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
+import "./GamePlayer.scss";
 
 type GamePlayerProps = {
 	world: World;
@@ -32,11 +33,9 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	}
 
 	return (
-		<section className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-neutral-950 text-neutral-100">
-			<div className="min-h-0 flex-1 overflow-y-auto p-6">
-				<div className="mx-auto max-w-3xl">
-					<OutputLog messages={gameState.messages} />
-				</div>
+		<section className="game-player">
+			<div className="game-player__output">
+				<OutputLog messages={gameState.messages} />
 			</div>
 
 			<CommandInput command={command} setCommand={setCommand} submitCommand={submitCommand} />

@@ -1,0 +1,14 @@
+.node {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	border: 2px solid #2f2920;
+	background: #ffffff;
+	pointer-events: auto;
+	user-select: none;
+	touch-action: none;
+	z-index: 3;
+	cursor: pointer;
+}
