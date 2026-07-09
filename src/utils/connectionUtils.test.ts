@@ -14,6 +14,7 @@ import {
 	isConnectionFromRoom,
 	isSameConnectionShape,
 } from "./connectionUtils";
+import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
 
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
@@ -22,33 +23,15 @@ const MIN_CONNECTOR_LENGTH = 12;
 const CONNECTOR_STEP = 4;
 
 function room(id: string, x: number, y: number): Room {
-	return {
-		id,
-		name: id,
-		position: {x, y},
-		description: {
-			default: "",
-			variants: [],
-		},
-		features: [],
-	};
+	return createDefaultRoom(id, id, {x, y});
 }
 
 function generatedRoom(id: string, name: string, position: Point): Room {
-	return {
-		id,
-		name,
-		position,
-		description: {
-			default: "",
-			variants: [],
-		},
-		features: [],
-	};
+	return createDefaultRoom(id, name, position);
 }
 
 function connection(overrides: Partial<Connection> = {}): Connection {
-	return {
+	return createDefaultConnection({
 		id: "connection-1",
 		fromRoomId: "room-1",
 		toRoomId: "room-2",
@@ -56,7 +39,7 @@ function connection(overrides: Partial<Connection> = {}): Connection {
 		returnDirection: "w",
 		pathway: "two-way",
 		...overrides,
-	};
+	});
 }
 
 function buildOptions({
@@ -617,14 +600,16 @@ describe("buildAddConnectionResult", () => {
 			}),
 		);
 
-		expect(result?.connection).toEqual({
-			id: "connection-1",
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
-			direction: "e",
-			returnDirection: "w",
-			pathway: "two-way",
-		});
+		expect(result?.connection).toEqual(
+			createDefaultConnection({
+				id: "connection-1",
+				fromRoomId: "room-1",
+				toRoomId: "room-2",
+				direction: "e",
+				returnDirection: "w",
+				pathway: "two-way",
+			}),
+		);
 	});
 
 	it("connects to an overlapping room instead of creating a new room", () => {
@@ -643,14 +628,16 @@ describe("buildAddConnectionResult", () => {
 		expect(result).not.toBeNull();
 		expect(result?.roomToAdd).toBeUndefined();
 
-		expect(result?.connection).toEqual({
-			id: "connection-1",
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
-			direction: "e",
-			returnDirection: "w",
-			pathway: "two-way",
-		});
+		expect(result?.connection).toEqual(
+			createDefaultConnection({
+				id: "connection-1",
+				fromRoomId: "room-1",
+				toRoomId: "room-2",
+				direction: "e",
+				returnDirection: "w",
+				pathway: "two-way",
+			}),
+		);
 	});
 
 	it("makes the new connection forwards-only when the target room already has a connection from the return direction", () => {
@@ -679,14 +666,16 @@ describe("buildAddConnectionResult", () => {
 		expect(result).not.toBeNull();
 		expect(result?.roomToAdd).toBeUndefined();
 
-		expect(result?.connection).toEqual({
-			id: "connection-2",
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
-			direction: "e",
-			returnDirection: "w",
-			pathway: "forwards",
-		});
+		expect(result?.connection).toEqual(
+			createDefaultConnection({
+				id: "connection-2",
+				fromRoomId: "room-1",
+				toRoomId: "room-2",
+				direction: "e",
+				returnDirection: "w",
+				pathway: "forwards",
+			}),
+		);
 	});
 
 	it("chooses the best aligned overlapping room when multiple rooms overlap the target area", () => {
@@ -724,10 +713,10 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result).not.toBeNull();
 
-		expect(result?.connection.toRoomId).toBe("room-3");
+		expect(result?.connection.toRoomId).toBe("room-2");
 
 		expect(result?.roomToAdd).toEqual(
-			generatedRoom("room-3", "Room 3", {
+			generatedRoom("room-2", "Room 3", {
 				x: 100 + ROOM_WIDTH + CONNECTOR_LENGTH,
 				y: 100,
 			}),
@@ -822,7 +811,7 @@ describe("buildAddConnectionResult", () => {
 		expect(result).not.toBeNull();
 
 		expect(result?.roomToAdd).toEqual(
-			generatedRoom("room-3", "Room 3", {
+			generatedRoom("room-2", "Room 3", {
 				x: 100,
 				y: 100 + ROOM_HEIGHT + CONNECTOR_LENGTH,
 			}),
@@ -830,7 +819,7 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result?.connection).toMatchObject({
 			fromRoomId: "room-1",
-			toRoomId: "room-3",
+			toRoomId: "room-2",
 			direction: "s",
 			returnDirection: "n",
 			pathway: "two-way",

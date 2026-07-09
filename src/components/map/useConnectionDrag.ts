@@ -11,6 +11,7 @@ import {
 	type MovingConnectionSide,
 	type SnapTarget,
 } from "../../utils/connectionUtils";
+import {createDefaultConnection} from "../../utils/createDefaultWorld";
 
 type ConnectionDragMode = "create" | "edit";
 
@@ -181,14 +182,14 @@ export function useConnectionDrag({
 				connections,
 			);
 
-			const connection: ConnectionType = {
+			const connection: ConnectionType = createDefaultConnection({
 				id: createConnectionId(),
 				fromRoomId,
 				toRoomId: toRoom.id,
 				direction: fromDirection,
 				returnDirection: toDirection,
 				pathway,
-			};
+			});
 
 			const existingConnection = getDuplicateConnectionByShape(connections, connection);
 

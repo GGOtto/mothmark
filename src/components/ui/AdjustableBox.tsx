@@ -59,14 +59,6 @@ export function AdjustableBox({
 	const [dragState, setDragState] = useState<DragState | null>(null);
 
 	useEffect(() => {
-		setCurrentWidth(width);
-	}, [width]);
-
-	useEffect(() => {
-		setCurrentHeight(height);
-	}, [height]);
-
-	useEffect(() => {
 		if (!dragState) return;
 
 		function handlePointerMove(event: PointerEvent) {

@@ -1,15 +1,11 @@
 import {z} from "zod";
 import {ConditionSchema} from "./conditionSchema";
-import {docify} from "../utils/docify";
 import {
-	editorArray,
 	editorBoolean,
-	editorCondition,
 	editorConditionList,
 	editorCounterKey,
 	editorDirection,
 	editorDiscriminatedUnion,
-	editorEffects,
 	editorEntityId,
 	editorFlagKey,
 	editorId,
@@ -1269,7 +1265,7 @@ export type Effect =
 	| ConditionalEffect;
 
 export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
-	editorEffects(
+	editorDiscriminatedUnion(
 		z
 			.discriminatedUnion("type", [
 				MessageEffectSchema,

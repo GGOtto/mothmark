@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import type {World} from "../../schemas/worldSchema";
 import {createInitialGameState, type GameState} from "../../engine/gameState";
 import {lookAtRoom} from "../../engine/rooms";
@@ -12,16 +12,9 @@ import "./GamePlayer.scss";
 type GamePlayerProps = {
 	world: World;
 	startingRoomId: string;
-	syncedRoomId?: string | null;
-	syncVersion?: number;
 };
 
-export function GamePlayer({
-	world,
-	startingRoomId,
-	syncedRoomId,
-	syncVersion = 0,
-}: GamePlayerProps) {
+export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	const initialState = useMemo(() => {
 		const state = createInitialGameState(world, startingRoomId);
 		return lookAtRoom(world, state);
@@ -32,34 +25,8 @@ export function GamePlayer({
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
 
-	useEffect(() => {
-		setGameState(initialState);
-	}, [initialState]);
-
-	useEffect(() => {
-		if (!syncedRoomId) return;
-
-		syncToRoom(syncedRoomId);
-	}, [syncedRoomId, syncVersion]);
-
 	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
 		setGameState((currentState) => updateGameState(currentState));
-	}
-
-	function syncToRoom(roomId: string) {
-		pushGameState((currentState) => {
-			const roomExists = world.rooms.some((room) => room.id === roomId);
-
-			if (!roomExists) {
-				return currentState;
-			}
-
-			return lookAtRoom(world, {
-				...currentState,
-				currentRoomId: roomId,
-				messages: [],
-			});
-		});
 	}
 
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {

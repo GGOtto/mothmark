@@ -1,5 +1,6 @@
 import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/mapTypes";
+import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
 import {generateUniqueId} from "./idUtils";
 import {subtractPoints} from "./pointUtils";
 
@@ -366,21 +367,6 @@ function connectionAlreadyExists(connectionToAdd: Connection, connections: Conne
 	});
 }
 
-// TODO: create a dedicated util file to create default rooms and have the tests validate them against the schema
-// Potentially use the schema to generate them
-function createDefaultRoom(id: string, name: string, position: Point): Room {
-	return {
-		id,
-		name,
-		position,
-		description: {
-			default: "",
-			variants: [],
-		},
-		features: [],
-	};
-}
-
 export function buildAddConnectionResult({
 	fromRoom,
 	direction,
@@ -421,14 +407,14 @@ export function buildAddConnectionResult({
 	const targetCanReturn =
 		!overlappingRoom || !isConnectionFromRoom(overlappingRoom.id, targetReturnDirection, connections);
 
-	const connection = {
+	const connection = createDefaultConnection({
 		id: generateUniqueId("connection", connections),
 		fromRoomId: fromRoom.id,
 		toRoomId: toRoom.id,
 		direction,
 		returnDirection: targetReturnDirection,
 		pathway: targetCanReturn ? "two-way" : "forwards",
-	} satisfies Connection;
+	});
 
 	if (connectionAlreadyExists(connection, connections)) {
 		return null;

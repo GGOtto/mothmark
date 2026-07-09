@@ -9,6 +9,11 @@ export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	sw: {x: -1, y: 1},
 	w: {x: -1, y: 0},
 	nw: {x: -1, y: -1},
+	// TODO: replace these fallback vectors when floor/contextual exit layout is implemented.
+	up: {x: 0, y: -1},
+	down: {x: 0, y: 1},
+	in: {x: 1, y: 0},
+	out: {x: -1, y: 0},
 };
 
 export const REVERSE_DIRECTION: Record<Direction, Direction> = {
@@ -20,6 +25,10 @@ export const REVERSE_DIRECTION: Record<Direction, Direction> = {
 	sw: "ne",
 	w: "e",
 	nw: "se",
+	up: "down",
+	down: "up",
+	in: "out",
+	out: "in",
 };
 
 export type RoomNode = {

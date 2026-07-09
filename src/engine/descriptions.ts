@@ -1,18 +1,37 @@
-import type {Condition, ConditionalText, Description} from "@/schemas/worldSchema";
+import type {Condition} from "@/schemas/conditionSchema";
+import type {Description} from "@/schemas/worldSchema";
 import type {GameState} from "./gameState";
-import {DefaultDeserializer} from "v8";
 
 export function conditionsMatch(conditions: Condition[], gameState: GameState) {
-	return conditions.every((condition) => {
-		return gameState.flags[condition.flag] === condition.value;
-	});
+	return conditions.every((condition) => conditionMatches(condition, gameState));
 }
 
 export function getConditionKey(conditions: Condition[]) {
 	return conditions
-		.map((condition) => `${condition.flag}:${condition.value}`)
+		.map((condition) => JSON.stringify(condition))
 		.sort()
 		.join("|");
+}
+
+function conditionMatches(condition: Condition, gameState: GameState): boolean {
+	if (condition.type === "group") {
+		const matches = condition.conditions.map((childCondition) =>
+			conditionMatches(childCondition, gameState),
+		);
+
+		if (condition.operator === "any") return matches.some(Boolean);
+		if (condition.operator === "none") return matches.every((match) => !match);
+		return matches.every(Boolean);
+	}
+
+	if (condition.type === "flag") {
+		if (condition.operation === "exists") return condition.flag in gameState.flags;
+		if (condition.operation === "missing") return !(condition.flag in gameState.flags);
+		return gameState.flags[condition.flag] === condition.value;
+	}
+
+	// TODO: evaluate the rest of the universal condition types against GameState.
+	return false;
 }
 
 function getRandomItem<T>(items: T[]) {

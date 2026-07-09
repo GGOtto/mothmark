@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {RefreshCw} from "lucide-react";
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {GamePlayer} from "./GamePlayer";
@@ -13,22 +13,14 @@ type CommandLineProps = {
 };
 
 export function CommandLine({world, selectedRoomId}: CommandLineProps) {
-	const startingRoomId = world.rooms[0]?.id ?? "";
-	const [syncedRoomId, setSyncedRoomId] = useState<string | null>(null);
 	const [syncVersion, setSyncVersion] = useState(0);
+	const startingRoomId = selectedRoomId ?? world.startRoomId;
 
 	function syncSelectedRoom() {
 		if (!selectedRoomId) return;
 
-		setSyncedRoomId(selectedRoomId);
 		setSyncVersion((currentVersion) => currentVersion + 1);
 	}
-
-	useEffect(() => {
-		if (!selectedRoomId) return;
-
-		syncSelectedRoom();
-	}, [selectedRoomId]);
 
 	return (
 		<AdjustableBox
@@ -51,10 +43,9 @@ export function CommandLine({world, selectedRoomId}: CommandLineProps) {
 			</div>
 
 			<GamePlayer
+				key={`${startingRoomId}:${syncVersion}`}
 				world={world}
 				startingRoomId={startingRoomId}
-				syncedRoomId={syncedRoomId}
-				syncVersion={syncVersion}
 			/>
 		</AdjustableBox>
 	);

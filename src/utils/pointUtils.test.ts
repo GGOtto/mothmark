@@ -1,4 +1,3 @@
-import type {Connection} from "../schemas/worldSchema";
 import {
 	addPoints,
 	getDistance,

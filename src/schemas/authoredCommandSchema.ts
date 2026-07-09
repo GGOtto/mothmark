@@ -1137,7 +1137,7 @@ export const CommandMessageVariableSchema = editorObject(
 				width: "half",
 				order: 1,
 			},
-		}).min(1),
+		}),
 
 		description: editorTextarea({
 			title: "Description",
@@ -1202,7 +1202,7 @@ export const AuthorCommandSchema = editorObject(
 				width: "half",
 				order: 2,
 			},
-		}).min(1),
+		}),
 
 		description: editorTextarea({
 			title: "Description",
@@ -1288,7 +1288,7 @@ export const AuthorCommandSchema = editorObject(
 				width: "full",
 				order: 11,
 			},
-		}).min(1),
+		}),
 
 		resolution: CommandResolutionSchema.default(DefaultCommandResolution).describe(
 			"Target resolution behavior for this command.",

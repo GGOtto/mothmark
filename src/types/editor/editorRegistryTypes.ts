@@ -13,6 +13,32 @@ export type EditorEntityOption = {
 	disabled?: boolean;
 };
 
+export type EntityType =
+	| "room"
+	| "connection"
+	| "item"
+	| "npc"
+	| "character"
+	| "topic"
+	| "quest"
+	| "command"
+	| "event"
+	| "feature"
+	| "container"
+	| "surface"
+	| "object"
+	| "direction";
+
+export type EntityPickerOption = EditorEntityOption & {
+	entityType?: EntityType;
+};
+
+export type EntityRegistry = {
+	getEntities: (entityType: EntityType) => EntityPickerOption[];
+	getEntityById: (entityType: EntityType, id: string) => EntityPickerOption | undefined;
+	isValidEntityId: (entityType: EntityType, id: string) => boolean;
+};
+
 export type EditorKeyOption = {
 	key: string;
 	label: string;
@@ -20,6 +46,17 @@ export type EditorKeyOption = {
 	source?: string;
 	deprecated?: boolean;
 	disabled?: boolean;
+};
+
+export type FlagOption = Omit<EditorKeyOption, "key"> & {
+	id: string;
+};
+
+export type FlagRegistry = {
+	getFlags: () => FlagOption[];
+	getFlagById: (id: string) => FlagOption | undefined;
+	isKnownFlag: (id: string) => boolean;
+	createFlag?: (id: string) => FlagOption;
 };
 
 export type EditorTagRegistry = {

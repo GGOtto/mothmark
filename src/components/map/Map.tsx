@@ -29,7 +29,6 @@ type MapProps = {
 	setIsConnectionSelected: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const GRID_SIZE = 48;
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 const ROOM_DRAG_THRESHOLD = 2;
