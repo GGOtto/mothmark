@@ -1,0 +1,112 @@
+.tagListEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 5px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.tagListEditor__tags {
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	gap: 5px;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	padding: 6px;
+}
+
+.tagListEditor__tag {
+	display: inline-flex;
+	max-width: 100%;
+	align-items: center;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	font-size: 12px;
+	line-height: 1;
+}
+
+.tagListEditor__tagText {
+	min-width: 0;
+	overflow: hidden;
+	padding: 5px 6px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tagListEditor__removeButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	align-self: stretch;
+	border: 0;
+	border-left: 1px solid var(--field-border);
+	background: transparent;
+	color: var(--field-muted);
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+}
+
+.tagListEditor__removeButton:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+	color: var(--field-text);
+}
+
+.tagListEditor__removeButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.42;
+}
+
+.tagListEditor__input {
+	min-width: 96px;
+	flex: 1 1 120px;
+	border: 0;
+	background: transparent;
+	color: var(--field-text);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.3;
+	outline: none;
+	padding: 4px 2px;
+}
+
+.tagListEditor__input::placeholder {
+	color: var(--field-soft);
+}
+
+.tagListEditor__input:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.tagListEditor__meta {
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.2;
+	text-align: right;
+}
+
+.universalField--error .tagListEditor__tags {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .tagListEditor__tags {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .tagListEditor__tags {
+	background: transparent;
+}
+
+.universalField--tone-panel .tagListEditor__tags {
+	background: var(--field-bg-raised);
+}

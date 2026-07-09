@@ -37,6 +37,61 @@ const CONTROL_TEST_PAGES = [
 		title: "Message",
 		description: "Read-only editor message controls.",
 	},
+	{
+		href: "/test/tag-list",
+		title: "Tag List",
+		description: "Compact short string array controls.",
+	},
+	{
+		href: "/test/string-list",
+		title: "String List",
+		description: "Longer editable string row controls.",
+	},
+	{
+		href: "/test/object",
+		title: "Object",
+		description: "Nested object editing controls.",
+	},
+	{
+		href: "/test/array",
+		title: "Array",
+		description: "Repeatable item editing controls.",
+	},
+	{
+		href: "/test/discriminated-union",
+		title: "Discriminated Union",
+		description: "Branching object controls.",
+	},
+	{
+		href: "/test/entity-picker",
+		title: "Entity Picker",
+		description: "Registry-backed entity selectors.",
+	},
+	{
+		href: "/test/flag-picker",
+		title: "Flag Picker",
+		description: "Registry-backed flag selectors.",
+	},
+	{
+		href: "/test/condition-builder",
+		title: "Condition Builder",
+		description: "Visual condition editing controls.",
+	},
+	{
+		href: "/test/effect-list",
+		title: "Effect List",
+		description: "Ordered gameplay effect controls.",
+	},
+	{
+		href: "/test/code-preview",
+		title: "Code Preview",
+		description: "Read-only code and JSON previews.",
+	},
+	{
+		href: "/test/hidden",
+		title: "Hidden",
+		description: "Explicit non-rendering controls.",
+	},
 ];
 
 export default function UniversalEditorTestPage() {
@@ -46,7 +101,7 @@ export default function UniversalEditorTestPage() {
 				<p className="testPage__eyebrow">Universal Editor</p>
 				<h1 className="testPage__title">Control Test Pages</h1>
 				<p className="testPage__description">
-					Each page renders one base control across inherited themes, chrome modes, sizes, validation
+					Each page renders one editor control across inherited themes, chrome modes, sizes, validation
 					states, disabled and readonly states, and control-specific features.
 				</p>
 			</section>

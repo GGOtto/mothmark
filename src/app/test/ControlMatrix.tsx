@@ -3,6 +3,13 @@
 import {useMemo, useState} from "react";
 import {renderEditorControl} from "../../components/editor/universal/renderEditorControl";
 import type {
+	EntityPickerOption,
+	EntityRegistry,
+	EntityType,
+	FlagOption,
+	FlagRegistry,
+} from "../../types/registryTypes";
+import type {
 	EditorControlAppearance,
 	EditorControlContext,
 	EditorControlMetadata,
@@ -159,6 +166,80 @@ const DEFAULT_THEME_TEST_THEMES: EditorControlTheme[] = [
 	"mothmark",
 ];
 
+const SAMPLE_ENTITIES: EntityPickerOption[] = [
+	{
+		id: "foyer",
+		label: "Foyer",
+		description: "The first room in the sample world.",
+		entityType: "room",
+	},
+	{
+		id: "library",
+		label: "Library",
+		description: "A quiet room full of indexed shelves.",
+		entityType: "room",
+	},
+	{
+		id: "brass-key",
+		label: "Brass Key",
+		description: "A small key with a worn bow.",
+		entityType: "item",
+	},
+	{
+		id: "archivist",
+		label: "Archivist",
+		description: "A character who knows where the maps are filed.",
+		entityType: "character",
+	},
+	{
+		id: "glass-case",
+		label: "Glass Case",
+		description: "A feature that can be inspected and unlocked.",
+		entityType: "feature",
+	},
+];
+
+const SAMPLE_FLAGS: FlagOption[] = [
+	{
+		id: "foyer.doorUnlocked",
+		label: "Door unlocked",
+		description: "Whether the foyer door has been unlocked.",
+		source: "manual",
+	},
+	{
+		id: "library.lampLit",
+		label: "Lamp lit",
+		description: "Whether the library lamp is lit.",
+		source: "effect",
+	},
+	{
+		id: "archive.hasReadLedger",
+		label: "Ledger read",
+		description: "Whether the player has read the archive ledger.",
+		source: "condition",
+	},
+];
+
+const SAMPLE_ENTITY_REGISTRY: EntityRegistry = {
+	getEntities: (entityType: EntityType) =>
+		SAMPLE_ENTITIES.filter((entity) => entity.entityType === entityType),
+	getEntityById: (entityType: EntityType, id: string) =>
+		SAMPLE_ENTITIES.find((entity) => entity.entityType === entityType && entity.id === id),
+	isValidEntityId: (entityType: EntityType, id: string) =>
+		SAMPLE_ENTITIES.some((entity) => entity.entityType === entityType && entity.id === id),
+};
+
+const SAMPLE_FLAG_REGISTRY: FlagRegistry = {
+	getFlags: () => SAMPLE_FLAGS,
+	getFlagById: (id: string) => SAMPLE_FLAGS.find((flag) => flag.id === id),
+	isKnownFlag: (id: string) => SAMPLE_FLAGS.some((flag) => flag.id === id),
+	createFlag: (id: string) => ({
+		id,
+		label: id,
+		source: "manual",
+	}),
+};
+
 export function ControlMatrix<TValue, TMetadata extends EditorControlMetadata>({
 	title,
 	description,
@@ -219,6 +300,9 @@ export function ControlMatrix<TValue, TMetadata extends EditorControlMetadata>({
 					}),
 				);
 			},
+
+			registerEntityPicker: SAMPLE_ENTITY_REGISTRY,
+			registerFlagPicker: SAMPLE_FLAG_REGISTRY,
 		};
 	}, [examples]);
 

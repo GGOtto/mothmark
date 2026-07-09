@@ -1,0 +1,113 @@
+.conditionBuilderEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.conditionBuilderEditor__row,
+.conditionBuilderEditor__fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+	gap: 6px;
+}
+
+.conditionBuilderEditor label {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 3px;
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.2;
+}
+
+.conditionBuilderEditor input,
+.conditionBuilderEditor select {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.3;
+	outline: none;
+	padding: 6px 7px;
+}
+
+.conditionBuilderEditor input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	accent-color: var(--field-border-strong);
+}
+
+.conditionBuilderEditor input:hover:not(:disabled),
+.conditionBuilderEditor input:focus,
+.conditionBuilderEditor select:hover:not(:disabled),
+.conditionBuilderEditor select:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.conditionBuilderEditor__nested {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.conditionBuilderEditor__nestedItem {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 5px;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	padding: 6px;
+}
+
+.conditionBuilderEditor button {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 7px 8px;
+}
+
+.conditionBuilderEditor button:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.conditionBuilderEditor button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.conditionBuilderEditor--compact {
+	gap: 5px;
+}
+
+.universalField--error .conditionBuilderEditor input,
+.universalField--error .conditionBuilderEditor select,
+.universalField--error .conditionBuilderEditor__nestedItem {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .conditionBuilderEditor input,
+.universalField--chrome-bare .conditionBuilderEditor select,
+.universalField--chrome-bare .conditionBuilderEditor button,
+.universalField--chrome-bare .conditionBuilderEditor__nestedItem {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}

@@ -1,0 +1,60 @@
+.discriminatedUnionEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.discriminatedUnionEditor__select {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.3;
+	outline: none;
+	padding: 8px 10px;
+}
+
+.discriminatedUnionEditor__select:hover:not(:disabled),
+.discriminatedUnionEditor__select:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.discriminatedUnionEditor__select:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.discriminatedUnionEditor__description {
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.35;
+}
+
+.universalField--error .discriminatedUnionEditor__select {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .discriminatedUnionEditor__select {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .discriminatedUnionEditor__select {
+	background: transparent;
+}
+
+.universalField--tone-panel .discriminatedUnionEditor__select {
+	background: var(--field-bg-raised);
+}

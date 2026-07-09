@@ -15,7 +15,24 @@ export type EditorControlScheme = "auto" | "light" | "dark";
 
 // only add types that exist for now
 export type EditorControlType =
-	"input" | "textarea" | "number" | "toggle" | "select" | "multi-select" | "message";
+	| "input"
+	| "textarea"
+	| "number"
+	| "toggle"
+	| "select"
+	| "multi-select"
+	| "message"
+	| "tag-list"
+	| "string-list"
+	| "object"
+	| "array"
+	| "discriminated-union"
+	| "entity-picker"
+	| "flag-picker"
+	| "condition-builder"
+	| "effect-list"
+	| "code-preview"
+	| "hidden";
 
 /**
  * Appearance controls how a control looks.

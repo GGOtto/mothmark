@@ -1,0 +1,109 @@
+.flagPickerEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.flagPickerEditor__row,
+.flagPickerEditor__createRow {
+	display: flex;
+	min-width: 0;
+	align-items: stretch;
+}
+
+.flagPickerEditor__select,
+.flagPickerEditor__createInput {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.3;
+	outline: none;
+	padding: 8px 10px;
+}
+
+.flagPickerEditor__select:hover:not(:disabled),
+.flagPickerEditor__select:focus,
+.flagPickerEditor__createInput:hover:not(:disabled),
+.flagPickerEditor__createInput:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.flagPickerEditor__select:disabled,
+.flagPickerEditor__createInput:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.flagPickerEditor__button {
+	flex-shrink: 0;
+	border: 1px solid var(--field-border);
+	border-left: 0;
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 8px;
+}
+
+.flagPickerEditor__button:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.flagPickerEditor__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.flagPickerEditor__preview {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.35;
+	padding: 6px 8px;
+}
+
+.flagPickerEditor__preview strong {
+	color: var(--field-text);
+}
+
+.universalField--error .flagPickerEditor__select,
+.universalField--error .flagPickerEditor__createInput {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .flagPickerEditor__select,
+.universalField--chrome-bare .flagPickerEditor__createInput,
+.universalField--chrome-bare .flagPickerEditor__button,
+.universalField--chrome-bare .flagPickerEditor__preview {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .flagPickerEditor__select,
+.universalField--tone-quiet .flagPickerEditor__createInput {
+	background: transparent;
+}
+
+.universalField--tone-panel .flagPickerEditor__select,
+.universalField--tone-panel .flagPickerEditor__createInput {
+	background: var(--field-bg-raised);
+}

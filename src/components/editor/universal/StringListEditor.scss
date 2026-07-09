@@ -1,0 +1,101 @@
+.stringListEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.stringListEditor__item {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+}
+
+.stringListEditor__textarea {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 0;
+	background: transparent;
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.4;
+	outline: none;
+	padding: 8px 9px;
+	resize: vertical;
+}
+
+.stringListEditor__textarea::placeholder {
+	color: var(--field-soft);
+}
+
+.stringListEditor__textarea:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.stringListEditor__textarea:read-only:not(:disabled) {
+	cursor: default;
+	opacity: 0.78;
+}
+
+.stringListEditor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	border-top: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+}
+
+.stringListEditor__actions button,
+.stringListEditor__addButton {
+	border: 0;
+	border-left: 1px solid var(--field-border);
+	background: transparent;
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 7px 8px;
+}
+
+.stringListEditor__actions button:hover:not(:disabled),
+.stringListEditor__addButton:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.stringListEditor__actions button:disabled,
+.stringListEditor__addButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.stringListEditor__addButton {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+}
+
+.universalField--error .stringListEditor__item {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .stringListEditor__item,
+.universalField--chrome-bare .stringListEditor__addButton {
+	border-color: transparent;
+	background: transparent;
+}
+
+.universalField--tone-quiet .stringListEditor__item {
+	background: transparent;
+}
+
+.universalField--tone-panel .stringListEditor__item {
+	background: var(--field-bg-raised);
+}

@@ -1,0 +1,108 @@
+.arrayEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.arrayEditor__summary,
+.arrayEditor__itemTitle {
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.2;
+	padding: 6px 8px;
+}
+
+.arrayEditor__item {
+	min-width: 0;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+}
+
+.arrayEditor__itemTitle {
+	display: block;
+	border-width: 0 0 1px;
+	color: var(--field-text);
+	cursor: default;
+	font-weight: 700;
+}
+
+summary.arrayEditor__itemTitle {
+	cursor: pointer;
+}
+
+.arrayEditor__preview {
+	overflow: auto;
+	margin: 0;
+	color: var(--field-text);
+	font: inherit;
+	font-size: 11px;
+	line-height: 1.35;
+	padding: 8px;
+	white-space: pre-wrap;
+}
+
+.arrayEditor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	border-top: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+}
+
+.arrayEditor__actions button,
+.arrayEditor__addButton {
+	border: 0;
+	border-left: 1px solid var(--field-border);
+	background: transparent;
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 7px 8px;
+}
+
+.arrayEditor__actions button:hover:not(:disabled),
+.arrayEditor__addButton:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.arrayEditor__actions button:disabled,
+.arrayEditor__addButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.arrayEditor__addButton {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+}
+
+.universalField--error .arrayEditor__item {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .arrayEditor__summary,
+.universalField--chrome-bare .arrayEditor__item,
+.universalField--chrome-bare .arrayEditor__itemTitle,
+.universalField--chrome-bare .arrayEditor__addButton {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .arrayEditor__item {
+	background: transparent;
+}
+
+.universalField--tone-panel .arrayEditor__item {
+	background: var(--field-bg-raised);
+}

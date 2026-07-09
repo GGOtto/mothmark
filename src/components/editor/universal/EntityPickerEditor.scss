@@ -1,0 +1,109 @@
+.entityPickerEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.entityPickerEditor__row,
+.entityPickerEditor__createRow {
+	display: flex;
+	min-width: 0;
+	align-items: stretch;
+}
+
+.entityPickerEditor__select,
+.entityPickerEditor__createInput {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.3;
+	outline: none;
+	padding: 8px 10px;
+}
+
+.entityPickerEditor__select:hover:not(:disabled),
+.entityPickerEditor__select:focus,
+.entityPickerEditor__createInput:hover:not(:disabled),
+.entityPickerEditor__createInput:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.entityPickerEditor__select:disabled,
+.entityPickerEditor__createInput:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.entityPickerEditor__button {
+	flex-shrink: 0;
+	border: 1px solid var(--field-border);
+	border-left: 0;
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 8px;
+}
+
+.entityPickerEditor__button:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.entityPickerEditor__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.entityPickerEditor__preview {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.35;
+	padding: 6px 8px;
+}
+
+.entityPickerEditor__preview strong {
+	color: var(--field-text);
+}
+
+.universalField--error .entityPickerEditor__select,
+.universalField--error .entityPickerEditor__createInput {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--chrome-bare .entityPickerEditor__select,
+.universalField--chrome-bare .entityPickerEditor__createInput,
+.universalField--chrome-bare .entityPickerEditor__button,
+.universalField--chrome-bare .entityPickerEditor__preview {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .entityPickerEditor__select,
+.universalField--tone-quiet .entityPickerEditor__createInput {
+	background: transparent;
+}
+
+.universalField--tone-panel .entityPickerEditor__select,
+.universalField--tone-panel .entityPickerEditor__createInput {
+	background: var(--field-bg-raised);
+}
