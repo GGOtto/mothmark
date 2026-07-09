@@ -1,0 +1,126 @@
+.universalField input {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.3;
+
+	outline: none;
+	padding: 8px 10px;
+
+	transition:
+		border-color 120ms ease,
+		background-color 120ms ease,
+		box-shadow 120ms ease,
+		opacity 120ms ease;
+}
+
+.universalField input::placeholder {
+	color: var(--field-soft);
+}
+
+.universalField input:hover:not(:disabled):not(:read-only) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.universalField input:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+.universalField input:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.universalField input:read-only:not(:disabled) {
+	cursor: default;
+	border-style: dashed;
+	opacity: 0.78;
+}
+
+.universalField--error input {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--error input:focus {
+	border-color: var(--field-border-strong);
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+/* Size variants */
+
+.universalField--sm input {
+	font-size: 12px;
+	padding: 5px 7px;
+}
+
+.universalField--md input {
+	font-size: 13px;
+	padding: 8px 10px;
+}
+
+.universalField--lg input {
+	font-size: 15px;
+	padding: 11px 12px;
+}
+
+/* Chrome variants */
+
+.universalField--compact input {
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.universalField--bare input {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--bare input:hover:not(:disabled):not(:read-only),
+.universalField--bare input:focus {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: inset 0 -1px 0 var(--field-border);
+}
+
+/* Tone-specific input treatment */
+
+.universalField--quiet input {
+	background: transparent;
+}
+
+.universalField--terminal input {
+	caret-color: var(--field-text);
+	letter-spacing: 0.01em;
+}
+
+.universalField--terminal input:focus {
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+.universalField--paper input {
+	background:
+		linear-gradient(
+			to bottom,
+			transparent calc(100% - 1px),
+			color-mix(in srgb, var(--field-border) 62%, transparent) calc(100% - 1px)
+		),
+		var(--field-bg);
+}
+
+.universalField--panel input {
+	background: var(--field-bg-raised);
+}
