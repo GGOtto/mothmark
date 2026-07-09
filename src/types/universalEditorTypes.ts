@@ -13,26 +13,85 @@ export type EditorControlTheme =
 
 export type EditorControlScheme = "auto" | "light" | "dark";
 
-// only add types that exist for now
 export type EditorControlType =
+	| "text"
 	| "input"
+	| "id"
 	| "textarea"
+	| "rich-text"
+	| "message"
 	| "number"
 	| "toggle"
 	| "select"
 	| "multi-select"
-	| "message"
 	| "tag-list"
 	| "string-list"
 	| "object"
 	| "array"
 	| "discriminated-union"
-	| "entity-picker"
-	| "flag-picker"
+	| "conditional-text"
 	| "condition-builder"
 	| "effect-list"
+	| "logic-branch-list"
+	| "command-pattern"
+	| "alias-suggestions"
+	| "entity-picker"
+	| "room-picker"
+	| "connection-picker"
+	| "flag-picker"
+	| "flag-editor"
+	| "direction-picker"
+	| "scope-picker"
+	| "priority-control"
+	| "template-picker"
+	| "validation-summary"
 	| "code-preview"
+	| "json-inspector"
+	| "diff-preview"
 	| "hidden";
+
+export type EditorSelectOption = {
+	label: string;
+	value: string;
+	description?: string;
+	group?: string;
+	icon?: string;
+	tone?: EditorControlTone;
+	disabled?: boolean;
+	badge?: string;
+};
+
+export type EditorPreviewFeatures = {
+	showPreview?: boolean;
+	previewMode?: "inline" | "below" | "popover";
+};
+
+export type EditorEmptyStateFeatures = {
+	emptyTitle?: string;
+	emptyDescription?: string;
+	emptyActionLabel?: string;
+};
+
+export type EditorDuplicateFeatures = {
+	duplicateBehavior?: "exact" | "with-new-id" | "from-template";
+	idField?: string;
+	idPrefix?: string;
+};
+
+export type EditorPickerFeatures = {
+	searchable?: boolean;
+	groupBy?: string;
+	showDescriptions?: boolean;
+	showBadges?: boolean;
+	allowCreate?: boolean;
+	clearButton?: boolean;
+	clearable?: boolean;
+	grouped?: boolean;
+};
+
+export type EditorChildControlOverrides = {
+	[key: string]: Partial<EditorControlMetadata>;
+};
 
 /**
  * Appearance controls how a control looks.
@@ -108,6 +167,8 @@ export type EditorControlMetadata = {
 	required?: boolean;
 
 	appearance?: EditorControlAppearance;
+	childControls?: EditorChildControlOverrides;
+	optionSource?: string;
 
 	className?: string;
 	testId?: string;
@@ -138,6 +199,8 @@ export type EditorControlContext = {
 	setValue: (path: EditorPath, value: unknown) => void;
 
 	validatePath?: (path: EditorPath) => string | undefined;
+
+	getOptionList?: (source: string) => EditorSelectOption[] | undefined;
 
 	registerEntityPicker?: EntityRegistry;
 	registerFlagPicker?: FlagRegistry;

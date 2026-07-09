@@ -28,7 +28,17 @@ const SETUPS = {
 		metadata: {
 			title: "Flag Condition",
 			description: "Simple scalar condition editing.",
-			features: {allowNestedGroups: true},
+			features: {
+				allowNestedGroups: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					flag: "schema.condition.flagOperations",
+					counter: "schema.condition.counterOperations",
+					"current-room": "schema.condition.currentRoomOperations",
+				},
+			},
 		},
 	},
 	group: {
@@ -44,7 +54,18 @@ const SETUPS = {
 		metadata: {
 			title: "Condition Group",
 			description: "Nested group editing.",
-			features: {allowNestedGroups: true, compact: false},
+			features: {
+				allowNestedGroups: true,
+				compact: false,
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					flag: "schema.condition.flagOperations",
+					counter: "schema.condition.counterOperations",
+					"current-room": "schema.condition.currentRoomOperations",
+				},
+			},
 		},
 	},
 	restricted: {
@@ -52,14 +73,45 @@ const SETUPS = {
 		value: {type: "current-room", operation: "is", roomId: "foyer"},
 		metadata: {
 			title: "Restricted Types",
-			features: {allowedConditionTypes: ["current-room", "inventory"], compact: true},
+			features: {
+				allowedConditionTypes: ["current-room", "inventory"],
+				compact: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				operatorOptionSourcesByType: {
+					"current-room": "schema.condition.currentRoomOperations",
+				},
+			},
+		},
+	},
+	listDriven: {
+		id: "list-driven",
+		value: {type: "counter", operation: "compare", counter: "turns", operator: "gte", value: 2},
+		metadata: {
+			title: "World Data Lists",
+			description: "Condition and operator choices are supplied by named option lists.",
+			features: {
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					counter: "schema.condition.counterOperations",
+				},
+				showGeneratedSummary: true,
+			},
 		},
 	},
 	error: {
 		id: "error",
 		value: {type: "flag", operation: "equals", flag: "", value: true},
 		error: "Flag id is required.",
-		metadata: {title: "Errored Condition", features: {allowNestedGroups: true}},
+		metadata: {
+			title: "Errored Condition",
+			features: {
+				allowNestedGroups: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				operatorOptionSourcesByType: {flag: "schema.condition.flagOperations"},
+			},
+		},
 	},
 } satisfies Record<string, ConditionSetup>;
 
@@ -106,6 +158,12 @@ export const conditionBuilderControlMatrixVariants = [
 		"Restricted compact condition builder.",
 		{tone: "panel", chrome: "field", size: "sm"},
 		SETUPS.restricted,
+	),
+	makeVariant(
+		"default-field-md-list-driven",
+		"List-sourced condition types and operators.",
+		{tone: "default", chrome: "field", size: "md"},
+		SETUPS.listDriven,
 	),
 	makeVariant(
 		"default-field-md-error",

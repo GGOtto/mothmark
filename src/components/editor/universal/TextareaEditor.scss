@@ -97,6 +97,17 @@
 	opacity: 0.48;
 }
 
+.textareaEditor__preview {
+	border: 1px solid var(--field-border);
+	border-top: none;
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	font-size: 12px;
+	line-height: 1.45;
+	padding: 8px 10px;
+	white-space: pre-wrap;
+}
+
 .universalField--error .textareaEditor__input {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);

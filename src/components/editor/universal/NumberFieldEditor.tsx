@@ -7,12 +7,16 @@ import {FieldShell} from "./FieldShell";
 import "./NumberFieldEditor.scss";
 
 export type NumberFieldFeatures = {
+	kind?: "plain" | "coordinate" | "percentage" | "priority" | "count" | "weight";
 	unit?: string;
 	prefix?: string;
 	suffix?: string;
 	slider?: boolean;
 	clearButton?: boolean;
 	clampOnBlur?: boolean;
+	nudgeButtons?: boolean;
+	resetButton?: boolean;
+	resetValue?: number;
 };
 
 export type NumberControlMetadata = EditorControlMetadata & {
@@ -53,6 +57,9 @@ export function NumberFieldEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
+	const step = metadata.step ?? (metadata.features?.kind === "percentage" ? 1 : 1);
+	const suffix =
+		metadata.features?.unit ?? metadata.features?.suffix ?? kindSuffix(metadata.features?.kind);
 	const hasSlider =
 		metadata.features?.slider && typeof metadata.min === "number" && typeof metadata.max === "number";
 	const draftValue = draftState.sourceValue === value ? draftState.draftValue : String(value);
@@ -112,6 +119,15 @@ export function NumberFieldEditor({
 		onChange(fallbackValue);
 	}
 
+	function setNumber(nextValue: number) {
+		const clampedValue = clampValue(nextValue, metadata.min, metadata.max);
+		setDraftState({
+			sourceValue: clampedValue,
+			draftValue: String(clampedValue),
+		});
+		onChange(clampedValue);
+	}
+
 	return (
 		<FieldShell
 			title={metadata.title}
@@ -140,7 +156,7 @@ export function NumberFieldEditor({
 						autoFocus={autoFocus}
 						min={metadata.min}
 						max={metadata.max}
-						step={metadata.step}
+						step={step}
 						required={metadata.required}
 						onBlur={restoreOrClampValue}
 						onChange={(event) => {
@@ -148,10 +164,29 @@ export function NumberFieldEditor({
 						}}
 					/>
 
-					{metadata.features?.unit || metadata.features?.suffix ? (
-						<span className="numberField__affix numberField__affix--suffix">
-							{metadata.features.unit ?? metadata.features.suffix}
-						</span>
+					{suffix ? (
+						<span className="numberField__affix numberField__affix--suffix">{suffix}</span>
+					) : null}
+
+					{metadata.features?.nudgeButtons ? (
+						<>
+							<button
+								className="numberField__button"
+								type="button"
+								disabled={!canEdit}
+								onClick={() => setNumber(value - step)}
+							>
+								- {step}
+							</button>
+							<button
+								className="numberField__button"
+								type="button"
+								disabled={!canEdit}
+								onClick={() => setNumber(value + step)}
+							>
+								+ {step}
+							</button>
+						</>
 					) : null}
 
 					{metadata.features?.clearButton ? (
@@ -164,7 +199,22 @@ export function NumberFieldEditor({
 							Clear
 						</button>
 					) : null}
+
+					{metadata.features?.resetButton ? (
+						<button
+							className="numberField__button"
+							type="button"
+							disabled={!canEdit || value === (metadata.features.resetValue ?? 0)}
+							onClick={() => setNumber(metadata.features?.resetValue ?? 0)}
+						>
+							Reset
+						</button>
+					) : null}
 				</div>
+
+				{metadata.features?.kind === "priority" ? (
+					<div className="numberField__hint">Higher priority runs before lower priority.</div>
+				) : null}
 
 				{hasSlider ? (
 					<input
@@ -183,4 +233,9 @@ export function NumberFieldEditor({
 			</div>
 		</FieldShell>
 	);
+}
+
+function kindSuffix(kind: NumberFieldFeatures["kind"]) {
+	if (kind === "percentage") return "%";
+	return undefined;
 }

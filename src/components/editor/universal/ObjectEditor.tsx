@@ -24,6 +24,10 @@ export type ObjectFeatures = {
 	showFieldCount?: boolean;
 	layout?: "stack" | "grid" | "section";
 	fields?: ObjectFieldMetadata[];
+	emptyTitle?: string;
+	emptyDescription?: string;
+	emptyActionLabel?: string;
+	defaultValue?: Record<string, unknown>;
 };
 
 export type ObjectControlMetadata = EditorControlMetadata & {
@@ -58,6 +62,9 @@ export function ObjectEditor({
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const fields = metadata.features?.fields ?? [];
 	const entries = Object.entries(value);
+	const isDisabled = disabled || metadata.disabled;
+	const isReadonly = readonly || metadata.readonly;
+	const canEdit = !isDisabled && !isReadonly;
 	const content = (
 		<div
 			className={[
@@ -99,7 +106,21 @@ export function ObjectEditor({
 					))}
 
 			{fields.length === 0 && entries.length === 0 ? (
-				<div className="objectEditor__empty">Empty object</div>
+				<div className="objectEditor__empty">
+					<strong>{metadata.features?.emptyTitle ?? "Empty object"}</strong>
+					{metadata.features?.emptyDescription ? (
+						<span>{metadata.features.emptyDescription}</span>
+					) : null}
+					{metadata.features?.defaultValue ? (
+						<button
+							type="button"
+							disabled={!canEdit}
+							onClick={() => onChange(metadata.features?.defaultValue ?? {})}
+						>
+							{metadata.features.emptyActionLabel ?? "Add defaults"}
+						</button>
+					) : null}
+				</div>
 			) : null}
 		</div>
 	);

@@ -13,6 +13,7 @@ import type {
 	EditorControlAppearance,
 	EditorControlContext,
 	EditorControlMetadata,
+	EditorSelectOption,
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,
@@ -240,6 +241,93 @@ const SAMPLE_FLAG_REGISTRY: FlagRegistry = {
 	}),
 };
 
+const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
+	"schema.condition.types": [
+		{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
+		{label: "Counter", value: "counter", description: "Checks a numeric counter."},
+		{label: "Current room", value: "current-room", description: "Checks the player's room."},
+		{label: "Inventory", value: "inventory", description: "Checks inventory state."},
+		{label: "Item location", value: "item-location", description: "Checks where an item exists."},
+		{label: "Object state", value: "object-state", description: "Checks object state."},
+		{label: "NPC", value: "npc", description: "Checks NPC state."},
+		{label: "Command history", value: "command-history", description: "Checks recent commands."},
+		{label: "Quest", value: "quest", description: "Checks quest state."},
+		{label: "Group", value: "group", description: "Nests multiple conditions."},
+	],
+	"schema.condition.groupOperators": [
+		{label: "All conditions pass", value: "all"},
+		{label: "Any condition passes", value: "any"},
+		{label: "No conditions pass", value: "none"},
+	],
+	"schema.condition.comparisonOperators": [
+		{label: "Equals", value: "eq"},
+		{label: "Does not equal", value: "neq"},
+		{label: "Greater than", value: "gt"},
+		{label: "Greater than or equal to", value: "gte"},
+		{label: "Less than", value: "lt"},
+		{label: "Less than or equal to", value: "lte"},
+	],
+	"schema.condition.flagOperations": [
+		{label: "Equals", value: "equals"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	"schema.condition.counterOperations": [
+		{label: "Compare", value: "compare"},
+		{label: "Between", value: "between"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	"schema.condition.currentRoomOperations": [
+		{label: "Is", value: "is"},
+		{label: "Is not", value: "is-not"},
+		{label: "Has tag", value: "has-tag"},
+		{label: "Missing tag", value: "missing-tag"},
+	],
+	"schema.effect.types": [
+		{label: "Message", value: "message"},
+		{label: "Flag", value: "flag"},
+		{label: "Counter", value: "counter"},
+		{label: "Inventory", value: "inventory"},
+		{label: "Item location", value: "item-location"},
+		{label: "Object state", value: "object-state"},
+		{label: "Room", value: "room"},
+		{label: "NPC", value: "npc"},
+		{label: "Event", value: "event"},
+		{label: "Flow", value: "flow"},
+		{label: "Group", value: "group"},
+		{label: "Conditional", value: "conditional"},
+	],
+	"schema.effect.flagOperations": [
+		{label: "Set", value: "set"},
+		{label: "Toggle", value: "toggle"},
+		{label: "Clear", value: "clear"},
+	],
+	"schema.effect.counterOperations": [
+		{label: "Set", value: "set"},
+		{label: "Increase", value: "increase"},
+		{label: "Decrease", value: "decrease"},
+		{label: "Reset", value: "reset"},
+		{label: "Clamp", value: "clamp"},
+	],
+	"schema.world.directions": [
+		{label: "North", value: "n", description: "Compass north."},
+		{label: "East", value: "e", description: "Compass east."},
+		{label: "South", value: "s", description: "Compass south."},
+		{label: "West", value: "w", description: "Compass west."},
+		{label: "Up", value: "up", description: "Vertical movement upward."},
+		{label: "Down", value: "down", description: "Vertical movement downward."},
+		{label: "In", value: "in", description: "Contextual inward movement."},
+		{label: "Out", value: "out", description: "Contextual outward movement."},
+	],
+	"schema.world.pathways": [
+		{label: "No way", value: "no-way"},
+		{label: "Two way", value: "two-way"},
+		{label: "Forwards", value: "forwards"},
+		{label: "Backwards", value: "backwards"},
+	],
+};
+
 export function ControlMatrix<TValue, TMetadata extends EditorControlMetadata>({
 	title,
 	description,
@@ -300,6 +388,8 @@ export function ControlMatrix<TValue, TMetadata extends EditorControlMetadata>({
 					}),
 				);
 			},
+
+			getOptionList: (source) => SAMPLE_OPTION_LISTS[source],
 
 			registerEntityPicker: SAMPLE_ENTITY_REGISTRY,
 			registerFlagPicker: SAMPLE_FLAG_REGISTRY,

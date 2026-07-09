@@ -1,21 +1,28 @@
 "use client";
 
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
+import {useMemo, useState} from "react";
+import type {
+	EditorControlMetadata,
+	EditorControlProps,
+	EditorSelectOption,
+} from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./SelectEditor.scss";
 
-export type SelectOption = {
-	label: string;
-	value: string;
-	description?: string;
-	disabled?: boolean;
-};
+export type SelectOption = EditorSelectOption;
 
 export type SelectFeatures = {
 	options: SelectOption[];
 	placeholder?: string;
 	searchable?: boolean;
+	grouped?: boolean;
+	groupBy?: string;
+	showDescriptions?: boolean;
+	showBadges?: boolean;
+	allowCreate?: boolean;
+	clearButton?: boolean;
+	clearable?: boolean;
 };
 
 export type SelectControlMetadata = EditorControlMetadata & {
@@ -37,9 +44,36 @@ export function SelectEditor({
 	context,
 }: SelectEditorProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
+	const [query, setQuery] = useState("");
 
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
+	const canEdit = !isDisabled && !isReadonly;
+	const searchable = metadata.features.searchable || metadata.features.allowCreate;
+	const clearable = metadata.features.clearButton || metadata.features.clearable;
+	const filteredOptions = useMemo(() => {
+		const normalizedQuery = query.trim().toLowerCase();
+		if (!normalizedQuery) return metadata.features.options;
+
+		return metadata.features.options.filter((option) =>
+			[option.label, option.value, option.description, option.group, option.badge]
+				.filter(Boolean)
+				.some((part) => String(part).toLowerCase().includes(normalizedQuery)),
+		);
+	}, [metadata.features.options, query]);
+	const hasDescriptions =
+		metadata.features.showDescriptions ??
+		metadata.features.options.some((option) => option.description);
+	const hasBadges =
+		metadata.features.showBadges ?? metadata.features.options.some((option) => option.badge);
+	const selectedOption = metadata.features.options.find((option) => option.value === value);
+
+	function createValue() {
+		const nextValue = query.trim();
+		if (!canEdit || !metadata.features.allowCreate || !nextValue) return;
+
+		onChange(nextValue);
+	}
 
 	return (
 		<FieldShell
@@ -52,34 +86,80 @@ export function SelectEditor({
 			testId={metadata.testId}
 		>
 			<div className="selectEditor">
-				<select
-					className="selectEditor__input"
-					value={value}
-					disabled={isDisabled || isReadonly}
-					autoFocus={autoFocus}
-					required={metadata.required}
-					aria-readonly={isReadonly || undefined}
-					data-readonly={isReadonly || undefined}
-					onChange={(event) => {
-						onChange(event.target.value);
-					}}
-				>
-					{metadata.features.placeholder ? (
-						<option value="" disabled={metadata.required}>
-							{metadata.features.placeholder}
-						</option>
+				<div className="selectEditor__row">
+					<select
+						className="selectEditor__input"
+						value={value}
+						disabled={isDisabled || isReadonly}
+						autoFocus={autoFocus}
+						required={metadata.required}
+						aria-readonly={isReadonly || undefined}
+						data-readonly={isReadonly || undefined}
+						onChange={(event) => {
+							onChange(event.target.value);
+						}}
+					>
+						{metadata.features.placeholder ? (
+							<option value="" disabled={metadata.required}>
+								{metadata.features.placeholder}
+							</option>
+						) : null}
+
+						{filteredOptions.map((option) => (
+							<option key={option.value} value={option.value} disabled={option.disabled}>
+								{option.group && metadata.features.grouped ? `${option.group} - ` : ""}
+								{option.label}
+								{option.badge && hasBadges ? ` (${option.badge})` : ""}
+							</option>
+						))}
+					</select>
+
+					{clearable ? (
+						<button
+							className="selectEditor__button"
+							type="button"
+							disabled={!canEdit || value.length === 0}
+							onClick={() => onChange("")}
+						>
+							Clear
+						</button>
 					) : null}
+				</div>
 
-					{metadata.features.options.map((option) => (
-						<option key={option.value} value={option.value} disabled={option.disabled}>
-							{option.label}
-						</option>
-					))}
-				</select>
+				{searchable ? (
+					<div className="selectEditor__searchRow">
+						<input
+							className="selectEditor__search"
+							type="search"
+							value={query}
+							placeholder="Search options"
+							disabled={!canEdit}
+							onChange={(event) => setQuery(event.target.value)}
+						/>
+						{metadata.features.allowCreate ? (
+							<button
+								className="selectEditor__button"
+								type="button"
+								disabled={!canEdit || query.trim().length === 0}
+								onClick={createValue}
+							>
+								Use value
+							</button>
+						) : null}
+					</div>
+				) : null}
 
-				{metadata.features.options.some((option) => option.description) ? (
+				{selectedOption && (selectedOption.description || selectedOption.badge) ? (
+					<div className="selectEditor__selectedPreview">
+						<strong>{selectedOption.label}</strong>
+						{selectedOption.badge && hasBadges ? <span>{selectedOption.badge}</span> : null}
+						{selectedOption.description ? <span>{selectedOption.description}</span> : null}
+					</div>
+				) : null}
+
+				{hasDescriptions ? (
 					<div className="selectEditor__descriptions">
-						{metadata.features.options.map((option) =>
+						{filteredOptions.map((option) =>
 							option.description ? (
 								<div key={option.value} className="selectEditor__description">
 									<span className="selectEditor__descriptionLabel">{option.label}</span>

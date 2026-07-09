@@ -42,6 +42,27 @@
 	opacity: 0.48;
 }
 
+.multiSelectEditor__searchRow {
+	display: flex;
+	min-width: 0;
+	gap: 6px;
+}
+
+.multiSelectEditor__search {
+	flex: 1 1 auto;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.3;
+	outline: none;
+	padding: 6px 8px;
+}
+
 .multiSelectEditor__options {
 	display: grid;
 	min-width: 0;
@@ -114,6 +135,14 @@
 	color: var(--field-muted);
 	font-size: 11px;
 	line-height: 1.3;
+}
+
+.multiSelectEditor__optionBadge {
+	display: inline-block;
+	margin-left: 5px;
+	color: var(--field-muted);
+	font-size: 10px;
+	font-weight: 400;
 }
 
 .universalField--error .multiSelectEditor__summary,

@@ -80,9 +80,30 @@
 }
 
 .objectEditor__empty {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	border: 1px dashed var(--field-border);
+	background: var(--field-bg-raised);
 	color: var(--field-muted);
 	font-size: 12px;
 	line-height: 1.35;
+	padding: 10px;
+}
+
+.objectEditor__empty strong {
+	color: var(--field-text);
+}
+
+.objectEditor__empty button {
+	align-self: flex-start;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	padding: 6px 8px;
 }
 
 .universalField--error .objectEditor__fields {

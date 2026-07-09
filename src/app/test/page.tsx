@@ -1,5 +1,5 @@
 import Link from "next/link";
-import "./TestPage.scss";
+import "./page.scss";
 
 const CONTROL_TEST_PAGES = [
 	{
@@ -8,9 +8,19 @@ const CONTROL_TEST_PAGES = [
 		description: "Short string input controls.",
 	},
 	{
+		href: "/test/id",
+		title: "ID",
+		description: "Canonical ID authoring controls.",
+	},
+	{
 		href: "/test/textarea",
 		title: "Textarea",
 		description: "Long-form string editing controls.",
+	},
+	{
+		href: "/test/rich-text",
+		title: "Rich Text",
+		description: "Previewable prose editing controls.",
 	},
 	{
 		href: "/test/number",
@@ -63,14 +73,64 @@ const CONTROL_TEST_PAGES = [
 		description: "Branching object controls.",
 	},
 	{
+		href: "/test/conditional-text",
+		title: "Conditional Text",
+		description: "Conditional prose controls.",
+	},
+	{
+		href: "/test/logic-branch-list",
+		title: "Logic Branch List",
+		description: "Branching command behavior controls.",
+	},
+	{
+		href: "/test/command-pattern",
+		title: "Command Pattern",
+		description: "Authored parser pattern controls.",
+	},
+	{
+		href: "/test/alias-suggestions",
+		title: "Alias Suggestions",
+		description: "Guided alias helper controls.",
+	},
+	{
 		href: "/test/entity-picker",
 		title: "Entity Picker",
 		description: "Registry-backed entity selectors.",
 	},
 	{
+		href: "/test/room-picker",
+		title: "Room Picker",
+		description: "Registry-backed room selectors.",
+	},
+	{
+		href: "/test/connection-picker",
+		title: "Connection Picker",
+		description: "Room connection authoring controls.",
+	},
+	{
 		href: "/test/flag-picker",
 		title: "Flag Picker",
 		description: "Registry-backed flag selectors.",
+	},
+	{
+		href: "/test/flag-editor",
+		title: "Flag Editor",
+		description: "Flag registry authoring controls.",
+	},
+	{
+		href: "/test/direction-picker",
+		title: "Direction Picker",
+		description: "Schema-backed direction controls.",
+	},
+	{
+		href: "/test/scope-picker",
+		title: "Scope Picker",
+		description: "Command scope selector controls.",
+	},
+	{
+		href: "/test/priority-control",
+		title: "Priority Control",
+		description: "Preset and custom priority controls.",
 	},
 	{
 		href: "/test/condition-builder",
@@ -86,6 +146,26 @@ const CONTROL_TEST_PAGES = [
 		href: "/test/code-preview",
 		title: "Code Preview",
 		description: "Read-only code and JSON previews.",
+	},
+	{
+		href: "/test/json-inspector",
+		title: "JSON Inspector",
+		description: "Structured JSON inspection controls.",
+	},
+	{
+		href: "/test/diff-preview",
+		title: "Diff Preview",
+		description: "Before and after change previews.",
+	},
+	{
+		href: "/test/validation-summary",
+		title: "Validation Summary",
+		description: "Scoped validation issue controls.",
+	},
+	{
+		href: "/test/template-picker",
+		title: "Template Picker",
+		description: "Preset object creation controls.",
 	},
 	{
 		href: "/test/hidden",

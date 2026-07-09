@@ -2,6 +2,7 @@
 
 import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import {createStableId, generateConditionSummary} from "../../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ArrayEditor.scss";
@@ -16,8 +17,23 @@ export type ArrayFeatures = {
 	minItems?: number;
 	maxItems?: number;
 	getItemTitle?: string;
+	getItemSubtitle?: string;
+	getItemBadge?: string;
+	getItemStatus?: "valid" | "warning" | "error";
+	confirmRemove?: boolean;
+	collapsedSummary?: boolean;
 	itemMetadata?: EditorControlMetadata & Record<string, unknown>;
 	defaultItem?: unknown;
+	addMenu?: Array<{
+		label: string;
+		defaultItem: unknown;
+	}>;
+	emptyTitle?: string;
+	emptyDescription?: string;
+	emptyActionLabel?: string;
+	duplicateBehavior?: "exact" | "with-new-id" | "from-template";
+	idField?: string;
+	idPrefix?: string;
 };
 
 export type ArrayControlMetadata = EditorControlMetadata & {
@@ -34,14 +50,38 @@ function cloneValue(value: unknown) {
 
 function getItemTitle(item: unknown, index: number, template?: string) {
 	if (!template) return `Item ${index + 1}`;
+	return templateValue(item, template);
+}
+
+function templateValue(item: unknown, template?: string) {
+	if (!template) return "";
 	if (typeof item === "object" && item !== null) {
 		return template.replace(/\{([^}]+)\}/g, (_, key: string) => {
 			const fieldValue = (item as Record<string, unknown>)[key];
+			if (key === "when" && typeof fieldValue === "object" && fieldValue !== null) {
+				return generateConditionSummary(fieldValue);
+			}
 			return fieldValue == null ? "" : String(fieldValue);
 		});
 	}
 
 	return template.replace("{value}", String(item ?? ""));
+}
+
+function duplicateValue(value: unknown, features?: ArrayFeatures) {
+	const nextValue = cloneValue(value);
+	if (
+		features?.duplicateBehavior === "with-new-id" &&
+		typeof nextValue === "object" &&
+		nextValue !== null &&
+		!Array.isArray(nextValue)
+	) {
+		const idField = features.idField ?? "id";
+		const record = nextValue as Record<string, unknown>;
+		record[idField] = createStableId(record[idField] ?? record, features.idPrefix);
+	}
+
+	return nextValue;
 }
 
 export function ArrayEditor({
@@ -70,6 +110,7 @@ export function ArrayEditor({
 
 	function removeItem(index: number) {
 		if (!canEdit || !removable || value.length <= minItems) return;
+		if (metadata.features?.confirmRemove && !window.confirm("Remove this item?")) return;
 
 		onChange(value.filter((_, itemIndex) => itemIndex !== index));
 	}
@@ -77,7 +118,11 @@ export function ArrayEditor({
 	function duplicateItem(index: number) {
 		if (!canAdd) return;
 
-		onChange([...value.slice(0, index + 1), cloneValue(value[index]), ...value.slice(index + 1)]);
+		onChange([
+			...value.slice(0, index + 1),
+			duplicateValue(value[index], metadata.features),
+			...value.slice(index + 1),
+		]);
 	}
 
 	function moveItem(index: number, direction: -1 | 1) {
@@ -91,6 +136,9 @@ export function ArrayEditor({
 
 	function renderItem(item: unknown, index: number) {
 		const title = getItemTitle(item, index, metadata.features?.getItemTitle);
+		const subtitle = templateValue(item, metadata.features?.getItemSubtitle);
+		const badge = templateValue(item, metadata.features?.getItemBadge);
+		const status = metadata.features?.getItemStatus;
 		const itemBody = metadata.features?.itemMetadata ? (
 			renderEditorControl({
 				value: item,
@@ -145,21 +193,41 @@ export function ArrayEditor({
 			return (
 				<details
 					key={index}
-					className="arrayEditor__item"
-					open={!metadata.features.defaultCollapsedItems}
+					className={["arrayEditor__item", status ? `arrayEditor__item--${status}` : ""]
+						.filter(Boolean)
+						.join(" ")}
+					open={!metadata.features.defaultCollapsedItems && !metadata.features.collapsedSummary}
 				>
-					<summary className="arrayEditor__itemTitle">{title}</summary>
+					<summary className="arrayEditor__itemTitle">
+						<span className="arrayEditor__itemTitleText">{title}</span>
+						{subtitle ? <span className="arrayEditor__itemSubtitle">{subtitle}</span> : null}
+						{badge ? <span className="arrayEditor__itemBadge">{badge}</span> : null}
+					</summary>
 					{itemShell}
 				</details>
 			);
 		}
 
 		return (
-			<div key={index} className="arrayEditor__item">
-				<div className="arrayEditor__itemTitle">{title}</div>
+			<div
+				key={index}
+				className={["arrayEditor__item", status ? `arrayEditor__item--${status}` : ""]
+					.filter(Boolean)
+					.join(" ")}
+			>
+				<div className="arrayEditor__itemTitle">
+					<span className="arrayEditor__itemTitleText">{title}</span>
+					{subtitle ? <span className="arrayEditor__itemSubtitle">{subtitle}</span> : null}
+					{badge ? <span className="arrayEditor__itemBadge">{badge}</span> : null}
+				</div>
 				{itemShell}
 			</div>
 		);
+	}
+
+	function addItem(defaultItem: unknown = metadata.features?.defaultItem ?? "") {
+		if (!canAdd) return;
+		onChange([...value, cloneValue(defaultItem)]);
 	}
 
 	return (
@@ -175,14 +243,38 @@ export function ArrayEditor({
 			<div className="arrayEditor">
 				<div className="arrayEditor__summary">{value.length} items</div>
 				{value.map(renderItem)}
-				<button
-					className="arrayEditor__addButton"
-					type="button"
-					disabled={!canAdd}
-					onClick={() => onChange([...value, cloneValue(metadata.features?.defaultItem ?? "")])}
-				>
-					{metadata.features?.addLabel ?? "Add item"}
-				</button>
+				{value.length === 0 ? (
+					<div className="arrayEditor__empty">
+						<strong>{metadata.features?.emptyTitle ?? "No items yet."}</strong>
+						{metadata.features?.emptyDescription ? (
+							<span>{metadata.features.emptyDescription}</span>
+						) : null}
+					</div>
+				) : null}
+				{metadata.features?.addMenu?.length ? (
+					<div className="arrayEditor__addMenu">
+						{metadata.features.addMenu.map((item) => (
+							<button
+								key={item.label}
+								className="arrayEditor__addButton"
+								type="button"
+								disabled={!canAdd}
+								onClick={() => addItem(item.defaultItem)}
+							>
+								{item.label}
+							</button>
+						))}
+					</div>
+				) : (
+					<button
+						className="arrayEditor__addButton"
+						type="button"
+						disabled={!canAdd}
+						onClick={() => addItem()}
+					>
+						{metadata.features?.emptyActionLabel ?? metadata.features?.addLabel ?? "Add item"}
+					</button>
+				)}
 			</div>
 		</FieldShell>
 	);

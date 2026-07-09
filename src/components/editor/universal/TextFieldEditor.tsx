@@ -39,7 +39,7 @@ export type TextFieldFeatures = {
 };
 
 export type TextFieldControlMetadata = EditorControlMetadata & {
-	type: "input";
+	type: "text" | "input" | "id";
 
 	minLength?: number;
 	maxLength?: number;

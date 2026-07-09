@@ -91,6 +91,36 @@
 	text-align: right;
 }
 
+.tagListEditor__suggestions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.tagListEditor__suggestions button {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 5px 6px;
+}
+
+.tagListEditor__suggestions button:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.tagListEditor__warning {
+	border: 1px solid var(--field-border);
+	background: var(--field-danger-bg);
+	color: var(--field-text);
+	font-size: 11px;
+	line-height: 1.3;
+	padding: 6px 8px;
+}
+
 .universalField--error .tagListEditor__tags {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);

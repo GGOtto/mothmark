@@ -8,6 +8,7 @@
 }
 
 .effectListEditor__summary,
+.effectListEditor__generatedSummary,
 .effectListEditor__itemTitle {
 	border: 1px solid var(--field-border);
 	background: var(--field-bg-raised);
@@ -15,6 +16,10 @@
 	font-size: 11px;
 	line-height: 1.2;
 	padding: 6px 8px;
+}
+
+.effectListEditor__generatedSummary {
+	line-height: 1.35;
 }
 
 .effectListEditor__item {

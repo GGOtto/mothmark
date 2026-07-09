@@ -16,6 +16,8 @@ export type TextareaFeatures = {
 	monospace?: boolean;
 	autoGrow?: boolean;
 	selectOnFocus?: boolean;
+	showPreview?: boolean;
+	previewMode?: "inline" | "below" | "popover";
 };
 
 export type TextareaControlMetadata = EditorControlMetadata & {
@@ -133,6 +135,10 @@ export function TextareaEditor({
 							</button>
 						) : null}
 					</div>
+				) : null}
+
+				{metadata.features?.showPreview ? (
+					<div className="textareaEditor__preview">{value || "Nothing to preview."}</div>
 				) : null}
 			</div>
 		</FieldShell>

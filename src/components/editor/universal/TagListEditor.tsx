@@ -12,6 +12,13 @@ export type TagListTransform = "none" | "slug" | "id" | "lowercase" | "uppercase
 export type TagListFeatures = {
 	allowDuplicates?: boolean;
 	suggestions?: string[];
+	autoSuggestFrom?: "title" | "description" | "registry";
+	sourceText?: string;
+	collisionValues?: string[];
+	showCollisions?: boolean;
+	showNormalization?: boolean;
+	suggestPlural?: boolean;
+	suggestArticleless?: boolean;
 	transform?: TagListTransform;
 	addOnBlur?: boolean;
 	addOnComma?: boolean;
@@ -43,6 +50,18 @@ export function TagListEditor({
 	const canEdit = !isDisabled && !isReadonly;
 	const maxItems = metadata.features?.maxItems;
 	const canAdd = canEdit && (typeof maxItems !== "number" || value.length < maxItems);
+	const collisionValues = new Set(metadata.features?.collisionValues ?? []);
+	const generatedSuggestions = createAliasSuggestions(
+		metadata.features?.sourceText,
+		metadata.features?.suggestions,
+		metadata.features?.suggestPlural,
+		metadata.features?.suggestArticleless,
+	);
+	const visibleSuggestions = generatedSuggestions.filter(
+		(suggestion) => !value.includes(suggestion),
+	);
+	const normalizedDraft = normalizeTag(draftValue);
+	const collisions = value.filter((tag) => collisionValues.has(tag));
 
 	function normalizeTag(rawValue: string) {
 		return applyTextTransform(rawValue.trim(), metadata.features?.transform);
@@ -128,12 +147,32 @@ export function TagListEditor({
 					/>
 				</div>
 
-				{metadata.features?.suggestions ? (
+				{visibleSuggestions.length > 0 ? (
 					<datalist id={`${metadata.testId ?? "tag-list"}-suggestions`}>
-						{metadata.features.suggestions.map((suggestion) => (
+						{visibleSuggestions.map((suggestion) => (
 							<option key={suggestion} value={suggestion} />
 						))}
 					</datalist>
+				) : null}
+
+				{visibleSuggestions.length > 0 ? (
+					<div className="tagListEditor__suggestions">
+						{visibleSuggestions.slice(0, 8).map((suggestion) => (
+							<button key={suggestion} type="button" disabled={!canAdd} onClick={() => addTag(suggestion)}>
+								{suggestion}
+							</button>
+						))}
+					</div>
+				) : null}
+
+				{metadata.features?.showNormalization && draftValue.trim() ? (
+					<div className="tagListEditor__meta">Normalizes to {normalizedDraft || "(empty)"}</div>
+				) : null}
+
+				{metadata.features?.showCollisions && collisions.length > 0 ? (
+					<div className="tagListEditor__warning">
+						Collides with existing aliases: {collisions.join(", ")}
+					</div>
 				) : null}
 
 				{typeof maxItems === "number" ? (
@@ -144,4 +183,32 @@ export function TagListEditor({
 			</div>
 		</FieldShell>
 	);
+}
+
+function createAliasSuggestions(
+	sourceText?: string,
+	suggestions: string[] = [],
+	suggestPlural?: boolean,
+	suggestArticleless?: boolean,
+) {
+	const values = new Set<string>(suggestions.map((suggestion) => suggestion.trim()).filter(Boolean));
+	const normalizedSource = sourceText?.trim();
+
+	if (normalizedSource) {
+		values.add(normalizedSource);
+
+		const articleless = normalizedSource.replace(/^(a|an|the)\s+/i, "").trim();
+		if (suggestArticleless && articleless) values.add(articleless);
+
+		const words = articleless.split(/\s+/).filter(Boolean);
+		if (words.length > 1) values.add(words[words.length - 1]);
+
+		if (suggestPlural) {
+			for (const value of [...values]) {
+				if (!value.endsWith("s")) values.add(`${value}s`);
+			}
+		}
+	}
+
+	return [...values];
 }
