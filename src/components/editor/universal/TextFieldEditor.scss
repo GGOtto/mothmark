@@ -1,20 +1,25 @@
-.universalField input {
+.textField {
+	display: flex;
+	min-width: 0;
+	align-items: stretch;
+	gap: 0;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.textField__input {
 	width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
-
 	border: 1px solid var(--field-border);
 	border-radius: 0;
 	background: var(--field-bg);
-
 	color: var(--field-text);
 	font: inherit;
 	font-size: 13px;
 	line-height: 1.3;
-
 	outline: none;
 	padding: 8px 10px;
-
 	transition:
 		border-color 120ms ease,
 		background-color 120ms ease,
@@ -22,96 +27,182 @@
 		opacity 120ms ease;
 }
 
-.universalField input::placeholder {
+.textField__input::placeholder {
 	color: var(--field-soft);
 }
 
-.universalField input:hover:not(:disabled):not(:read-only) {
+.textField__input:hover:not(:disabled):not(:read-only) {
 	border-color: var(--field-border-strong);
 	background: var(--field-bg-raised);
 }
 
-.universalField input:focus {
+.textField__input:focus {
 	border-color: var(--field-border-strong);
 	background: var(--field-bg-strong);
 	box-shadow: inset 0 -1px 0 var(--field-border-strong);
 }
 
-.universalField input:disabled {
+.textField__input:disabled {
 	cursor: not-allowed;
 	opacity: 0.52;
 }
 
-.universalField input:read-only:not(:disabled) {
+.textField__input:read-only:not(:disabled) {
 	cursor: default;
 	border-style: dashed;
 	opacity: 0.78;
 }
 
-.universalField--error input {
+.textField__affix,
+.textField__button {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-left: none;
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 8px;
+	white-space: nowrap;
+}
+
+.textField__affix--prefix {
+	border-right: 0;
+}
+
+.textField__affix--suffix {
+	border-left: 0;
+}
+
+.textField__button {
+	cursor: pointer;
+	color: var(--field-text);
+}
+
+.textField__button:hover:not(:disabled) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+}
+
+.textField__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+/* Keep connected controls visually joined */
+
+.textField__affix--prefix + .textField__input {
+	border-left-color: var(--field-border);
+}
+
+.textField__input:has(+ .textField__affix--suffix),
+.textField__input:has(+ .textField__button) {
+	border-right-color: var(--field-border);
+}
+
+/* Error state */
+
+.universalField--error .textField__input {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);
 }
 
-.universalField--error input:focus {
+.universalField--error .textField__input:focus {
 	border-color: var(--field-border-strong);
 	box-shadow: inset 0 -1px 0 var(--field-border-strong);
 }
 
-/* Size variants */
+/* Size */
 
-.universalField--sm input {
+.universalField--size-sm .textField__input {
 	font-size: 12px;
 	padding: 5px 7px;
 }
 
-.universalField--md input {
+.universalField--size-sm .textField__affix,
+.universalField--size-sm .textField__button {
+	font-size: 11px;
+	padding: 0 6px;
+}
+
+.universalField--size-md .textField__input {
 	font-size: 13px;
 	padding: 8px 10px;
 }
 
-.universalField--lg input {
+.universalField--size-md .textField__affix,
+.universalField--size-md .textField__button {
+	font-size: 12px;
+	padding: 0 8px;
+}
+
+.universalField--size-lg .textField__input {
 	font-size: 15px;
 	padding: 11px 12px;
 }
 
-/* Chrome variants */
+.universalField--size-lg .textField__affix,
+.universalField--size-lg .textField__button {
+	font-size: 13px;
+	padding: 0 10px;
+}
 
-.universalField--compact input {
+/* Chrome */
+
+.universalField--chrome-compact .textField__input {
 	font-size: 12px;
 	padding: 6px 8px;
 }
 
-.universalField--bare input {
+.universalField--chrome-compact .textField__affix,
+.universalField--chrome-compact .textField__button {
+	font-size: 11px;
+	padding: 0 6px;
+}
+
+.universalField--chrome-bare .textField__input {
 	border-color: transparent;
 	background: transparent;
 	padding-right: 0;
 	padding-left: 0;
 }
 
-.universalField--bare input:hover:not(:disabled):not(:read-only),
-.universalField--bare input:focus {
+.universalField--chrome-bare .textField__input:hover:not(:disabled):not(:read-only),
+.universalField--chrome-bare .textField__input:focus {
 	border-color: transparent;
 	background: transparent;
 	box-shadow: inset 0 -1px 0 var(--field-border);
 }
 
-/* Tone-specific input treatment */
+.universalField--chrome-bare .textField__affix,
+.universalField--chrome-bare .textField__button {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 4px;
+	padding-left: 4px;
+}
 
-.universalField--quiet input {
+/* Tone */
+
+.universalField--tone-quiet .textField__input {
 	background: transparent;
 }
 
-.universalField--terminal input {
+.universalField--tone-terminal .textField__input {
 	caret-color: var(--field-text);
 	letter-spacing: 0.01em;
 }
 
-.universalField--terminal input:focus {
+.universalField--tone-terminal .textField__input:focus {
 	box-shadow: inset 0 -1px 0 var(--field-border-strong);
 }
 
-.universalField--paper input {
+.universalField--tone-paper .textField__input {
 	background:
 		linear-gradient(
 			to bottom,
@@ -121,6 +212,51 @@
 		var(--field-bg);
 }
 
-.universalField--panel input {
+.universalField--tone-panel .textField__input {
 	background: var(--field-bg-raised);
+}
+
+/* Inline chrome adjustments */
+
+.universalField--chrome-inline .textField {
+	width: 100%;
+}
+
+/* Small screens */
+
+@media (max-width: 680px) {
+	.universalField--chrome-inline {
+		display: flex;
+		flex-direction: column;
+
+		.universalField__control,
+		.universalField__error,
+		.universalField__warnings {
+			grid-column: auto;
+		}
+	}
+
+	.textField {
+		flex-wrap: wrap;
+	}
+
+	.textField__input {
+		flex-basis: 100%;
+		order: 1;
+	}
+
+	.textField__affix--prefix {
+		order: 0;
+		border-right: 1px solid var(--field-border);
+	}
+
+	.textField__affix--suffix {
+		order: 2;
+		border-left: 1px solid var(--field-border);
+	}
+
+	.textField__button {
+		order: 3;
+		min-height: 28px;
+	}
 }

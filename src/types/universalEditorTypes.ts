@@ -8,12 +8,74 @@ export type EditorControlTone = "default" | "quiet" | "terminal" | "paper" | "pa
 
 export type EditorControlChrome = "field" | "card" | "inline" | "compact" | "bare";
 
-// only add themes and types that exist for now
-export type EditorControlType = "input";
-
 export type EditorControlTheme =
 	"auto" | "mothmark" | "parchment" | "blueprint" | "terminal" | "plain";
 
+export type EditorControlScheme = "auto" | "light" | "dark";
+
+// only add types that exist for now
+export type EditorControlType = "input";
+
+/**
+ * Appearance controls how a control looks.
+ *
+ * Context appearance is the inherited/default appearance for an editor region.
+ * Metadata appearance is the per-control override.
+ *
+ * Precedence:
+ * default appearance < context.appearance < metadata.appearance
+ */
+export type EditorControlAppearance = {
+	theme?: EditorControlTheme;
+	scheme?: EditorControlScheme;
+	tone?: EditorControlTone;
+	chrome?: EditorControlChrome;
+	size?: EditorControlSize;
+};
+
+export type ResolvedEditorControlAppearance = {
+	theme: EditorControlTheme;
+	scheme: EditorControlScheme;
+	tone: EditorControlTone;
+	chrome: EditorControlChrome;
+	size: EditorControlSize;
+};
+
+export const DEFAULT_EDITOR_CONTROL_APPEARANCE: ResolvedEditorControlAppearance = {
+	theme: "auto",
+	scheme: "auto",
+	tone: "default",
+	chrome: "field",
+	size: "md",
+};
+
+export function resolveEditorControlAppearance(
+	contextAppearance?: EditorControlAppearance,
+	metadataAppearance?: EditorControlAppearance,
+): ResolvedEditorControlAppearance {
+	return {
+		...DEFAULT_EDITOR_CONTROL_APPEARANCE,
+		...contextAppearance,
+		...metadataAppearance,
+	};
+}
+
+/**
+ * Metadata describes the control itself.
+ *
+ * Use metadata for:
+ * - field label and description
+ * - placeholder
+ * - required/disabled/readonly/hidden
+ * - per-control appearance overrides
+ * - per-control behavior/features
+ *
+ * Do not use metadata for:
+ * - editor-wide theme defaults
+ * - editor mode
+ * - registry/services access
+ * - reading/writing other paths
+ */
 export type EditorControlMetadata = {
 	type: EditorControlType;
 
@@ -26,16 +88,32 @@ export type EditorControlMetadata = {
 	hidden?: boolean;
 
 	required?: boolean;
-	size?: EditorControlSize;
-	tone?: EditorControlTone;
-	chrome?: EditorControlChrome;
+
+	appearance?: EditorControlAppearance;
 
 	className?: string;
 	testId?: string;
 };
 
+/**
+ * Context describes the environment where the control is being rendered.
+ *
+ * Use context for:
+ * - inherited/default appearance
+ * - editor mode
+ * - reading/writing values by path
+ * - validation services
+ * - registries such as entities and flags
+ *
+ * Do not use context for:
+ * - field-specific labels
+ * - field-specific placeholder
+ * - field-specific transforms
+ * - field-specific buttons/features
+ */
 export type EditorControlContext = {
-	theme: EditorControlTheme;
+	appearance?: EditorControlAppearance;
+
 	mode: "create" | "edit" | "preview";
 
 	getValue: (path: EditorPath) => unknown;

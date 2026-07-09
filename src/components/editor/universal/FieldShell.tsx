@@ -1,9 +1,4 @@
-import type {
-	EditorControlChrome,
-	EditorControlTone,
-	EditorControlSize,
-	EditorControlTheme,
-} from "@/types/universalEditorTypes";
+import type {ResolvedEditorControlAppearance} from "@/types/universalEditorTypes";
 import "./FieldShell.scss";
 
 export type FieldShellProps = {
@@ -12,9 +7,10 @@ export type FieldShellProps = {
 	error?: string;
 	warnings?: string[];
 
-	chrome?: EditorControlChrome;
-	tone?: EditorControlTone;
-	size?: EditorControlSize;
+	appearance: ResolvedEditorControlAppearance;
+
+	className?: string;
+	testId?: string;
 
 	children: React.ReactNode;
 };
@@ -24,26 +20,31 @@ export function FieldShell({
 	description,
 	error,
 	warnings = [],
-	chrome = "field",
-	tone = "default",
-	size = "md",
-	theme = "auto",
+	appearance,
+	className,
+	testId,
 	children,
-}: FieldShellProps & {theme?: EditorControlTheme}) {
+}: FieldShellProps) {
 	return (
 		<div
 			className={[
 				"universalField",
-				`universalField--theme-${theme}`,
-				`universalField--${chrome}`,
-				`universalField--${tone}`,
-				`universalField--${size}`,
+				`universalField--theme-${appearance.theme}`,
+				`universalField--scheme-${appearance.scheme}`,
+				`universalField--tone-${appearance.tone}`,
+				`universalField--chrome-${appearance.chrome}`,
+				`universalField--size-${appearance.size}`,
 				error ? "universalField--error" : "",
-			].join(" ")}
+				className ?? "",
+			]
+				.filter(Boolean)
+				.join(" ")}
+			data-testid={testId}
 		>
 			{title || description ? (
 				<div className="universalField__header">
 					{title ? <div className="universalField__title">{title}</div> : null}
+
 					{description ? <div className="universalField__description">{description}</div> : null}
 				</div>
 			) : null}
