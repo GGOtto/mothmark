@@ -1,0 +1,172 @@
+.numberField {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.numberField__row {
+	display: flex;
+	min-width: 0;
+	align-items: stretch;
+	gap: 0;
+}
+
+.numberField__input {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.3;
+	outline: none;
+	padding: 8px 10px;
+	transition:
+		border-color 120ms ease,
+		background-color 120ms ease,
+		box-shadow 120ms ease,
+		opacity 120ms ease;
+}
+
+.numberField__input::placeholder {
+	color: var(--field-soft);
+}
+
+.numberField__input:hover:not(:disabled):not(:read-only) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.numberField__input:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+.numberField__input:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.numberField__input:read-only:not(:disabled) {
+	cursor: default;
+	border-style: dashed;
+	opacity: 0.78;
+}
+
+.numberField__affix,
+.numberField__button {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-left: none;
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 8px;
+	white-space: nowrap;
+}
+
+.numberField__affix--prefix {
+	border-right: 0;
+}
+
+.numberField__affix--suffix {
+	border-left: 0;
+}
+
+.numberField__button {
+	cursor: pointer;
+	color: var(--field-text);
+}
+
+.numberField__button:hover:not(:disabled) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+}
+
+.numberField__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.numberField__slider {
+	width: 100%;
+	accent-color: var(--field-border-strong);
+}
+
+.numberField__slider:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.universalField--error .numberField__input {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--size-sm .numberField__input,
+.universalField--chrome-compact .numberField__input {
+	font-size: 12px;
+	padding: 5px 7px;
+}
+
+.universalField--size-sm .numberField__affix,
+.universalField--size-sm .numberField__button,
+.universalField--chrome-compact .numberField__affix,
+.universalField--chrome-compact .numberField__button {
+	font-size: 11px;
+	padding: 0 6px;
+}
+
+.universalField--size-lg .numberField__input {
+	font-size: 15px;
+	padding: 11px 12px;
+}
+
+.universalField--size-lg .numberField__affix,
+.universalField--size-lg .numberField__button {
+	font-size: 13px;
+	padding: 0 10px;
+}
+
+.universalField--chrome-bare .numberField__input {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--chrome-bare .numberField__input:hover:not(:disabled):not(:read-only),
+.universalField--chrome-bare .numberField__input:focus {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: inset 0 -1px 0 var(--field-border);
+}
+
+.universalField--chrome-bare .numberField__affix,
+.universalField--chrome-bare .numberField__button {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 4px;
+	padding-left: 4px;
+}
+
+.universalField--tone-quiet .numberField__input {
+	background: transparent;
+}
+
+.universalField--tone-panel .numberField__input {
+	background: var(--field-bg-raised);
+}

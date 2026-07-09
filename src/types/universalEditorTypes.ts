@@ -14,7 +14,8 @@ export type EditorControlTheme =
 export type EditorControlScheme = "auto" | "light" | "dark";
 
 // only add types that exist for now
-export type EditorControlType = "input";
+export type EditorControlType =
+	"input" | "textarea" | "number" | "toggle" | "select" | "multi-select" | "message";
 
 /**
  * Appearance controls how a control looks.

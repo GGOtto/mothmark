@@ -1,0 +1,164 @@
+.textareaEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.textareaEditor__input {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 13px;
+	line-height: 1.45;
+	outline: none;
+	padding: 8px 10px;
+	transition:
+		border-color 120ms ease,
+		background-color 120ms ease,
+		box-shadow 120ms ease,
+		opacity 120ms ease;
+}
+
+.textareaEditor--monospace .textareaEditor__input {
+	font-family:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.textareaEditor--autoGrow .textareaEditor__input {
+	overflow-y: auto;
+}
+
+.textareaEditor__input::placeholder {
+	color: var(--field-soft);
+}
+
+.textareaEditor__input:hover:not(:disabled):not(:read-only) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.textareaEditor__input:focus {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+.textareaEditor__input:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.textareaEditor__input:read-only:not(:disabled) {
+	cursor: default;
+	border-style: dashed;
+	opacity: 0.78;
+}
+
+.textareaEditor__actions {
+	display: flex;
+	justify-content: flex-end;
+	border: 1px solid var(--field-border);
+	border-top: none;
+	background: var(--field-bg-raised);
+}
+
+.textareaEditor__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-height: 27px;
+	border: 0;
+	border-left: 1px solid var(--field-border);
+	background: transparent;
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	padding: 0 8px;
+	white-space: nowrap;
+}
+
+.textareaEditor__button:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.textareaEditor__button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.universalField--error .textareaEditor__input {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--size-sm .textareaEditor__input,
+.universalField--chrome-compact .textareaEditor__input {
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.universalField--size-sm .textareaEditor__button,
+.universalField--chrome-compact .textareaEditor__button {
+	min-height: 24px;
+	font-size: 11px;
+	padding: 0 6px;
+}
+
+.universalField--size-lg .textareaEditor__input {
+	font-size: 15px;
+	padding: 11px 12px;
+}
+
+.universalField--size-lg .textareaEditor__button {
+	min-height: 32px;
+	font-size: 13px;
+	padding: 0 10px;
+}
+
+.universalField--chrome-bare .textareaEditor__input {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--chrome-bare .textareaEditor__input:hover:not(:disabled):not(:read-only),
+.universalField--chrome-bare .textareaEditor__input:focus {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: inset 0 -1px 0 var(--field-border);
+}
+
+.universalField--chrome-bare .textareaEditor__actions {
+	border-color: transparent;
+	background: transparent;
+}
+
+.universalField--tone-quiet .textareaEditor__input {
+	background: transparent;
+}
+
+.universalField--tone-paper .textareaEditor__input {
+	background:
+		linear-gradient(
+			to bottom,
+			transparent calc(100% - 1px),
+			color-mix(in srgb, var(--field-border) 62%, transparent) calc(100% - 1px)
+		),
+		var(--field-bg);
+}
+
+.universalField--tone-panel .textareaEditor__input {
+	background: var(--field-bg-raised);
+}

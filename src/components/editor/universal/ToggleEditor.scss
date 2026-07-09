@@ -1,0 +1,162 @@
+.toggleEditor {
+	display: inline-flex;
+	width: fit-content;
+	max-width: 100%;
+	align-items: center;
+	box-sizing: border-box;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+	font-size: 13px;
+	line-height: 1.2;
+}
+
+.toggleEditor--switch,
+.toggleEditor--button {
+	min-height: 34px;
+	border: 1px solid var(--field-border);
+	border-radius: 0;
+	background: var(--field-bg);
+	cursor: pointer;
+	font: inherit;
+	padding: 6px 9px;
+	transition:
+		border-color 120ms ease,
+		background-color 120ms ease,
+		box-shadow 120ms ease,
+		opacity 120ms ease;
+}
+
+.toggleEditor--switch {
+	gap: 8px;
+}
+
+.toggleEditor--button {
+	justify-content: center;
+	min-width: 72px;
+}
+
+.toggleEditor--switch:hover:not(:disabled),
+.toggleEditor--button:hover:not(:disabled) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.toggleEditor--switch:focus-visible,
+.toggleEditor--button:focus-visible {
+	outline: none;
+	border-color: var(--field-border-strong);
+	box-shadow: inset 0 -1px 0 var(--field-border-strong);
+}
+
+.toggleEditor--checked {
+	background: var(--field-bg-strong);
+}
+
+.toggleEditor:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.toggleEditor[data-readonly="true"]:not(:disabled) {
+	cursor: default;
+	border-style: dashed;
+	opacity: 0.78;
+}
+
+.toggleEditor--checkbox {
+	gap: 7px;
+	min-height: 30px;
+}
+
+.toggleEditor__checkbox {
+	width: 15px;
+	height: 15px;
+	margin: 0;
+	accent-color: var(--field-border-strong);
+}
+
+.toggleEditor__checkbox:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.toggleEditor__track {
+	position: relative;
+	width: 30px;
+	height: 16px;
+	flex: 0 0 auto;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+}
+
+.toggleEditor__track::after {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 10px;
+	height: 10px;
+	background: var(--field-muted);
+	content: "";
+	transition:
+		background-color 120ms ease,
+		transform 120ms ease;
+}
+
+.toggleEditor--checked .toggleEditor__track::after {
+	background: var(--field-text);
+	transform: translateX(14px);
+}
+
+.toggleEditor__label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.universalField--error .toggleEditor--switch,
+.universalField--error .toggleEditor--button {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--size-sm .toggleEditor,
+.universalField--chrome-compact .toggleEditor {
+	font-size: 12px;
+}
+
+.universalField--size-sm .toggleEditor--switch,
+.universalField--size-sm .toggleEditor--button,
+.universalField--chrome-compact .toggleEditor--switch,
+.universalField--chrome-compact .toggleEditor--button {
+	min-height: 28px;
+	padding: 4px 7px;
+}
+
+.universalField--size-lg .toggleEditor {
+	font-size: 15px;
+}
+
+.universalField--size-lg .toggleEditor--switch,
+.universalField--size-lg .toggleEditor--button {
+	min-height: 40px;
+	padding: 8px 11px;
+}
+
+.universalField--chrome-bare .toggleEditor--switch,
+.universalField--chrome-bare .toggleEditor--button {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .toggleEditor--switch,
+.universalField--tone-quiet .toggleEditor--button {
+	background: transparent;
+}
+
+.universalField--tone-panel .toggleEditor--switch,
+.universalField--tone-panel .toggleEditor--button {
+	background: var(--field-bg-raised);
+}

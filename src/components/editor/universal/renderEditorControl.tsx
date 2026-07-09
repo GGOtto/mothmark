@@ -1,4 +1,10 @@
+import {MessageEditor, type MessageEditorProps} from "./MessageEditor";
+import {MultiSelectEditor, type MultiSelectEditorProps} from "./MultiSelectEditor";
+import {NumberFieldEditor, type NumberFieldProps} from "./NumberFieldEditor";
+import {SelectEditor, type SelectEditorProps} from "./SelectEditor";
 import {TextField, type TextFieldProps} from "./TextFieldEditor";
+import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
+import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../../types/universalEditorTypes";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
@@ -6,20 +12,20 @@ export function renderEditorControl(props: EditorControlProps<unknown, EditorCon
 		case "input":
 			return <TextField {...(props as TextFieldProps)} />;
 
-		// 	case "textarea":
-		// 		return <TextareaEditor {...props as TextareaEditorProps} />;
+		case "textarea":
+			return <TextareaEditor {...(props as TextareaProps)} />;
 
-		// 	case "number":
-		// 		return <NumberEditor {...props as NumberEditorProps} />;
+		case "number":
+			return <NumberFieldEditor {...(props as NumberFieldProps)} />;
 
-		// 	case "toggle":
-		// 		return <ToggleEditor {...props as ToggleEditorProps} />;
+		case "toggle":
+			return <ToggleEditor {...(props as ToggleEditorProps)} />;
 
-		// 	case "select":
-		// 		return <SelectEditor {...props as SelectEditorProps} />;
+		case "select":
+			return <SelectEditor {...(props as SelectEditorProps)} />;
 
-		// 	case "multi-select":
-		// 		return <MultiSelectEditor {...props as MultiSelectEditorProps} />;
+		case "multi-select":
+			return <MultiSelectEditor {...(props as MultiSelectEditorProps)} />;
 
 		// 	case "tag-list":
 		// 		return <TagListEditor {...props as TagListEditorProps} />;
@@ -54,8 +60,8 @@ export function renderEditorControl(props: EditorControlProps<unknown, EditorCon
 		// 	case "hidden":
 		// 		return null;
 
-		// 	case "message":
-		// 		return <MessageEditor {...props as MessageEditorProps} />;
+		case "message":
+			return <MessageEditor {...(props as MessageEditorProps)} />;
 
 		default:
 			return null;

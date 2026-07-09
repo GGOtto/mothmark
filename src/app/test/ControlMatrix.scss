@@ -243,6 +243,53 @@
 	padding: 0 5px;
 }
 
+.control-matrix__theme-card .textareaEditor__input,
+.control-matrix__theme-card .numberField__input,
+.control-matrix__theme-card .selectEditor__input {
+	font-size: 11px;
+	padding: 5px 6px;
+}
+
+.control-matrix__theme-card .textareaEditor__button,
+.control-matrix__theme-card .numberField__affix,
+.control-matrix__theme-card .numberField__button {
+	font-size: 10px;
+	padding: 0 5px;
+}
+
+.control-matrix__theme-card .toggleEditor,
+.control-matrix__theme-card .messageEditor {
+	font-size: 11px;
+}
+
+.control-matrix__theme-card .toggleEditor--switch,
+.control-matrix__theme-card .toggleEditor--button {
+	min-height: 28px;
+	padding: 4px 7px;
+}
+
+.control-matrix__theme-card .selectEditor__descriptions,
+.control-matrix__theme-card .multiSelectEditor__summary,
+.control-matrix__theme-card .multiSelectEditor__optionDescription {
+	font-size: 10px;
+}
+
+.control-matrix__theme-card .multiSelectEditor__options {
+	grid-template-columns: 1fr;
+}
+
+.control-matrix__theme-card .multiSelectEditor__option {
+	padding: 5px;
+}
+
+.control-matrix__theme-card .multiSelectEditor__optionLabel {
+	font-size: 11px;
+}
+
+.control-matrix__theme-card .messageEditor {
+	padding: 6px 7px;
+}
+
 @media (max-width: 1180px) {
 	.control-matrix__theme-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));

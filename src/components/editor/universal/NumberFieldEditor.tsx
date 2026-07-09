@@ -1,0 +1,186 @@
+"use client";
+
+import {useState} from "react";
+import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import {FieldShell} from "./FieldShell";
+import "./NumberFieldEditor.scss";
+
+export type NumberFieldFeatures = {
+	unit?: string;
+	prefix?: string;
+	suffix?: string;
+	slider?: boolean;
+	clearButton?: boolean;
+	clampOnBlur?: boolean;
+};
+
+export type NumberControlMetadata = EditorControlMetadata & {
+	type: "number";
+
+	min?: number;
+	max?: number;
+	step?: number;
+	features?: NumberFieldFeatures;
+};
+
+export type NumberFieldProps = EditorControlProps<number, NumberControlMetadata>;
+
+function clampValue(value: number, min?: number, max?: number) {
+	if (typeof min === "number" && value < min) return min;
+	if (typeof max === "number" && value > max) return max;
+
+	return value;
+}
+
+export function NumberFieldEditor({
+	value,
+	onChange,
+	metadata,
+	error,
+	warnings,
+	disabled,
+	readonly,
+	autoFocus,
+	context,
+}: NumberFieldProps) {
+	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
+	const [draftState, setDraftState] = useState(() => ({
+		sourceValue: value,
+		draftValue: String(value),
+	}));
+
+	const isDisabled = disabled || metadata.disabled;
+	const isReadonly = readonly || metadata.readonly;
+	const canEdit = !isDisabled && !isReadonly;
+	const hasSlider =
+		metadata.features?.slider && typeof metadata.min === "number" && typeof metadata.max === "number";
+	const draftValue = draftState.sourceValue === value ? draftState.draftValue : String(value);
+
+	function commitNumber(rawValue: string) {
+		setDraftState({
+			sourceValue: value,
+			draftValue: rawValue,
+		});
+
+		if (rawValue.trim() === "") return;
+
+		const nextValue = Number(rawValue);
+
+		if (!Number.isFinite(nextValue)) return;
+
+		onChange(nextValue);
+	}
+
+	function restoreOrClampValue() {
+		if (draftValue.trim() === "") {
+			setDraftState({
+				sourceValue: value,
+				draftValue: String(value),
+			});
+			return;
+		}
+
+		const nextValue = Number(draftValue);
+
+		if (!Number.isFinite(nextValue)) {
+			setDraftState({
+				sourceValue: value,
+				draftValue: String(value),
+			});
+			return;
+		}
+
+		if (!metadata.features?.clampOnBlur) return;
+
+		const clampedValue = clampValue(nextValue, metadata.min, metadata.max);
+		setDraftState({
+			sourceValue: clampedValue,
+			draftValue: String(clampedValue),
+		});
+		onChange(clampedValue);
+	}
+
+	function clearValue() {
+		if (!canEdit) return;
+
+		const fallbackValue = metadata.min ?? 0;
+		setDraftState({
+			sourceValue: fallbackValue,
+			draftValue: String(fallbackValue),
+		});
+		onChange(fallbackValue);
+	}
+
+	return (
+		<FieldShell
+			title={metadata.title}
+			description={metadata.description}
+			error={error}
+			warnings={warnings}
+			appearance={appearance}
+			className={metadata.className}
+			testId={metadata.testId}
+		>
+			<div className="numberField">
+				<div className="numberField__row">
+					{metadata.features?.prefix ? (
+						<span className="numberField__affix numberField__affix--prefix">
+							{metadata.features.prefix}
+						</span>
+					) : null}
+
+					<input
+						className="numberField__input"
+						type="number"
+						value={draftValue}
+						placeholder={metadata.placeholder}
+						disabled={isDisabled}
+						readOnly={isReadonly}
+						autoFocus={autoFocus}
+						min={metadata.min}
+						max={metadata.max}
+						step={metadata.step}
+						required={metadata.required}
+						onBlur={restoreOrClampValue}
+						onChange={(event) => {
+							commitNumber(event.target.value);
+						}}
+					/>
+
+					{metadata.features?.unit || metadata.features?.suffix ? (
+						<span className="numberField__affix numberField__affix--suffix">
+							{metadata.features.unit ?? metadata.features.suffix}
+						</span>
+					) : null}
+
+					{metadata.features?.clearButton ? (
+						<button
+							className="numberField__button"
+							type="button"
+							disabled={!canEdit || value === (metadata.min ?? 0)}
+							onClick={clearValue}
+						>
+							Clear
+						</button>
+					) : null}
+				</div>
+
+				{hasSlider ? (
+					<input
+						className="numberField__slider"
+						type="range"
+						value={value}
+						disabled={isDisabled || isReadonly}
+						min={metadata.min}
+						max={metadata.max}
+						step={metadata.step}
+						onChange={(event) => {
+							commitNumber(event.target.value);
+						}}
+					/>
+				) : null}
+			</div>
+		</FieldShell>
+	);
+}

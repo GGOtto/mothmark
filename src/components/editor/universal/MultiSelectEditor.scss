@@ -1,0 +1,153 @@
+.multiSelectEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.multiSelectEditor__summary {
+	display: flex;
+	min-height: 28px;
+	align-items: center;
+	gap: 7px;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1;
+	padding: 4px 7px;
+}
+
+.multiSelectEditor__clearButton {
+	margin-left: auto;
+	border: 0;
+	background: transparent;
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 3px 0;
+}
+
+.multiSelectEditor__clearButton:hover:not(:disabled) {
+	color: var(--field-muted);
+}
+
+.multiSelectEditor__clearButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.multiSelectEditor__options {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+	gap: 5px;
+}
+
+.multiSelectEditor__option {
+	display: flex;
+	min-width: 0;
+	align-items: flex-start;
+	gap: 7px;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	cursor: pointer;
+	padding: 7px;
+	transition:
+		border-color 120ms ease,
+		background-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.multiSelectEditor__option:hover {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-raised);
+}
+
+.multiSelectEditor__option--checked {
+	background: var(--field-bg-strong);
+}
+
+.multiSelectEditor__option--readonly {
+	cursor: default;
+	border-style: dashed;
+	opacity: 0.78;
+}
+
+.multiSelectEditor__checkbox {
+	width: 14px;
+	height: 14px;
+	flex: 0 0 auto;
+	margin: 1px 0 0;
+	accent-color: var(--field-border-strong);
+}
+
+.multiSelectEditor__checkbox:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.multiSelectEditor__optionText {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.multiSelectEditor__optionLabel {
+	overflow: hidden;
+	color: var(--field-text);
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.multiSelectEditor__optionDescription {
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.3;
+}
+
+.universalField--error .multiSelectEditor__summary,
+.universalField--error .multiSelectEditor__option {
+	border-color: var(--field-border);
+	background: var(--field-danger-bg);
+}
+
+.universalField--size-sm .multiSelectEditor__optionLabel,
+.universalField--chrome-compact .multiSelectEditor__optionLabel {
+	font-size: 11px;
+}
+
+.universalField--size-sm .multiSelectEditor__optionDescription,
+.universalField--chrome-compact .multiSelectEditor__optionDescription {
+	font-size: 10px;
+}
+
+.universalField--size-lg .multiSelectEditor__optionLabel {
+	font-size: 14px;
+}
+
+.universalField--chrome-bare .multiSelectEditor__summary,
+.universalField--chrome-bare .multiSelectEditor__option {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .multiSelectEditor__option {
+	background: transparent;
+}
+
+.universalField--tone-panel .multiSelectEditor__option {
+	background: var(--field-bg-raised);
+}

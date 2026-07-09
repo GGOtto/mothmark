@@ -1,0 +1,73 @@
+.messageEditor {
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+	font-size: 13px;
+	line-height: 1.45;
+	padding: 8px 10px;
+}
+
+.messageEditor__body {
+	margin: 0;
+	color: inherit;
+}
+
+.messageEditor__summary {
+	cursor: pointer;
+	color: inherit;
+	font-weight: 700;
+}
+
+.messageEditor__summary + .messageEditor__body {
+	margin-top: 7px;
+}
+
+.messageEditor--warning {
+	border-color: color-mix(in srgb, var(--field-warning) 34%, transparent);
+	background: var(--field-warning-bg);
+	color: var(--field-warning);
+}
+
+.messageEditor--error {
+	border-color: color-mix(in srgb, var(--field-danger) 34%, transparent);
+	background: var(--field-danger-bg);
+	color: var(--field-danger);
+}
+
+.messageEditor--success {
+	border-color: color-mix(in srgb, #3f8b57 40%, transparent);
+	background: color-mix(in srgb, #3f8b57 12%, transparent);
+}
+
+.messageEditor--empty {
+	border-style: dashed;
+	color: var(--field-muted);
+}
+
+.universalField--size-sm .messageEditor,
+.universalField--chrome-compact .messageEditor {
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.universalField--size-lg .messageEditor {
+	font-size: 15px;
+	padding: 11px 12px;
+}
+
+.universalField--chrome-bare .messageEditor {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .messageEditor {
+	background: transparent;
+}
+
+.universalField--tone-panel .messageEditor {
+	background: var(--field-bg-raised);
+}
