@@ -1,10 +1,11 @@
-import type {Room, Connection} from "../../../schemas/worldSchema";
+import type {Room, Connection, World} from "../../../schemas/worldSchema";
 import {AdjustableBox} from "../../ui/AdjustableBox";
 import {RoomEditor} from "./RoomEditor";
 import {ConnectionEditor} from "./ConnectionEditor";
 import "./RightSideBar.scss";
 
 type RightSideBarProps = {
+	world?: World;
 	rooms?: Room[];
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
@@ -16,6 +17,7 @@ type RightSideBarProps = {
 };
 
 export function RightSideBar({
+	world,
 	rooms = [],
 	selectedRoom,
 	selectedConnection,
@@ -34,7 +36,12 @@ export function RightSideBar({
 			adjustableEdges={["left"]}
 		>
 			{selectedRoom ? (
-				<RoomEditor selectedRoom={selectedRoom} rooms={rooms} onRoomChange={onRoomChange} />
+				<RoomEditor
+					selectedRoom={selectedRoom}
+					rooms={rooms}
+					world={world}
+					onRoomChange={onRoomChange}
+				/>
 			) : selectedConnection ? (
 				<ConnectionEditor
 					selectedConnection={selectedConnection}

@@ -95,9 +95,20 @@ export default function EditorPage() {
 	}, [connections, selection]);
 
 	function updateRoom(updatedRoom: Room) {
+		const selectedRoomId = selection.isConnectionSelected ? null : selection.selectedId;
+
 		setRooms((currentRooms) =>
-			currentRooms.map((room) => (room.id === updatedRoom.id ? updatedRoom : room)),
+			currentRooms.map((room) =>
+				room.id === (selectedRoomId ?? updatedRoom.id) ? updatedRoom : room,
+			),
 		);
+
+		if (selectedRoomId && selectedRoomId !== updatedRoom.id) {
+			setSelection({
+				selectedId: updatedRoom.id,
+				isConnectionSelected: false,
+			});
+		}
 	}
 
 	function updateConnection(updatedConnection: Connection) {
@@ -146,6 +157,8 @@ export default function EditorPage() {
 
 			<EditorInspector
 				activeTab={activeTab}
+				world={editorWorld}
+				rooms={rooms}
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onRoomChange={updateRoom}
@@ -324,6 +337,8 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 
 type EditorInspectorProps = {
 	activeTab: EditorTab;
+	world: World;
+	rooms: Room[];
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
@@ -333,6 +348,8 @@ type EditorInspectorProps = {
 
 function EditorInspector({
 	activeTab,
+	world,
+	rooms,
 	selectedRoom,
 	selectedConnection,
 	onRoomChange,
@@ -342,6 +359,8 @@ function EditorInspector({
 	if (activeTab === "map") {
 		return (
 			<RightSideBar
+				world={world}
+				rooms={rooms}
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onRoomChange={onRoomChange}
@@ -355,6 +374,8 @@ function EditorInspector({
 
 	return (
 		<RightSideBar
+			world={world}
+			rooms={rooms}
 			selectedRoom={null}
 			selectedConnection={null}
 			onRoomChange={onRoomChange}

@@ -40,7 +40,7 @@ export type ConditionBuilderControlMetadata = EditorControlMetadata & {
 };
 
 export type ConditionBuilderEditorProps = EditorControlProps<
-	ConditionValue,
+	ConditionValue | ConditionValue[],
 	ConditionBuilderControlMetadata
 >;
 
@@ -207,6 +207,87 @@ export function ConditionBuilderEditor({
 	context,
 }: ConditionBuilderEditorProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
+	const isDisabled = disabled || metadata.disabled;
+	const isReadonly = readonly || metadata.readonly;
+	const canEdit = !isDisabled && !isReadonly;
+
+	if (Array.isArray(value)) {
+		const conditions = value as ConditionValue[];
+		const summaryCondition = {
+			type: "group",
+			operator: "all",
+			conditions,
+		};
+
+		function updateCondition(index: number, nextCondition: ConditionValue) {
+			onChange(
+				conditions.map((condition, conditionIndex) =>
+					conditionIndex === index ? nextCondition : condition,
+				),
+			);
+		}
+
+		function removeCondition(index: number) {
+			if (!canEdit) return;
+			onChange(conditions.filter((_, conditionIndex) => conditionIndex !== index));
+		}
+
+		function addCondition() {
+			if (!canEdit) return;
+			onChange([...conditions, createDefaultCondition("flag")]);
+		}
+
+		return (
+			<FieldShell
+				title={metadata.title}
+				description={metadata.description}
+				error={error}
+				warnings={warnings}
+				appearance={appearance}
+				className={metadata.className}
+				testId={metadata.testId}
+			>
+				<div
+					className={[
+						"conditionBuilderEditor",
+						metadata.features?.compact ? "conditionBuilderEditor--compact" : "",
+					]
+						.filter(Boolean)
+						.join(" ")}
+				>
+					{(metadata.features?.showGeneratedSummary ?? true) ? (
+						<div className="conditionBuilderEditor__summary">
+							{conditions.length > 0 ? generateConditionSummary(summaryCondition) : "Always"}
+						</div>
+					) : null}
+					<div className="conditionBuilderEditor__nested">
+						{conditions.map((condition, index) => (
+							<div key={index} className="conditionBuilderEditor__nestedItem">
+								<ConditionNodeEditor
+									value={normalizeCondition(condition)}
+									onChange={(nextCondition) => updateCondition(index, nextCondition)}
+									metadata={metadata}
+									path={[...path, index]}
+									depth={0}
+									disabled={disabled}
+									readonly={readonly}
+									context={context}
+								/>
+								<button type="button" disabled={!canEdit} onClick={() => removeCondition(index)}>
+									Remove
+								</button>
+							</div>
+						))}
+						<div className="conditionBuilderEditor__actions">
+							<button type="button" disabled={!canEdit} onClick={addCondition}>
+								Add condition
+							</button>
+						</div>
+					</div>
+				</div>
+			</FieldShell>
+		);
+	}
 
 	return (
 		<FieldShell
