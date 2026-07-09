@@ -339,9 +339,6 @@
    Tone
 --------------------------------------------- */
 
-.universalField--tone-default {
-}
-
 .universalField--tone-quiet {
 	--field-muted: color-mix(in srgb, var(--field-text) 48%, transparent);
 	--field-border: color-mix(in srgb, var(--field-text) 14%, transparent);
