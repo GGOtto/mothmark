@@ -8,7 +8,7 @@ import type {
 	EntityType,
 	FlagOption,
 	FlagRegistry,
-} from "../../types/registryTypes";
+} from "../../types/editor/editorRegistryTypes";
 import type {
 	EditorControlAppearance,
 	EditorControlContext,

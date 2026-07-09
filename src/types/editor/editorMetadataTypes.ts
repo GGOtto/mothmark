@@ -1,10 +1,7 @@
-import {FlagRegistry, EntityRegistry} from "./registryTypes";
-
-export type EditorPath = Array<string | number>;
-
 export type EditorControlSize = "sm" | "md" | "lg";
 
-export type EditorControlTone = "default" | "quiet" | "terminal" | "paper" | "panel";
+export type EditorControlTone =
+	"default" | "quiet" | "terminal" | "paper" | "panel" | "danger" | "warning" | "success";
 
 export type EditorControlChrome = "field" | "card" | "inline" | "compact" | "bare";
 
@@ -39,6 +36,7 @@ export type EditorControlType =
 	| "room-picker"
 	| "connection-picker"
 	| "flag-picker"
+	| "counter-picker"
 	| "flag-editor"
 	| "direction-picker"
 	| "scope-picker"
@@ -50,7 +48,26 @@ export type EditorControlType =
 	| "diff-preview"
 	| "hidden";
 
-export type EditorSelectOption = {
+export type EditorEntityType =
+	| "room"
+	| "connection"
+	| "item"
+	| "npc"
+	| "topic"
+	| "quest"
+	| "quest-objective"
+	| "command"
+	| "event"
+	| "feature"
+	| "container"
+	| "surface"
+	| "object"
+	| "direction";
+
+export type EditorTagSource =
+	"rooms" | "items" | "features" | "npcs" | "topics" | "quests" | "commands" | "events" | "all";
+
+export type EditorOption = {
 	label: string;
 	value: string;
 	description?: string;
@@ -58,6 +75,7 @@ export type EditorSelectOption = {
 	icon?: string;
 	tone?: EditorControlTone;
 	disabled?: boolean;
+	deprecated?: boolean;
 	badge?: string;
 };
 
@@ -89,19 +107,18 @@ export type EditorPickerFeatures = {
 	grouped?: boolean;
 };
 
-export type EditorChildControlOverrides = {
-	[key: string]: Partial<EditorControlMetadata>;
+export type EditorFieldLayoutMetadata = {
+	group?: string;
+	section?: string;
+	order?: number;
+	width?: "full" | "half" | "third" | "auto";
 };
 
-/**
- * Appearance controls how a control looks.
- *
- * Context appearance is the inherited/default appearance for an editor region.
- * Metadata appearance is the per-control override.
- *
- * Precedence:
- * default appearance < context.appearance < metadata.appearance
- */
+export type EditorSummaryMetadata = {
+	enabled?: boolean;
+	mode?: "deterministic" | "preview";
+};
+
 export type EditorControlAppearance = {
 	theme?: EditorControlTheme;
 	scheme?: EditorControlScheme;
@@ -137,89 +154,62 @@ export function resolveEditorControlAppearance(
 	};
 }
 
+export type EditorChildControlOverrides = {
+	[key: string]: Partial<EditorFieldMetadata>;
+};
+
 /**
- * Metadata describes the control itself.
+ * Metadata describes a schema field.
  *
  * Use metadata for:
  * - field label and description
  * - placeholder
  * - required/disabled/readonly/hidden
- * - per-control appearance overrides
- * - per-control behavior/features
+ * - per-field appearance overrides
+ * - per-field editor behavior
+ * - picker source metadata
+ * - deterministic summaries
  *
  * Do not use metadata for:
- * - editor-wide theme defaults
+ * - current world data
  * - editor mode
- * - registry/services access
- * - reading/writing other paths
+ * - runtime services
+ * - registries
+ * - value access
  */
-export type EditorControlMetadata = {
-	type: EditorControlType;
+export type EditorFieldMetadata = {
+	control: EditorControlType;
 
 	title?: string;
 	description?: string;
-
 	placeholder?: string;
-	disabled?: boolean;
-	readonly?: boolean;
-	hidden?: boolean;
 
 	required?: boolean;
+	readonly?: boolean;
+	disabled?: boolean;
+	hidden?: boolean;
+	advanced?: boolean;
+	deprecated?: boolean;
 
 	appearance?: EditorControlAppearance;
-	childControls?: EditorChildControlOverrides;
+	layout?: EditorFieldLayoutMetadata;
+
+	options?: EditorOption[];
 	optionSource?: string;
+
+	entityType?: EditorEntityType;
+	tagSource?: EditorTagSource;
+
+	childControls?: EditorChildControlOverrides;
+
+	preview?: EditorPreviewFeatures;
+	emptyState?: EditorEmptyStateFeatures;
+	duplicate?: EditorDuplicateFeatures;
+	picker?: EditorPickerFeatures;
+
+	summary?: EditorSummaryMetadata;
 
 	className?: string;
 	testId?: string;
-};
-
-/**
- * Context describes the environment where the control is being rendered.
- *
- * Use context for:
- * - inherited/default appearance
- * - editor mode
- * - reading/writing values by path
- * - validation services
- * - registries such as entities and flags
- *
- * Do not use context for:
- * - field-specific labels
- * - field-specific placeholder
- * - field-specific transforms
- * - field-specific buttons/features
- */
-export type EditorControlContext = {
-	appearance?: EditorControlAppearance;
-
-	mode: "create" | "edit" | "preview";
-
-	getValue: (path: EditorPath) => unknown;
-	setValue: (path: EditorPath, value: unknown) => void;
-
-	validatePath?: (path: EditorPath) => string | undefined;
-
-	getOptionList?: (source: string) => EditorSelectOption[] | undefined;
-
-	registerEntityPicker?: EntityRegistry;
-	registerFlagPicker?: FlagRegistry;
-};
-
-export type EditorControlProps<TValue, TMetadata extends EditorControlMetadata> = {
-	value: TValue;
-	onChange: (nextValue: TValue) => void;
-
-	metadata: TMetadata;
-	path: EditorPath;
-
-	error?: string;
-	warnings?: string[];
-
-	disabled?: boolean;
-	readonly?: boolean;
-
-	autoFocus?: boolean;
-
-	context: EditorControlContext;
+	debugName?: string;
 };

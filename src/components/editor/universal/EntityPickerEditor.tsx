@@ -1,6 +1,6 @@
 "use client";
 
-import type {EntityPickerOption, EntityType} from "../../../types/registryTypes";
+import type {EntityPickerOption, EntityType} from "../../../types/editor/editorRegistryTypes";
 import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
