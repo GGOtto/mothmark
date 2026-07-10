@@ -7,6 +7,7 @@ export type GameMessage = {
 	id: string;
 	text: string;
 	type: GameMessageType;
+	roomId?: string;
 };
 
 export type GameState = {
@@ -16,11 +17,20 @@ export type GameState = {
 	messages: GameMessage[];
 };
 
-export function createGameMessage(text: string, type: GameMessageType): GameMessage {
+export type CreateGameMessageOptions = {
+	roomId?: string;
+};
+
+export function createGameMessage(
+	text: string,
+	type: GameMessageType,
+	options: CreateGameMessageOptions = {},
+): GameMessage {
 	return {
 		id: crypto.randomUUID(),
 		text,
 		type,
+		...options,
 	};
 }
 

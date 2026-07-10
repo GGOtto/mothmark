@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import type {World} from "../../schemas/worldSchema";
 import {createInitialGameState, type GameState} from "../../engine/gameState";
-import {lookAtRoom} from "../../engine/rooms";
+import {lookAtRoom, refreshLatestRoomMessage} from "../../engine/rooms";
 import {runCommand} from "../../engine/commands";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
@@ -24,6 +24,9 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState<number>(0);
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
+	const displayState = useMemo(() => {
+		return refreshLatestRoomMessage(world, gameState);
+	}, [world, gameState]);
 
 	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
 		setGameState((currentState) => updateGameState(currentState));
@@ -46,7 +49,7 @@ export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
 	return (
 		<section className="game-player">
 			<div className="game-player__output">
-				<OutputLog messages={gameState.messages} />
+				<OutputLog messages={displayState.messages} />
 			</div>
 
 			<CommandInput

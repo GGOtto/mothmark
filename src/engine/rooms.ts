@@ -31,7 +31,9 @@ export function buildRoomDescription(room: Room, gameState: GameState): GameMess
 	}
 
 	text += "\n";
-	return createGameMessage(text, "room");
+	return createGameMessage(text, "room", {
+		roomId: room.id,
+	});
 }
 
 export function lookAtRoom(world: World, gameState: GameState): GameState {
@@ -46,5 +48,36 @@ export function lookAtRoom(world: World, gameState: GameState): GameState {
 			[getRoomViewedFlag(room.id)]: true,
 		},
 		messages: [...gameState.messages, description],
+	};
+}
+
+export function refreshLatestRoomMessage(world: World, gameState: GameState): GameState {
+	let latestRoomMessageIndex = -1;
+
+	for (let index = gameState.messages.length - 1; index >= 0; index -= 1) {
+		if (gameState.messages[index].type !== "room") continue;
+
+		latestRoomMessageIndex = index;
+		break;
+	}
+
+	if (latestRoomMessageIndex === -1) return gameState;
+
+	const latestRoomMessage = gameState.messages[latestRoomMessageIndex];
+	const roomId = latestRoomMessage.roomId ?? gameState.currentRoomId;
+	const room = world.rooms.find((candidateRoom) => candidateRoom.id === roomId);
+
+	if (!room) return gameState;
+
+	const refreshedMessage = {
+		...buildRoomDescription(room, gameState),
+		id: latestRoomMessage.id,
+	};
+	const messages = [...gameState.messages];
+	messages[latestRoomMessageIndex] = refreshedMessage;
+
+	return {
+		...gameState,
+		messages,
 	};
 }
