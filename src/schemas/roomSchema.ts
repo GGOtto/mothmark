@@ -518,6 +518,21 @@ export const ConnectionSchema = editor.object(
 			},
 		}),
 
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of the room.",
+				placeholder: "Connection Name",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+					pinned: true,
+				},
+			})
+			.min(1)
+			.optional(),
+
 		fromRoomId: editor.entityId("room", {
 			title: "From Room",
 			description: "The id of the room where this connection starts.",

@@ -1,4 +1,4 @@
-import type {Direction, Point, Room} from "../schemas/worldSchema";
+import type {Direction, Point, Room} from "../schemas/roomSchema";
 
 export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	n: {x: 0, y: -1},

@@ -1,4 +1,4 @@
-import type {Point} from "../schemas/worldSchema";
+import type {Point} from "../schemas/roomSchema";
 
 export function addPoints(p1: Point, p2: Point): Point {
 	return {

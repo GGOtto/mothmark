@@ -1,4 +1,5 @@
-import type {Room, Connection, World} from "../../../schemas/worldSchema";
+import type {Room, Connection} from "../../../schemas/roomSchema";
+import type {World} from "@/schemas/worldSchema";
 import {AdjustableBox} from "../../ui/AdjustableBox";
 import {RoomEditor} from "./RoomEditor";
 import {ConnectionEditor} from "./ConnectionEditor";
@@ -46,7 +47,8 @@ export function RightSideBar({
 				<ConnectionEditor
 					selectedConnection={selectedConnection}
 					onConnectionChange={onConnectionChange}
-					deleteConnection={deleteConnection}
+					connections={world?.connections}
+					world={world}
 				/>
 			) : title ? (
 				<EmptyTabPanel title={title} description={description} />
