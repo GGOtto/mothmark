@@ -1,5 +1,5 @@
 import type {RoomNode} from "../../types/mapTypes";
-import type {Room, Direction} from "../../schemas/worldSchema";
+import type {Room, Direction} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {Node} from "./Node";
 import "./Room.scss";

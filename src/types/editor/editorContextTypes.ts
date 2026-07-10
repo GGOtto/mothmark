@@ -126,6 +126,8 @@ export type EditorChromeContext = {
 	rootPath?: EditorPath;
 	activeSection?: EditorActiveSection;
 	setActiveSection?: (section?: EditorActiveSection) => void;
+	getSectionDisclosure?: (path: EditorPath, sectionId: string) => boolean | undefined;
+	setSectionDisclosure?: (path: EditorPath, sectionId: string, isOpen: boolean) => void;
 };
 
 export type EditorControlContext = {

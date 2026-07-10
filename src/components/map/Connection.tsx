@@ -1,5 +1,5 @@
 import type React from "react";
-import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/worldSchema";
+import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
 import {
 	addPoints,

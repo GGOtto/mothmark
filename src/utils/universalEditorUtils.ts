@@ -22,6 +22,80 @@ export type UniversalCondition =
 
 export const conditionOperatorSummaryLabels: Record<string, string> = {
 	equals: "is",
+	is: "is",
+	"is-not": "is not",
+	"has-tag": "has tag",
+	"missing-tag": "is missing tag",
+	"has-item": "has item",
+	"missing-item": "is missing item",
+	"has-all-items": "has all items",
+	"has-any-item": "has any item",
+	"contains-tag": "contains tag",
+	count: "count is",
+	"tag-count": "tag count is",
+	"in-inventory": "is in inventory",
+	"in-current-room": "is in current room",
+	"in-room": "is in room",
+	"on-surface": "is on surface",
+	"in-container": "is in container",
+	"held-by-npc": "is held by NPC",
+	hidden: "is hidden",
+	destroyed: "is destroyed",
+	visible: "is visible",
+	reachable: "is reachable",
+	open: "is open",
+	closed: "is closed",
+	locked: "is locked",
+	unlocked: "is unlocked",
+	lit: "is lit",
+	unlit: "is unlit",
+	broken: "is broken",
+	intact: "is intact",
+	clean: "is clean",
+	dirty: "is dirty",
+	"contains-item": "contains item",
+	"surface-has-item": "surface has item",
+	"surface-missing-item": "surface is missing item",
+	empty: "is empty",
+	custom: "custom state",
+	"mood-is": "mood is",
+	trust: "trust is",
+	"met-player": "has met player",
+	"not-met-player": "has not met player",
+	hostile: "is hostile",
+	friendly: "is friendly",
+	asleep: "is asleep",
+	awake: "is awake",
+	"can-see-player": "can see player",
+	"cannot-see-player": "cannot see player",
+	"previous-command-was": "previous command was",
+	"previous-raw-command-was": "previous raw command was",
+	"previous-target-was": "previous target was",
+	"used-command-before": "used command before",
+	"never-used-command": "never used command",
+	"used-command-within-turns": "used command within turns",
+	"repeated-command": "repeated command",
+	sequence: "sequence",
+	"not-started": "is not started",
+	active: "is active",
+	completed: "is completed",
+	failed: "is failed",
+	"objective-complete": "objective is complete",
+	"objective-incomplete": "objective is incomplete",
+	"event-scheduled": "event is scheduled",
+	"event-not-scheduled": "event is not scheduled",
+	"tag-scheduled": "tag is scheduled",
+	"tag-not-scheduled": "tag is not scheduled",
+	compare: "is",
+	between: "is between",
+	exists: "exists",
+	missing: "is missing",
+	"multiple-of": "is multiple of",
+	"object-is": "object is",
+	"target-is": "target is",
+	"connector-is": "connector is",
+	"topic-is": "topic is",
+	"direction-is": "direction is",
 	"not-equals": "is not",
 	"greater-than": "is greater than",
 	"greater-than-or-equal": "is at least",
@@ -84,10 +158,72 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stringifySummaryValue(value: unknown) {
+function stringifySummaryValue(value: unknown): string {
 	if (value === undefined) return "";
+	if (Array.isArray(value))
+		return value.length ? value.map(stringifySummaryValue).join(", ") : "(none)";
 	if (typeof value === "string") return value.length ? value : "(empty)";
 	return String(value);
+}
+
+function conditionSummarySubject(condition: Record<string, unknown>) {
+	const subjectKeys = [
+		"subject",
+		"flag",
+		"counter",
+		"itemId",
+		"itemIds",
+		"objectId",
+		"surfaceId",
+		"containerId",
+		"roomId",
+		"npcId",
+		"questId",
+		"objectiveId",
+		"instanceId",
+		"eventId",
+		"commandName",
+		"rawCommand",
+		"targetId",
+		"object",
+		"connector",
+		"topicId",
+		"direction",
+		"tag",
+		"key",
+		"seedKey",
+	];
+
+	for (const key of subjectKeys) {
+		const value = condition[key];
+		if (Array.isArray(value) && value.length > 0) return stringifySummaryValue(value);
+		if (typeof value === "string" && value.trim().length > 0) return value.trim();
+		if (typeof value === "number" || typeof value === "boolean") return stringifySummaryValue(value);
+	}
+
+	const type = String(condition.type ?? condition.kind ?? "");
+	if (type === "flag") return "choose flag";
+	if (type === "counter") return "choose counter";
+	if (type === "current-room") return "current room";
+	if (type === "inventory") return "choose inventory target";
+	if (type === "item-location") return "choose item";
+	if (type === "object-state") return "choose object";
+	if (type === "npc") return "choose NPC";
+	if (type === "command-history") return "choose command";
+	if (type === "turn") return "turn";
+	if (type === "random-chance") return "chance";
+	if (type === "quest") return "choose quest";
+	if (type === "scheduled-event") return "choose event";
+	if (type === "resolved-target") return "resolved target";
+
+	return "choose target";
+}
+
+function conditionSummaryTarget(value: unknown, fallback: string): string {
+	if (Array.isArray(value)) return value.length ? stringifySummaryValue(value) : fallback;
+	if (typeof value === "string") return value.trim().length > 0 ? value.trim() : fallback;
+	if (value === undefined || value === null) return fallback;
+	return stringifySummaryValue(value);
 }
 
 function getTemplateValue(value: unknown, path: string) {
@@ -182,26 +318,30 @@ function generateConditionSummaryAtDepth(
 	if (kind === "single") {
 		const flag = String(condition.flag ?? condition.subject ?? "");
 		const value = condition.value ?? true;
-		return `${flag || "(flag)"} is ${stringifySummaryValue(value)}`;
+		return `${flag || "choose flag"} is ${stringifySummaryValue(value)}`;
 	}
 
-	const subject = String(
-		condition.subject ??
-			condition.flag ??
-			condition.counter ??
-			condition.roomId ??
-			condition.itemId ??
-			"",
-	);
+	if (kind === "current-room") {
+		const operator = String(condition.operation ?? "is");
+		const operatorLabel = conditionOperatorSummaryLabels[operator] ?? operator;
+		const usesTag = operator === "has-tag" || operator === "missing-tag";
+		const value = usesTag ? condition.tag : condition.roomId;
+		return `current room ${operatorLabel} ${conditionSummaryTarget(
+			value,
+			usesTag ? "choose tag" : "choose room",
+		)}`.trim();
+	}
+
+	const subject = conditionSummarySubject(condition);
 	const operator = String(condition.operator ?? condition.operation ?? "equals");
 	const operatorLabel = conditionOperatorSummaryLabels[operator] ?? operator;
 	const value = condition.value ?? condition.chance;
 
 	if (value === undefined || operatorLabel.endsWith("true") || operatorLabel.endsWith("false")) {
-		return `${subject || "(subject)"} ${operatorLabel}`;
+		return `${subject} ${operatorLabel}`;
 	}
 
-	return `${subject || "(subject)"} ${operatorLabel} ${stringifySummaryValue(value)}`;
+	return `${subject} ${operatorLabel} ${stringifySummaryValue(value)}`;
 }
 
 export function generateEffectSummary(effect: unknown): string {

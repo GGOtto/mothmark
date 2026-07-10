@@ -71,6 +71,7 @@
 .conditionBuilderEditor__linkItem--active {
 	border-color: var(--field-border-strong);
 	background: var(--field-bg-strong);
+	box-shadow: inset 2px 0 0 var(--field-border-strong);
 }
 
 .conditionBuilderEditor__linkButton,
@@ -89,25 +90,47 @@
 	min-width: 0;
 	flex: 1 1 auto;
 	justify-content: flex-start;
-	gap: 5px;
-	padding: 6px;
+	gap: 7px;
+	padding: 7px 6px;
 	text-align: left;
 }
 
-.conditionBuilderEditor__linkText {
+.conditionBuilderEditor__linkContent {
+	display: flex;
+	min-width: 0;
 	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.conditionBuilderEditor__linkText {
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	font-weight: 650;
+	line-height: 1.2;
+}
+
+.conditionBuilderEditor__linkSummary {
+	min-width: 0;
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.35;
+	overflow-wrap: anywhere;
 }
 
 .conditionBuilderEditor__linkHint {
 	flex: 0 0 auto;
+	align-self: flex-start;
 	color: var(--field-muted);
 	font-size: 10px;
 	font-weight: 700;
 	text-transform: uppercase;
+}
+
+.conditionBuilderEditor__linkItem--active .conditionBuilderEditor__linkHint {
+	color: var(--field-text);
 }
 
 .conditionBuilderEditor__linkRemoveButton {
@@ -184,6 +207,16 @@
 .conditionBuilderEditor__itemBody {
 	min-width: 0;
 	padding: 8px;
+}
+
+.conditionBuilderEditor__editingTitle {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.3;
+	padding: 6px 8px;
 }
 
 .conditionBuilderEditor__node {

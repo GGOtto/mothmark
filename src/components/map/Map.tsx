@@ -1,8 +1,8 @@
 "use client";
 
 import type React from "react";
-import {useState} from "react";
-import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/worldSchema";
+import {useEffect, useRef, useState} from "react";
+import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
@@ -44,6 +44,7 @@ export function Map({
 	setIsConnectionSelected,
 }: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
+	const pendingConnectionSelectionIdRef = useRef<string | null>(null);
 
 	function selectRoom(room?: Room) {
 		setSelectedId(room ? room.id : null);
@@ -54,6 +55,25 @@ export function Map({
 		setSelectedId(connection ? connection.id : null);
 		setIsConnectionSelected(true);
 	}
+
+	function requestConnectionSelection(connectionId: string) {
+		pendingConnectionSelectionIdRef.current = connectionId;
+	}
+
+	useEffect(() => {
+		const pendingConnectionSelectionId = pendingConnectionSelectionIdRef.current;
+
+		if (!pendingConnectionSelectionId) return;
+
+		const connectionToSelect = connections.find(
+			(connection) => connection.id === pendingConnectionSelectionId,
+		);
+
+		if (!connectionToSelect) return;
+
+		pendingConnectionSelectionIdRef.current = null;
+		selectConnection(connectionToSelect);
+	}, [connections]);
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
 		const vector = DIRECTION_VECTORS[direction];
@@ -80,7 +100,6 @@ export function Map({
 	const {
 		mapRef,
 		connectionDragState,
-		editedConnectionId,
 		addOrUpdateConnectionByShape,
 		handleConnectionDragStart,
 		handleConnectionDragMove,
@@ -91,6 +110,7 @@ export function Map({
 		connections,
 		setConnections,
 		getRoomConnectionPoint,
+		onConnectionSelectionRequested: requestConnectionSelection,
 	});
 
 	function addConnection(fromRoom: Room, direction: Direction) {
@@ -112,16 +132,20 @@ export function Map({
 
 		if (result.roomToAdd) {
 			const roomToAdd = result.roomToAdd;
-			setSelectedId(roomToAdd.id);
+
+			selectRoom(roomToAdd);
 			setRooms((rooms) => [...rooms, roomToAdd]);
+
+			addOrUpdateConnectionByShape(result.connection, {
+				selectConnection: false,
+			});
+
+			return;
 		}
 
-		addOrUpdateConnectionByShape(result.connection);
-	}
-
-	function handleMapClick(event: React.MouseEvent<HTMLDivElement>) {
-		if (event.target !== event.currentTarget) return;
-		selectRoom();
+		addOrUpdateConnectionByShape(result.connection, {
+			selectConnection: true,
+		});
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
@@ -201,7 +225,6 @@ export function Map({
 			ref={mapRef}
 			data-map
 			className="map"
-			onClick={handleMapClick}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerCancel}
@@ -221,7 +244,7 @@ export function Map({
 							fromRoom={fromRoom}
 							toRoom={toRoom}
 							selectConnection={selectConnection}
-							isEditing={editedConnectionId === connection.id}
+							isEditing={isConnectionSelected && connection.id === selectedId}
 							isSelected={isConnectionSelected && connection.id === selectedId}
 						/>
 					);

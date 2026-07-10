@@ -67,6 +67,9 @@ const EMPTY_REGISTRIES: EditorRegistries = buildEditorRegistries({
 	rooms: [],
 	connections: [],
 } as unknown as World);
+
+type EditorSectionDisclosureState = Record<string, Record<string, boolean>>;
+
 function isScrollableContainer(element: HTMLElement) {
 	const style = window.getComputedStyle(element);
 	return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight;
@@ -215,6 +218,21 @@ function getEntityPathByRef(value: unknown, ref: EditorLinkRef): EditorPath | un
 	return undefined;
 }
 
+function getIndexedChildPathByRef(value: unknown, sourcePath: EditorPath, ref: EditorLinkRef) {
+	const collection = getValueAtPath(value, sourcePath);
+	const index = Number(ref.id);
+	if (
+		!Array.isArray(collection) ||
+		!Number.isInteger(index) ||
+		index < 0 ||
+		index >= collection.length
+	) {
+		return undefined;
+	}
+
+	return [...sourcePath, index];
+}
+
 function resolvePathTemplate(
 	value: unknown,
 	path: EditorPath,
@@ -262,8 +280,11 @@ function labelFieldForValue(value: unknown) {
 
 function labelFromValue(value: unknown) {
 	if (!isRecord(value)) return undefined;
-	const label = value.label ?? value.name ?? value.title ?? value.id;
-	return label == null ? undefined : String(label);
+	const label = value.name ?? value.title ?? value.label ?? value.id;
+	if (label == null) return undefined;
+
+	const normalizedLabel = String(label).trim();
+	return normalizedLabel.length > 0 ? normalizedLabel : undefined;
 }
 
 function assignCreatedEntityDefaults(value: unknown, id: string, target: EditorLinkTargetMetadata) {
@@ -319,6 +340,7 @@ export function UniversalEditor<TValue>({
 	const activeViewPathKey = activeView ? JSON.stringify(activeView.path) : "root";
 	const [showJsonPreview, setShowJsonPreview] = useState(false);
 	const [activeSection, setActiveSection] = useState<EditorActiveSection | undefined>(undefined);
+	const [sectionDisclosure, setSectionDisclosure] = useState<EditorSectionDisclosureState>({});
 	const currentEditorRootPath = activeView?.path ?? path;
 	const setEditorActiveSection = useCallback((nextSection?: EditorActiveSection) => {
 		setActiveSection((currentSection) => {
@@ -335,6 +357,29 @@ export function UniversalEditor<TValue>({
 			return isSameSection ? currentSection : nextSection;
 		});
 	}, []);
+	const getEditorSectionDisclosure = useCallback(
+		(sectionPath: EditorPath, sectionId: string) => {
+			return sectionDisclosure[JSON.stringify(sectionPath)]?.[sectionId];
+		},
+		[sectionDisclosure],
+	);
+	const setEditorSectionDisclosure = useCallback(
+		(sectionPath: EditorPath, sectionId: string, isOpen: boolean) => {
+			const pathKey = JSON.stringify(sectionPath);
+			setSectionDisclosure((currentDisclosure) => {
+				if (currentDisclosure[pathKey]?.[sectionId] === isOpen) return currentDisclosure;
+
+				return {
+					...currentDisclosure,
+					[pathKey]: {
+						...(currentDisclosure[pathKey] ?? {}),
+						[sectionId]: isOpen,
+					},
+				};
+			});
+		},
+		[],
+	);
 
 	const emitChange = useCallback(
 		(nextValue: TValue) => {
@@ -365,6 +410,7 @@ export function UniversalEditor<TValue>({
 		previousSchemaRef.current = schema;
 		pendingBackScrollPositionRef.current = undefined;
 		setViewStack([]);
+		setSectionDisclosure({});
 		requestAnimationFrame(() => scrollEditorTop(rootRef.current));
 	}, [rootPathKey, schema]);
 
@@ -380,6 +426,7 @@ export function UniversalEditor<TValue>({
 
 		pendingBackScrollPositionRef.current = undefined;
 		setViewStack([]);
+		setSectionDisclosure({});
 		requestAnimationFrame(() => scrollEditorTop(rootRef.current));
 	}, [value]);
 
@@ -389,10 +436,15 @@ export function UniversalEditor<TValue>({
 
 			if (target.entityType && ref.type !== target.entityType) return undefined;
 
-			const resolvedPath =
-				target.path && target.path.length > 0
-					? resolvePathTemplate(value, target.path, ref, request.sourcePath)
-					: getEntityPathByRef(value, ref);
+			let resolvedPath: EditorPath | undefined;
+			if (target.path && target.path.length > 0) {
+				resolvedPath = resolvePathTemplate(value, target.path, ref, request.sourcePath);
+			} else if (target.kind === "condition" || target.kind === "effect") {
+				resolvedPath = getIndexedChildPathByRef(value, request.sourcePath, ref);
+			} else {
+				resolvedPath = getEntityPathByRef(value, ref);
+			}
+
 			if (!resolvedPath) return undefined;
 
 			const childSchema = getSchemaAtPath(schema, resolvedPath);
@@ -627,6 +679,8 @@ export function UniversalEditor<TValue>({
 				rootPath: currentEditorRootPath,
 				activeSection,
 				setActiveSection: setEditorActiveSection,
+				getSectionDisclosure: getEditorSectionDisclosure,
+				setSectionDisclosure: setEditorSectionDisclosure,
 			},
 		}),
 		[
@@ -636,6 +690,7 @@ export function UniversalEditor<TValue>({
 			disabled,
 			createEditorLink,
 			emitChange,
+			getEditorSectionDisclosure,
 			openChildEditor,
 			openEditorLink,
 			popEditorView,
@@ -646,6 +701,7 @@ export function UniversalEditor<TValue>({
 			registries,
 			resolveEditorLinkDescription,
 			resolveEditorLinkLabel,
+			setEditorSectionDisclosure,
 			setEditorActiveSection,
 			value,
 			viewStack,
@@ -658,7 +714,10 @@ export function UniversalEditor<TValue>({
 		? (getValueAtPath(value, activeView.path) ?? activeView.value)
 		: value;
 	const shellMetadata = renderedMetadata.shell;
-	const shellTitle = activeView?.title ?? shellMetadata?.title ?? renderedMetadata.title ?? "Editor";
+	const activeViewTitle = activeView
+		? (labelFromValue(renderedValue) ?? activeView.title)
+		: undefined;
+	const shellTitle = activeViewTitle ?? shellMetadata?.title ?? renderedMetadata.title ?? "Editor";
 	const shellDescription =
 		activeView?.description ?? shellMetadata?.description ?? renderedMetadata.description;
 	const shellSummary = shellMetadata?.summary;
@@ -668,10 +727,21 @@ export function UniversalEditor<TValue>({
 	const breadcrumbs = [
 		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
 		...viewStack.map((view) => ({
-			label: view.title ?? view.metadata?.title ?? "Child editor",
+			label:
+				labelFromValue(getValueAtPath(value, view.path) ?? view.value) ??
+				view.title ??
+				view.metadata?.title ??
+				"Child editor",
 			path: view.path,
 		})),
 	];
+	const navigateToEditorBreadcrumb = (index: number) => {
+		if (index < 0 || index >= breadcrumbs.length - 1) return;
+
+		pendingBackScrollPositionRef.current =
+			index === 0 ? viewStack[0]?.returnScrollPosition : viewStack[index]?.returnScrollPosition;
+		setViewStack((views) => views.slice(0, index));
+	};
 	const densityClass = `universalEditor--density-${shellMetadata?.density ?? "comfortable"}`;
 	const visibleActiveSection =
 		activeSection && JSON.stringify(activeSection.path) === JSON.stringify(renderedPath)
@@ -727,12 +797,32 @@ export function UniversalEditor<TValue>({
 				</div>
 				{breadcrumbs.length > 1 ? (
 					<nav className="universalEditor__breadcrumbs" aria-label="Editor breadcrumbs">
-						{breadcrumbs.map((crumb, index) => (
-							<span key={`${crumb.label}-${index}`}>
-								{index > 0 ? <span aria-hidden="true">/</span> : null}
-								{crumb.label}
-							</span>
-						))}
+						{breadcrumbs.map((crumb, index) => {
+							const isCurrent = index === breadcrumbs.length - 1;
+
+							return (
+								<span className="universalEditor__breadcrumbItem" key={`${crumb.label}-${index}`}>
+									{index > 0 ? (
+										<span className="universalEditor__breadcrumbSeparator" aria-hidden="true">
+											/
+										</span>
+									) : null}
+									{isCurrent ? (
+										<span className="universalEditor__breadcrumbCurrent" aria-current="page">
+											{crumb.label}
+										</span>
+									) : (
+										<button
+											className="universalEditor__breadcrumbButton"
+											type="button"
+											onClick={() => navigateToEditorBreadcrumb(index)}
+										>
+											{crumb.label}
+										</button>
+									)}
+								</span>
+							);
+						})}
 					</nav>
 				) : null}
 			</div>

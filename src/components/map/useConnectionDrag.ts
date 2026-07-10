@@ -1,22 +1,15 @@
 import {useEffect, useRef, useState} from "react";
 import type React from "react";
-import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/worldSchema";
+import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
 import {
-	getConnectionSide,
-	getConnectionsOnNode,
 	getDuplicateConnectionByShape,
 	getNearestNodeInRadius,
-	getNodeSelectionKey,
 	getPathwayForNewDrop,
-	type MovingConnectionSide,
 	type SnapTarget,
 } from "../../utils/connectionUtils";
 import {createDefaultConnection} from "../../utils/createDefaultWorld";
 
-type ConnectionDragMode = "create" | "edit";
-
 export type ConnectionDragState = {
-	mode: ConnectionDragMode;
 	fromRoomId: string;
 	fromDirection: Direction;
 	startPointer: Point;
@@ -24,9 +17,6 @@ export type ConnectionDragState = {
 	currentPoint: Point;
 	hasDragged: boolean;
 	snapTarget: SnapTarget | null;
-	connectionId?: string;
-	movingSide?: MovingConnectionSide;
-	lockedRoomId?: string;
 };
 
 type UseConnectionDragParams = {
@@ -34,6 +24,7 @@ type UseConnectionDragParams = {
 	connections: ConnectionType[];
 	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
 	getRoomConnectionPoint: (room: Room, direction: Direction) => Point;
+	onConnectionSelectionRequested?: (connectionId: string) => void;
 };
 
 const DRAG_THRESHOLD = 5;
@@ -52,22 +43,13 @@ export function useConnectionDrag({
 	connections,
 	setConnections,
 	getRoomConnectionPoint,
+	onConnectionSelectionRequested,
 }: UseConnectionDragParams) {
 	const mapRef = useRef<HTMLDivElement | null>(null);
 	const connectionDragStateRef = useRef<ConnectionDragState | null>(null);
 	const connectionPointerIdRef = useRef<number | null>(null);
 
-	const editSelectionKeyRef = useRef<string | null>(null);
-	const editSelectionIndexRef = useRef(0);
-	const selectedConnectionIdRef = useRef<string | null>(null);
-
 	const [connectionDragState, setConnectionDragState] = useState<ConnectionDragState | null>(null);
-	const [selectedConnectionId, setSelectedConnectionIdState] = useState<string | null>(null);
-
-	function setSelectedConnection(connectionId: string | null) {
-		selectedConnectionIdRef.current = connectionId;
-		setSelectedConnectionIdState(connectionId);
-	}
 
 	function setSyncedConnectionDragState(state: ConnectionDragState | null) {
 		connectionDragStateRef.current = state;
@@ -84,11 +66,20 @@ export function useConnectionDrag({
 		});
 	}
 
-	function addOrUpdateConnectionByShape(connection: ConnectionType) {
+	function addOrUpdateConnectionByShape(
+		connection: ConnectionType,
+		options: {selectConnection?: boolean} = {},
+	) {
+		const shouldSelectConnection = options.selectConnection ?? true;
+
 		setConnections((connections) => {
 			const existingConnection = getDuplicateConnectionByShape(connections, connection);
 
 			if (existingConnection) {
+				if (shouldSelectConnection) {
+					onConnectionSelectionRequested?.(existingConnection.id);
+				}
+
 				return connections.map((currentConnection) => {
 					if (currentConnection.id !== existingConnection.id) return currentConnection;
 
@@ -97,6 +88,10 @@ export function useConnectionDrag({
 						pathway: connection.pathway,
 					};
 				});
+			}
+
+			if (shouldSelectConnection) {
+				onConnectionSelectionRequested?.(connection.id);
 			}
 
 			return [...connections, connection];
@@ -124,7 +119,6 @@ export function useConnectionDrag({
 		pointer: Point,
 		options: {
 			ignoredRoomId?: string;
-			lockedRoomId?: string;
 		} = {},
 	) {
 		return getNearestNodeInRadius({
@@ -133,36 +127,7 @@ export function useConnectionDrag({
 			getRoomConnectionPoint,
 			snapDistance: SNAP_DISTANCE,
 			ignoredRoomId: options.ignoredRoomId,
-			lockedRoomId: options.lockedRoomId,
 		});
-	}
-
-	function getEditableConnectionOnNode(roomId: string, direction: Direction) {
-		const nodeConnections = getConnectionsOnNode(connections, roomId, direction);
-
-		if (nodeConnections.length === 0) {
-			return null;
-		}
-
-		const selectionKey = getNodeSelectionKey(roomId, direction);
-		const selectedConnectionIndex = nodeConnections.findIndex(
-			(connection) => connection.id === selectedConnectionIdRef.current,
-		);
-
-		if (editSelectionKeyRef.current !== selectionKey) {
-			editSelectionKeyRef.current = selectionKey;
-			editSelectionIndexRef.current = 0;
-		} else if (selectedConnectionIndex >= 0) {
-			editSelectionIndexRef.current = (selectedConnectionIndex + 1) % nodeConnections.length;
-		} else {
-			editSelectionIndexRef.current = (editSelectionIndexRef.current + 1) % nodeConnections.length;
-		}
-
-		const selectedConnection = nodeConnections[editSelectionIndexRef.current];
-
-		setSelectedConnection(selectedConnection.id);
-
-		return selectedConnection;
 	}
 
 	function addDraggedConnection(
@@ -194,6 +159,8 @@ export function useConnectionDrag({
 			const existingConnection = getDuplicateConnectionByShape(connections, connection);
 
 			if (existingConnection) {
+				onConnectionSelectionRequested?.(existingConnection.id);
+
 				return connections.map((currentConnection) => {
 					if (currentConnection.id !== existingConnection.id) return currentConnection;
 
@@ -204,79 +171,9 @@ export function useConnectionDrag({
 				});
 			}
 
+			onConnectionSelectionRequested?.(connection.id);
+
 			return [...connections, connection];
-		});
-	}
-
-	function redrawDraggedConnection(
-		connectionId: string,
-		sideToRedraw: MovingConnectionSide,
-		targetRoom: Room,
-		targetDirection: Direction,
-	) {
-		setConnections((connections) => {
-			const connectionToRedraw = connections.find((connection) => connection.id === connectionId);
-
-			if (!connectionToRedraw) return connections;
-
-			if (sideToRedraw === "from" && targetRoom.id === connectionToRedraw.toRoomId) {
-				return connections;
-			}
-
-			if (sideToRedraw === "to" && targetRoom.id === connectionToRedraw.fromRoomId) {
-				return connections;
-			}
-
-			const redrawnConnectionWithoutPathway: ConnectionType =
-				sideToRedraw === "from"
-					? {
-							...connectionToRedraw,
-							fromRoomId: targetRoom.id,
-							direction: targetDirection,
-						}
-					: {
-							...connectionToRedraw,
-							toRoomId: targetRoom.id,
-							returnDirection: targetDirection,
-						};
-
-			const connectionsWithoutRedrawnConnection = connections.filter(
-				(connection) => connection.id !== connectionId,
-			);
-
-			const pathway = getPathwayForNewDrop(
-				redrawnConnectionWithoutPathway.fromRoomId,
-				redrawnConnectionWithoutPathway.direction,
-				redrawnConnectionWithoutPathway.toRoomId,
-				redrawnConnectionWithoutPathway.returnDirection,
-				connectionsWithoutRedrawnConnection,
-			);
-
-			const redrawnConnection: ConnectionType = {
-				...redrawnConnectionWithoutPathway,
-				pathway,
-			};
-
-			const duplicateConnection = getDuplicateConnectionByShape(
-				connectionsWithoutRedrawnConnection,
-				redrawnConnection,
-			);
-
-			if (duplicateConnection) {
-				return connections
-					.filter((connection) => connection.id !== duplicateConnection.id)
-					.map((connection) => {
-						if (connection.id !== connectionId) return connection;
-
-						return redrawnConnection;
-					});
-			}
-
-			return connections.map((connection) => {
-				if (connection.id !== connectionId) return connection;
-
-				return redrawnConnection;
-			});
 		});
 	}
 
@@ -287,7 +184,6 @@ export function useConnectionDrag({
 
 	function finishConnectionDrag() {
 		cancelConnectionDrag();
-		setSelectedConnection(null);
 	}
 
 	function moveConnectionDragToClientPoint(clientX: number, clientY: number) {
@@ -315,9 +211,7 @@ export function useConnectionDrag({
 			}
 
 			const snapTarget = getNearestConnectionNode(pointer, {
-				ignoredRoomId:
-					connectionDragState.mode === "create" ? connectionDragState.fromRoomId : undefined,
-				lockedRoomId: connectionDragState.lockedRoomId,
+				ignoredRoomId: connectionDragState.fromRoomId,
 			});
 
 			return {
@@ -344,29 +238,10 @@ export function useConnectionDrag({
 		}
 
 		const snapTarget = getNearestConnectionNode(pointer, {
-			ignoredRoomId:
-				activeConnectionDragState.mode === "create" ? activeConnectionDragState.fromRoomId : undefined,
-			lockedRoomId: activeConnectionDragState.lockedRoomId,
+			ignoredRoomId: activeConnectionDragState.fromRoomId,
 		});
 
 		if (!snapTarget) {
-			finishConnectionDrag();
-			return;
-		}
-
-		if (activeConnectionDragState.mode === "edit") {
-			if (!activeConnectionDragState.connectionId || !activeConnectionDragState.movingSide) {
-				finishConnectionDrag();
-				return;
-			}
-
-			redrawDraggedConnection(
-				activeConnectionDragState.connectionId,
-				activeConnectionDragState.movingSide,
-				snapTarget.room,
-				snapTarget.direction,
-			);
-
 			finishConnectionDrag();
 			return;
 		}
@@ -423,10 +298,9 @@ export function useConnectionDrag({
 		fromRoom: Room,
 		fromDirection: Direction,
 	) {
-		const isLeftClick = event.button === 0;
-		const isRightClick = event.button === 2;
+		event.stopPropagation();
 
-		if (!isLeftClick && !isRightClick) return;
+		if (event.button !== 0) return;
 
 		connectionPointerIdRef.current = event.pointerId;
 
@@ -434,41 +308,7 @@ export function useConnectionDrag({
 		const sourcePoint = getRoomConnectionPoint(fromRoom, fromDirection);
 		const startPointer = pointer ?? sourcePoint;
 
-		if (isLeftClick) {
-			setSelectedConnection(null);
-
-			setSyncedConnectionDragState({
-				mode: "create",
-				fromRoomId: fromRoom.id,
-				fromDirection,
-				startPointer,
-				startPoint: sourcePoint,
-				currentPoint: startPointer,
-				hasDragged: false,
-				snapTarget: null,
-			});
-
-			return;
-		}
-
-		const existingConnection = getEditableConnectionOnNode(fromRoom.id, fromDirection);
-
-		if (!existingConnection) {
-			cancelConnectionDrag();
-			return;
-		}
-
-		const clickedSide = getConnectionSide(existingConnection, fromRoom.id, fromDirection);
-
-		if (!clickedSide) {
-			cancelConnectionDrag();
-			return;
-		}
-
-		const sideToRedraw: MovingConnectionSide = clickedSide === "from" ? "to" : "from";
-
 		setSyncedConnectionDragState({
-			mode: "edit",
 			fromRoomId: fromRoom.id,
 			fromDirection,
 			startPointer,
@@ -476,19 +316,20 @@ export function useConnectionDrag({
 			currentPoint: startPointer,
 			hasDragged: false,
 			snapTarget: null,
-			connectionId: existingConnection.id,
-			movingSide: sideToRedraw,
-			lockedRoomId: fromRoom.id,
 		});
 	}
 
 	function handleConnectionDragMove(event: React.PointerEvent<HTMLDivElement>) {
+		event.stopPropagation();
+
 		if (connectionPointerIdRef.current !== event.pointerId) return;
 
 		moveConnectionDragToClientPoint(event.clientX, event.clientY);
 	}
 
 	function handleConnectionDragEnd(event: React.PointerEvent<HTMLDivElement>) {
+		event.stopPropagation();
+
 		if (connectionPointerIdRef.current !== event.pointerId) return;
 
 		endConnectionDragAtClientPoint(event.clientX, event.clientY);
@@ -497,7 +338,6 @@ export function useConnectionDrag({
 	return {
 		mapRef,
 		connectionDragState,
-		editedConnectionId: connectionDragState?.connectionId ?? selectedConnectionId,
 		addOrUpdateConnectionByShape,
 		handleConnectionDragStart,
 		handleConnectionDragMove,

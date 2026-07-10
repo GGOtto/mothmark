@@ -526,6 +526,8 @@ export function ObjectEditor({
 			.join(" · ");
 		const shouldCollapse =
 			!visibleSearchTerm && (section.group.defaultCollapsed || metadata.disclosure?.defaultCollapsed);
+		const savedOpenState = context.editorChrome?.getSectionDisclosure?.(path, section.group.id);
+		const isOpen = Boolean(visibleSearchTerm) || (savedOpenState ?? !shouldCollapse);
 		const body = (
 			<div
 				className={[
@@ -553,7 +555,11 @@ export function ObjectEditor({
 					"objectEditor__section",
 					`objectEditor__section--${section.group.importance ?? "secondary"}`,
 				].join(" ")}
-				open={!shouldCollapse || Boolean(visibleSearchTerm)}
+				open={isOpen}
+				onToggle={(event) => {
+					if (visibleSearchTerm) return;
+					context.editorChrome?.setSectionDisclosure?.(path, section.group.id, event.currentTarget.open);
+				}}
 			>
 				<summary className="objectEditor__sectionHeader">
 					<span className="objectEditor__sectionTitle">{section.group.title}</span>

@@ -1,6 +1,6 @@
 import {useRef} from "react";
 import type {RoomNode} from "../../types/mapTypes";
-import type {Room, Direction, Point} from "../../schemas/worldSchema";
+import type {Room, Direction, Point} from "../../schemas/roomSchema";
 import "./Node.scss";
 
 type NodeProps = {

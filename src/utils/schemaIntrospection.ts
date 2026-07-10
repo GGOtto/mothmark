@@ -5,6 +5,7 @@ type ZodDef = {
 	type?: string;
 	innerType?: z.ZodTypeAny;
 	element?: z.ZodTypeAny;
+	getter?: () => z.ZodTypeAny;
 	shape?: Record<string, z.ZodTypeAny> | (() => Record<string, z.ZodTypeAny>);
 	options?: z.ZodTypeAny[];
 };
@@ -25,21 +26,48 @@ function getDef(schema: z.ZodTypeAny): ZodDef {
 
 export function unwrapSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 	let current = schema;
+	const seen = new Set<z.ZodTypeAny>();
 
-	while (WRAPPER_TYPES.has(getDef(current).type ?? "")) {
-		const innerType = getDef(current).innerType;
-		if (!innerType) break;
-		current = innerType;
+	while (!seen.has(current)) {
+		seen.add(current);
+		const def = getDef(current);
+
+		if (WRAPPER_TYPES.has(def.type ?? "")) {
+			const innerType = def.innerType;
+			if (!innerType) break;
+			current = innerType;
+			continue;
+		}
+
+		if (def.type === "lazy") {
+			const innerType = def.getter?.();
+			if (!innerType) break;
+			current = innerType;
+			continue;
+		}
+
+		break;
 	}
 
 	return current;
 }
 
-export function getObjectShape(schema: z.ZodTypeAny) {
+export function getObjectShape(schema: z.ZodTypeAny): Record<string, z.ZodTypeAny> | undefined {
 	const unwrapped = unwrapSchema(schema) as IntrospectableSchema;
-	if (getDef(unwrapped).type !== "object") return undefined;
+	const def = getDef(unwrapped);
 
-	const shape = unwrapped.shape ?? getDef(unwrapped).shape;
+	if (def.type === "union" && def.options?.length) {
+		const shapes = def.options
+			.map((option) => getObjectShape(option))
+			.filter((shape): shape is Record<string, z.ZodTypeAny> => Boolean(shape));
+		if (shapes.length === 0) return undefined;
+
+		return Object.assign({}, ...shapes);
+	}
+
+	if (def.type !== "object") return undefined;
+
+	const shape = unwrapped.shape ?? def.shape;
 	return typeof shape === "function" ? shape() : shape;
 }
 

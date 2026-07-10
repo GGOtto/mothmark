@@ -1,4 +1,4 @@
-import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
+import type {Connection, Direction, Point, Room} from "../schemas/roomSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/mapTypes";
 import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
 import {generateUniqueId} from "./idUtils";

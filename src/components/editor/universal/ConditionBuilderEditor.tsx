@@ -393,6 +393,68 @@ function conditionListName(
 	return `${typeLabel(type, metadata, context)} ${index + 1}`;
 }
 
+function hasStoredConditionName(condition: ConditionValue) {
+	return [condition.name, condition.label, condition.title].some(
+		(value) => typeof value === "string" && value.trim().length > 0,
+	);
+}
+
+function storedConditionName(condition: ConditionValue) {
+	const explicitName = condition.name ?? condition.label ?? condition.title;
+	return typeof explicitName === "string" && explicitName.trim().length > 0
+		? explicitName.trim()
+		: undefined;
+}
+
+function uniqueConditionName(baseName: string, siblings: ConditionValue[]) {
+	const usedNames = new Set(
+		siblings
+			.map(storedConditionName)
+			.filter((name): name is string => Boolean(name))
+			.map((name) => name.toLowerCase()),
+	);
+	if (!usedNames.has(baseName.toLowerCase())) return baseName;
+
+	const numberedMatch = baseName.match(/^(.*?)(?:\s+(\d+))$/);
+	const rootName = numberedMatch?.[1]?.trim() || baseName;
+	let index = numberedMatch?.[2] ? Number(numberedMatch[2]) + 1 : 2;
+	let nextName = `${rootName} ${index}`;
+
+	while (usedNames.has(nextName.toLowerCase())) {
+		index += 1;
+		nextName = `${rootName} ${index}`;
+	}
+
+	return nextName;
+}
+
+function createNamedCondition(
+	type: "flag" | "group",
+	index: number,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	siblings: ConditionValue[],
+	overrides: ConditionValue = {},
+) {
+	const condition = {
+		...createDefaultCondition(type),
+		...overrides,
+	};
+
+	return {
+		...condition,
+		name: uniqueConditionName(conditionListName(condition, metadata, context, index), siblings),
+	};
+}
+
+function conditionDisplayNameFields(condition: ConditionValue) {
+	return {
+		name: condition.name,
+		label: condition.label,
+		title: condition.title,
+	};
+}
+
 export function ConditionBuilderEditor({
 	value,
 	onChange,
@@ -442,7 +504,17 @@ export function ConditionBuilderEditor({
 		function addCondition(type: "flag" | "group") {
 			if (!canEdit) return;
 			if (type === "group" && !canAddGroup) return;
-			onChange([...conditions, createDefaultCondition(type)]);
+			onChange([
+				...conditions,
+				createNamedCondition(
+					type,
+					conditions.length,
+					metadata,
+					context,
+					conditions,
+					type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+				),
+			]);
 		}
 
 		return (
@@ -585,9 +657,10 @@ function ConditionLinkList({
 	groupTitle?: string;
 }) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const canOpenChildEditor = typeof context.editorNavigation?.openEditorLink === "function";
 	const safeSelectedIndex =
 		conditions.length > 0 ? Math.min(selectedIndex, conditions.length - 1) : 0;
-	const selectedCondition = conditions[safeSelectedIndex];
+	const selectedCondition = canOpenChildEditor ? undefined : conditions[safeSelectedIndex];
 
 	function removeCondition(index: number) {
 		onRemoveCondition(index);
@@ -604,13 +677,49 @@ function ConditionLinkList({
 		setSelectedIndex(conditions.length);
 	}
 
+	function openCondition(index: number) {
+		const condition = conditions[index];
+		const name = conditionListName(condition, metadata, context, index);
+
+		if (canEdit && !hasStoredConditionName(condition)) {
+			onUpdateCondition(index, {
+				...condition,
+				name: uniqueConditionName(
+					name,
+					conditions.filter((_, conditionIndex) => conditionIndex !== index),
+				),
+			});
+		}
+
+		if (canOpenChildEditor) {
+			context.editorNavigation?.openEditorLink?.({
+				ref: {
+					type: "condition",
+					id: String(index),
+					label: name,
+				},
+				target: {
+					kind: "condition",
+					controlType: "condition-builder",
+					showBackLink: true,
+					backLabel: groupTitle ? "Back to group conditions" : "Back to conditions",
+				},
+				sourcePath: path,
+			});
+			return;
+		}
+
+		setSelectedIndex(index);
+	}
+
 	return (
 		<div className="conditionBuilderEditor__linkList">
 			<div className="conditionBuilderEditor__linkItems">
 				{conditions.length === 0 ? emptyState : null}
 				{conditions.map((condition, index) => {
 					const name = conditionListName(condition, metadata, context, index);
-					const isSelected = index === safeSelectedIndex;
+					const summary = generateConditionSummary(condition);
+					const isSelected = !canOpenChildEditor && index === safeSelectedIndex;
 
 					return (
 						<div
@@ -626,10 +735,13 @@ function ConditionLinkList({
 								className="conditionBuilderEditor__linkButton"
 								type="button"
 								aria-pressed={isSelected}
-								onClick={() => setSelectedIndex(index)}
+								onClick={() => openCondition(index)}
 							>
 								<Pencil size={13} aria-hidden="true" />
-								<span className="conditionBuilderEditor__linkText">{name}</span>
+								<span className="conditionBuilderEditor__linkContent">
+									<span className="conditionBuilderEditor__linkText">{name}</span>
+									<span className="conditionBuilderEditor__linkSummary">{summary}</span>
+								</span>
 								<span className="conditionBuilderEditor__linkHint">{isSelected ? "Editing" : "Edit"}</span>
 							</button>
 							<button
@@ -671,6 +783,12 @@ function ConditionLinkList({
 						disabled={disabled}
 						readonly={readonly}
 						context={context}
+						editorTitle={`Editing ${conditionListName(
+							selectedCondition,
+							metadata,
+							context,
+							safeSelectedIndex,
+						)}`}
 					/>
 				</ConditionItemShell>
 			) : null}
@@ -740,6 +858,7 @@ type ConditionNodeEditorProps = {
 	disabled?: boolean;
 	readonly?: boolean;
 	context: ConditionBuilderEditorProps["context"];
+	editorTitle?: string;
 };
 
 function ConditionNodeEditor({
@@ -751,6 +870,7 @@ function ConditionNodeEditor({
 	disabled,
 	readonly,
 	context,
+	editorTitle,
 }: ConditionNodeEditorProps) {
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -783,12 +903,14 @@ function ConditionNodeEditor({
 		if (type === "group" && !canAddGroup) return;
 		updateField("conditions", [
 			...childConditions,
-			type === "group"
-				? {
-						...createDefaultCondition("group"),
-						operator: metadata.features?.defaultGroupOperator ?? "all",
-					}
-				: createDefaultCondition("flag"),
+			createNamedCondition(
+				type,
+				childConditions.length,
+				metadata,
+				context,
+				childConditions,
+				type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+			),
 		]);
 	}
 
@@ -808,6 +930,13 @@ function ConditionNodeEditor({
 		);
 	}
 
+	function changeType(nextType: string) {
+		onChange({
+			...createDefaultCondition(nextType),
+			...conditionDisplayNameFields(value),
+		});
+	}
+
 	return (
 		<div
 			className={[
@@ -818,23 +947,24 @@ function ConditionNodeEditor({
 				.join(" ")}
 			style={{"--condition-depth": depth} as CSSProperties}
 		>
+			{editorTitle ? <div className="conditionBuilderEditor__editingTitle">{editorTitle}</div> : null}
 			<div className="conditionBuilderEditor__row">
 				{renderTextField(
 					"name",
 					String(value.name ?? value.label ?? value.title ?? ""),
-					"Name in list",
+					isGroup ? "Group name in list" : "Condition name in list",
 					updateField,
 					metadata,
 					path,
 					disabled,
 					readonly,
 					context,
-					"Shown in the condition list",
+					"Shown in the parent condition list",
 				)}
 				{renderSelect({
 					childKey: "conditionType",
 					value: type,
-					onChange: (nextType) => onChange(createDefaultCondition(String(nextType))),
+					onChange: (nextType) => changeType(String(nextType)),
 					title: "Type",
 					options: availableTypes,
 					metadata,
@@ -1163,7 +1293,6 @@ function renderItemLocationFields(
 	disabled: boolean | undefined,
 	readonly: boolean | undefined,
 	context: ConditionBuilderEditorProps["context"],
-	description?: string,
 ) {
 	const operation = String(value.operation ?? "in-inventory");
 
@@ -2128,6 +2257,7 @@ function renderTextField(
 	disabled: boolean | undefined,
 	readonly: boolean | undefined,
 	context: ConditionBuilderEditorProps["context"],
+	description?: string,
 ) {
 	return renderChildControl({
 		type: "text",
