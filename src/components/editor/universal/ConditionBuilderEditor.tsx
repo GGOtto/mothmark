@@ -406,31 +406,82 @@ function storedConditionName(condition: ConditionValue) {
 		: undefined;
 }
 
-function uniqueConditionName(baseName: string, siblings: ConditionValue[]) {
+function storedConditionId(condition: ConditionValue) {
+	return typeof condition.id === "string" && condition.id.trim().length > 0
+		? condition.id.trim()
+		: undefined;
+}
+
+function uniqueSiblingValue(
+	baseValue: string,
+	siblings: ConditionValue[],
+	readValue: (condition: ConditionValue) => string | undefined,
+) {
 	const usedNames = new Set(
 		siblings
-			.map(storedConditionName)
+			.map(readValue)
 			.filter((name): name is string => Boolean(name))
 			.map((name) => name.toLowerCase()),
 	);
-	if (!usedNames.has(baseName.toLowerCase())) return baseName;
+	if (!usedNames.has(baseValue.toLowerCase())) return baseValue;
 
-	const numberedMatch = baseName.match(/^(.*?)(?:\s+(\d+))$/);
-	const rootName = numberedMatch?.[1]?.trim() || baseName;
+	const numberedMatch = baseValue.match(/^(.*?)(?:[-\s]+(\d+))$/);
+	const rootName = numberedMatch?.[1]?.trim() || baseValue;
+	const separator = baseValue.includes("-") ? "-" : " ";
 	let index = numberedMatch?.[2] ? Number(numberedMatch[2]) + 1 : 2;
-	let nextName = `${rootName} ${index}`;
+	let nextName = `${rootName}${separator}${index}`;
 
 	while (usedNames.has(nextName.toLowerCase())) {
 		index += 1;
-		nextName = `${rootName} ${index}`;
+		nextName = `${rootName}${separator}${index}`;
 	}
 
 	return nextName;
 }
 
+function uniqueConditionName(baseName: string, siblings: ConditionValue[]) {
+	return uniqueSiblingValue(baseName, siblings, storedConditionName);
+}
+
+function conditionIdPrefix(type: string) {
+	const normalizedType = type.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+	return normalizedType || "condition";
+}
+
+function uniqueConditionId(condition: ConditionValue, siblings: ConditionValue[]) {
+	const type = getConditionType(condition);
+	return uniqueSiblingValue(`${conditionIdPrefix(type)}-1`, siblings, storedConditionId);
+}
+
+function generatedConditionNameForType(
+	type: string,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	siblings: ConditionValue[],
+) {
+	const typeCount = siblings.filter((condition) => getConditionType(condition) === type).length;
+	if (type === "group") return `Group ${typeCount + 1}`;
+	return `${typeLabel(type, metadata, context)} ${typeCount + 1}`;
+}
+
+function ensureConditionIdentity(
+	condition: ConditionValue,
+	index: number,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	siblings: ConditionValue[],
+) {
+	return {
+		...condition,
+		id: storedConditionId(condition) ?? uniqueConditionId(condition, siblings),
+		name:
+			storedConditionName(condition) ??
+			uniqueConditionName(conditionListName(condition, metadata, context, index), siblings),
+	};
+}
+
 function createNamedCondition(
 	type: "flag" | "group",
-	index: number,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
 	siblings: ConditionValue[],
@@ -440,15 +491,34 @@ function createNamedCondition(
 		...createDefaultCondition(type),
 		...overrides,
 	};
+	if (type === "group" && Array.isArray(condition.conditions)) {
+		const identifiedChildren: ConditionValue[] = [];
+		condition.conditions = condition.conditions.map((childCondition, childIndex) => {
+			const nextCondition = ensureConditionIdentity(
+				normalizeCondition(childCondition as ConditionValue),
+				childIndex,
+				metadata,
+				context,
+				identifiedChildren,
+			);
+			identifiedChildren.push(nextCondition);
+			return nextCondition;
+		});
+	}
 
 	return {
 		...condition,
-		name: uniqueConditionName(conditionListName(condition, metadata, context, index), siblings),
+		id: uniqueConditionId(condition, siblings),
+		name: uniqueConditionName(
+			generatedConditionNameForType(getConditionType(condition), metadata, context, siblings),
+			siblings,
+		),
 	};
 }
 
 function conditionDisplayNameFields(condition: ConditionValue) {
 	return {
+		id: condition.id,
 		name: condition.name,
 		label: condition.label,
 		title: condition.title,
@@ -508,7 +578,6 @@ export function ConditionBuilderEditor({
 				...conditions,
 				createNamedCondition(
 					type,
-					conditions.length,
 					metadata,
 					context,
 					conditions,
@@ -681,14 +750,12 @@ function ConditionLinkList({
 		const condition = conditions[index];
 		const name = conditionListName(condition, metadata, context, index);
 
-		if (canEdit && !hasStoredConditionName(condition)) {
-			onUpdateCondition(index, {
-				...condition,
-				name: uniqueConditionName(
-					name,
-					conditions.filter((_, conditionIndex) => conditionIndex !== index),
-				),
-			});
+		if (canEdit && (!hasStoredConditionName(condition) || !storedConditionId(condition))) {
+			const siblingConditions = conditions.filter((_, conditionIndex) => conditionIndex !== index);
+			onUpdateCondition(
+				index,
+				ensureConditionIdentity(condition, index, metadata, context, siblingConditions),
+			);
 		}
 
 		if (canOpenChildEditor) {
@@ -905,7 +972,6 @@ function ConditionNodeEditor({
 			...childConditions,
 			createNamedCondition(
 				type,
-				childConditions.length,
 				metadata,
 				context,
 				childConditions,
@@ -960,6 +1026,18 @@ function ConditionNodeEditor({
 					readonly,
 					context,
 					"Shown in the parent condition list",
+				)}
+				{renderTextField(
+					"id",
+					String(value.id ?? ""),
+					isGroup ? "Group ID" : "Condition ID",
+					updateField,
+					metadata,
+					path,
+					disabled,
+					readonly,
+					context,
+					"Stable identifier used when reusing this condition",
 				)}
 				{renderSelect({
 					childKey: "conditionType",

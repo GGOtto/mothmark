@@ -111,6 +111,18 @@ export const StringComparisonOperatorSchema = editorSelect(
 	},
 );
 
+const ConditionIdentitySchema = z.object({
+	id: editorInput({
+		title: "Condition ID",
+		description: "Stable identifier used when reusing this condition.",
+		advanced: true,
+	}).optional(),
+	name: editorInput({
+		title: "Condition Name",
+		description: "Display name shown in condition lists and reuse pickers.",
+	}).optional(),
+});
+
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 export const FlagConditionSchema = editorDiscriminatedUnion(
@@ -1948,10 +1960,11 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 	editorCondition(
 		z
 			.union([
-				SingleConditionSchema,
+				z.intersection(SingleConditionSchema, ConditionIdentitySchema),
 
 				editorObject(
 					z.object({
+						...ConditionIdentitySchema.shape,
 						type: z.literal("group").describe("Groups multiple conditions together."),
 
 						operator: editorSelect(z.enum(["all", "any", "none"]).default("all"), {
