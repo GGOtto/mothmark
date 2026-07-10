@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Pencil, Plus, Trash2} from "lucide-react";
 import type {CSSProperties, ReactNode} from "react";
 import type {
@@ -295,7 +295,7 @@ export function createDefaultCondition(type = "flag"): ConditionValue {
 			type: "group",
 			kind: "group",
 			operator: "all",
-			conditions: [createDefaultCondition("flag")],
+			conditions: [],
 		};
 	}
 
@@ -333,6 +333,7 @@ export function createDefaultCondition(type = "flag"): ConditionValue {
 }
 
 function getConditionType(condition: ConditionValue) {
+	if (condition.type === "condition-ref") return "condition-ref";
 	if (condition.kind === "group" || condition.type === "group") return "group";
 	return String(condition.type ?? (condition.kind === "expression" ? "counter" : "flag"));
 }
@@ -344,6 +345,13 @@ function normalizeGroupOperator(operator: unknown): "all" | "any" | "none" {
 }
 
 function normalizeCondition(condition: ConditionValue): ConditionValue {
+	if (condition.type === "condition-ref") {
+		return {
+			type: "condition-ref",
+			conditionId: typeof condition.conditionId === "string" ? condition.conditionId : "",
+		};
+	}
+
 	if (condition.kind === "group" || condition.type === "group") {
 		return {
 			...condition,
@@ -522,7 +530,128 @@ function conditionDisplayNameFields(condition: ConditionValue) {
 		name: condition.name,
 		label: condition.label,
 		title: condition.title,
+		allowMultipleUsesInWorld: condition.allowMultipleUsesInWorld,
 	};
+}
+
+function worldConditions(context: EditorControlContext) {
+	const conditions = context.getWorldValue?.(["conditions"]) ?? context.getValue(["conditions"]);
+	return Array.isArray(conditions) ? (conditions as ConditionValue[]).map(normalizeCondition) : [];
+}
+
+function worldConditionById(context: EditorControlContext, id: unknown) {
+	if (typeof id !== "string" || !id.trim()) return undefined;
+	return worldConditions(context).find((condition) => storedConditionId(condition) === id.trim());
+}
+
+function isConditionReference(condition: ConditionValue) {
+	return condition.type === "condition-ref";
+}
+
+function isWorldConditionEditorPath(path: Array<string | number>) {
+	return path[0] === "conditions" && typeof path[1] === "number";
+}
+
+function conditionUsage(
+	condition: ConditionValue,
+	context: EditorControlContext,
+	seenConditionIds = new Set<string>(),
+): ConditionValue {
+	if (isConditionReference(condition)) {
+		const conditionId = typeof condition.conditionId === "string" ? condition.conditionId.trim() : "";
+		if (!conditionId || seenConditionIds.has(conditionId)) return condition;
+
+		const worldCondition = worldConditionById(context, conditionId);
+		if (!worldCondition) return condition;
+
+		const nextSeenConditionIds = new Set(seenConditionIds);
+		nextSeenConditionIds.add(conditionId);
+		return conditionUsage(worldCondition, context, nextSeenConditionIds);
+	}
+
+	if (getConditionType(condition) === "group" && Array.isArray(condition.conditions)) {
+		return {
+			...condition,
+			conditions: condition.conditions.map((childCondition) =>
+				conditionUsage(childCondition as ConditionValue, context, seenConditionIds),
+			),
+		};
+	}
+
+	return condition;
+}
+
+function uniqueWorldConditionId(condition: ConditionValue, context: EditorControlContext) {
+	return uniqueConditionId(condition, worldConditions(context));
+}
+
+function uniqueWorldConditionName(
+	condition: ConditionValue,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+) {
+	return uniqueConditionName(
+		generatedConditionNameForType(
+			getConditionType(condition),
+			metadata,
+			context,
+			worldConditions(context),
+		),
+		worldConditions(context),
+	);
+}
+
+function createWorldConditionDefinition(
+	type: "flag" | "group",
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	overrides: ConditionValue = {},
+) {
+	const condition = {
+		...createDefaultCondition(type),
+		...overrides,
+	};
+	const nextCondition = {
+		...condition,
+		id: uniqueWorldConditionId(condition, context),
+		name: uniqueWorldConditionName(condition, metadata, context),
+		allowMultipleUsesInWorld: false,
+	};
+	return nextCondition;
+}
+
+function createWorldCondition(
+	type: "flag" | "group",
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	overrides: ConditionValue = {},
+) {
+	const nextCondition = createWorldConditionDefinition(type, metadata, context, overrides);
+	const conditions = worldConditions(context);
+	if (context.setWorldValue) {
+		context.setWorldValue(["conditions"], [...conditions, nextCondition]);
+	} else {
+		context.setValue(["conditions"], [...conditions, nextCondition]);
+	}
+
+	return nextCondition;
+}
+
+function conditionRefFor(condition: ConditionValue) {
+	return {
+		type: "condition-ref",
+		conditionId: storedConditionId(condition) ?? "",
+	};
+}
+
+function reusableWorldConditions(context: EditorControlContext) {
+	return worldConditions(context).filter(
+		(condition) => condition.allowMultipleUsesInWorld === true && storedConditionId(condition),
+	);
+}
+
+function hasWorldConditionLibrary(context: EditorControlContext) {
+	return Array.isArray(context.getWorldValue?.(["conditions"]) ?? context.getValue(["conditions"]));
 }
 
 export function ConditionBuilderEditor({
@@ -548,13 +677,41 @@ export function ConditionBuilderEditor({
 	]
 		.filter(Boolean)
 		.join(" ");
+	const isConditionList = Array.isArray(value);
+	const singleCondition = isConditionList ? undefined : normalizeCondition(value as ConditionValue);
+	const worldConditionIndex =
+		!isConditionList && isWorldConditionEditorPath(path) && typeof path[1] === "number"
+			? path[1]
+			: undefined;
 
-	if (Array.isArray(value)) {
+	useEffect(() => {
+		if (isConditionList || !singleCondition || !canEdit || worldConditionIndex === undefined) {
+			return;
+		}
+
+		if (hasStoredConditionName(singleCondition) && storedConditionId(singleCondition)) return;
+
+		const siblingConditions = worldConditions(context).filter(
+			(_, conditionIndex) => conditionIndex !== worldConditionIndex,
+		);
+		onChange(
+			ensureConditionIdentity(
+				singleCondition,
+				worldConditionIndex,
+				metadata,
+				context,
+				siblingConditions,
+			),
+		);
+	}, [canEdit, context, isConditionList, metadata, onChange, singleCondition, worldConditionIndex]);
+
+	if (isConditionList) {
 		const conditions = value.map((condition) => normalizeCondition(condition as ConditionValue));
+		const summaryConditions = conditions.map((condition) => conditionUsage(condition, context));
 		const summaryCondition = {
 			type: "group",
 			operator: "all",
-			conditions,
+			conditions: summaryConditions,
 		};
 		const canAddGroup = canEdit && (metadata.features?.allowGroups ?? true);
 
@@ -574,6 +731,16 @@ export function ConditionBuilderEditor({
 		function addCondition(type: "flag" | "group") {
 			if (!canEdit) return;
 			if (type === "group" && !canAddGroup) return;
+			if (hasWorldConditionLibrary(context)) {
+				const nextCondition = createWorldCondition(
+					type,
+					metadata,
+					context,
+					type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+				);
+				onChange([...conditions, conditionRefFor(nextCondition)]);
+				return;
+			}
 			onChange([
 				...conditions,
 				createNamedCondition(
@@ -623,13 +790,16 @@ export function ConditionBuilderEditor({
 						canAddGroup={canAddGroup}
 						onAddCondition={() => addCondition("flag")}
 						onAddGroup={() => addCondition("group")}
+						onAddExistingCondition={(conditionId) =>
+							onChange([...conditions, {type: "condition-ref", conditionId}])
+						}
 					/>
 				</div>
 			</FieldShell>
 		);
 	}
 
-	const condition = normalizeCondition(value);
+	const condition = singleCondition ?? normalizeCondition(value as ConditionValue);
 
 	return (
 		<FieldShell
@@ -643,7 +813,10 @@ export function ConditionBuilderEditor({
 		>
 			<div className={className}>
 				{shouldShowSummary(metadata) ? (
-					<ConditionSummary title="Allowed when" summary={generateConditionSummary(condition)} />
+					<ConditionSummary
+						title="Allowed when"
+						summary={generateConditionSummary(conditionUsage(condition, context))}
+					/>
 				) : null}
 				<ConditionNodeEditor
 					value={condition}
@@ -704,6 +877,7 @@ function ConditionLinkList({
 	canAddGroup,
 	onAddCondition,
 	onAddGroup,
+	onAddExistingCondition,
 	groupTitle,
 }: {
 	conditions: ConditionValue[];
@@ -723,6 +897,7 @@ function ConditionLinkList({
 	canAddGroup: boolean;
 	onAddCondition: () => void;
 	onAddGroup: () => void;
+	onAddExistingCondition?: (conditionId: string) => void;
 	groupTitle?: string;
 }) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
@@ -730,6 +905,10 @@ function ConditionLinkList({
 	const safeSelectedIndex =
 		conditions.length > 0 ? Math.min(selectedIndex, conditions.length - 1) : 0;
 	const selectedCondition = canOpenChildEditor ? undefined : conditions[safeSelectedIndex];
+	const reusableConditions =
+		canEdit && onAddExistingCondition && hasWorldConditionLibrary(context)
+			? reusableWorldConditions(context)
+			: [];
 
 	function removeCondition(index: number) {
 		onRemoveCondition(index);
@@ -748,9 +927,14 @@ function ConditionLinkList({
 
 	function openCondition(index: number) {
 		const condition = conditions[index];
-		const name = conditionListName(condition, metadata, context, index);
+		const usage = conditionUsage(condition, context);
+		const name = conditionListName(usage, metadata, context, index);
 
-		if (canEdit && (!hasStoredConditionName(condition) || !storedConditionId(condition))) {
+		if (
+			canEdit &&
+			!isConditionReference(condition) &&
+			(!hasStoredConditionName(condition) || !storedConditionId(condition))
+		) {
 			const siblingConditions = conditions.filter((_, conditionIndex) => conditionIndex !== index);
 			onUpdateCondition(
 				index,
@@ -759,14 +943,19 @@ function ConditionLinkList({
 		}
 
 		if (canOpenChildEditor) {
+			const conditionId = isConditionReference(condition)
+				? String(condition.conditionId ?? "")
+				: storedConditionId(condition);
+			const opensWorldCondition = Boolean(conditionId && worldConditionById(context, conditionId));
 			context.editorNavigation?.openEditorLink?.({
 				ref: {
 					type: "condition",
-					id: String(index),
+					id: conditionId ?? String(index),
 					label: name,
 				},
 				target: {
 					kind: "condition",
+					entityType: opensWorldCondition ? "condition" : undefined,
 					controlType: "condition-builder",
 					showBackLink: true,
 					backLabel: groupTitle ? "Back to group conditions" : "Back to conditions",
@@ -779,14 +968,22 @@ function ConditionLinkList({
 		setSelectedIndex(index);
 	}
 
+	function addExistingCondition(conditionId: string) {
+		if (!conditionId || !onAddExistingCondition) return;
+		onAddExistingCondition(conditionId);
+		setSelectedIndex(conditions.length);
+	}
+
 	return (
 		<div className="conditionBuilderEditor__linkList">
 			<div className="conditionBuilderEditor__linkItems">
 				{conditions.length === 0 ? emptyState : null}
 				{conditions.map((condition, index) => {
-					const name = conditionListName(condition, metadata, context, index);
-					const summary = generateConditionSummary(condition);
+					const usage = conditionUsage(condition, context);
+					const name = conditionListName(usage, metadata, context, index);
+					const summary = generateConditionSummary(usage);
 					const isSelected = !canOpenChildEditor && index === safeSelectedIndex;
+					const missingReference = isConditionReference(condition) && usage === condition;
 
 					return (
 						<div
@@ -807,7 +1004,9 @@ function ConditionLinkList({
 								<Pencil size={13} aria-hidden="true" />
 								<span className="conditionBuilderEditor__linkContent">
 									<span className="conditionBuilderEditor__linkText">{name}</span>
-									<span className="conditionBuilderEditor__linkSummary">{summary}</span>
+									<span className="conditionBuilderEditor__linkSummary">
+										{missingReference ? "Missing world condition" : summary}
+									</span>
 								</span>
 								<span className="conditionBuilderEditor__linkHint">{isSelected ? "Editing" : "Edit"}</span>
 							</button>
@@ -833,13 +1032,20 @@ function ConditionLinkList({
 				canAddGroup={canAddGroup}
 				onAddCondition={() => addAndSelect(onAddCondition)}
 				onAddGroup={() => addAndSelect(onAddGroup)}
+				reusableConditions={reusableConditions}
+				onAddExistingCondition={addExistingCondition}
 				groupTitle={groupTitle}
 			/>
 
 			{selectedCondition ? (
 				<ConditionItemShell
-					title={conditionListName(selectedCondition, metadata, context, safeSelectedIndex)}
-					summary={generateConditionSummary(selectedCondition)}
+					title={conditionListName(
+						conditionUsage(selectedCondition, context),
+						metadata,
+						context,
+						safeSelectedIndex,
+					)}
+					summary={generateConditionSummary(conditionUsage(selectedCondition, context))}
 				>
 					<ConditionNodeEditor
 						value={selectedCondition}
@@ -870,6 +1076,8 @@ function ConditionActions({
 	canAddGroup,
 	onAddCondition,
 	onAddGroup,
+	reusableConditions,
+	onAddExistingCondition,
 	groupTitle,
 }: {
 	addConditionLabel: string;
@@ -878,6 +1086,8 @@ function ConditionActions({
 	canAddGroup: boolean;
 	onAddCondition: () => void;
 	onAddGroup: () => void;
+	reusableConditions?: ConditionValue[];
+	onAddExistingCondition?: (conditionId: string) => void;
 	groupTitle?: string;
 }) {
 	return (
@@ -890,6 +1100,25 @@ function ConditionActions({
 				<Plus size={14} aria-hidden="true" />
 				<span>{addGroupLabel}</span>
 			</button>
+			{reusableConditions && reusableConditions.length > 0 && onAddExistingCondition ? (
+				<div className="conditionBuilderEditor__reuse">
+					<select
+						value=""
+						aria-label="Reusable world condition"
+						onChange={(event) => onAddExistingCondition(event.target.value)}
+					>
+						<option value="">Use existing reusable condition...</option>
+						{reusableConditions.map((condition) => {
+							const conditionId = storedConditionId(condition) ?? "";
+							return (
+								<option key={conditionId} value={conditionId}>
+									{storedConditionName(condition) ?? conditionId}
+								</option>
+							);
+						})}
+					</select>
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -968,6 +1197,32 @@ function ConditionNodeEditor({
 
 	function addChild(type: "flag" | "group") {
 		if (type === "group" && !canAddGroup) return;
+		if (hasWorldConditionLibrary(context)) {
+			const nextCondition = createWorldConditionDefinition(
+				type,
+				metadata,
+				context,
+				type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+			);
+			const nextChildConditions = [...childConditions, conditionRefFor(nextCondition)];
+
+			if (context.setWorldValue && isWorldConditionEditorPath(path) && typeof path[1] === "number") {
+				const conditions = worldConditions(context);
+				const nextConditions = [...conditions, nextCondition];
+				nextConditions[path[1]] = {
+					...value,
+					conditions: nextChildConditions,
+				};
+				context.setWorldValue(["conditions"], nextConditions);
+				return;
+			}
+
+			if (context.setWorldValue) {
+				context.setWorldValue(["conditions"], [...worldConditions(context), nextCondition]);
+			}
+			updateField("conditions", [...childConditions, conditionRefFor(nextCondition)]);
+			return;
+		}
 		updateField("conditions", [
 			...childConditions,
 			createNamedCondition(
@@ -1039,6 +1294,17 @@ function ConditionNodeEditor({
 					context,
 					"Stable identifier used when reusing this condition",
 				)}
+				{isWorldConditionEditorPath(path)
+					? renderReuseToggleField(
+							Boolean(value.allowMultipleUsesInWorld),
+							updateField,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)
+					: null}
 				{renderSelect({
 					childKey: "conditionType",
 					value: type,
@@ -1096,6 +1362,9 @@ function ConditionNodeEditor({
 						groupTitle={!canAddGroup && depth >= maxDepth ? "Maximum nesting depth reached." : undefined}
 						onAddCondition={() => addChild("flag")}
 						onAddGroup={() => addChild("group")}
+						onAddExistingCondition={(conditionId) =>
+							updateField("conditions", [...childConditions, {type: "condition-ref", conditionId}])
+						}
 					/>
 				</div>
 			) : (
@@ -2407,6 +2676,40 @@ function renderToggleField(
 		},
 		parentMetadata: metadata,
 		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderReuseToggleField(
+	value: boolean,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "toggle",
+		childKey: "allowMultipleUsesInWorld",
+		value,
+		onChange: (nextValue) => onChange("allowMultipleUsesInWorld", nextValue),
+		metadata: {
+			title: "Allow multiple uses in world",
+			description: "Makes this condition available in existing-condition pickers.",
+			appearance: {chrome: "inline", size: "sm"},
+			features: {
+				display: "checkbox",
+				labels: {
+					on: "Allow multiple uses in world",
+					off: "Allow multiple uses in world",
+				},
+			},
+		},
+		parentMetadata: metadata,
+		path: [...path, "allowMultipleUsesInWorld"],
 		disabled,
 		readonly,
 		context,

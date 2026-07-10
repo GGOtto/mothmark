@@ -85,6 +85,12 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		description: descriptionText(connection.description),
 		path: ["connections", index],
 	}));
+	const conditions = ((worldRecord.conditions as WorldEntity[] | undefined) ?? []).map(
+		(condition, index) => ({
+			...entityOption(condition, ["conditions", index]),
+			description: descriptionText(condition.description),
+		}),
+	);
 	const items = ((worldRecord.items as WorldEntity[] | undefined) ?? []).map((item, index) =>
 		entityOption(item, ["items", index]),
 	);
@@ -139,6 +145,7 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	return {
 		rooms,
 		connections,
+		conditions,
 		items,
 		npcs,
 		topics,

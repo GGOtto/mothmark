@@ -60,6 +60,7 @@ export type EditorEntityType =
 	| "command"
 	| "event"
 	| "feature"
+	| "condition"
 	| "container"
 	| "surface"
 	| "object"

@@ -202,6 +202,7 @@ function conditionSummarySubject(condition: Record<string, unknown>) {
 	}
 
 	const type = String(condition.type ?? condition.kind ?? "");
+	if (type === "condition-ref") return String(condition.conditionId ?? "choose condition");
 	if (type === "flag") return "choose flag";
 	if (type === "counter") return "choose counter";
 	if (type === "current-room") return "current room";

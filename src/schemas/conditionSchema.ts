@@ -114,14 +114,51 @@ export const StringComparisonOperatorSchema = editorSelect(
 const ConditionIdentitySchema = z.object({
 	id: editorInput({
 		title: "Condition ID",
-		description: "Stable identifier used when reusing this condition.",
+		description: "Stable world-unique identifier used when reusing this condition.",
 		advanced: true,
 	}).optional(),
 	name: editorInput({
 		title: "Condition Name",
 		description: "Display name shown in condition lists and reuse pickers.",
 	}).optional(),
+	allowMultipleUsesInWorld: editorBoolean({
+		title: "Allow multiple uses in world",
+		description: "When checked, this condition can be selected from other condition lists.",
+		features: {
+			display: "checkbox",
+			labels: {
+				on: "Allow multiple uses in world",
+				off: "Allow multiple uses in world",
+			},
+		},
+		layout: {
+			width: "full",
+			order: 3,
+		},
+	}).default(false),
 });
+
+export const ConditionReferenceSchema = editorObject(
+	z.object({
+		type: z.literal("condition-ref").describe("References a condition stored in the world."),
+		conditionId: editorEntityId("condition", {
+			title: "Condition",
+			description: "The world condition this usage should evaluate.",
+			layout: {
+				width: "full",
+				order: 1,
+			},
+		}),
+	}),
+	{
+		title: "Condition Reference",
+		description: "A usage of a condition stored in the world condition library.",
+		summary: {
+			enabled: true,
+			mode: "deterministic",
+		},
+	},
+);
 
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
@@ -1954,12 +1991,16 @@ export type ConditionGroup = {
 	conditions: Condition[];
 };
 
-export type Condition = SingleCondition | ConditionGroup;
+export type ConditionReference = z.infer<typeof ConditionReferenceSchema>;
+
+export type Condition = SingleCondition | ConditionGroup | ConditionReference;
 
 export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 	editorCondition(
 		z
 			.union([
+				ConditionReferenceSchema,
+
 				z.intersection(SingleConditionSchema, ConditionIdentitySchema),
 
 				editorObject(

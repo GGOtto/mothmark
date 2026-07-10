@@ -24,6 +24,7 @@ export type EntityType =
 	| "command"
 	| "event"
 	| "feature"
+	| "condition"
 	| "container"
 	| "surface"
 	| "object"
@@ -81,6 +82,7 @@ export type EditorRegistries = {
 	commands: EditorEntityOption[];
 	events: EditorEntityOption[];
 	features: EditorEntityOption[];
+	conditions: EditorEntityOption[];
 	containers: EditorEntityOption[];
 	surfaces: EditorEntityOption[];
 	objects: EditorEntityOption[];

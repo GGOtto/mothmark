@@ -163,6 +163,7 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				onRoomChange={updateRoom}
 				onConnectionChange={updateConnection}
+				onWorldChange={setEditorWorld}
 				deleteConnection={deleteConnection}
 			/>
 		</main>
@@ -343,6 +344,7 @@ type EditorInspectorProps = {
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
 	onConnectionChange: (connection: Connection) => void;
+	onWorldChange: (world: World) => void;
 	deleteConnection: (connection: Connection) => void;
 };
 
@@ -354,12 +356,14 @@ function EditorInspector({
 	selectedConnection,
 	onRoomChange,
 	onConnectionChange,
+	onWorldChange,
 	deleteConnection,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
 			<RightSideBar
 				world={world}
+				onWorldChange={onWorldChange}
 				rooms={rooms}
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
@@ -375,6 +379,7 @@ function EditorInspector({
 	return (
 		<RightSideBar
 			world={world}
+			onWorldChange={onWorldChange}
 			rooms={rooms}
 			selectedRoom={null}
 			selectedConnection={null}

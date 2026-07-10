@@ -34,6 +34,7 @@ type ConnectionEditorProps = {
 	selectedConnection: Connection;
 	connections?: Pick<Connection, "id">[];
 	world?: World;
+	onWorldChange?: (world: World) => void;
 	onConnectionChange: (connection: Connection) => void;
 };
 
@@ -41,6 +42,7 @@ export function ConnectionEditor({
 	selectedConnection,
 	connections = [],
 	world,
+	onWorldChange,
 	onConnectionChange,
 }: ConnectionEditorProps) {
 	const duplicateConnectionId = useMemo(() => {
@@ -75,6 +77,7 @@ export function ConnectionEditor({
 				value={selectedConnection}
 				onChange={onConnectionChange}
 				world={world}
+				onWorldChange={onWorldChange}
 				appearance={{
 					theme: "auto",
 					scheme: "dark",

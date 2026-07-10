@@ -7,10 +7,17 @@ type RoomEditorProps = {
 	selectedRoom: Room;
 	rooms?: Pick<Room, "id">[];
 	world?: World;
+	onWorldChange?: (world: World) => void;
 	onRoomChange: (room: Room) => void;
 };
 
-export function RoomEditor({selectedRoom, rooms = [], world, onRoomChange}: RoomEditorProps) {
+export function RoomEditor({
+	selectedRoom,
+	rooms = [],
+	world,
+	onWorldChange,
+	onRoomChange,
+}: RoomEditorProps) {
 	const duplicateRoomId = useMemo(() => {
 		return rooms.filter((room) => room.id === selectedRoom.id).length > 1;
 	}, [rooms, selectedRoom.id]);
@@ -31,6 +38,7 @@ export function RoomEditor({selectedRoom, rooms = [], world, onRoomChange}: Room
 				value={selectedRoom}
 				onChange={onRoomChange}
 				world={world}
+				onWorldChange={onWorldChange}
 				appearance={{
 					theme: "auto",
 					scheme: "dark",

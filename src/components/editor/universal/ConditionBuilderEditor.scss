@@ -256,6 +256,25 @@
 	padding: 7px;
 }
 
+.conditionBuilderEditor__reuse {
+	display: grid;
+	flex: 1 1 100%;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 6px;
+}
+
+.conditionBuilderEditor__reuse select {
+	min-width: 0;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 11px;
+	line-height: 1.2;
+	min-height: 28px;
+	padding: 5px 7px;
+}
+
 .conditionBuilderEditor__linkItems + .conditionBuilderEditor__actions {
 	border-top-width: 0;
 }
@@ -369,5 +388,9 @@
 
 	.conditionBuilderEditor__actions button {
 		flex: 1 1 140px;
+	}
+
+	.conditionBuilderEditor__reuse {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }

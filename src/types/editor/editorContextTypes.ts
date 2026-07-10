@@ -141,6 +141,8 @@ export type EditorControlContext = {
 
 	getValue: (path: EditorPath) => unknown;
 	setValue: (path: EditorPath, value: unknown) => void;
+	getWorldValue?: (path: EditorPath) => unknown;
+	setWorldValue?: (path: EditorPath, value: unknown) => void;
 	patchValue?: (patch: EditorPatch) => void;
 
 	getIssues?: (path: EditorPath) => EditorIssue[];

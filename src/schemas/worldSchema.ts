@@ -11,7 +11,6 @@ import {
 	editorArray,
 	editorBoolean,
 	editorConditionList,
-	editorConditionalText,
 	editorDiscriminatedUnion,
 	editorEntityId,
 	editorEntityIdList,
@@ -21,10 +20,7 @@ import {
 	editorMessage,
 	editorNumber,
 	editorObject,
-	editorOptionalFlagKey,
 	editorOptionalRoomId,
-	editorPositiveInteger,
-	editorRichText,
 	editorSelect,
 	editorTagList,
 	editorTextarea,
@@ -1059,6 +1055,26 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
+			conditions: editorArray(ConditionSchema, {
+				title: "Conditions",
+				description: "Named condition definitions that can be attached throughout the world.",
+				emptyState: {
+					emptyTitle: "No conditions",
+					emptyDescription:
+						"Add named conditions that visibility, commands, events, and groups can use.",
+					emptyActionLabel: "Add condition",
+				},
+				duplicate: {
+					duplicateBehavior: "with-new-id",
+					idField: "id",
+					idPrefix: "condition",
+				},
+				layout: {
+					width: "full",
+					order: 5,
+				},
+			}),
+
 			items: editorArray(ItemSchema, {
 				title: "Items",
 				description: "All item definitions in the world.",
@@ -1074,7 +1090,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 5,
+					order: 6,
 				},
 			}),
 
@@ -1093,7 +1109,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 6,
+					order: 7,
 				},
 			}),
 
@@ -1112,7 +1128,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 7,
+					order: 8,
 				},
 			}),
 
@@ -1131,7 +1147,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 8,
+					order: 9,
 				},
 			}),
 
@@ -1150,7 +1166,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 9,
+					order: 10,
 				},
 			}),
 
@@ -1169,7 +1185,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 10,
+					order: 11,
 				},
 			}),
 
@@ -1207,6 +1223,7 @@ export const WorldSchema = editorObject(
 			const questIds = new Set<string>();
 			const commandIds = new Set<string>();
 			const eventIds = new Set<string>();
+			const conditionIds = new Set<string>();
 
 			const fullFeatureIds = new Set<string>();
 			const containerIds = new Set<string>();
@@ -1270,6 +1287,27 @@ export const WorldSchema = editorObject(
 				}
 
 				connectionIds.add(connection.id);
+			}
+
+			for (const [conditionIndex, condition] of world.conditions.entries()) {
+				if (!("id" in condition) || typeof condition.id !== "string" || !condition.id.trim()) {
+					ctx.addIssue({
+						code: "custom",
+						message: "World conditions need a condition id.",
+						path: ["conditions", conditionIndex, "id"],
+					});
+					continue;
+				}
+
+				if (conditionIds.has(condition.id)) {
+					ctx.addIssue({
+						code: "custom",
+						message: `Duplicate condition id: ${condition.id}`,
+						path: ["conditions", conditionIndex, "id"],
+					});
+				}
+
+				conditionIds.add(condition.id);
 			}
 
 			for (const [itemIndex, item] of world.items.entries()) {
@@ -1525,3 +1563,4 @@ export type InitialCounter = z.infer<typeof InitialCounterSchema>;
 export type WorldInitialState = z.infer<typeof WorldInitialStateSchema>;
 export type WorldMetadata = z.infer<typeof WorldMetadataSchema>;
 export type World = z.infer<typeof WorldSchema>;
+export type {Connection, Direction, Point, Room} from "./roomSchema";

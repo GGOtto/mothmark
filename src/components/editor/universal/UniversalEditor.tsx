@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import type {z} from "zod";
-import type {World} from "@/schemas/worldSchema";
+import {WorldSchema, type World} from "@/schemas/worldSchema";
 import type {
 	EditorEntityOption,
 	EditorKeyOption,
@@ -34,6 +34,7 @@ type UniversalEditorProps<TValue> = {
 	value: TValue;
 	onChange: (value: TValue) => void;
 	world?: World;
+	onWorldChange?: (world: World) => void;
 	path?: EditorPath;
 	appearance?: EditorControlAppearance;
 	readonly?: boolean;
@@ -48,6 +49,7 @@ type UniversalEditorView = {
 	value?: unknown;
 	path: EditorPath;
 	metadata?: EditorControlMetadata;
+	valueScope?: "local" | "world";
 	showBackLink?: boolean;
 	backLabel?: string;
 	returnScrollPosition?: EditorScrollPosition;
@@ -66,6 +68,7 @@ const EMPTY_REGISTRIES: EditorRegistries = buildEditorRegistries({
 	startRoomId: "",
 	rooms: [],
 	connections: [],
+	conditions: [],
 } as unknown as World);
 
 type EditorSectionDisclosureState = Record<string, Record<string, boolean>>;
@@ -206,6 +209,7 @@ function findArrayEntityPath(
 function getEntityPathByRef(value: unknown, ref: EditorLinkRef): EditorPath | undefined {
 	if (ref.type === "room") return findArrayEntityPath(value, ["rooms"], ref.id);
 	if (ref.type === "connection") return findArrayEntityPath(value, ["connections"], ref.id);
+	if (ref.type === "condition") return findArrayEntityPath(value, ["conditions"], ref.id);
 	if (ref.type === "item") return findArrayEntityPath(value, ["items"], ref.id);
 	if (ref.type === "npc" || ref.type === "character") {
 		return findArrayEntityPath(value, ["npcs"], ref.id);
@@ -312,11 +316,17 @@ function metadataForTarget(schema: z.ZodTypeAny, target: EditorLinkTargetMetadat
 	} satisfies EditorControlMetadata;
 }
 
+function viewValue(rootValue: unknown, world: World | undefined, view: UniversalEditorView) {
+	const sourceValue = view.valueScope === "world" ? world : rootValue;
+	return getValueAtPath(sourceValue, view.path) ?? view.value;
+}
+
 export function UniversalEditor<TValue>({
 	schema,
 	value,
 	onChange,
 	world,
+	onWorldChange,
 	path = [],
 	appearance,
 	readonly,
@@ -437,8 +447,14 @@ export function UniversalEditor<TValue>({
 			if (target.entityType && ref.type !== target.entityType) return undefined;
 
 			let resolvedPath: EditorPath | undefined;
+			const valueScope = target.entityType === "condition" && world ? "world" : "local";
+			const sourceValue = valueScope === "world" ? world : value;
+			const sourceSchema = valueScope === "world" ? WorldSchema : schema;
+
 			if (target.path && target.path.length > 0) {
-				resolvedPath = resolvePathTemplate(value, target.path, ref, request.sourcePath);
+				resolvedPath = resolvePathTemplate(sourceValue, target.path, ref, request.sourcePath);
+			} else if (target.entityType) {
+				resolvedPath = getEntityPathByRef(sourceValue, ref);
 			} else if (target.kind === "condition" || target.kind === "effect") {
 				resolvedPath = getIndexedChildPathByRef(value, request.sourcePath, ref);
 			} else {
@@ -447,7 +463,7 @@ export function UniversalEditor<TValue>({
 
 			if (!resolvedPath) return undefined;
 
-			const childSchema = getSchemaAtPath(schema, resolvedPath);
+			const childSchema = getSchemaAtPath(sourceSchema, resolvedPath);
 			if (!childSchema) return undefined;
 
 			const childMetadata = metadataForTarget(childSchema, target);
@@ -459,14 +475,15 @@ export function UniversalEditor<TValue>({
 				title: ref.label ?? option?.label ?? childMetadata.title ?? `${ref.type}/${ref.id}`,
 				description: option?.description ?? childMetadata.description,
 				schema: childSchema,
-				value: getValueAtPath(value, resolvedPath),
+				value: getValueAtPath(sourceValue, resolvedPath),
 				path: resolvedPath,
 				metadata: childMetadata,
+				valueScope,
 				showBackLink: target.showBackLink ?? true,
 				backLabel: target.backLabel,
 			};
 		},
-		[registries, schema, value],
+		[registries, schema, value, world],
 	);
 
 	const openEditorLink = useCallback(
@@ -607,6 +624,13 @@ export function UniversalEditor<TValue>({
 			setValue: (editorPath, nextValue) => {
 				emitChange(setValueAtPath(value, editorPath, nextValue) as TValue);
 			},
+			getWorldValue: world ? (editorPath) => getValueAtPath(world, editorPath) : undefined,
+			setWorldValue:
+				world && onWorldChange
+					? (editorPath, nextValue) => {
+							onWorldChange(setValueAtPath(world, editorPath, nextValue) as World);
+						}
+					: undefined,
 			getOptionList: (source) => {
 				if (source === "rooms") {
 					return registries.rooms.map((room: EditorEntityOption) => ({
@@ -666,7 +690,11 @@ export function UniversalEditor<TValue>({
 				breadcrumbs: [
 					{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
 					...viewStack.map((view) => ({
-						label: view.title ?? view.metadata?.title ?? "Child editor",
+						label:
+							labelFromValue(viewValue(value, world, view)) ??
+							view.title ??
+							view.metadata?.title ??
+							"Child editor",
 						path: view.path,
 					})),
 				],
@@ -693,6 +721,7 @@ export function UniversalEditor<TValue>({
 			getEditorSectionDisclosure,
 			openChildEditor,
 			openEditorLink,
+			onWorldChange,
 			popEditorView,
 			metadata.shell?.title,
 			metadata.title,
@@ -710,9 +739,7 @@ export function UniversalEditor<TValue>({
 	);
 	const renderedMetadata = activeView?.metadata ?? metadata;
 	const renderedPath = activeView?.path ?? path;
-	const renderedValue = activeView
-		? (getValueAtPath(value, activeView.path) ?? activeView.value)
-		: value;
+	const renderedValue = activeView ? viewValue(value, world, activeView) : value;
 	const shellMetadata = renderedMetadata.shell;
 	const activeViewTitle = activeView
 		? (labelFromValue(renderedValue) ?? activeView.title)
@@ -728,7 +755,7 @@ export function UniversalEditor<TValue>({
 		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
 		...viewStack.map((view) => ({
 			label:
-				labelFromValue(getValueAtPath(value, view.path) ?? view.value) ??
+				labelFromValue(viewValue(value, world, view)) ??
 				view.title ??
 				view.metadata?.title ??
 				"Child editor",
@@ -833,6 +860,11 @@ export function UniversalEditor<TValue>({
 				value={renderedValue}
 				onChange={(nextValue) => {
 					if (activeView) {
+						if (activeView.valueScope === "world" && world && onWorldChange) {
+							onWorldChange(setValueAtPath(world, activeView.path, nextValue) as World);
+							return;
+						}
+
 						emitChange(setValueAtPath(value, activeView.path, nextValue) as TValue);
 						return;
 					}

@@ -7,6 +7,7 @@ import "./RightSideBar.scss";
 
 type RightSideBarProps = {
 	world?: World;
+	onWorldChange?: (world: World) => void;
 	rooms?: Room[];
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
@@ -19,6 +20,7 @@ type RightSideBarProps = {
 
 export function RightSideBar({
 	world,
+	onWorldChange,
 	rooms = [],
 	selectedRoom,
 	selectedConnection,
@@ -41,6 +43,7 @@ export function RightSideBar({
 					selectedRoom={selectedRoom}
 					rooms={rooms}
 					world={world}
+					onWorldChange={onWorldChange}
 					onRoomChange={onRoomChange}
 				/>
 			) : selectedConnection ? (
@@ -49,6 +52,7 @@ export function RightSideBar({
 					onConnectionChange={onConnectionChange}
 					connections={world?.connections}
 					world={world}
+					onWorldChange={onWorldChange}
 				/>
 			) : title ? (
 				<EmptyTabPanel title={title} description={description} />
