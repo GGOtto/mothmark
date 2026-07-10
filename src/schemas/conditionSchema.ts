@@ -15,6 +15,8 @@ import {
 	editorPositiveInteger,
 	editorSelect,
 	editorStringList,
+	editorConditionList,
+	editorRichText,
 } from "@/schemas/editorSchemaHelpers";
 
 export const ComparisonOperatorSchema = editorSelect(
@@ -2036,3 +2038,37 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 		},
 	),
 );
+
+export const ConditionalTextSchema = editorObject(
+	z.object({
+		text: editorRichText({
+			title: "Text",
+			description: "The text that will be used when all required conditions are met.",
+			placeholder: "Describe the conditional text...",
+			required: true,
+			layout: {
+				width: "full",
+				order: 1,
+			},
+		}).min(1),
+
+		when: editorConditionList(ConditionSchema, {
+			title: "When",
+			description: "Conditions that must all be true before this text can be used.",
+			layout: {
+				width: "full",
+				order: 2,
+			},
+		}),
+	}),
+	{
+		title: "Conditional Text",
+		description: "Text that is only used when a set of conditions are met.",
+		summary: {
+			enabled: true,
+			mode: "deterministic",
+		},
+	},
+);
+
+export type ConditionalText = z.infer<typeof ConditionalTextSchema>;

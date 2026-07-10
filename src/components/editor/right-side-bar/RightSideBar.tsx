@@ -29,7 +29,7 @@ export function RightSideBar({
 }: RightSideBarProps) {
 	return (
 		<AdjustableBox
-			width="20%"
+			width="35%"
 			maxWidth="100%"
 			minWidth="220px"
 			className="rightSideBar"

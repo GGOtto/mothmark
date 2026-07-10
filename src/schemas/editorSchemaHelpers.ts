@@ -722,3 +722,27 @@ export function editorHidden<TSchema extends z.ZodTypeAny>(
 		...metadata,
 	});
 }
+
+export const editor = {
+	aliasList: editorAliasList,
+	array: editorArray,
+	boolean: editorBoolean,
+	conditionList: editorConditionList,
+	conditionalText: editorConditionalText,
+	discriminatedUnion: editorDiscriminatedUnion,
+	entityId: editorEntityId,
+	entityIdList: editorEntityIdList,
+	flagKey: editorFlagKey,
+	id: editorId,
+	input: editorInput,
+	message: editorMessage,
+	number: editorNumber,
+	object: editorObject,
+	optionalFlagKey: editorOptionalFlagKey,
+	optionalRoomId: editorOptionalRoomId,
+	positiveInteger: editorPositiveInteger,
+	richText: editorRichText,
+	select: editorSelect,
+	tagList: editorTagList,
+	textarea: editorTextarea,
+} as const;

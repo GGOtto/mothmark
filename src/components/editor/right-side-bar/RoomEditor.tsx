@@ -1,5 +1,6 @@
 import {useMemo} from "react";
-import {RoomSchema, type Room, type World} from "../../../schemas/worldSchema";
+import {type World} from "../../../schemas/worldSchema";
+import {RoomSchema, type Room} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../universal/UniversalEditor";
 
 type RoomEditorProps = {
@@ -31,9 +32,9 @@ export function RoomEditor({selectedRoom, rooms = [], world, onRoomChange}: Room
 				onChange={onRoomChange}
 				world={world}
 				appearance={{
-					theme: "mothmark",
+					theme: "auto",
 					scheme: "dark",
-					chrome: "bare",
+					chrome: "field", // TODO: maybe an auto mode that adjusts based on the available space
 				}}
 				className="roomEditorUniversal"
 			/>

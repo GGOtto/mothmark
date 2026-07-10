@@ -1,12 +1,12 @@
 import {
 	ConnectionSchema,
-	DefaultObjectStateDefaults,
 	RoomSchema,
 	type Connection,
 	type Direction,
 	type Point,
 	type Room,
-} from "@/schemas/worldSchema";
+} from "@/schemas/roomSchema";
+import {DefaultObjectStateDefaults} from "@/schemas/objectStateSchema";
 
 // TODO: add createDefaultFeature when feature creation UI exists.
 // TODO: add createDefaultWorld when the starter route moves off ad hoc schema default generation.
