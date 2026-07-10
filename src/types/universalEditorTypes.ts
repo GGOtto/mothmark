@@ -3,12 +3,19 @@ import type {
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,
+	EditorDisclosure,
 	EditorFieldMetadata,
+	EditorFieldGroupMetadata,
+	EditorFieldImportance,
+	EditorFieldPriority,
 	EditorOption,
+	EditorSummaryMetadata,
 	ResolvedEditorControlAppearance,
+	UniversalEditorShellMetadata,
 } from "./editor/editorMetadataTypes";
 import type {
 	EditorControlContext as CurrentEditorControlContext,
+	EditorActiveSection,
 	EditorCreateLinkRequest,
 	EditorLinkOpenRequest,
 	EditorLinkRef,
@@ -26,6 +33,11 @@ export type {
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,
+	EditorDisclosure,
+	EditorActiveSection,
+	EditorFieldGroupMetadata,
+	EditorFieldImportance,
+	EditorFieldPriority,
 	EditorCreateLinkRequest,
 	EditorIssue,
 	EditorLinkOpenRequest,
@@ -35,7 +47,9 @@ export type {
 	EditorNavigationEntry,
 	EditorPatch,
 	EditorPath,
+	EditorSummaryMetadata,
 	ResolvedEditorControlAppearance,
+	UniversalEditorShellMetadata,
 };
 export {resolveEditorControlAppearance} from "./editor/editorMetadataTypes";
 

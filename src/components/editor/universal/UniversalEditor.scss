@@ -1,29 +1,158 @@
 .universalEditor {
+	--universal-editor-sticky-bg: rgba(244, 236, 216, 0.075);
+	--universal-editor-sticky-bg-hover: rgba(244, 236, 216, 0.12);
+	--universal-editor-sticky-border: rgba(244, 236, 216, 0.22);
+	--universal-editor-sticky-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 8px 18px rgba(0, 0, 0, 0.22);
+	--universal-editor-section-sticky-top: 72px;
+
 	min-width: 0;
 	color: #f4ecd8;
+}
+
+.universalEditor--density-compact {
+	--universal-editor-section-sticky-top: 56px;
+
+	.universalEditor__shellHeader {
+		gap: 6px;
+		padding: 7px 8px;
+	}
+
+	.universalEditor__shellCopy h2 {
+		font-size: 14px;
+	}
+
+	.universalEditor__shellCopy p,
+	.universalEditor__shellCopy small {
+		font-size: 11px;
+	}
 }
 
 .universalEditor > .universalField {
 	margin: 0;
 }
 
-.universalEditor__childBar {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
+.universalEditor__shellHeader {
+	position: sticky;
+	z-index: 2;
+	top: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 8px 10px;
 	box-sizing: border-box;
-	border: 1px solid var(--field-border, rgba(244, 236, 216, 0.22));
-	background: var(--field-bg-raised, rgba(244, 236, 216, 0.06));
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	background: var(--field-bg-raised, var(--universal-editor-sticky-bg));
 	color: var(--field-text, #f4ecd8);
 	font-family: var(--field-font-family, inherit);
-	margin-bottom: 10px;
-	padding: 8px;
+	margin-bottom: 0;
+	padding: 10px;
+	box-shadow: var(--universal-editor-sticky-shadow);
+	backdrop-filter: blur(12px);
+}
+
+.universalEditor__shellMain {
+	display: flex;
+	min-width: 0;
+	gap: 9px;
+	align-items: flex-start;
+}
+
+.universalEditor__shellCopy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.universalEditor__eyebrow {
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.universalEditor__shellCopy h2 {
+	overflow: hidden;
+	margin: 0;
+	color: var(--field-text, #f4ecd8);
+	font-size: 16px;
+	font-weight: 800;
+	letter-spacing: 0;
+	line-height: 1.18;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.universalEditor__shellCopy p,
+.universalEditor__shellCopy small {
+	overflow: hidden;
+	margin: 0;
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: 12px;
+	line-height: 1.35;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.universalEditor__shellCopy small {
+	font-size: 11px;
+}
+
+.universalEditor__activeSectionInline {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 6px;
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: 12px;
+	line-height: 1.35;
+	white-space: nowrap;
+}
+
+.universalEditor__activeSectionInline span {
+	overflow: hidden;
+	color: var(--field-text, #f4ecd8);
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.universalEditor__activeSectionInline em {
+	flex: 0 0 auto;
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: 10px;
+	font-style: normal;
+	font-weight: 600;
+	line-height: 1;
+	padding: 2px 5px;
+}
+
+.universalEditor__activeSectionInline small {
+	overflow: hidden;
+	min-width: 0;
+	margin: 0;
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: inherit;
+	line-height: inherit;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.universalEditor__shellMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: flex-start;
+	justify-content: flex-end;
 }
 
 .universalEditor__backButton {
 	flex: 0 0 auto;
-	border: 1px solid var(--field-border, rgba(244, 236, 216, 0.22));
-	background: var(--field-bg, transparent);
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
 	color: var(--field-text, #f4ecd8);
 	cursor: pointer;
 	font: inherit;
@@ -32,13 +161,108 @@
 	padding: 6px 8px;
 }
 
-.universalEditor__backButton:hover {
-	background: var(--field-bg-strong, rgba(244, 236, 216, 0.12));
+.universalEditor__backButton:hover,
+.universalEditor__previewToggle:hover {
+	background: var(--field-bg-strong, var(--universal-editor-sticky-bg-hover));
 }
 
-.universalEditor__backButton:focus-visible {
+.universalEditor__backButton:focus-visible,
+.universalEditor__previewToggle:focus-visible {
 	outline: 2px solid var(--field-border-strong, currentColor);
 	outline-offset: 2px;
+}
+
+.universalEditor__status,
+.universalEditor__previewToggle {
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
+	color: var(--field-text, #f4ecd8);
+	font: inherit;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+	padding: 5px 7px;
+	text-transform: capitalize;
+}
+
+.universalEditor__status--valid {
+	color: #8bd7a6;
+}
+
+.universalEditor__status--warning {
+	color: var(--field-warning, #d7ad62);
+}
+
+.universalEditor__status--error {
+	color: var(--field-danger, #f29b8f);
+}
+
+.universalEditor__status--readonly {
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+}
+
+.universalEditor__previewToggle {
+	cursor: pointer;
+	text-transform: none;
+}
+
+.universalEditor__breadcrumbs {
+	grid-column: 1 / -1;
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	gap: 4px;
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
+	font-size: 11px;
+	line-height: 1.25;
+}
+
+.universalEditor__breadcrumbs span {
+	display: inline-flex;
+	gap: 4px;
+	min-width: 0;
+}
+
+.universalEditor__jsonPreview {
+	overflow: auto;
+	box-sizing: border-box;
+	max-height: 260px;
+	margin: 0 0 10px;
+	border: 1px solid var(--field-border, rgba(244, 236, 216, 0.22));
+	background: var(--field-bg-raised, rgba(244, 236, 216, 0.06));
+	color: var(--field-text, #f4ecd8);
+	font:
+		11px / 1.45 ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		Monaco,
+		Consolas,
+		"Liberation Mono",
+		"Courier New",
+		monospace;
+	padding: 10px;
+	white-space: pre-wrap;
+}
+
+@media (max-width: 680px) {
+	.universalEditor {
+		--universal-editor-section-sticky-top: 0px;
+	}
+
+	.universalEditor__shellHeader {
+		position: static;
+		grid-template-columns: 1fr;
+	}
+
+	.universalEditor__shellMeta {
+		justify-content: flex-start;
+	}
+
+	.universalEditor__shellCopy h2,
+	.universalEditor__shellCopy p,
+	.universalEditor__shellCopy small {
+		white-space: normal;
+	}
 }
 
 .universalEditor__childTitle {

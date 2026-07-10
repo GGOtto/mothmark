@@ -1,4 +1,5 @@
 import {TextFieldControlMetadata} from "@/components/editor/universal/TextFieldEditor";
+import type {EditorSummaryMetadata} from "@/types/universalEditorTypes";
 
 export type UniversalCondition =
 	| {
@@ -87,6 +88,60 @@ function stringifySummaryValue(value: unknown) {
 	if (value === undefined) return "";
 	if (typeof value === "string") return value.length ? value : "(empty)";
 	return String(value);
+}
+
+function getTemplateValue(value: unknown, path: string) {
+	return path.split(".").reduce<unknown>((currentValue, segment) => {
+		if (currentValue == null) return undefined;
+
+		if (segment === "length") {
+			return Array.isArray(currentValue) || typeof currentValue === "string"
+				? currentValue.length
+				: undefined;
+		}
+
+		if (isRecord(currentValue)) return currentValue[segment];
+		return undefined;
+	}, value);
+}
+
+function applySummaryTemplate(value: unknown, template: string) {
+	return template.replace(/\{([^}]+)\}/g, (_, rawPath: string) => {
+		const nextValue = getTemplateValue(value, rawPath.trim());
+		return nextValue == null ? "" : stringifySummaryValue(nextValue);
+	});
+}
+
+export function generateEditorSummary(
+	value: unknown,
+	summary?: EditorSummaryMetadata,
+	fallback?: string,
+) {
+	if (summary?.summary) return summary.summary;
+
+	if (summary?.summaryTemplate) {
+		const templatedSummary = applySummaryTemplate(value, summary.summaryTemplate).trim();
+		if (templatedSummary) return templatedSummary;
+	}
+
+	if (Array.isArray(value)) {
+		if (value.length === 0) return summary?.emptySummary ?? fallback ?? "No items yet";
+		if (summary?.mode === "deterministic" || summary?.enabled) return `${value.length} items`;
+	}
+
+	if (isRecord(value)) {
+		if (Object.keys(value).length === 0) {
+			return summary?.emptySummary ?? fallback ?? "No details yet";
+		}
+		if (summary?.mode === "deterministic" || summary?.enabled) {
+			const label = value.name ?? value.title ?? value.label ?? value.id;
+			if (label != null) return String(label);
+		}
+	}
+
+	if (value == null || value === "") return summary?.emptySummary ?? fallback;
+
+	return fallback;
 }
 
 export function createStableId(value: unknown, prefix = "copy") {

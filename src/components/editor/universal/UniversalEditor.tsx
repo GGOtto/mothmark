@@ -15,9 +15,11 @@ import type {
 	EditorControlContext,
 	EditorControlMetadata,
 	EditorControlProps,
+	EditorActiveSection,
 	EditorLinkOpenRequest,
 	EditorLinkRef,
 	EditorLinkTargetMetadata,
+	EditorNavigationEntry,
 	EditorPath,
 } from "@/types/universalEditorTypes";
 import {buildEditorRegistries} from "@/utils/buildEditorRegistries";
@@ -315,6 +317,24 @@ export function UniversalEditor<TValue>({
 	const activeView = viewStack[viewStack.length - 1];
 	const rootPathKey = JSON.stringify(path);
 	const activeViewPathKey = activeView ? JSON.stringify(activeView.path) : "root";
+	const [showJsonPreview, setShowJsonPreview] = useState(false);
+	const [activeSection, setActiveSection] = useState<EditorActiveSection | undefined>(undefined);
+	const currentEditorRootPath = activeView?.path ?? path;
+	const setEditorActiveSection = useCallback((nextSection?: EditorActiveSection) => {
+		setActiveSection((currentSection) => {
+			if (!currentSection && !nextSection) return currentSection;
+			if (!currentSection || !nextSection) return nextSection;
+
+			const isSameSection =
+				currentSection.id === nextSection.id &&
+				currentSection.title === nextSection.title &&
+				currentSection.description === nextSection.description &&
+				currentSection.countLabel === nextSection.countLabel &&
+				JSON.stringify(currentSection.path) === JSON.stringify(nextSection.path);
+
+			return isSameSection ? currentSection : nextSection;
+		});
+	}, []);
 
 	const emitChange = useCallback(
 		(nextValue: TValue) => {
@@ -333,6 +353,7 @@ export function UniversalEditor<TValue>({
 		}
 
 		scrollEditorTop(rootRef.current);
+		setActiveSection(undefined);
 	}, [activeViewPathKey]);
 
 	useEffect(() => {
@@ -412,6 +433,25 @@ export function UniversalEditor<TValue>({
 		[resolveEditorNavigationEntry],
 	);
 
+	const openChildEditor = useCallback((entry: EditorNavigationEntry) => {
+		const entryMetadata = entry.metadata
+			? ({
+					...entry.metadata,
+					type: "type" in entry.metadata ? entry.metadata.type : entry.metadata.control,
+				} as EditorControlMetadata)
+			: resolveEditorMetadata(entry.schema);
+
+		setViewStack((views) => [
+			...views,
+			{
+				...entry,
+				metadata: entryMetadata,
+				showBackLink: entry.showBackLink ?? true,
+				returnScrollPosition: captureScrollPosition(rootRef.current),
+			},
+		]);
+	}, []);
+
 	const createEditorLink = useCallback(
 		({
 			target,
@@ -470,10 +510,10 @@ export function UniversalEditor<TValue>({
 		[emitChange, schema, value],
 	);
 
-	function popEditorView() {
+	const popEditorView = useCallback(() => {
 		pendingBackScrollPositionRef.current = activeView?.returnScrollPosition;
 		setViewStack((views) => views.slice(0, -1));
-	}
+	}, [activeView?.returnScrollPosition]);
 
 	const resolveEditorLinkLabel = useCallback(
 		(ref: EditorLinkRef, target?: EditorLinkTargetMetadata) => {
@@ -568,23 +608,47 @@ export function UniversalEditor<TValue>({
 				isKnownFlag: (id) => registries.flags.some((option: EditorKeyOption) => option.key === id),
 			},
 			editorNavigation: {
+				openChildEditor,
+				goBack: popEditorView,
+				canGoBack: viewStack.length > 0,
+				breadcrumbs: [
+					{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
+					...viewStack.map((view) => ({
+						label: view.title ?? view.metadata?.title ?? "Child editor",
+						path: view.path,
+					})),
+				],
 				openEditorLink,
 				createEditorLink,
 				resolveEditorLinkLabel,
 				resolveEditorLinkDescription,
 			},
+			editorChrome: {
+				rootPath: currentEditorRootPath,
+				activeSection,
+				setActiveSection: setEditorActiveSection,
+			},
 		}),
 		[
+			activeSection,
 			appearance,
+			currentEditorRootPath,
 			disabled,
 			createEditorLink,
 			emitChange,
+			openChildEditor,
 			openEditorLink,
+			popEditorView,
+			metadata.shell?.title,
+			metadata.title,
+			path,
 			readonly,
 			registries,
 			resolveEditorLinkDescription,
 			resolveEditorLinkLabel,
+			setEditorActiveSection,
 			value,
+			viewStack,
 			world,
 		],
 	);
@@ -593,19 +657,87 @@ export function UniversalEditor<TValue>({
 	const renderedValue = activeView
 		? (getValueAtPath(value, activeView.path) ?? activeView.value)
 		: value;
+	const shellMetadata = renderedMetadata.shell;
+	const shellTitle = activeView?.title ?? shellMetadata?.title ?? renderedMetadata.title ?? "Editor";
+	const shellDescription =
+		activeView?.description ?? shellMetadata?.description ?? renderedMetadata.description;
+	const shellSummary = shellMetadata?.summary;
+	const shellStatus = readonly
+		? "readonly"
+		: (shellMetadata?.status ?? (activeView ? undefined : "draft"));
+	const breadcrumbs = [
+		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
+		...viewStack.map((view) => ({
+			label: view.title ?? view.metadata?.title ?? "Child editor",
+			path: view.path,
+		})),
+	];
+	const densityClass = `universalEditor--density-${shellMetadata?.density ?? "comfortable"}`;
+	const visibleActiveSection =
+		activeSection && JSON.stringify(activeSection.path) === JSON.stringify(renderedPath)
+			? activeSection
+			: undefined;
 
 	return (
-		<div ref={rootRef} className={["universalEditor", className ?? ""].filter(Boolean).join(" ")}>
-			{activeView?.showBackLink ? (
-				<div className="universalEditor__childBar">
-					<button className="universalEditor__backButton" type="button" onClick={popEditorView}>
-						{activeView.backLabel ?? "Back"}
-					</button>
-					<div className="universalEditor__childTitle">
-						<span>{activeView.title ?? renderedMetadata.title ?? "Editor"}</span>
-						{activeView.description ? <small>{activeView.description}</small> : null}
+		<div
+			ref={rootRef}
+			className={["universalEditor", densityClass, className ?? ""].filter(Boolean).join(" ")}
+		>
+			<div className="universalEditor__shellHeader">
+				<div className="universalEditor__shellMain">
+					{activeView?.showBackLink ? (
+						<button className="universalEditor__backButton" type="button" onClick={popEditorView}>
+							{activeView.backLabel ?? "Back"}
+						</button>
+					) : null}
+					<div className="universalEditor__shellCopy">
+						{shellMetadata?.eyebrow ? (
+							<div className="universalEditor__eyebrow">{shellMetadata.eyebrow}</div>
+						) : null}
+						<h2>{shellTitle}</h2>
+						{visibleActiveSection ? (
+							<div className="universalEditor__activeSectionInline">
+								<span>{visibleActiveSection.title}</span>
+								{visibleActiveSection.countLabel ? <em>{visibleActiveSection.countLabel}</em> : null}
+								{visibleActiveSection.description ? (
+									<small>{visibleActiveSection.description}</small>
+								) : null}
+							</div>
+						) : shellDescription ? (
+							<p>{shellDescription}</p>
+						) : null}
+						{shellSummary ? <small>{shellSummary}</small> : null}
 					</div>
 				</div>
+				<div className="universalEditor__shellMeta">
+					{shellStatus ? (
+						<span className={`universalEditor__status universalEditor__status--${shellStatus}`}>
+							{shellStatus}
+						</span>
+					) : null}
+					{shellMetadata?.showJsonPreview ? (
+						<button
+							className="universalEditor__previewToggle"
+							type="button"
+							onClick={() => setShowJsonPreview((isVisible) => !isVisible)}
+						>
+							{showJsonPreview ? "Hide JSON" : "JSON"}
+						</button>
+					) : null}
+				</div>
+				{breadcrumbs.length > 1 ? (
+					<nav className="universalEditor__breadcrumbs" aria-label="Editor breadcrumbs">
+						{breadcrumbs.map((crumb, index) => (
+							<span key={`${crumb.label}-${index}`}>
+								{index > 0 ? <span aria-hidden="true">/</span> : null}
+								{crumb.label}
+							</span>
+						))}
+					</nav>
+				) : null}
+			</div>
+			{showJsonPreview ? (
+				<pre className="universalEditor__jsonPreview">{JSON.stringify(renderedValue, null, 2)}</pre>
 			) : null}
 			<EditorControlRenderer
 				value={renderedValue}

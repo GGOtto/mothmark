@@ -2,7 +2,11 @@
 
 import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
-import {createStableId, generateConditionSummary} from "../../../utils/universalEditorUtils";
+import {
+	createStableId,
+	generateConditionSummary,
+	generateEditorSummary,
+} from "../../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ArrayEditor.scss";
@@ -18,6 +22,7 @@ export type ArrayFeatures = {
 	maxItems?: number;
 	getItemTitle?: string;
 	getItemSubtitle?: string;
+	getItemSummary?: string;
 	getItemBadge?: string;
 	getItemStatus?: "valid" | "warning" | "error";
 	confirmRemove?: boolean;
@@ -58,8 +63,18 @@ function templateValue(item: unknown, template?: string) {
 	if (typeof item === "object" && item !== null) {
 		return template.replace(/\{([^}]+)\}/g, (_, key: string) => {
 			const fieldValue = (item as Record<string, unknown>)[key];
-			if (key === "when" && typeof fieldValue === "object" && fieldValue !== null) {
-				return generateConditionSummary(fieldValue);
+			if (key === "when") {
+				if (Array.isArray(fieldValue)) {
+					if (fieldValue.length === 0) return "Always";
+					return generateConditionSummary({
+						type: "group",
+						operator: "all",
+						conditions: fieldValue,
+					});
+				}
+				if (typeof fieldValue === "object" && fieldValue !== null) {
+					return generateConditionSummary(fieldValue);
+				}
 			}
 			return fieldValue == null ? "" : String(fieldValue);
 		});
@@ -136,7 +151,10 @@ export function ArrayEditor({
 
 	function renderItem(item: unknown, index: number) {
 		const title = getItemTitle(item, index, metadata.features?.getItemTitle);
-		const subtitle = templateValue(item, metadata.features?.getItemSubtitle);
+		const subtitle =
+			templateValue(item, metadata.features?.getItemSummary) ||
+			templateValue(item, metadata.features?.getItemSubtitle) ||
+			generateEditorSummary(item, metadata.features?.itemMetadata?.summary);
 		const badge = templateValue(item, metadata.features?.getItemBadge);
 		const status = metadata.features?.getItemStatus;
 		const itemBody = metadata.features?.itemMetadata ? (
@@ -236,9 +254,21 @@ export function ArrayEditor({
 			description={metadata.description}
 			error={error}
 			warnings={warnings}
+			required={metadata.required}
+			disabled={isDisabled}
+			readonly={isReadonly}
 			appearance={appearance}
 			className={metadata.className}
 			testId={metadata.testId}
+			slots={{
+				summary: generateEditorSummary(
+					value,
+					metadata.summary,
+					value.length === 0
+						? (metadata.features?.emptyTitle ?? "No items yet")
+						: `${value.length} items`,
+				),
+			}}
 		>
 			<div className="arrayEditor">
 				<div className="arrayEditor__summary">{value.length} items</div>

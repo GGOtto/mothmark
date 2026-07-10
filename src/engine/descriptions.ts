@@ -1,21 +1,29 @@
 import type {Condition} from "@/schemas/conditionSchema";
-import type {Description} from "@/schemas/worldSchema";
+import type {Description} from "@/schemas/descriptionSchema";
 import type {GameState} from "./gameState";
 
 export function conditionsMatch(conditions: Condition[], gameState: GameState) {
-	return conditions.every((condition) => conditionMatches(condition, gameState));
+	return normalizeConditions(conditions).every((condition) =>
+		conditionMatches(condition, gameState),
+	);
 }
 
 export function getConditionKey(conditions: Condition[]) {
-	return conditions
+	return normalizeConditions(conditions)
 		.map((condition) => JSON.stringify(condition))
 		.sort()
 		.join("|");
 }
 
+function normalizeConditions(conditions: Condition[] | Condition | unknown): Condition[] {
+	if (Array.isArray(conditions)) return conditions;
+	if (conditions && typeof conditions === "object") return [conditions as Condition];
+	return [];
+}
+
 function conditionMatches(condition: Condition, gameState: GameState): boolean {
 	if (condition.type === "group") {
-		const matches = condition.conditions.map((childCondition) =>
+		const matches = normalizeConditions(condition.conditions).map((childCondition) =>
 			conditionMatches(childCondition, gameState),
 		);
 

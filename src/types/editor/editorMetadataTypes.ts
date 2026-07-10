@@ -130,9 +130,55 @@ export type EditorFieldLayoutMetadata = {
 	width?: "full" | "half" | "third" | "auto";
 };
 
+export type EditorFieldImportance = "primary" | "secondary" | "advanced" | "internal";
+
+export type EditorFieldPriority = {
+	order?: number;
+	group?: string;
+	pinned?: boolean;
+	importance?: EditorFieldImportance;
+};
+
+export type EditorDisclosure = {
+	defaultCollapsed?: boolean;
+	collapsible?: boolean;
+	preview?: "none" | "summary" | "count" | "first-item" | "custom";
+	advanced?: boolean;
+};
+
 export type EditorSummaryMetadata = {
 	enabled?: boolean;
 	mode?: "deterministic" | "preview";
+	summary?: string;
+	summaryTemplate?: string;
+	emptySummary?: string;
+	warningSummary?: string;
+};
+
+export type EditorFieldGroupMetadata = {
+	id: string;
+	title: string;
+	description?: string;
+	icon?: string;
+	defaultCollapsed?: boolean;
+	collapsible?: boolean;
+	importance?: EditorFieldImportance;
+	order?: number;
+};
+
+export type EditorDensity = "comfortable" | "compact";
+
+export type UniversalEditorShellMetadata = {
+	title?: string;
+	description?: string;
+	eyebrow?: string;
+	icon?: string;
+	summary?: string;
+	status?: "draft" | "valid" | "warning" | "error" | "readonly";
+	density?: EditorDensity;
+	showSearch?: boolean;
+	showOutline?: boolean;
+	showJsonPreview?: boolean;
 };
 
 export type EditorControlAppearance = {
@@ -209,6 +255,8 @@ export type EditorFieldMetadata = {
 
 	appearance?: EditorControlAppearance;
 	layout?: EditorFieldLayoutMetadata;
+	priority?: EditorFieldPriority;
+	disclosure?: EditorDisclosure;
 
 	options?: EditorOption[];
 	optionSource?: string;
@@ -225,6 +273,7 @@ export type EditorFieldMetadata = {
 	picker?: EditorPickerFeatures;
 
 	summary?: EditorSummaryMetadata;
+	shell?: UniversalEditorShellMetadata;
 
 	className?: string;
 	testId?: string;

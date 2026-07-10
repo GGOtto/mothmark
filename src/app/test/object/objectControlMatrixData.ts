@@ -56,6 +56,119 @@ const SETUPS = {
 			features: {...BASIC_METADATA.features, collapsible: true, defaultCollapsed: true},
 		},
 	},
+	sectioned: {
+		id: "sectioned",
+		value: {
+			id: "observatory",
+			name: "Observatory",
+			description: "A brass telescope faces a cloudy pane of glass.",
+			aliases: ["tower", "scope room"],
+			visible: true,
+			notes: "Used by the lantern puzzle.",
+			internalKey: "generated-observatory-001",
+		},
+		metadata: {
+			title: "Sectioned Room",
+			description: "Pinned, grouped, searchable object fields with advanced disclosure.",
+			summary: {
+				summaryTemplate: "{name} · {aliases.length} aliases",
+				emptySummary: "No room details yet",
+			},
+			features: {
+				showFieldCount: true,
+				showOutline: true,
+				searchable: true,
+				layout: "section",
+				groups: [
+					{
+						id: "identity",
+						title: "Identity",
+						description: "Names, IDs, aliases, and visibility.",
+						order: 10,
+					},
+					{
+						id: "content",
+						title: "Description",
+						description: "What the player sees and what authors need to remember.",
+						order: 20,
+					},
+					{
+						id: "advanced",
+						title: "Advanced",
+						description: "Generated or rarely edited details.",
+						defaultCollapsed: true,
+						importance: "advanced",
+						order: 90,
+					},
+				],
+				fields: [
+					{
+						key: "id",
+						metadata: {
+							type: "input",
+							title: "Room ID",
+							description: "Stable ID used by commands, exits, and references.",
+							required: true,
+							priority: {group: "identity", order: 10, pinned: true, importance: "primary"},
+							transform: "id",
+						},
+					},
+					{
+						key: "name",
+						metadata: {
+							type: "input",
+							title: "Name",
+							priority: {group: "identity", order: 20, pinned: true, importance: "primary"},
+						},
+					},
+					{
+						key: "aliases",
+						metadata: {
+							type: "string-list",
+							title: "Aliases",
+							priority: {group: "identity", order: 30, importance: "secondary"},
+							summary: {summaryTemplate: "{length} aliases", emptySummary: "No aliases yet"},
+						},
+						defaultValue: [],
+					},
+					{
+						key: "visible",
+						metadata: {
+							type: "toggle",
+							title: "Visible",
+							priority: {group: "identity", order: 40, importance: "secondary"},
+						},
+					},
+					{
+						key: "description",
+						metadata: {
+							type: "textarea",
+							title: "Default Description",
+							priority: {group: "content", order: 10, importance: "primary"},
+						},
+					},
+					{
+						key: "notes",
+						metadata: {
+							type: "textarea",
+							title: "Author Notes",
+							priority: {group: "content", order: 20, importance: "secondary"},
+						},
+					},
+					{
+						key: "internalKey",
+						metadata: {
+							type: "input",
+							title: "Internal Key",
+							description: "Rarely edited generated identifier.",
+							priority: {group: "advanced", order: 10, importance: "advanced"},
+							disclosure: {defaultCollapsed: true, advanced: true},
+						},
+					},
+				],
+			},
+		},
+	},
 	preview: {
 		id: "preview",
 		value: {id: "raw-room", exits: ["north", "east"], danger: 2},
@@ -112,6 +225,12 @@ export const objectControlMatrixVariants = [
 		"Collapsible object.",
 		{tone: "panel", chrome: "field", size: "sm"},
 		SETUPS.collapsed,
+	),
+	makeVariant(
+		"default-card-md-sectioned",
+		"Sectioned object with priority, outline, search, and advanced disclosure.",
+		{tone: "default", chrome: "card", size: "md"},
+		SETUPS.sectioned,
 	),
 	makeVariant(
 		"default-field-md-preview",

@@ -19,6 +19,11 @@ export const DescriptionSchema = editor.conditionalText(
 		variants: editor.array(ConditionalTextSchema, {
 			title: "Description Variants",
 			description: "Description variants that can replace the description if conditions are met.",
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				emptySummary: "No conditional variants",
+			},
 			emptyState: {
 				emptyTitle: "No variants",
 				emptyDescription: "Add conditional descriptions for alternate world states.",
@@ -26,6 +31,13 @@ export const DescriptionSchema = editor.conditionalText(
 			},
 			duplicate: {
 				duplicateBehavior: "exact",
+			},
+			features: {
+				addLabel: "Add variant",
+				getItemTitle: "Variant {text}",
+				getItemSummary: "{when}",
+				defaultCollapsedItems: true,
+				collapsibleItems: true,
 			},
 			layout: {
 				width: "full",

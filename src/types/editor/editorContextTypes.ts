@@ -98,6 +98,13 @@ export type EditorCreateLinkRequest = {
 };
 
 export type EditorNavigationContext = {
+	openChildEditor?: (entry: EditorNavigationEntry) => void;
+	goBack?: () => void;
+	canGoBack?: boolean;
+	breadcrumbs?: Array<{
+		label: string;
+		path?: EditorPath;
+	}>;
 	openEditorLink?: (request: EditorLinkOpenRequest) => void;
 	createEditorLink?: (request: EditorCreateLinkRequest) => EditorLinkRef | undefined;
 	resolveEditorLinkLabel?: (ref: EditorLinkRef, target?: EditorLinkTargetMetadata) => string;
@@ -105,6 +112,20 @@ export type EditorNavigationContext = {
 		ref: EditorLinkRef,
 		target?: EditorLinkTargetMetadata,
 	) => string | undefined;
+};
+
+export type EditorActiveSection = {
+	id: string;
+	title: string;
+	description?: string;
+	countLabel?: string;
+	path: EditorPath;
+};
+
+export type EditorChromeContext = {
+	rootPath?: EditorPath;
+	activeSection?: EditorActiveSection;
+	setActiveSection?: (section?: EditorActiveSection) => void;
 };
 
 export type EditorControlContext = {
@@ -126,6 +147,7 @@ export type EditorControlContext = {
 	getOptionList?: (source: string) => EditorOption[] | undefined;
 
 	editorNavigation?: EditorNavigationContext;
+	editorChrome?: EditorChromeContext;
 
 	readOnly?: boolean;
 	disabled?: boolean;

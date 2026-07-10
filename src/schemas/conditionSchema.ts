@@ -2042,31 +2042,68 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 export const ConditionalTextSchema = editorObject(
 	z.object({
 		text: editorRichText({
-			title: "Text",
+			title: "Variant Text",
 			description: "The text that will be used when all required conditions are met.",
 			placeholder: "Describe the conditional text...",
 			required: true,
+			priority: {
+				group: "text",
+				order: 10,
+				pinned: true,
+				importance: "primary",
+			},
 			layout: {
 				width: "full",
 				order: 1,
+				group: "text",
 			},
 		}).min(1),
 
 		when: editorConditionList(ConditionSchema, {
-			title: "When",
+			title: "Conditions",
 			description: "Conditions that must all be true before this text can be used.",
+			priority: {
+				group: "conditions",
+				order: 20,
+				importance: "primary",
+			},
+			disclosure: {
+				collapsible: true,
+				defaultCollapsed: false,
+				preview: "summary",
+			},
 			layout: {
 				width: "full",
 				order: 2,
+				group: "conditions",
 			},
 		}),
 	}),
 	{
 		title: "Conditional Text",
 		description: "Text that is only used when a set of conditions are met.",
+		features: {
+			layout: "section",
+			groups: [
+				{
+					id: "text",
+					title: "Variant Text",
+					description: "Player-facing text for this alternate description.",
+					order: 10,
+				},
+				{
+					id: "conditions",
+					title: "Conditions",
+					description: "When this variant is allowed to replace the default description.",
+					order: 20,
+				},
+			],
+		},
 		summary: {
 			enabled: true,
 			mode: "deterministic",
+			summaryTemplate: "{text}",
+			emptySummary: "No variant text yet",
 		},
 	},
 );

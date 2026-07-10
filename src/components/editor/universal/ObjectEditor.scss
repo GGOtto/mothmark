@@ -2,7 +2,7 @@
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
 	color: var(--field-text);
 	font-family: var(--field-font-family);
 }
@@ -54,7 +54,10 @@
 }
 
 .objectEditor__fields--section {
-	border-left-width: 3px;
+	gap: 10px;
+	border: 0;
+	background: transparent;
+	padding: 0;
 }
 
 .objectEditor__field {
@@ -133,6 +136,146 @@
 	padding: 6px 8px;
 }
 
+.objectEditor__toolbar {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.objectEditor__search {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 4px;
+	color: var(--field-muted);
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.objectEditor__search input {
+	box-sizing: border-box;
+	width: 100%;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	color: var(--field-text);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.2;
+	padding: 7px 8px;
+	text-transform: none;
+}
+
+.objectEditor__search input:focus {
+	border-color: var(--field-border-strong);
+	outline: 2px solid color-mix(in srgb, var(--field-border-strong) 44%, transparent);
+	outline-offset: 1px;
+}
+
+.objectEditor__outline {
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.objectEditor__outline button {
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1;
+	padding: 6px 7px;
+}
+
+.objectEditor__outline button:hover {
+	background: var(--field-bg-strong);
+}
+
+.objectEditor__section {
+	min-width: 0;
+	overflow: visible;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	scroll-margin-top: calc(var(--universal-editor-section-sticky-top, 0px) + 8px);
+}
+
+.objectEditor__sectionHeader {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 2px 8px;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	border-width: 0 1px 1px;
+	background: var(--field-bg-raised, var(--universal-editor-sticky-bg));
+	color: var(--field-text);
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.25;
+	padding: 7px 9px;
+}
+
+summary.objectEditor__sectionHeader {
+	cursor: pointer;
+}
+
+summary.objectEditor__sectionHeader:hover {
+	background: var(--field-bg-strong, var(--universal-editor-sticky-bg-hover));
+}
+
+.objectEditor__sectionTitle {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.objectEditor__sectionCount {
+	align-self: start;
+	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
+	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
+	color: var(--field-muted);
+	font-size: 10px;
+	font-weight: 500;
+	line-height: 1;
+	padding: 2px 5px;
+}
+
+.objectEditor__sectionDescription {
+	grid-column: 1 / -1;
+	color: var(--field-muted);
+	font-size: 10px;
+	font-weight: 400;
+	line-height: 1.3;
+}
+
+.objectEditor__sectionFields {
+	display: grid;
+	min-width: 0;
+	gap: 8px;
+	box-sizing: border-box;
+	padding: 9px;
+}
+
+.objectEditor__sectionFields--grid {
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.objectEditor__sectionFields--inline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.objectEditor__sectionFields--section {
+	grid-template-columns: 1fr;
+}
+
 .universalField--error .objectEditor__fields {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);
@@ -140,7 +283,8 @@
 
 .universalField--chrome-bare .objectEditor__count,
 .universalField--chrome-bare .objectEditor__summary,
-.universalField--chrome-bare .objectEditor__fields {
+.universalField--chrome-bare .objectEditor__fields,
+.universalField--chrome-bare .objectEditor__section {
 	border-color: transparent;
 	background: transparent;
 	padding-right: 0;
@@ -157,6 +301,7 @@
 
 @media (max-width: 680px) {
 	.objectEditor__fields--grid,
+	.objectEditor__sectionFields--grid,
 	.objectEditor__previewRow {
 		grid-template-columns: 1fr;
 	}
