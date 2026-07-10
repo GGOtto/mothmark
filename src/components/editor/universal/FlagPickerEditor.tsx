@@ -14,6 +14,7 @@ type FlagPickerOptionWithMeta = FlagOption & {
 export type FlagPickerFeatures = {
 	allowCreate?: boolean;
 	showUsageCount?: boolean;
+	showPreview?: boolean;
 	clearButton?: boolean;
 	filter?: "all" | "boolean" | "number" | "string";
 	options?: FlagPickerOptionWithMeta[];
@@ -44,6 +45,7 @@ export function FlagPickerEditor({
 	const registryOptions: FlagPickerOptionWithMeta[] = context.registerFlagPicker?.getFlags() ?? [];
 	const rawOptions: FlagPickerOptionWithMeta[] = metadata.features?.options ?? registryOptions;
 	const filter = metadata.features?.filter ?? "all";
+	const showPreview = metadata.features?.showPreview ?? true;
 	const options = rawOptions.filter((option) => filter === "all" || option.kind === filter);
 	const selectedOption: FlagPickerOptionWithMeta | undefined =
 		options.find((option) => option.id === value) ?? context.registerFlagPicker?.getFlagById(value);
@@ -118,7 +120,7 @@ export function FlagPickerEditor({
 					</div>
 				) : null}
 
-				{selectedOption || isUnknownValue ? (
+				{showPreview && (selectedOption || isUnknownValue) ? (
 					<div className="flagPickerEditor__preview">
 						<strong>{selectedOption?.label ?? value}</strong>
 						<span>{selectedOption?.description ?? (isUnknownValue ? "Unknown flag" : value)}</span>

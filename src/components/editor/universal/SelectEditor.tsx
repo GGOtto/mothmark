@@ -51,6 +51,7 @@ export function SelectEditor({
 	const canEdit = !isDisabled && !isReadonly;
 	const searchable = metadata.features.searchable || metadata.features.allowCreate;
 	const clearable = metadata.features.clearButton || metadata.features.clearable;
+	const showDescriptions = metadata.features.showDescriptions ?? true;
 	const filteredOptions = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
 		if (!normalizedQuery) return metadata.features.options;
@@ -146,7 +147,7 @@ export function SelectEditor({
 					</div>
 				) : null}
 
-				{selectedOption && (selectedOption.description || selectedOption.badge) ? (
+				{showDescriptions && selectedOption && (selectedOption.description || selectedOption.badge) ? (
 					<div className="selectEditor__selectedPreview">
 						<strong>{selectedOption.label}</strong>
 						{selectedOption.badge && hasBadges ? <span>{selectedOption.badge}</span> : null}

@@ -2,98 +2,237 @@
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 7px;
+	gap: 8px;
 	color: var(--field-text);
 	font-family: var(--field-font-family);
 }
 
-.conditionBuilderEditor__row,
-.conditionBuilderEditor__fields {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-	gap: 6px;
-}
-
 .conditionBuilderEditor__summary {
+	display: grid;
+	grid-template-columns: minmax(88px, max-content) minmax(0, 1fr);
+	align-items: start;
+	gap: 6px 10px;
+	box-sizing: border-box;
 	border: 1px solid var(--field-border);
 	background: var(--field-bg-raised);
 	color: var(--field-muted);
 	font-size: 11px;
 	line-height: 1.35;
-	padding: 6px 8px;
+	padding: 7px 8px;
+}
+
+.conditionBuilderEditor__summary span {
+	text-transform: uppercase;
+	letter-spacing: 0;
+	font-size: 10px;
+	font-weight: 700;
+}
+
+.conditionBuilderEditor__summary strong {
+	min-width: 0;
+	color: var(--field-text);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.conditionBuilderEditor__summary[data-empty="true"] strong {
+	color: var(--field-muted);
+}
+
+.conditionBuilderEditor__linkList {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.conditionBuilderEditor__linkItems {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 5px;
+	box-sizing: border-box;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+	padding: 6px;
+}
+
+.conditionBuilderEditor__linkItem {
+	display: flex;
+	min-width: 0;
+	align-items: stretch;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	font-size: 12px;
+	line-height: 1;
+}
+
+.conditionBuilderEditor__linkItem--active {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+}
+
+.conditionBuilderEditor__linkButton,
+.conditionBuilderEditor__linkRemoveButton {
+	display: inline-flex;
+	align-items: center;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+}
+
+.conditionBuilderEditor__linkButton {
+	min-width: 0;
+	flex: 1 1 auto;
+	justify-content: flex-start;
+	gap: 5px;
+	padding: 6px;
+	text-align: left;
+}
+
+.conditionBuilderEditor__linkText {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.conditionBuilderEditor__linkHint {
+	flex: 0 0 auto;
+	color: var(--field-muted);
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.conditionBuilderEditor__linkRemoveButton {
+	flex: 0 0 26px;
+	justify-content: center;
+	border-left: 1px solid var(--field-border);
+	color: var(--field-muted);
+	padding: 0;
+}
+
+.conditionBuilderEditor__linkButton:hover:not(:disabled),
+.conditionBuilderEditor__linkRemoveButton:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+	color: var(--field-text);
+}
+
+.conditionBuilderEditor__empty {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	border: 1px dashed var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	font-size: 12px;
+	line-height: 1.35;
+	padding: 10px;
+}
+
+.conditionBuilderEditor__empty strong {
+	color: var(--field-text);
+}
+
+.conditionBuilderEditor__item,
+.conditionBuilderEditor__group {
+	min-width: 0;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg);
+}
+
+.conditionBuilderEditor__itemHeader,
+.conditionBuilderEditor__groupHeader {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 6px;
+	border-bottom: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	padding: 7px 8px;
+}
+
+.conditionBuilderEditor__itemTitle {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.conditionBuilderEditor__itemTitle strong,
+.conditionBuilderEditor__groupHeader strong {
+	color: var(--field-text);
+	font-size: 11px;
+	line-height: 1.25;
+}
+
+.conditionBuilderEditor__itemTitle span,
+.conditionBuilderEditor__groupHeader span {
+	min-width: 0;
+	color: var(--field-muted);
+	font-size: 11px;
+	line-height: 1.35;
+	overflow-wrap: anywhere;
+}
+
+.conditionBuilderEditor__itemBody {
+	min-width: 0;
+	padding: 8px;
 }
 
 .conditionBuilderEditor__node {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
 }
 
-.conditionBuilderEditor label {
-	display: flex;
+.conditionBuilderEditor__node--group {
+	gap: 7px;
+}
+
+.conditionBuilderEditor__row,
+.conditionBuilderEditor__fields {
+	display: grid;
 	min-width: 0;
-	flex-direction: column;
-	gap: 3px;
-	color: var(--field-muted);
-	font-size: 11px;
-	line-height: 1.2;
+	grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+	gap: 7px;
 }
 
-.conditionBuilderEditor input,
-.conditionBuilderEditor select {
-	width: 100%;
-	min-width: 0;
-	box-sizing: border-box;
-	border: 1px solid var(--field-border);
-	border-radius: 0;
-	background: var(--field-bg);
-	color: var(--field-text);
-	font: inherit;
-	font-size: 12px;
-	line-height: 1.3;
-	outline: none;
-	padding: 6px 7px;
+.conditionBuilderEditor__fields {
+	align-items: start;
 }
 
-.conditionBuilderEditor input[type="checkbox"] {
-	width: 16px;
-	height: 16px;
-	padding: 0;
-	accent-color: var(--field-border-strong);
-}
-
-.conditionBuilderEditor input:hover:not(:disabled),
-.conditionBuilderEditor input:focus,
-.conditionBuilderEditor select:hover:not(:disabled),
-.conditionBuilderEditor select:focus {
-	border-color: var(--field-border-strong);
-	background: var(--field-bg-raised);
-}
-
-.conditionBuilderEditor__nested {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+.conditionBuilderEditor__group {
+	margin-left: min(calc(var(--condition-depth, 0) * 8px), 24px);
 }
 
 .conditionBuilderEditor__actions {
 	display: flex;
 	flex-wrap: wrap;
+	justify-content: flex-end;
 	gap: 6px;
+	border-top: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	padding: 7px;
 }
 
-.conditionBuilderEditor__nestedItem {
-	display: flex;
-	min-width: 0;
-	flex-direction: column;
+.conditionBuilderEditor__linkItems + .conditionBuilderEditor__actions {
+	border-top-width: 0;
+}
+
+.conditionBuilderEditor__actions button,
+.conditionBuilderEditor__iconButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	gap: 5px;
-	border: 1px solid var(--field-border);
-	background: var(--field-bg);
-	padding: 6px;
-}
-
-.conditionBuilderEditor button {
 	border: 1px solid var(--field-border);
 	background: var(--field-bg-raised);
 	color: var(--field-text);
@@ -101,35 +240,101 @@
 	font: inherit;
 	font-size: 11px;
 	line-height: 1;
+	min-height: 28px;
 	padding: 7px 8px;
 }
 
-.conditionBuilderEditor button:hover:not(:disabled) {
+.conditionBuilderEditor__actions button:hover:not(:disabled),
+.conditionBuilderEditor__iconButton:hover:not(:disabled) {
+	border-color: var(--field-border-strong);
 	background: var(--field-bg-strong);
 }
 
-.conditionBuilderEditor button:disabled {
+.conditionBuilderEditor__actions button:disabled,
+.conditionBuilderEditor__iconButton:disabled,
+.conditionBuilderEditor__linkButton:disabled,
+.conditionBuilderEditor__linkRemoveButton:disabled {
 	cursor: not-allowed;
 	opacity: 0.48;
 }
 
 .conditionBuilderEditor--compact {
-	gap: 5px;
+	gap: 6px;
 }
 
-.universalField--error .conditionBuilderEditor input,
-.universalField--error .conditionBuilderEditor select,
-.universalField--error .conditionBuilderEditor__nestedItem {
+.conditionBuilderEditor--compact .conditionBuilderEditor__summary,
+.conditionBuilderEditor--compact .conditionBuilderEditor__itemHeader,
+.conditionBuilderEditor--compact .conditionBuilderEditor__groupHeader,
+.conditionBuilderEditor--compact .conditionBuilderEditor__itemBody {
+	padding: 6px;
+}
+
+.conditionBuilderEditor--compact .conditionBuilderEditor__linkItems {
+	padding: 4px;
+}
+
+.conditionBuilderEditor--compact .conditionBuilderEditor__row,
+.conditionBuilderEditor--compact .conditionBuilderEditor__fields {
+	grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+	gap: 6px;
+}
+
+.universalField--error .conditionBuilderEditor__item,
+.universalField--error .conditionBuilderEditor__group,
+.universalField--error .conditionBuilderEditor__linkItems {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);
 }
 
-.universalField--chrome-bare .conditionBuilderEditor input,
-.universalField--chrome-bare .conditionBuilderEditor select,
-.universalField--chrome-bare .conditionBuilderEditor button,
-.universalField--chrome-bare .conditionBuilderEditor__nestedItem {
+.universalField--chrome-bare .conditionBuilderEditor__summary,
+.universalField--chrome-bare .conditionBuilderEditor__item,
+.universalField--chrome-bare .conditionBuilderEditor__group,
+.universalField--chrome-bare .conditionBuilderEditor__linkItems,
+.universalField--chrome-bare .conditionBuilderEditor__itemHeader,
+.universalField--chrome-bare .conditionBuilderEditor__groupHeader,
+.universalField--chrome-bare .conditionBuilderEditor__empty {
 	border-color: transparent;
 	background: transparent;
 	padding-right: 0;
 	padding-left: 0;
+}
+
+.universalField--chrome-bare .conditionBuilderEditor__actions {
+	border-color: transparent;
+	background: transparent;
+	padding-right: 0;
+	padding-left: 0;
+}
+
+.universalField--tone-quiet .conditionBuilderEditor__item,
+.universalField--tone-quiet .conditionBuilderEditor__group,
+.universalField--tone-quiet .conditionBuilderEditor__linkItems {
+	background: transparent;
+}
+
+.universalField--tone-panel .conditionBuilderEditor__item,
+.universalField--tone-panel .conditionBuilderEditor__group,
+.universalField--tone-panel .conditionBuilderEditor__linkItems {
+	background: var(--field-bg-raised);
+}
+
+@media (max-width: 520px) {
+	.conditionBuilderEditor__summary,
+	.conditionBuilderEditor__itemHeader,
+	.conditionBuilderEditor__groupHeader {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.conditionBuilderEditor__row,
+	.conditionBuilderEditor__fields {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.conditionBuilderEditor__actions {
+		justify-content: stretch;
+	}
+
+	.conditionBuilderEditor__actions button {
+		flex: 1 1 140px;
+	}
 }

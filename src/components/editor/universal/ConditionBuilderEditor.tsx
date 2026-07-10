@@ -1,5 +1,8 @@
 "use client";
 
+import {useState} from "react";
+import {Pencil, Plus, Trash2} from "lucide-react";
+import type {CSSProperties, ReactNode} from "react";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -17,6 +20,7 @@ export type ConditionValue = Record<string, unknown>;
 export type ConditionBuilderFeatures = {
 	allowGroups?: boolean;
 	allowNestedGroups?: boolean;
+	allowEmptyGroups?: boolean;
 	maxDepth?: number;
 	defaultGroupOperator?: "all" | "any" | "none";
 	allowedConditionTypes?: string[];
@@ -31,7 +35,11 @@ export type ConditionBuilderFeatures = {
 	operatorOptionSource?: string;
 	operatorOptionSourcesByType?: Record<string, string>;
 	showGeneratedSummary?: boolean;
+	showSummary?: boolean;
+	showNaturalLanguagePreview?: boolean;
 	compact?: boolean;
+	addConditionLabel?: string;
+	addGroupLabel?: string;
 };
 
 export type ConditionBuilderControlMetadata = EditorControlMetadata & {
@@ -45,23 +53,34 @@ export type ConditionBuilderEditorProps = EditorControlProps<
 >;
 
 const FALLBACK_CONDITION_TYPE_OPTIONS = [
-	{label: "Flag", value: "flag", description: "Compare a boolean flag."},
-	{label: "Counter", value: "counter", description: "Compare a numeric counter."},
-	{label: "Inventory", value: "inventory", description: "Check an item list."},
-	{label: "Current room", value: "current-room", description: "Check the player's room."},
-	{label: "Group", value: "group", description: "Nest multiple conditions."},
+	{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
+	{label: "Counter", value: "counter", description: "Compares a numeric counter."},
+	{label: "Current room", value: "current-room", description: "Checks where the player is."},
+	{label: "Inventory", value: "inventory", description: "Checks the player's inventory."},
+	{label: "Item location", value: "item-location", description: "Checks where an item exists."},
+	{label: "Object state", value: "object-state", description: "Checks object state."},
+	{label: "NPC", value: "npc", description: "Checks NPC state."},
+	{label: "Command history", value: "command-history", description: "Checks recent commands."},
+	{label: "Random chance", value: "random-chance", description: "Checks a probability."},
+	{label: "Quest", value: "quest", description: "Checks quest state."},
+	{label: "Scheduled event", value: "scheduled-event", description: "Checks scheduled event state."},
+	{label: "Turn", value: "turn", description: "Checks the global turn count."},
+	{
+		label: "Resolved target",
+		value: "resolved-target",
+		description: "Checks parsed command targets.",
+	},
+	{label: "Group", value: "group", description: "Nests multiple conditions."},
 ];
 
 const FALLBACK_GROUP_OPERATOR_OPTIONS = [
-	{label: "All conditions", value: "all", description: "Every child condition must pass."},
-	{label: "Any condition", value: "any", description: "At least one child condition must pass."},
-	{label: "No conditions", value: "none", description: "No child condition may pass."},
-];
-
-const FALLBACK_OPERATOR_OPTIONS = [
-	{label: "Is", value: "equals"},
-	{label: "Exists", value: "exists"},
-	{label: "Missing", value: "missing"},
+	{label: "All conditions pass", value: "all", description: "Every child condition must pass."},
+	{
+		label: "Any condition passes",
+		value: "any",
+		description: "At least one child condition must pass.",
+	},
+	{label: "No conditions pass", value: "none", description: "No child condition may pass."},
 ];
 
 const FALLBACK_COMPARISON_OPERATOR_OPTIONS = [
@@ -72,6 +91,126 @@ const FALLBACK_COMPARISON_OPERATOR_OPTIONS = [
 	{label: "Less than", value: "lt"},
 	{label: "Less than or equal to", value: "lte"},
 ];
+
+const FALLBACK_STRING_OPERATOR_OPTIONS = [
+	{label: "Equals", value: "eq"},
+	{label: "Does not equal", value: "neq"},
+	{label: "Includes", value: "includes"},
+	{label: "Starts with", value: "starts-with"},
+	{label: "Ends with", value: "ends-with"},
+];
+
+const FALLBACK_OPERATION_OPTIONS_BY_TYPE: Record<string, EditorSelectOption[]> = {
+	flag: [
+		{label: "Equals", value: "equals"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	counter: [
+		{label: "Compare", value: "compare"},
+		{label: "Between", value: "between"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	"current-room": [
+		{label: "Is", value: "is"},
+		{label: "Is not", value: "is-not"},
+		{label: "Has tag", value: "has-tag"},
+		{label: "Missing tag", value: "missing-tag"},
+	],
+	inventory: [
+		{label: "Has item", value: "has-item"},
+		{label: "Missing item", value: "missing-item"},
+		{label: "Has all items", value: "has-all-items"},
+		{label: "Has any item", value: "has-any-item"},
+		{label: "Contains tag", value: "contains-tag"},
+		{label: "Missing tag", value: "missing-tag"},
+		{label: "Count", value: "count"},
+		{label: "Tag count", value: "tag-count"},
+	],
+	"item-location": [
+		{label: "In inventory", value: "in-inventory"},
+		{label: "In current room", value: "in-current-room"},
+		{label: "In room", value: "in-room"},
+		{label: "On surface", value: "on-surface"},
+		{label: "In container", value: "in-container"},
+		{label: "Held by NPC", value: "held-by-npc"},
+		{label: "Hidden", value: "hidden"},
+		{label: "Destroyed", value: "destroyed"},
+		{label: "Visible", value: "visible"},
+		{label: "Reachable", value: "reachable"},
+	],
+	"object-state": [
+		{label: "Open", value: "open"},
+		{label: "Closed", value: "closed"},
+		{label: "Locked", value: "locked"},
+		{label: "Unlocked", value: "unlocked"},
+		{label: "Lit", value: "lit"},
+		{label: "Unlit", value: "unlit"},
+		{label: "Broken", value: "broken"},
+		{label: "Intact", value: "intact"},
+		{label: "Clean", value: "clean"},
+		{label: "Dirty", value: "dirty"},
+		{label: "Contains item", value: "contains-item"},
+		{label: "Missing item", value: "missing-item"},
+		{label: "Surface has item", value: "surface-has-item"},
+		{label: "Surface missing item", value: "surface-missing-item"},
+		{label: "Empty", value: "empty"},
+		{label: "Custom", value: "custom"},
+	],
+	npc: [
+		{label: "In current room", value: "in-current-room"},
+		{label: "In room", value: "in-room"},
+		{label: "Has item", value: "has-item"},
+		{label: "Mood is", value: "mood-is"},
+		{label: "Trust", value: "trust"},
+		{label: "Met player", value: "met-player"},
+		{label: "Not met player", value: "not-met-player"},
+		{label: "Hostile", value: "hostile"},
+		{label: "Friendly", value: "friendly"},
+		{label: "Asleep", value: "asleep"},
+		{label: "Awake", value: "awake"},
+		{label: "Can see player", value: "can-see-player"},
+		{label: "Cannot see player", value: "cannot-see-player"},
+	],
+	"command-history": [
+		{label: "Previous command was", value: "previous-command-was"},
+		{label: "Previous raw command was", value: "previous-raw-command-was"},
+		{label: "Previous target was", value: "previous-target-was"},
+		{label: "Used command before", value: "used-command-before"},
+		{label: "Never used command", value: "never-used-command"},
+		{label: "Used command within turns", value: "used-command-within-turns"},
+		{label: "Repeated command", value: "repeated-command"},
+		{label: "Sequence", value: "sequence"},
+	],
+	quest: [
+		{label: "Not started", value: "not-started"},
+		{label: "Active", value: "active"},
+		{label: "Completed", value: "completed"},
+		{label: "Failed", value: "failed"},
+		{label: "Objective complete", value: "objective-complete"},
+		{label: "Objective incomplete", value: "objective-incomplete"},
+	],
+	"scheduled-event": [
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+		{label: "Event scheduled", value: "event-scheduled"},
+		{label: "Event not scheduled", value: "event-not-scheduled"},
+		{label: "Tag scheduled", value: "tag-scheduled"},
+		{label: "Tag not scheduled", value: "tag-not-scheduled"},
+	],
+	turn: [
+		{label: "Compare", value: "compare"},
+		{label: "Multiple of", value: "multiple-of"},
+	],
+	"resolved-target": [
+		{label: "Object is", value: "object-is"},
+		{label: "Target is", value: "target-is"},
+		{label: "Connector is", value: "connector-is"},
+		{label: "Topic is", value: "topic-is"},
+		{label: "Direction is", value: "direction-is"},
+	],
+};
 
 function optionList(
 	context: EditorControlContext,
@@ -116,7 +255,7 @@ function groupOperatorOptions(
 	);
 }
 
-function operatorOptionsForType(
+function operationOptionsForType(
 	type: string,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
@@ -125,7 +264,7 @@ function operatorOptionsForType(
 		context,
 		metadata.features?.operatorOptionSourcesByType?.[type] ?? metadata.features?.operatorOptionSource,
 		metadata.features?.operatorOptionsByType?.[type] ?? metadata.features?.operatorOptions,
-		FALLBACK_OPERATOR_OPTIONS,
+		FALLBACK_OPERATION_OPTIONS_BY_TYPE[type] ?? [{label: "Equals", value: "equals"}],
 	);
 }
 
@@ -141,10 +280,20 @@ function comparisonOperatorOptions(
 	);
 }
 
+function shouldShowSummary(metadata: ConditionBuilderControlMetadata) {
+	return (
+		metadata.features?.showGeneratedSummary ??
+		metadata.features?.showSummary ??
+		metadata.features?.showNaturalLanguagePreview ??
+		true
+	);
+}
+
 export function createDefaultCondition(type = "flag"): ConditionValue {
 	if (type === "group") {
 		return {
 			type: "group",
+			kind: "group",
 			operator: "all",
 			conditions: [createDefaultCondition("flag")],
 		};
@@ -160,21 +309,20 @@ export function createDefaultCondition(type = "flag"): ConditionValue {
 		};
 	}
 
-	if (type === "inventory") {
-		return {
-			type,
-			operation: "has-item",
-			itemId: "",
-		};
-	}
-
-	if (type === "current-room") {
-		return {
-			type,
-			operation: "is",
-			roomId: "",
-		};
-	}
+	if (type === "current-room") return {type, operation: "is", roomId: ""};
+	if (type === "inventory") return {type, operation: "has-item", itemId: ""};
+	if (type === "item-location") return {type, operation: "in-inventory", itemId: ""};
+	if (type === "object-state") return {type, operation: "open", objectId: ""};
+	if (type === "npc") return {type, operation: "in-current-room", npcId: ""};
+	if (type === "command-history") return {type, operation: "previous-command-was", commandName: ""};
+	if (type === "random-chance") return {type, chance: 0.5, seedKey: "", invert: false};
+	if (type === "quest") return {type, operation: "active", questId: ""};
+	if (type === "scheduled-event") return {type, operation: "exists", instanceId: ""};
+	if (type === "turn") return {type, operation: "compare", operator: "eq", value: 0};
+	if (type === "resolved-target") return {type, operation: "object-is", objectId: ""};
+	if (type === "has-item") return {type, itemId: "", negate: false};
+	if (type === "room-history") return {type, roomId: "", history: "visited", value: true};
+	if (type === "feature-examined") return {type, roomId: "", featureId: "", value: true};
 
 	return {
 		type,
@@ -195,6 +343,56 @@ function normalizeGroupOperator(operator: unknown): "all" | "any" | "none" {
 	return "all";
 }
 
+function normalizeCondition(condition: ConditionValue): ConditionValue {
+	if (condition.kind === "group" || condition.type === "group") {
+		return {
+			...condition,
+			kind: "group",
+			type: "group",
+			operator: normalizeGroupOperator(condition.operator),
+			conditions: Array.isArray(condition.conditions) ? condition.conditions : [],
+		};
+	}
+
+	const type = getConditionType(condition);
+	return {
+		...createDefaultCondition(type),
+		...condition,
+		type,
+	};
+}
+
+function groupTitle(operator: unknown) {
+	const normalized = normalizeGroupOperator(operator);
+	if (normalized === "any") return "Any of these can pass";
+	if (normalized === "none") return "None of these may pass";
+	return "All of these must pass";
+}
+
+function typeLabel(
+	type: string,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+) {
+	return (
+		conditionTypeOptions(metadata, context).find((option) => option.value === type)?.label ?? type
+	);
+}
+
+function conditionListName(
+	condition: ConditionValue,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	index: number,
+) {
+	const explicitName = condition.name ?? condition.label ?? condition.title;
+	if (typeof explicitName === "string" && explicitName.trim().length > 0) return explicitName.trim();
+
+	const type = getConditionType(condition);
+	if (type === "group") return `Group ${index + 1}`;
+	return `${typeLabel(type, metadata, context)} ${index + 1}`;
+}
+
 export function ConditionBuilderEditor({
 	value,
 	onChange,
@@ -210,14 +408,23 @@ export function ConditionBuilderEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
+	const addConditionLabel = metadata.features?.addConditionLabel ?? "Add condition";
+	const addGroupLabel = metadata.features?.addGroupLabel ?? "Add group";
+	const className = [
+		"conditionBuilderEditor",
+		metadata.features?.compact ? "conditionBuilderEditor--compact" : "",
+	]
+		.filter(Boolean)
+		.join(" ");
 
 	if (Array.isArray(value)) {
-		const conditions = value as ConditionValue[];
+		const conditions = value.map((condition) => normalizeCondition(condition as ConditionValue));
 		const summaryCondition = {
 			type: "group",
 			operator: "all",
 			conditions,
 		};
+		const canAddGroup = canEdit && (metadata.features?.allowGroups ?? true);
 
 		function updateCondition(index: number, nextCondition: ConditionValue) {
 			onChange(
@@ -232,9 +439,10 @@ export function ConditionBuilderEditor({
 			onChange(conditions.filter((_, conditionIndex) => conditionIndex !== index));
 		}
 
-		function addCondition() {
+		function addCondition(type: "flag" | "group") {
 			if (!canEdit) return;
-			onChange([...conditions, createDefaultCondition("flag")]);
+			if (type === "group" && !canAddGroup) return;
+			onChange([...conditions, createDefaultCondition(type)]);
 		}
 
 		return (
@@ -247,47 +455,40 @@ export function ConditionBuilderEditor({
 				className={metadata.className}
 				testId={metadata.testId}
 			>
-				<div
-					className={[
-						"conditionBuilderEditor",
-						metadata.features?.compact ? "conditionBuilderEditor--compact" : "",
-					]
-						.filter(Boolean)
-						.join(" ")}
-				>
-					{(metadata.features?.showGeneratedSummary ?? true) ? (
-						<div className="conditionBuilderEditor__summary">
-							{conditions.length > 0 ? generateConditionSummary(summaryCondition) : "Always"}
-						</div>
+				<div className={className}>
+					{shouldShowSummary(metadata) ? (
+						<ConditionSummary
+							title="Allowed when"
+							summary={conditions.length > 0 ? generateConditionSummary(summaryCondition) : "Always"}
+							isEmpty={conditions.length === 0}
+						/>
 					) : null}
-					<div className="conditionBuilderEditor__nested">
-						{conditions.map((condition, index) => (
-							<div key={index} className="conditionBuilderEditor__nestedItem">
-								<ConditionNodeEditor
-									value={normalizeCondition(condition)}
-									onChange={(nextCondition) => updateCondition(index, nextCondition)}
-									metadata={metadata}
-									path={[...path, index]}
-									depth={0}
-									disabled={disabled}
-									readonly={readonly}
-									context={context}
-								/>
-								<button type="button" disabled={!canEdit} onClick={() => removeCondition(index)}>
-									Remove
-								</button>
-							</div>
-						))}
-						<div className="conditionBuilderEditor__actions">
-							<button type="button" disabled={!canEdit} onClick={addCondition}>
-								Add condition
-							</button>
-						</div>
-					</div>
+
+					<ConditionLinkList
+						conditions={conditions}
+						onUpdateCondition={updateCondition}
+						onRemoveCondition={removeCondition}
+						metadata={metadata}
+						path={path}
+						depth={0}
+						canEdit={canEdit}
+						disabled={disabled}
+						readonly={readonly}
+						context={context}
+						emptyState={<ConditionEmptyState />}
+						addConditionLabel={addConditionLabel}
+						addGroupLabel={addGroupLabel}
+						canAddCondition={canEdit}
+						canAddGroup={canAddGroup}
+						onAddCondition={() => addCondition("flag")}
+						onAddGroup={() => addCondition("group")}
+					/>
 				</div>
 			</FieldShell>
 		);
 	}
+
+	const condition = normalizeCondition(value);
 
 	return (
 		<FieldShell
@@ -299,21 +500,12 @@ export function ConditionBuilderEditor({
 			className={metadata.className}
 			testId={metadata.testId}
 		>
-			<div
-				className={[
-					"conditionBuilderEditor",
-					metadata.features?.compact ? "conditionBuilderEditor--compact" : "",
-				]
-					.filter(Boolean)
-					.join(" ")}
-			>
-				{(metadata.features?.showGeneratedSummary ?? true) ? (
-					<div className="conditionBuilderEditor__summary">
-						{generateConditionSummary(normalizeCondition(value))}
-					</div>
+			<div className={className}>
+				{shouldShowSummary(metadata) ? (
+					<ConditionSummary title="Allowed when" summary={generateConditionSummary(condition)} />
 				) : null}
 				<ConditionNodeEditor
-					value={normalizeCondition(value)}
+					value={condition}
 					onChange={onChange}
 					metadata={metadata}
 					path={path}
@@ -327,18 +519,216 @@ export function ConditionBuilderEditor({
 	);
 }
 
-function normalizeCondition(condition: ConditionValue): ConditionValue {
-	if (condition.kind === "group" || condition.type === "group") {
-		return {
-			...condition,
-			kind: "group",
-			type: "group",
-			operator: normalizeGroupOperator(condition.operator),
-			conditions: Array.isArray(condition.conditions) ? condition.conditions : [],
-		};
+function ConditionSummary({
+	title,
+	summary,
+	isEmpty,
+}: {
+	title: string;
+	summary: string;
+	isEmpty?: boolean;
+}) {
+	return (
+		<div className="conditionBuilderEditor__summary" data-empty={isEmpty || undefined}>
+			<span>{title}</span>
+			<strong>{summary}</strong>
+		</div>
+	);
+}
+
+function ConditionEmptyState() {
+	return (
+		<div className="conditionBuilderEditor__empty">
+			<strong>No conditions yet</strong>
+			<span>This rule is currently always allowed. Add a condition to make it conditional.</span>
+		</div>
+	);
+}
+
+function ConditionLinkList({
+	conditions,
+	onUpdateCondition,
+	onRemoveCondition,
+	metadata,
+	path,
+	depth,
+	canEdit,
+	disabled,
+	readonly,
+	context,
+	emptyState,
+	addConditionLabel,
+	addGroupLabel,
+	canAddCondition,
+	canAddGroup,
+	onAddCondition,
+	onAddGroup,
+	groupTitle,
+}: {
+	conditions: ConditionValue[];
+	onUpdateCondition: (index: number, nextCondition: ConditionValue) => void;
+	onRemoveCondition: (index: number) => void;
+	metadata: ConditionBuilderControlMetadata;
+	path: Array<string | number>;
+	depth: number;
+	canEdit: boolean;
+	disabled?: boolean;
+	readonly?: boolean;
+	context: ConditionBuilderEditorProps["context"];
+	emptyState: ReactNode;
+	addConditionLabel: string;
+	addGroupLabel: string;
+	canAddCondition: boolean;
+	canAddGroup: boolean;
+	onAddCondition: () => void;
+	onAddGroup: () => void;
+	groupTitle?: string;
+}) {
+	const [selectedIndex, setSelectedIndex] = useState(0);
+	const safeSelectedIndex =
+		conditions.length > 0 ? Math.min(selectedIndex, conditions.length - 1) : 0;
+	const selectedCondition = conditions[safeSelectedIndex];
+
+	function removeCondition(index: number) {
+		onRemoveCondition(index);
+		setSelectedIndex((currentIndex) => {
+			if (conditions.length <= 1) return 0;
+			if (currentIndex > index) return currentIndex - 1;
+			if (currentIndex === index) return Math.max(0, Math.min(index, conditions.length - 2));
+			return currentIndex;
+		});
 	}
 
-	return condition.kind ? condition : createDefaultCondition(getConditionType(condition));
+	function addAndSelect(add: () => void) {
+		add();
+		setSelectedIndex(conditions.length);
+	}
+
+	return (
+		<div className="conditionBuilderEditor__linkList">
+			<div className="conditionBuilderEditor__linkItems">
+				{conditions.length === 0 ? emptyState : null}
+				{conditions.map((condition, index) => {
+					const name = conditionListName(condition, metadata, context, index);
+					const isSelected = index === safeSelectedIndex;
+
+					return (
+						<div
+							key={index}
+							className={[
+								"conditionBuilderEditor__linkItem",
+								isSelected ? "conditionBuilderEditor__linkItem--active" : "",
+							]
+								.filter(Boolean)
+								.join(" ")}
+						>
+							<button
+								className="conditionBuilderEditor__linkButton"
+								type="button"
+								aria-pressed={isSelected}
+								onClick={() => setSelectedIndex(index)}
+							>
+								<Pencil size={13} aria-hidden="true" />
+								<span className="conditionBuilderEditor__linkText">{name}</span>
+								<span className="conditionBuilderEditor__linkHint">{isSelected ? "Editing" : "Edit"}</span>
+							</button>
+							<button
+								className="conditionBuilderEditor__linkRemoveButton"
+								type="button"
+								disabled={!canEdit}
+								aria-label={`Remove ${name}`}
+								title={`Remove ${name}`}
+								onClick={() => removeCondition(index)}
+							>
+								<Trash2 size={13} aria-hidden="true" />
+							</button>
+						</div>
+					);
+				})}
+			</div>
+
+			<ConditionActions
+				addConditionLabel={addConditionLabel}
+				addGroupLabel={addGroupLabel}
+				canAddCondition={canAddCondition}
+				canAddGroup={canAddGroup}
+				onAddCondition={() => addAndSelect(onAddCondition)}
+				onAddGroup={() => addAndSelect(onAddGroup)}
+				groupTitle={groupTitle}
+			/>
+
+			{selectedCondition ? (
+				<ConditionItemShell
+					title={conditionListName(selectedCondition, metadata, context, safeSelectedIndex)}
+					summary={generateConditionSummary(selectedCondition)}
+				>
+					<ConditionNodeEditor
+						value={selectedCondition}
+						onChange={(nextCondition) => onUpdateCondition(safeSelectedIndex, nextCondition)}
+						metadata={metadata}
+						path={[...path, safeSelectedIndex]}
+						depth={depth}
+						disabled={disabled}
+						readonly={readonly}
+						context={context}
+					/>
+				</ConditionItemShell>
+			) : null}
+		</div>
+	);
+}
+
+function ConditionActions({
+	addConditionLabel,
+	addGroupLabel,
+	canAddCondition,
+	canAddGroup,
+	onAddCondition,
+	onAddGroup,
+	groupTitle,
+}: {
+	addConditionLabel: string;
+	addGroupLabel: string;
+	canAddCondition: boolean;
+	canAddGroup: boolean;
+	onAddCondition: () => void;
+	onAddGroup: () => void;
+	groupTitle?: string;
+}) {
+	return (
+		<div className="conditionBuilderEditor__actions">
+			<button type="button" disabled={!canAddCondition} onClick={onAddCondition}>
+				<Plus size={14} aria-hidden="true" />
+				<span>{addConditionLabel}</span>
+			</button>
+			<button type="button" disabled={!canAddGroup} title={groupTitle} onClick={onAddGroup}>
+				<Plus size={14} aria-hidden="true" />
+				<span>{addGroupLabel}</span>
+			</button>
+		</div>
+	);
+}
+
+function ConditionItemShell({
+	title,
+	summary,
+	children,
+}: {
+	title: string;
+	summary: string;
+	children: ReactNode;
+}) {
+	return (
+		<div className="conditionBuilderEditor__item">
+			<div className="conditionBuilderEditor__itemHeader">
+				<div className="conditionBuilderEditor__itemTitle">
+					<strong>{title}</strong>
+					<span>{summary}</span>
+				</div>
+			</div>
+			<div className="conditionBuilderEditor__itemBody">{children}</div>
+		</div>
+	);
 }
 
 type ConditionNodeEditorProps = {
@@ -376,6 +766,11 @@ function ConditionNodeEditor({
 	const availableTypes = conditionTypeOptions(metadata, context).filter(
 		(option) => option.value !== "group" || canAddGroup || isGroup,
 	);
+	const addConditionLabel = metadata.features?.addConditionLabel ?? "Add condition";
+	const addGroupLabel = metadata.features?.addGroupLabel ?? "Add group";
+	const childConditions = Array.isArray(value.conditions)
+		? (value.conditions as ConditionValue[]).map(normalizeCondition)
+		: [];
 
 	function updateField(key: string, nextValue: unknown) {
 		onChange({
@@ -385,9 +780,9 @@ function ConditionNodeEditor({
 	}
 
 	function addChild(type: "flag" | "group") {
-		const conditions = Array.isArray(value.conditions) ? value.conditions : [];
+		if (type === "group" && !canAddGroup) return;
 		updateField("conditions", [
-			...conditions,
+			...childConditions,
 			type === "group"
 				? {
 						...createDefaultCondition("group"),
@@ -398,41 +793,51 @@ function ConditionNodeEditor({
 	}
 
 	function updateChild(index: number, nextValue: ConditionValue) {
-		const conditions = Array.isArray(value.conditions) ? value.conditions : [];
 		updateField(
 			"conditions",
-			conditions.map((condition, conditionIndex) =>
+			childConditions.map((condition, conditionIndex) =>
 				conditionIndex === index ? nextValue : condition,
 			),
 		);
 	}
 
 	function removeChild(index: number) {
-		const conditions = Array.isArray(value.conditions) ? value.conditions : [];
 		updateField(
 			"conditions",
-			conditions.filter((_, conditionIndex) => conditionIndex !== index),
+			childConditions.filter((_, conditionIndex) => conditionIndex !== index),
 		);
 	}
 
 	return (
-		<div className="conditionBuilderEditor__node">
+		<div
+			className={[
+				"conditionBuilderEditor__node",
+				isGroup ? "conditionBuilderEditor__node--group" : "conditionBuilderEditor__node--leaf",
+			]
+				.filter(Boolean)
+				.join(" ")}
+			style={{"--condition-depth": depth} as CSSProperties}
+		>
 			<div className="conditionBuilderEditor__row">
-				{renderChildControl({
-					type: "select",
+				{renderTextField(
+					"name",
+					String(value.name ?? value.label ?? value.title ?? ""),
+					"Name in list",
+					updateField,
+					metadata,
+					path,
+					disabled,
+					readonly,
+					context,
+					"Shown in the condition list",
+				)}
+				{renderSelect({
 					childKey: "conditionType",
 					value: type,
-					onChange: (nextType) => onChange(createDefaultCondition(nextType)),
-					metadata: {
-						title: "Type",
-						appearance: {chrome: "inline", size: "sm"},
-						features: {
-							options: availableTypes,
-							showDescriptions: true,
-							searchable: availableTypes.length > 6,
-						},
-					},
-					parentMetadata: metadata,
+					onChange: (nextType) => onChange(createDefaultCondition(String(nextType))),
+					title: "Type",
+					options: availableTypes,
+					metadata,
 					path: [...path, "type"],
 					disabled,
 					readonly,
@@ -440,20 +845,13 @@ function ConditionNodeEditor({
 				})}
 
 				{isGroup
-					? renderChildControl({
-							type: "select",
+					? renderSelect({
 							childKey: "groupOperator",
 							value: normalizeGroupOperator(value.operator),
 							onChange: (nextOperator) => updateField("operator", nextOperator),
-							metadata: {
-								title: "Operator",
-								appearance: {chrome: "inline", size: "sm"},
-								features: {
-									options: groupOperatorOptions(metadata, context),
-									showDescriptions: true,
-								},
-							},
-							parentMetadata: metadata,
+							title: "Group logic",
+							options: groupOperatorOptions(metadata, context),
+							metadata,
 							path: [...path, "operator"],
 							disabled,
 							readonly,
@@ -463,37 +861,34 @@ function ConditionNodeEditor({
 			</div>
 
 			{isGroup ? (
-				<div className="conditionBuilderEditor__nested">
-					{(Array.isArray(value.conditions) ? value.conditions : []).map((condition, index) => (
-						<div key={index} className="conditionBuilderEditor__nestedItem">
-							<ConditionNodeEditor
-								value={normalizeCondition(condition as ConditionValue)}
-								onChange={(nextCondition) => updateChild(index, nextCondition)}
-								metadata={metadata}
-								path={[...path, "conditions", index]}
-								depth={depth + 1}
-								disabled={disabled}
-								readonly={readonly}
-								context={context}
-							/>
-							<button type="button" disabled={!canEdit} onClick={() => removeChild(index)}>
-								Remove
-							</button>
-						</div>
-					))}
-					<div className="conditionBuilderEditor__actions">
-						<button type="button" disabled={!canEdit} onClick={() => addChild("flag")}>
-							Add condition
-						</button>
-						<button
-							type="button"
-							disabled={!canAddGroup}
-							title={!canAddGroup && depth >= maxDepth ? "Maximum nesting depth reached." : undefined}
-							onClick={() => addChild("group")}
-						>
-							Add group
-						</button>
+				<div className="conditionBuilderEditor__group">
+					<div className="conditionBuilderEditor__groupHeader">
+						<strong>{groupTitle(value.operator)}</strong>
+						<span>
+							{childConditions.length} condition{childConditions.length === 1 ? "" : "s"}
+						</span>
 					</div>
+
+					<ConditionLinkList
+						conditions={childConditions}
+						onUpdateCondition={updateChild}
+						onRemoveCondition={removeChild}
+						metadata={metadata}
+						path={[...path, "conditions"]}
+						depth={depth + 1}
+						canEdit={canEdit}
+						disabled={disabled}
+						readonly={readonly}
+						context={context}
+						emptyState={<ConditionEmptyState />}
+						addConditionLabel={addConditionLabel}
+						addGroupLabel={addGroupLabel}
+						canAddCondition={canEdit}
+						canAddGroup={canAddGroup}
+						groupTitle={!canAddGroup && depth >= maxDepth ? "Maximum nesting depth reached." : undefined}
+						onAddCondition={() => addChild("flag")}
+						onAddGroup={() => addChild("group")}
+					/>
 				</div>
 			) : (
 				<ConditionLeafFields
@@ -528,147 +923,1321 @@ function ConditionLeafFields({
 	context: ConditionBuilderEditorProps["context"];
 }) {
 	const type = getConditionType(value);
-	const operatorOptions = operatorOptionsForType(type, metadata, context);
-	const comparisonOptions = comparisonOperatorOptions(metadata, context);
-	const hasComparisonOperator =
-		value.operator !== undefined ||
-		(type === "counter" && String(value.operation ?? "") === "compare") ||
-		(type === "inventory" && ["count", "tag-count"].includes(String(value.operation ?? "")));
 
 	if (type === "flag") {
-		const operatorOptions = operatorOptionsForType(type, metadata, context);
 		const operation = String(value.operation ?? "equals");
 
 		return (
 			<div className="conditionBuilderEditor__fields">
-				{renderChildControl({
-					type: "select",
-					childKey: "operation",
-					value: operation,
-					onChange: (nextValue) => onChange("operation", nextValue),
-					metadata: {
-						title: "Operation",
-						appearance: {chrome: "inline", size: "sm"},
-						features: {options: operatorOptions, searchable: operatorOptions.length > 6},
-					},
-					parentMetadata: metadata,
-					path: [...path, "operation"],
-					disabled,
-					readonly,
-					context,
-				})}
-				{renderChildControl({
-					type: "flag-picker",
-					childKey: "flag",
-					value: String(value.flag ?? ""),
-					onChange: (nextValue) => onChange("flag", nextValue),
-					metadata: {
-						title: "Flag",
-						appearance: {chrome: "inline", size: "sm"},
-						features: {allowCreate: true, clearButton: true},
-					},
-					parentMetadata: metadata,
-					path: [...path, "flag"],
-					disabled,
-					readonly,
-					context,
-				})}
+				{renderOperationSelect(type, operation, onChange, metadata, path, disabled, readonly, context)}
+				{renderFlagField(value, onChange, metadata, path, disabled, readonly, context)}
 				{operation === "equals"
-					? renderChildControl({
-							type: "toggle",
-							childKey: "value",
-							value: Boolean(value.value ?? true),
-							onChange: (nextValue) => onChange("value", nextValue),
-							metadata: {
-								title: "Expected",
-								appearance: {chrome: "inline", size: "sm"},
-							},
-							parentMetadata: metadata,
-							path: [...path, "value"],
+					? renderToggleField(
+							"value",
+							Boolean(value.value ?? true),
+							"Expected",
+							onChange,
+							metadata,
+							path,
 							disabled,
 							readonly,
 							context,
-						})
+						)
 					: null}
 			</div>
 		);
 	}
 
+	if (type === "counter") {
+		const operation = String(value.operation ?? "compare");
+
+		return (
+			<div className="conditionBuilderEditor__fields">
+				{renderOperationSelect(type, operation, onChange, metadata, path, disabled, readonly, context)}
+				{renderTextField(
+					"counter",
+					String(value.counter ?? ""),
+					"Counter",
+					onChange,
+					metadata,
+					path,
+					disabled,
+					readonly,
+					context,
+				)}
+				{operation === "compare"
+					? renderComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)
+					: null}
+				{operation === "compare"
+					? renderNumberField(
+							"value",
+							Number(value.value ?? 0),
+							"Value",
+							onChange,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)
+					: null}
+				{operation === "between" ? (
+					<>
+						{renderNumberField(
+							"min",
+							Number(value.min ?? 0),
+							"Minimum",
+							onChange,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)}
+						{renderNumberField(
+							"max",
+							Number(value.max ?? 0),
+							"Maximum",
+							onChange,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)}
+						{renderToggleField(
+							"inclusive",
+							Boolean(value.inclusive ?? true),
+							"Inclusive",
+							onChange,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)}
+					</>
+				) : null}
+			</div>
+		);
+	}
+
+	if (type === "current-room") {
+		const operation = String(value.operation ?? "is");
+		const checksTag = operation === "has-tag" || operation === "missing-tag";
+
+		return (
+			<div className="conditionBuilderEditor__fields">
+				{renderOperationSelect(type, operation, onChange, metadata, path, disabled, readonly, context)}
+				{checksTag
+					? renderTextField(
+							"tag",
+							String(value.tag ?? ""),
+							"Tag",
+							onChange,
+							metadata,
+							path,
+							disabled,
+							readonly,
+							context,
+						)
+					: renderRoomField(value, onChange, metadata, path, disabled, readonly, context)}
+			</div>
+		);
+	}
+
+	if (type === "inventory")
+		return renderInventoryFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "item-location")
+		return renderItemLocationFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "object-state")
+		return renderObjectStateFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "npc")
+		return renderNpcFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "command-history")
+		return renderCommandHistoryFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "random-chance")
+		return renderRandomChanceFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "quest")
+		return renderQuestFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "scheduled-event")
+		return renderScheduledEventFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "turn")
+		return renderTurnFields(value, onChange, metadata, path, disabled, readonly, context);
+	if (type === "resolved-target")
+		return renderResolvedTargetFields(value, onChange, metadata, path, disabled, readonly, context);
+
+	return renderFallbackFields(value, onChange, metadata, path, disabled, readonly, context);
+}
+
+function renderInventoryFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "has-item");
+	const comparesCount = operation === "count" || operation === "tag-count";
+
 	return (
 		<div className="conditionBuilderEditor__fields">
-			{renderChildControl({
-				type: "select",
-				childKey: "operation",
-				value: String(value.operation ?? value.operator ?? ""),
-				onChange: (nextValue) => onChange("operation", nextValue),
-				metadata: {
-					title: "Operation",
-					appearance: {chrome: "inline", size: "sm"},
-					features: {options: operatorOptions, searchable: operatorOptions.length > 6},
-				},
-				parentMetadata: metadata,
-				path: [...path, "operation"],
+			{renderOperationSelect(
+				"inventory",
+				operation,
+				onChange,
+				metadata,
+				path,
 				disabled,
 				readonly,
 				context,
-			})}
-			{hasComparisonOperator
-				? renderChildControl({
-						type: "select",
-						childKey: "comparisonOperator",
-						value: String(value.operator ?? "eq"),
-						onChange: (nextValue) => onChange("operator", nextValue),
-						metadata: {
-							title: "Compare",
-							appearance: {chrome: "inline", size: "sm"},
-							features: {options: comparisonOptions, searchable: comparisonOptions.length > 6},
-						},
-						parentMetadata: metadata,
-						path: [...path, "operator"],
+			)}
+			{operation === "has-item" || operation === "missing-item"
+				? renderEntityField(
+						"itemId",
+						String(value.itemId ?? ""),
+						"Item",
+						"item",
+						onChange,
+						metadata,
+						path,
 						disabled,
 						readonly,
 						context,
-					})
+					)
 				: null}
-			{renderChildControl({
-				type: type === "current-room" ? "room-picker" : "text",
-				childKey: "subject",
-				value: String(value.subject ?? value.counter ?? value.itemId ?? value.roomId ?? ""),
-				onChange: (nextValue) => {
-					if (type === "counter") onChange("counter", nextValue);
-					else if (type === "inventory") onChange("itemId", nextValue);
-					else if (type === "current-room") onChange("roomId", nextValue);
-					else onChange("subject", nextValue);
-				},
-				metadata: {
-					title: type === "current-room" ? "Room" : type === "counter" ? "Counter" : "Subject",
-					appearance: {chrome: "inline", size: "sm"},
-					features: {clearButton: true},
-				},
-				parentMetadata: metadata,
-				path: [...path, "subject"],
-				disabled,
-				readonly,
-				context,
-			})}
-			{value.value !== undefined || type === "counter"
-				? renderChildControl({
-						type: typeof value.value === "number" || type === "counter" ? "number" : "text",
-						childKey: "value",
-						value: (value.value ?? 0) as string | number,
-						onChange: (nextValue) => onChange("value", nextValue),
-						metadata: {
-							title: "Value",
-							appearance: {chrome: "inline", size: "sm"},
-							features: {clearButton: true},
-						},
-						parentMetadata: metadata,
-						path: [...path, "value"],
+			{operation === "has-all-items" || operation === "has-any-item"
+				? renderStringListField(
+						"itemIds",
+						asStringArray(value.itemIds),
+						"Items",
+						"Add item",
+						onChange,
+						metadata,
+						path,
 						disabled,
 						readonly,
 						context,
-					})
+					)
+				: null}
+			{operation === "contains-tag" || operation === "missing-tag" || operation === "tag-count"
+				? renderTextField(
+						"tag",
+						String(value.tag ?? ""),
+						"Tag",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{comparesCount
+				? renderComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)
+				: null}
+			{comparesCount
+				? renderNumberField(
+						"value",
+						Number(value.value ?? 0),
+						"Count",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
 				: null}
 		</div>
 	);
+}
+
+function renderItemLocationFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+	description?: string,
+) {
+	const operation = String(value.operation ?? "in-inventory");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"item-location",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderEntityField(
+				"itemId",
+				String(value.itemId ?? ""),
+				"Item",
+				"item",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "in-room"
+				? renderEntityField(
+						"roomId",
+						String(value.roomId ?? ""),
+						"Room",
+						"room",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "on-surface"
+				? renderEntityField(
+						"surfaceId",
+						String(value.surfaceId ?? ""),
+						"Surface",
+						"surface",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "in-container"
+				? renderEntityField(
+						"containerId",
+						String(value.containerId ?? ""),
+						"Container",
+						"container",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "held-by-npc"
+				? renderEntityField(
+						"npcId",
+						String(value.npcId ?? ""),
+						"NPC",
+						"npc",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderObjectStateFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "open");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"object-state",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "surface-has-item" || operation === "surface-missing-item"
+				? renderEntityField(
+						"surfaceId",
+						String(value.surfaceId ?? ""),
+						"Surface",
+						"surface",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: renderEntityField(
+						"objectId",
+						String(value.objectId ?? ""),
+						"Object",
+						"object",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+			{["contains-item", "missing-item", "surface-has-item", "surface-missing-item"].includes(
+				operation,
+			)
+				? renderEntityField(
+						"itemId",
+						String(value.itemId ?? ""),
+						"Item",
+						"item",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "custom" ? (
+				<>
+					{renderTextField(
+						"key",
+						String(value.key ?? ""),
+						"Key",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+					{renderStringComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)}
+					{renderTextField(
+						"value",
+						String(value.value ?? ""),
+						"Value",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+				</>
+			) : null}
+		</div>
+	);
+}
+
+function renderNpcFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "in-current-room");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect("npc", operation, onChange, metadata, path, disabled, readonly, context)}
+			{renderEntityField(
+				"npcId",
+				String(value.npcId ?? ""),
+				"NPC",
+				"npc",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "in-room"
+				? renderEntityField(
+						"roomId",
+						String(value.roomId ?? ""),
+						"Room",
+						"room",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "has-item"
+				? renderEntityField(
+						"itemId",
+						String(value.itemId ?? ""),
+						"Item",
+						"item",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "mood-is"
+				? renderTextField(
+						"mood",
+						String(value.mood ?? ""),
+						"Mood",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "trust"
+				? renderComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)
+				: null}
+			{operation === "trust"
+				? renderNumberField(
+						"value",
+						Number(value.value ?? 0),
+						"Trust",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderCommandHistoryFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "previous-command-was");
+	const commandOperations = [
+		"previous-command-was",
+		"used-command-before",
+		"never-used-command",
+		"used-command-within-turns",
+		"repeated-command",
+	];
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"command-history",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{commandOperations.includes(operation)
+				? renderTextField(
+						"commandName",
+						String(value.commandName ?? ""),
+						"Command",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "previous-raw-command-was" ? (
+				<>
+					{renderStringComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)}
+					{renderTextField(
+						"value",
+						String(value.value ?? ""),
+						"Raw command",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+				</>
+			) : null}
+			{operation === "previous-target-was"
+				? renderEntityField(
+						"targetId",
+						String(value.targetId ?? ""),
+						"Target",
+						"object",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "used-command-within-turns"
+				? renderNumberField(
+						"turns",
+						Number(value.turns ?? 1),
+						"Turns",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "repeated-command" ? (
+				<>
+					{renderNumberField(
+						"count",
+						Number(value.count ?? 1),
+						"Count",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+					{renderToggleField(
+						"consecutive",
+						Boolean(value.consecutive ?? true),
+						"Consecutive",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)}
+				</>
+			) : null}
+			{operation === "sequence"
+				? renderStringListField(
+						"commands",
+						asStringArray(value.commands),
+						"Commands",
+						"Add command",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "sequence"
+				? renderNumberField(
+						"withinTurns",
+						Number(value.withinTurns ?? 1),
+						"Within turns",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderRandomChanceFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderNumberField(
+				"chance",
+				Number(value.chance ?? 0.5),
+				"Chance",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderTextField(
+				"seedKey",
+				String(value.seedKey ?? ""),
+				"Seed key",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderToggleField(
+				"invert",
+				Boolean(value.invert ?? false),
+				"Invert",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+		</div>
+	);
+}
+
+function renderQuestFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "active");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"quest",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderEntityField(
+				"questId",
+				String(value.questId ?? ""),
+				"Quest",
+				"quest",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "objective-complete" || operation === "objective-incomplete"
+				? renderTextField(
+						"objectiveId",
+						String(value.objectiveId ?? ""),
+						"Objective",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderScheduledEventFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "exists");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"scheduled-event",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "exists" || operation === "missing"
+				? renderTextField(
+						"instanceId",
+						String(value.instanceId ?? ""),
+						"Instance ID",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "event-scheduled" || operation === "event-not-scheduled"
+				? renderEntityField(
+						"eventId",
+						String(value.eventId ?? ""),
+						"Event",
+						"event",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "tag-scheduled" || operation === "tag-not-scheduled"
+				? renderTextField(
+						"tag",
+						String(value.tag ?? ""),
+						"Tag",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderTurnFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "compare");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect("turn", operation, onChange, metadata, path, disabled, readonly, context)}
+			{operation === "compare"
+				? renderComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)
+				: null}
+			{renderNumberField(
+				"value",
+				Number(value.value ?? 0),
+				operation === "multiple-of" ? "Multiple" : "Turn",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+		</div>
+	);
+}
+
+function renderResolvedTargetFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const operation = String(value.operation ?? "object-is");
+
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				"resolved-target",
+				operation,
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{operation === "object-is"
+				? renderEntityField(
+						"objectId",
+						String(value.objectId ?? ""),
+						"Object",
+						"object",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "target-is"
+				? renderEntityField(
+						"targetId",
+						String(value.targetId ?? ""),
+						"Target",
+						"object",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "topic-is"
+				? renderEntityField(
+						"topicId",
+						String(value.topicId ?? ""),
+						"Topic",
+						"topic",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "connector-is"
+				? renderTextField(
+						"connector",
+						String(value.connector ?? ""),
+						"Connector",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+			{operation === "direction-is"
+				? renderTextField(
+						"direction",
+						String(value.direction ?? ""),
+						"Direction",
+						onChange,
+						metadata,
+						path,
+						disabled,
+						readonly,
+						context,
+					)
+				: null}
+		</div>
+	);
+}
+
+function renderFallbackFields(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return (
+		<div className="conditionBuilderEditor__fields">
+			{renderOperationSelect(
+				getConditionType(value),
+				String(value.operation ?? value.operator ?? "equals"),
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderTextField(
+				"subject",
+				String(value.subject ?? ""),
+				"Subject",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+			{renderTextField(
+				"value",
+				String(value.value ?? ""),
+				"Value",
+				onChange,
+				metadata,
+				path,
+				disabled,
+				readonly,
+				context,
+			)}
+		</div>
+	);
+}
+
+function renderOperationSelect(
+	type: string,
+	operation: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderSelect({
+		childKey: "operation",
+		value: operation,
+		onChange: (nextValue) => onChange("operation", nextValue),
+		title: "Operation",
+		options: operationOptionsForType(type, metadata, context),
+		metadata,
+		path: [...path, "operation"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderComparisonSelect(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderSelect({
+		childKey: "comparisonOperator",
+		value: String(value.operator ?? "eq"),
+		onChange: (nextValue) => onChange("operator", nextValue),
+		title: "Compare",
+		options: comparisonOperatorOptions(metadata, context),
+		metadata,
+		path: [...path, "operator"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderStringComparisonSelect(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderSelect({
+		childKey: "stringComparisonOperator",
+		value: String(value.operator ?? "eq"),
+		onChange: (nextValue) => onChange("operator", nextValue),
+		title: "Compare",
+		options: FALLBACK_STRING_OPERATOR_OPTIONS,
+		metadata,
+		path: [...path, "operator"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderSelect({
+	childKey,
+	value,
+	onChange,
+	title,
+	options,
+	metadata,
+	path,
+	disabled,
+	readonly,
+	context,
+	showDescriptions,
+}: {
+	childKey: string;
+	value: string;
+	onChange: (nextValue: string) => void;
+	title: string;
+	options: EditorSelectOption[];
+	metadata: ConditionBuilderControlMetadata;
+	path: Array<string | number>;
+	disabled?: boolean;
+	readonly?: boolean;
+	context: ConditionBuilderEditorProps["context"];
+	showDescriptions?: boolean;
+}) {
+	return renderChildControl({
+		type: "select",
+		childKey,
+		value,
+		onChange,
+		metadata: {
+			title,
+			appearance: {chrome: "inline", size: "sm"},
+			features: {
+				options,
+				showDescriptions: showDescriptions ?? false,
+				searchable: showDescriptions ? options.length > 6 : false,
+			},
+		},
+		parentMetadata: metadata,
+		path,
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderFlagField(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "flag-picker",
+		childKey: "flag",
+		value: String(value.flag ?? ""),
+		onChange: (nextValue) => onChange("flag", nextValue),
+		metadata: {
+			title: "Flag",
+			appearance: {chrome: "inline", size: "sm"},
+			features: {allowCreate: false, clearButton: false, showPreview: false},
+		},
+		parentMetadata: metadata,
+		path: [...path, "flag"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderRoomField(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderEntityField(
+		"roomId",
+		String(value.roomId ?? ""),
+		"Room",
+		"room",
+		onChange,
+		metadata,
+		path,
+		disabled,
+		readonly,
+		context,
+	);
+}
+
+function renderEntityField(
+	key: string,
+	value: string,
+	title: string,
+	entityType: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "entity-picker",
+		childKey: key,
+		value,
+		onChange: (nextValue) => onChange(key, nextValue),
+		metadata: {
+			title,
+			appearance: {chrome: "inline", size: "sm"},
+			features: {
+				entityType,
+				allowCreate: false,
+				clearButton: false,
+			},
+		},
+		parentMetadata: metadata,
+		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderTextField(
+	key: string,
+	value: string,
+	title: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "text",
+		childKey: key,
+		value,
+		onChange: (nextValue) => onChange(key, nextValue),
+		metadata: {
+			title,
+			description,
+			appearance: {chrome: "inline", size: "sm"},
+			features: {clearButton: true},
+		},
+		parentMetadata: metadata,
+		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderNumberField(
+	key: string,
+	value: number,
+	title: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "number",
+		childKey: key,
+		value,
+		onChange: (nextValue) => onChange(key, nextValue),
+		metadata: {
+			title,
+			appearance: {chrome: "inline", size: "sm"},
+		},
+		parentMetadata: metadata,
+		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderToggleField(
+	key: string,
+	value: boolean,
+	title: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "toggle",
+		childKey: key,
+		value,
+		onChange: (nextValue) => onChange(key, nextValue),
+		metadata: {
+			title,
+			appearance: {chrome: "inline", size: "sm"},
+			features: {labels: {on: "True", off: "False"}},
+		},
+		parentMetadata: metadata,
+		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderStringListField(
+	key: string,
+	value: string[],
+	title: string,
+	addLabel: string,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	return renderChildControl({
+		type: "string-list",
+		childKey: key,
+		value,
+		onChange: (nextValue) => onChange(key, nextValue),
+		metadata: {
+			title,
+			appearance: {chrome: "inline", size: "sm"},
+			features: {
+				emptyTitle: `No ${title.toLowerCase()}`,
+				emptyActionLabel: addLabel,
+			},
+		},
+		parentMetadata: metadata,
+		path: [...path, key],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function asStringArray(value: unknown): string[] {
+	return Array.isArray(value) ? value.map(String) : [];
 }
