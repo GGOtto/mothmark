@@ -544,6 +544,35 @@ function worldConditionById(context: EditorControlContext, id: unknown) {
 	return worldConditions(context).find((condition) => storedConditionId(condition) === id.trim());
 }
 
+function worldConditionIndexById(context: EditorControlContext, id: unknown) {
+	if (typeof id !== "string" || !id.trim()) return -1;
+	return worldConditions(context).findIndex(
+		(condition) => storedConditionId(condition) === id.trim(),
+	);
+}
+
+function updateWorldConditionById(
+	context: EditorControlContext,
+	id: unknown,
+	nextCondition: ConditionValue,
+) {
+	const conditionIndex = worldConditionIndexById(context, id);
+	if (conditionIndex < 0) return false;
+
+	const conditions = worldConditions(context);
+	const nextConditions = conditions.map((condition, index) =>
+		index === conditionIndex ? nextCondition : condition,
+	);
+
+	if (context.setWorldValue) {
+		context.setWorldValue(["conditions"], nextConditions);
+	} else {
+		context.setValue(["conditions"], nextConditions);
+	}
+
+	return true;
+}
+
 function isConditionReference(condition: ConditionValue) {
 	return condition.type === "condition-ref";
 }
@@ -644,6 +673,48 @@ function conditionRefFor(condition: ConditionValue) {
 	};
 }
 
+function materializeWorldConditionDefinition(
+	condition: ConditionValue,
+	index: number,
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+	pendingConditions: ConditionValue[],
+): ConditionValue {
+	const normalizedCondition = normalizeCondition(condition);
+	const siblingConditions = [...worldConditions(context), ...pendingConditions];
+	const identifiedCondition: ConditionValue = ensureConditionIdentity(
+		normalizedCondition,
+		index,
+		metadata,
+		context,
+		siblingConditions,
+	);
+
+	if (getConditionType(identifiedCondition) !== "group") return identifiedCondition;
+
+	const childConditions = Array.isArray(identifiedCondition.conditions)
+		? (identifiedCondition.conditions as ConditionValue[])
+		: [];
+	const nextChildRefs = childConditions.map((childCondition, childIndex) => {
+		if (isConditionReference(childCondition)) return childCondition;
+
+		const childDefinition = materializeWorldConditionDefinition(
+			childCondition,
+			childIndex,
+			metadata,
+			context,
+			pendingConditions,
+		);
+		pendingConditions.push(childDefinition);
+		return conditionRefFor(childDefinition);
+	});
+
+	return {
+		...identifiedCondition,
+		conditions: nextChildRefs,
+	};
+}
+
 function reusableWorldConditions(context: EditorControlContext) {
 	return worldConditions(context).filter(
 		(condition) => condition.allowMultipleUsesInWorld === true && storedConditionId(condition),
@@ -683,6 +754,36 @@ export function ConditionBuilderEditor({
 		!isConditionList && isWorldConditionEditorPath(path) && typeof path[1] === "number"
 			? path[1]
 			: undefined;
+
+	useEffect(() => {
+		if (!isConditionList || !canEdit || !hasWorldConditionLibrary(context)) return;
+
+		const conditions = value.map((condition) => normalizeCondition(condition as ConditionValue));
+		if (conditions.every(isConditionReference)) return;
+
+		const nextWorldConditions = worldConditions(context);
+		const pendingConditions: ConditionValue[] = [];
+		const nextRefs = conditions.map((condition, index) => {
+			if (isConditionReference(condition)) return condition;
+
+			const nextCondition = materializeWorldConditionDefinition(
+				condition,
+				index,
+				metadata,
+				context,
+				pendingConditions,
+			);
+			pendingConditions.push(nextCondition);
+			return conditionRefFor(nextCondition);
+		});
+
+		if (context.setWorldValue) {
+			context.setWorldValue(["conditions"], [...nextWorldConditions, ...pendingConditions]);
+		} else {
+			context.setValue(["conditions"], [...nextWorldConditions, ...pendingConditions]);
+		}
+		onChange(nextRefs);
+	}, [canEdit, context, isConditionList, metadata, onChange, value]);
 
 	useEffect(() => {
 		if (isConditionList || !singleCondition || !canEdit || worldConditionIndex === undefined) {
@@ -904,7 +1005,16 @@ function ConditionLinkList({
 	const canOpenChildEditor = typeof context.editorNavigation?.openEditorLink === "function";
 	const safeSelectedIndex =
 		conditions.length > 0 ? Math.min(selectedIndex, conditions.length - 1) : 0;
-	const selectedCondition = canOpenChildEditor ? undefined : conditions[safeSelectedIndex];
+	const selectedConditionReference = canOpenChildEditor ? undefined : conditions[safeSelectedIndex];
+	const selectedWorldCondition =
+		selectedConditionReference && isConditionReference(selectedConditionReference)
+			? worldConditionById(context, selectedConditionReference.conditionId)
+			: undefined;
+	const selectedWorldConditionIndex =
+		selectedConditionReference && isConditionReference(selectedConditionReference)
+			? worldConditionIndexById(context, selectedConditionReference.conditionId)
+			: -1;
+	const selectedCondition = selectedWorldCondition ?? selectedConditionReference;
 	const reusableConditions =
 		canEdit && onAddExistingCondition && hasWorldConditionLibrary(context)
 			? reusableWorldConditions(context)
@@ -1049,9 +1159,23 @@ function ConditionLinkList({
 				>
 					<ConditionNodeEditor
 						value={selectedCondition}
-						onChange={(nextCondition) => onUpdateCondition(safeSelectedIndex, nextCondition)}
+						onChange={(nextCondition) => {
+							if (
+								selectedConditionReference &&
+								isConditionReference(selectedConditionReference) &&
+								updateWorldConditionById(context, selectedConditionReference.conditionId, nextCondition)
+							) {
+								return;
+							}
+
+							onUpdateCondition(safeSelectedIndex, nextCondition);
+						}}
 						metadata={metadata}
-						path={[...path, safeSelectedIndex]}
+						path={
+							selectedWorldConditionIndex >= 0
+								? ["conditions", selectedWorldConditionIndex]
+								: [...path, safeSelectedIndex]
+						}
 						depth={depth}
 						disabled={disabled}
 						readonly={readonly}

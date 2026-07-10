@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
+import {ConditionUsageSchema} from "./conditionSchema";
 import {
 	editorBoolean,
 	editorConditionList,
@@ -1017,7 +1017,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 				.min(1)
 				.optional(),
 			timing: EffectTimingSchema.describe("When the authored event should run."),
-			cancelIf: editorConditionList(ConditionSchema, {
+			cancelIf: editorConditionList(ConditionUsageSchema, {
 				title: "Cancel If",
 				description: "Conditions that cancel this scheduled event instance before it runs.",
 				layout: {
@@ -1139,7 +1139,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 3,
 				},
 			}).optional(),
-			cancelIf: editorConditionList(ConditionSchema, {
+			cancelIf: editorConditionList(ConditionUsageSchema, {
 				title: "Cancel If",
 				description: "Conditions that cancel this repeating scheduled event.",
 				layout: {
@@ -1245,7 +1245,7 @@ export type EffectGroup = {
 
 export type ConditionalEffect = {
 	type: "conditional";
-	when: z.infer<typeof ConditionSchema>[];
+	when: z.infer<typeof ConditionUsageSchema>[];
 	then: Effect[];
 	otherwise: Effect[];
 };
@@ -1318,7 +1318,7 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 						type: z
 							.literal("conditional")
 							.describe("Runs different effects depending on whether conditions pass."),
-						when: editorConditionList(ConditionSchema, {
+						when: editorConditionList(ConditionUsageSchema, {
 							title: "When",
 							description: "The conditions that must pass for the then effects to run.",
 							layout: {
@@ -1394,7 +1394,7 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}).default(""),
 
-		conditions: editorConditionList(ConditionSchema, {
+		conditions: editorConditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description:
 				"Conditions that must pass when this event tries to run. If these fail, the event does not apply its effects.",
@@ -1404,7 +1404,7 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		cancelIf: editorConditionList(ConditionSchema, {
+		cancelIf: editorConditionList(ConditionUsageSchema, {
 			title: "Cancel If",
 			description:
 				"Conditions that cancel this event before it runs. Use this for delayed events that should become invalid if the world changes.",
@@ -1532,7 +1532,7 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}).default(0),
 
-		cancelIf: editorConditionList(ConditionSchema, {
+		cancelIf: editorConditionList(ConditionUsageSchema, {
 			title: "Cancel If",
 			description:
 				"Runtime cancellation conditions checked before this scheduled event instance runs.",

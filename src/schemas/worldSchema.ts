@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
+import {ConditionUsageSchema, WorldConditionSchema} from "./conditionSchema";
 import {AuthorCommandSchema} from "./authoredCommandSchema";
 import {AuthoredEventSchema} from "./effectSchema";
 import {DescriptionSchema} from "./descriptionSchema";
@@ -43,7 +43,7 @@ export const TagListSchema = editorTagList("all", {
 
 export const EntityVisibilitySchema = editorObject(
 	z.object({
-		visibleWhen: editorConditionList(ConditionSchema, {
+		visibleWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The entity is only visible when all of these conditions pass.",
 			layout: {
@@ -52,7 +52,7 @@ export const EntityVisibilitySchema = editorObject(
 			},
 		}),
 
-		hiddenWhen: editorConditionList(ConditionSchema, {
+		hiddenWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Hidden When",
 			description: "The entity is hidden when any of these conditions pass.",
 			layout: {
@@ -83,7 +83,7 @@ export const DefaultEntityVisibility = {
 
 export const InteractionRuleSchema = editorObject(
 	z.object({
-		allowedWhen: editorConditionList(ConditionSchema, {
+		allowedWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Allowed When",
 			description: "The interaction is allowed only when all of these conditions pass.",
 			layout: {
@@ -92,7 +92,7 @@ export const InteractionRuleSchema = editorObject(
 			},
 		}),
 
-		blockedWhen: editorConditionList(ConditionSchema, {
+		blockedWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Blocked When",
 			description: "The interaction is blocked when any of these conditions pass.",
 			layout: {
@@ -274,7 +274,7 @@ export const ItemSchema = editorObject(
 			},
 		}).default(true),
 
-		visibleWhen: editorConditionList(ConditionSchema, {
+		visibleWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The item is visible only when all of these conditions pass.",
 			layout: {
@@ -283,7 +283,7 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		takeableWhen: editorConditionList(ConditionSchema, {
+		takeableWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Takeable When",
 			description: "The item can be taken only when all of these conditions pass.",
 			layout: {
@@ -292,7 +292,7 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		usableWhen: editorConditionList(ConditionSchema, {
+		usableWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Usable When",
 			description: "The item can be used only when all of these conditions pass.",
 			layout: {
@@ -367,7 +367,7 @@ export const NpcScheduleEntrySchema = editorObject(
 			},
 		}),
 
-		when: editorConditionList(ConditionSchema, {
+		when: editorConditionList(ConditionUsageSchema, {
 			title: "When",
 			description: "Conditions that activate this schedule entry.",
 			layout: {
@@ -475,7 +475,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		visibleWhen: editorConditionList(ConditionSchema, {
+		visibleWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The NPC is visible only when all of these conditions pass.",
 			layout: {
@@ -484,7 +484,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		talkableWhen: editorConditionList(ConditionSchema, {
+		talkableWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Talkable When",
 			description: "The NPC can be spoken to only when all of these conditions pass.",
 			layout: {
@@ -600,7 +600,7 @@ export const TopicSchema = editorObject(
 			},
 		}).default(false),
 
-		knownWhen: editorConditionList(ConditionSchema, {
+		knownWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Known When",
 			description: "The topic becomes known when all of these conditions pass.",
 			layout: {
@@ -658,7 +658,7 @@ export const QuestObjectiveSchema = editorObject(
 			},
 		}).default(""),
 
-		completeWhen: editorConditionList(ConditionSchema, {
+		completeWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Complete When",
 			description: "Conditions that mark this objective complete.",
 			layout: {
@@ -667,7 +667,7 @@ export const QuestObjectiveSchema = editorObject(
 			},
 		}),
 
-		visibleWhen: editorConditionList(ConditionSchema, {
+		visibleWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "Conditions that make this objective visible.",
 			layout: {
@@ -727,7 +727,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		startWhen: editorConditionList(ConditionSchema, {
+		startWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Start When",
 			description: "Conditions that make this quest active.",
 			layout: {
@@ -736,7 +736,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		completeWhen: editorConditionList(ConditionSchema, {
+		completeWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Complete When",
 			description: "Conditions that mark this quest completed.",
 			layout: {
@@ -745,7 +745,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		failWhen: editorConditionList(ConditionSchema, {
+		failWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Fail When",
 			description: "Conditions that mark this quest failed.",
 			layout: {
@@ -1055,7 +1055,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			conditions: editorArray(ConditionSchema, {
+			conditions: editorArray(WorldConditionSchema, {
 				title: "Conditions",
 				description: "Named condition definitions that can be attached throughout the world.",
 				emptyState: {

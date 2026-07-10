@@ -1,12 +1,12 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
+import {ConditionUsageSchema} from "./conditionSchema";
 import {EffectSchema} from "./effectSchema";
 import {docify} from "../utils/docify";
 import {
 	editorAliasList,
 	editorArray,
 	editorBoolean,
-	editorCondition,
+	editorConditionList,
 	editorDiscriminatedUnion,
 	editorEffects,
 	editorEntityId,
@@ -24,11 +24,7 @@ import {
 	editorTextarea,
 } from "./editorSchemaHelpers";
 
-export const DefaultEmptyCondition = {
-	type: "group" as const,
-	operator: "all" as const,
-	conditions: [],
-};
+export const DefaultEmptyConditions: Array<z.infer<typeof ConditionUsageSchema>> = [];
 
 export const DEFAULT_COMMAND_CONNECTORS = [
 	"on",
@@ -1039,7 +1035,7 @@ export const CommandBranchSchema = editorObject(
 			},
 		}),
 
-		conditions: editorCondition(ConditionSchema, {
+		conditions: editorConditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description: "Conditions that must pass for this branch to run.",
 			layout: {
@@ -1050,7 +1046,7 @@ export const CommandBranchSchema = editorObject(
 				enabled: true,
 				mode: "deterministic",
 			},
-		}).default(DefaultEmptyCondition),
+		}).default(DefaultEmptyConditions),
 
 		effects: editorEffects(EffectSchema, {
 			title: "Effects",
@@ -1294,7 +1290,7 @@ export const AuthorCommandSchema = editorObject(
 			"Target resolution behavior for this command.",
 		),
 
-		conditions: editorCondition(ConditionSchema, {
+		conditions: editorConditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description: "Top-level conditions that must pass before success branches are considered.",
 			layout: {
@@ -1305,7 +1301,7 @@ export const AuthorCommandSchema = editorObject(
 				enabled: true,
 				mode: "deterministic",
 			},
-		}).default(DefaultEmptyCondition),
+		}).default(DefaultEmptyConditions),
 
 		effects: editorEffects(EffectSchema, {
 			title: "Effects",

@@ -14,18 +14,18 @@ export function getRoom(world: World, roomId: string): Room {
 	return room;
 }
 
-export function buildRoomDescription(room: Room, gameState: GameState): GameMessage {
+export function buildRoomDescription(world: World, room: Room, gameState: GameState): GameMessage {
 	let text = room.name + "\n";
 
 	// print out the room's description
-	const description = resolveDescription(room.description, gameState);
+	const description = resolveDescription(room.description, gameState, world);
 	text += description + "\n";
 
 	// print out the room features that are available to list
 	if (room.features) {
 		for (const feature of room.features) {
 			if (feature.listedInRoom) {
-				text += resolveDescription(feature.description, gameState) + "\n";
+				text += resolveDescription(feature.description, gameState, world) + "\n";
 			}
 		}
 	}
@@ -38,7 +38,7 @@ export function buildRoomDescription(room: Room, gameState: GameState): GameMess
 
 export function lookAtRoom(world: World, gameState: GameState): GameState {
 	const room = getRoom(world, gameState.currentRoomId);
-	const description = buildRoomDescription(room, gameState);
+	const description = buildRoomDescription(world, room, gameState);
 
 	return {
 		...gameState,
@@ -70,7 +70,7 @@ export function refreshLatestRoomMessage(world: World, gameState: GameState): Ga
 	if (!room) return gameState;
 
 	const refreshedMessage = {
-		...buildRoomDescription(room, gameState),
+		...buildRoomDescription(world, room, gameState),
 		id: latestRoomMessage.id,
 	};
 	const messages = [...gameState.messages];

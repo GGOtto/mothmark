@@ -1988,19 +1988,17 @@ export type SingleCondition = z.infer<typeof SingleConditionSchema>;
 export type ConditionGroup = {
 	type: "group";
 	operator: "all" | "any" | "none";
-	conditions: Condition[];
+	conditions: ConditionReference[];
 };
 
 export type ConditionReference = z.infer<typeof ConditionReferenceSchema>;
 
 export type Condition = SingleCondition | ConditionGroup | ConditionReference;
 
-export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
+export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> = z.lazy(() =>
 	editorCondition(
 		z
 			.union([
-				ConditionReferenceSchema,
-
 				z.intersection(SingleConditionSchema, ConditionIdentitySchema),
 
 				editorObject(
@@ -2037,9 +2035,9 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 						}),
 
 						conditions: z
-							.array(ConditionSchema)
+							.array(ConditionReferenceSchema)
 							.default([])
-							.describe("Nested child conditions. These can be single conditions or more groups."),
+							.describe("Nested child condition references stored in the world condition library."),
 					}),
 					{
 						title: "Condition Group",
@@ -2093,6 +2091,34 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 	),
 );
 
+export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
+	editorCondition(
+		z.union([ConditionReferenceSchema, WorldConditionSchema]).describe(
+			docify(`
+				A universal condition.
+
+				World condition definitions are stored in the world's conditions list.
+				Every usage outside that list should store a condition reference.
+			`),
+		),
+		{
+			title: "Condition",
+			description: docify(`
+				A universal condition.
+
+				Use world condition definitions in the condition library, and condition
+				references anywhere authored logic needs to decide whether something should happen.
+			`),
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+			},
+		},
+	),
+);
+
+export const ConditionUsageSchema = ConditionReferenceSchema;
+
 export const ConditionalTextSchema = editorObject(
 	z.object({
 		text: editorRichText({
@@ -2113,7 +2139,7 @@ export const ConditionalTextSchema = editorObject(
 			},
 		}).min(1),
 
-		when: editorConditionList(ConditionSchema, {
+		when: editorConditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description: "Conditions that must all be true before this text can be used.",
 			priority: {

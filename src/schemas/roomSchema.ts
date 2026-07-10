@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
+import {ConditionUsageSchema} from "./conditionSchema";
 import {DescriptionSchema} from "./descriptionSchema";
 import {DefaultObjectStateDefaults, ObjectStateDefaultsSchema} from "./objectStateSchema";
 import {docify} from "../utils/docify";
@@ -235,7 +235,7 @@ export const RoomFeatureSchema = editor.object(
 			})
 			.default(false),
 
-		activeWhen: editor.conditionList(ConditionSchema, {
+		activeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Active When",
 			description:
 				"The feature is not listed or interacted with unless all of these conditions are true.",
@@ -245,7 +245,7 @@ export const RoomFeatureSchema = editor.object(
 			},
 		}),
 
-		visibleWhen: editor.conditionList(ConditionSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The feature is visible only when all of these conditions pass.",
 			layout: {
@@ -254,7 +254,7 @@ export const RoomFeatureSchema = editor.object(
 			},
 		}),
 
-		usableWhen: editor.conditionList(ConditionSchema, {
+		usableWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Usable When",
 			description: "The feature can be used only when all of these conditions pass.",
 			layout: {
@@ -454,7 +454,7 @@ export const RoomSchema = editor.object(
 			},
 		}),
 
-		activeWhen: editor.conditionList(ConditionSchema, {
+		activeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Active When",
 			description: "The room is available only when all of these conditions pass.",
 			layout: {
@@ -463,7 +463,7 @@ export const RoomSchema = editor.object(
 			},
 		}),
 
-		visibleWhen: editor.conditionList(ConditionSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The room can be discovered or referenced only when all of these conditions pass.",
 			layout: {
@@ -598,7 +598,7 @@ export const ConnectionSchema = editor.object(
 			})
 			.default(""),
 
-		visibleWhen: editor.conditionList(ConditionSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The connection is visible only when all of these conditions pass.",
 			layout: {
@@ -607,7 +607,7 @@ export const ConnectionSchema = editor.object(
 			},
 		}),
 
-		travelAllowedWhen: editor.conditionList(ConditionSchema, {
+		travelAllowedWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Travel Allowed When",
 			description: "The connection can be traveled only when all of these conditions pass.",
 			layout: {
@@ -616,7 +616,7 @@ export const ConnectionSchema = editor.object(
 			},
 		}),
 
-		lockedWhen: editor.conditionList(ConditionSchema, {
+		lockedWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Locked When",
 			description: "The connection is considered locked when any of these conditions pass.",
 			layout: {
