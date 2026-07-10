@@ -110,7 +110,22 @@ export type EditorPickerFeatures = {
 export type EditorFieldLayoutMetadata = {
 	group?: string;
 	section?: string;
+
+	/**
+	 * Lower numbers render earlier.
+	 *
+	 * This is optional. When omitted, the editor falls back to schema/property order.
+	 */
 	order?: number;
+
+	/**
+	 * Pinned fields render before normal fields.
+	 *
+	 * Use this for the first fields an author usually wants to edit:
+	 * ids, names, descriptions, kind/type selectors, core routing fields, etc.
+	 */
+	pinned?: boolean;
+
 	width?: "full" | "half" | "third" | "auto";
 };
 

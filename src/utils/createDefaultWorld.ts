@@ -60,3 +60,5 @@ export function createDefaultConnection({
 		state: DefaultObjectStateDefaults,
 	});
 }
+
+// TODO: weird place to put this, but we need a button that can pull up another unversal editor. Example: list of connections in room, click on one and it replaces the room universal editor with the connection

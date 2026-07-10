@@ -174,6 +174,7 @@ export const RoomFeatureSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 1,
+				pinned: true,
 			},
 		}),
 
@@ -186,6 +187,7 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 2,
+					pinned: true,
 				},
 			})
 			.min(1),
@@ -195,7 +197,7 @@ export const RoomFeatureSchema = editor.object(
 			description: "Alternative names the player can use to refer to this feature.",
 			layout: {
 				width: "full",
-				order: 3,
+				order: 5,
 			},
 		}),
 
@@ -204,7 +206,7 @@ export const RoomFeatureSchema = editor.object(
 			description: "Tags used to group this feature.",
 			layout: {
 				width: "full",
-				order: 4,
+				order: 6,
 			},
 		}),
 
@@ -303,6 +305,34 @@ export const RoomFeatureSchema = editor.object(
 			idField: "id",
 			idPrefix: "feature",
 		},
+		childControls: {
+			kind: {
+				title: "Kind",
+				description: "The feature's interaction category.",
+				layout: {
+					width: "half",
+					order: 3,
+					pinned: true,
+				},
+			},
+			description: {
+				title: "Description",
+				description: "The description shown when the player examines or interacts with this feature.",
+				layout: {
+					width: "full",
+					order: 4,
+					pinned: true,
+				},
+			},
+			state: {
+				title: "State",
+				description: "Initial object state for this feature.",
+				layout: {
+					width: "full",
+					order: 14,
+				},
+			},
+		},
 	},
 );
 
@@ -315,6 +345,7 @@ export const RoomSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 1,
+				pinned: true,
 			},
 		}),
 
@@ -327,27 +358,10 @@ export const RoomSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 2,
+					pinned: true,
 				},
 			})
 			.min(1),
-
-		aliases: editor.aliasList({
-			title: "Aliases",
-			description: "Alternative names for this room.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}),
-
-		tags: editor.tagList("rooms", {
-			title: "Tags",
-			description: "Tags used to group this room, such as indoors, outdoors, safe, dark, or kitchen.",
-			layout: {
-				width: "full",
-				order: 4,
-			},
-		}),
 
 		description: DescriptionSchema.describe(
 			"The description shown when the player enters or looks around this room.",
@@ -360,10 +374,29 @@ export const RoomSchema = editor.object(
 				placeholder: "You are back in the kitchen.",
 				layout: {
 					width: "full",
-					order: 6,
+					order: 4,
+					pinned: true,
 				},
 			})
 			.default(""),
+
+		aliases: editor.aliasList({
+			title: "Aliases",
+			description: "Alternative names for this room.",
+			layout: {
+				width: "full",
+				order: 5,
+			},
+		}),
+
+		tags: editor.tagList("rooms", {
+			title: "Tags",
+			description: "Tags used to group this room, such as indoors, outdoors, safe, dark, or kitchen.",
+			layout: {
+				width: "full",
+				order: 6,
+			},
+		}),
 
 		features: editor.array(RoomFeatureSchema, {
 			title: "Features",
@@ -426,6 +459,28 @@ export const RoomSchema = editor.object(
 	{
 		title: "Room",
 		description: "A location in the world that the player can visit.",
+		childControls: {
+			description: {
+				title: "Description",
+				description: "The description shown when the player enters or looks around this room.",
+				layout: {
+					width: "full",
+					order: 3,
+					pinned: true,
+				},
+			},
+			position: {
+				title: "Position",
+				description: "The room's position in the editor canvas.",
+				layout: {
+					width: "full",
+					order: 8,
+				},
+				appearance: {
+					chrome: "compact",
+				},
+			},
+		},
 		duplicate: {
 			duplicateBehavior: "with-new-id",
 			idField: "id",
@@ -443,6 +498,7 @@ export const ConnectionSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 1,
+				pinned: true,
 			},
 		}),
 
@@ -452,6 +508,7 @@ export const ConnectionSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 2,
+				pinned: true,
 			},
 		}),
 
@@ -461,6 +518,7 @@ export const ConnectionSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 3,
+				pinned: true,
 			},
 		}),
 
@@ -552,6 +610,46 @@ export const ConnectionSchema = editor.object(
 			duplicateBehavior: "with-new-id",
 			idField: "id",
 			idPrefix: "connection",
+		},
+		childControls: {
+			direction: {
+				title: "Direction",
+				description:
+					"The direction the player uses to travel from the starting room to the destination room.",
+				layout: {
+					width: "half",
+					order: 4,
+					pinned: true,
+				},
+			},
+			returnDirection: {
+				title: "Return Direction",
+				description:
+					"The direction the player uses to travel back from the destination room to the starting room.",
+				layout: {
+					width: "half",
+					order: 5,
+					pinned: true,
+				},
+			},
+			pathway: {
+				title: "Pathway",
+				description:
+					"Controls whether this connection can be traveled both ways, only forwards, only backwards, or not at all.",
+				layout: {
+					width: "full",
+					order: 6,
+					pinned: true,
+				},
+			},
+			state: {
+				title: "State",
+				description: "Initial state for this connection or exit, such as locked or open.",
+				layout: {
+					width: "full",
+					order: 13,
+				},
+			},
 		},
 	},
 );

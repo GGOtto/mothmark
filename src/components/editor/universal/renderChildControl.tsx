@@ -5,6 +5,7 @@ import type {
 	EditorControlType,
 	EditorPath,
 } from "../../../types/universalEditorTypes";
+import {mergeEditorMetadata} from "../../../utils/mergeEditorMetadata";
 import {renderEditorControl} from "./renderEditorControl";
 
 type RenderChildControlArgs<TValue> = {
@@ -33,11 +34,11 @@ export function renderChildControl<TValue>({
 	readonly,
 }: RenderChildControlArgs<TValue>) {
 	const override = parentMetadata?.childControls?.[childKey];
-	const childMetadata = {
+	const baseMetadata = {
 		...metadata,
 		type,
-		...override,
 	} as EditorControlMetadata;
+	const childMetadata = mergeEditorMetadata(baseMetadata, override);
 
 	return renderEditorControl({
 		value,

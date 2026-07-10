@@ -7,6 +7,8 @@ import type {
 } from "@/types/universalEditorTypes";
 import type {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
 import {getEditorMetadata} from "@/utils/editorMetadata";
+import {mergeEditorMetadata} from "@/utils/mergeEditorMetadata";
+import {sortEditorObjectFields} from "@/utils/sortEditorObjectFields";
 
 type ZodDef = {
 	type?: string;
@@ -170,25 +172,31 @@ function featureDefaults(metadata?: EditorFieldMetadata): Record<string, unknown
 
 function buildObjectFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadata) {
 	const shape = getObjectShape(schema);
+	const fields = shape
+		? sortEditorObjectFields(
+				Object.entries(shape).map(([key, fieldSchema], index) => {
+					const fieldMetadata = resolveEditorMetadata(fieldSchema, {
+						title: titleFromKey(key),
+					});
+
+					return {
+						key,
+						metadata: mergeEditorMetadata(fieldMetadata, metadata?.childControls?.[key]),
+						defaultValue: createDefaultValue(fieldSchema),
+						index,
+					};
+				}),
+			).map((field) => ({
+				key: field.key,
+				metadata: field.metadata,
+				defaultValue: field.defaultValue,
+			}))
+		: [];
 
 	return {
 		...featureDefaults(metadata),
 		layout: "stack",
-		fields: shape
-			? Object.entries(shape)
-					.map(([key, fieldSchema]) => ({
-						key,
-						metadata: resolveEditorMetadata(fieldSchema, {
-							title: titleFromKey(key),
-						}),
-						defaultValue: createDefaultValue(fieldSchema),
-					}))
-					.sort((left, right) => {
-						const leftOrder = left.metadata.layout?.order ?? Number.MAX_SAFE_INTEGER;
-						const rightOrder = right.metadata.layout?.order ?? Number.MAX_SAFE_INTEGER;
-						return leftOrder - rightOrder;
-					})
-			: [],
+		fields,
 	} satisfies Record<string, unknown> & {fields: ObjectFieldMetadata[]};
 }
 
