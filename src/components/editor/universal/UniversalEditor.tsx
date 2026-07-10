@@ -69,6 +69,7 @@ const EMPTY_REGISTRIES: EditorRegistries = buildEditorRegistries({
 	rooms: [],
 	connections: [],
 	conditions: [],
+	effects: [],
 } as unknown as World);
 
 type EditorSectionDisclosureState = Record<string, Record<string, boolean>>;
@@ -210,6 +211,7 @@ function getEntityPathByRef(value: unknown, ref: EditorLinkRef): EditorPath | un
 	if (ref.type === "room") return findArrayEntityPath(value, ["rooms"], ref.id);
 	if (ref.type === "connection") return findArrayEntityPath(value, ["connections"], ref.id);
 	if (ref.type === "condition") return findArrayEntityPath(value, ["conditions"], ref.id);
+	if (ref.type === "effect") return findArrayEntityPath(value, ["effects"], ref.id);
 	if (ref.type === "item") return findArrayEntityPath(value, ["items"], ref.id);
 	if (ref.type === "npc" || ref.type === "character") {
 		return findArrayEntityPath(value, ["npcs"], ref.id);
@@ -447,7 +449,10 @@ export function UniversalEditor<TValue>({
 			if (target.entityType && ref.type !== target.entityType) return undefined;
 
 			let resolvedPath: EditorPath | undefined;
-			const valueScope = target.entityType === "condition" && world ? "world" : "local";
+			const valueScope =
+				(target.entityType === "condition" || target.entityType === "effect") && world
+					? "world"
+					: "local";
 			const sourceValue = valueScope === "world" ? world : value;
 			const sourceSchema = valueScope === "world" ? WorldSchema : schema;
 

@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {ConditionUsageSchema, WorldConditionSchema} from "./conditionSchema";
 import {AuthorCommandSchema} from "./authoredCommandSchema";
-import {AuthoredEventSchema} from "./effectSchema";
+import {AuthoredEventSchema, WorldEffectSchema} from "./effectSchema";
 import {DescriptionSchema} from "./descriptionSchema";
 import {ObjectStateDefaultsSchema, DefaultObjectStateDefaults} from "./objectStateSchema";
 import {RoomSchema, ConnectionSchema} from "./roomSchema";
@@ -475,6 +475,11 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
+		isDead: editorBoolean({
+			title: "Is Dead",
+			description: "Flag indicating whether the NPC is dead or alive.",
+		}).default(true),
+
 		visibleWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The NPC is visible only when all of these conditions pass.",
@@ -487,6 +492,15 @@ export const NpcSchema = editorObject(
 		talkableWhen: editorConditionList(ConditionUsageSchema, {
 			title: "Talkable When",
 			description: "The NPC can be spoken to only when all of these conditions pass.",
+			layout: {
+				width: "full",
+				order: 12,
+			},
+		}),
+
+		diesWhen: editorConditionList(ConditionUsageSchema, {
+			title: "Dies When",
+			description: "The NPC dies when all these conditions pass.",
 			layout: {
 				width: "full",
 				order: 12,
@@ -1075,6 +1089,25 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
+			effects: editorArray(WorldEffectSchema, {
+				title: "Effects",
+				description: "Named effect definitions that can be attached throughout the world.",
+				emptyState: {
+					emptyTitle: "No effects",
+					emptyDescription: "Add named effects that commands, events, groups, and branches can use.",
+					emptyActionLabel: "Add effect",
+				},
+				duplicate: {
+					duplicateBehavior: "with-new-id",
+					idField: "id",
+					idPrefix: "effect",
+				},
+				layout: {
+					width: "full",
+					order: 6,
+				},
+			}),
+
 			items: editorArray(ItemSchema, {
 				title: "Items",
 				description: "All item definitions in the world.",
@@ -1090,7 +1123,7 @@ export const WorldSchema = editorObject(
 				},
 				layout: {
 					width: "full",
-					order: 6,
+					order: 7,
 				},
 			}),
 

@@ -117,6 +117,7 @@ export const conditionOperatorSummaryLabels: Record<string, string> = {
 	lt: "is less than",
 	lte: "is at most",
 };
+// TODO: stuff like this just means we have to edit multiple locations to add or remove these
 
 export const conditionGroupSummaryLabels: Record<string, string> = {
 	all: "and",

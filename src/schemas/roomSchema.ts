@@ -456,19 +456,11 @@ export const RoomSchema = editor.object(
 
 		activeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Active When",
-			description: "The room is available only when all of these conditions pass.",
+			description:
+				"The room is available only when all of these conditions pass. Passages to this room will be blocked.",
 			layout: {
 				width: "full",
 				order: 11,
-			},
-		}),
-
-		visibleWhen: editor.conditionList(ConditionUsageSchema, {
-			title: "Visible When",
-			description: "The room can be discovered or referenced only when all of these conditions pass.",
-			layout: {
-				width: "full",
-				order: 12,
 			},
 		}),
 	}),

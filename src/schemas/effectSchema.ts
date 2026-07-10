@@ -6,6 +6,7 @@ import {
 	editorCounterKey,
 	editorDirection,
 	editorDiscriminatedUnion,
+	editorEffects,
 	editorEntityId,
 	editorFlagKey,
 	editorId,
@@ -22,6 +23,54 @@ import {
 } from "@/schemas/editorSchemaHelpers";
 
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+
+const EffectIdentitySchema = z.object({
+	id: editorId({
+		title: "Effect ID",
+		description: "Stable world-unique identifier used when reusing this effect.",
+	}).optional(),
+	name: editorInput({
+		title: "Effect Name",
+		description: "Display name shown in effect lists and reuse pickers.",
+	}).optional(),
+	allowMultipleUsesInWorld: editorBoolean({
+		title: "Allow multiple uses in world",
+		description: "When checked, this effect can be selected from other effect lists.",
+		features: {
+			display: "checkbox",
+			labels: {
+				on: "Allow multiple uses in world",
+				off: "Allow multiple uses in world",
+			},
+		},
+		layout: {
+			width: "full",
+			order: 3,
+		},
+	}).default(false),
+});
+
+export const EffectReferenceSchema = editorObject(
+	z.object({
+		type: z.literal("effect-ref").describe("References an effect stored in the world."),
+		effectId: editorEntityId("effect", {
+			title: "Effect",
+			description: "The world effect this usage should run.",
+			layout: {
+				width: "full",
+				order: 1,
+			},
+		}),
+	}),
+	{
+		title: "Effect Reference",
+		description: "A usage of an effect stored in the world effect library.",
+		summary: {
+			enabled: true,
+			mode: "deterministic",
+		},
+	},
+);
 
 export const EffectTimingSchema = editorDiscriminatedUnion(
 	z.discriminatedUnion("type", [
@@ -1240,15 +1289,22 @@ export type FlowEffect = z.infer<typeof FlowEffectSchema>;
 export type EffectGroup = {
 	type: "group";
 	id?: string;
-	effects: Effect[];
+	name?: string;
+	allowMultipleUsesInWorld?: boolean;
+	effects: EffectReference[];
 };
 
 export type ConditionalEffect = {
 	type: "conditional";
+	id?: string;
+	name?: string;
+	allowMultipleUsesInWorld?: boolean;
 	when: z.infer<typeof ConditionUsageSchema>[];
-	then: Effect[];
-	otherwise: Effect[];
+	then: EffectReference[];
+	otherwise: EffectReference[];
 };
+
+export type EffectReference = z.infer<typeof EffectReferenceSchema>;
 
 export type Effect =
 	| MessageEffect
@@ -1262,41 +1318,41 @@ export type Effect =
 	| EventEffect
 	| FlowEffect
 	| EffectGroup
-	| ConditionalEffect;
+	| ConditionalEffect
+	| EffectReference;
 
-export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
+const SingleEffectSchema = z.union([
+	z.intersection(MessageEffectSchema, EffectIdentitySchema),
+	z.intersection(FlagEffectSchema, EffectIdentitySchema),
+	z.intersection(CounterEffectSchema, EffectIdentitySchema),
+	z.intersection(InventoryEffectSchema, EffectIdentitySchema),
+	z.intersection(ItemLocationEffectSchema, EffectIdentitySchema),
+	z.intersection(ObjectStateEffectSchema, EffectIdentitySchema),
+	z.intersection(RoomEffectSchema, EffectIdentitySchema),
+	z.intersection(NpcEffectSchema, EffectIdentitySchema),
+	z.intersection(EventEffectSchema, EffectIdentitySchema),
+	z.intersection(FlowEffectSchema, EffectIdentitySchema),
+]);
+
+export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.lazy(() =>
 	editorDiscriminatedUnion(
 		z
-			.discriminatedUnion("type", [
-				MessageEffectSchema,
-				FlagEffectSchema,
-				CounterEffectSchema,
-				InventoryEffectSchema,
-				ItemLocationEffectSchema,
-				ObjectStateEffectSchema,
-				RoomEffectSchema,
-				NpcEffectSchema,
-				EventEffectSchema,
-				FlowEffectSchema,
+			.union([
+				SingleEffectSchema,
 
 				editorObject(
 					z.object({
+						...EffectIdentitySchema.shape,
 						type: z.literal("group").describe("Runs multiple effects together as one effect."),
-						id: editorId({
-							title: "Group ID",
+						effects: editorEffects(EffectReferenceSchema, {
+							title: "Effects",
 							description:
-								"An optional id for this effect group. Useful for editor labels, debugging, or reusable authored structures.",
+								"The effect references to run in order. Later effects can depend on state changed by earlier effects.",
 							layout: {
-								width: "half",
-								order: 1,
+								width: "full",
+								order: 4,
 							},
-						}).optional(),
-						effects: z
-							.array(EffectSchema)
-							.default([])
-							.describe(
-								"The effects to run in order. Later effects can depend on state changed by earlier effects.",
-							),
+						}),
 					}),
 					{
 						title: "Effect Group",
@@ -1315,6 +1371,7 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 
 				editorObject(
 					z.object({
+						...EffectIdentitySchema.shape,
 						type: z
 							.literal("conditional")
 							.describe("Runs different effects depending on whether conditions pass."),
@@ -1326,14 +1383,22 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 								order: 1,
 							},
 						}),
-						then: z
-							.array(EffectSchema)
-							.default([])
-							.describe("The effects to run when all conditions pass."),
-						otherwise: z
-							.array(EffectSchema)
-							.default([])
-							.describe("The effects to run when the conditions do not pass."),
+						then: editorEffects(EffectReferenceSchema, {
+							title: "Then",
+							description: "The effect references to run when all conditions pass.",
+							layout: {
+								width: "full",
+								order: 2,
+							},
+						}),
+						otherwise: editorEffects(EffectReferenceSchema, {
+							title: "Otherwise",
+							description: "The effect references to run when the conditions do not pass.",
+							layout: {
+								width: "full",
+								order: 3,
+							},
+						}),
 					}),
 					{
 						title: "Conditional Effect",
@@ -1359,6 +1424,27 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 		},
 	),
 );
+
+export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
+	editorDiscriminatedUnion(
+		z
+			.union([EffectReferenceSchema, WorldEffectSchema])
+			.describe(
+				"World effect definitions are stored in the world's effects list. Every usage outside that list should store an effect reference.",
+			),
+		{
+			title: "Effect",
+			description:
+				"Use world effect definitions in the effect library, and effect references anywhere authored logic needs to change state.",
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+			},
+		},
+	),
+);
+
+export const EffectUsageSchema = EffectReferenceSchema;
 
 export const AuthoredEventSchema = editorObject(
 	z.object({
@@ -1414,10 +1500,14 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		effects: z
-			.array(EffectSchema)
-			.default([])
-			.describe("The effects this authored event runs when triggered."),
+		effects: editorEffects(EffectUsageSchema, {
+			title: "Effects",
+			description: "The effects this authored event runs when triggered.",
+			layout: {
+				width: "full",
+				order: 6,
+			},
+		}),
 
 		tags: editorTagList("events", {
 			title: "Tags",

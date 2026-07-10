@@ -1280,6 +1280,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 					"awake",
 					"can-see-player",
 					"cannot-see-player",
+					"is-dead",
 				]),
 				{
 					title: "NPC State",
@@ -1293,7 +1294,9 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 						{label: "Awake", value: "awake"},
 						{label: "Can See Player", value: "can-see-player"},
 						{label: "Cannot See Player", value: "cannot-see-player"},
+						{label: "Died", value: "is-dead"},
 					],
+					// TODO: Stuff like this should belong to the schema for npc conditions, but we'll wait on that
 				},
 			),
 			npcId: editorEntityId("npc", {

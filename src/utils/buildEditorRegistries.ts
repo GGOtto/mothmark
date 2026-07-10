@@ -109,6 +109,9 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	const events = ((worldRecord.events as WorldEntity[] | undefined) ?? []).map((event, index) =>
 		entityOption(event, ["events", index]),
 	);
+	const effects = ((worldRecord.effects as WorldEntity[] | undefined) ?? []).map((effect, index) =>
+		entityOption(effect, ["effects", index]),
+	);
 	const features = world.rooms.flatMap((room, roomIndex) =>
 		(room.features ?? []).map((feature, featureIndex) => ({
 			...entityOption(feature, ["rooms", roomIndex, "features", featureIndex]),
@@ -152,6 +155,7 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		quests,
 		commands,
 		events,
+		effects,
 		features,
 		containers,
 		surfaces,

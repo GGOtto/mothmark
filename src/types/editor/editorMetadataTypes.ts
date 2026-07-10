@@ -59,6 +59,7 @@ export type EditorEntityType =
 	| "quest-objective"
 	| "command"
 	| "event"
+	| "effect"
 	| "feature"
 	| "condition"
 	| "container"

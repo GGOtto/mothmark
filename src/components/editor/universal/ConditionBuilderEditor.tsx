@@ -52,6 +52,7 @@ export type ConditionBuilderEditorProps = EditorControlProps<
 	ConditionBuilderControlMetadata
 >;
 
+// TODO: all these below sound like a schema think
 const FALLBACK_CONDITION_TYPE_OPTIONS = [
 	{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
 	{label: "Counter", value: "counter", description: "Compares a numeric counter."},

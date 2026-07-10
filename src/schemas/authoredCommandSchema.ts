@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {ConditionUsageSchema} from "./conditionSchema";
-import {EffectSchema} from "./effectSchema";
+import {EffectUsageSchema} from "./effectSchema";
 import {docify} from "../utils/docify";
 import {
 	editorAliasList,
@@ -1048,7 +1048,7 @@ export const CommandBranchSchema = editorObject(
 			},
 		}).default(DefaultEmptyConditions),
 
-		effects: editorEffects(EffectSchema, {
+		effects: editorEffects(EffectUsageSchema, {
 			title: "Effects",
 			description: "Effects to run when this branch is selected.",
 			layout: {
@@ -1303,7 +1303,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}).default(DefaultEmptyConditions),
 
-		effects: editorEffects(EffectSchema, {
+		effects: editorEffects(EffectUsageSchema, {
 			title: "Effects",
 			description:
 				"Default success effects for this command. Prefer branches for complex commands with multiple outcomes.",
@@ -1317,7 +1317,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		elseEffects: editorEffects(EffectSchema, {
+		elseEffects: editorEffects(EffectUsageSchema, {
 			title: "Else Effects",
 			description:
 				"Default effects to run when the command matches but top-level conditions fail and no failure branch handles it.",

@@ -23,6 +23,7 @@ export type EntityType =
 	| "quest"
 	| "command"
 	| "event"
+	| "effect"
 	| "feature"
 	| "condition"
 	| "container"
@@ -81,6 +82,7 @@ export type EditorRegistries = {
 	quests: EditorEntityOption[];
 	commands: EditorEntityOption[];
 	events: EditorEntityOption[];
+	effects: EditorEntityOption[];
 	features: EditorEntityOption[];
 	conditions: EditorEntityOption[];
 	containers: EditorEntityOption[];
