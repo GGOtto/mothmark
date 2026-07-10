@@ -61,7 +61,6 @@
 	justify-content: center;
 	box-sizing: border-box;
 	border: 1px solid var(--field-border);
-	border-left: none;
 	background: var(--field-bg-raised);
 	color: var(--field-muted);
 	font: inherit;
@@ -72,16 +71,17 @@
 }
 
 .textField__affix--prefix {
-	border-right: 0;
+	border-right: none;
 }
 
 .textField__affix--suffix {
-	border-left: 0;
+	border-left: none;
 }
 
 .textField__button {
 	cursor: pointer;
 	color: var(--field-text);
+	border-left: none;
 }
 
 .textField__button:hover:not(:disabled) {

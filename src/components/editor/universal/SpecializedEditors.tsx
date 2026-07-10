@@ -46,7 +46,6 @@ export type IdControlMetadata = EditorControlMetadata & {
 	type: "id";
 	features?: {
 		scope?: "world" | "room" | "feature" | "connection" | "command" | "flag";
-		prefix?: string;
 		checkUnique?: boolean;
 		knownIds?: string[];
 		renameReferences?: boolean;
@@ -292,11 +291,10 @@ export function IdEditor(props: IdEditorProps) {
 					value,
 					onChange,
 					metadata: {
-						title: metadata.features?.scope ? `${metadata.features.scope} ID` : "ID",
 						placeholder: metadata.placeholder,
 						transform: "id",
 						features: {
-							prefix: metadata.features?.prefix,
+							prefix: metadata.features?.prefix ?? "ID",
 							clearButton: metadata.features?.clearButton,
 							copyButton: metadata.features?.copyButton,
 							selectOnFocus: true,
