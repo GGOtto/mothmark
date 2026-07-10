@@ -1,1 +1,5 @@
-export {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
+export {
+	createDefaultConnection,
+	createDefaultFeature,
+	createDefaultRoom,
+} from "./createDefaultWorld";

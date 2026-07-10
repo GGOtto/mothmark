@@ -1,11 +1,14 @@
 import type {World} from "../../schemas/worldSchema";
 import type {
 	EditorControlAppearance,
+	EditorControlType,
 	EditorFieldMetadata,
 	EditorOption,
 } from "./editorMetadataTypes";
+import type {EntityType} from "./editorRegistryTypes";
 import type {EditorRegistries} from "./editorRegistryTypes";
 import type {EditorPath} from "./editorPathTypes";
+import type {z} from "zod";
 
 export type EditorMode = "create" | "edit" | "preview" | "debug";
 
@@ -46,6 +49,64 @@ export type EditorPatch =
 			toIndex: number;
 	  };
 
+export type EditorLinkRef = {
+	type: string;
+	id: string;
+	label?: string;
+};
+
+export type EditorLinkTargetKind = "entity" | "path" | "control" | "condition" | "effect";
+
+export type EditorLinkTargetMetadata = {
+	kind: EditorLinkTargetKind;
+	entityType?: EntityType;
+	path?: EditorPath;
+	schemaKey?: string;
+	controlType?: EditorControlType;
+	create?: {
+		enabled?: boolean;
+		buttonLabel?: string;
+		defaultLabel?: string;
+		idPrefix?: string;
+		openAfterCreate?: boolean;
+	};
+	showBackLink?: boolean;
+	backLabel?: string;
+	emptyLabel?: string;
+};
+
+export type EditorNavigationEntry = {
+	title?: string;
+	description?: string;
+	schema: z.ZodTypeAny;
+	value: unknown;
+	path: EditorPath;
+	metadata?: EditorFieldMetadata;
+	showBackLink?: boolean;
+	backLabel?: string;
+};
+
+export type EditorLinkOpenRequest = {
+	ref: EditorLinkRef;
+	target: EditorLinkTargetMetadata;
+	sourcePath: EditorPath;
+};
+
+export type EditorCreateLinkRequest = {
+	target: EditorLinkTargetMetadata;
+	sourcePath: EditorPath;
+};
+
+export type EditorNavigationContext = {
+	openEditorLink?: (request: EditorLinkOpenRequest) => void;
+	createEditorLink?: (request: EditorCreateLinkRequest) => EditorLinkRef | undefined;
+	resolveEditorLinkLabel?: (ref: EditorLinkRef, target?: EditorLinkTargetMetadata) => string;
+	resolveEditorLinkDescription?: (
+		ref: EditorLinkRef,
+		target?: EditorLinkTargetMetadata,
+	) => string | undefined;
+};
+
 export type EditorControlContext = {
 	appearance?: EditorControlAppearance;
 
@@ -63,6 +124,8 @@ export type EditorControlContext = {
 	validatePath?: (path: EditorPath) => EditorIssue[];
 
 	getOptionList?: (source: string) => EditorOption[] | undefined;
+
+	editorNavigation?: EditorNavigationContext;
 
 	readOnly?: boolean;
 	disabled?: boolean;

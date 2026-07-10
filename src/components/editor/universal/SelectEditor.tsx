@@ -61,9 +61,6 @@ export function SelectEditor({
 				.some((part) => String(part).toLowerCase().includes(normalizedQuery)),
 		);
 	}, [metadata.features.options, query]);
-	const hasDescriptions =
-		metadata.features.showDescriptions ??
-		metadata.features.options.some((option) => option.description);
 	const hasBadges =
 		metadata.features.showBadges ?? metadata.features.options.some((option) => option.badge);
 	const selectedOption = metadata.features.options.find((option) => option.value === value);
@@ -154,19 +151,6 @@ export function SelectEditor({
 						<strong>{selectedOption.label}</strong>
 						{selectedOption.badge && hasBadges ? <span>{selectedOption.badge}</span> : null}
 						{selectedOption.description ? <span>{selectedOption.description}</span> : null}
-					</div>
-				) : null}
-
-				{hasDescriptions ? (
-					<div className="selectEditor__descriptions">
-						{filteredOptions.map((option) =>
-							option.description ? (
-								<div key={option.value} className="selectEditor__description">
-									<span className="selectEditor__descriptionLabel">{option.label}</span>
-									<span>{option.description}</span>
-								</div>
-							) : null,
-						)}
 					</div>
 				) : null}
 			</div>

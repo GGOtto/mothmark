@@ -2,12 +2,18 @@ import {z} from "zod";
 import {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
 import {withEditorMetadata} from "@/utils/editorMetadata";
 import type {EditorEntityType, EditorTagSource} from "@/types/editor/editorMetadataTypes";
+import type {EntityType} from "@/types/editor/editorRegistryTypes";
+import type {LinkListFeatures} from "@/components/editor/universal/LinkListEditor";
 
 type EditorMetadataWithoutControl = Omit<EditorFieldMetadata, "control">;
 
 type EditorMetadataWithoutControlOrEntityType = Omit<EditorFieldMetadata, "control" | "entityType">;
 
 type EditorMetadataWithoutControlOrTagSource = Omit<EditorFieldMetadata, "control" | "tagSource">;
+
+type LinkListMetadata = EditorMetadataWithoutControl & {
+	features: LinkListFeatures;
+};
 
 export function editorString(metadata: EditorMetadataWithoutControl = {}) {
 	return withEditorMetadata(z.string(), {
@@ -36,6 +42,12 @@ export function editorId(metadata: EditorMetadataWithoutControl = {}) {
 			...metadata.picker,
 		},
 		...metadata,
+		advanced: true,
+		layout: {
+			...metadata.layout,
+			order: 1000,
+			pinned: false,
+		},
 	});
 }
 
@@ -137,7 +149,7 @@ export function editorSelect<TSchema extends z.ZodTypeAny>(
 		picker: {
 			searchable: false,
 			clearable: false,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			...metadata.picker,
 		},
@@ -153,7 +165,7 @@ export function editorMultiSelect<
 		picker: {
 			searchable: true,
 			clearable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			...metadata.picker,
 		},
@@ -228,6 +240,96 @@ export function editorTagList<TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodA
 	});
 }
 
+export function editorLinkList<
+	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
+>(metadata: LinkListMetadata, schema?: TSchema) {
+	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
+		control: "link-list",
+		...metadata,
+	});
+}
+
+export function editorInternalLinkList(
+	metadata: Omit<LinkListMetadata, "features"> & {
+		features?: Partial<Omit<LinkListFeatures, "linkType">>;
+	} = {},
+) {
+	return editorLinkList({
+		...metadata,
+		features: {
+			linkType: "internal-link",
+			...metadata.features,
+		},
+	});
+}
+
+export function editorExternalLinkList(
+	metadata: Omit<LinkListMetadata, "features"> & {
+		features?: Partial<Omit<LinkListFeatures, "linkType">>;
+	} = {},
+) {
+	return editorLinkList({
+		...metadata,
+		features: {
+			linkType: "external-link",
+			...metadata.features,
+		},
+	});
+}
+
+function entityCollectionPath(entityType: EntityType) {
+	if (entityType === "character" || entityType === "npc") return "npcs";
+	if (entityType === "direction") return "directions";
+	return `${entityType}s`;
+}
+
+export function editorEditorLinkList(
+	entityType: EntityType,
+	metadata: Omit<LinkListMetadata, "features"> & {
+		features?: Partial<Omit<LinkListFeatures, "linkType" | "editorTarget">>;
+	} = {},
+) {
+	return editorLinkList(
+		{
+			...metadata,
+			features: {
+				linkType: "editor",
+				editorTarget: {
+					kind: "entity",
+					entityType,
+					path: [entityCollectionPath(entityType), "{id}"],
+				},
+				...metadata.features,
+			},
+		},
+		z.array(z.object({type: z.string(), id: z.string(), label: z.string().optional()})).default([]),
+	);
+}
+
+export function editorSingleEditorLink(
+	entityType: EntityType,
+	metadata: Omit<LinkListMetadata, "features"> & {
+		features?: Partial<Omit<LinkListFeatures, "linkType" | "mode" | "editorTarget">>;
+	} = {},
+) {
+	return editorLinkList(
+		{
+			...metadata,
+			features: {
+				mode: "single-link",
+				linkType: "editor",
+				editorTarget: {
+					kind: "entity",
+					entityType,
+					path: [entityCollectionPath(entityType), "{id}"],
+				},
+				...metadata.features,
+			},
+		},
+		z.object({type: z.string(), id: z.string(), label: z.string().optional()}).nullable(),
+	);
+}
+
 export function editorEntityId(
 	entityType: EditorEntityType,
 	metadata: EditorMetadataWithoutControlOrEntityType = {},
@@ -238,7 +340,7 @@ export function editorEntityId(
 		required: true,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: false,
 			...metadata.picker,
@@ -256,7 +358,7 @@ export function editorOptionalEntityId(
 		entityType,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: true,
 			clearButton: true,
@@ -275,7 +377,7 @@ export function editorEntityIdList(
 		entityType,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: true,
 			grouped: true,
@@ -298,7 +400,7 @@ export function editorRoomId(metadata: EditorMetadataWithoutControlOrEntityType 
 		required: true,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: false,
 			...metadata.picker,
@@ -313,7 +415,7 @@ export function editorOptionalRoomId(metadata: EditorMetadataWithoutControlOrEnt
 		entityType: "room",
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: true,
 			clearButton: true,
@@ -330,7 +432,7 @@ export function editorConnectionId(metadata: EditorMetadataWithoutControlOrEntit
 		required: true,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: false,
 			...metadata.picker,
@@ -346,7 +448,7 @@ export function editorFlagKey(metadata: EditorMetadataWithoutControl = {}) {
 		picker: {
 			searchable: true,
 			allowCreate: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			clearable: false,
 			...metadata.picker,
 		},
@@ -360,7 +462,7 @@ export function editorOptionalFlagKey(metadata: EditorMetadataWithoutControl = {
 		picker: {
 			searchable: true,
 			allowCreate: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			clearable: true,
 			clearButton: true,
 			...metadata.picker,
@@ -376,7 +478,7 @@ export function editorCounterKey(metadata: EditorMetadataWithoutControl = {}) {
 		picker: {
 			searchable: true,
 			allowCreate: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			clearable: false,
 			...metadata.picker,
 		},
@@ -390,7 +492,7 @@ export function editorOptionalCounterKey(metadata: EditorMetadataWithoutControl 
 		picker: {
 			searchable: true,
 			allowCreate: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			clearable: true,
 			clearButton: true,
 			...metadata.picker,
@@ -405,7 +507,7 @@ export function editorDirection(metadata: EditorMetadataWithoutControl = {}) {
 		required: true,
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			clearable: false,
 			...metadata.picker,
 		},
@@ -421,7 +523,7 @@ export function editorScope<TSchema extends z.ZodTypeAny>(
 		control: "scope-picker",
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: false,
 			...metadata.picker,
@@ -589,7 +691,7 @@ export function editorDiscriminatedUnion<TSchema extends z.ZodTypeAny>(
 		control: "discriminated-union",
 		picker: {
 			searchable: true,
-			showDescriptions: true,
+			showDescriptions: false,
 			showBadges: true,
 			clearable: false,
 			...metadata.picker,
@@ -735,6 +837,8 @@ export const editor = {
 	flagKey: editorFlagKey,
 	id: editorId,
 	input: editorInput,
+	internalLinkList: editorInternalLinkList,
+	linkList: editorLinkList,
 	message: editorMessage,
 	number: editorNumber,
 	object: editorObject,
@@ -743,6 +847,9 @@ export const editor = {
 	positiveInteger: editorPositiveInteger,
 	richText: editorRichText,
 	select: editorSelect,
+	singleEditorLink: editorSingleEditorLink,
 	tagList: editorTagList,
 	textarea: editorTextarea,
+	externalLinkList: editorExternalLinkList,
+	editorLinkList: editorEditorLinkList,
 } as const;

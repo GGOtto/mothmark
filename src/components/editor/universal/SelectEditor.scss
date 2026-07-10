@@ -113,26 +113,6 @@
 	grid-column: 1 / -1;
 }
 
-.selectEditor__descriptions {
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
-	color: var(--field-muted);
-	font-size: 11px;
-	line-height: 1.35;
-}
-
-.selectEditor__description {
-	display: flex;
-	gap: 5px;
-}
-
-.selectEditor__descriptionLabel {
-	flex-shrink: 0;
-	color: var(--field-text);
-	font-weight: 700;
-}
-
 .universalField--error .selectEditor__input {
 	border-color: var(--field-border);
 	background: var(--field-danger-bg);

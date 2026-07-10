@@ -9,6 +9,12 @@ import type {
 } from "./editor/editorMetadataTypes";
 import type {
 	EditorControlContext as CurrentEditorControlContext,
+	EditorCreateLinkRequest,
+	EditorLinkOpenRequest,
+	EditorLinkRef,
+	EditorLinkTargetMetadata,
+	EditorNavigationContext,
+	EditorNavigationEntry,
 	EditorIssue,
 	EditorPatch,
 } from "./editor/editorContextTypes";
@@ -20,7 +26,13 @@ export type {
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,
+	EditorCreateLinkRequest,
 	EditorIssue,
+	EditorLinkOpenRequest,
+	EditorLinkRef,
+	EditorLinkTargetMetadata,
+	EditorNavigationContext,
+	EditorNavigationEntry,
 	EditorPatch,
 	EditorPath,
 	ResolvedEditorControlAppearance,

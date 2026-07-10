@@ -279,6 +279,7 @@ export function resolveEditorMetadata(
 		description,
 		features: {
 			...buildFeatures(metadataSchema, type, metadata),
+			...(metadata?.features ?? {}),
 			...(fallback.features ?? {}),
 		},
 	};

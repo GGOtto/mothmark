@@ -68,7 +68,9 @@ export const PointSchema = editor.object(
 	z.object({
 		x: editor.number({
 			title: "X",
-			description: "The horizontal position of the point.",
+			features: {
+				kind: "coordinate",
+			},
 			layout: {
 				width: "half",
 				order: 1,
@@ -77,7 +79,9 @@ export const PointSchema = editor.object(
 
 		y: editor.number({
 			title: "Y",
-			description: "The vertical position of the point.",
+			features: {
+				kind: "coordinate",
+			},
 			layout: {
 				width: "half",
 				order: 2,
@@ -89,6 +93,9 @@ export const PointSchema = editor.object(
 		description: "A two-dimensional position used by the editor layout.",
 		appearance: {
 			chrome: "compact",
+		},
+		features: {
+			layout: "inline",
 		},
 	},
 );
@@ -398,25 +405,34 @@ export const RoomSchema = editor.object(
 			},
 		}),
 
-		features: editor.array(RoomFeatureSchema, {
-			title: "Features",
-			description: "Interactive room features that exist inside this room.",
-			emptyState: {
-				emptyTitle: "No features",
-				emptyDescription:
-					"Add scenery, containers, surfaces, doors, hazards, or other room-local objects.",
-				emptyActionLabel: "Add feature",
+		features: editor.linkList(
+			{
+				title: "Features",
+				description: "Interactive room features that exist inside this room.",
+				layout: {
+					width: "full",
+					order: 7,
+				},
+				features: {
+					mode: "edit",
+					linkType: "editor",
+					emptyText: "No features",
+					clickHint: "Edit",
+					editorTarget: {
+						kind: "entity",
+						entityType: "feature",
+						path: ["{sourcePath}", "{id}"],
+						create: {
+							enabled: true,
+							buttonLabel: "Add feature",
+							defaultLabel: "New feature",
+							idPrefix: "feature",
+						},
+					},
+				},
 			},
-			duplicate: {
-				duplicateBehavior: "with-new-id",
-				idField: "id",
-				idPrefix: "feature",
-			},
-			layout: {
-				width: "full",
-				order: 7,
-			},
-		}),
+			z.array(RoomFeatureSchema).default([]),
+		),
 
 		position: PointSchema.describe("The room's position in the editor canvas."),
 

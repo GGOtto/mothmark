@@ -3,12 +3,17 @@
 	flex-shrink: 0;
 	overflow: auto;
 	box-sizing: border-box;
-	padding: 16px;
+	padding: 0 16px 16px;
 	border-left: 1px solid rgba(255, 255, 255, 0.1);
 	background: #111;
 
 	.rightSideBarSection {
 		width: 100%;
+		padding-top: 16px;
+	}
+
+	.roomEditor {
+		padding-top: 8px;
 	}
 
 	.rightSideBarFieldGroup {

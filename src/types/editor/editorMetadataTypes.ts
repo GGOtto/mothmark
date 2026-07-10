@@ -22,6 +22,7 @@ export type EditorControlType =
 	| "select"
 	| "multi-select"
 	| "tag-list"
+	| "link-list"
 	| "string-list"
 	| "object"
 	| "array"
@@ -211,6 +212,7 @@ export type EditorFieldMetadata = {
 
 	options?: EditorOption[];
 	optionSource?: string;
+	features?: Record<string, unknown>;
 
 	entityType?: EditorEntityType;
 	tagSource?: EditorTagSource;

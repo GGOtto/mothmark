@@ -57,6 +57,7 @@ Each control has a matrix page under `src/app/test`:
 - `/test/multi-select`
 - `/test/message`
 - `/test/tag-list`
+- `/test/link-list`
 - `/test/string-list`
 - `/test/object`
 - `/test/array`
@@ -302,6 +303,30 @@ Features:
 ```
 
 Use this for short values. For full sentence rows, use `string-list`.
+
+## `link-list`
+
+Tag-like clickable links for internal routes, external URLs, and editor targets.
+
+Value:
+
+```ts
+string[] | EditorLinkRef[] | Array<{ id: string }> | string | EditorLinkRef | null
+```
+
+Features:
+
+```ts
+{
+  mode?: "read" | "edit" | "single-link";
+  linkType: "internal-link" | "external-link" | "editor";
+  display?: "inline" | "block" | "compact";
+  openBehavior?: "same-tab" | "new-tab";
+  editorTarget?: EditorLinkTargetMetadata;
+}
+```
+
+Use this when link values should remain compact but still be visibly clickable.
 
 ## `string-list`
 

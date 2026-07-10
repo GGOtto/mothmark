@@ -52,8 +52,9 @@ describe("resolveEditorMetadata object fields", () => {
 	});
 
 	it("applies the recommended room authoring field order", () => {
-		expect(getObjectFields(RoomSchema).map((field) => field.key)).toEqual([
-			"id",
+		const fields = getObjectFields(RoomSchema);
+
+		expect(fields.map((field) => field.key)).toEqual([
 			"name",
 			"description",
 			"shortDescription",
@@ -65,12 +66,36 @@ describe("resolveEditorMetadata object fields", () => {
 			"viewedFlag",
 			"activeWhen",
 			"visibleWhen",
+			"id",
 		]);
+		expect(fields.at(-1)?.metadata).toMatchObject({
+			advanced: true,
+			layout: {
+				order: 1000,
+				pinned: false,
+			},
+		});
+	});
+
+	it("renders room features through the link-list editor", () => {
+		const featureField = getObjectFields(RoomSchema).find((field) => field.key === "features");
+
+		expect(featureField?.metadata.type).toBe("link-list");
+		expect(featureField?.metadata.features).toMatchObject({
+			mode: "edit",
+			linkType: "editor",
+			editorTarget: {
+				kind: "entity",
+				entityType: "feature",
+				path: ["{sourcePath}", "{id}"],
+			},
+		});
 	});
 
 	it("applies the recommended room feature authoring field order", () => {
-		expect(getObjectFields(RoomFeatureSchema).map((field) => field.key)).toEqual([
-			"id",
+		const fields = getObjectFields(RoomFeatureSchema);
+
+		expect(fields.map((field) => field.key)).toEqual([
 			"name",
 			"kind",
 			"description",
@@ -84,12 +109,15 @@ describe("resolveEditorMetadata object fields", () => {
 			"capacity",
 			"initialItems",
 			"state",
+			"id",
 		]);
+		expect(fields.at(-1)?.metadata.advanced).toBe(true);
 	});
 
 	it("applies the recommended connection authoring field order", () => {
-		expect(getObjectFields(ConnectionSchema).map((field) => field.key)).toEqual([
-			"id",
+		const fields = getObjectFields(ConnectionSchema);
+
+		expect(fields.map((field) => field.key)).toEqual([
 			"fromRoomId",
 			"toRoomId",
 			"direction",
@@ -102,6 +130,8 @@ describe("resolveEditorMetadata object fields", () => {
 			"travelAllowedWhen",
 			"lockedWhen",
 			"state",
+			"id",
 		]);
+		expect(fields.at(-1)?.metadata.advanced).toBe(true);
 	});
 });

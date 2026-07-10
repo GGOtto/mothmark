@@ -53,6 +53,11 @@ const CONTROL_TEST_PAGES = [
 		description: "Compact short string array controls.",
 	},
 	{
+		href: "/test/link-list",
+		title: "Link List",
+		description: "Clickable tag-like link controls.",
+	},
+	{
 		href: "/test/string-list",
 		title: "String List",
 		description: "Longer editable string row controls.",

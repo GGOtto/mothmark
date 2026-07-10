@@ -22,7 +22,7 @@ export type ObjectFeatures = {
 	collapsible?: boolean;
 	defaultCollapsed?: boolean;
 	showFieldCount?: boolean;
-	layout?: "stack" | "grid" | "section";
+	layout?: "stack" | "grid" | "section" | "inline";
 	fields?: ObjectFieldMetadata[];
 	emptyTitle?: string;
 	emptyDescription?: string;
@@ -76,9 +76,13 @@ export function ObjectEditor({
 				? fields.map((field) => {
 						const childPath: EditorPath = [...path, field.key];
 						const childValue = value[field.key] ?? field.defaultValue;
+						const width = field.metadata.layout?.width ?? "full";
 
 						return (
-							<div key={field.key} className="objectEditor__field">
+							<div
+								key={field.key}
+								className={["objectEditor__field", `objectEditor__field--width-${width}`].join(" ")}
+							>
 								{renderEditorControl({
 									value: childValue,
 									onChange: (nextValue) => {

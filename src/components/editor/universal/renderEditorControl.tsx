@@ -9,6 +9,7 @@ import {EffectListEditor, type EffectListEditorProps} from "./EffectListEditor";
 import {EntityPickerEditor, type EntityPickerEditorProps} from "./EntityPickerEditor";
 import {FlagPickerEditor, type FlagPickerEditorProps} from "./FlagPickerEditor";
 import {HiddenEditor, type HiddenEditorProps} from "./HiddenEditor";
+import {LinkListEditor, type LinkListEditorProps} from "./LinkListEditor";
 import {MessageEditor, type MessageEditorProps} from "./MessageEditor";
 import {MultiSelectEditor, type MultiSelectEditorProps} from "./MultiSelectEditor";
 import {NumberFieldEditor, type NumberFieldProps} from "./NumberFieldEditor";
@@ -76,6 +77,9 @@ export function renderEditorControl(props: EditorControlProps<unknown, EditorCon
 
 		case "tag-list":
 			return <TagListEditor {...(props as TagListEditorProps)} />;
+
+		case "link-list":
+			return <LinkListEditor {...(props as LinkListEditorProps)} />;
 
 		case "string-list":
 			return <StringListEditor {...(props as StringListEditorProps)} />;

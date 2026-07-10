@@ -34,6 +34,18 @@
 		opacity 120ms ease;
 }
 
+.numberField--kind-coordinate {
+	width: 100%;
+	max-width: 132px;
+}
+
+.numberField__input[data-kind="coordinate"] {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	padding-right: 8px;
+	padding-left: 8px;
+}
+
 .numberField__input::placeholder {
 	color: var(--field-soft);
 }

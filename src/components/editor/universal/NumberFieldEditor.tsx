@@ -138,7 +138,14 @@ export function NumberFieldEditor({
 			className={metadata.className}
 			testId={metadata.testId}
 		>
-			<div className="numberField">
+			<div
+				className={[
+					"numberField",
+					metadata.features?.kind ? `numberField--kind-${metadata.features.kind}` : "",
+				]
+					.filter(Boolean)
+					.join(" ")}
+			>
 				<div className="numberField__row">
 					{metadata.features?.prefix ? (
 						<span className="numberField__affix numberField__affix--prefix">
@@ -157,6 +164,7 @@ export function NumberFieldEditor({
 						min={metadata.min}
 						max={metadata.max}
 						step={step}
+						data-kind={metadata.features?.kind}
 						required={metadata.required}
 						onBlur={restoreOrClampValue}
 						onChange={(event) => {

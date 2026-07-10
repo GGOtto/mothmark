@@ -46,12 +46,39 @@
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.objectEditor__fields--inline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 8px;
+}
+
 .objectEditor__fields--section {
 	border-left-width: 3px;
 }
 
 .objectEditor__field {
 	min-width: 0;
+}
+
+.objectEditor__fields--inline .objectEditor__field {
+	flex: 0 0 auto;
+}
+
+.objectEditor__fields--inline .objectEditor__field--width-full {
+	flex-basis: 100%;
+}
+
+.objectEditor__fields--inline .objectEditor__field--width-half {
+	width: min(132px, calc(50% - 4px));
+}
+
+.objectEditor__fields--inline .objectEditor__field--width-third {
+	width: min(104px, calc(33.333% - 6px));
+}
+
+.objectEditor__fields--inline .objectEditor__field--width-auto {
+	width: auto;
 }
 
 .objectEditor__previewRow {
@@ -132,5 +159,10 @@
 	.objectEditor__fields--grid,
 	.objectEditor__previewRow {
 		grid-template-columns: 1fr;
+	}
+
+	.objectEditor__fields--inline .objectEditor__field--width-half,
+	.objectEditor__fields--inline .objectEditor__field--width-third {
+		width: min(132px, calc(50% - 4px));
 	}
 }

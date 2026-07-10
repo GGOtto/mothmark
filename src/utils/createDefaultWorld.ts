@@ -1,10 +1,12 @@
 import {
 	ConnectionSchema,
 	RoomSchema,
+	RoomFeatureSchema,
 	type Connection,
 	type Direction,
 	type Point,
 	type Room,
+	type RoomFeature,
 } from "@/schemas/roomSchema";
 import {DefaultObjectStateDefaults} from "@/schemas/objectStateSchema";
 
@@ -26,6 +28,26 @@ export function createDefaultRoom(id: string, name: string, position: Point): Ro
 		features: [],
 		activeWhen: [],
 		visibleWhen: [],
+	});
+}
+
+export function createDefaultFeature(id: string, name = "New feature"): RoomFeature {
+	return RoomFeatureSchema.parse({
+		id,
+		name,
+		aliases: [],
+		tags: [],
+		kind: "feature",
+		description: {
+			default: "",
+			variants: [],
+		},
+		listedInRoom: false,
+		activeWhen: [],
+		visibleWhen: [],
+		usableWhen: [],
+		initialItems: [],
+		state: DefaultObjectStateDefaults,
 	});
 }
 
@@ -60,5 +82,3 @@ export function createDefaultConnection({
 		state: DefaultObjectStateDefaults,
 	});
 }
-
-// TODO: weird place to put this, but we need a button that can pull up another unversal editor. Example: list of connections in room, click on one and it replaces the room universal editor with the connection
