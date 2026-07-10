@@ -3,6 +3,14 @@
 import {useEffect, useState} from "react";
 import {Pencil, Plus, Trash2} from "lucide-react";
 import type {CSSProperties, ReactNode} from "react";
+import {
+	comparisonOperatorOptions as defaultComparisonOperatorOptions,
+	conditionGroupOperatorOptions,
+	conditionOperationOptionsByType,
+	conditionTypeOptions as defaultConditionTypeOptions,
+	createDefaultConditionValue,
+	stringComparisonOperatorOptions,
+} from "@/schemas/editorCatalogs";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -52,167 +60,6 @@ export type ConditionBuilderEditorProps = EditorControlProps<
 	ConditionBuilderControlMetadata
 >;
 
-// TODO: all these below sound like a schema think
-const FALLBACK_CONDITION_TYPE_OPTIONS = [
-	{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
-	{label: "Counter", value: "counter", description: "Compares a numeric counter."},
-	{label: "Current room", value: "current-room", description: "Checks where the player is."},
-	{label: "Inventory", value: "inventory", description: "Checks the player's inventory."},
-	{label: "Item location", value: "item-location", description: "Checks where an item exists."},
-	{label: "Object state", value: "object-state", description: "Checks object state."},
-	{label: "NPC", value: "npc", description: "Checks NPC state."},
-	{label: "Command history", value: "command-history", description: "Checks recent commands."},
-	{label: "Random chance", value: "random-chance", description: "Checks a probability."},
-	{label: "Quest", value: "quest", description: "Checks quest state."},
-	{label: "Scheduled event", value: "scheduled-event", description: "Checks scheduled event state."},
-	{label: "Turn", value: "turn", description: "Checks the global turn count."},
-	{
-		label: "Resolved target",
-		value: "resolved-target",
-		description: "Checks parsed command targets.",
-	},
-	{label: "Group", value: "group", description: "Nests multiple conditions."},
-];
-
-const FALLBACK_GROUP_OPERATOR_OPTIONS = [
-	{label: "All conditions pass", value: "all", description: "Every child condition must pass."},
-	{
-		label: "Any condition passes",
-		value: "any",
-		description: "At least one child condition must pass.",
-	},
-	{label: "No conditions pass", value: "none", description: "No child condition may pass."},
-];
-
-const FALLBACK_COMPARISON_OPERATOR_OPTIONS = [
-	{label: "Equals", value: "eq"},
-	{label: "Does not equal", value: "neq"},
-	{label: "Greater than", value: "gt"},
-	{label: "Greater than or equal to", value: "gte"},
-	{label: "Less than", value: "lt"},
-	{label: "Less than or equal to", value: "lte"},
-];
-
-const FALLBACK_STRING_OPERATOR_OPTIONS = [
-	{label: "Equals", value: "eq"},
-	{label: "Does not equal", value: "neq"},
-	{label: "Includes", value: "includes"},
-	{label: "Starts with", value: "starts-with"},
-	{label: "Ends with", value: "ends-with"},
-];
-
-const FALLBACK_OPERATION_OPTIONS_BY_TYPE: Record<string, EditorSelectOption[]> = {
-	flag: [
-		{label: "Equals", value: "equals"},
-		{label: "Exists", value: "exists"},
-		{label: "Missing", value: "missing"},
-	],
-	counter: [
-		{label: "Compare", value: "compare"},
-		{label: "Between", value: "between"},
-		{label: "Exists", value: "exists"},
-		{label: "Missing", value: "missing"},
-	],
-	"current-room": [
-		{label: "Is", value: "is"},
-		{label: "Is not", value: "is-not"},
-		{label: "Has tag", value: "has-tag"},
-		{label: "Missing tag", value: "missing-tag"},
-	],
-	inventory: [
-		{label: "Has item", value: "has-item"},
-		{label: "Missing item", value: "missing-item"},
-		{label: "Has all items", value: "has-all-items"},
-		{label: "Has any item", value: "has-any-item"},
-		{label: "Contains tag", value: "contains-tag"},
-		{label: "Missing tag", value: "missing-tag"},
-		{label: "Count", value: "count"},
-		{label: "Tag count", value: "tag-count"},
-	],
-	"item-location": [
-		{label: "In inventory", value: "in-inventory"},
-		{label: "In current room", value: "in-current-room"},
-		{label: "In room", value: "in-room"},
-		{label: "On surface", value: "on-surface"},
-		{label: "In container", value: "in-container"},
-		{label: "Held by NPC", value: "held-by-npc"},
-		{label: "Hidden", value: "hidden"},
-		{label: "Destroyed", value: "destroyed"},
-		{label: "Visible", value: "visible"},
-		{label: "Reachable", value: "reachable"},
-	],
-	"object-state": [
-		{label: "Open", value: "open"},
-		{label: "Closed", value: "closed"},
-		{label: "Locked", value: "locked"},
-		{label: "Unlocked", value: "unlocked"},
-		{label: "Lit", value: "lit"},
-		{label: "Unlit", value: "unlit"},
-		{label: "Broken", value: "broken"},
-		{label: "Intact", value: "intact"},
-		{label: "Clean", value: "clean"},
-		{label: "Dirty", value: "dirty"},
-		{label: "Contains item", value: "contains-item"},
-		{label: "Missing item", value: "missing-item"},
-		{label: "Surface has item", value: "surface-has-item"},
-		{label: "Surface missing item", value: "surface-missing-item"},
-		{label: "Empty", value: "empty"},
-		{label: "Custom", value: "custom"},
-	],
-	npc: [
-		{label: "In current room", value: "in-current-room"},
-		{label: "In room", value: "in-room"},
-		{label: "Has item", value: "has-item"},
-		{label: "Mood is", value: "mood-is"},
-		{label: "Trust", value: "trust"},
-		{label: "Met player", value: "met-player"},
-		{label: "Not met player", value: "not-met-player"},
-		{label: "Hostile", value: "hostile"},
-		{label: "Friendly", value: "friendly"},
-		{label: "Asleep", value: "asleep"},
-		{label: "Awake", value: "awake"},
-		{label: "Can see player", value: "can-see-player"},
-		{label: "Cannot see player", value: "cannot-see-player"},
-	],
-	"command-history": [
-		{label: "Previous command was", value: "previous-command-was"},
-		{label: "Previous raw command was", value: "previous-raw-command-was"},
-		{label: "Previous target was", value: "previous-target-was"},
-		{label: "Used command before", value: "used-command-before"},
-		{label: "Never used command", value: "never-used-command"},
-		{label: "Used command within turns", value: "used-command-within-turns"},
-		{label: "Repeated command", value: "repeated-command"},
-		{label: "Sequence", value: "sequence"},
-	],
-	quest: [
-		{label: "Not started", value: "not-started"},
-		{label: "Active", value: "active"},
-		{label: "Completed", value: "completed"},
-		{label: "Failed", value: "failed"},
-		{label: "Objective complete", value: "objective-complete"},
-		{label: "Objective incomplete", value: "objective-incomplete"},
-	],
-	"scheduled-event": [
-		{label: "Exists", value: "exists"},
-		{label: "Missing", value: "missing"},
-		{label: "Event scheduled", value: "event-scheduled"},
-		{label: "Event not scheduled", value: "event-not-scheduled"},
-		{label: "Tag scheduled", value: "tag-scheduled"},
-		{label: "Tag not scheduled", value: "tag-not-scheduled"},
-	],
-	turn: [
-		{label: "Compare", value: "compare"},
-		{label: "Multiple of", value: "multiple-of"},
-	],
-	"resolved-target": [
-		{label: "Object is", value: "object-is"},
-		{label: "Target is", value: "target-is"},
-		{label: "Connector is", value: "connector-is"},
-		{label: "Topic is", value: "topic-is"},
-		{label: "Direction is", value: "direction-is"},
-	],
-};
-
 function optionList(
 	context: EditorControlContext,
 	source?: string,
@@ -235,7 +82,7 @@ function conditionTypeOptions(
 		context,
 		metadata.features?.conditionTypeOptionSource,
 		metadata.features?.conditionTypeOptions,
-		FALLBACK_CONDITION_TYPE_OPTIONS,
+		defaultConditionTypeOptions,
 	);
 
 	return options.filter((option) => {
@@ -252,7 +99,7 @@ function groupOperatorOptions(
 		context,
 		metadata.features?.groupOperatorOptionSource,
 		metadata.features?.groupOperatorOptions,
-		FALLBACK_GROUP_OPERATOR_OPTIONS,
+		conditionGroupOperatorOptions,
 	);
 }
 
@@ -265,7 +112,7 @@ function operationOptionsForType(
 		context,
 		metadata.features?.operatorOptionSourcesByType?.[type] ?? metadata.features?.operatorOptionSource,
 		metadata.features?.operatorOptionsByType?.[type] ?? metadata.features?.operatorOptions,
-		FALLBACK_OPERATION_OPTIONS_BY_TYPE[type] ?? [{label: "Equals", value: "equals"}],
+		conditionOperationOptionsByType[type] ?? [{label: "Equals", value: "equals"}],
 	);
 }
 
@@ -277,7 +124,7 @@ function comparisonOperatorOptions(
 		context,
 		metadata.features?.comparisonOperatorOptionSource,
 		metadata.features?.comparisonOperatorOptions,
-		FALLBACK_COMPARISON_OPERATOR_OPTIONS,
+		defaultComparisonOperatorOptions,
 	);
 }
 
@@ -291,46 +138,7 @@ function shouldShowSummary(metadata: ConditionBuilderControlMetadata) {
 }
 
 export function createDefaultCondition(type = "flag"): ConditionValue {
-	if (type === "group") {
-		return {
-			type: "group",
-			kind: "group",
-			operator: "all",
-			conditions: [],
-		};
-	}
-
-	if (type === "counter") {
-		return {
-			type,
-			operation: "compare",
-			counter: "",
-			operator: "eq",
-			value: 0,
-		};
-	}
-
-	if (type === "current-room") return {type, operation: "is", roomId: ""};
-	if (type === "inventory") return {type, operation: "has-item", itemId: ""};
-	if (type === "item-location") return {type, operation: "in-inventory", itemId: ""};
-	if (type === "object-state") return {type, operation: "open", objectId: ""};
-	if (type === "npc") return {type, operation: "in-current-room", npcId: ""};
-	if (type === "command-history") return {type, operation: "previous-command-was", commandName: ""};
-	if (type === "random-chance") return {type, chance: 0.5, seedKey: "", invert: false};
-	if (type === "quest") return {type, operation: "active", questId: ""};
-	if (type === "scheduled-event") return {type, operation: "exists", instanceId: ""};
-	if (type === "turn") return {type, operation: "compare", operator: "eq", value: 0};
-	if (type === "resolved-target") return {type, operation: "object-is", objectId: ""};
-	if (type === "has-item") return {type, itemId: "", negate: false};
-	if (type === "room-history") return {type, roomId: "", history: "visited", value: true};
-	if (type === "feature-examined") return {type, roomId: "", featureId: "", value: true};
-
-	return {
-		type,
-		operation: "equals",
-		flag: "",
-		value: true,
-	};
+	return createDefaultConditionValue(type);
 }
 
 function getConditionType(condition: ConditionValue) {
@@ -2579,7 +2387,7 @@ function renderStringComparisonSelect(
 		value: String(value.operator ?? "eq"),
 		onChange: (nextValue) => onChange("operator", nextValue),
 		title: "Compare",
-		options: FALLBACK_STRING_OPERATOR_OPTIONS,
+		options: stringComparisonOperatorOptions,
 		metadata,
 		path: [...path, "operator"],
 		disabled,

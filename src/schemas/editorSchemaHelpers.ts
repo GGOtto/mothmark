@@ -4,6 +4,14 @@ import {withEditorMetadata} from "@/utils/editorMetadata";
 import type {EditorEntityType, EditorTagSource} from "@/types/editor/editorMetadataTypes";
 import type {EntityType} from "@/types/editor/editorRegistryTypes";
 import type {LinkListFeatures} from "@/components/editor/universal/LinkListEditor";
+import {
+	CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
+	CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
+	CONDITION_TYPE_OPTION_SOURCE,
+	EFFECT_TYPE_OPTION_SOURCE,
+	conditionOperationOptionsByType,
+	effectOperationOptionsByType,
+} from "@/schemas/editorCatalogs";
 
 type EditorMetadataWithoutControl = Omit<EditorFieldMetadata, "control">;
 
@@ -202,15 +210,10 @@ export function editorAliasList<
 	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
 >(metadata: EditorMetadataWithoutControl = {}, schema?: TSchema) {
 	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
-		control: "string-list",
+		control: "tag-list",
 		title: "Aliases",
 		description: "Alternative names the player can use.",
-		emptyState: {
-			emptyTitle: "No aliases",
-			emptyDescription: "Add aliases so the parser can understand alternate phrasing.",
-			emptyActionLabel: "Add alias",
-			...metadata.emptyState,
-		},
+		placeholder: "Add alias",
 		...metadata,
 	});
 }
@@ -549,6 +552,18 @@ export function editorCondition<TSchema extends z.ZodTypeAny>(
 ) {
 	return withEditorMetadata(schema, {
 		control: "condition-builder",
+		features: {
+			conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
+			groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
+			comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
+			operatorOptionSourcesByType: Object.fromEntries(
+				Object.keys(conditionOperationOptionsByType).map((type) => [
+					type,
+					`schema.condition.${type}.operations`,
+				]),
+			),
+			...metadata.features,
+		},
 		summary: {
 			enabled: true,
 			mode: "deterministic",
@@ -570,6 +585,18 @@ export function editorConditionList<TSchema extends z.ZodTypeAny>(
 ) {
 	return withEditorMetadata(z.array(conditionSchema).default([]), {
 		control: "condition-builder",
+		features: {
+			conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
+			groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
+			comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
+			operatorOptionSourcesByType: Object.fromEntries(
+				Object.keys(conditionOperationOptionsByType).map((type) => [
+					type,
+					`schema.condition.${type}.operations`,
+				]),
+			),
+			...metadata.features,
+		},
 		summary: {
 			enabled: true,
 			mode: "deterministic",
@@ -591,6 +618,16 @@ export function editorEffects<TSchema extends z.ZodTypeAny>(
 ) {
 	return withEditorMetadata(z.array(effectSchema).default([]), {
 		control: "effect-list",
+		features: {
+			effectTypeOptionSource: EFFECT_TYPE_OPTION_SOURCE,
+			operationOptionSourcesByType: Object.fromEntries(
+				Object.keys(effectOperationOptionsByType).map((type) => [
+					type,
+					`schema.effect.${type}.operations`,
+				]),
+			),
+			...metadata.features,
+		},
 		summary: {
 			enabled: true,
 			mode: "deterministic",
