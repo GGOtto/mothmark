@@ -45,7 +45,7 @@ export function RoomEditor({
 				appearance={{
 					theme: "auto",
 					scheme: "dark",
-					chrome: "field",
+					chrome: "collapse",
 				}}
 				className="roomEditorUniversal"
 				allowDelete={true}

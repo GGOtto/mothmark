@@ -117,11 +117,21 @@ export function Connection({
 			onClick={handleSelect}
 		/>
 	);
+	const selectedPathUnderlay = isSelected ? (
+		<path
+			className="connectionPathUnderlay"
+			d={path}
+			fill="none"
+			strokeLinecap="round"
+			pointerEvents="none"
+		/>
+	) : null;
 
 	if (connection.pathway === "two-way") {
 		return (
 			<g className={connectionClassNames}>
 				{clickTarget}
+				{selectedPathUnderlay}
 
 				<path
 					className="connectionPath"
@@ -138,6 +148,7 @@ export function Connection({
 		return (
 			<g className={connectionClassNames}>
 				{clickTarget}
+				{selectedPathUnderlay}
 
 				<path
 					className="connectionPath connectionPathDashed"
@@ -153,6 +164,7 @@ export function Connection({
 	return (
 		<g className={connectionClassNames}>
 			{clickTarget}
+			{selectedPathUnderlay}
 
 			<path
 				className="connectionPath connectionPathDashed"

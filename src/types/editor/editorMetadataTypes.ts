@@ -3,7 +3,7 @@ export type EditorControlSize = "sm" | "md" | "lg";
 export type EditorControlTone =
 	"default" | "quiet" | "terminal" | "paper" | "panel" | "danger" | "warning" | "success";
 
-export type EditorControlChrome = "field" | "card" | "inline" | "compact" | "bare";
+export type EditorControlChrome = "field" | "card" | "inline" | "compact" | "bare" | "collapse";
 
 export type EditorControlTheme =
 	"auto" | "mothmark" | "parchment" | "blueprint" | "terminal" | "plain";
@@ -120,14 +120,6 @@ export type EditorFieldLayoutMetadata = {
 	 * This is optional. When omitted, the editor falls back to schema/property order.
 	 */
 	order?: number;
-
-	/**
-	 * Pinned fields render before normal fields.
-	 *
-	 * Use this for the first fields an author usually wants to edit:
-	 * ids, names, descriptions, kind/type selectors, core routing fields, etc.
-	 */
-	pinned?: boolean;
 
 	width?: "full" | "half" | "third" | "auto";
 };

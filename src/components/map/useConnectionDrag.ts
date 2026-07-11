@@ -139,42 +139,39 @@ export function useConnectionDrag({
 	) {
 		if (fromRoomId === idValue(toRoom.id)) return;
 
-		setConnections((connections) => {
-			const pathway = getPathwayForNewDrop(
-				fromRoomId,
-				fromDirection,
-				idValue(toRoom.id),
-				toDirection,
-				connections,
-			);
+		const pathway = getPathwayForNewDrop(
+			fromRoomId,
+			fromDirection,
+			idValue(toRoom.id),
+			toDirection,
+			connections,
+		);
 
-			const connection: ConnectionType = createDefaultConnection({
-				id: createConnectionId(),
-				fromRoomId,
-				toRoomId: toRoom.id,
-				direction: fromDirection,
-				returnDirection: toDirection,
-				pathway,
+		const connection: ConnectionType = createDefaultConnection({
+			id: createConnectionId(),
+			fromRoomId,
+			toRoomId: toRoom.id,
+			direction: fromDirection,
+			returnDirection: toDirection,
+			pathway,
+		});
+
+		const existingConnection = getDuplicateConnectionByShape(connections, connection);
+		const connectionToSelect = existingConnection ?? connection;
+
+		onConnectionSelectionRequested?.(idValue(connectionToSelect.id));
+
+		setConnections((currentConnections) => {
+			if (!existingConnection) return [...currentConnections, connection];
+
+			return currentConnections.map((currentConnection) => {
+				if (!compareIds(currentConnection.id, existingConnection.id)) return currentConnection;
+
+				return {
+					...currentConnection,
+					pathway,
+				};
 			});
-
-			const existingConnection = getDuplicateConnectionByShape(connections, connection);
-
-			if (existingConnection) {
-				onConnectionSelectionRequested?.(idValue(existingConnection.id));
-
-				return connections.map((currentConnection) => {
-					if (!compareIds(currentConnection.id, existingConnection.id)) return currentConnection;
-
-					return {
-						...currentConnection,
-						pathway,
-					};
-				});
-			}
-
-			onConnectionSelectionRequested?.(idValue(connection.id));
-
-			return [...connections, connection];
 		});
 	}
 

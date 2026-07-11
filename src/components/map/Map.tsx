@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import {useEffect, useRef, useState} from "react";
+import {useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
@@ -45,7 +45,6 @@ export function Map({
 	setIsConnectionSelected,
 }: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
-	const pendingConnectionSelectionIdRef = useRef<string | null>(null);
 
 	function selectRoom(room?: Room) {
 		setSelectedId(room ? idValue(room.id) : null);
@@ -58,23 +57,9 @@ export function Map({
 	}
 
 	function requestConnectionSelection(connectionId: string) {
-		pendingConnectionSelectionIdRef.current = connectionId;
+		setSelectedId(connectionId);
+		setIsConnectionSelected(true);
 	}
-
-	useEffect(() => {
-		const pendingConnectionSelectionId = pendingConnectionSelectionIdRef.current;
-
-		if (!pendingConnectionSelectionId) return;
-
-		const connectionToSelect = connections.find(
-			(connection) => idValue(connection.id) === pendingConnectionSelectionId,
-		);
-
-		if (!connectionToSelect) return;
-
-		pendingConnectionSelectionIdRef.current = null;
-		selectConnection(connectionToSelect);
-	}, [connections]);
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
 		const vector = DIRECTION_VECTORS[direction];

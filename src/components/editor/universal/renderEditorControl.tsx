@@ -48,8 +48,19 @@ import {TextField, type TextFieldProps} from "./TextFieldEditor";
 import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../../types/universalEditorTypes";
+import {FieldShellDisclosureProvider} from "./FieldShell";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
+	return (
+		<FieldShellDisclosureProvider
+			value={{metadata: props.metadata, path: props.path, context: props.context}}
+		>
+			{renderControl(props)}
+		</FieldShellDisclosureProvider>
+	);
+}
+
+function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
 	switch (props.metadata.type) {
 		case "text":
 		case "input":

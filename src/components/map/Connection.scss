@@ -8,6 +8,13 @@
 		stroke-width: 2;
 	}
 
+	.connectionPathUnderlay {
+		stroke: #5b9dff;
+		stroke-width: 5;
+		opacity: 0.5;
+		filter: drop-shadow(0 0 2px #3b82f680);
+	}
+
 	.connectionPathDashed {
 		stroke-dasharray: 4 5;
 	}
@@ -25,7 +32,8 @@
 
 	&.connectionSelected {
 		.connectionPath {
-			stroke: #f00;
+			stroke: #183b66;
+			stroke-width: 2.5;
 		}
 	}
 }
