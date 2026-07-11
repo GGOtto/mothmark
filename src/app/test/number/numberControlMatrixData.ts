@@ -1,4 +1,4 @@
-import type {NumberControlMetadata} from "../../../components/editor/universal/NumberFieldEditor";
+import type {NumberControlMetadata} from "../../../components/universal-editor/NumberFieldEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

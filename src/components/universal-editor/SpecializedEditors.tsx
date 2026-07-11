@@ -5,13 +5,13 @@ import type {
 	EditorControlMetadata,
 	EditorControlProps,
 	EditorSelectOption,
-} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {
 	applyTextTransform,
 	generateConditionSummary,
 	generateEffectSummary,
-} from "../../../utils/universalEditorUtils";
+} from "../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./SpecializedEditors.scss";

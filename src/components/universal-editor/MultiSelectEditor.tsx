@@ -1,8 +1,8 @@
 "use client";
 
 import {useMemo, useState} from "react";
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import type {SelectOption} from "./SelectEditor";
 import {FieldShell} from "./FieldShell";
 import "./MultiSelectEditor.scss";

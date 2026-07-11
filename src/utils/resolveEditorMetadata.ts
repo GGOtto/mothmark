@@ -1,5 +1,5 @@
 import type {z} from "zod";
-import type {ObjectFieldMetadata} from "@/components/editor/universal/ObjectEditor";
+import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import type {
 	EditorControlMetadata,
 	EditorControlType,

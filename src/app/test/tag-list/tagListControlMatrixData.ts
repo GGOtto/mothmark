@@ -1,4 +1,4 @@
-import type {TagListControlMetadata} from "../../../components/editor/universal/TagListEditor";
+import type {TagListControlMetadata} from "../../../components/universal-editor/TagListEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

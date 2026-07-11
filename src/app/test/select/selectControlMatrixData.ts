@@ -1,4 +1,4 @@
-import type {SelectControlMetadata} from "../../../components/editor/universal/SelectEditor";
+import type {SelectControlMetadata} from "../../../components/universal-editor/SelectEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

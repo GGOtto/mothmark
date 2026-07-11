@@ -47,7 +47,7 @@ import {TagListEditor, type TagListEditorProps} from "./TagListEditor";
 import {TextField, type TextFieldProps} from "./TextFieldEditor";
 import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
-import type {EditorControlProps, EditorControlMetadata} from "../../../types/universalEditorTypes";
+import type {EditorControlProps, EditorControlMetadata} from "../../types/universalEditorTypes";
 import {FieldShellDisclosureProvider} from "./FieldShell";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {

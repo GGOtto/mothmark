@@ -1,4 +1,4 @@
-import type {LinkListControlMetadata} from "../../../components/editor/universal/LinkListEditor";
+import type {LinkListControlMetadata} from "../../../components/universal-editor/LinkListEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

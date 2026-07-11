@@ -1,9 +1,9 @@
 "use client";
 
 import {useState} from "react";
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
-import {applyTextTransform} from "../../../utils/universalEditorUtils";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {applyTextTransform} from "../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import "./TagListEditor.scss";
 

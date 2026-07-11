@@ -7,9 +7,9 @@ import type {
 	EditorControlProps,
 	EditorLinkRef,
 	EditorLinkTargetMetadata,
-} from "../../../types/universalEditorTypes";
-import type {EntityType} from "../../../types/editor/editorRegistryTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+} from "../../types/universalEditorTypes";
+import type {EntityType} from "../../types/editor/editorRegistryTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./LinkListEditor.scss";
 

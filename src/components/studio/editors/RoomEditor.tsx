@@ -1,7 +1,7 @@
 import {useMemo} from "react";
 import {type World} from "../../../schemas/worldSchema";
 import {RoomSchema, type Room} from "../../../schemas/roomSchema";
-import {UniversalEditor} from "../universal/UniversalEditor";
+import {UniversalEditor} from "../../universal-editor/UniversalEditor";
 import {compareIds} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
 
@@ -47,7 +47,7 @@ export function RoomEditor({
 				appearance={{
 					theme: "auto",
 					scheme: theme,
-					chrome: "collapse",
+					chrome: "field",
 				}}
 				className="roomEditorUniversal"
 				allowDelete={true}

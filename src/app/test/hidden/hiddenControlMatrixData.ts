@@ -1,4 +1,4 @@
-import type {HiddenControlMetadata} from "../../../components/editor/universal/HiddenEditor";
+import type {HiddenControlMetadata} from "../../../components/universal-editor/HiddenEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

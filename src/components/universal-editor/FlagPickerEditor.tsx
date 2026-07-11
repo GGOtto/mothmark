@@ -1,8 +1,8 @@
 "use client";
 
-import type {FlagOption} from "../../../types/editor/editorRegistryTypes";
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import type {FlagOption} from "../../types/editor/editorRegistryTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./FlagPickerEditor.scss";
 

@@ -1,4 +1,4 @@
-import type {MultiSelectControlMetadata} from "../../../components/editor/universal/MultiSelectEditor";
+import type {MultiSelectControlMetadata} from "../../../components/universal-editor/MultiSelectEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

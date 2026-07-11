@@ -16,10 +16,10 @@ import type {
 	EditorControlMetadata,
 	EditorControlProps,
 	EditorSelectOption,
-} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
-import {generateConditionSummary} from "../../../utils/universalEditorUtils";
-import {idValue, isID, toID} from "../../../utils/idUtils";
+} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {generateConditionSummary} from "../../utils/universalEditorUtils";
+import {idValue, isID, toID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./ConditionBuilderEditor.scss";

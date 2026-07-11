@@ -1,5 +1,5 @@
 import {z} from "zod";
-import type {ObjectFieldMetadata} from "@/components/editor/universal/ObjectEditor";
+import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import {editor} from "@/schemas/editorSchemaHelpers";
 import {ConnectionSchema, RoomFeatureSchema, RoomSchema} from "@/schemas/roomSchema";
 import {resolveEditorMetadata} from "./resolveEditorMetadata";

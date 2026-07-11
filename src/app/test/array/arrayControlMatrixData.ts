@@ -1,4 +1,4 @@
-import type {ArrayControlMetadata} from "../../../components/editor/universal/ArrayEditor";
+import type {ArrayControlMetadata} from "../../../components/universal-editor/ArrayEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

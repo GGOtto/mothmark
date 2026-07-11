@@ -4,7 +4,7 @@ import {withEditorMetadata} from "@/utils/editorMetadata";
 import type {EditorTagSource} from "@/types/editor/editorMetadataTypes";
 import type {EntityType} from "@/types/editor/editorRegistryTypes";
 import {isID, toID, type ID, type IdEntityType, type WorldIdEntityType} from "@/utils/idUtils";
-import type {LinkListFeatures} from "@/components/editor/universal/LinkListEditor";
+import type {LinkListFeatures} from "@/components/universal-editor/LinkListEditor";
 import {
 	CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
 	CONDITION_GROUP_OPERATOR_OPTION_SOURCE,

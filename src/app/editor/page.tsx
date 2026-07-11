@@ -2,9 +2,9 @@
 
 import type React from "react";
 import {useCallback, useMemo, useState} from "react";
-import {ToolBar} from "@/components/editor/ToolBar";
-import {LeftSideBar, type EditorTab} from "@/components/editor/LeftSideBar";
-import {RightSideBar} from "@/components/editor/right-side-bar/RightSideBar";
+import {ToolBar} from "@/components/studio/ToolBar";
+import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
+import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";

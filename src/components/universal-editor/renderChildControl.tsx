@@ -4,8 +4,8 @@ import type {
 	EditorControlProps,
 	EditorControlType,
 	EditorPath,
-} from "../../../types/universalEditorTypes";
-import {mergeEditorMetadata} from "../../../utils/mergeEditorMetadata";
+} from "../../types/universalEditorTypes";
+import {mergeEditorMetadata} from "../../utils/mergeEditorMetadata";
 import {renderEditorControl} from "./renderEditorControl";
 
 type RenderChildControlArgs<TValue> = {

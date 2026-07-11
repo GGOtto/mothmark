@@ -5,10 +5,10 @@ import type {
 	EditorControlMetadata,
 	EditorControlProps,
 	EditorSelectOption,
-} from "../../../types/universalEditorTypes";
-import type {EntityType} from "../../../types/editor/editorRegistryTypes";
-import {idValue, type ID, type WorldIdEntityType} from "../../../utils/idUtils";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+} from "../../types/universalEditorTypes";
+import type {EntityType} from "../../types/editor/editorRegistryTypes";
+import {idValue, type ID, type WorldIdEntityType} from "../../utils/idUtils";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./SelectEditor.scss";
 

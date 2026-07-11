@@ -2,7 +2,7 @@ import {useMemo} from "react";
 import {ArrowLeft, ArrowLeftRight, ArrowRight, Minus} from "lucide-react";
 import {type World} from "../../../schemas/worldSchema";
 import {ConnectionSchema, type Connection, type Pathway} from "../../../schemas/roomSchema";
-import {UniversalEditor} from "../universal/UniversalEditor";
+import {UniversalEditor} from "../../universal-editor/UniversalEditor";
 import {compareIds, idValue, resolveWorldEntityName, toID} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import "./ConnectionEditor.scss";

@@ -1,4 +1,4 @@
-import type {EntityPickerControlMetadata} from "../../../components/editor/universal/EntityPickerEditor";
+import type {EntityPickerControlMetadata} from "../../../components/universal-editor/EntityPickerEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

@@ -6,9 +6,9 @@ import type {
 	EditorControlProps,
 	EditorFieldGroupMetadata,
 	EditorPath,
-} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
-import {generateEditorSummary} from "../../../utils/universalEditorUtils";
+} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {generateEditorSummary} from "../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ObjectEditor.scss";

@@ -1,4 +1,4 @@
-import type {ObjectControlMetadata} from "../../../components/editor/universal/ObjectEditor";
+import type {ObjectControlMetadata} from "../../../components/universal-editor/ObjectEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

@@ -1,4 +1,4 @@
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 
 export type HiddenFeatures = {
 	reason?: string;

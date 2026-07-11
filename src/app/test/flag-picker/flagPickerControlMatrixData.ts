@@ -1,4 +1,4 @@
-import type {FlagPickerControlMetadata} from "../../../components/editor/universal/FlagPickerEditor";
+import type {FlagPickerControlMetadata} from "../../../components/universal-editor/FlagPickerEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

@@ -1,7 +1,7 @@
 "use client";
 
 import {useMemo, useState} from "react";
-import {renderEditorControl} from "../../components/editor/universal/renderEditorControl";
+import {renderEditorControl} from "../../components/universal-editor/renderEditorControl";
 import type {
 	EntityPickerOption,
 	EntityRegistry,

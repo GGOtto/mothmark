@@ -1,4 +1,4 @@
-import type {ConditionBuilderControlMetadata} from "../../../components/editor/universal/ConditionBuilderEditor";
+import type {ConditionBuilderControlMetadata} from "../../../components/universal-editor/ConditionBuilderEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

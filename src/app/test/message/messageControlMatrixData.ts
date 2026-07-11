@@ -1,4 +1,4 @@
-import type {MessageControlMetadata} from "../../../components/editor/universal/MessageEditor";
+import type {MessageControlMetadata} from "../../../components/universal-editor/MessageEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

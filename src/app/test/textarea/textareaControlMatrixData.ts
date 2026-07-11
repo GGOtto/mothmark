@@ -1,4 +1,4 @@
-import type {TextareaControlMetadata} from "../../../components/editor/universal/TextareaEditor";
+import type {TextareaControlMetadata} from "../../../components/universal-editor/TextareaEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

@@ -1,8 +1,8 @@
-import type {Room, Connection} from "../../../schemas/roomSchema";
+import type {Room, Connection} from "../../schemas/roomSchema";
 import type {World} from "@/schemas/worldSchema";
-import {AdjustableBox} from "../../ui/AdjustableBox";
-import {RoomEditor} from "./RoomEditor";
-import {ConnectionEditor} from "./ConnectionEditor";
+import {AdjustableBox} from "../ui/AdjustableBox";
+import {RoomEditor} from "./editors/RoomEditor";
+import {ConnectionEditor} from "./editors/ConnectionEditor";
 import "./RightSideBar.scss";
 
 type RightSideBarProps = {

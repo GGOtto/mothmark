@@ -1,12 +1,12 @@
 "use client";
 
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {
 	createStableId,
 	generateConditionSummary,
 	generateEditorSummary,
-} from "../../../utils/universalEditorUtils";
+} from "../../utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ArrayEditor.scss";

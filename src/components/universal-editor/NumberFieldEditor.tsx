@@ -1,8 +1,8 @@
 "use client";
 
 import {useState} from "react";
-import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
-import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./NumberFieldEditor.scss";
 

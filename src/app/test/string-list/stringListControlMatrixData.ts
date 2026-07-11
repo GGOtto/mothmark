@@ -1,4 +1,4 @@
-import type {StringListControlMetadata} from "../../../components/editor/universal/StringListEditor";
+import type {StringListControlMetadata} from "../../../components/universal-editor/StringListEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

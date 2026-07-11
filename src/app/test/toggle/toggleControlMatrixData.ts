@@ -1,4 +1,4 @@
-import type {ToggleControlMetadata} from "../../../components/editor/universal/ToggleEditor";
+import type {ToggleControlMetadata} from "../../../components/universal-editor/ToggleEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

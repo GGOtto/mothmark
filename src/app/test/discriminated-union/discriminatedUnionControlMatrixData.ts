@@ -1,4 +1,4 @@
-import type {DiscriminatedUnionControlMetadata} from "../../../components/editor/universal/DiscriminatedUnionEditor";
+import type {DiscriminatedUnionControlMetadata} from "../../../components/universal-editor/DiscriminatedUnionEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

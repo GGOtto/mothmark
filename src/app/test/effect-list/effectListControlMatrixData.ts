@@ -1,4 +1,4 @@
-import type {EffectListControlMetadata} from "../../../components/editor/universal/EffectListEditor";
+import type {EffectListControlMetadata} from "../../../components/universal-editor/EffectListEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

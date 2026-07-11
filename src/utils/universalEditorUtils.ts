@@ -1,4 +1,4 @@
-import {TextFieldControlMetadata} from "@/components/editor/universal/TextFieldEditor";
+import {TextFieldControlMetadata} from "@/components/universal-editor/TextFieldEditor";
 import type {EditorSummaryMetadata} from "@/types/universalEditorTypes";
 
 export type UniversalCondition =

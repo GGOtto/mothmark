@@ -8,7 +8,7 @@ import type {
 	RoomPickerMetadata,
 	ScopePickerMetadata,
 	SpecializedControlMetadata,
-} from "../../components/editor/universal/SpecializedEditors";
+} from "../../components/universal-editor/SpecializedEditors";
 import type {EditorControlAppearance} from "../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "./ControlMatrix";
 

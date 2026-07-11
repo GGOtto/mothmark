@@ -19,6 +19,9 @@ export const DescriptionSchema = editor.conditionalText(
 		variants: editor.array(ConditionalTextSchema, {
 			title: "Description Variants",
 			description: "Description variants that can replace the description if conditions are met.",
+			appearance: {
+				chrome: "bare",
+			},
 			summary: {
 				enabled: true,
 				mode: "deterministic",

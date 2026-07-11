@@ -1,4 +1,4 @@
-import type {CodePreviewControlMetadata} from "../../../components/editor/universal/CodePreviewEditor";
+import type {CodePreviewControlMetadata} from "../../../components/universal-editor/CodePreviewEditor";
 import type {
 	EditorControlAppearance,
 	EditorControlTheme,

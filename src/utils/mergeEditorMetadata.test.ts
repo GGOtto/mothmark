@@ -18,7 +18,6 @@ describe("mergeEditorMetadata", () => {
 			mergeEditorMetadata(base, {
 				layout: {
 					order: 3,
-					pinned: true,
 				},
 			}),
 		).toEqual({
@@ -30,7 +29,6 @@ describe("mergeEditorMetadata", () => {
 			layout: {
 				width: "full",
 				order: 3,
-				pinned: true,
 			},
 		});
 	});
