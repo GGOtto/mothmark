@@ -46,6 +46,24 @@ type NamedEntity = Identifiable & {
 	features?: RoomFeature[];
 };
 
+const WORLD_ID_ENTITY_TYPES = [
+	"room",
+	"connection",
+	"condition",
+	"effect",
+	"item",
+	"npc",
+	"topic",
+	"quest",
+	"quest-objective",
+	"command",
+	"event",
+	"feature",
+	"container",
+	"surface",
+	"object",
+] as const satisfies readonly WorldIdEntityType[];
+
 const ENTITY_COLLECTIONS = {
 	room: "rooms",
 	connection: "connections",
@@ -63,6 +81,10 @@ type CollectionEntityType = keyof typeof ENTITY_COLLECTIONS;
 
 function hasEntityCollection(entityType: WorldIdEntityType): entityType is CollectionEntityType {
 	return entityType in ENTITY_COLLECTIONS;
+}
+
+function isWorldIdEntityType(value: string): value is WorldIdEntityType {
+	return (WORLD_ID_ENTITY_TYPES as readonly string[]).includes(value);
 }
 
 const REFERENCE_KEYS_BY_ENTITY_TYPE = {
@@ -226,6 +248,35 @@ export function deleteWorldEntity(world: World, reference: ID<WorldIdEntityType>
 	}
 
 	return true;
+}
+
+/**
+ * Resolves an unknown value to a valid world entity ID reference.
+ *
+ * Returns `undefined` when the value is not an ID reference, uses an unsupported
+ * world entity type, has an empty ID, or points at an entity that does not exist.
+ */
+export function resolveWorldEntityId(
+	value: unknown,
+	world?: World,
+): ID<WorldIdEntityType> | undefined {
+	if (
+		value !== null &&
+		typeof value === "object" &&
+		"id" in value &&
+		isID(value.id) &&
+		isWorldIdEntityType(value.id.type) &&
+		value.id.id
+	) {
+		if (world) {
+			const entity = findWorldEntity(world, value.id.type, value.id.id);
+			if (!entity) return;
+		}
+		return {
+			type: value.id.type,
+			id: value.id.id,
+		};
+	}
 }
 
 /**

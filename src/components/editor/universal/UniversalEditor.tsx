@@ -24,7 +24,7 @@ import type {
 	EditorPath,
 } from "@/types/universalEditorTypes";
 import {buildEditorRegistries} from "@/utils/buildEditorRegistries";
-import {generateUniqueId} from "@/utils/idUtils";
+import {generateUniqueId, ID, resolveWorldEntityId} from "@/utils/idUtils";
 import {createDefaultValue, resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
 import {getArrayElement, getSchemaAtPath} from "@/utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
@@ -34,6 +34,7 @@ type UniversalEditorProps<TValue> = {
 	schema: z.ZodTypeAny;
 	value: TValue;
 	onChange: (value: TValue) => void;
+	onDelete?: (id?: ID) => void;
 	world?: World;
 	onWorldChange?: (world: World) => void;
 	path?: EditorPath;
@@ -328,6 +329,7 @@ export function UniversalEditor<TValue>({
 	schema,
 	value,
 	onChange,
+	onDelete,
 	world,
 	onWorldChange,
 	path = [],
@@ -757,9 +759,7 @@ export function UniversalEditor<TValue>({
 	const shellDescription =
 		activeView?.description ?? shellMetadata?.description ?? renderedMetadata.description;
 	const shellSummary = shellMetadata?.summary;
-	const shellStatus = readonly
-		? "readonly"
-		: (shellMetadata?.status ?? (activeView ? undefined : "draft"));
+	const id: ID = resolveWorldEntityId(value, world);
 	const breadcrumbs = [
 		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
 		...viewStack.map((view) => ({
@@ -816,11 +816,11 @@ export function UniversalEditor<TValue>({
 					</div>
 				</div>
 				<div className="universalEditor__shellMeta">
-					{shellStatus ? (
-						<span className={`universalEditor__status universalEditor__status--${shellStatus}`}>
-							{shellStatus}
-						</span>
-					) : null}
+					{onDelete !== undefined && (
+						<button className="universalEditor__delete" onClick={() => onDelete()}>
+							Delete
+						</button>
+					)}
 					{shellMetadata?.showJsonPreview ? (
 						<button
 							className="universalEditor__previewToggle"

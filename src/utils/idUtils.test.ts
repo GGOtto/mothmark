@@ -2,8 +2,9 @@ import type {World} from "@/schemas/worldSchema";
 import {
 	deleteWorldEntity,
 	generateUniqueId,
-	resolveWorldEntityName,
 	idValue,
+	resolveWorldEntityId,
+	resolveWorldEntityName,
 	updateWorldEntityId,
 	type Identifiable,
 } from "./idUtils";
@@ -137,6 +138,75 @@ describe("updateWorldEntityId", () => {
 		expect(resolveWorldEntityName(world, {type: "room", id: "foyer"})).toBe("Foyer");
 		expect(resolveWorldEntityName(world, {type: "feature", id: "foyer.table"})).toBe("Oak Table");
 		expect(resolveWorldEntityName(world, {type: "item", id: "missing"})).toBeUndefined();
+	});
+});
+
+describe("resolveWorldEntityId", () => {
+	it("resolves an unknown object with an ID reference without checking the world (not provided).", () => {
+		expect(resolveWorldEntityId({id: {type: "room", id: "foyer"}})).toEqual({
+			type: "room",
+			id: "foyer",
+		});
+	});
+
+	it("resolves an unknown object with an ID reference when the entity exists", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId({id: {type: "room", id: "foyer"}}, world)).toEqual({
+			type: "room",
+			id: "foyer",
+		});
+	});
+
+	it("resolves nested and special entity types when they exist", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId({id: {type: "feature", id: "foyer.table"}}, world)).toEqual({
+			type: "feature",
+			id: "foyer.table",
+		});
+
+		expect(resolveWorldEntityId({id: {type: "quest-objective", id: "objective"}}, world)).toEqual({
+			type: "quest-objective",
+			id: "objective",
+		});
+	});
+
+	it("returns undefined for malformed values", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId(undefined, world)).toBeUndefined();
+		expect(resolveWorldEntityId(null, world)).toBeUndefined();
+		expect(resolveWorldEntityId("foyer")).toBeUndefined();
+		expect(resolveWorldEntityId({type: "room", id: "foyer"}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: "foyer"})).toBeUndefined();
+		expect(resolveWorldEntityId({id: {type: "room"}}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: {id: "foyer"}}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: {type: "room", id: ""}}, world)).toBeUndefined();
+	});
+
+	it("returns undefined for unsupported entity types", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId({id: {type: "command-branch", id: "branch"}}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: {type: "not-real", id: "foyer"}})).toBeUndefined();
+	});
+
+	it("returns undefined when the referenced entity does not exist", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId({id: {type: "room", id: "missing"}}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: {type: "item", id: "missing"}}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: {type: "feature", id: "missing"}}, world)).toBeUndefined();
+	});
+
+	it("ignores objects whose id field is not a typed ID reference", () => {
+		const world = createTestWorld();
+
+		expect(resolveWorldEntityId({id: "foyer", name: "Foyer"}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: 123}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: null}, world)).toBeUndefined();
+		expect(resolveWorldEntityId({id: ["foyer"]}, world)).toBeUndefined();
 	});
 });
 
