@@ -45,9 +45,10 @@ export function RoomEditor({
 				appearance={{
 					theme: "auto",
 					scheme: "dark",
-					chrome: "field", // TODO: maybe an auto mode that adjusts based on the available space
+					chrome: "field",
 				}}
 				className="roomEditorUniversal"
+				allowDelete={true}
 			/>
 		</div>
 	);

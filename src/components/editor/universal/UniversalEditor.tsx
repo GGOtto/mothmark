@@ -24,7 +24,7 @@ import type {
 	EditorPath,
 } from "@/types/universalEditorTypes";
 import {buildEditorRegistries} from "@/utils/buildEditorRegistries";
-import {generateUniqueId, ID, resolveWorldEntityId} from "@/utils/idUtils";
+import {deleteWorldEntity, generateUniqueId, ID, resolveWorldEntityId} from "@/utils/idUtils";
 import {createDefaultValue, resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
 import {getArrayElement, getSchemaAtPath} from "@/utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
@@ -34,7 +34,6 @@ type UniversalEditorProps<TValue> = {
 	schema: z.ZodTypeAny;
 	value: TValue;
 	onChange: (value: TValue) => void;
-	onDelete?: (id?: ID) => void;
 	world?: World;
 	onWorldChange?: (world: World) => void;
 	path?: EditorPath;
@@ -42,6 +41,7 @@ type UniversalEditorProps<TValue> = {
 	readonly?: boolean;
 	disabled?: boolean;
 	className?: string;
+	allowDelete?: boolean;
 };
 
 type UniversalEditorView = {
@@ -329,7 +329,6 @@ export function UniversalEditor<TValue>({
 	schema,
 	value,
 	onChange,
-	onDelete,
 	world,
 	onWorldChange,
 	path = [],
@@ -337,6 +336,7 @@ export function UniversalEditor<TValue>({
 	readonly,
 	disabled,
 	className,
+	allowDelete,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
@@ -748,6 +748,7 @@ export function UniversalEditor<TValue>({
 			world,
 		],
 	);
+
 	const renderedMetadata = activeView?.metadata ?? metadata;
 	const renderedPath = activeView?.path ?? path;
 	const renderedValue = activeView ? viewValue(value, world, activeView) : value;
@@ -759,7 +760,19 @@ export function UniversalEditor<TValue>({
 	const shellDescription =
 		activeView?.description ?? shellMetadata?.description ?? renderedMetadata.description;
 	const shellSummary = shellMetadata?.summary;
-	const id: ID = resolveWorldEntityId(value, world);
+	const resolvedEntityId = resolveWorldEntityId(renderedValue, world);
+
+	const handleDelete = useCallback(() => {
+		if (!world || !onWorldChange || !resolvedEntityId) return;
+
+		const nextWorld = structuredClone(world);
+		const didDelete = deleteWorldEntity(nextWorld, resolvedEntityId);
+		if (!didDelete) return;
+
+		onWorldChange(nextWorld);
+		setViewStack((views) => views.slice(0, -1));
+	}, [onWorldChange, resolvedEntityId, world]);
+
 	const breadcrumbs = [
 		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},
 		...viewStack.map((view) => ({
@@ -816,11 +829,11 @@ export function UniversalEditor<TValue>({
 					</div>
 				</div>
 				<div className="universalEditor__shellMeta">
-					{onDelete !== undefined && (
-						<button className="universalEditor__delete" onClick={() => onDelete()}>
+					{allowDelete && resolvedEntityId && onWorldChange ? (
+						<button className="universalEditor__delete" type="button" onClick={handleDelete}>
 							Delete
 						</button>
-					)}
+					) : null}
 					{shellMetadata?.showJsonPreview ? (
 						<button
 							className="universalEditor__previewToggle"
