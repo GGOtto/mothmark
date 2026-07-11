@@ -7,6 +7,7 @@ import {LeftSideBar, type EditorTab} from "@/components/editor/LeftSideBar";
 import {RightSideBar} from "@/components/editor/right-side-bar/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map} from "@/components/map/Map";
+import {useTheme} from "@/components/theme/ThemeProvider";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
@@ -288,8 +289,11 @@ function MapWorkspace({
 	selection,
 	setSelection,
 }: MapWorkspaceProps) {
+	const {theme} = useTheme();
+
 	return (
 		<Map
+			theme="light"
 			rooms={rooms}
 			setRooms={setRooms}
 			connections={connections}

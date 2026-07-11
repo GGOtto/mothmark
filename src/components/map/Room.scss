@@ -1,21 +1,47 @@
 .roomCard {
 	position: absolute;
 	transform: translate(-50%, -50%);
-	border: 2px solid #2f2920;
-	background: #d8ceb4;
-	color: #241f18;
+	border: 1px solid var(--map-room-border);
+	border-radius: 2px;
+	background: var(--map-room-surface);
+	color: var(--map-room-text);
 	font-size: 12px;
+	font-weight: 500;
 	cursor: grab;
 	user-select: none;
 	touch-action: none;
 	z-index: 1;
 	overflow: visible;
+	box-shadow:
+		inset 0 1px 0 var(--map-highlight),
+		0 2px 4px var(--map-shadow);
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		box-shadow 120ms ease;
+
+	&:hover {
+		background: var(--map-room-hover);
+		box-shadow:
+			inset 0 1px 0 var(--map-highlight),
+			0 3px 7px var(--map-shadow);
+	}
 
 	&.roomCardSelected {
-		background: #aea07d;
+		border: 2px solid var(--map-accent);
+		background: var(--map-room-hover);
+		box-shadow:
+			inset 0 1px 0 var(--map-highlight),
+			0 0 0 2px var(--map-accent-soft),
+			0 3px 7px var(--map-shadow);
+
+		.node {
+			border-color: var(--map-accent-strong);
+		}
 	}
 
 	&.roomCardDragging {
 		cursor: grabbing;
+		box-shadow: 0 6px 14px var(--map-shadow);
 	}
 }

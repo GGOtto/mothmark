@@ -3,6 +3,35 @@
 :root {
 	--background: #11100e;
 	--foreground: #eee8dc;
+	--chrome-bg: #11130f;
+	--chrome-raised: #1b1a16;
+	--chrome-border: #3a352b;
+	--chrome-text: #f2e5c8;
+	--chrome-muted: #b8ad97;
+	--chrome-accent: #8db6cf;
+	--panel-bg: #111;
+	--workspace-bg: #161616;
+	--panel-border: rgba(255, 255, 255, 0.12);
+	--panel-text: #f4ecd8;
+	--panel-muted: rgba(244, 236, 216, 0.55);
+	--command-bg: #090908;
+}
+
+:root[data-theme="light"] {
+	--background: #e4dcc9;
+	--foreground: #2d271f;
+	--chrome-bg: #d4cbb7;
+	--chrome-raised: #e7dfcd;
+	--chrome-border: #9d927c;
+	--chrome-text: #312a22;
+	--chrome-muted: #665e50;
+	--chrome-accent: #536f8a;
+	--panel-bg: #d8cfbc;
+	--workspace-bg: #c8bea8;
+	--panel-border: rgba(56, 48, 38, 0.2);
+	--panel-text: #302920;
+	--panel-muted: rgba(48, 41, 32, 0.62);
+	--command-bg: #eee6d5;
 }
 
 @theme inline {

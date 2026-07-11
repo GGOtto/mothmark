@@ -4,15 +4,15 @@
 	}
 
 	.connectionPath {
-		stroke: #2f2920;
+		stroke: var(--map-line);
 		stroke-width: 2;
 	}
 
 	.connectionPathUnderlay {
-		stroke: #5b9dff;
+		stroke: var(--map-accent);
 		stroke-width: 5;
-		opacity: 0.5;
-		filter: drop-shadow(0 0 2px #3b82f680);
+		opacity: 0.62;
+		filter: drop-shadow(0 0 2px var(--map-accent-soft));
 	}
 
 	.connectionPathDashed {
@@ -25,15 +25,17 @@
 
 	&.connectionEditing {
 		.connectionPath {
-			stroke: #796d5ab3;
+			stroke: var(--map-line);
 			stroke-width: 3;
+			opacity: 0.68;
 		}
 	}
 
 	&.connectionSelected {
 		.connectionPath {
-			stroke: #183b66;
+			stroke: var(--map-accent-strong);
 			stroke-width: 2.5;
+			opacity: 1;
 		}
 	}
 }

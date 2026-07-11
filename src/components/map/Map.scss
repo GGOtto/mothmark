@@ -1,15 +1,61 @@
 .map {
+	--map-surface: #aaa08a;
+	--map-grid: rgba(48, 38, 53, 0.14);
+	--map-border: #443a4b;
+	--map-line: #4c4154;
+	--map-room-surface: #d9ceb4;
+	--map-room-hover: #e7dcc2;
+	--map-room-border: #665a70;
+	--map-room-text: #2d2532;
+	--map-node-surface: #fff8e8;
+	--map-accent: #6074bd;
+	--map-accent-strong: #3f5295;
+	--map-accent-soft: rgba(104, 127, 205, 0.38);
+	--map-shadow: rgba(48, 37, 55, 0.25);
+	--map-highlight: rgba(255, 251, 235, 0.48);
+
 	position: relative;
 	width: 100%;
 	height: 100%;
-	border: 1px solid #2f2920;
-	background-color: #c9bea3;
+	border: 1px solid var(--map-border);
+	background-color: var(--map-surface);
 	background-image:
-		linear-gradient(rgba(47, 41, 32, 0.18) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(47, 41, 32, 0.18) 1px, transparent 1px);
-	background-size: 48px 48px;
+		radial-gradient(circle at 22% 28%, rgba(129, 105, 164, 0.08), transparent 34%),
+		radial-gradient(circle at 78% 68%, rgba(92, 126, 145, 0.06), transparent 38%),
+		linear-gradient(var(--map-grid) 1px, transparent 1px),
+		linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+	background-size:
+		auto,
+		auto,
+		48px 48px,
+		48px 48px;
 	overflow: hidden;
 	touch-action: none;
+	color-scheme: light;
+
+	&.map--theme-dark {
+		--map-surface: #756b56;
+		--map-grid: rgba(246, 231, 198, 0.1);
+		--map-border: #a99a7b;
+		--map-line: #d5c39d;
+		--map-room-surface: #554d3f;
+		--map-room-hover: #625847;
+		--map-room-border: #c4b28d;
+		--map-room-text: #fff6dc;
+		--map-node-surface: #f0dfba;
+		--map-accent: #8db6cf;
+		--map-accent-strong: #c2dbe7;
+		--map-accent-soft: rgba(116, 170, 199, 0.38);
+		--map-shadow: rgba(24, 20, 14, 0.38);
+		--map-highlight: rgba(255, 241, 207, 0.12);
+
+		color-scheme: dark;
+		background-image:
+			radial-gradient(circle at 22% 28%, rgba(171, 140, 91, 0.12), transparent 34%),
+			radial-gradient(circle at 78% 68%, rgba(93, 132, 133, 0.08), transparent 38%),
+			linear-gradient(var(--map-grid) 1px, transparent 1px),
+			linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+	}
 
 	.mapSvg {
 		position: absolute;
@@ -18,13 +64,14 @@
 	}
 
 	.mapConnectionDragPath {
-		stroke: #2f2920;
+		stroke: var(--map-accent);
 		stroke-width: 2;
 		stroke-dasharray: 4 5;
 	}
 
 	.mapSnapTarget {
-		stroke: #2f2920;
+		stroke: var(--map-accent);
 		stroke-width: 2;
+		filter: drop-shadow(0 0 2px #ffffff);
 	}
 }

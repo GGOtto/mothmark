@@ -5,8 +5,8 @@
 
 	padding: 12px;
 
-	background: #000;
-	color: #fff;
+	background: var(--command-bg);
+	color: var(--panel-text);
 }
 
 .command-input__prompt {
@@ -23,7 +23,7 @@
 	border: none;
 	outline: none;
 	background: transparent;
-	color: #fff;
+	color: var(--panel-text);
 
 	font: inherit;
 }

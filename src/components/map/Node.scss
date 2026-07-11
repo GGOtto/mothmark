@@ -4,11 +4,30 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	border: 2px solid #2f2920;
-	background: #ffffff;
+	border: 2px solid var(--map-border);
+	background: var(--map-node-surface);
 	pointer-events: auto;
 	user-select: none;
 	touch-action: none;
 	z-index: 3;
 	cursor: pointer;
+	box-shadow: 0 1px 2px var(--map-shadow);
+	transition:
+		transform 100ms ease,
+		border-color 100ms ease,
+		background-color 100ms ease,
+		box-shadow 100ms ease;
+
+	&::after {
+		content: "";
+		position: absolute;
+		inset: -7px;
+	}
+
+	&:hover {
+		transform: translate(-50%, -50%) scale(1.25);
+		border-color: var(--map-accent-strong);
+		background: var(--map-node-surface);
+		box-shadow: 0 0 0 2px var(--map-accent-soft);
+	}
 }

@@ -4,9 +4,9 @@
 	flex-shrink: 0;
 	box-sizing: border-box;
 	padding: 0 20px;
-	border-bottom: 1px solid #3a352b;
-	background: #11130f;
-	color: #f2e5c8;
+	border-bottom: 1px solid var(--chrome-border);
+	background: var(--chrome-bg);
+	color: var(--chrome-text);
 
 	display: flex;
 	align-items: center;
@@ -21,12 +21,12 @@
 
 		&:hover {
 			.headerLogoMark {
-				border-color: #70a58d;
-				color: #70a58d;
+				border-color: var(--chrome-accent);
+				color: var(--chrome-accent);
 			}
 
 			.headerTitle {
-				color: #f2e5c8;
+				color: var(--chrome-text);
 			}
 		}
 
@@ -39,10 +39,10 @@
 	.headerLogoMark {
 		width: 26px;
 		height: 26px;
-		border: 1px solid #3a352b;
+		border: 1px solid var(--chrome-border);
 		border-radius: 7px;
-		background: #1b1a16;
-		color: #b8ad97;
+		background: var(--chrome-raised);
+		color: var(--chrome-muted);
 
 		display: inline-flex;
 		align-items: center;
@@ -55,7 +55,7 @@
 	}
 
 	.headerTitle {
-		color: #f2e5c8;
+		color: var(--chrome-text);
 		font-family:
 			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
 			monospace;
@@ -73,11 +73,11 @@
 	}
 
 	.headerLink {
-		color: #b8ad97;
+		color: var(--chrome-muted);
 		text-decoration: none;
 
 		&:hover {
-			color: #f2e5c8;
+			color: var(--chrome-text);
 		}
 
 		&:focus-visible {
@@ -85,4 +85,53 @@
 			outline-offset: 4px;
 		}
 	}
+
+	.headerThemeToggle {
+		display: inline-flex;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--chrome-text);
+		cursor: pointer;
+
+		&:focus-visible {
+			border-radius: 999px;
+			outline: 2px solid var(--chrome-accent);
+			outline-offset: 3px;
+		}
+	}
+
+	.headerThemeToggleTrack {
+		position: relative;
+		display: block;
+		width: 38px;
+		height: 22px;
+		box-sizing: border-box;
+		border: 1px solid var(--chrome-border);
+		border-radius: 999px;
+		background: var(--chrome-raised);
+		transition:
+			background-color 140ms ease,
+			border-color 140ms ease;
+	}
+
+	.headerThemeToggleThumb {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: var(--chrome-text);
+		color: var(--chrome-bg);
+		box-shadow: 0 1px 3px rgb(0 0 0 / 28%);
+		transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+}
+
+:root[data-theme="dark"] .headerThemeToggleThumb {
+	transform: translateX(16px);
 }

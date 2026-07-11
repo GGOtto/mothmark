@@ -20,6 +20,7 @@ type DragState = {
 };
 
 type MapProps = {
+	theme?: MapTheme;
 	rooms: Room[];
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	connections: ConnectionType[];
@@ -30,11 +31,14 @@ type MapProps = {
 	setIsConnectionSelected: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+export type MapTheme = "light" | "dark";
+
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
 const ROOM_DRAG_THRESHOLD = 2;
 
 export function Map({
+	theme = "dark",
 	rooms,
 	setRooms,
 	connections,
@@ -211,7 +215,7 @@ export function Map({
 		<div
 			ref={mapRef}
 			data-map
-			className="map"
+			className={`map map--theme-${theme}`}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerCancel}

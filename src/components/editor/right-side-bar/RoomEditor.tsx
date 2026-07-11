@@ -3,6 +3,7 @@ import {type World} from "../../../schemas/worldSchema";
 import {RoomSchema, type Room} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../universal/UniversalEditor";
 import {compareIds} from "@/utils/idUtils";
+import {useTheme} from "@/components/theme/ThemeProvider";
 
 type RoomEditorProps = {
 	selectedRoom: Room;
@@ -19,6 +20,7 @@ export function RoomEditor({
 	onWorldChange,
 	onRoomChange,
 }: RoomEditorProps) {
+	const {theme} = useTheme();
 	const duplicateRoomId = useMemo(() => {
 		return rooms.filter((room) => compareIds(room.id, selectedRoom.id)).length > 1;
 	}, [rooms, selectedRoom.id]);
@@ -44,7 +46,7 @@ export function RoomEditor({
 				onWorldChange={onWorldChange}
 				appearance={{
 					theme: "auto",
-					scheme: "dark",
+					scheme: theme,
 					chrome: "collapse",
 				}}
 				className="roomEditorUniversal"

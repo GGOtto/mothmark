@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 import "./globals.css";
 import {Header} from "../components/header/Header";
+import {ThemeProvider} from "../components/theme/ThemeProvider";
 
 export const metadata: Metadata = {
 	title: "Mothmark",
@@ -13,11 +14,13 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className="h-full antialiased">
-			<body className="flex h-dvh flex-col overflow-hidden bg-[#111]">
-				<Header />
+		<html lang="en" className="h-full antialiased" data-theme="dark">
+			<body className="flex h-dvh flex-col overflow-hidden">
+				<ThemeProvider>
+					<Header />
 
-				<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+					<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

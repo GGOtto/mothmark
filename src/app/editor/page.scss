@@ -4,7 +4,7 @@
 	height: 100%;
 	min-height: 0;
 	overflow: hidden;
-	background: #161616;
+	background: var(--workspace-bg);
 
 	.editorMainPanel {
 		display: flex;
@@ -27,19 +27,19 @@
 		flex-shrink: 0;
 		box-sizing: border-box;
 		padding: 0 16px;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-		background: #111;
+		border-bottom: 1px solid var(--panel-border);
+		background: var(--panel-bg);
 
 		.editorToolbarTitle {
 			margin: 0;
-			color: #ffffff;
+			color: var(--panel-text);
 			font-size: 14px;
 			font-weight: 600;
 		}
 
 		.editorToolbarDescription {
 			margin: 0;
-			color: rgba(255, 255, 255, 0.45);
+			color: var(--panel-muted);
 			font-size: 12px;
 		}
 	}
@@ -53,7 +53,7 @@
 		box-sizing: border-box;
 		padding: 24px;
 		overflow: auto;
-		background: #161616;
+		background: var(--workspace-bg);
 
 		.placeholderWorkspaceCard {
 			max-width: 576px;

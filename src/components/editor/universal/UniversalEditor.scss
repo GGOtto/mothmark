@@ -1,4 +1,7 @@
 .universalEditor {
+	--field-text: var(--panel-text, #f4ecd8);
+	--field-muted: var(--panel-muted, rgba(244, 236, 216, 0.72));
+	--field-border: var(--panel-border, rgba(244, 236, 216, 0.22));
 	--universal-editor-sticky-bg: rgba(244, 236, 216, 0.075);
 	--universal-editor-sticky-bg-hover: rgba(244, 236, 216, 0.12);
 	--universal-editor-sticky-border: rgba(244, 236, 216, 0.22);
@@ -7,7 +10,7 @@
 	--universal-editor-section-sticky-top: 72px;
 
 	min-width: 0;
-	color: #f4ecd8;
+	color: var(--panel-text, #f4ecd8);
 }
 
 .universalEditor--density-compact {

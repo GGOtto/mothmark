@@ -4,6 +4,7 @@ import {type World} from "../../../schemas/worldSchema";
 import {ConnectionSchema, type Connection, type Pathway} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../universal/UniversalEditor";
 import {compareIds, idValue, resolveWorldEntityName, toID} from "@/utils/idUtils";
+import {useTheme} from "@/components/theme/ThemeProvider";
 import "./ConnectionEditor.scss";
 
 type PathwayIndicatorProps = {
@@ -46,6 +47,7 @@ export function ConnectionEditor({
 	onWorldChange,
 	onConnectionChange,
 }: ConnectionEditorProps) {
+	const {theme} = useTheme();
 	const duplicateConnectionId = useMemo(() => {
 		return (
 			connections.filter((connection) => compareIds(connection.id, selectedConnection.id)).length > 1
@@ -92,7 +94,7 @@ export function ConnectionEditor({
 				onWorldChange={onWorldChange}
 				appearance={{
 					theme: "auto",
-					scheme: "dark",
+					scheme: theme,
 					chrome: "card",
 				}}
 				className="connectionEditorUniversal"
