@@ -9,13 +9,12 @@ import {
 	editorConditionList,
 	editorDiscriminatedUnion,
 	editorEffects,
-	editorEntityId,
+	editorReference,
 	editorId,
 	editorInput,
 	editorMessage,
 	editorObject,
 	editorOptionalFlagKey,
-	editorOptionalRoomId,
 	editorPriority,
 	editorScope,
 	editorSelect,
@@ -207,7 +206,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("room").describe("This command can only match in a specific room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room where this command is available.",
 				layout: {
@@ -235,7 +234,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("item").describe("This command is attached to a specific item."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item this command is attached to.",
 				layout: {
@@ -261,7 +260,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("feature").describe("This command is attached to a specific room feature."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room containing the feature.",
 				layout: {
@@ -269,7 +268,7 @@ export const CommandScopeSchema = editorScope(
 					order: 1,
 				},
 			}),
-			featureId: editorEntityId("feature", {
+			featureId: editorReference("feature", {
 				title: "Feature",
 				description: "The id of the feature this command is attached to.",
 				layout: {
@@ -293,9 +292,10 @@ export const CommandScopeSchema = editorScope(
 					order: 1,
 				},
 			}).min(1),
-			roomId: editorOptionalRoomId({
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "Optional room id. If provided, only features in this room are considered.",
+				required: false,
 				layout: {
 					width: "half",
 					order: 2,
@@ -305,7 +305,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("npc").describe("This command is attached to a specific NPC."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC this command is attached to.",
 				layout: {
@@ -331,7 +331,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("quest").describe("This command is available during a specific quest context."),
-			questId: editorEntityId("quest", {
+			questId: editorReference("quest", {
 				title: "Quest",
 				description: "The quest id this command belongs to.",
 				layout: {

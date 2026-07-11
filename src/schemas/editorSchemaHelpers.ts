@@ -15,12 +15,19 @@ import {
 
 type EditorMetadataWithoutControl = Omit<EditorFieldMetadata, "control">;
 
-type EditorMetadataWithoutControlOrEntityType = Omit<EditorFieldMetadata, "control" | "entityType">;
-
 type EditorMetadataWithoutControlOrTagSource = Omit<EditorFieldMetadata, "control" | "tagSource">;
 
 type LinkListMetadata = EditorMetadataWithoutControl & {
 	features: LinkListFeatures;
+};
+
+export type EditorReference<TEntityType extends EditorEntityType = EditorEntityType> = {
+	type: TEntityType;
+	id: string;
+};
+
+type OptionalReferenceMetadata = EditorMetadataWithoutControl & {
+	required: false;
 };
 
 export function editorString(metadata: EditorMetadataWithoutControl = {}) {
@@ -42,20 +49,7 @@ export function editorInput(metadata: EditorMetadataWithoutControl = {}) {
 export function editorId(metadata: EditorMetadataWithoutControl = {}) {
 	return withEditorMetadata(z.string().min(1), {
 		control: "id",
-		placeholder: "stable-id",
-		required: true,
-		picker: {
-			clearButton: false,
-			clearable: false,
-			...metadata.picker,
-		},
 		...metadata,
-		advanced: true,
-		layout: {
-			...metadata.layout,
-			order: 1000,
-			pinned: false,
-		},
 	});
 }
 
@@ -187,6 +181,42 @@ export function editorMultiSelect<
 	});
 }
 
+export function editorReference<TEntityType extends EditorEntityType>(
+	entityType: TEntityType,
+	metadata: OptionalReferenceMetadata,
+): z.ZodOptional<z.ZodType<string>>;
+export function editorReference<TEntityType extends EditorEntityType>(
+	entityType: TEntityType,
+	metadata?: EditorMetadataWithoutControl,
+): z.ZodType<string>;
+export function editorReference<TEntityType extends EditorEntityType>(
+	entityType: TEntityType,
+	metadata: EditorMetadataWithoutControl = {},
+) {
+	const referenceObjectSchema = z
+		.object({
+			type: z.literal(entityType),
+			id: z.string().min(1),
+		})
+		.transform((reference) => reference.id);
+	const schema = z.union([z.string().min(1), referenceObjectSchema]);
+	const isRequired = metadata.required ?? true;
+
+	return editorSelect(isRequired ? schema : schema.optional(), {
+		entityType,
+		required: isRequired,
+		picker: {
+			searchable: true,
+			clearable: !isRequired,
+			clearButton: !isRequired,
+			showDescriptions: false,
+			showBadges: true,
+			...metadata.picker,
+		},
+		...metadata,
+	}) as z.ZodType<string> | z.ZodOptional<z.ZodType<string>>;
+}
+
 export function editorStringList<
 	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
 >(metadata: EditorMetadataWithoutControl = {}, schema?: TSchema) {
@@ -215,6 +245,10 @@ export function editorAliasList<
 		description: "Alternative names the player can use.",
 		placeholder: "Add alias",
 		...metadata,
+		features: {
+			suggestionFields: ["name", "title", "label", "id"],
+			...(metadata.features ?? {}),
+		},
 	});
 }
 
@@ -240,6 +274,10 @@ export function editorTagList<TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodA
 			...metadata.emptyState,
 		},
 		...metadata,
+		features: {
+			suggestionFields: ["name", "title", "label", "id", "kind", "type"],
+			...(metadata.features ?? {}),
+		},
 	});
 }
 
@@ -331,117 +369,6 @@ export function editorSingleEditorLink(
 		},
 		z.object({type: z.string(), id: z.string(), label: z.string().optional()}).nullable(),
 	);
-}
-
-export function editorEntityId(
-	entityType: EditorEntityType,
-	metadata: EditorMetadataWithoutControlOrEntityType = {},
-) {
-	return withEditorMetadata(z.string().min(1), {
-		control: "entity-picker",
-		entityType,
-		required: true,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: false,
-			...metadata.picker,
-		},
-		...metadata,
-	});
-}
-
-export function editorOptionalEntityId(
-	entityType: EditorEntityType,
-	metadata: EditorMetadataWithoutControlOrEntityType = {},
-) {
-	return withEditorMetadata(z.string().min(1).optional(), {
-		control: "entity-picker",
-		entityType,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: true,
-			clearButton: true,
-			...metadata.picker,
-		},
-		...metadata,
-	});
-}
-
-export function editorEntityIdList(
-	entityType: EditorEntityType,
-	metadata: EditorMetadataWithoutControlOrEntityType = {},
-) {
-	return withEditorMetadata(z.array(z.string().min(1)).default([]), {
-		control: "multi-select",
-		entityType,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: true,
-			grouped: true,
-			...metadata.picker,
-		},
-		emptyState: {
-			emptyTitle: "No entities selected",
-			emptyDescription: "Choose one or more entities.",
-			emptyActionLabel: "Add entity",
-			...metadata.emptyState,
-		},
-		...metadata,
-	});
-}
-
-export function editorRoomId(metadata: EditorMetadataWithoutControlOrEntityType = {}) {
-	return withEditorMetadata(z.string().min(1), {
-		control: "room-picker",
-		entityType: "room",
-		required: true,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: false,
-			...metadata.picker,
-		},
-		...metadata,
-	});
-}
-
-export function editorOptionalRoomId(metadata: EditorMetadataWithoutControlOrEntityType = {}) {
-	return withEditorMetadata(z.string().min(1).optional(), {
-		control: "room-picker",
-		entityType: "room",
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: true,
-			clearButton: true,
-			...metadata.picker,
-		},
-		...metadata,
-	});
-}
-
-export function editorConnectionId(metadata: EditorMetadataWithoutControlOrEntityType = {}) {
-	return withEditorMetadata(z.string().min(1), {
-		control: "connection-picker",
-		entityType: "connection",
-		required: true,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: false,
-			...metadata.picker,
-		},
-		...metadata,
-	});
 }
 
 export function editorFlagKey(metadata: EditorMetadataWithoutControl = {}) {
@@ -869,19 +796,18 @@ export const editor = {
 	conditionList: editorConditionList,
 	conditionalText: editorConditionalText,
 	discriminatedUnion: editorDiscriminatedUnion,
-	entityId: editorEntityId,
-	entityIdList: editorEntityIdList,
 	flagKey: editorFlagKey,
 	id: editorId,
 	input: editorInput,
 	internalLinkList: editorInternalLinkList,
 	linkList: editorLinkList,
 	message: editorMessage,
+	multiSelect: editorMultiSelect,
 	number: editorNumber,
 	object: editorObject,
 	optionalFlagKey: editorOptionalFlagKey,
-	optionalRoomId: editorOptionalRoomId,
 	positiveInteger: editorPositiveInteger,
+	reference: editorReference,
 	richText: editorRichText,
 	select: editorSelect,
 	singleEditorLink: editorSingleEditorLink,

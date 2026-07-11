@@ -227,6 +227,7 @@ function buildSelectFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadat
 		...featureDefaults(metadata),
 		options: metadata?.options ?? getEnumOptions(schema),
 		optionSource: metadata?.optionSource,
+		entityType: metadata?.entityType,
 		placeholder: metadata?.placeholder,
 	};
 }

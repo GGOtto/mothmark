@@ -7,7 +7,6 @@ import {
 	editorDirection,
 	editorDiscriminatedUnion,
 	editorEffects,
-	editorEntityId,
 	editorFlagKey,
 	editorId,
 	editorInput,
@@ -16,6 +15,7 @@ import {
 	editorNumber,
 	editorObject,
 	editorPositiveInteger,
+	editorReference,
 	editorSelect,
 	editorStringList,
 	editorTagList,
@@ -53,7 +53,7 @@ const EffectIdentitySchema = z.object({
 export const EffectReferenceSchema = editorObject(
 	z.object({
 		type: z.literal("effect-ref").describe("References an effect stored in the world."),
-		effectId: editorEntityId("effect", {
+		effectId: editorReference("effect", {
 			title: "Effect",
 			description: "The world effect this usage should run.",
 			layout: {
@@ -401,7 +401,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("add").describe("Adds an item to the player's inventory."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to add to the player's inventory.",
 				layout: {
@@ -414,7 +414,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("remove").describe("Removes an item from the player's inventory."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to remove from the player's inventory.",
 				layout: {
@@ -444,7 +444,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("replace").describe("Replaces one inventory item with another."),
-			fromItemId: editorEntityId("item", {
+			fromItemId: editorReference("item", {
 				title: "From Item",
 				description: "The id of the inventory item to remove.",
 				layout: {
@@ -452,7 +452,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			toItemId: editorEntityId("item", {
+			toItemId: editorReference("item", {
 				title: "To Item",
 				description: "The id of the inventory item to add in its place.",
 				layout: {
@@ -477,7 +477,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("move-to-room").describe("Moves an item to a specific room."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to move.",
 				layout: {
@@ -485,7 +485,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room where the item should be moved.",
 				layout: {
@@ -500,7 +500,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("move-to-current-room")
 				.describe("Moves an item to the player's current room."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to move into the current room.",
 				layout: {
@@ -515,7 +515,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("place-on-surface")
 				.describe("Places an item on a surface, such as a table, shelf, desk, or altar."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to place.",
 				layout: {
@@ -523,7 +523,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			surfaceId: editorEntityId("surface", {
+			surfaceId: editorReference("surface", {
 				title: "Surface",
 				description: "The id of the surface where the item should be placed.",
 				layout: {
@@ -538,7 +538,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("place-in-container")
 				.describe("Places an item inside a container, such as a box, chest, drawer, or bag."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to place.",
 				layout: {
@@ -546,7 +546,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			containerId: editorEntityId("container", {
+			containerId: editorReference("container", {
 				title: "Container",
 				description: "The id of the container where the item should be placed.",
 				layout: {
@@ -559,7 +559,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("give-to-npc").describe("Moves an item into an NPC's possession."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to give to the NPC.",
 				layout: {
@@ -567,7 +567,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC who should receive the item.",
 				layout: {
@@ -584,7 +584,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 				.describe(
 					"Hides an item so it is no longer discoverable or visible through normal interactions.",
 				),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to hide.",
 				layout: {
@@ -599,7 +599,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("reveal")
 				.describe("Reveals a hidden item so it can be discovered or interacted with again."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to reveal.",
 				layout: {
@@ -614,7 +614,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("destroy")
 				.describe("Removes an item from the game world permanently or semi-permanently."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to destroy.",
 				layout: {
@@ -627,7 +627,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("create").describe("Creates or spawns an item into the game world."),
-			itemId: editorEntityId("item", {
+			itemId: editorReference("item", {
 				title: "Item",
 				description: "The id of the item to create or spawn.",
 				layout: {
@@ -695,7 +695,7 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 					],
 				},
 			),
-			objectId: editorEntityId("object", {
+			objectId: editorReference("object", {
 				title: "Object",
 				description: "The id of the object whose state should change.",
 				layout: {
@@ -710,7 +710,7 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 				.literal("object-state")
 				.describe("Changes the state of a world object, feature, container, surface, door, or item."),
 			operation: z.literal("set-custom").describe("Sets a custom state key on an object."),
-			objectId: editorEntityId("object", {
+			objectId: editorReference("object", {
 				title: "Object",
 				description: "The id of the object whose custom state should change.",
 				layout: {
@@ -747,7 +747,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("move-player").describe("Moves the player directly to a specific room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room where the player should be moved.",
 				layout: {
@@ -762,7 +762,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("set-description-variant")
 				.describe("Forces or selects a specific description variant for a room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room whose description variant should change.",
 				layout: {
@@ -794,7 +794,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					{label: "Unlock Exit", value: "unlock-exit"},
 				],
 			}),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room containing the exit.",
 				layout: {
@@ -815,7 +815,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("add-tag").describe("Adds a tag to a room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room that should receive the tag.",
 				layout: {
@@ -838,7 +838,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("remove-tag").describe("Removes a tag from a room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room that should lose the tag.",
 				layout: {
@@ -875,7 +875,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("move-to-room").describe("Moves an NPC to a specific room."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to move.",
 				layout: {
@@ -883,7 +883,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The id of the room where the NPC should be moved.",
 				layout: {
@@ -900,7 +900,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("move-to-current-room")
 				.describe("Moves an NPC to the player's current room."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to move into the current room.",
 				layout: {
@@ -915,7 +915,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("remove").describe("Removes an NPC from the active game world."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to remove.",
 				layout: {
@@ -930,7 +930,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("set-mood").describe("Sets the NPC's current mood or emotional state."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose mood should change.",
 				layout: {
@@ -957,7 +957,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("increase-trust")
 				.describe("Increases an NPC's trust, affinity, or relationship score."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose trust should increase.",
 				layout: {
@@ -982,7 +982,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("decrease-trust")
 				.describe("Decreases an NPC's trust, affinity, or relationship score."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose trust should decrease.",
 				layout: {
@@ -1017,7 +1017,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					],
 				},
 			),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to update.",
 				layout: {
@@ -1045,7 +1045,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("schedule")
 				.describe("Schedules an authored event to run at a later time or immediately."),
-			eventId: editorEntityId("event", {
+			eventId: editorReference("event", {
 				title: "Event",
 				description: "The id of the authored event to schedule.",
 				layout: {
@@ -1106,7 +1106,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("cancel-by-event-id")
 				.describe("Cancels all scheduled instances of a specific authored event."),
-			eventId: editorEntityId("event", {
+			eventId: editorReference("event", {
 				title: "Event",
 				description: "The authored event id whose scheduled instances should be cancelled.",
 				layout: {
@@ -1163,7 +1163,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("repeat")
 				.describe("Schedules an authored event to repeat every set number of turns."),
-			eventId: editorEntityId("event", {
+			eventId: editorReference("event", {
 				title: "Event",
 				description: "The id of the authored event to repeat.",
 				layout: {
@@ -1558,7 +1558,7 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}),
 
-		eventId: editorEntityId("event", {
+		eventId: editorReference("event", {
 			title: "Event",
 			description: "The authored event id this scheduled instance will run.",
 			layout: {

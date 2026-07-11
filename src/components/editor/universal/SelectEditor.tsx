@@ -6,6 +6,7 @@ import type {
 	EditorControlProps,
 	EditorSelectOption,
 } from "../../../types/universalEditorTypes";
+import type {EntityType} from "../../../types/editor/editorRegistryTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./SelectEditor.scss";
@@ -23,6 +24,7 @@ export type SelectFeatures = {
 	allowCreate?: boolean;
 	clearButton?: boolean;
 	clearable?: boolean;
+	entityType?: EntityType | "quest-objective";
 };
 
 export type SelectControlMetadata = EditorControlMetadata & {
@@ -31,6 +33,11 @@ export type SelectControlMetadata = EditorControlMetadata & {
 };
 
 export type SelectEditorProps = EditorControlProps<string, SelectControlMetadata>;
+
+function registryEntityType(entityType: SelectFeatures["entityType"]): EntityType | undefined {
+	if (entityType === "quest-objective") return undefined;
+	return entityType;
+}
 
 export function SelectEditor({
 	value,
@@ -52,19 +59,32 @@ export function SelectEditor({
 	const searchable = metadata.features.searchable || metadata.features.allowCreate;
 	const clearable = metadata.features.clearButton || metadata.features.clearable;
 	const showDescriptions = metadata.features.showDescriptions ?? true;
+	const entityType = registryEntityType(metadata.features.entityType);
+	const registryOptions =
+		entityType && context.registerEntityPicker
+			? context.registerEntityPicker.getEntities(entityType).map((option) => ({
+					label: option.label,
+					value: option.id,
+					description: option.description,
+					group: undefined,
+					badge: option.kind ?? option.entityType,
+					disabled: option.disabled || option.deprecated,
+				}))
+			: [];
+	const options: SelectOption[] =
+		metadata.features.options.length > 0 ? metadata.features.options : registryOptions;
 	const filteredOptions = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
-		if (!normalizedQuery) return metadata.features.options;
+		if (!normalizedQuery) return options;
 
-		return metadata.features.options.filter((option) =>
+		return options.filter((option) =>
 			[option.label, option.value, option.description, option.group, option.badge]
 				.filter(Boolean)
 				.some((part) => String(part).toLowerCase().includes(normalizedQuery)),
 		);
-	}, [metadata.features.options, query]);
-	const hasBadges =
-		metadata.features.showBadges ?? metadata.features.options.some((option) => option.badge);
-	const selectedOption = metadata.features.options.find((option) => option.value === value);
+	}, [options, query]);
+	const hasBadges = metadata.features.showBadges ?? options.some((option) => option.badge);
+	const selectedOption = options.find((option) => option.value === value);
 
 	function createValue() {
 		const nextValue = query.trim();

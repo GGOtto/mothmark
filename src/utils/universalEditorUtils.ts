@@ -203,22 +203,22 @@ function conditionSummarySubject(condition: Record<string, unknown>) {
 	}
 
 	const type = String(condition.type ?? condition.kind ?? "");
-	if (type === "condition-ref") return String(condition.conditionId ?? "choose condition");
-	if (type === "flag") return "choose flag";
-	if (type === "counter") return "choose counter";
-	if (type === "current-room") return "current room";
-	if (type === "inventory") return "choose inventory target";
-	if (type === "item-location") return "choose item";
-	if (type === "object-state") return "choose object";
-	if (type === "npc") return "choose NPC";
-	if (type === "command-history") return "choose command";
+	if (type === "condition-ref") return String(condition.conditionId ?? "(unchosen) condition");
+	if (type === "flag") return "unspecified flag";
+	if (type === "counter") return "unspecified counter";
+	if (type === "current-room") return "unspecified room";
+	if (type === "inventory") return "unspecified inventory target";
+	if (type === "item-location") return "unspecified item";
+	if (type === "object-state") return "unspecified object";
+	if (type === "npc") return "unspecified NPC";
+	if (type === "command-history") return "unspecifed command";
 	if (type === "turn") return "turn";
 	if (type === "random-chance") return "chance";
-	if (type === "quest") return "choose quest";
-	if (type === "scheduled-event") return "choose event";
+	if (type === "quest") return "unspecifed quest";
+	if (type === "scheduled-event") return "unspecifed event";
 	if (type === "resolved-target") return "resolved target";
 
-	return "choose target";
+	return "unspecifed target";
 }
 
 function conditionSummaryTarget(value: unknown, fallback: string): string {
@@ -320,7 +320,7 @@ function generateConditionSummaryAtDepth(
 	if (kind === "single") {
 		const flag = String(condition.flag ?? condition.subject ?? "");
 		const value = condition.value ?? true;
-		return `${flag || "choose flag"} is ${stringifySummaryValue(value)}`;
+		return `${flag || "unspecified flag"} is ${stringifySummaryValue(value)}`;
 	}
 
 	if (kind === "current-room") {
@@ -330,7 +330,7 @@ function generateConditionSummaryAtDepth(
 		const value = usesTag ? condition.tag : condition.roomId;
 		return `current room ${operatorLabel} ${conditionSummaryTarget(
 			value,
-			usesTag ? "choose tag" : "choose room",
+			usesTag ? "unspecified tag" : "unspecified room",
 		)}`.trim();
 	}
 

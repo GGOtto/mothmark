@@ -34,7 +34,6 @@ describe("resolveEditorMetadata object fields", () => {
 					a: {
 						layout: {
 							order: 2,
-							pinned: true,
 						},
 					},
 				},
@@ -43,11 +42,10 @@ describe("resolveEditorMetadata object fields", () => {
 
 		const fields = getObjectFields(schema);
 
-		expect(fields.map((field) => field.key)).toEqual(["a", "b", "c"]);
-		expect(fields[0].metadata.layout).toEqual({
+		expect(fields.map((field) => field.key)).toEqual(["b", "a", "c"]);
+		expect(fields[1].metadata.layout).toEqual({
 			width: "half",
 			order: 2,
-			pinned: true,
 		});
 	});
 
@@ -65,15 +63,10 @@ describe("resolveEditorMetadata object fields", () => {
 			"visitedFlag",
 			"viewedFlag",
 			"activeWhen",
-			"visibleWhen",
 			"id",
 		]);
 		expect(fields.at(-1)?.metadata).toMatchObject({
-			advanced: true,
-			layout: {
-				order: 1000,
-				pinned: false,
-			},
+			type: "id",
 		});
 	});
 
@@ -96,6 +89,7 @@ describe("resolveEditorMetadata object fields", () => {
 		const fields = getObjectFields(RoomFeatureSchema);
 
 		expect(fields.map((field) => field.key)).toEqual([
+			"id",
 			"name",
 			"kind",
 			"description",
@@ -109,15 +103,18 @@ describe("resolveEditorMetadata object fields", () => {
 			"capacity",
 			"initialItems",
 			"state",
-			"id",
 		]);
-		expect(fields.at(-1)?.metadata.advanced).toBe(true);
+		expect(fields[0].metadata).toMatchObject({
+			type: "id",
+		});
 	});
 
 	it("applies the recommended connection authoring field order", () => {
 		const fields = getObjectFields(ConnectionSchema);
 
 		expect(fields.map((field) => field.key)).toEqual([
+			"id",
+			"name",
 			"fromRoomId",
 			"toRoomId",
 			"direction",
@@ -130,8 +127,9 @@ describe("resolveEditorMetadata object fields", () => {
 			"travelAllowedWhen",
 			"lockedWhen",
 			"state",
-			"id",
 		]);
-		expect(fields.at(-1)?.metadata.advanced).toBe(true);
+		expect(fields[0].metadata).toMatchObject({
+			type: "id",
+		});
 	});
 });

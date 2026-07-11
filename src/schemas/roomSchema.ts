@@ -181,7 +181,6 @@ export const RoomFeatureSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 1,
-				pinned: true,
 			},
 		}),
 
@@ -194,7 +193,6 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 2,
-					pinned: true,
 				},
 			})
 			.min(1),
@@ -284,10 +282,11 @@ export const RoomFeatureSchema = editor.object(
 			})
 			.optional(),
 
-		initialItems: editor.entityIdList("item", {
+		initialItems: editor.multiSelect({
 			title: "Initial Items",
 			description:
 				"Item ids initially inside this container or on this surface. Prefer item.initialLocation as the source of truth when possible.",
+			entityType: "item",
 			layout: {
 				width: "full",
 				order: 13,
@@ -319,7 +318,6 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 3,
-					pinned: true,
 				},
 			},
 			description: {
@@ -328,7 +326,6 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 4,
-					pinned: true,
 				},
 			},
 			state: {
@@ -351,8 +348,7 @@ export const RoomSchema = editor.object(
 			required: true,
 			layout: {
 				width: "half",
-				order: 1,
-				pinned: true,
+				order: -1,
 			},
 		}),
 
@@ -365,7 +361,6 @@ export const RoomSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 2,
-					pinned: true,
 				},
 			})
 			.min(1),
@@ -382,7 +377,6 @@ export const RoomSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 4,
-					pinned: true,
 				},
 			})
 			.default(""),
@@ -474,7 +468,6 @@ export const RoomSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 3,
-					pinned: true,
 				},
 			},
 			position: {
@@ -506,7 +499,6 @@ export const ConnectionSchema = editor.object(
 			layout: {
 				width: "half",
 				order: 1,
-				pinned: true,
 			},
 		}),
 
@@ -519,29 +511,26 @@ export const ConnectionSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 2,
-					pinned: true,
 				},
 			})
 			.min(1)
 			.optional(),
 
-		fromRoomId: editor.entityId("room", {
+		fromRoomId: editor.reference("room", {
 			title: "From Room",
 			description: "The id of the room where this connection starts.",
 			layout: {
 				width: "half",
 				order: 2,
-				pinned: true,
 			},
 		}),
 
-		toRoomId: editor.entityId("room", {
+		toRoomId: editor.reference("room", {
 			title: "To Room",
 			description: "The id of the room where this connection leads.",
 			layout: {
 				width: "half",
 				order: 3,
-				pinned: true,
 			},
 		}),
 
@@ -642,7 +631,6 @@ export const ConnectionSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 4,
-					pinned: true,
 				},
 			},
 			returnDirection: {
@@ -652,7 +640,6 @@ export const ConnectionSchema = editor.object(
 				layout: {
 					width: "half",
 					order: 5,
-					pinned: true,
 				},
 			},
 			pathway: {
@@ -662,7 +649,6 @@ export const ConnectionSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 6,
-					pinned: true,
 				},
 			},
 			state: {

@@ -12,15 +12,14 @@ import {
 	editorBoolean,
 	editorConditionList,
 	editorDiscriminatedUnion,
-	editorEntityId,
-	editorEntityIdList,
+	editorReference,
 	editorFlagKey,
 	editorId,
 	editorInput,
 	editorMessage,
+	editorMultiSelect,
 	editorNumber,
 	editorObject,
-	editorOptionalRoomId,
 	editorSelect,
 	editorTagList,
 	editorTextarea,
@@ -135,7 +134,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("room").describe("The item starts loose in a room."),
-			roomId: editorEntityId("room", {
+			roomId: editorReference("room", {
 				title: "Room",
 				description: "The room where the item starts.",
 				layout: {
@@ -147,7 +146,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("container").describe("The item starts inside a container."),
-			containerId: editorEntityId("container", {
+			containerId: editorReference("container", {
 				title: "Container",
 				description: "The container where the item starts.",
 				layout: {
@@ -159,7 +158,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("surface").describe("The item starts on a surface."),
-			surfaceId: editorEntityId("surface", {
+			surfaceId: editorReference("surface", {
 				title: "Surface",
 				description: "The surface where the item starts.",
 				layout: {
@@ -171,7 +170,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("npc").describe("The item starts held by an NPC."),
-			npcId: editorEntityId("npc", {
+			npcId: editorReference("npc", {
 				title: "NPC",
 				description: "The NPC who starts with the item.",
 				layout: {
@@ -358,7 +357,7 @@ export const NpcScheduleEntrySchema = editorObject(
 			},
 		}),
 
-		roomId: editorEntityId("room", {
+		roomId: editorReference("room", {
 			title: "Room",
 			description: "The room where the NPC should be for this schedule entry.",
 			layout: {
@@ -436,9 +435,10 @@ export const NpcSchema = editorObject(
 			"The description shown when the player examines this NPC.",
 		),
 
-		initialRoomId: editorOptionalRoomId({
+		initialRoomId: editorReference("room", {
 			title: "Initial Room",
 			description: "The room where this NPC starts. Omit if the NPC starts unavailable or hidden.",
+			required: false,
 			layout: {
 				width: "half",
 				order: 6,
@@ -466,9 +466,10 @@ export const NpcSchema = editorObject(
 			},
 		}).default(0),
 
-		initialInventory: editorEntityIdList("item", {
+		initialInventory: editorMultiSelect({
 			title: "Initial Inventory",
 			description: "Item ids this NPC starts with.",
+			entityType: "item",
 			layout: {
 				width: "full",
 				order: 10,
@@ -507,9 +508,10 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		knownTopics: editorEntityIdList("topic", {
+		knownTopics: editorMultiSelect({
 			title: "Known Topics",
 			description: "Topic ids this NPC can discuss.",
+			entityType: "topic",
 			layout: {
 				width: "full",
 				order: 13,
@@ -805,7 +807,7 @@ export const QuestSchema = editorObject(
 
 export const InitialObjectStateSchema = editorObject(
 	z.object({
-		objectId: editorEntityId("object", {
+		objectId: editorReference("object", {
 			title: "Object",
 			description:
 				"The object id whose state should be initialized, such as item:lantern or feature:kitchen.table.",
@@ -925,18 +927,20 @@ export const WorldInitialStateSchema = editorObject(
 			},
 		}),
 
-		knownTopics: editorEntityIdList("topic", {
+		knownTopics: editorMultiSelect({
 			title: "Known Topics",
 			description: "Topic ids the player knows when the game starts.",
+			entityType: "topic",
 			layout: {
 				width: "full",
 				order: 4,
 			},
 		}),
 
-		inventory: editorEntityIdList("item", {
+		inventory: editorMultiSelect({
 			title: "Inventory",
 			description: "Item ids the player starts with. Prefer item.initialLocation when possible.",
+			entityType: "item",
 			layout: {
 				width: "full",
 				order: 5,
@@ -1022,7 +1026,7 @@ export const WorldSchema = editorObject(
 				"Optional metadata about this world.",
 			),
 
-			startRoomId: editorEntityId("room", {
+			startRoomId: editorReference("room", {
 				title: "Start Room",
 				description: "The id of the room where the player starts.",
 				layout: {

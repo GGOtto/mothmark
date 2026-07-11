@@ -134,13 +134,6 @@ export type EditorFieldLayoutMetadata = {
 
 export type EditorFieldImportance = "primary" | "secondary" | "advanced" | "internal";
 
-export type EditorFieldPriority = {
-	order?: number;
-	group?: string;
-	pinned?: boolean;
-	importance?: EditorFieldImportance;
-};
-
 export type EditorDisclosure = {
 	defaultCollapsed?: boolean;
 	collapsible?: boolean;
@@ -257,7 +250,6 @@ export type EditorFieldMetadata = {
 
 	appearance?: EditorControlAppearance;
 	layout?: EditorFieldLayoutMetadata;
-	priority?: EditorFieldPriority;
 	disclosure?: EditorDisclosure;
 
 	options?: EditorOption[];

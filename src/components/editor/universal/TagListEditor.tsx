@@ -12,6 +12,7 @@ export type TagListTransform = "none" | "slug" | "id" | "lowercase" | "uppercase
 export type TagListFeatures = {
 	allowDuplicates?: boolean;
 	suggestions?: string[];
+	suggestionFields?: string[];
 	autoSuggestFrom?: "title" | "description" | "registry";
 	sourceText?: string;
 	collisionValues?: string[];
@@ -36,6 +37,7 @@ export function TagListEditor({
 	value,
 	onChange,
 	metadata,
+	path,
 	error,
 	warnings,
 	disabled,
@@ -51,11 +53,20 @@ export function TagListEditor({
 	const maxItems = metadata.features?.maxItems;
 	const canAdd = canEdit && (typeof maxItems !== "number" || value.length < maxItems);
 	const collisionValues = new Set(metadata.features?.collisionValues ?? []);
+	const suggestionSourceText =
+		metadata.features?.sourceText ??
+		resolveSuggestionSourceText(
+			metadata.features?.suggestionFields,
+			metadata.features?.autoSuggestFrom,
+			path,
+			context,
+		);
 	const generatedSuggestions = createAliasSuggestions(
-		metadata.features?.sourceText,
+		suggestionSourceText,
 		metadata.features?.suggestions,
 		metadata.features?.suggestPlural,
 		metadata.features?.suggestArticleless,
+		metadata.features?.suggestionFields !== undefined,
 	);
 	const visibleSuggestions = generatedSuggestions.filter(
 		(suggestion) => !value.includes(suggestion),
@@ -122,7 +133,7 @@ export function TagListEditor({
 						readOnly={isReadonly}
 						autoFocus={autoFocus}
 						list={
-							metadata.features?.suggestions ? `${metadata.testId ?? "tag-list"}-suggestions` : undefined
+							visibleSuggestions.length > 0 ? `${metadata.testId ?? "tag-list"}-suggestions` : undefined
 						}
 						onBlur={() => {
 							if (metadata.features?.addOnBlur) addTag();
@@ -185,17 +196,57 @@ export function TagListEditor({
 	);
 }
 
+function resolveSuggestionSourceText(
+	suggestionFields: TagListFeatures["suggestionFields"],
+	legacySource: TagListFeatures["autoSuggestFrom"],
+	path: TagListEditorProps["path"],
+	context: TagListEditorProps["context"],
+) {
+	const fields = suggestionFields ?? fieldsForLegacySuggestionSource(legacySource);
+	if (fields.length === 0) return undefined;
+
+	const parentPath = path.slice(0, -1);
+	const parentValue = context.getValue(parentPath);
+	if (!parentValue || typeof parentValue !== "object" || Array.isArray(parentValue))
+		return undefined;
+
+	const record = parentValue as Record<string, unknown>;
+
+	for (const fieldName of fields) {
+		const fieldValue = record[fieldName];
+		if (typeof fieldValue !== "string") continue;
+
+		const trimmedValue = fieldValue.trim();
+		if (trimmedValue) return trimmedValue;
+	}
+
+	return undefined;
+}
+
+function fieldsForLegacySuggestionSource(source: TagListFeatures["autoSuggestFrom"]) {
+	if (source === "description") return ["description"];
+	if (source === "title") return ["name", "title", "label"];
+	return [];
+}
+
 function createAliasSuggestions(
 	sourceText?: string,
 	suggestions: string[] = [],
 	suggestPlural?: boolean,
 	suggestArticleless?: boolean,
+	suggestNumberedAliases?: boolean,
 ) {
 	const values = new Set<string>(suggestions.map((suggestion) => suggestion.trim()).filter(Boolean));
 	const normalizedSource = sourceText?.trim();
 
 	if (normalizedSource) {
-		values.add(normalizedSource);
+		if (suggestNumberedAliases) {
+			values.add(`${normalizedSource} 1`);
+			values.add(`${normalizedSource} 2`);
+			values.add(`${normalizedSource} 3`);
+		} else {
+			values.add(normalizedSource);
+		}
 
 		const articleless = normalizedSource.replace(/^(a|an|the)\s+/i, "").trim();
 		if (suggestArticleless && articleless) values.add(articleless);

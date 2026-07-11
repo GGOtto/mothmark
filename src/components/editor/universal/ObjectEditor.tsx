@@ -184,18 +184,8 @@ function inferFieldGroupId(field: ObjectFieldMetadata) {
 	return "details";
 }
 
-function getFieldGroupId(field: ObjectFieldMetadata) {
-	return (
-		field.metadata.priority?.group ??
-		field.metadata.layout?.section ??
-		field.metadata.layout?.group ??
-		inferFieldGroupId(field)
-	);
-}
-
 function getFieldImportance(field: ObjectFieldMetadata) {
 	return (
-		field.metadata.priority?.importance ??
 		(field.metadata.advanced || field.metadata.disclosure?.advanced ? "advanced" : undefined) ??
 		"secondary"
 	);
@@ -209,7 +199,6 @@ function getFieldSearchText(field: ObjectFieldMetadata, group?: EditorFieldGroup
 		field.metadata.placeholder,
 		group?.title,
 		group?.description,
-		field.metadata.priority?.group,
 		field.metadata.layout?.group,
 		field.metadata.layout?.section,
 	]
@@ -293,11 +282,7 @@ function buildGroupMetadata(
 		importance: inferredImportance,
 		collapsible: true,
 		defaultCollapsed: shouldDefaultCollapse,
-		order:
-			configuredGroup?.order ??
-			inferredGroup?.order ??
-			firstField?.metadata.priority?.order ??
-			firstField?.metadata.layout?.order,
+		order: configuredGroup?.order ?? inferredGroup?.order ?? firstField?.metadata.layout?.order,
 	} satisfies EditorFieldGroupMetadata;
 }
 
@@ -383,7 +368,7 @@ export function ObjectEditor({
 	const groupedSections = useMemo(() => {
 		const groups = new Map<string, ObjectFieldMetadata[]>();
 		for (const field of fields) {
-			const groupId = shouldRenderSections ? getFieldGroupId(field) : "details";
+			const groupId = shouldRenderSections ? inferFieldGroupId(field) : "details";
 			const groupFields = groups.get(groupId) ?? [];
 			groupFields.push(field);
 			groups.set(groupId, groupFields);

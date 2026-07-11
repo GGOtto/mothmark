@@ -1,3 +1,4 @@
+import {useState} from "react";
 import type {EditorControlMetadata, EditorControlProps} from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {applyTextTransform} from "../../../utils/universalEditorUtils";
@@ -39,7 +40,7 @@ export type TextFieldFeatures = {
 };
 
 export type TextFieldControlMetadata = EditorControlMetadata & {
-	type: "text" | "input" | "id";
+	type: "input";
 
 	minLength?: number;
 	maxLength?: number;
@@ -70,10 +71,12 @@ export function TextField({
 
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
+	const [inputText, setInputText] = useState<string>(value);
 
 	const canEdit = !isDisabled && !isReadonly;
 
 	function updateValue(rawValue: string) {
+		setInputText(rawValue);
 		onChange(applyTextTransform(rawValue, metadata.transform));
 	}
 
@@ -106,7 +109,7 @@ export function TextField({
 
 				<input
 					className="textField__input"
-					value={value}
+					value={inputText}
 					placeholder={metadata.placeholder}
 					disabled={isDisabled}
 					readOnly={isReadonly}
