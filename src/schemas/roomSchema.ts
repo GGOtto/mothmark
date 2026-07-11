@@ -174,7 +174,7 @@ export const RoomFeatureKindSchema = editor.select(
 
 export const RoomFeatureSchema = editor.object(
 	z.object({
-		id: editor.id({
+		id: editor.id("feature", {
 			title: "Feature ID",
 			description: "The unique id used to identify this room feature.",
 			required: true,
@@ -342,7 +342,7 @@ export const RoomFeatureSchema = editor.object(
 
 export const RoomSchema = editor.object(
 	z.object({
-		id: editor.id({
+		id: editor.id("room", {
 			title: "Room ID",
 			description: "The unique id used to identify this room.",
 			required: true,
@@ -492,7 +492,7 @@ export const RoomSchema = editor.object(
 
 export const ConnectionSchema = editor.object(
 	z.object({
-		id: editor.id({
+		id: editor.id("connection", {
 			title: "Connection ID",
 			description: "The unique id used to identify this connection.",
 			required: true,

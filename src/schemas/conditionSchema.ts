@@ -8,6 +8,7 @@ import {
 	editorDiscriminatedUnion,
 	editorReference,
 	editorFlagKey,
+	editorId,
 	editorInput,
 	editorNonNegativeInteger,
 	editorNumber,
@@ -112,7 +113,7 @@ export const StringComparisonOperatorSchema = editorSelect(
 );
 
 const ConditionIdentitySchema = z.object({
-	id: editorInput({
+	id: editorId("condition", {
 		title: "Condition ID",
 		description: "Stable world-unique identifier used when reusing this condition.",
 		advanced: true,

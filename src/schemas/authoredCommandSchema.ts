@@ -1002,15 +1002,7 @@ export const CommandBranchKindSchema = editorSelect(
 
 export const CommandBranchSchema = editorObject(
 	z.object({
-		id: editorId({
-			title: "Branch ID",
-			description: "Stable unique id for this command branch.",
-			required: true,
-			layout: {
-				width: "half",
-				order: 1,
-			},
-		}),
+		id: editorId("command-branch"),
 
 		name: editorInput({
 			title: "Name",
@@ -1179,7 +1171,7 @@ export const CommandMessageVariableSchema = editorObject(
 
 export const AuthorCommandSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("command", {
 			title: "Command ID",
 			description: "Stable unique id for this authored command.",
 			required: true,

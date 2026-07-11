@@ -1,4 +1,5 @@
 import type {Connection, Direction, World} from "../schemas/worldSchema";
+import {idValue} from "../utils/idUtils";
 import type {GameState} from "./gameState";
 import {createGameMessage} from "./gameState";
 import {lookAtRoom} from "./rooms";
@@ -14,12 +15,12 @@ function canTravelBackward(connection: Connection) {
 function getConnectionForDirection(world: World, currentRoomId: string, direction: Direction) {
 	return world.connections.find((connection) => {
 		const forwardMatch =
-			connection.fromRoomId === currentRoomId &&
+			idValue(connection.fromRoomId) === currentRoomId &&
 			connection.direction === direction &&
 			canTravelForward(connection);
 
 		const backwardMatch =
-			connection.toRoomId === currentRoomId &&
+			idValue(connection.toRoomId) === currentRoomId &&
 			connection.returnDirection === direction &&
 			canTravelBackward(connection);
 
@@ -28,11 +29,11 @@ function getConnectionForDirection(world: World, currentRoomId: string, directio
 }
 
 function getDestinationRoomId(connection: Connection, currentRoomId: string) {
-	if (connection.fromRoomId === currentRoomId) {
-		return connection.toRoomId;
+	if (idValue(connection.fromRoomId) === currentRoomId) {
+		return idValue(connection.toRoomId);
 	}
 
-	return connection.fromRoomId;
+	return idValue(connection.fromRoomId);
 }
 
 export function movePlayer(world: World, gameState: GameState, direction: Direction): GameState {

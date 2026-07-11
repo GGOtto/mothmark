@@ -5,6 +5,7 @@ import {RefreshCw} from "lucide-react";
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {GamePlayer} from "./GamePlayer";
 import type {World} from "../../schemas/worldSchema";
+import {idValue} from "../../utils/idUtils";
 import "./CommandLine.scss";
 
 type CommandLineProps = {
@@ -14,7 +15,7 @@ type CommandLineProps = {
 
 export function CommandLine({world, selectedRoomId}: CommandLineProps) {
 	const [syncVersion, setSyncVersion] = useState(0);
-	const startingRoomId = selectedRoomId ?? world.startRoomId;
+	const startingRoomId = selectedRoomId ?? idValue(world.startRoomId);
 
 	function syncSelectedRoom() {
 		if (!selectedRoomId) return;

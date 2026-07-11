@@ -8,6 +8,7 @@ import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
 import {buildAddConnectionResult} from "../../utils/connectionUtils";
+import {idValue, type ID} from "../../utils/idUtils";
 import {useConnectionDrag} from "./useConnectionDrag";
 import "./Map.scss";
 
@@ -47,12 +48,12 @@ export function Map({
 	const pendingConnectionSelectionIdRef = useRef<string | null>(null);
 
 	function selectRoom(room?: Room) {
-		setSelectedId(room ? room.id : null);
+		setSelectedId(room ? idValue(room.id) : null);
 		setIsConnectionSelected(false);
 	}
 
 	function selectConnection(connection?: ConnectionType) {
-		setSelectedId(connection ? connection.id : null);
+		setSelectedId(connection ? idValue(connection.id) : null);
 		setIsConnectionSelected(true);
 	}
 
@@ -66,7 +67,7 @@ export function Map({
 		if (!pendingConnectionSelectionId) return;
 
 		const connectionToSelect = connections.find(
-			(connection) => connection.id === pendingConnectionSelectionId,
+			(connection) => idValue(connection.id) === pendingConnectionSelectionId,
 		);
 
 		if (!connectionToSelect) return;
@@ -84,8 +85,9 @@ export function Map({
 		});
 	}
 
-	function getRoom(roomId: string, direction?: Direction) {
-		const room = rooms.find((room) => room.id === roomId);
+	function getRoom(roomReference: string | ID<"room">, direction?: Direction) {
+		const roomId = idValue(roomReference);
+		const room = rooms.find((room) => idValue(room.id) === roomId);
 
 		if (room && direction) {
 			return {
@@ -165,7 +167,7 @@ export function Map({
 		event.currentTarget.setPointerCapture(event.pointerId);
 
 		setDragState({
-			roomId: room.id,
+			roomId: idValue(room.id),
 			offset: subtractPoints(pointer, room.position),
 			startPointer: pointer,
 			hasDragged: false,
@@ -194,7 +196,7 @@ export function Map({
 
 		setRooms((rooms) =>
 			rooms.map((room) => {
-				if (room.id !== dragState.roomId) return room;
+				if (idValue(room.id) !== dragState.roomId) return room;
 
 				return {
 					...room,
@@ -207,7 +209,7 @@ export function Map({
 	function handlePointerUp() {
 		if (!dragState) return;
 
-		const selectedRoom = rooms.find((room) => room.id === dragState.roomId);
+		const selectedRoom = rooms.find((room) => idValue(room.id) === dragState.roomId);
 
 		if (selectedRoom && !dragState.hasDragged) {
 			selectRoom(selectedRoom);
@@ -239,13 +241,13 @@ export function Map({
 
 					return (
 						<Connection
-							key={connection.id}
+							key={idValue(connection.id)}
 							connection={connection}
 							fromRoom={fromRoom}
 							toRoom={toRoom}
 							selectConnection={selectConnection}
-							isEditing={isConnectionSelected && connection.id === selectedId}
-							isSelected={isConnectionSelected && connection.id === selectedId}
+							isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
+							isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
 						/>
 					);
 				})}
@@ -272,12 +274,12 @@ export function Map({
 
 			{rooms.map((room) => (
 				<RoomCard
-					key={room.id}
+					key={idValue(room.id)}
 					room={room}
 					width={ROOM_WIDTH}
 					height={ROOM_HEIGHT}
-					isSelected={!isConnectionSelected && selectedId === room.id}
-					isDragging={dragState?.roomId === room.id && dragState.hasDragged}
+					isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
+					isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
 					onPointerDown={handleRoomPointerDown}
 					onNodeClick={addConnection}
 					onConnectionDragStart={handleConnectionDragStart}

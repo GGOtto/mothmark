@@ -1,11 +1,12 @@
 import type {Room, World} from "@/schemas/worldSchema";
+import {idValue} from "@/utils/idUtils";
 import {resolveDescription} from "./descriptions";
 import {getRoomViewedFlag, getRoomVisitedFlag} from "./flags";
 import type {GameState, GameMessage} from "./gameState";
 import {createGameMessage} from "./gameState";
 
 export function getRoom(world: World, roomId: string): Room {
-	const room = world.rooms.find((room) => room.id === roomId);
+	const room = world.rooms.find((room) => idValue(room.id) === roomId);
 
 	if (!room) {
 		throw new Error(`Missing room: ${roomId}`);
@@ -32,7 +33,7 @@ export function buildRoomDescription(world: World, room: Room, gameState: GameSt
 
 	text += "\n";
 	return createGameMessage(text, "room", {
-		roomId: room.id,
+		roomId: idValue(room.id),
 	});
 }
 
@@ -44,8 +45,8 @@ export function lookAtRoom(world: World, gameState: GameState): GameState {
 		...gameState,
 		flags: {
 			...gameState.flags,
-			[getRoomVisitedFlag(room.id)]: true,
-			[getRoomViewedFlag(room.id)]: true,
+			[getRoomVisitedFlag(idValue(room.id))]: true,
+			[getRoomViewedFlag(idValue(room.id))]: true,
 		},
 		messages: [...gameState.messages, description],
 	};
@@ -65,7 +66,7 @@ export function refreshLatestRoomMessage(world: World, gameState: GameState): Ga
 
 	const latestRoomMessage = gameState.messages[latestRoomMessageIndex];
 	const roomId = latestRoomMessage.roomId ?? gameState.currentRoomId;
-	const room = world.rooms.find((candidateRoom) => candidateRoom.id === roomId);
+	const room = world.rooms.find((candidateRoom) => idValue(candidateRoom.id) === roomId);
 
 	if (!room) return gameState;
 

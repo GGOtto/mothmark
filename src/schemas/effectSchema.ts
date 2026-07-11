@@ -25,7 +25,7 @@ import {
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 const EffectIdentitySchema = z.object({
-	id: editorId({
+	id: editorId("effect", {
 		title: "Effect ID",
 		description: "Stable world-unique identifier used when reusing this effect.",
 	}).optional(),
@@ -1288,7 +1288,7 @@ export type FlowEffect = z.infer<typeof FlowEffectSchema>;
 
 export type EffectGroup = {
 	type: "group";
-	id?: string;
+	id?: import("@/utils/idUtils").ID<"effect">;
 	name?: string;
 	allowMultipleUsesInWorld?: boolean;
 	effects: EffectReference[];
@@ -1296,7 +1296,7 @@ export type EffectGroup = {
 
 export type ConditionalEffect = {
 	type: "conditional";
-	id?: string;
+	id?: import("@/utils/idUtils").ID<"effect">;
 	name?: string;
 	allowMultipleUsesInWorld?: boolean;
 	when: z.infer<typeof ConditionUsageSchema>[];
@@ -1448,7 +1448,7 @@ export const EffectUsageSchema = EffectReferenceSchema;
 
 export const AuthoredEventSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("event", {
 			title: "Event ID",
 			description:
 				"The unique id of this authored event. Event effects reference this id when scheduling, repeating, or cancelling events.",
@@ -1548,7 +1548,7 @@ export type AuthoredEvent = z.infer<typeof AuthoredEventSchema>;
 
 export const ScheduledEventInstanceSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("event-instance", {
 			title: "Instance ID",
 			description: "The unique runtime id for this scheduled event instance.",
 			required: true,

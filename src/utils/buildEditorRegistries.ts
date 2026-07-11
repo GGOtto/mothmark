@@ -5,11 +5,12 @@ import type {
 	EditorRegistries,
 	EditorTagRegistry,
 } from "@/types/editor/editorRegistryTypes";
+import {idValue, type ID} from "@/utils/idUtils";
 
 export type {EditorRegistries};
 
 type WorldEntity = {
-	id: string;
+	id: string | ID;
 	name?: string;
 	title?: string;
 	description?: unknown;
@@ -30,8 +31,8 @@ function descriptionText(description: unknown): string | undefined {
 
 function entityOption(entity: WorldEntity, path: Array<string | number>): EditorEntityOption {
 	return {
-		id: entity.id,
-		label: entity.name ?? entity.title ?? entity.id,
+		id: idValue(entity.id),
+		label: entity.name ?? entity.title ?? idValue(entity.id),
 		description: descriptionText(entity.description),
 		aliases: entity.aliases,
 		tags: entity.tags,
@@ -80,8 +81,8 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	const worldRecord = world as unknown as Record<string, WorldEntity[] | unknown>;
 	const rooms = world.rooms.map((room, index) => entityOption(room, ["rooms", index]));
 	const connections = world.connections.map((connection, index) => ({
-		id: connection.id,
-		label: `${connection.fromRoomId} ${connection.direction} ${connection.toRoomId}`,
+		id: idValue(connection.id),
+		label: `${idValue(connection.fromRoomId)} ${connection.direction} ${idValue(connection.toRoomId)}`,
 		description: descriptionText(connection.description),
 		path: ["connections", index],
 	}));
@@ -115,8 +116,8 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	const features = world.rooms.flatMap((room, roomIndex) =>
 		(room.features ?? []).map((feature, featureIndex) => ({
 			...entityOption(feature, ["rooms", roomIndex, "features", featureIndex]),
-			id: `${room.id}.${feature.id}`,
-			parentId: room.id,
+			id: `${idValue(room.id)}.${idValue(feature.id)}`,
+			parentId: idValue(room.id),
 		})),
 	);
 	const containers = features.filter((feature) => feature.kind === "container");

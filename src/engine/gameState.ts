@@ -1,4 +1,5 @@
 import type {World} from "@/schemas/worldSchema";
+import {idValue} from "@/utils/idUtils";
 import {getFeatureExaminedFlag, getRoomViewedFlag, getRoomVisitedFlag} from "./flags";
 
 export type GameMessageType = "room" | "command" | "system" | "error";
@@ -38,15 +39,15 @@ export function createInitialGameState(world: World, startingRoomId: string): Ga
 	const flags: Record<string, boolean> = {};
 
 	for (const room of world.rooms) {
-		flags[getRoomVisitedFlag(room.id)] = false;
-		flags[getRoomViewedFlag(room.id)] = false;
+		flags[getRoomVisitedFlag(idValue(room.id))] = false;
+		flags[getRoomViewedFlag(idValue(room.id))] = false;
 
 		if (!room.features) {
 			continue;
 		}
 
 		for (const feature of room.features) {
-			flags[getFeatureExaminedFlag(room.id, feature.id)] = false;
+			flags[getFeatureExaminedFlag(idValue(room.id), idValue(feature.id))] = false;
 		}
 	}
 

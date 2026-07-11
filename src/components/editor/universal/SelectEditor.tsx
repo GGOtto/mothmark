@@ -7,6 +7,7 @@ import type {
 	EditorSelectOption,
 } from "../../../types/universalEditorTypes";
 import type {EntityType} from "../../../types/editor/editorRegistryTypes";
+import {idValue, type ID, type WorldIdEntityType} from "../../../utils/idUtils";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./SelectEditor.scss";
@@ -24,7 +25,7 @@ export type SelectFeatures = {
 	allowCreate?: boolean;
 	clearButton?: boolean;
 	clearable?: boolean;
-	entityType?: EntityType | "quest-objective";
+	entityType?: WorldIdEntityType;
 };
 
 export type SelectControlMetadata = EditorControlMetadata & {
@@ -32,11 +33,19 @@ export type SelectControlMetadata = EditorControlMetadata & {
 	features: SelectFeatures;
 };
 
-export type SelectEditorProps = EditorControlProps<string, SelectControlMetadata>;
+export type SelectEditorValue = string | ID | undefined;
+
+export type SelectEditorProps = EditorControlProps<SelectEditorValue, SelectControlMetadata>;
 
 function registryEntityType(entityType: SelectFeatures["entityType"]): EntityType | undefined {
+	if (entityType === "object") return undefined;
 	if (entityType === "quest-objective") return undefined;
 	return entityType;
+}
+
+function selectValue(value: SelectEditorValue) {
+	if (typeof value === "string") return value;
+	return idValue(value);
 }
 
 export function SelectEditor({
@@ -60,6 +69,7 @@ export function SelectEditor({
 	const clearable = metadata.features.clearButton || metadata.features.clearable;
 	const showDescriptions = metadata.features.showDescriptions ?? true;
 	const entityType = registryEntityType(metadata.features.entityType);
+	const selectedValue = selectValue(value);
 	const registryOptions =
 		entityType && context.registerEntityPicker
 			? context.registerEntityPicker.getEntities(entityType).map((option) => ({
@@ -84,13 +94,22 @@ export function SelectEditor({
 		);
 	}, [options, query]);
 	const hasBadges = metadata.features.showBadges ?? options.some((option) => option.badge);
-	const selectedOption = options.find((option) => option.value === value);
+	const selectedOption = options.find((option) => option.value === selectedValue);
+
+	function commitValue(nextId: string) {
+		if (metadata.features.entityType) {
+			onChange(nextId ? {type: metadata.features.entityType, id: nextId} : undefined);
+			return;
+		}
+
+		onChange(nextId);
+	}
 
 	function createValue() {
 		const nextValue = query.trim();
 		if (!canEdit || !metadata.features.allowCreate || !nextValue) return;
 
-		onChange(nextValue);
+		commitValue(nextValue);
 	}
 
 	return (
@@ -107,14 +126,14 @@ export function SelectEditor({
 				<div className="selectEditor__row">
 					<select
 						className="selectEditor__input"
-						value={value}
+						value={selectedValue}
 						disabled={isDisabled || isReadonly}
 						autoFocus={autoFocus}
 						required={metadata.required}
 						aria-readonly={isReadonly || undefined}
 						data-readonly={isReadonly || undefined}
 						onChange={(event) => {
-							onChange(event.target.value);
+							commitValue(event.target.value);
 						}}
 					>
 						{metadata.features.placeholder ? (
@@ -136,8 +155,8 @@ export function SelectEditor({
 						<button
 							className="selectEditor__button"
 							type="button"
-							disabled={!canEdit || value.length === 0}
-							onClick={() => onChange("")}
+							disabled={!canEdit || selectedValue.length === 0}
+							onClick={() => commitValue("")}
 						>
 							Clear
 						</button>

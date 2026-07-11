@@ -6,6 +6,7 @@ import {DescriptionSchema} from "./descriptionSchema";
 import {ObjectStateDefaultsSchema, DefaultObjectStateDefaults} from "./objectStateSchema";
 import {RoomSchema, ConnectionSchema} from "./roomSchema";
 import {docify} from "../utils/docify";
+import {idValue, isID} from "../utils/idUtils";
 import {
 	editorAliasList,
 	editorArray,
@@ -25,7 +26,7 @@ import {
 	editorTextarea,
 } from "@/schemas/editorSchemaHelpers";
 
-export const IdSchema = editorId({
+export const IdSchema = editorId("object", {
 	title: "ID",
 	description: "A stable unique id used by schemas, conditions, effects, and editor references.",
 });
@@ -217,7 +218,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 export const ItemSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("item", {
 			title: "Item ID",
 			description: "The unique id used to identify this item.",
 			required: true,
@@ -347,7 +348,7 @@ export const NpcDispositionSchema = editorSelect(
 
 export const NpcScheduleEntrySchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("npc-schedule-entry", {
 			title: "Schedule Entry ID",
 			description: "Unique id for this schedule entry.",
 			required: true,
@@ -392,7 +393,7 @@ export const NpcScheduleEntrySchema = editorObject(
 
 export const NpcSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("npc", {
 			title: "NPC ID",
 			description: "The unique id used to identify this NPC.",
 			required: true,
@@ -559,7 +560,7 @@ export const NpcSchema = editorObject(
 
 export const TopicSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("topic", {
 			title: "Topic ID",
 			description: "The unique id used to identify this conversation topic.",
 			required: true,
@@ -645,7 +646,7 @@ export const TopicSchema = editorObject(
 
 export const QuestObjectiveSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("quest-objective", {
 			title: "Objective ID",
 			description: "The unique id for this quest objective.",
 			required: true,
@@ -705,7 +706,7 @@ export const QuestObjectiveSchema = editorObject(
 
 export const QuestSchema = editorObject(
 	z.object({
-		id: editorId({
+		id: editorId("quest", {
 			title: "Quest ID",
 			description: "The unique id used to identify this quest.",
 			required: true,
@@ -1267,30 +1268,32 @@ export const WorldSchema = editorObject(
 			const surfaceIds = new Set<string>();
 
 			for (const [roomIndex, room] of world.rooms.entries()) {
-				if (roomIds.has(room.id)) {
+				const roomId = idValue(room.id);
+				if (roomIds.has(roomId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate room id: ${room.id}`,
+						message: `Duplicate room id: ${roomId}`,
 						path: ["rooms", roomIndex, "id"],
 					});
 				}
 
-				roomIds.add(room.id);
+				roomIds.add(roomId);
 
 				const roomFeatureIds = new Set<string>();
 
 				for (const [featureIndex, feature] of room.features.entries()) {
-					const fullFeatureId = `${room.id}.${feature.id}`;
+					const featureId = idValue(feature.id);
+					const fullFeatureId = `${roomId}.${featureId}`;
 
-					if (roomFeatureIds.has(feature.id)) {
+					if (roomFeatureIds.has(featureId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `Duplicate feature id ${feature.id} in room ${room.id}`,
+							message: `Duplicate feature id ${featureId} in room ${roomId}`,
 							path: ["rooms", roomIndex, "features", featureIndex, "id"],
 						});
 					}
 
-					roomFeatureIds.add(feature.id);
+					roomFeatureIds.add(featureId);
 
 					if (fullFeatureIds.has(fullFeatureId)) {
 						ctx.addIssue({
@@ -1303,31 +1306,33 @@ export const WorldSchema = editorObject(
 					fullFeatureIds.add(fullFeatureId);
 
 					if (feature.kind === "container") {
-						containerIds.add(feature.id);
+						containerIds.add(featureId);
 						containerIds.add(fullFeatureId);
 					}
 
 					if (feature.kind === "surface") {
-						surfaceIds.add(feature.id);
+						surfaceIds.add(featureId);
 						surfaceIds.add(fullFeatureId);
 					}
 				}
 			}
 
 			for (const [connectionIndex, connection] of world.connections.entries()) {
-				if (connectionIds.has(connection.id)) {
+				const connectionId = idValue(connection.id);
+				if (connectionIds.has(connectionId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate connection id: ${connection.id}`,
+						message: `Duplicate connection id: ${connectionId}`,
 						path: ["connections", connectionIndex, "id"],
 					});
 				}
 
-				connectionIds.add(connection.id);
+				connectionIds.add(connectionId);
 			}
 
 			for (const [conditionIndex, condition] of world.conditions.entries()) {
-				if (!("id" in condition) || typeof condition.id !== "string" || !condition.id.trim()) {
+				const conditionId = "id" in condition && isID(condition.id) ? idValue(condition.id) : "";
+				if (!conditionId) {
 					ctx.addIssue({
 						code: "custom",
 						message: "World conditions need a condition id.",
@@ -1336,124 +1341,135 @@ export const WorldSchema = editorObject(
 					continue;
 				}
 
-				if (conditionIds.has(condition.id)) {
+				if (conditionIds.has(conditionId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate condition id: ${condition.id}`,
+						message: `Duplicate condition id: ${conditionId}`,
 						path: ["conditions", conditionIndex, "id"],
 					});
 				}
 
-				conditionIds.add(condition.id);
+				conditionIds.add(conditionId);
 			}
 
 			for (const [itemIndex, item] of world.items.entries()) {
-				if (itemIds.has(item.id)) {
+				const itemId = idValue(item.id);
+				if (itemIds.has(itemId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate item id: ${item.id}`,
+						message: `Duplicate item id: ${itemId}`,
 						path: ["items", itemIndex, "id"],
 					});
 				}
 
-				itemIds.add(item.id);
+				itemIds.add(itemId);
 			}
 
 			for (const [topicIndex, topic] of world.topics.entries()) {
-				if (topicIds.has(topic.id)) {
+				const topicId = idValue(topic.id);
+				if (topicIds.has(topicId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate topic id: ${topic.id}`,
+						message: `Duplicate topic id: ${topicId}`,
 						path: ["topics", topicIndex, "id"],
 					});
 				}
 
-				topicIds.add(topic.id);
+				topicIds.add(topicId);
 			}
 
 			for (const [npcIndex, npc] of world.npcs.entries()) {
-				if (npcIds.has(npc.id)) {
+				const npcId = idValue(npc.id);
+				if (npcIds.has(npcId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate NPC id: ${npc.id}`,
+						message: `Duplicate NPC id: ${npcId}`,
 						path: ["npcs", npcIndex, "id"],
 					});
 				}
 
-				npcIds.add(npc.id);
+				npcIds.add(npcId);
 			}
 
 			for (const [questIndex, quest] of world.quests.entries()) {
-				if (questIds.has(quest.id)) {
+				const questId = idValue(quest.id);
+				if (questIds.has(questId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate quest id: ${quest.id}`,
+						message: `Duplicate quest id: ${questId}`,
 						path: ["quests", questIndex, "id"],
 					});
 				}
 
-				questIds.add(quest.id);
+				questIds.add(questId);
 
 				const objectiveIds = new Set<string>();
 
 				for (const [objectiveIndex, objective] of quest.objectives.entries()) {
-					if (objectiveIds.has(objective.id)) {
+					const objectiveId = idValue(objective.id);
+					if (objectiveIds.has(objectiveId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `Duplicate objective id ${objective.id} in quest ${quest.id}`,
+							message: `Duplicate objective id ${objectiveId} in quest ${questId}`,
 							path: ["quests", questIndex, "objectives", objectiveIndex, "id"],
 						});
 					}
 
-					objectiveIds.add(objective.id);
+					objectiveIds.add(objectiveId);
 				}
 			}
 
 			for (const [commandIndex, command] of world.authoredCommands.entries()) {
-				if (commandIds.has(command.id)) {
+				const commandId = idValue(command.id);
+				if (commandIds.has(commandId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate authored command id: ${command.id}`,
+						message: `Duplicate authored command id: ${commandId}`,
 						path: ["authoredCommands", commandIndex, "id"],
 					});
 				}
 
-				commandIds.add(command.id);
+				commandIds.add(commandId);
 			}
 
 			for (const [eventIndex, event] of world.authoredEvents.entries()) {
-				if (eventIds.has(event.id)) {
+				const eventId = idValue(event.id);
+				if (eventIds.has(eventId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Duplicate authored event id: ${event.id}`,
+						message: `Duplicate authored event id: ${eventId}`,
 						path: ["authoredEvents", eventIndex, "id"],
 					});
 				}
 
-				eventIds.add(event.id);
+				eventIds.add(eventId);
 			}
 
-			if (!roomIds.has(world.startRoomId)) {
+			const startRoomId = idValue(world.startRoomId);
+			if (!roomIds.has(startRoomId)) {
 				ctx.addIssue({
 					code: "custom",
-					message: `Starting room id ${world.startRoomId} is not a real room.`,
+					message: `Starting room ${startRoomId} is not a real room.`,
 					path: ["startRoomId"],
 				});
 			}
 
 			for (const [connectionIndex, connection] of world.connections.entries()) {
-				if (!roomIds.has(connection.fromRoomId)) {
+				const fromRoomId = idValue(connection.fromRoomId);
+				const toRoomId = idValue(connection.toRoomId);
+
+				if (!roomIds.has(fromRoomId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Connection points from missing room: ${connection.fromRoomId}`,
+						message: `Connection points from missing room: ${fromRoomId}`,
 						path: ["connections", connectionIndex, "fromRoomId"],
 					});
 				}
 
-				if (!roomIds.has(connection.toRoomId)) {
+				if (!roomIds.has(toRoomId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Connection points to missing room: ${connection.toRoomId}`,
+						message: `Connection points to missing room: ${toRoomId}`,
 						path: ["connections", connectionIndex, "toRoomId"],
 					});
 				}
@@ -1465,7 +1481,7 @@ export const WorldSchema = editorObject(
 						if (!itemIds.has(itemId)) {
 							ctx.addIssue({
 								code: "custom",
-								message: `Feature ${room.id}.${feature.id} references missing initial item: ${itemId}`,
+								message: `Feature ${idValue(room.id)}.${idValue(feature.id)} references missing initial item: ${itemId}`,
 								path: ["rooms", roomIndex, "features", featureIndex, "initialItems", itemIndex],
 							});
 						}
@@ -1474,50 +1490,53 @@ export const WorldSchema = editorObject(
 			}
 
 			for (const [itemIndex, item] of world.items.entries()) {
-				if (item.initialLocation.type === "room" && !roomIds.has(item.initialLocation.roomId)) {
+				if (
+					item.initialLocation.type === "room" &&
+					!roomIds.has(idValue(item.initialLocation.roomId))
+				) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Item ${item.id} starts in missing room: ${item.initialLocation.roomId}`,
+						message: `Item ${idValue(item.id)} starts in missing room: ${idValue(item.initialLocation.roomId)}`,
 						path: ["items", itemIndex, "initialLocation", "roomId"],
 					});
 				}
 
 				if (
 					item.initialLocation.type === "container" &&
-					!containerIds.has(item.initialLocation.containerId)
+					!containerIds.has(idValue(item.initialLocation.containerId))
 				) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Item ${item.id} starts in missing container: ${item.initialLocation.containerId}`,
+						message: `Item ${idValue(item.id)} starts in missing container: ${idValue(item.initialLocation.containerId)}`,
 						path: ["items", itemIndex, "initialLocation", "containerId"],
 					});
 				}
 
 				if (
 					item.initialLocation.type === "surface" &&
-					!surfaceIds.has(item.initialLocation.surfaceId)
+					!surfaceIds.has(idValue(item.initialLocation.surfaceId))
 				) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Item ${item.id} starts on missing surface: ${item.initialLocation.surfaceId}`,
+						message: `Item ${idValue(item.id)} starts on missing surface: ${idValue(item.initialLocation.surfaceId)}`,
 						path: ["items", itemIndex, "initialLocation", "surfaceId"],
 					});
 				}
 
-				if (item.initialLocation.type === "npc" && !npcIds.has(item.initialLocation.npcId)) {
+				if (item.initialLocation.type === "npc" && !npcIds.has(idValue(item.initialLocation.npcId))) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Item ${item.id} starts with missing NPC: ${item.initialLocation.npcId}`,
+						message: `Item ${idValue(item.id)} starts with missing NPC: ${idValue(item.initialLocation.npcId)}`,
 						path: ["items", itemIndex, "initialLocation", "npcId"],
 					});
 				}
 			}
 
 			for (const [npcIndex, npc] of world.npcs.entries()) {
-				if (npc.initialRoomId && !roomIds.has(npc.initialRoomId)) {
+				if (npc.initialRoomId && !roomIds.has(idValue(npc.initialRoomId))) {
 					ctx.addIssue({
 						code: "custom",
-						message: `NPC ${npc.id} starts in missing room: ${npc.initialRoomId}`,
+						message: `NPC ${idValue(npc.id)} starts in missing room: ${idValue(npc.initialRoomId)}`,
 						path: ["npcs", npcIndex, "initialRoomId"],
 					});
 				}
@@ -1526,7 +1545,7 @@ export const WorldSchema = editorObject(
 					if (!itemIds.has(itemId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `NPC ${npc.id} starts with missing item: ${itemId}`,
+							message: `NPC ${idValue(npc.id)} starts with missing item: ${itemId}`,
 							path: ["npcs", npcIndex, "initialInventory", inventoryIndex],
 						});
 					}
@@ -1536,17 +1555,18 @@ export const WorldSchema = editorObject(
 					if (!topicIds.has(topicId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `NPC ${npc.id} references missing topic: ${topicId}`,
+							message: `NPC ${idValue(npc.id)} references missing topic: ${topicId}`,
 							path: ["npcs", npcIndex, "knownTopics", topicIndex],
 						});
 					}
 				}
 
 				for (const [scheduleIndex, scheduleEntry] of npc.schedule.entries()) {
-					if (!roomIds.has(scheduleEntry.roomId)) {
+					const roomId = idValue(scheduleEntry.roomId);
+					if (!roomIds.has(roomId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `NPC ${npc.id} schedule points to missing room: ${scheduleEntry.roomId}`,
+							message: `NPC ${idValue(npc.id)} schedule points to missing room: ${roomId}`,
 							path: ["npcs", npcIndex, "schedule", scheduleIndex, "roomId"],
 						});
 					}

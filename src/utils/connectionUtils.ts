@@ -1,7 +1,7 @@
 import type {Connection, Direction, Point, Room} from "../schemas/roomSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/mapTypes";
 import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
-import {generateUniqueId} from "./idUtils";
+import {compareIds, generateUniqueId, idValue} from "./idUtils";
 import {subtractPoints} from "./pointUtils";
 
 type BuildAddConnectionResultOptions = {
@@ -39,10 +39,10 @@ export function isConnectionFromRoom(
 ) {
 	return connections.some((connection) => {
 		return (
-			(connection.fromRoomId === roomId &&
+			(idValue(connection.fromRoomId) === roomId &&
 				connection.direction === direction &&
 				(connection.pathway === "forwards" || connection.pathway === "two-way")) ||
-			(connection.toRoomId === roomId &&
+			(idValue(connection.toRoomId) === roomId &&
 				connection.returnDirection === direction &&
 				(connection.pathway === "backwards" || connection.pathway === "two-way"))
 		);
@@ -51,8 +51,8 @@ export function isConnectionFromRoom(
 
 export function connectionUsesNode(connection: Connection, roomId: string, direction: Direction) {
 	return (
-		(connection.fromRoomId === roomId && connection.direction === direction) ||
-		(connection.toRoomId === roomId && connection.returnDirection === direction)
+		(idValue(connection.fromRoomId) === roomId && connection.direction === direction) ||
+		(idValue(connection.toRoomId) === roomId && connection.returnDirection === direction)
 	);
 }
 
@@ -63,7 +63,7 @@ export function getConnectionOnNode(
 	ignoredConnectionId?: string,
 ) {
 	return connections.find((connection) => {
-		if (connection.id === ignoredConnectionId) return false;
+		if (idValue(connection.id) === ignoredConnectionId) return false;
 
 		return connectionUsesNode(connection, roomId, direction);
 	});
@@ -76,7 +76,7 @@ export function getConnectionsOnNode(
 	ignoredConnectionId?: string,
 ) {
 	return connections.filter((connection) => {
-		if (connection.id === ignoredConnectionId) return false;
+		if (idValue(connection.id) === ignoredConnectionId) return false;
 
 		return connectionUsesNode(connection, roomId, direction);
 	});
@@ -87,11 +87,11 @@ export function getConnectionSide(
 	roomId: string,
 	direction: Direction,
 ): MovingConnectionSide | null {
-	if (connection.fromRoomId === roomId && connection.direction === direction) {
+	if (idValue(connection.fromRoomId) === roomId && connection.direction === direction) {
 		return "from";
 	}
 
-	if (connection.toRoomId === roomId && connection.returnDirection === direction) {
+	if (idValue(connection.toRoomId) === roomId && connection.returnDirection === direction) {
 		return "to";
 	}
 
@@ -100,8 +100,8 @@ export function getConnectionSide(
 
 export function isSameConnectionShape(connection: Connection, candidate: Connection) {
 	return (
-		connection.fromRoomId === candidate.fromRoomId &&
-		connection.toRoomId === candidate.toRoomId &&
+		idValue(connection.fromRoomId) === idValue(candidate.fromRoomId) &&
+		idValue(connection.toRoomId) === idValue(candidate.toRoomId) &&
 		connection.direction === candidate.direction &&
 		connection.returnDirection === candidate.returnDirection
 	);
@@ -113,7 +113,7 @@ export function getDuplicateConnectionByShape(
 	ignoredConnectionId?: string,
 ) {
 	return connections.find((connection) => {
-		if (connection.id === ignoredConnectionId) return false;
+		if (idValue(connection.id) === ignoredConnectionId) return false;
 
 		return isSameConnectionShape(connection, candidate);
 	});
@@ -141,8 +141,8 @@ export function getNearestNodeInRadius({
 	let nearestTarget: SnapTarget | null = null;
 
 	for (const room of rooms) {
-		if (room.id === ignoredRoomId) continue;
-		if (room.id === lockedRoomId) continue;
+		if (idValue(room.id) === ignoredRoomId) continue;
+		if (idValue(room.id) === lockedRoomId) continue;
 
 		for (const direction of DIRECTIONS) {
 			const point = getRoomConnectionPoint(room, direction);
@@ -262,7 +262,7 @@ function getBestOverlappingRoom({
 	minConnectorLength: number;
 }) {
 	const candidates = rooms
-		.filter((room) => room.id !== sourceRoom.id)
+		.filter((room) => !compareIds(room.id, sourceRoom.id))
 		.map((room) => {
 			const dx = Math.abs(room.position.x - position.x);
 			const dy = Math.abs(room.position.y - position.y);
@@ -360,8 +360,8 @@ function findTargetRoomOrPosition({
 function connectionAlreadyExists(connectionToAdd: Connection, connections: Connection[]) {
 	return connections.some((connection) => {
 		return (
-			connection.fromRoomId === connectionToAdd.fromRoomId &&
-			connection.toRoomId === connectionToAdd.toRoomId &&
+			idValue(connection.fromRoomId) === idValue(connectionToAdd.fromRoomId) &&
+			idValue(connection.toRoomId) === idValue(connectionToAdd.toRoomId) &&
 			connection.direction === connectionToAdd.direction
 		);
 	});
@@ -378,7 +378,7 @@ export function buildAddConnectionResult({
 	minConnectorLength,
 	connectorStep,
 }: BuildAddConnectionResultOptions): BuildAddConnectionResult | null {
-	if (isConnectionFromRoom(fromRoom.id, direction, connections)) {
+	if (isConnectionFromRoom(idValue(fromRoom.id), direction, connections)) {
 		return null;
 	}
 
@@ -405,7 +405,8 @@ export function buildAddConnectionResult({
 
 	const targetReturnDirection = REVERSE_DIRECTION[direction];
 	const targetCanReturn =
-		!overlappingRoom || !isConnectionFromRoom(overlappingRoom.id, targetReturnDirection, connections);
+		!overlappingRoom ||
+		!isConnectionFromRoom(idValue(overlappingRoom.id), targetReturnDirection, connections);
 
 	const connection = createDefaultConnection({
 		id: generateUniqueId("connection", connections),

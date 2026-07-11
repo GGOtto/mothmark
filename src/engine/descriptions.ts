@@ -1,6 +1,7 @@
 import type {Condition} from "@/schemas/conditionSchema";
 import type {Description} from "@/schemas/descriptionSchema";
 import type {World} from "@/schemas/worldSchema";
+import {idValue} from "@/utils/idUtils";
 import type {GameState} from "./gameState";
 
 export function conditionsMatch(conditions: Condition[], gameState: GameState, world?: World) {
@@ -29,7 +30,7 @@ function resolveConditionReference(
 ): Condition | undefined {
 	if (condition.type !== "condition-ref") return condition;
 
-	const conditionId = condition.conditionId.trim();
+	const conditionId = idValue(condition.conditionId).trim();
 	if (!conditionId || seenConditionIds.has(conditionId)) return undefined;
 
 	const worldCondition = world?.conditions.find(
@@ -53,7 +54,7 @@ function conditionMatches(
 
 	const nextSeenConditionIds = new Set(seenConditionIds);
 	if (condition.type === "condition-ref") {
-		nextSeenConditionIds.add(condition.conditionId);
+		nextSeenConditionIds.add(idValue(condition.conditionId));
 	}
 
 	if (resolvedCondition.type === "group") {

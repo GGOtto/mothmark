@@ -8,6 +8,7 @@ import {
 	type SnapTarget,
 } from "../../utils/connectionUtils";
 import {createDefaultConnection} from "../../utils/createDefaultWorld";
+import {compareIds, idValue} from "../../utils/idUtils";
 
 export type ConnectionDragState = {
 	fromRoomId: string;
@@ -77,11 +78,11 @@ export function useConnectionDrag({
 
 			if (existingConnection) {
 				if (shouldSelectConnection) {
-					onConnectionSelectionRequested?.(existingConnection.id);
+					onConnectionSelectionRequested?.(idValue(existingConnection.id));
 				}
 
 				return connections.map((currentConnection) => {
-					if (currentConnection.id !== existingConnection.id) return currentConnection;
+					if (!compareIds(currentConnection.id, existingConnection.id)) return currentConnection;
 
 					return {
 						...currentConnection,
@@ -91,7 +92,7 @@ export function useConnectionDrag({
 			}
 
 			if (shouldSelectConnection) {
-				onConnectionSelectionRequested?.(connection.id);
+				onConnectionSelectionRequested?.(idValue(connection.id));
 			}
 
 			return [...connections, connection];
@@ -136,13 +137,13 @@ export function useConnectionDrag({
 		toRoom: Room,
 		toDirection: Direction,
 	) {
-		if (fromRoomId === toRoom.id) return;
+		if (fromRoomId === idValue(toRoom.id)) return;
 
 		setConnections((connections) => {
 			const pathway = getPathwayForNewDrop(
 				fromRoomId,
 				fromDirection,
-				toRoom.id,
+				idValue(toRoom.id),
 				toDirection,
 				connections,
 			);
@@ -159,10 +160,10 @@ export function useConnectionDrag({
 			const existingConnection = getDuplicateConnectionByShape(connections, connection);
 
 			if (existingConnection) {
-				onConnectionSelectionRequested?.(existingConnection.id);
+				onConnectionSelectionRequested?.(idValue(existingConnection.id));
 
 				return connections.map((currentConnection) => {
-					if (currentConnection.id !== existingConnection.id) return currentConnection;
+					if (!compareIds(currentConnection.id, existingConnection.id)) return currentConnection;
 
 					return {
 						...currentConnection,
@@ -171,7 +172,7 @@ export function useConnectionDrag({
 				});
 			}
 
-			onConnectionSelectionRequested?.(connection.id);
+			onConnectionSelectionRequested?.(idValue(connection.id));
 
 			return [...connections, connection];
 		});
@@ -309,7 +310,7 @@ export function useConnectionDrag({
 		const startPointer = pointer ?? sourcePoint;
 
 		setSyncedConnectionDragState({
-			fromRoomId: fromRoom.id,
+			fromRoomId: idValue(fromRoom.id),
 			fromDirection,
 			startPointer,
 			startPoint: sourcePoint,

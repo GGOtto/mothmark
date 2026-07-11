@@ -15,6 +15,7 @@ import {
 	isSameConnectionShape,
 } from "./connectionUtils";
 import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
+import {idValue, toID} from "./idUtils";
 
 const ROOM_WIDTH = 72;
 const ROOM_HEIGHT = 40;
@@ -32,9 +33,9 @@ function generatedRoom(id: string, name: string, position: Point): Room {
 
 function connection(overrides: Partial<Connection> = {}): Connection {
 	return createDefaultConnection({
-		id: "connection-1",
-		fromRoomId: "room-1",
-		toRoomId: "room-2",
+		id: toID("connection", "connection-1"),
+		fromRoomId: {type: "room", id: "room-1"},
+		toRoomId: {type: "room", id: "room-2"},
 		direction: "e",
 		returnDirection: "w",
 		pathway: "two-way",
@@ -79,8 +80,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns true when a forwards connection leaves the room in the given direction", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "forwards",
@@ -93,8 +94,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns false when a forwards connection leaves the room in a different direction", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "forwards",
@@ -107,8 +108,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns true when a two-way connection enters the room through the given return direction", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "two-way",
@@ -121,8 +122,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns true when a backwards connection enters the room through the given return direction", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "backwards",
@@ -135,8 +136,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns false when a backwards connection is checked from the original fromRoom direction", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "backwards",
@@ -149,8 +150,8 @@ describe("isConnectionFromRoom", () => {
 	it("returns false for no-way connections", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "no-way",
@@ -165,7 +166,7 @@ describe("isConnectionFromRoom", () => {
 describe("connectionUsesNode", () => {
 	it("returns true when the connection starts at the given node", () => {
 		const existingConnection = connection({
-			fromRoomId: "room-1",
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -174,7 +175,7 @@ describe("connectionUsesNode", () => {
 
 	it("returns true when the connection ends at the given node", () => {
 		const existingConnection = connection({
-			toRoomId: "room-2",
+			toRoomId: {type: "room", id: "room-2"},
 			returnDirection: "w",
 		});
 
@@ -183,7 +184,7 @@ describe("connectionUsesNode", () => {
 
 	it("returns false when the room matches but the direction does not", () => {
 		const existingConnection = connection({
-			fromRoomId: "room-1",
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -194,15 +195,15 @@ describe("connectionUsesNode", () => {
 describe("getConnectionOnNode", () => {
 	it("returns the first connection that uses the node", () => {
 		const matchingConnection = connection({
-			id: "connection-1",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-1"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
 		const connections = [
 			connection({
-				id: "connection-2",
-				fromRoomId: "room-2",
+				id: toID("connection", "connection-2"),
+				fromRoomId: {type: "room", id: "room-2"},
 				direction: "n",
 			}),
 			matchingConnection,
@@ -213,14 +214,14 @@ describe("getConnectionOnNode", () => {
 
 	it("ignores the connection with the ignored id", () => {
 		const ignoredConnection = connection({
-			id: "connection-1",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-1"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
 		const matchingConnection = connection({
-			id: "connection-2",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-2"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -232,7 +233,7 @@ describe("getConnectionOnNode", () => {
 	it("returns undefined when no connection uses the node", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
+				fromRoomId: {type: "room", id: "room-1"},
 				direction: "e",
 			}),
 		];
@@ -244,21 +245,21 @@ describe("getConnectionOnNode", () => {
 describe("getConnectionsOnNode", () => {
 	it("returns all connections that use the node", () => {
 		const firstConnection = connection({
-			id: "connection-1",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-1"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
 		const secondConnection = connection({
-			id: "connection-2",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-2"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
-			toRoomId: "room-3",
+			toRoomId: {type: "room", id: "room-3"},
 		});
 
 		const nonMatchingConnection = connection({
-			id: "connection-3",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-3"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "n",
 		});
 
@@ -269,14 +270,14 @@ describe("getConnectionsOnNode", () => {
 
 	it("excludes the ignored connection", () => {
 		const ignoredConnection = connection({
-			id: "connection-1",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-1"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
 		const matchingConnection = connection({
-			id: "connection-2",
-			fromRoomId: "room-1",
+			id: toID("connection", "connection-2"),
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -289,7 +290,7 @@ describe("getConnectionsOnNode", () => {
 describe("getConnectionSide", () => {
 	it("returns from when the given node is the connection's from side", () => {
 		const existingConnection = connection({
-			fromRoomId: "room-1",
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -298,7 +299,7 @@ describe("getConnectionSide", () => {
 
 	it("returns to when the given node is the connection's to side", () => {
 		const existingConnection = connection({
-			toRoomId: "room-2",
+			toRoomId: {type: "room", id: "room-2"},
 			returnDirection: "w",
 		});
 
@@ -307,7 +308,7 @@ describe("getConnectionSide", () => {
 
 	it("returns null when the connection does not use the given node", () => {
 		const existingConnection = connection({
-			fromRoomId: "room-1",
+			fromRoomId: {type: "room", id: "room-1"},
 			direction: "e",
 		});
 
@@ -318,12 +319,12 @@ describe("getConnectionSide", () => {
 describe("isSameConnectionShape", () => {
 	it("returns true when room ids and directions match", () => {
 		const firstConnection = connection({
-			id: "connection-1",
+			id: toID("connection", "connection-1"),
 			pathway: "two-way",
 		});
 
 		const secondConnection = connection({
-			id: "connection-2",
+			id: toID("connection", "connection-2"),
 			pathway: "forwards",
 		});
 
@@ -332,15 +333,15 @@ describe("isSameConnectionShape", () => {
 
 	it("returns false when one of the shape fields differs", () => {
 		const firstConnection = connection({
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-2"},
 			direction: "e",
 			returnDirection: "w",
 		});
 
 		const secondConnection = connection({
-			fromRoomId: "room-1",
-			toRoomId: "room-3",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-3"},
 			direction: "e",
 			returnDirection: "w",
 		});
@@ -352,12 +353,12 @@ describe("isSameConnectionShape", () => {
 describe("getDuplicateConnectionByShape", () => {
 	it("returns a connection with the same shape", () => {
 		const duplicateConnection = connection({
-			id: "connection-1",
+			id: toID("connection", "connection-1"),
 			pathway: "two-way",
 		});
 
 		const candidate = connection({
-			id: "connection-2",
+			id: toID("connection", "connection-2"),
 			pathway: "forwards",
 		});
 
@@ -366,11 +367,11 @@ describe("getDuplicateConnectionByShape", () => {
 
 	it("ignores the connection with the ignored id", () => {
 		const ignoredConnection = connection({
-			id: "connection-1",
+			id: toID("connection", "connection-1"),
 		});
 
 		const candidate = connection({
-			id: "connection-2",
+			id: toID("connection", "connection-2"),
 		});
 
 		expect(
@@ -380,15 +381,15 @@ describe("getDuplicateConnectionByShape", () => {
 
 	it("returns undefined when no connection has the same shape", () => {
 		const existingConnection = connection({
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-2"},
 			direction: "e",
 			returnDirection: "w",
 		});
 
 		const candidate = connection({
-			fromRoomId: "room-1",
-			toRoomId: "room-3",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-3"},
 			direction: "e",
 			returnDirection: "w",
 		});
@@ -477,8 +478,8 @@ describe("getPathwayForNewDrop", () => {
 	it("returns backwards when the source node is occupied", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-1",
-				toRoomId: "room-3",
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-3"},
 				direction: "e",
 				returnDirection: "w",
 			}),
@@ -490,8 +491,8 @@ describe("getPathwayForNewDrop", () => {
 	it("returns forwards when the target node is occupied", () => {
 		const connections = [
 			connection({
-				fromRoomId: "room-3",
-				toRoomId: "room-2",
+				fromRoomId: {type: "room", id: "room-3"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 			}),
@@ -503,16 +504,16 @@ describe("getPathwayForNewDrop", () => {
 	it("returns no-way when both the source and target nodes are occupied", () => {
 		const connections = [
 			connection({
-				id: "connection-1",
-				fromRoomId: "room-1",
-				toRoomId: "room-3",
+				id: toID("connection", "connection-1"),
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-3"},
 				direction: "e",
 				returnDirection: "w",
 			}),
 			connection({
-				id: "connection-2",
-				fromRoomId: "room-4",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-2"),
+				fromRoomId: {type: "room", id: "room-4"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 			}),
@@ -526,8 +527,8 @@ describe("getPathwayForEditedDrop", () => {
 	it("returns two-way when the target node is not occupied by another connection", () => {
 		const connections = [
 			connection({
-				id: "connection-1",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-1"),
+				toRoomId: {type: "room", id: "room-2"},
 				returnDirection: "w",
 			}),
 		];
@@ -538,14 +539,14 @@ describe("getPathwayForEditedDrop", () => {
 	it("returns forwards when the target node is occupied by another connection", () => {
 		const connections = [
 			connection({
-				id: "connection-1",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-1"),
+				toRoomId: {type: "room", id: "room-2"},
 				returnDirection: "w",
 			}),
 			connection({
-				id: "connection-2",
-				fromRoomId: "room-2",
-				toRoomId: "room-3",
+				id: toID("connection", "connection-2"),
+				fromRoomId: {type: "room", id: "room-2"},
+				toRoomId: {type: "room", id: "room-3"},
 				direction: "w",
 				returnDirection: "e",
 			}),
@@ -566,8 +567,8 @@ describe("buildAddConnectionResult", () => {
 				direction: "e",
 				connections: [
 					connection({
-						fromRoomId: "room-1",
-						toRoomId: "room-2",
+						fromRoomId: {type: "room", id: "room-1"},
+						toRoomId: {type: "room", id: "room-2"},
 						direction: "e",
 						returnDirection: "w",
 						pathway: "two-way",
@@ -602,9 +603,9 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result?.connection).toEqual(
 			createDefaultConnection({
-				id: "connection-1",
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-1"),
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "two-way",
@@ -630,9 +631,9 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result?.connection).toEqual(
 			createDefaultConnection({
-				id: "connection-1",
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-1"),
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "two-way",
@@ -652,9 +653,9 @@ describe("buildAddConnectionResult", () => {
 				rooms: [fromRoom, existingTargetRoom, otherRoom],
 				connections: [
 					connection({
-						id: "connection-1",
-						fromRoomId: "room-2",
-						toRoomId: "room-3",
+						id: toID("connection", "connection-1"),
+						fromRoomId: {type: "room", id: "room-2"},
+						toRoomId: {type: "room", id: "room-3"},
 						direction: "w",
 						returnDirection: "e",
 						pathway: "forwards",
@@ -668,9 +669,9 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result?.connection).toEqual(
 			createDefaultConnection({
-				id: "connection-2",
-				fromRoomId: "room-1",
-				toRoomId: "room-2",
+				id: toID("connection", "connection-2"),
+				fromRoomId: {type: "room", id: "room-1"},
+				toRoomId: {type: "room", id: "room-2"},
 				direction: "e",
 				returnDirection: "w",
 				pathway: "forwards",
@@ -695,7 +696,7 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result).not.toBeNull();
 		expect(result?.roomToAdd).toBeUndefined();
-		expect(result?.connection.toRoomId).toBe("room-3");
+		expect(result?.connection.toRoomId).toEqual({type: "room", id: "room-3"});
 	});
 
 	it("does not connect to a room that is behind the source direction", () => {
@@ -713,7 +714,7 @@ describe("buildAddConnectionResult", () => {
 
 		expect(result).not.toBeNull();
 
-		expect(result?.connection.toRoomId).toBe("room-2");
+		expect(result?.connection.toRoomId).toEqual({type: "room", id: "room-2"});
 
 		expect(result?.roomToAdd).toEqual(
 			generatedRoom("room-2", "Room 3", {
@@ -732,18 +733,18 @@ describe("buildAddConnectionResult", () => {
 				direction: "s",
 				rooms: [fromRoom],
 				connections: [
-					connection({id: "connection-1"}),
+					connection({id: toID("connection", "connection-1")}),
 					connection({
-						id: "connection-2",
-						fromRoomId: "room-3",
-						toRoomId: "room-4",
+						id: toID("connection", "connection-2"),
+						fromRoomId: {type: "room", id: "room-3"},
+						toRoomId: {type: "room", id: "room-4"},
 					}),
 				],
 			}),
 		);
 
 		expect(result).not.toBeNull();
-		expect(result?.connection.id).toBe("connection-3");
+		expect(idValue(result?.connection.id)).toBe("connection-3");
 	});
 
 	it("sets the correct return direction for diagonal connections", () => {
@@ -761,8 +762,8 @@ describe("buildAddConnectionResult", () => {
 		expect(result).not.toBeNull();
 
 		expect(result?.connection).toMatchObject({
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-2"},
 			direction: "ne",
 			returnDirection: "sw",
 			pathway: "two-way",
@@ -791,7 +792,7 @@ describe("buildAddConnectionResult", () => {
 		expect(result).not.toBeNull();
 
 		expect(result?.roomToAdd).toBeUndefined();
-		expect(result?.connection.toRoomId).toBe("blocking-room");
+		expect(result?.connection.toRoomId).toEqual({type: "room", id: "blocking-room"});
 	});
 
 	it("creates a new room at the default target position when no nearby room blocks that direction", () => {
@@ -818,8 +819,8 @@ describe("buildAddConnectionResult", () => {
 		);
 
 		expect(result?.connection).toMatchObject({
-			fromRoomId: "room-1",
-			toRoomId: "room-2",
+			fromRoomId: {type: "room", id: "room-1"},
+			toRoomId: {type: "room", id: "room-2"},
 			direction: "s",
 			returnDirection: "n",
 			pathway: "two-way",

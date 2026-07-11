@@ -23,7 +23,7 @@ describe("getSchemaAtPath", () => {
 				rooms: z.array(
 					editor.object(
 						z.object({
-							id: editor.id({title: "Room ID"}),
+							id: editor.id("room", {title: "Room ID"}),
 							name: editor.input({title: "Room Name"}),
 						}),
 					),

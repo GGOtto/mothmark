@@ -19,6 +19,7 @@ import type {
 } from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {generateConditionSummary} from "../../../utils/universalEditorUtils";
+import {idValue, isID, toID} from "../../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./ConditionBuilderEditor.scss";
@@ -224,8 +225,8 @@ function storedConditionName(condition: ConditionValue) {
 }
 
 function storedConditionId(condition: ConditionValue) {
-	return typeof condition.id === "string" && condition.id.trim().length > 0
-		? condition.id.trim()
+	return isID(condition.id) && idValue(condition.id).trim().length > 0
+		? idValue(condition.id).trim()
 		: undefined;
 }
 
@@ -290,7 +291,7 @@ function ensureConditionIdentity(
 ) {
 	return {
 		...condition,
-		id: storedConditionId(condition) ?? uniqueConditionId(condition, siblings),
+		id: toID("condition", storedConditionId(condition) ?? uniqueConditionId(condition, siblings)),
 		name:
 			storedConditionName(condition) ??
 			uniqueConditionName(conditionListName(condition, metadata, context, index), siblings),
@@ -325,7 +326,7 @@ function createNamedCondition(
 
 	return {
 		...condition,
-		id: uniqueConditionId(condition, siblings),
+		id: toID("condition", uniqueConditionId(condition, siblings)),
 		name: uniqueConditionName(
 			generatedConditionNameForType(getConditionType(condition), metadata, context, siblings),
 			siblings,
@@ -1217,7 +1218,7 @@ function ConditionNodeEditor({
 				)}
 				{renderTextField(
 					"id",
-					String(value.id ?? ""),
+					isID(value.id) ? idValue(value.id) : "",
 					isGroup ? "Group ID" : "Condition ID",
 					updateField,
 					metadata,

@@ -14,6 +14,7 @@ import type {
 } from "../../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../../types/universalEditorTypes";
 import {generateEffectSummary} from "../../../utils/universalEditorUtils";
+import {idValue, isID, toID} from "../../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./EffectListEditor.scss";
@@ -98,7 +99,9 @@ function isEffectReference(effect: EffectValue) {
 }
 
 function storedEffectId(effect: EffectValue) {
-	return typeof effect.id === "string" && effect.id.trim().length > 0 ? effect.id.trim() : undefined;
+	return isID(effect.id) && idValue(effect.id).trim().length > 0
+		? idValue(effect.id).trim()
+		: undefined;
 }
 
 function storedEffectName(effect: EffectValue) {
@@ -229,7 +232,7 @@ function effectUsage(
 function effectRefFor(effect: EffectValue) {
 	return {
 		type: "effect-ref",
-		effectId: storedEffectId(effect) ?? "",
+		effectId: toID("effect", storedEffectId(effect) ?? ""),
 	};
 }
 
@@ -242,7 +245,7 @@ function ensureEffectIdentity(
 ) {
 	return {
 		...effect,
-		id: storedEffectId(effect) ?? uniqueEffectId(effect, siblings),
+		id: toID("effect", storedEffectId(effect) ?? uniqueEffectId(effect, siblings)),
 		name:
 			storedEffectName(effect) ??
 			uniqueEffectName(effectListName(effect, index, metadata, context), siblings),

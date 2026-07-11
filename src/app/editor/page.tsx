@@ -9,6 +9,7 @@ import {CommandLine} from "@/components/player/CommandLine";
 import {Map} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Room, World} from "@/schemas/worldSchema";
+import {compareIds, idValue} from "@/utils/idUtils";
 import "./page.scss";
 
 type EditorSelection = {
@@ -58,7 +59,7 @@ export default function EditorPage() {
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 
 	const [selection, setSelection] = useState<EditorSelection>({
-		selectedId: initialWorld.startRoomId,
+		selectedId: idValue(initialWorld.startRoomId),
 		isConnectionSelected: false,
 	});
 
@@ -85,13 +86,13 @@ export default function EditorPage() {
 	const selectedRoom = useMemo(() => {
 		if (selection.isConnectionSelected) return null;
 
-		return rooms.find((room) => room.id === selection.selectedId) ?? null;
+		return rooms.find((room) => idValue(room.id) === selection.selectedId) ?? null;
 	}, [rooms, selection]);
 
 	const selectedConnection = useMemo(() => {
 		if (!selection.isConnectionSelected) return null;
 
-		return connections.find((connection) => connection.id === selection.selectedId) ?? null;
+		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
 
 	function updateRoom(updatedRoom: Room) {
@@ -99,13 +100,13 @@ export default function EditorPage() {
 
 		setRooms((currentRooms) =>
 			currentRooms.map((room) =>
-				room.id === (selectedRoomId ?? updatedRoom.id) ? updatedRoom : room,
+				idValue(room.id) === (selectedRoomId ?? idValue(updatedRoom.id)) ? updatedRoom : room,
 			),
 		);
 
-		if (selectedRoomId && selectedRoomId !== updatedRoom.id) {
+		if (selectedRoomId && selectedRoomId !== idValue(updatedRoom.id)) {
 			setSelection({
-				selectedId: updatedRoom.id,
+				selectedId: idValue(updatedRoom.id),
 				isConnectionSelected: false,
 			});
 		}
@@ -114,20 +115,20 @@ export default function EditorPage() {
 	function updateConnection(updatedConnection: Connection) {
 		setConnections((currentConnections) =>
 			currentConnections.map((connection) =>
-				connection.id === updatedConnection.id ? updatedConnection : connection,
+				compareIds(connection.id, updatedConnection.id) ? updatedConnection : connection,
 			),
 		);
 	}
 
 	function deleteConnection(connectionToDelete: Connection) {
 		setConnections((currentConnections) =>
-			currentConnections.filter((connection) => connection.id !== connectionToDelete.id),
+			currentConnections.filter((connection) => !compareIds(connection.id, connectionToDelete.id)),
 		);
 
 		setSelection((currentSelection) => {
 			if (
 				currentSelection.isConnectionSelected &&
-				currentSelection.selectedId === connectionToDelete.id
+				currentSelection.selectedId === idValue(connectionToDelete.id)
 			) {
 				return {
 					selectedId: null,
@@ -209,7 +210,7 @@ function EditorMainPanel({
 				/>
 			</div>
 
-			<CommandLine world={world} selectedRoomId={selectedRoom?.id ?? null} />
+			<CommandLine world={world} selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null} />
 		</section>
 	);
 }

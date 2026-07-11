@@ -66,7 +66,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"id",
 		]);
 		expect(fields.at(-1)?.metadata).toMatchObject({
-			type: "id",
+			type: "hidden",
 		});
 	});
 
@@ -105,7 +105,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"state",
 		]);
 		expect(fields[0].metadata).toMatchObject({
-			type: "id",
+			type: "hidden",
 		});
 	});
 
@@ -129,7 +129,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"state",
 		]);
 		expect(fields[0].metadata).toMatchObject({
-			type: "id",
+			type: "hidden",
 		});
 	});
 });

@@ -2,6 +2,7 @@ import {useMemo} from "react";
 import {type World} from "../../../schemas/worldSchema";
 import {RoomSchema, type Room} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../universal/UniversalEditor";
+import {compareIds} from "@/utils/idUtils";
 
 type RoomEditorProps = {
 	selectedRoom: Room;
@@ -19,7 +20,7 @@ export function RoomEditor({
 	onRoomChange,
 }: RoomEditorProps) {
 	const duplicateRoomId = useMemo(() => {
-		return rooms.filter((room) => room.id === selectedRoom.id).length > 1;
+		return rooms.filter((room) => compareIds(room.id, selectedRoom.id)).length > 1;
 	}, [rooms, selectedRoom.id]);
 
 	return (
@@ -30,7 +31,9 @@ export function RoomEditor({
 			</div>
 
 			{duplicateRoomId ? (
-				<p className="rightSideBarWarningText">This room ID is already being used.</p>
+				<p className="rightSideBarWarningText">
+					This room is already using the same internal identifier.
+				</p>
 			) : null}
 
 			<UniversalEditor

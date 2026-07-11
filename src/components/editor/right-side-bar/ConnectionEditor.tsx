@@ -3,6 +3,7 @@ import {ArrowLeft, ArrowLeftRight, ArrowRight, Minus} from "lucide-react";
 import {type World} from "../../../schemas/worldSchema";
 import {ConnectionSchema, type Connection, type Pathway} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../universal/UniversalEditor";
+import {compareIds, idValue, resolveWorldEntityName, toID} from "@/utils/idUtils";
 import "./ConnectionEditor.scss";
 
 type PathwayIndicatorProps = {
@@ -46,11 +47,20 @@ export function ConnectionEditor({
 	onConnectionChange,
 }: ConnectionEditorProps) {
 	const duplicateConnectionId = useMemo(() => {
-		return connections.filter((connection) => connection.id === selectedConnection.id).length > 1;
+		return (
+			connections.filter((connection) => compareIds(connection.id, selectedConnection.id)).length > 1
+		);
 	}, [connections, selectedConnection.id]);
 
 	const connectionTitle =
 		selectedConnection.name && selectedConnection.name !== "" ? selectedConnection.name : null;
+	const fromRoomLabel =
+		(world
+			? resolveWorldEntityName(world, toID("room", selectedConnection.fromRoomId))
+			: undefined) ?? idValue(selectedConnection.fromRoomId);
+	const toRoomLabel =
+		(world ? resolveWorldEntityName(world, toID("room", selectedConnection.toRoomId)) : undefined) ??
+		idValue(selectedConnection.toRoomId);
 
 	return (
 		<div className="rightSideBarSection connectionEditor">
@@ -60,16 +70,18 @@ export function ConnectionEditor({
 				<h2 className="roomEditorTitle">
 					{connectionTitle ?? (
 						<span className="connectionEditorPathwayTitle">
-							<span>{selectedConnection.fromRoomId}</span>
+							<span>{fromRoomLabel}</span>
 							<PathwayIndicator pathway={selectedConnection.pathway} />
-							<span>{selectedConnection.toRoomId}</span>
+							<span>{toRoomLabel}</span>
 						</span>
 					)}
 				</h2>
 			</div>
 
 			{duplicateConnectionId ? (
-				<p className="rightSideBarWarningText">This connection ID is already being used.</p>
+				<p className="rightSideBarWarningText">
+					This connection is already using the same internal identifier.
+				</p>
 			) : null}
 
 			<UniversalEditor

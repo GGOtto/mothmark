@@ -1,8 +1,9 @@
 import {z} from "zod";
 import {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
 import {withEditorMetadata} from "@/utils/editorMetadata";
-import type {EditorEntityType, EditorTagSource} from "@/types/editor/editorMetadataTypes";
+import type {EditorTagSource} from "@/types/editor/editorMetadataTypes";
 import type {EntityType} from "@/types/editor/editorRegistryTypes";
+import {isID, toID, type ID, type IdEntityType, type WorldIdEntityType} from "@/utils/idUtils";
 import type {LinkListFeatures} from "@/components/editor/universal/LinkListEditor";
 import {
 	CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
@@ -19,11 +20,6 @@ type EditorMetadataWithoutControlOrTagSource = Omit<EditorFieldMetadata, "contro
 
 type LinkListMetadata = EditorMetadataWithoutControl & {
 	features: LinkListFeatures;
-};
-
-export type EditorReference<TEntityType extends EditorEntityType = EditorEntityType> = {
-	type: TEntityType;
-	id: string;
 };
 
 type OptionalReferenceMetadata = EditorMetadataWithoutControl & {
@@ -46,11 +42,19 @@ export function editorInput(metadata: EditorMetadataWithoutControl = {}) {
 	});
 }
 
-export function editorId(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string().min(1), {
-		control: "id",
-		...metadata,
-	});
+export function editorId<TEntityType extends IdEntityType>(
+	entityType: TEntityType,
+	metadata: EditorMetadataWithoutControl = {},
+) {
+	return editorHidden(
+		z
+			.union([z.custom<ID<TEntityType>>(isID), z.string().min(1)])
+			.transform((value) => toID(entityType, value as string | ID<TEntityType>)),
+		{
+			...metadata,
+			readonly: true,
+		},
+	);
 }
 
 export function editorTextarea(metadata: EditorMetadataWithoutControl = {}) {
@@ -181,15 +185,15 @@ export function editorMultiSelect<
 	});
 }
 
-export function editorReference<TEntityType extends EditorEntityType>(
+export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata: OptionalReferenceMetadata,
-): z.ZodOptional<z.ZodType<string>>;
-export function editorReference<TEntityType extends EditorEntityType>(
+): z.ZodOptional<z.ZodType<ID<TEntityType>>>;
+export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata?: EditorMetadataWithoutControl,
-): z.ZodType<string>;
-export function editorReference<TEntityType extends EditorEntityType>(
+): z.ZodType<ID<TEntityType>>;
+export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata: EditorMetadataWithoutControl = {},
 ) {
@@ -198,8 +202,12 @@ export function editorReference<TEntityType extends EditorEntityType>(
 			type: z.literal(entityType),
 			id: z.string().min(1),
 		})
-		.transform((reference) => reference.id);
-	const schema = z.union([z.string().min(1), referenceObjectSchema]);
+		.transform((reference) => reference as ID<TEntityType>);
+	const legacyStringReferenceSchema = z
+		.string()
+		.min(1)
+		.transform((id) => ({type: entityType, id}) as ID<TEntityType>);
+	const schema = z.union([referenceObjectSchema, legacyStringReferenceSchema]);
 	const isRequired = metadata.required ?? true;
 
 	return editorSelect(isRequired ? schema : schema.optional(), {
@@ -214,7 +222,7 @@ export function editorReference<TEntityType extends EditorEntityType>(
 			...metadata.picker,
 		},
 		...metadata,
-	}) as z.ZodType<string> | z.ZodOptional<z.ZodType<string>>;
+	}) as z.ZodType<ID<TEntityType>> | z.ZodOptional<z.ZodType<ID<TEntityType>>>;
 }
 
 export function editorStringList<

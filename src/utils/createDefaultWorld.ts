@@ -9,6 +9,7 @@ import {
 	type RoomFeature,
 } from "@/schemas/roomSchema";
 import {DefaultObjectStateDefaults} from "@/schemas/objectStateSchema";
+import type {ID} from "@/utils/idUtils";
 
 // TODO: add createDefaultFeature when feature creation UI exists.
 // TODO: add createDefaultWorld when the starter route moves off ad hoc schema default generation.
@@ -59,9 +60,9 @@ export function createDefaultConnection({
 	returnDirection,
 	pathway = "two-way",
 }: {
-	id: string;
-	fromRoomId: string;
-	toRoomId: string;
+	id: ID<"connection"> | string;
+	fromRoomId: ID<"room"> | string;
+	toRoomId: ID<"room"> | string;
 	direction: Direction;
 	returnDirection: Direction;
 	pathway?: Connection["pathway"];

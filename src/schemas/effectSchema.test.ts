@@ -9,7 +9,7 @@ describe("effect storage schemas", () => {
 			}),
 		).toEqual({
 			type: "effect-ref",
-			effectId: "open-gate",
+			effectId: {type: "effect", id: "open-gate"},
 		});
 
 		expect(() =>
@@ -36,13 +36,13 @@ describe("effect storage schemas", () => {
 				],
 			}),
 		).toMatchObject({
-			id: "open-gate-sequence",
+			id: {type: "effect", id: "open-gate-sequence"},
 			name: "Open gate sequence",
 			type: "group",
 			effects: [
 				{
 					type: "effect-ref",
-					effectId: "set-gate-open",
+					effectId: {type: "effect", id: "set-gate-open"},
 				},
 			],
 		});
