@@ -64,6 +64,7 @@ export function RoomCard({
 		<button
 			type="button"
 			className={className}
+			title={room.name}
 			onPointerDown={(event) => onPointerDown(event, room)}
 			style={{
 				left: room.position.x,
@@ -85,7 +86,7 @@ export function RoomCard({
 				/>
 			))}
 
-			{room.name}
+			<span className="roomCardName">{room.name}</span>
 		</button>
 	);
 }

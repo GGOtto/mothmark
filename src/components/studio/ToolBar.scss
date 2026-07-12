@@ -4,4 +4,71 @@
 	flex-shrink: 0;
 	border-bottom: 1px solid var(--panel-border);
 	background: var(--panel-bg);
+	display: flex;
+	align-items: center;
+	gap: 0;
+	padding: 0 14px;
+}
+
+.toolbarTools {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.toolbarTool {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	height: 34px;
+	padding: 0 11px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--panel-muted);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+
+	&:hover {
+		background: rgba(127, 127, 127, 0.1);
+		color: var(--panel-text);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--panel-text);
+		outline-offset: 1px;
+	}
+}
+
+.toolbarToolActive {
+	border-color: var(--panel-border);
+	background: var(--panel-raised, rgba(255, 255, 255, 0.08));
+	color: var(--panel-text);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.toolbarZoom {
+	min-width: 48px;
+	color: var(--panel-text);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.toolbarDivider {
+	align-self: stretch;
+	width: 1px;
+	margin: 9px 12px;
+	background: var(--panel-border);
+}
+
+.toolbarHint {
+	color: var(--panel-muted);
+	font-size: 11px;
+}
+
+.toolbarAddRoom {
+	margin-left: auto;
+	border-color: var(--panel-border);
+	color: var(--panel-text);
 }

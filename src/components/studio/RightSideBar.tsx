@@ -13,7 +13,6 @@ type RightSideBarProps = {
 	selectedConnection: Connection | null;
 	onRoomChange: (room: Room) => void;
 	onConnectionChange: (connection: Connection) => void;
-	deleteConnection: (connection: Connection) => void;
 	title?: string;
 	description?: string;
 };
@@ -26,7 +25,6 @@ export function RightSideBar({
 	selectedConnection,
 	onRoomChange,
 	onConnectionChange,
-	deleteConnection,
 	title,
 	description,
 }: RightSideBarProps) {

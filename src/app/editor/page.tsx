@@ -6,7 +6,7 @@ import {ToolBar} from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
-import {Map} from "@/components/map/Map";
+import {Map, type MapTool} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
@@ -40,12 +40,16 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Review validation errors and broken world logic.",
 	},
 	"world-settings": {
-		title: "World Settings",
+		title: "World Config",
 		description: "Configure project-level world settings.",
 	},
 	"editor-settings": {
 		title: "Settings",
 		description: "Configure editor preferences.",
+	},
+	story: {
+		title: "Story",
+		description: "Examine the text connection to world entities.",
 	},
 };
 
@@ -55,6 +59,9 @@ function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): 
 
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
+	const [mapTool, setMapTool] = useState<MapTool>("edit");
+	const [mapZoom, setMapZoom] = useState(1);
+	const [mapRecenterRequest, setMapRecenterRequest] = useState(0);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 
@@ -154,6 +161,15 @@ export default function EditorPage() {
 				selection={selection}
 				setSelection={setSelection}
 				selectedRoom={selectedRoom}
+				mapTool={mapTool}
+				setMapTool={setMapTool}
+				mapZoom={mapZoom}
+				setMapZoom={setMapZoom}
+				mapRecenterRequest={mapRecenterRequest}
+				onMapRecenter={() => {
+					setMapZoom(1);
+					setMapRecenterRequest((request) => request + 1);
+				}}
 			/>
 
 			<EditorInspector
@@ -181,6 +197,12 @@ type EditorMainPanelProps = {
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	selectedRoom: Room | null;
+	mapTool: MapTool;
+	setMapTool: (tool: MapTool) => void;
+	mapZoom: number;
+	setMapZoom: (zoom: number) => void;
+	mapRecenterRequest: number;
+	onMapRecenter: () => void;
 };
 
 function EditorMainPanel({
@@ -193,10 +215,22 @@ function EditorMainPanel({
 	selection,
 	setSelection,
 	selectedRoom,
+	mapTool,
+	setMapTool,
+	mapZoom,
+	setMapZoom,
+	mapRecenterRequest,
+	onMapRecenter,
 }: EditorMainPanelProps) {
 	return (
 		<section className="editorMainPanel">
-			<EditorToolbar activeTab={activeTab} />
+			<EditorToolbar
+				activeTab={activeTab}
+				mapTool={mapTool}
+				setMapTool={setMapTool}
+				mapZoom={mapZoom}
+				onMapRecenter={onMapRecenter}
+			/>
 
 			<div className="editorWorkspaceShell">
 				<EditorWorkspace
@@ -207,6 +241,9 @@ function EditorMainPanel({
 					setConnections={setConnections}
 					selection={selection}
 					setSelection={setSelection}
+					mapTool={mapTool}
+					onZoomChange={setMapZoom}
+					recenterRequest={mapRecenterRequest}
 				/>
 			</div>
 
@@ -217,11 +254,28 @@ function EditorMainPanel({
 
 type EditorToolbarProps = {
 	activeTab: EditorTab;
+	mapTool: MapTool;
+	setMapTool: (tool: MapTool) => void;
+	mapZoom: number;
+	onMapRecenter: () => void;
 };
 
-function EditorToolbar({activeTab}: EditorToolbarProps) {
+function EditorToolbar({
+	activeTab,
+	mapTool,
+	setMapTool,
+	mapZoom,
+	onMapRecenter,
+}: EditorToolbarProps) {
 	if (activeTab === "map") {
-		return <ToolBar />;
+		return (
+			<ToolBar
+				activeTool={mapTool}
+				onToolChange={setMapTool}
+				zoom={mapZoom}
+				onRecenter={onMapRecenter}
+			/>
+		);
 	}
 
 	const metadata = getEditorTabMetadata(activeTab);
@@ -244,6 +298,9 @@ type EditorWorkspaceProps = {
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
+	mapTool: MapTool;
+	onZoomChange: (zoom: number) => void;
+	recenterRequest: number;
 };
 
 function EditorWorkspace({
@@ -254,6 +311,9 @@ function EditorWorkspace({
 	setConnections,
 	selection,
 	setSelection,
+	mapTool,
+	onZoomChange,
+	recenterRequest,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -264,6 +324,9 @@ function EditorWorkspace({
 				setConnections={setConnections}
 				selection={selection}
 				setSelection={setSelection}
+				mapTool={mapTool}
+				onZoomChange={onZoomChange}
+				recenterRequest={recenterRequest}
 			/>
 		);
 	}
@@ -278,6 +341,9 @@ type MapWorkspaceProps = {
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
+	mapTool: MapTool;
+	onZoomChange: (zoom: number) => void;
+	recenterRequest: number;
 };
 
 function MapWorkspace({
@@ -287,9 +353,15 @@ function MapWorkspace({
 	setConnections,
 	selection,
 	setSelection,
+	mapTool,
+	onZoomChange,
+	recenterRequest,
 }: MapWorkspaceProps) {
 	return (
 		<Map
+			key={recenterRequest}
+			tool={mapTool}
+			onZoomChange={onZoomChange}
 			theme="light"
 			rooms={rooms}
 			setRooms={setRooms}
@@ -371,7 +443,6 @@ function EditorInspector({
 				selectedConnection={selectedConnection}
 				onRoomChange={onRoomChange}
 				onConnectionChange={onConnectionChange}
-				deleteConnection={deleteConnection}
 			/>
 		);
 	}
@@ -387,7 +458,6 @@ function EditorInspector({
 			selectedConnection={null}
 			onRoomChange={onRoomChange}
 			onConnectionChange={onConnectionChange}
-			deleteConnection={deleteConnection}
 			title={metadata.title}
 			description={metadata.description}
 		/>

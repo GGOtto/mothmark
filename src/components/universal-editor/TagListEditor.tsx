@@ -47,6 +47,7 @@ export function TagListEditor({
 }: TagListEditorProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const [draftValue, setDraftValue] = useState("");
+
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;

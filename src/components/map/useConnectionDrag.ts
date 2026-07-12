@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react";
+import type {RefObject} from "react";
 import type React from "react";
 import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
 import {
@@ -26,6 +27,8 @@ type UseConnectionDragParams = {
 	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
 	getRoomConnectionPoint: (room: Room, direction: Direction) => Point;
 	onConnectionSelectionRequested?: (connectionId: string) => void;
+	clientToMapPoint?: (clientX: number, clientY: number) => Point | null;
+	mapRef?: RefObject<HTMLDivElement | null>;
 };
 
 const DRAG_THRESHOLD = 5;
@@ -45,8 +48,11 @@ export function useConnectionDrag({
 	setConnections,
 	getRoomConnectionPoint,
 	onConnectionSelectionRequested,
+	clientToMapPoint,
+	mapRef: providedMapRef,
 }: UseConnectionDragParams) {
-	const mapRef = useRef<HTMLDivElement | null>(null);
+	const internalMapRef = useRef<HTMLDivElement | null>(null);
+	const mapRef = providedMapRef ?? internalMapRef;
 	const connectionDragStateRef = useRef<ConnectionDragState | null>(null);
 	const connectionPointerIdRef = useRef<number | null>(null);
 
@@ -100,6 +106,8 @@ export function useConnectionDrag({
 	}
 
 	function getMapPointerFromClient(clientX: number, clientY: number): Point | null {
+		if (clientToMapPoint) return clientToMapPoint(clientX, clientY);
+
 		const mapElement = mapRef.current;
 
 		if (!mapElement) return null;

@@ -32,6 +32,30 @@
 	overflow: hidden;
 	touch-action: none;
 	color-scheme: light;
+	cursor: default;
+
+	&.map--tool-edit {
+		cursor: crosshair;
+	}
+
+	&.map--tool-pan {
+		cursor: grab;
+
+		.mapViewport {
+			pointer-events: none;
+		}
+	}
+
+	&.map--panning {
+		cursor: grabbing;
+	}
+
+	.mapViewport {
+		position: absolute;
+		inset: 0;
+		transform-origin: 0 0;
+		will-change: transform;
+	}
 
 	&.map--theme-dark {
 		--map-surface: #756b56;
@@ -61,6 +85,7 @@
 		position: absolute;
 		inset: 0;
 		pointer-events: none;
+		overflow: visible;
 	}
 
 	.mapConnectionDragPath {

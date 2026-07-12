@@ -5,8 +5,7 @@
 	border-radius: 2px;
 	background: var(--map-room-surface);
 	color: var(--map-room-text);
-	font-size: 12px;
-	font-weight: 500;
+	padding: 8px 12px;
 	cursor: grab;
 	user-select: none;
 	touch-action: none;
@@ -19,6 +18,19 @@
 		background-color 120ms ease,
 		border-color 120ms ease,
 		box-shadow 120ms ease;
+
+	.roomCardName {
+		display: -webkit-box;
+		width: 100%;
+		overflow: hidden;
+		font-size: 13px;
+		font-weight: 600;
+		line-height: 1.2;
+		text-align: center;
+		overflow-wrap: anywhere;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 4;
+	}
 
 	&:hover {
 		background: var(--map-room-hover);

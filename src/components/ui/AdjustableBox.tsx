@@ -5,6 +5,7 @@ import {useEffect, useRef, useState} from "react";
 import "./AdjustableBox.scss";
 
 type AdjustableBoxEdge = "top" | "bottom" | "left" | "right";
+export type AdjustableBoxHandleStyle = "thin" | "hover" | "notch" | "double-dots";
 
 type AdjustableSize = number | string;
 
@@ -18,6 +19,7 @@ type AdjustableBoxProps = {
 	minHeight?: AdjustableSize;
 	className?: string;
 	adjustableEdges?: AdjustableBoxEdge[];
+	resizeHandleStyle?: AdjustableBoxHandleStyle;
 };
 
 type DragState = {
@@ -51,6 +53,7 @@ export function AdjustableBox({
 	minHeight,
 	className = "",
 	adjustableEdges = [],
+	resizeHandleStyle = "notch",
 }: AdjustableBoxProps) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -115,7 +118,34 @@ export function AdjustableBox({
 		};
 	}
 
-	const boxClassName = ["adjustableBox", className].filter(Boolean).join(" ");
+	const boxClassName = ["adjustableBox", dragState && "adjustableBox--resizing", className]
+		.filter(Boolean)
+		.join(" ");
+
+	function handleProps(edge: AdjustableBoxEdge) {
+		return {
+			"aria-label": `Resize ${edge} edge`,
+			"aria-orientation": (edge === "top" || edge === "bottom" ? "horizontal" : "vertical") as
+				"horizontal" | "vertical",
+			"data-active": dragState?.edge === edge || undefined,
+			role: "separator",
+			title: `Drag to resize ${edge} edge`,
+		};
+	}
+
+	function renderHandle(edge: AdjustableBoxEdge) {
+		const isHorizontal = edge === "top" || edge === "bottom";
+		return (
+			<div
+				className={`adjustableBoxHandle adjustableBoxHandle${edge[0].toUpperCase()}${edge.slice(1)} adjustableBoxHandle--${resizeHandleStyle}`}
+				style={isHorizontal ? {height: HANDLE_SIZE} : {width: HANDLE_SIZE}}
+				onPointerDown={startDrag(edge)}
+				{...handleProps(edge)}
+			>
+				<span className="adjustableBoxHandleIndicator" aria-hidden="true" />
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -130,37 +160,10 @@ export function AdjustableBox({
 				maxHeight: toCssSize(maxHeight),
 			}}
 		>
-			{adjustableEdges.includes("top") && (
-				<div
-					className="adjustableBoxHandle adjustableBoxHandleTop"
-					style={{height: HANDLE_SIZE}}
-					onPointerDown={startDrag("top")}
-				/>
-			)}
-
-			{adjustableEdges.includes("bottom") && (
-				<div
-					className="adjustableBoxHandle adjustableBoxHandleBottom"
-					style={{height: HANDLE_SIZE}}
-					onPointerDown={startDrag("bottom")}
-				/>
-			)}
-
-			{adjustableEdges.includes("left") && (
-				<div
-					className="adjustableBoxHandle adjustableBoxHandleLeft"
-					style={{width: HANDLE_SIZE}}
-					onPointerDown={startDrag("left")}
-				/>
-			)}
-
-			{adjustableEdges.includes("right") && (
-				<div
-					className="adjustableBoxHandle adjustableBoxHandleRight"
-					style={{width: HANDLE_SIZE}}
-					onPointerDown={startDrag("right")}
-				/>
-			)}
+			{adjustableEdges.includes("top") && renderHandle("top")}
+			{adjustableEdges.includes("bottom") && renderHandle("bottom")}
+			{adjustableEdges.includes("left") && renderHandle("left")}
+			{adjustableEdges.includes("right") && renderHandle("right")}
 
 			{children}
 		</div>

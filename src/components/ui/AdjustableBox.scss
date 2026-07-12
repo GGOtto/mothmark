@@ -5,40 +5,158 @@
 	min-height: 0;
 
 	.adjustableBoxHandle {
+		--handle-color: color-mix(in srgb, currentColor 24%, transparent);
+		--handle-active-color: color-mix(in srgb, Highlight 65%, currentColor);
 		position: absolute;
 		z-index: 10;
 		touch-action: none;
+		color: var(--handle-color);
+
+		.adjustableBoxHandleIndicator {
+			position: absolute;
+			pointer-events: none;
+			transition:
+				opacity 120ms ease,
+				background-color 120ms ease,
+				border-color 120ms ease;
+		}
+
+		&:hover,
+		&[data-active="true"] {
+			color: var(--handle-active-color);
+		}
+	}
+
+	.adjustableBoxHandleTop,
+	.adjustableBoxHandleBottom {
+		left: 0;
+		width: 100%;
+		cursor: ns-resize;
 	}
 
 	.adjustableBoxHandleTop {
-		left: 0;
 		top: 0;
-		width: 100%;
-		cursor: ns-resize;
 		transform: translateY(-50%);
 	}
 
 	.adjustableBoxHandleBottom {
-		left: 0;
 		bottom: 0;
-		width: 100%;
-		cursor: ns-resize;
 		transform: translateY(50%);
+	}
+
+	.adjustableBoxHandleLeft,
+	.adjustableBoxHandleRight {
+		top: 0;
+		height: 100%;
+		cursor: ew-resize;
 	}
 
 	.adjustableBoxHandleLeft {
 		left: 0;
-		top: 0;
-		height: 100%;
-		cursor: ew-resize;
 		transform: translateX(-50%);
 	}
 
 	.adjustableBoxHandleRight {
 		right: 0;
+		transform: translateX(50%);
+	}
+
+	.adjustableBoxHandleTop .adjustableBoxHandleIndicator,
+	.adjustableBoxHandleBottom .adjustableBoxHandleIndicator {
+		left: 0;
+		top: 50%;
+		width: 100%;
+		height: 1px;
+		transform: translateY(-50%);
+	}
+
+	.adjustableBoxHandleLeft .adjustableBoxHandleIndicator,
+	.adjustableBoxHandleRight .adjustableBoxHandleIndicator {
+		left: 50%;
+		top: 0;
+		width: 1px;
+		height: 100%;
+		transform: translateX(-50%);
+	}
+
+	/* A persistent one-pixel divider that brightens on interaction. */
+	.adjustableBoxHandle--thin .adjustableBoxHandleIndicator {
+		background: currentColor;
+	}
+
+	/* The same divider, revealed only when its hit area is hovered or dragged. */
+	.adjustableBoxHandle--hover .adjustableBoxHandleIndicator {
+		background: currentColor;
+		opacity: 0;
+	}
+
+	.adjustableBoxHandle--hover:hover .adjustableBoxHandleIndicator,
+	.adjustableBoxHandle--hover[data-active="true"] .adjustableBoxHandleIndicator {
+		opacity: 1;
+	}
+
+	/* A divider with one short, slightly stronger segment in its center. */
+	.adjustableBoxHandle--notch .adjustableBoxHandleIndicator {
+		background: currentColor;
+	}
+
+	.adjustableBoxHandle--notch .adjustableBoxHandleIndicator::after {
+		position: absolute;
+		border-radius: 999px;
+		background: currentColor;
+		content: "";
+	}
+
+	.adjustableBoxHandleTop.adjustableBoxHandle--notch .adjustableBoxHandleIndicator::after,
+	.adjustableBoxHandleBottom.adjustableBoxHandle--notch .adjustableBoxHandleIndicator::after {
+		left: 50%;
+		top: 50%;
+		width: 20px;
+		height: 2px;
+		transform: translate(-50%, -50%);
+	}
+
+	.adjustableBoxHandleLeft.adjustableBoxHandle--notch .adjustableBoxHandleIndicator::after,
+	.adjustableBoxHandleRight.adjustableBoxHandle--notch .adjustableBoxHandleIndicator::after {
+		left: 50%;
+		top: 50%;
+		width: 2px;
+		height: 20px;
+		transform: translate(-50%, -50%);
+	}
+
+	/* Two fine rules with three dots centered in the channel between them. */
+	.adjustableBoxHandle--double-dots .adjustableBoxHandleIndicator {
+		background: transparent;
+	}
+
+	.adjustableBoxHandleTop.adjustableBoxHandle--double-dots .adjustableBoxHandleIndicator,
+	.adjustableBoxHandleBottom.adjustableBoxHandle--double-dots .adjustableBoxHandleIndicator {
 		top: 0;
 		height: 100%;
-		cursor: ew-resize;
-		transform: translateX(50%);
+		transform: none;
+		border-top: 1px solid currentColor;
+		border-bottom: 1px solid currentColor;
+		background:
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) calc(50% - 6px) 50% / 3px 3px
+				no-repeat,
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) 50% 50% / 3px 3px no-repeat,
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) calc(50% + 6px) 50% / 3px 3px
+				no-repeat;
+	}
+
+	.adjustableBoxHandleLeft.adjustableBoxHandle--double-dots .adjustableBoxHandleIndicator,
+	.adjustableBoxHandleRight.adjustableBoxHandle--double-dots .adjustableBoxHandleIndicator {
+		left: 0;
+		width: 100%;
+		transform: none;
+		border-left: 1px solid currentColor;
+		border-right: 1px solid currentColor;
+		background:
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) 50% calc(50% - 6px) / 3px 3px
+				no-repeat,
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) 50% 50% / 3px 3px no-repeat,
+			radial-gradient(circle, currentColor 0 1px, transparent 1.25px) 50% calc(50% + 6px) / 3px 3px
+				no-repeat;
 	}
 }

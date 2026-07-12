@@ -879,6 +879,7 @@ export function UniversalEditor<TValue>({
 				<pre className="universalEditor__jsonPreview">{JSON.stringify(renderedValue, null, 2)}</pre>
 			) : null}
 			<EditorControlRenderer
+				key={resolvedEntityId ? `${resolvedEntityId.type}:${resolvedEntityId.id}` : rootPathKey}
 				value={renderedValue}
 				onChange={(nextValue) => {
 					if (activeView) {
