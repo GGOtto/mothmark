@@ -1,9 +1,9 @@
 import type {LucideIcon} from "lucide-react";
-import {Map, Box, Puzzle, Bug, ScrollText, Settings, SlidersHorizontal} from "lucide-react";
+import {Map, Key, Puzzle, Bug, ScrollText, Settings, VenetianMask} from "lucide-react";
 import "./LeftSideBar.scss";
 
 export type EditorTab =
-	"map" | "world" | "logic" | "story" | "issues" | "world-settings" | "editor-settings";
+	"map" | "world" | "logic" | "npcs" | "debug" | "world-settings" | "editor-settings";
 
 type NavItem = {
 	id: EditorTab;
@@ -19,8 +19,13 @@ const editorNavItems: NavItem[] = [
 	},
 	{
 		id: "world",
-		label: "Objects",
-		icon: Box,
+		label: "Items",
+		icon: Key,
+	},
+	{
+		id: "npcs",
+		label: "NPCs",
+		icon: VenetianMask,
 	},
 	{
 		id: "logic",
@@ -28,13 +33,8 @@ const editorNavItems: NavItem[] = [
 		icon: Puzzle,
 	},
 	{
-		id: "story",
-		label: "Story",
-		icon: ScrollText,
-	},
-	{
-		id: "issues",
-		label: "Issues",
+		id: "debug",
+		label: "Debug",
 		icon: Bug,
 	},
 ];
@@ -43,7 +43,7 @@ const utilityNavItems: NavItem[] = [
 	{
 		id: "world-settings",
 		label: "World Config",
-		icon: SlidersHorizontal,
+		icon: ScrollText,
 	},
 	{
 		id: "editor-settings",
