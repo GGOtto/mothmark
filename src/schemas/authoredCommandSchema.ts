@@ -871,7 +871,7 @@ export const CommandPatternSchema = editor.discriminatedUnion(
 );
 
 export const CommandResolutionSchema = editor.object(
-	z.object({
+	{
 		stripLeadingArticles: editor
 			.boolean({
 				title: "Strip Leading Articles",
@@ -951,7 +951,7 @@ export const CommandResolutionSchema = editor.object(
 				},
 			})
 			.default(""),
-	}),
+	},
 	{
 		title: "Command Resolution",
 		description: docify(`
@@ -1024,7 +1024,7 @@ export const CommandBranchKindSchema = editor.select(
 );
 
 export const CommandBranchSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("command-branch"),
 
 		name: editor
@@ -1106,7 +1106,7 @@ export const CommandBranchSchema = editor.object(
 				order: 10,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Command Branch",
 		description: docify(`
@@ -1143,7 +1143,7 @@ export const CommandBranchSchema = editor.object(
 );
 
 export const CommandMessageVariableSchema = editor.object(
-	z.object({
+	{
 		key: editor.input({
 			title: "Variable Key",
 			description:
@@ -1178,7 +1178,7 @@ export const CommandMessageVariableSchema = editor.object(
 				},
 			})
 			.default(""),
-	}),
+	},
 	{
 		title: "Message Variable",
 		description: docify(`
@@ -1203,7 +1203,7 @@ export const CommandMessageVariableSchema = editor.object(
 );
 
 export const AuthorCommandSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("command", {
 			title: "Command ID",
 			description: "Stable unique id for this authored command.",
@@ -1481,7 +1481,7 @@ export const AuthorCommandSchema = editor.object(
 				},
 			})
 			.default(""),
-	}),
+	},
 	{
 		title: "Authored Command",
 		description: docify(`

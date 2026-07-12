@@ -163,9 +163,17 @@ export function editorSelect<TSchema extends z.ZodTypeAny>(
 	});
 }
 
-export function editorMultiSelect<
-	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
->(metadata: EditorMetadataWithoutControl = {}, schema?: TSchema) {
+export function editorMultiSelect(
+	metadata?: EditorMetadataWithoutControl,
+): z.ZodDefault<z.ZodArray<z.ZodString>>;
+export function editorMultiSelect<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl,
+	schema: TSchema,
+): TSchema;
+export function editorMultiSelect<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl = {},
+	schema?: TSchema,
+) {
 	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
 		control: "multi-select",
 		picker: {
@@ -225,9 +233,17 @@ export function editorReference<TEntityType extends WorldIdEntityType>(
 	}) as z.ZodType<ID<TEntityType>> | z.ZodOptional<z.ZodType<ID<TEntityType>>>;
 }
 
-export function editorStringList<
-	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
->(metadata: EditorMetadataWithoutControl = {}, schema?: TSchema) {
+export function editorStringList(
+	metadata?: EditorMetadataWithoutControl,
+): z.ZodDefault<z.ZodArray<z.ZodString>>;
+export function editorStringList<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl,
+	schema: TSchema,
+): TSchema;
+export function editorStringList<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl = {},
+	schema?: TSchema,
+) {
 	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
 		control: "string-list",
 		emptyState: {
@@ -244,9 +260,17 @@ export function editorStringList<
 	});
 }
 
-export function editorAliasList<
-	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
->(metadata: EditorMetadataWithoutControl = {}, schema?: TSchema) {
+export function editorAliasList(
+	metadata?: EditorMetadataWithoutControl,
+): z.ZodDefault<z.ZodArray<z.ZodString>>;
+export function editorAliasList<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl,
+	schema: TSchema,
+): TSchema;
+export function editorAliasList<TSchema extends z.ZodTypeAny>(
+	metadata: EditorMetadataWithoutControl = {},
+	schema?: TSchema,
+) {
 	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
 		control: "tag-list",
 		title: "Aliases",
@@ -260,7 +284,16 @@ export function editorAliasList<
 	});
 }
 
-export function editorTagList<TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>>(
+export function editorTagList(
+	tagSource: EditorTagSource,
+	metadata?: EditorMetadataWithoutControlOrTagSource,
+): z.ZodDefault<z.ZodArray<z.ZodString>>;
+export function editorTagList<TSchema extends z.ZodTypeAny>(
+	tagSource: EditorTagSource,
+	metadata: EditorMetadataWithoutControlOrTagSource,
+	schema: TSchema,
+): TSchema;
+export function editorTagList<TSchema extends z.ZodTypeAny>(
 	tagSource: EditorTagSource,
 	metadata: EditorMetadataWithoutControlOrTagSource = {},
 	schema?: TSchema,
@@ -289,9 +322,15 @@ export function editorTagList<TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodA
 	});
 }
 
-export function editorLinkList<
-	TSchema extends z.ZodTypeAny = z.ZodDefault<z.ZodArray<z.ZodString>>,
->(metadata: LinkListMetadata, schema?: TSchema) {
+export function editorLinkList(metadata: LinkListMetadata): z.ZodDefault<z.ZodArray<z.ZodString>>;
+export function editorLinkList<TSchema extends z.ZodTypeAny>(
+	metadata: LinkListMetadata,
+	schema: TSchema,
+): TSchema;
+export function editorLinkList<TSchema extends z.ZodTypeAny>(
+	metadata: LinkListMetadata,
+	schema?: TSchema,
+) {
 	return withEditorMetadata((schema ?? z.array(z.string().min(1)).default([])) as TSchema, {
 		control: "link-list",
 		...metadata,
@@ -672,11 +711,25 @@ export function editorDiscriminatedUnion<TSchema extends z.ZodTypeAny>(
 	});
 }
 
-export function editorObject<TSchema extends z.ZodTypeAny>(
-	schema: TSchema,
+export function editorObject<TShape extends z.ZodRawShape>(
+	shape: TShape,
 	metadata: EditorMetadataWithoutControl = {},
 ) {
-	return withEditorMetadata(schema, {
+	return withEditorMetadata(z.object(shape), {
+		control: "object",
+		appearance: {
+			chrome: "card",
+			...metadata.appearance,
+		},
+		...metadata,
+	});
+}
+
+export function editorRecord<TValueSchema extends z.ZodTypeAny>(
+	valueSchema: TValueSchema,
+	metadata: EditorMetadataWithoutControl = {},
+) {
+	return withEditorMetadata(z.record(z.string(), valueSchema).default({}), {
 		control: "object",
 		appearance: {
 			chrome: "card",
@@ -827,6 +880,7 @@ export const editor = {
 	nonNegativeInteger: editorNonNegativeInteger,
 	number: editorNumber,
 	object: editorObject,
+	record: editorRecord,
 	optionalCounterKey: editorOptionalCounterKey,
 	optionalFlagKey: editorOptionalFlagKey,
 	positiveInteger: editorPositiveInteger,

@@ -13,6 +13,9 @@ export const DescriptionSchema = editor.conditionalText(
 				},
 				title: "Description",
 				description: "A default description with optional conditional variants.",
+				appearance: {
+					chrome: "field",
+				},
 			})
 			.default(""),
 
@@ -24,7 +27,7 @@ export const DescriptionSchema = editor.conditionalText(
 				defaultCollapsed: true,
 			},
 			summary: {
-				enabled: true,
+				enabled: false,
 				mode: "deterministic",
 				emptySummary: "No conditional variants",
 			},
@@ -38,7 +41,7 @@ export const DescriptionSchema = editor.conditionalText(
 			},
 			features: {
 				addLabel: "Add variant",
-				getItemTitle: "Variant {text}",
+				getItemTitle: "Variant {index}",
 				getItemSummary: "{when}",
 				defaultCollapsedItems: true,
 				collapsibleItems: true,

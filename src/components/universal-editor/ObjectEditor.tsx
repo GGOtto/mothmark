@@ -22,10 +22,8 @@ export type ObjectFieldMetadata = {
 };
 
 export type ObjectFeatures = {
-	collapsible?: boolean;
-	defaultCollapsed?: boolean;
 	showFieldCount?: boolean;
-	layout?: "stack" | "grid" | "section" | "inline";
+	layout?: "stack" | "grid" | "inline";
 	groups?: EditorFieldGroupMetadata[];
 	fields?: ObjectFieldMetadata[];
 	showOutline?: boolean;
@@ -55,144 +53,8 @@ function formatValue(value: unknown) {
 	return JSON.stringify(value, null, 2);
 }
 
-function titleFromGroupId(groupId: string) {
-	return groupId
-		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-		.replace(/[-_]+/g, " ")
-		.replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-const INFERRED_GROUPS: Record<string, EditorFieldGroupMetadata> = {
-	identity: {
-		id: "identity",
-		title: "Identity",
-		description: "Names, IDs, aliases, tags, and type.",
-		order: 10,
-	},
-	content: {
-		id: "content",
-		title: "Description",
-		description: "Player-facing text and author-facing prose.",
-		order: 20,
-	},
-	connections: {
-		id: "connections",
-		title: "Connections",
-		description: "Movement, exits, directions, and pathways.",
-		order: 30,
-	},
-	features: {
-		id: "features",
-		title: "Features",
-		description: "Objects, actors, topics, and authored content attached here.",
-		order: 40,
-	},
-	logic: {
-		id: "logic",
-		title: "Logic",
-		description: "Conditions, effects, flags, counters, and state changes.",
-		defaultCollapsed: true,
-		importance: "advanced",
-		order: 80,
-	},
-	advanced: {
-		id: "advanced",
-		title: "Advanced",
-		description: "Editor, generated, or rarely edited fields.",
-		defaultCollapsed: true,
-		importance: "advanced",
-		order: 90,
-	},
-	details: {
-		id: "details",
-		title: "Details",
-		description: "Additional fields.",
-		order: 60,
-	},
-};
-
-function inferFieldGroupId(field: ObjectFieldMetadata) {
-	const key = field.key.toLowerCase();
-	const title = (field.metadata.title ?? "").toLowerCase();
-	const type = field.metadata.type;
-	const haystack = `${key} ${title}`;
-
-	if (["id", "name", "title", "label", "aliases", "tags", "kind", "type"].includes(key)) {
-		return "identity";
-	}
-
-	if (
-		key.includes("description") ||
-		key.includes("text") ||
-		key.includes("message") ||
-		key === "default" ||
-		key === "variants" ||
-		type === "textarea" ||
-		type === "rich-text" ||
-		type === "message"
-	) {
-		return "content";
-	}
-
-	if (
-		haystack.includes("connection") ||
-		haystack.includes("direction") ||
-		haystack.includes("pathway") ||
-		haystack.includes("exit") ||
-		key.endsWith("roomid") ||
-		key === "fromroom" ||
-		key === "toroom"
-	) {
-		return "connections";
-	}
-
-	if (
-		["features", "items", "npcs", "characters", "topics", "quests", "commands", "events"].includes(
-			key,
-		) ||
-		key.includes("items")
-	) {
-		return "features";
-	}
-
-	if (
-		haystack.includes("condition") ||
-		key.endsWith("when") ||
-		key.includes("flag") ||
-		key.includes("counter") ||
-		key.includes("state") ||
-		key.includes("effect") ||
-		key.includes("priority") ||
-		type === "condition-builder" ||
-		type === "effect-list" ||
-		type === "flag-picker" ||
-		type === "counter-picker"
-	) {
-		return "logic";
-	}
-
-	if (
-		key.includes("position") ||
-		key.includes("metadata") ||
-		key.includes("internal") ||
-		key.includes("debug") ||
-		key.includes("generated")
-	) {
-		return "advanced";
-	}
-
-	return "details";
-}
-
 function resolveFieldGroupId(field: ObjectFieldMetadata) {
-	return field.metadata.layout?.group ?? field.metadata.layout?.section ?? inferFieldGroupId(field);
-}
-
-function getFieldImportance(field: ObjectFieldMetadata) {
-	return (
-		(field.metadata.advanced || field.metadata.disclosure?.advanced ? "advanced" : undefined) ??
-		"secondary"
-	);
+	return field.metadata.layout?.group ?? field.metadata.layout?.section;
 }
 
 function getFieldSearchText(field: ObjectFieldMetadata, group?: EditorFieldGroupMetadata) {
@@ -257,37 +119,6 @@ function getActiveSectionLine(element: HTMLElement, container: HTMLElement | Win
 	if (shellHeader) return shellHeader.getBoundingClientRect().bottom - 6;
 
 	return getContainerTop(container) + getStickyOffset(element) + 8;
-}
-
-function buildGroupMetadata(
-	groupId: string,
-	configuredGroups: EditorFieldGroupMetadata[],
-	fields: ObjectFieldMetadata[],
-) {
-	const configuredGroup = configuredGroups.find((group) => group.id === groupId);
-	const inferredGroup = INFERRED_GROUPS[groupId];
-	const firstField = fields[0];
-	const inferredImportance =
-		configuredGroup?.importance ??
-		inferredGroup?.importance ??
-		(firstField ? getFieldImportance(firstField) : "secondary");
-	const shouldDefaultCollapse =
-		configuredGroup?.defaultCollapsed ??
-		inferredGroup?.defaultCollapsed ??
-		(fields.some((field) => field.metadata.appearance?.defaultCollapsed) ||
-			inferredImportance === "advanced" ||
-			inferredImportance === "internal");
-
-	return {
-		id: groupId,
-		title: configuredGroup?.title ?? inferredGroup?.title ?? titleFromGroupId(groupId),
-		description: configuredGroup?.description ?? inferredGroup?.description,
-		icon: configuredGroup?.icon ?? inferredGroup?.icon,
-		importance: inferredImportance,
-		collapsible: true,
-		defaultCollapsed: shouldDefaultCollapse,
-		order: configuredGroup?.order ?? inferredGroup?.order ?? firstField?.metadata.layout?.order,
-	} satisfies EditorFieldGroupMetadata;
 }
 
 function renderField({
@@ -362,27 +193,31 @@ export function ObjectEditor({
 		() => metadata.features?.groups ?? [],
 		[metadata.features?.groups],
 	);
-	const shouldRenderSections =
-		metadata.features?.layout === "section" || configuredGroups.length > 0 || fields.length > 5;
+	const shouldRenderSections = configuredGroups.length > 0;
 	const searchable = Boolean(metadata.features?.searchable || fields.length >= 8);
 	const visibleSearchTerm = searchTerm.trim().toLowerCase();
 	const fieldCount = fields.length || entries.length;
 	const objectSummary = generateEditorSummary(value, metadata.summary);
 
 	const groupedSections = useMemo(() => {
-		const groups = new Map<string, ObjectFieldMetadata[]>();
-		for (const field of fields) {
-			const groupId = shouldRenderSections ? resolveFieldGroupId(field) : "details";
-			const groupFields = groups.get(groupId) ?? [];
-			groupFields.push(field);
-			groups.set(groupId, groupFields);
-		}
+		const sections = configuredGroups
+			.map((group, index) => {
+				const subgroups = [...(group.groups ?? [])]
+					.sort((a, b) => (a.order ?? Number.POSITIVE_INFINITY) - (b.order ?? Number.POSITIVE_INFINITY))
+					.map((subgroup) => ({
+						group: subgroup,
+						fields: fields.filter((field) => resolveFieldGroupId(field) === subgroup.id),
+					}))
+					.filter((subgroup) => subgroup.fields.length > 0);
+				const subgroupIds = new Set((group.groups ?? []).map((subgroup) => subgroup.id));
+				const groupFields = fields.filter(
+					(field) =>
+						resolveFieldGroupId(field) === group.id && !subgroupIds.has(resolveFieldGroupId(field) ?? ""),
+				);
 
-		const sections = Array.from(groups.entries()).map(([groupId, groupFields], index) => ({
-			index,
-			group: buildGroupMetadata(groupId, configuredGroups, groupFields),
-			fields: groupFields,
-		}));
+				return {index, group, fields: groupFields, subgroups};
+			})
+			.filter((section) => section.fields.length > 0 || section.subgroups.length > 0);
 
 		return sections.sort((a, b) => {
 			const orderDiff =
@@ -390,7 +225,21 @@ export function ObjectEditor({
 			if (orderDiff !== 0) return orderDiff;
 			return a.index - b.index;
 		});
-	}, [configuredGroups, fields, shouldRenderSections]);
+	}, [configuredGroups, fields]);
+
+	const ungroupedFields = useMemo(
+		() =>
+			fields.filter((field) => {
+				const groupId = resolveFieldGroupId(field);
+				return (
+					!groupId ||
+					!configuredGroups.some(
+						(group) => group.id === groupId || group.groups?.some((subgroup) => subgroup.id === groupId),
+					)
+				);
+			}),
+		[configuredGroups, fields],
+	);
 
 	const matchingSections = useMemo(
 		() =>
@@ -402,7 +251,25 @@ export function ObjectEditor({
 								getFieldSearchText(field, section.group).includes(visibleSearchTerm),
 							)
 						: section.fields,
-					matches: groupMatchesSearch(section.fields, section.group, visibleSearchTerm),
+					subgroups: section.subgroups
+						.map((subgroup) => ({
+							...subgroup,
+							fields: visibleSearchTerm
+								? subgroup.fields.filter((field) =>
+										getFieldSearchText(field, subgroup.group).includes(visibleSearchTerm),
+									)
+								: subgroup.fields,
+						}))
+						.filter(
+							(subgroup) =>
+								!visibleSearchTerm ||
+								groupMatchesSearch(subgroup.fields, subgroup.group, visibleSearchTerm),
+						),
+					matches:
+						groupMatchesSearch(section.fields, section.group, visibleSearchTerm) ||
+						section.subgroups.some((subgroup) =>
+							groupMatchesSearch(subgroup.fields, subgroup.group, visibleSearchTerm),
+						),
 				}))
 				.filter((section) => section.matches),
 		[groupedSections, visibleSearchTerm],
@@ -414,10 +281,12 @@ export function ObjectEditor({
 				id: section.group.id,
 				title: section.group.title,
 				description: section.group.description,
-				countLabel:
-					metadata.features?.showFieldCount || section.fields.length > 3
-						? `${section.fields.length} fields`
-						: undefined,
+				countLabel: (() => {
+					const count =
+						section.fields.length +
+						section.subgroups.reduce((total, subgroup) => total + subgroup.fields.length, 0);
+					return metadata.features?.showFieldCount ? `${count} fields` : undefined;
+				})(),
 			})),
 		[matchingSections, metadata.features?.showFieldCount],
 	);
@@ -505,7 +374,11 @@ export function ObjectEditor({
 	}
 
 	function renderFieldGroup(section: (typeof matchingSections)[number]) {
-		const groupSummary = section.fields
+		const allSectionFields = [
+			...section.fields,
+			...section.subgroups.flatMap((subgroup) => subgroup.fields),
+		];
+		const groupSummary = allSectionFields
 			.map((field) => {
 				const fieldValue = value[field.key] ?? field.defaultValue;
 				return generateEditorSummary(fieldValue, field.metadata.summary, field.metadata.title);
@@ -517,6 +390,42 @@ export function ObjectEditor({
 			!visibleSearchTerm && (section.group.defaultCollapsed || metadata.appearance?.defaultCollapsed);
 		const savedOpenState = context.editorChrome?.getSectionDisclosure?.(path, section.group.id);
 		const isOpen = Boolean(visibleSearchTerm) || (savedOpenState ?? !shouldCollapse);
+		function renderSubgroup(subgroup: (typeof section.subgroups)[number]) {
+			const disclosureId = `${section.group.id}/${subgroup.group.id}`;
+			const savedSubgroupState = context.editorChrome?.getSectionDisclosure?.(path, disclosureId);
+			const subgroupOpen =
+				Boolean(visibleSearchTerm) || (savedSubgroupState ?? !subgroup.group.defaultCollapsed);
+
+			return (
+				<details
+					key={subgroup.group.id}
+					className="objectEditor__subgroup universalField--chrome-collapse"
+					open={subgroupOpen}
+					onToggle={(event) => {
+						if (visibleSearchTerm) return;
+						context.editorChrome?.setSectionDisclosure?.(path, disclosureId, event.currentTarget.open);
+					}}
+				>
+					<summary className="universalField__cardHeader">
+						<div className="universalField__header">
+							<div className="universalField__titleRow">
+								<div className="universalField__title">{subgroup.group.title}</div>
+							</div>
+							{subgroup.group.description ? (
+								<div className="universalField__description">{subgroup.group.description}</div>
+							) : null}
+						</div>
+					</summary>
+					<div
+						className={`objectEditor__sectionFields objectEditor__sectionFields--${metadata.features?.layout ?? "stack"}`}
+					>
+						{subgroup.fields.map((field) =>
+							renderField({field, value, onChange, path, disabled, readonly, context}),
+						)}
+					</div>
+				</details>
+			);
+		}
 		const body = (
 			<div
 				className={[
@@ -527,12 +436,11 @@ export function ObjectEditor({
 				{section.fields.map((field) =>
 					renderField({field, value, onChange, path, disabled, readonly, context}),
 				)}
+				{section.subgroups.map(renderSubgroup)}
 			</div>
 		);
-		const countLabel =
-			metadata.features?.showFieldCount || section.fields.length > 3
-				? `${section.fields.length} fields`
-				: undefined;
+		const sectionFieldCount = allSectionFields.length;
+		const countLabel = metadata.features?.showFieldCount ? `${sectionFieldCount} fields` : undefined;
 		const sectionId = `object-section-${path.join("-") || "root"}-${section.group.id}`;
 
 		return (
@@ -542,6 +450,7 @@ export function ObjectEditor({
 				data-section-id={section.group.id}
 				className={[
 					"objectEditor__section",
+					"universalField--chrome-collapse",
 					`objectEditor__section--${section.group.importance ?? "secondary"}`,
 				].join(" ")}
 				open={isOpen}
@@ -550,14 +459,22 @@ export function ObjectEditor({
 					context.editorChrome?.setSectionDisclosure?.(path, section.group.id, event.currentTarget.open);
 				}}
 			>
-				<summary className="objectEditor__sectionHeader">
-					<span className="objectEditor__sectionTitle">{section.group.title}</span>
-					{countLabel ? <span className="objectEditor__sectionCount">{countLabel}</span> : null}
-					{section.group.description ? (
-						<span className="objectEditor__sectionDescription">{section.group.description}</span>
-					) : groupSummary ? (
-						<span className="objectEditor__sectionDescription">{groupSummary}</span>
-					) : null}
+				<summary className="universalField__cardHeader">
+					<div className="universalField__header">
+						<div className="universalField__titleRow">
+							<div className="universalField__title">{section.group.title}</div>
+						</div>
+						{countLabel ? (
+							<div className="universalField__headerAction">
+								<span className="objectEditor__sectionCount">{countLabel}</span>
+							</div>
+						) : null}
+						{section.group.description || groupSummary ? (
+							<div className="universalField__description">
+								{section.group.description ?? groupSummary}
+							</div>
+						) : null}
+					</div>
 				</summary>
 				{body}
 			</details>
@@ -571,18 +488,31 @@ export function ObjectEditor({
 				`objectEditor__fields--${shouldRenderSections ? "section" : (metadata.features?.layout ?? "stack")}`,
 			].join(" ")}
 		>
-			{fields.length > 0
-				? shouldRenderSections
-					? matchingSections.map(renderFieldGroup)
-					: matchingSections
-							.flatMap((section) => section.fields)
-							.map((field) => renderField({field, value, onChange, path, disabled, readonly, context}))
-				: entries.map(([key, entryValue]) => (
-						<div key={key} className="objectEditor__previewRow">
-							<span className="objectEditor__previewKey">{key}</span>
-							<pre className="objectEditor__previewValue">{formatValue(entryValue)}</pre>
-						</div>
-					))}
+			{fields.length > 0 ? (
+				shouldRenderSections ? (
+					<>
+						{matchingSections.map(renderFieldGroup)}
+						{ungroupedFields
+							.filter((field) =>
+								visibleSearchTerm ? getFieldSearchText(field).includes(visibleSearchTerm) : true,
+							)
+							.map((field) => renderField({field, value, onChange, path, disabled, readonly, context}))}
+					</>
+				) : (
+					fields
+						.filter((field) =>
+							visibleSearchTerm ? getFieldSearchText(field).includes(visibleSearchTerm) : true,
+						)
+						.map((field) => renderField({field, value, onChange, path, disabled, readonly, context}))
+				)
+			) : (
+				entries.map(([key, entryValue]) => (
+					<div key={key} className="objectEditor__previewRow">
+						<span className="objectEditor__previewKey">{key}</span>
+						<pre className="objectEditor__previewValue">{formatValue(entryValue)}</pre>
+					</div>
+				))
+			)}
 
 			{fields.length === 0 && entries.length === 0 ? (
 				<div className="objectEditor__empty">
@@ -603,7 +533,10 @@ export function ObjectEditor({
 					) : null}
 				</div>
 			) : null}
-			{fields.length > 0 && matchingSections.length === 0 ? (
+			{fields.length > 0 &&
+			visibleSearchTerm &&
+			matchingSections.length === 0 &&
+			ungroupedFields.every((field) => !getFieldSearchText(field).includes(visibleSearchTerm)) ? (
 				<div className="objectEditor__empty">
 					<strong>No matching fields</strong>
 					<span>Try a different field name or section.</span>
@@ -658,22 +591,10 @@ export function ObjectEditor({
 			}}
 		>
 			<div ref={objectRef} className="objectEditor">
-				{metadata.features?.collapsible ? (
-					<details className="objectEditor__details" open={!metadata.features.defaultCollapsed}>
-						<summary className="objectEditor__summary">
-							<span>{metadata.placeholder ?? "Object fields"}</span>
-							{metadata.features.showFieldCount ? <span>{fieldCount} fields</span> : null}
-						</summary>
-						{content}
-					</details>
-				) : (
-					<>
-						{metadata.features?.showFieldCount ? (
-							<div className="objectEditor__count">{fieldCount} fields</div>
-						) : null}
-						{content}
-					</>
-				)}
+				{metadata.features?.showFieldCount ? (
+					<div className="objectEditor__count">{fieldCount} fields</div>
+				) : null}
+				{content}
 			</div>
 		</FieldShell>
 	);

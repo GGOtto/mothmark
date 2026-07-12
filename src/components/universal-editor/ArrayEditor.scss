@@ -62,6 +62,15 @@ summary.arrayEditor__itemTitle {
 	padding: 2px 4px;
 }
 
+.arrayEditor__itemTitleActions {
+	display: inline-flex;
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-items: center;
+	align-self: center;
+	gap: 4px;
+}
+
 .arrayEditor__item--valid {
 	border-color: var(--field-border-strong);
 }
@@ -104,6 +113,26 @@ summary.arrayEditor__itemTitle {
 	font-size: 11px;
 	line-height: 1;
 	padding: 7px 8px;
+}
+
+.arrayEditor__removeButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	background: transparent;
+	color: var(--field-danger, #b94444);
+	cursor: pointer;
+	padding: 3px;
+}
+
+.arrayEditor__removeButton:hover:not(:disabled) {
+	background: var(--field-danger-bg);
+}
+
+.arrayEditor__removeButton:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
 }
 
 .arrayEditor__actions button:hover:not(:disabled),

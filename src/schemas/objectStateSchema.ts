@@ -11,7 +11,7 @@ export const StateValueSchema = editor.discriminatedUnion(
 );
 
 export const ObjectStateDefaultsSchema = editor.object(
-	z.object({
+	{
 		open: editor
 			.boolean({
 				title: "Open",
@@ -67,7 +67,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 			})
 			.optional(),
 
-		custom: editor.object(z.record(z.string(), StateValueSchema).default({}), {
+		custom: editor.record(StateValueSchema, {
 			title: "Custom State",
 			description: "Custom object state values, such as freshness, fuel, sealed, sticky, or charged.",
 			advanced: true,
@@ -76,7 +76,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 				order: 6,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Object State Defaults",
 		description: docify(`

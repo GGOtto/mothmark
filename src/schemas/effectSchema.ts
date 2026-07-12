@@ -37,7 +37,7 @@ const EffectIdentitySchema = z.object({
 });
 
 export const EffectReferenceSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("effect-ref").describe("References an effect stored in the world."),
 		effectId: editor.reference("effect", {
 			title: "Effect",
@@ -47,7 +47,7 @@ export const EffectReferenceSchema = editor.object(
 				order: 1,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Effect Reference",
 		description: "A usage of an effect stored in the world effect library.",
@@ -1357,7 +1357,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 				SingleEffectSchema,
 
 				editor.object(
-					z.object({
+					{
 						...EffectIdentitySchema.shape,
 						type: z.literal("group").describe("Runs multiple effects together as one effect."),
 						effects: editor.effects(EffectReferenceSchema, {
@@ -1369,7 +1369,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 								order: 4,
 							},
 						}),
-					}),
+					},
 					{
 						title: "Effect Group",
 						description: "An effect that groups multiple effects together and runs them in order.",
@@ -1386,7 +1386,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 				),
 
 				editor.object(
-					z.object({
+					{
 						...EffectIdentitySchema.shape,
 						type: z
 							.literal("conditional")
@@ -1415,7 +1415,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 								order: 3,
 							},
 						}),
-					}),
+					},
 					{
 						title: "Conditional Effect",
 						description: "An effect that branches into different effects based on game-state conditions.",
@@ -1463,7 +1463,7 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 export const EffectUsageSchema = EffectReferenceSchema;
 
 export const AuthoredEventSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("event", {
 			title: "Event ID",
 			description:
@@ -1549,7 +1549,7 @@ export const AuthoredEventSchema = editor.object(
 				},
 			})
 			.default(false),
-	}),
+	},
 	{
 		title: "Authored Event",
 		description:
@@ -1569,7 +1569,7 @@ export const AuthoredEventSchema = editor.object(
 export type AuthoredEvent = z.infer<typeof AuthoredEventSchema>;
 
 export const ScheduledEventInstanceSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("event-instance", {
 			title: "Instance ID",
 			description: "The unique runtime id for this scheduled event instance.",
@@ -1672,7 +1672,7 @@ export const ScheduledEventInstanceSchema = editor.object(
 				order: 10,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Scheduled Event Instance",
 		description:

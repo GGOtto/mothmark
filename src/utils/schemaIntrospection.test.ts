@@ -5,11 +5,9 @@ import {resolveEditorMetadata} from "./resolveEditorMetadata";
 
 describe("getSchemaAtPath", () => {
 	it("resolves object properties through wrapped schemas", () => {
-		const schema = editor.object(
-			z.object({
-				title: editor.input({title: "Title"}).default("Untitled"),
-			}),
-		);
+		const schema = editor.object({
+			title: editor.input({title: "Title"}).default("Untitled"),
+		});
 
 		const childSchema = getSchemaAtPath(schema, ["title"]);
 
@@ -18,18 +16,14 @@ describe("getSchemaAtPath", () => {
 	});
 
 	it("resolves array element properties by numeric path segment", () => {
-		const schema = editor.object(
-			z.object({
-				rooms: z.array(
-					editor.object(
-						z.object({
-							id: editor.id("room", {title: "Room ID"}),
-							name: editor.input({title: "Room Name"}),
-						}),
-					),
-				),
-			}),
-		);
+		const schema = editor.object({
+			rooms: z.array(
+				editor.object({
+					id: editor.id("room", {title: "Room ID"}),
+					name: editor.input({title: "Room Name"}),
+				}),
+			),
+		});
 
 		const childSchema = getSchemaAtPath(schema, ["rooms", 0, "name"]);
 

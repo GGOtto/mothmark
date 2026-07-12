@@ -1,5 +1,6 @@
 "use client";
 
+import {Trash2} from "lucide-react";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {
@@ -55,7 +56,7 @@ function cloneValue(value: unknown) {
 
 function getItemTitle(item: unknown, index: number, template?: string) {
 	if (!template) return `Item ${index + 1}`;
-	return templateValue(item, template);
+	return templateValue(item, template.replaceAll("{index}", String(index + 1)));
 }
 
 function templateValue(item: unknown, template?: string) {
@@ -157,6 +158,29 @@ export function ArrayEditor({
 			generateEditorSummary(item, metadata.features?.itemMetadata?.summary);
 		const badge = templateValue(item, metadata.features?.getItemBadge);
 		const status = metadata.features?.getItemStatus;
+		const removeButton = removable ? (
+			<button
+				className="arrayEditor__removeButton"
+				type="button"
+				disabled={!canEdit || value.length <= minItems}
+				onClick={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					removeItem(index);
+				}}
+				aria-label={`Delete ${title}`}
+				title={`Delete ${title}`}
+			>
+				<Trash2 size={13} aria-hidden="true" />
+			</button>
+		) : null;
+		const itemTitleActions =
+			badge || removeButton ? (
+				<span className="arrayEditor__itemTitleActions">
+					{badge ? <span className="arrayEditor__itemBadge">{badge}</span> : null}
+					{removeButton}
+				</span>
+			) : null;
 		const itemBody = metadata.features?.itemMetadata ? (
 			renderEditorControl({
 				value: item,
@@ -195,14 +219,6 @@ export function ArrayEditor({
 							Duplicate
 						</button>
 					) : null}
-
-					<button
-						type="button"
-						disabled={!canEdit || !removable || value.length <= minItems}
-						onClick={() => removeItem(index)}
-					>
-						Remove
-					</button>
 				</div>
 			</>
 		);
@@ -219,7 +235,7 @@ export function ArrayEditor({
 					<summary className="arrayEditor__itemTitle">
 						<span className="arrayEditor__itemTitleText">{title}</span>
 						{subtitle ? <span className="arrayEditor__itemSubtitle">{subtitle}</span> : null}
-						{badge ? <span className="arrayEditor__itemBadge">{badge}</span> : null}
+						{itemTitleActions}
 					</summary>
 					{itemShell}
 				</details>
@@ -236,7 +252,7 @@ export function ArrayEditor({
 				<div className="arrayEditor__itemTitle">
 					<span className="arrayEditor__itemTitleText">{title}</span>
 					{subtitle ? <span className="arrayEditor__itemSubtitle">{subtitle}</span> : null}
-					{badge ? <span className="arrayEditor__itemBadge">{badge}</span> : null}
+					{itemTitleActions}
 				</div>
 				{itemShell}
 			</div>
@@ -271,7 +287,6 @@ export function ArrayEditor({
 			}}
 		>
 			<div className="arrayEditor">
-				<div className="arrayEditor__summary">{value.length} items</div>
 				{value.map(renderItem)}
 				{value.length === 0 ? (
 					<div className="arrayEditor__empty">

@@ -64,41 +64,10 @@ export const PathwaySchema = editor.select(
 	},
 );
 
-export const PointSchema = editor.object(
-	z.object({
-		x: editor.number({
-			title: "X",
-			features: {
-				kind: "coordinate",
-			},
-			layout: {
-				width: "half",
-				order: 1,
-			},
-		}),
-
-		y: editor.number({
-			title: "Y",
-			features: {
-				kind: "coordinate",
-			},
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}),
-	}),
-	{
-		title: "Point",
-		description: "A two-dimensional position used by the editor layout.",
-		appearance: {
-			chrome: "compact",
-		},
-		features: {
-			layout: "inline",
-		},
-	},
-);
+export const PointSchema = z.object({
+	x: z.number(),
+	y: z.number(),
+});
 
 export const RoomFeatureKindSchema = editor.select(
 	z
@@ -173,7 +142,7 @@ export const RoomFeatureKindSchema = editor.select(
 );
 
 export const RoomFeatureSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("feature", {
 			title: "Feature ID",
 			description: "The unique id used to identify this room feature.",
@@ -296,7 +265,7 @@ export const RoomFeatureSchema = editor.object(
 		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
 			"Initial object state for this feature.",
 		),
-	}),
+	},
 	{
 		title: "Room Feature",
 		description: docify(`
@@ -339,7 +308,7 @@ export const RoomFeatureSchema = editor.object(
 );
 
 export const RoomSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("room", {
 			title: "Room ID",
 			description: "The unique id used to identify this room.",
@@ -375,7 +344,7 @@ export const RoomSchema = editor.object(
 				description: "Optional shorter description used after the room has already been visited.",
 				placeholder: "You are back in the kitchen.",
 				layout: {
-					group: "description",
+					group: "details",
 					width: "full",
 					order: 4,
 				},
@@ -390,7 +359,7 @@ export const RoomSchema = editor.object(
 			title: "Aliases",
 			description: "Alternative names for this room.",
 			layout: {
-				group: "details",
+				group: "identify",
 				width: "full",
 				order: 5,
 			},
@@ -400,7 +369,7 @@ export const RoomSchema = editor.object(
 			title: "Tags",
 			description: "Tags used to group this room, such as indoors, outdoors, safe, dark, or kitchen.",
 			layout: {
-				group: "details",
+				group: "identify",
 				width: "full",
 				order: 6,
 			},
@@ -438,26 +407,6 @@ export const RoomSchema = editor.object(
 
 		position: PointSchema.describe("The room's position in the editor canvas."),
 
-		visitedFlag: editor.optionalFlagKey({
-			title: "Visited Flag",
-			description: "Optional flag set when the player visits this room.",
-			layout: {
-				group: "availability",
-				width: "half",
-				order: 9,
-			},
-		}),
-
-		viewedFlag: editor.optionalFlagKey({
-			title: "Viewed Flag",
-			description: "Optional flag set when this room's description is shown.",
-			layout: {
-				group: "availability",
-				width: "half",
-				order: 10,
-			},
-		}),
-
 		activeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Active When",
 			description:
@@ -468,28 +417,16 @@ export const RoomSchema = editor.object(
 				order: 11,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Room",
 		description: "A location in the world that the player can visit.",
 		childControls: {
 			description: {
 				layout: {
-					group: "description",
+					group: "details",
 					width: "full",
 					order: 3,
-				},
-			},
-			position: {
-				title: "Position",
-				description: "The room's position in the editor canvas.",
-				layout: {
-					group: "editor",
-					width: "full",
-					order: 8,
-				},
-				appearance: {
-					chrome: "compact",
 				},
 			},
 		},
@@ -498,36 +435,31 @@ export const RoomSchema = editor.object(
 			groups: [
 				{
 					id: "details",
-					title: "Details",
-					description: "The room's name, identifier, aliases, and tags.",
+					title: "Presentation",
+					description: "Control what the player will see when interacting with this room.",
 					order: 10,
-				},
-				{
-					id: "description",
-					title: "Description",
-					description: "Text used when presenting this room to the player.",
-					order: 20,
+					groups: [
+						{
+							id: "identify",
+							title: "Identification",
+							description: "Tags used to identify this room if a user types something close to the name.",
+							defaultCollapsed: true,
+						},
+					],
 				},
 				{
 					id: "features",
 					title: "Features",
 					description: "Interactive features located in this room.",
 					order: 30,
+					defaultCollapsed: true,
 				},
 				{
 					id: "availability",
 					title: "Availability",
-					description: "State tracking and conditions that control this room.",
+					description: "Block passages into this room until these conditions are met.",
 					order: 40,
 					defaultCollapsed: true,
-				},
-				{
-					id: "editor",
-					title: "Editor",
-					description: "Map-editor-specific information.",
-					order: 50,
-					defaultCollapsed: true,
-					importance: "advanced",
 				},
 			],
 		},
@@ -540,7 +472,7 @@ export const RoomSchema = editor.object(
 );
 
 export const ConnectionSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("connection", {
 			title: "Connection ID",
 			description: "The unique id used to identify this connection.",
@@ -668,7 +600,7 @@ export const ConnectionSchema = editor.object(
 		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
 			"Initial state for this connection or exit, such as locked or open.",
 		),
-	}),
+	},
 	{
 		title: "Connection",
 		description: docify(`

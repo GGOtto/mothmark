@@ -176,10 +176,15 @@ function buildObjectFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadat
 		? sortEditorObjectFields(
 				Object.entries(shape).map(([key, fieldSchema], index) => {
 					const fieldMetadata = resolveEditorMetadata(fieldSchema);
+					const childOverride = metadata?.childControls?.[key];
+					const hasExplicitControl = Boolean(
+						resolveSchemaParts(fieldSchema).metadata?.control ?? childOverride?.control,
+					);
+					const mergedMetadata = mergeEditorMetadata(fieldMetadata, childOverride);
 
 					return {
 						key,
-						metadata: mergeEditorMetadata(fieldMetadata, metadata?.childControls?.[key]),
+						metadata: hasExplicitControl ? mergedMetadata : {...mergedMetadata, type: "hidden" as const},
 						defaultValue: createDefaultValue(fieldSchema),
 						index,
 					};

@@ -32,7 +32,7 @@ type ObjectSetup = {
 	id: string;
 	value: Record<string, unknown>;
 	error?: string;
-	metadata: Omit<ObjectControlMetadata, "type" | "appearance">;
+	metadata: Omit<ObjectControlMetadata, "type">;
 };
 
 const SETUPS = {
@@ -52,8 +52,7 @@ const SETUPS = {
 		metadata: {
 			...BASIC_METADATA,
 			title: "Collapsible Object",
-			placeholder: "Room fields",
-			features: {...BASIC_METADATA.features, collapsible: true, defaultCollapsed: true},
+			appearance: {chrome: "collapse", defaultCollapsed: true},
 		},
 	},
 	sectioned: {
@@ -78,7 +77,6 @@ const SETUPS = {
 				showFieldCount: true,
 				showOutline: true,
 				searchable: true,
-				layout: "section",
 				groups: [
 					{
 						id: "identity",

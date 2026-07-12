@@ -128,7 +128,7 @@ const ConditionIdentitySchema = z.object({
 });
 
 export const ConditionReferenceSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("condition-ref").describe("References a condition stored in the world."),
 		conditionId: editor.reference("condition", {
 			title: "Condition",
@@ -138,7 +138,7 @@ export const ConditionReferenceSchema = editor.object(
 				order: 1,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Condition Reference",
 		description: "A usage of a condition stored in the world condition library.",
@@ -430,7 +430,7 @@ export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 );
 
 export const RoomHistoryConditionSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("room-history").describe("Checks whether a room has been visited or viewed."),
 
 		roomId: editor.reference("room", {
@@ -473,7 +473,7 @@ export const RoomHistoryConditionSchema = editor.object(
 				},
 			})
 			.default(true),
-	}),
+	},
 	{
 		title: "Room History Condition",
 		description: docify(`
@@ -494,7 +494,7 @@ export const RoomHistoryConditionSchema = editor.object(
 );
 
 export const FeatureExaminedConditionSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("feature-examined").describe("Checks whether a room feature has been examined."),
 
 		roomId: editor.reference("room", {
@@ -525,7 +525,7 @@ export const FeatureExaminedConditionSchema = editor.object(
 				},
 			})
 			.default(true),
-	}),
+	},
 	{
 		title: "Feature Examined Condition",
 		description: docify(`
@@ -724,7 +724,7 @@ export const InventoryConditionSchema = editor.discriminatedUnion(
 );
 
 export const HasItemConditionSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("has-item").describe("Checks the player's inventory."),
 
 		itemId: editor.reference("item", {
@@ -746,7 +746,7 @@ export const HasItemConditionSchema = editor.object(
 				},
 			})
 			.default(false),
-	}),
+	},
 	{
 		title: "Legacy Has Item Condition",
 		description: docify(`
@@ -1558,7 +1558,7 @@ export const CommandHistoryConditionSchema = editor.discriminatedUnion(
 );
 
 export const RandomChanceConditionSchema = editor.object(
-	z.object({
+	{
 		type: z.literal("random-chance").describe("Checks whether a random chance succeeds."),
 
 		chance: editor.number(
@@ -1597,7 +1597,7 @@ export const RandomChanceConditionSchema = editor.object(
 				},
 			})
 			.default(false),
-	}),
+	},
 	{
 		title: "Random Chance Condition",
 		description: docify(`
@@ -2047,7 +2047,7 @@ export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> =
 				z.intersection(SingleConditionSchema, ConditionIdentitySchema),
 
 				editor.object(
-					z.object({
+					{
 						...ConditionIdentitySchema.shape,
 						type: z.literal("group").describe("Groups multiple conditions together."),
 
@@ -2083,7 +2083,7 @@ export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> =
 							.array(ConditionReferenceSchema)
 							.default([])
 							.describe("Nested child condition references stored in the world condition library."),
-					}),
+					},
 					{
 						title: "Condition Group",
 						description: docify(`
@@ -2165,7 +2165,7 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 export const ConditionUsageSchema = ConditionReferenceSchema;
 
 export const ConditionalTextSchema = editor.object(
-	z.object({
+	{
 		text: editor
 			.richText({
 				title: "Variant Text",
@@ -2196,32 +2196,10 @@ export const ConditionalTextSchema = editor.object(
 				group: "conditions",
 			},
 		}),
-	}),
+	},
 	{
-		title: "Conditional Text",
-		description: "Text that is only used when a set of conditions are met.",
-		features: {
-			layout: "section",
-			groups: [
-				{
-					id: "text",
-					title: "Variant Text",
-					description: "Player-facing text for this alternate description.",
-					order: 10,
-				},
-				{
-					id: "conditions",
-					title: "Conditions",
-					description: "When this variant is allowed to replace the default description.",
-					order: 20,
-				},
-			],
-		},
 		summary: {
-			enabled: true,
-			mode: "deterministic",
-			summaryTemplate: "{text}",
-			emptySummary: "No variant text yet",
+			enabled: false,
 		},
 	},
 );

@@ -764,8 +764,7 @@ function ConditionSummary({
 function ConditionEmptyState() {
 	return (
 		<div className="conditionBuilderEditor__empty">
-			<strong>No conditions yet</strong>
-			<span>This rule is currently always allowed. Add a condition to make it conditional.</span>
+			<span>Add a condition to make this variant conditional.</span>
 		</div>
 	);
 }

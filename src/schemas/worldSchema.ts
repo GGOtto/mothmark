@@ -25,7 +25,7 @@ export const TagListSchema = editor.tagList("all", {
 });
 
 export const EntityVisibilitySchema = editor.object(
-	z.object({
+	{
 		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The entity is only visible when all of these conditions pass.",
@@ -43,7 +43,7 @@ export const EntityVisibilitySchema = editor.object(
 				order: 2,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Entity Visibility",
 		description: docify(`
@@ -65,7 +65,7 @@ export const DefaultEntityVisibility = {
 } satisfies z.infer<typeof EntityVisibilitySchema>;
 
 export const InteractionRuleSchema = editor.object(
-	z.object({
+	{
 		allowedWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Allowed When",
 			description: "The interaction is allowed only when all of these conditions pass.",
@@ -95,7 +95,7 @@ export const InteractionRuleSchema = editor.object(
 				},
 			})
 			.default(""),
-	}),
+	},
 	{
 		title: "Interaction Rule",
 		description: "Reusable rules for whether an interaction is currently allowed.",
@@ -203,7 +203,7 @@ export const ItemLocationSchema = editor.discriminatedUnion(
 );
 
 export const ItemSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("item", {
 			title: "Item ID",
 			description: "The unique id used to identify this item.",
@@ -302,7 +302,7 @@ export const ItemSchema = editor.object(
 		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
 			"Initial object state for this item.",
 		),
-	}),
+	},
 	{
 		title: "Item",
 		description: docify(`
@@ -337,7 +337,7 @@ export const NpcDispositionSchema = editor.select(
 );
 
 export const NpcScheduleEntrySchema = editor.object(
-	z.object({
+	{
 		id: editor.id("npc-schedule-entry", {
 			title: "Schedule Entry ID",
 			description: "Unique id for this schedule entry.",
@@ -365,7 +365,7 @@ export const NpcScheduleEntrySchema = editor.object(
 				order: 3,
 			},
 		}),
-	}),
+	},
 	{
 		title: "NPC Schedule Entry",
 		description: "A conditional NPC schedule entry.",
@@ -382,7 +382,7 @@ export const NpcScheduleEntrySchema = editor.object(
 );
 
 export const NpcSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("npc", {
 			title: "NPC ID",
 			description: "The unique id used to identify this NPC.",
@@ -539,7 +539,7 @@ export const NpcSchema = editor.object(
 		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
 			"Custom NPC state values beyond mood, trust, and disposition.",
 		),
-	}),
+	},
 	{
 		title: "NPC",
 		description: docify(`
@@ -557,7 +557,7 @@ export const NpcSchema = editor.object(
 );
 
 export const TopicSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("topic", {
 			title: "Topic ID",
 			description: "The unique id used to identify this conversation topic.",
@@ -629,7 +629,7 @@ export const TopicSchema = editor.object(
 				order: 7,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Topic",
 		description: docify(`
@@ -649,7 +649,7 @@ export const TopicSchema = editor.object(
 );
 
 export const QuestObjectiveSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("quest-objective", {
 			title: "Objective ID",
 			description: "The unique id for this quest objective.",
@@ -700,7 +700,7 @@ export const QuestObjectiveSchema = editor.object(
 				order: 5,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Quest Objective",
 		description: "A single objective within a quest.",
@@ -713,7 +713,7 @@ export const QuestObjectiveSchema = editor.object(
 );
 
 export const QuestSchema = editor.object(
-	z.object({
+	{
 		id: editor.id("quest", {
 			title: "Quest ID",
 			description: "The unique id used to identify this quest.",
@@ -801,7 +801,7 @@ export const QuestSchema = editor.object(
 				order: 8,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Quest",
 		description: docify(`
@@ -819,7 +819,7 @@ export const QuestSchema = editor.object(
 );
 
 export const InitialObjectStateSchema = editor.object(
-	z.object({
+	{
 		objectId: editor.reference("object", {
 			title: "Object",
 			description:
@@ -831,7 +831,7 @@ export const InitialObjectStateSchema = editor.object(
 		}),
 
 		state: ObjectStateDefaultsSchema.describe("The initial state values for this object."),
-	}),
+	},
 	{
 		title: "Initial Object State",
 		description: "Initial state for an arbitrary object id.",
@@ -843,7 +843,7 @@ export const InitialObjectStateSchema = editor.object(
 );
 
 export const InitialFlagSchema = editor.object(
-	z.object({
+	{
 		flag: editor.flagKey({
 			title: "Flag",
 			description: "The flag key to initialize.",
@@ -861,7 +861,7 @@ export const InitialFlagSchema = editor.object(
 				order: 2,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Initial Flag",
 		description: "A starting flag value.",
@@ -869,7 +869,7 @@ export const InitialFlagSchema = editor.object(
 );
 
 export const InitialCounterSchema = editor.object(
-	z.object({
+	{
 		counter: editor
 			.input({
 				title: "Counter",
@@ -890,7 +890,7 @@ export const InitialCounterSchema = editor.object(
 				order: 2,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Initial Counter",
 		description: "A starting counter value.",
@@ -898,7 +898,7 @@ export const InitialCounterSchema = editor.object(
 );
 
 export const WorldInitialStateSchema = editor.object(
-	z.object({
+	{
 		flags: editor.array(InitialFlagSchema, {
 			title: "Flags",
 			description: "Boolean flags that should exist when the game starts.",
@@ -961,7 +961,7 @@ export const WorldInitialStateSchema = editor.object(
 				order: 5,
 			},
 		}),
-	}),
+	},
 	{
 		title: "Initial State",
 		description: docify(`
@@ -982,7 +982,7 @@ export const DefaultWorldInitialState = {
 } satisfies z.infer<typeof WorldInitialStateSchema>;
 
 export const WorldMetadataSchema = editor.object(
-	z.object({
+	{
 		title: editor
 			.input({
 				title: "Title",
@@ -1028,7 +1028,7 @@ export const WorldMetadataSchema = editor.object(
 				},
 			})
 			.default("0.1.0"),
-	}),
+	},
 	{
 		title: "World Metadata",
 		description: "Optional world metadata.",
@@ -1042,9 +1042,9 @@ export const DefaultWorldMetadata = {
 	version: "0.1.0",
 } satisfies z.infer<typeof WorldMetadataSchema>;
 
-export const WorldSchema = editor.object(
-	z
-		.object({
+export const WorldSchema = editor
+	.object(
+		{
 			metadata: WorldMetadataSchema.default(DefaultWorldMetadata).describe(
 				"Optional metadata about this world.",
 			),
@@ -1252,9 +1252,18 @@ export const WorldSchema = editor.object(
 			initialState: WorldInitialStateSchema.default(DefaultWorldInitialState).describe(
 				"Initial runtime state seeded when a new game starts.",
 			),
-		})
-		.describe(
-			docify(`
+		},
+		{
+			title: "World",
+			description: "A complete playable text adventure world.",
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+			},
+		},
+	)
+	.describe(
+		docify(`
 				A complete playable text adventure world.
 
 				The world schema defines static world data:
@@ -1273,357 +1282,345 @@ export const WorldSchema = editor.object(
 				recentCommands, itemLocations, npcLocations, and objectStates, should live
 				in GameState rather than directly in the world definition.
 			`),
-		)
-		.superRefine((world, ctx) => {
-			const roomIds = new Set<string>();
-			const connectionIds = new Set<string>();
-			const itemIds = new Set<string>();
-			const npcIds = new Set<string>();
-			const topicIds = new Set<string>();
-			const questIds = new Set<string>();
-			const commandIds = new Set<string>();
-			const eventIds = new Set<string>();
-			const conditionIds = new Set<string>();
+	)
+	.superRefine((world, ctx) => {
+		const roomIds = new Set<string>();
+		const connectionIds = new Set<string>();
+		const itemIds = new Set<string>();
+		const npcIds = new Set<string>();
+		const topicIds = new Set<string>();
+		const questIds = new Set<string>();
+		const commandIds = new Set<string>();
+		const eventIds = new Set<string>();
+		const conditionIds = new Set<string>();
 
-			const fullFeatureIds = new Set<string>();
-			const containerIds = new Set<string>();
-			const surfaceIds = new Set<string>();
+		const fullFeatureIds = new Set<string>();
+		const containerIds = new Set<string>();
+		const surfaceIds = new Set<string>();
 
-			for (const [roomIndex, room] of world.rooms.entries()) {
-				const roomId = idValue(room.id);
-				if (roomIds.has(roomId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate room id: ${roomId}`,
-						path: ["rooms", roomIndex, "id"],
-					});
-				}
-
-				roomIds.add(roomId);
-
-				const roomFeatureIds = new Set<string>();
-
-				for (const [featureIndex, feature] of room.features.entries()) {
-					const featureId = idValue(feature.id);
-					const fullFeatureId = `${roomId}.${featureId}`;
-
-					if (roomFeatureIds.has(featureId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: `Duplicate feature id ${featureId} in room ${roomId}`,
-							path: ["rooms", roomIndex, "features", featureIndex, "id"],
-						});
-					}
-
-					roomFeatureIds.add(featureId);
-
-					if (fullFeatureIds.has(fullFeatureId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: `Duplicate full feature id: ${fullFeatureId}`,
-							path: ["rooms", roomIndex, "features", featureIndex, "id"],
-						});
-					}
-
-					fullFeatureIds.add(fullFeatureId);
-
-					if (feature.kind === "container") {
-						containerIds.add(featureId);
-						containerIds.add(fullFeatureId);
-					}
-
-					if (feature.kind === "surface") {
-						surfaceIds.add(featureId);
-						surfaceIds.add(fullFeatureId);
-					}
-				}
-			}
-
-			for (const [connectionIndex, connection] of world.connections.entries()) {
-				const connectionId = idValue(connection.id);
-				if (connectionIds.has(connectionId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate connection id: ${connectionId}`,
-						path: ["connections", connectionIndex, "id"],
-					});
-				}
-
-				connectionIds.add(connectionId);
-			}
-
-			for (const [conditionIndex, condition] of world.conditions.entries()) {
-				const conditionId = "id" in condition && isID(condition.id) ? idValue(condition.id) : "";
-				if (!conditionId) {
-					ctx.addIssue({
-						code: "custom",
-						message: "World conditions need a condition id.",
-						path: ["conditions", conditionIndex, "id"],
-					});
-					continue;
-				}
-
-				if (conditionIds.has(conditionId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate condition id: ${conditionId}`,
-						path: ["conditions", conditionIndex, "id"],
-					});
-				}
-
-				conditionIds.add(conditionId);
-			}
-
-			for (const [itemIndex, item] of world.items.entries()) {
-				const itemId = idValue(item.id);
-				if (itemIds.has(itemId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate item id: ${itemId}`,
-						path: ["items", itemIndex, "id"],
-					});
-				}
-
-				itemIds.add(itemId);
-			}
-
-			for (const [topicIndex, topic] of world.topics.entries()) {
-				const topicId = idValue(topic.id);
-				if (topicIds.has(topicId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate topic id: ${topicId}`,
-						path: ["topics", topicIndex, "id"],
-					});
-				}
-
-				topicIds.add(topicId);
-			}
-
-			for (const [npcIndex, npc] of world.npcs.entries()) {
-				const npcId = idValue(npc.id);
-				if (npcIds.has(npcId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate NPC id: ${npcId}`,
-						path: ["npcs", npcIndex, "id"],
-					});
-				}
-
-				npcIds.add(npcId);
-			}
-
-			for (const [questIndex, quest] of world.quests.entries()) {
-				const questId = idValue(quest.id);
-				if (questIds.has(questId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate quest id: ${questId}`,
-						path: ["quests", questIndex, "id"],
-					});
-				}
-
-				questIds.add(questId);
-
-				const objectiveIds = new Set<string>();
-
-				for (const [objectiveIndex, objective] of quest.objectives.entries()) {
-					const objectiveId = idValue(objective.id);
-					if (objectiveIds.has(objectiveId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: `Duplicate objective id ${objectiveId} in quest ${questId}`,
-							path: ["quests", questIndex, "objectives", objectiveIndex, "id"],
-						});
-					}
-
-					objectiveIds.add(objectiveId);
-				}
-			}
-
-			for (const [commandIndex, command] of world.authoredCommands.entries()) {
-				const commandId = idValue(command.id);
-				if (commandIds.has(commandId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate authored command id: ${commandId}`,
-						path: ["authoredCommands", commandIndex, "id"],
-					});
-				}
-
-				commandIds.add(commandId);
-			}
-
-			for (const [eventIndex, event] of world.authoredEvents.entries()) {
-				const eventId = idValue(event.id);
-				if (eventIds.has(eventId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate authored event id: ${eventId}`,
-						path: ["authoredEvents", eventIndex, "id"],
-					});
-				}
-
-				eventIds.add(eventId);
-			}
-
-			const startRoomId = idValue(world.startRoomId);
-			if (!roomIds.has(startRoomId)) {
+		for (const [roomIndex, room] of world.rooms.entries()) {
+			const roomId = idValue(room.id);
+			if (roomIds.has(roomId)) {
 				ctx.addIssue({
 					code: "custom",
-					message: `Starting room ${startRoomId} is not a real room.`,
-					path: ["startRoomId"],
+					message: `Duplicate room id: ${roomId}`,
+					path: ["rooms", roomIndex, "id"],
 				});
 			}
 
-			for (const [connectionIndex, connection] of world.connections.entries()) {
-				const fromRoomId = idValue(connection.fromRoomId);
-				const toRoomId = idValue(connection.toRoomId);
+			roomIds.add(roomId);
 
-				if (!roomIds.has(fromRoomId)) {
+			const roomFeatureIds = new Set<string>();
+
+			for (const [featureIndex, feature] of room.features.entries()) {
+				const featureId = idValue(feature.id);
+				const fullFeatureId = `${roomId}.${featureId}`;
+
+				if (roomFeatureIds.has(featureId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Connection points from missing room: ${fromRoomId}`,
-						path: ["connections", connectionIndex, "fromRoomId"],
+						message: `Duplicate feature id ${featureId} in room ${roomId}`,
+						path: ["rooms", roomIndex, "features", featureIndex, "id"],
 					});
 				}
 
-				if (!roomIds.has(toRoomId)) {
+				roomFeatureIds.add(featureId);
+
+				if (fullFeatureIds.has(fullFeatureId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Connection points to missing room: ${toRoomId}`,
-						path: ["connections", connectionIndex, "toRoomId"],
+						message: `Duplicate full feature id: ${fullFeatureId}`,
+						path: ["rooms", roomIndex, "features", featureIndex, "id"],
 					});
+				}
+
+				fullFeatureIds.add(fullFeatureId);
+
+				if (feature.kind === "container") {
+					containerIds.add(featureId);
+					containerIds.add(fullFeatureId);
+				}
+
+				if (feature.kind === "surface") {
+					surfaceIds.add(featureId);
+					surfaceIds.add(fullFeatureId);
 				}
 			}
+		}
 
-			for (const [roomIndex, room] of world.rooms.entries()) {
-				for (const [featureIndex, feature] of room.features.entries()) {
-					for (const [itemIndex, itemId] of feature.initialItems.entries()) {
-						if (!itemIds.has(itemId)) {
-							ctx.addIssue({
-								code: "custom",
-								message: `Feature ${idValue(room.id)}.${idValue(feature.id)} references missing initial item: ${itemId}`,
-								path: ["rooms", roomIndex, "features", featureIndex, "initialItems", itemIndex],
-							});
-						}
-					}
-				}
+		for (const [connectionIndex, connection] of world.connections.entries()) {
+			const connectionId = idValue(connection.id);
+			if (connectionIds.has(connectionId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate connection id: ${connectionId}`,
+					path: ["connections", connectionIndex, "id"],
+				});
 			}
 
-			for (const [itemIndex, item] of world.items.entries()) {
-				if (
-					item.initialLocation.type === "room" &&
-					!roomIds.has(idValue(item.initialLocation.roomId))
-				) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Item ${idValue(item.id)} starts in missing room: ${idValue(item.initialLocation.roomId)}`,
-						path: ["items", itemIndex, "initialLocation", "roomId"],
-					});
-				}
+			connectionIds.add(connectionId);
+		}
 
-				if (
-					item.initialLocation.type === "container" &&
-					!containerIds.has(idValue(item.initialLocation.containerId))
-				) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Item ${idValue(item.id)} starts in missing container: ${idValue(item.initialLocation.containerId)}`,
-						path: ["items", itemIndex, "initialLocation", "containerId"],
-					});
-				}
-
-				if (
-					item.initialLocation.type === "surface" &&
-					!surfaceIds.has(idValue(item.initialLocation.surfaceId))
-				) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Item ${idValue(item.id)} starts on missing surface: ${idValue(item.initialLocation.surfaceId)}`,
-						path: ["items", itemIndex, "initialLocation", "surfaceId"],
-					});
-				}
-
-				if (item.initialLocation.type === "npc" && !npcIds.has(idValue(item.initialLocation.npcId))) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Item ${idValue(item.id)} starts with missing NPC: ${idValue(item.initialLocation.npcId)}`,
-						path: ["items", itemIndex, "initialLocation", "npcId"],
-					});
-				}
+		for (const [conditionIndex, condition] of world.conditions.entries()) {
+			const conditionId = "id" in condition && isID(condition.id) ? idValue(condition.id) : "";
+			if (!conditionId) {
+				ctx.addIssue({
+					code: "custom",
+					message: "World conditions need a condition id.",
+					path: ["conditions", conditionIndex, "id"],
+				});
+				continue;
 			}
 
-			for (const [npcIndex, npc] of world.npcs.entries()) {
-				if (npc.initialRoomId && !roomIds.has(idValue(npc.initialRoomId))) {
+			if (conditionIds.has(conditionId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate condition id: ${conditionId}`,
+					path: ["conditions", conditionIndex, "id"],
+				});
+			}
+
+			conditionIds.add(conditionId);
+		}
+
+		for (const [itemIndex, item] of world.items.entries()) {
+			const itemId = idValue(item.id);
+			if (itemIds.has(itemId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate item id: ${itemId}`,
+					path: ["items", itemIndex, "id"],
+				});
+			}
+
+			itemIds.add(itemId);
+		}
+
+		for (const [topicIndex, topic] of world.topics.entries()) {
+			const topicId = idValue(topic.id);
+			if (topicIds.has(topicId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate topic id: ${topicId}`,
+					path: ["topics", topicIndex, "id"],
+				});
+			}
+
+			topicIds.add(topicId);
+		}
+
+		for (const [npcIndex, npc] of world.npcs.entries()) {
+			const npcId = idValue(npc.id);
+			if (npcIds.has(npcId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate NPC id: ${npcId}`,
+					path: ["npcs", npcIndex, "id"],
+				});
+			}
+
+			npcIds.add(npcId);
+		}
+
+		for (const [questIndex, quest] of world.quests.entries()) {
+			const questId = idValue(quest.id);
+			if (questIds.has(questId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate quest id: ${questId}`,
+					path: ["quests", questIndex, "id"],
+				});
+			}
+
+			questIds.add(questId);
+
+			const objectiveIds = new Set<string>();
+
+			for (const [objectiveIndex, objective] of quest.objectives.entries()) {
+				const objectiveId = idValue(objective.id);
+				if (objectiveIds.has(objectiveId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `NPC ${idValue(npc.id)} starts in missing room: ${idValue(npc.initialRoomId)}`,
-						path: ["npcs", npcIndex, "initialRoomId"],
+						message: `Duplicate objective id ${objectiveId} in quest ${questId}`,
+						path: ["quests", questIndex, "objectives", objectiveIndex, "id"],
 					});
 				}
 
-				for (const [inventoryIndex, itemId] of npc.initialInventory.entries()) {
+				objectiveIds.add(objectiveId);
+			}
+		}
+
+		for (const [commandIndex, command] of world.authoredCommands.entries()) {
+			const commandId = idValue(command.id);
+			if (commandIds.has(commandId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate authored command id: ${commandId}`,
+					path: ["authoredCommands", commandIndex, "id"],
+				});
+			}
+
+			commandIds.add(commandId);
+		}
+
+		for (const [eventIndex, event] of world.authoredEvents.entries()) {
+			const eventId = idValue(event.id);
+			if (eventIds.has(eventId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Duplicate authored event id: ${eventId}`,
+					path: ["authoredEvents", eventIndex, "id"],
+				});
+			}
+
+			eventIds.add(eventId);
+		}
+
+		const startRoomId = idValue(world.startRoomId);
+		if (!roomIds.has(startRoomId)) {
+			ctx.addIssue({
+				code: "custom",
+				message: `Starting room ${startRoomId} is not a real room.`,
+				path: ["startRoomId"],
+			});
+		}
+
+		for (const [connectionIndex, connection] of world.connections.entries()) {
+			const fromRoomId = idValue(connection.fromRoomId);
+			const toRoomId = idValue(connection.toRoomId);
+
+			if (!roomIds.has(fromRoomId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Connection points from missing room: ${fromRoomId}`,
+					path: ["connections", connectionIndex, "fromRoomId"],
+				});
+			}
+
+			if (!roomIds.has(toRoomId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Connection points to missing room: ${toRoomId}`,
+					path: ["connections", connectionIndex, "toRoomId"],
+				});
+			}
+		}
+
+		for (const [roomIndex, room] of world.rooms.entries()) {
+			for (const [featureIndex, feature] of room.features.entries()) {
+				for (const [itemIndex, itemId] of feature.initialItems.entries()) {
 					if (!itemIds.has(itemId)) {
 						ctx.addIssue({
 							code: "custom",
-							message: `NPC ${idValue(npc.id)} starts with missing item: ${itemId}`,
-							path: ["npcs", npcIndex, "initialInventory", inventoryIndex],
-						});
-					}
-				}
-
-				for (const [topicIndex, topicId] of npc.knownTopics.entries()) {
-					if (!topicIds.has(topicId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: `NPC ${idValue(npc.id)} references missing topic: ${topicId}`,
-							path: ["npcs", npcIndex, "knownTopics", topicIndex],
-						});
-					}
-				}
-
-				for (const [scheduleIndex, scheduleEntry] of npc.schedule.entries()) {
-					const roomId = idValue(scheduleEntry.roomId);
-					if (!roomIds.has(roomId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: `NPC ${idValue(npc.id)} schedule points to missing room: ${roomId}`,
-							path: ["npcs", npcIndex, "schedule", scheduleIndex, "roomId"],
+							message: `Feature ${idValue(room.id)}.${idValue(feature.id)} references missing initial item: ${itemId}`,
+							path: ["rooms", roomIndex, "features", featureIndex, "initialItems", itemIndex],
 						});
 					}
 				}
 			}
+		}
 
-			for (const [inventoryIndex, itemId] of world.initialState.inventory.entries()) {
+		for (const [itemIndex, item] of world.items.entries()) {
+			if (item.initialLocation.type === "room" && !roomIds.has(idValue(item.initialLocation.roomId))) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} starts in missing room: ${idValue(item.initialLocation.roomId)}`,
+					path: ["items", itemIndex, "initialLocation", "roomId"],
+				});
+			}
+
+			if (
+				item.initialLocation.type === "container" &&
+				!containerIds.has(idValue(item.initialLocation.containerId))
+			) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} starts in missing container: ${idValue(item.initialLocation.containerId)}`,
+					path: ["items", itemIndex, "initialLocation", "containerId"],
+				});
+			}
+
+			if (
+				item.initialLocation.type === "surface" &&
+				!surfaceIds.has(idValue(item.initialLocation.surfaceId))
+			) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} starts on missing surface: ${idValue(item.initialLocation.surfaceId)}`,
+					path: ["items", itemIndex, "initialLocation", "surfaceId"],
+				});
+			}
+
+			if (item.initialLocation.type === "npc" && !npcIds.has(idValue(item.initialLocation.npcId))) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} starts with missing NPC: ${idValue(item.initialLocation.npcId)}`,
+					path: ["items", itemIndex, "initialLocation", "npcId"],
+				});
+			}
+		}
+
+		for (const [npcIndex, npc] of world.npcs.entries()) {
+			if (npc.initialRoomId && !roomIds.has(idValue(npc.initialRoomId))) {
+				ctx.addIssue({
+					code: "custom",
+					message: `NPC ${idValue(npc.id)} starts in missing room: ${idValue(npc.initialRoomId)}`,
+					path: ["npcs", npcIndex, "initialRoomId"],
+				});
+			}
+
+			for (const [inventoryIndex, itemId] of npc.initialInventory.entries()) {
 				if (!itemIds.has(itemId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Initial inventory references missing item: ${itemId}`,
-						path: ["initialState", "inventory", inventoryIndex],
+						message: `NPC ${idValue(npc.id)} starts with missing item: ${itemId}`,
+						path: ["npcs", npcIndex, "initialInventory", inventoryIndex],
 					});
 				}
 			}
 
-			for (const [topicIndex, topicId] of world.initialState.knownTopics.entries()) {
+			for (const [topicIndex, topicId] of npc.knownTopics.entries()) {
 				if (!topicIds.has(topicId)) {
 					ctx.addIssue({
 						code: "custom",
-						message: `Initial known topic references missing topic: ${topicId}`,
-						path: ["initialState", "knownTopics", topicIndex],
+						message: `NPC ${idValue(npc.id)} references missing topic: ${topicId}`,
+						path: ["npcs", npcIndex, "knownTopics", topicIndex],
 					});
 				}
 			}
-		}),
-	{
-		title: "World",
-		description: "A complete playable text adventure world.",
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-		},
-	},
-);
+
+			for (const [scheduleIndex, scheduleEntry] of npc.schedule.entries()) {
+				const roomId = idValue(scheduleEntry.roomId);
+				if (!roomIds.has(roomId)) {
+					ctx.addIssue({
+						code: "custom",
+						message: `NPC ${idValue(npc.id)} schedule points to missing room: ${roomId}`,
+						path: ["npcs", npcIndex, "schedule", scheduleIndex, "roomId"],
+					});
+				}
+			}
+		}
+
+		for (const [inventoryIndex, itemId] of world.initialState.inventory.entries()) {
+			if (!itemIds.has(itemId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Initial inventory references missing item: ${itemId}`,
+					path: ["initialState", "inventory", inventoryIndex],
+				});
+			}
+		}
+
+		for (const [topicIndex, topicId] of world.initialState.knownTopics.entries()) {
+			if (!topicIds.has(topicId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Initial known topic references missing topic: ${topicId}`,
+					path: ["initialState", "knownTopics", topicIndex],
+				});
+			}
+		}
+	});
 
 export type Id = z.infer<typeof IdSchema>;
 export type EntityVisibility = z.infer<typeof EntityVisibilitySchema>;

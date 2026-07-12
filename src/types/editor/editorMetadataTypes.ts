@@ -141,7 +141,7 @@ export type EditorSummaryMetadata = {
 	warningSummary?: string;
 };
 
-export type EditorFieldGroupMetadata = {
+export type EditorFieldSubgroupMetadata = {
 	id: string;
 	title: string;
 	description?: string;
@@ -150,6 +150,10 @@ export type EditorFieldGroupMetadata = {
 	collapsible?: boolean;
 	importance?: EditorFieldImportance;
 	order?: number;
+};
+
+export type EditorFieldGroupMetadata = EditorFieldSubgroupMetadata & {
+	groups?: EditorFieldSubgroupMetadata[];
 };
 
 export type EditorDensity = "comfortable" | "compact";

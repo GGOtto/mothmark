@@ -6,6 +6,7 @@ const rawWorld = {
 		{
 			id: "gate",
 			name: "Gate",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 100,
 				y: 180,
@@ -54,6 +55,7 @@ const rawWorld = {
 		{
 			id: "hall",
 			name: "Hall",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 260,
 				y: 180,
@@ -102,6 +104,7 @@ const rawWorld = {
 		{
 			id: "well",
 			name: "Well",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 260,
 				y: 60,
@@ -161,6 +164,7 @@ const rawWorld = {
 		{
 			id: "loft",
 			name: "Loft",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 420,
 				y: 60,
@@ -209,6 +213,7 @@ const rawWorld = {
 		{
 			id: "vault",
 			name: "Vault",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 420,
 				y: 180,
@@ -257,6 +262,7 @@ const rawWorld = {
 		{
 			id: "den",
 			name: "Den",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 260,
 				y: 300,
@@ -305,6 +311,7 @@ const rawWorld = {
 		{
 			id: "cell",
 			name: "Cell",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 420,
 				y: 300,
@@ -353,6 +360,7 @@ const rawWorld = {
 		{
 			id: "pit",
 			name: "Pit",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 100,
 				y: 300,
@@ -401,6 +409,7 @@ const rawWorld = {
 		{
 			id: "fold",
 			name: "Fold",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 580,
 				y: 300,
@@ -449,6 +458,7 @@ const rawWorld = {
 		{
 			id: "knot",
 			name: "Knot",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 580,
 				y: 60,
@@ -497,6 +507,7 @@ const rawWorld = {
 		{
 			id: "hush",
 			name: "Hush",
+			identify: {aliases: [], tags: []},
 			position: {
 				x: 90,
 				y: 60,

@@ -17,11 +17,23 @@ function getFieldGroups(schema: z.ZodTypeAny) {
 }
 
 describe("resolveEditorMetadata object fields", () => {
-	it("does not synthesize titles or descriptions for unannotated fields", () => {
+	it("treats fields without explicit control metadata as hidden", () => {
 		const fields = getObjectFields(z.object({plainField: z.string()}));
 
 		expect(fields[0].metadata.title).toBeUndefined();
 		expect(fields[0].metadata.description).toBeUndefined();
+		expect(fields[0].metadata.type).toBe("hidden");
+	});
+
+	it("renders a field when its control is supplied by parent metadata", () => {
+		const schema = editor.object(
+			{plainField: z.string()},
+			{
+				childControls: {plainField: {control: "text"}},
+			},
+		);
+
+		expect(getObjectFields(schema)[0].metadata.type).toBe("text");
 	});
 
 	it("does not expose Zod describe blocks as control descriptions", () => {
@@ -54,7 +66,7 @@ describe("resolveEditorMetadata object fields", () => {
 
 	it("merges childControls before sorting object fields", () => {
 		const schema = editor.object(
-			z.object({
+			{
 				a: editor.input({
 					title: "A",
 					layout: {
@@ -70,7 +82,7 @@ describe("resolveEditorMetadata object fields", () => {
 				c: editor.input({
 					title: "C",
 				}),
-			}),
+			},
 			{
 				childControls: {
 					a: {
