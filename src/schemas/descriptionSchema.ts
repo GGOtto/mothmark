@@ -6,13 +6,13 @@ export const DescriptionSchema = editor.conditionalText(
 	z.object({
 		default: editor
 			.richText({
-				title: "Default Description",
-				description: "The description that will be displayed if no other conditions are met.",
 				placeholder: "Describe what the player sees...",
 				layout: {
 					width: "full",
 					order: 1,
 				},
+				title: "Description",
+				description: "A default description with optional conditional variants.",
 			})
 			.default(""),
 
@@ -20,7 +20,8 @@ export const DescriptionSchema = editor.conditionalText(
 			title: "Description Variants",
 			description: "Description variants that can replace the description if conditions are met.",
 			appearance: {
-				chrome: "bare",
+				chrome: "collapse",
+				defaultCollapsed: true,
 			},
 			summary: {
 				enabled: true,
@@ -48,10 +49,6 @@ export const DescriptionSchema = editor.conditionalText(
 			},
 		}),
 	}),
-	{
-		title: "Description",
-		description: "A default description with optional conditional variants.",
-	},
 );
 
 export type Description = z.infer<typeof DescriptionSchema>;

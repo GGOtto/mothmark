@@ -2,26 +2,7 @@ import {z} from "zod";
 import {ConditionUsageSchema} from "./conditionSchema";
 import {EffectUsageSchema} from "./effectSchema";
 import {docify} from "../utils/docify";
-import {
-	editorAliasList,
-	editorArray,
-	editorBoolean,
-	editorConditionList,
-	editorDiscriminatedUnion,
-	editorEffects,
-	editorReference,
-	editorId,
-	editorInput,
-	editorMessage,
-	editorObject,
-	editorOptionalFlagKey,
-	editorPriority,
-	editorScope,
-	editorSelect,
-	editorStringList,
-	editorTagList,
-	editorTextarea,
-} from "./editorSchemaHelpers";
+import {editor} from "./editorSchemaHelpers";
 
 export const DefaultEmptyConditions: Array<z.infer<typeof ConditionUsageSchema>> = [];
 
@@ -61,7 +42,7 @@ export const DEFAULT_SPEECH_VERBS = [
 	"ask",
 ] as const;
 
-export const CommandFallbackBehaviorSchema = editorSelect(
+export const CommandFallbackBehaviorSchema = editor.select(
 	z.enum([
 		"stop",
 		"continue-authored",
@@ -121,7 +102,7 @@ export const CommandFallbackBehaviorSchema = editorSelect(
 	},
 );
 
-export const CommandTurnBehaviorSchema = editorSelect(
+export const CommandTurnBehaviorSchema = editor.select(
 	z.enum(["default", "consume", "do-not-consume"]).default("default"),
 	{
 		title: "Turn Behavior",
@@ -157,7 +138,7 @@ export const CommandTurnBehaviorSchema = editorSelect(
 	},
 );
 
-export const CommandProtectedModeSchema = editorSelect(
+export const CommandProtectedModeSchema = editor.select(
 	z.enum(["normal", "protected", "allow-override-protected"]).default("normal"),
 	{
 		title: "Protected Mode",
@@ -198,7 +179,7 @@ export const CommandProtectedModeSchema = editorSelect(
 	},
 );
 
-export const CommandScopeSchema = editorScope(
+export const CommandScopeSchema = editor.scope(
 	z.discriminatedUnion("type", [
 		z.object({
 			type: z.literal("global").describe("This command can match anywhere in the world."),
@@ -206,7 +187,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("room").describe("This command can only match in a specific room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room where this command is available.",
 				layout: {
@@ -220,21 +201,23 @@ export const CommandScopeSchema = editorScope(
 			type: z
 				.literal("room-tag")
 				.describe("This command can only match in rooms with a specific tag."),
-			tag: editorInput({
-				title: "Room Tag",
-				description: "The room tag required for this command to be available.",
-				placeholder: "indoors",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Room Tag",
+					description: "The room tag required for this command to be available.",
+					placeholder: "indoors",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("item").describe("This command is attached to a specific item."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item this command is attached to.",
 				layout: {
@@ -246,21 +229,23 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("item-tag").describe("This command applies to items with a specific tag."),
-			tag: editorInput({
-				title: "Item Tag",
-				description: "The item tag required for this command to apply.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Item Tag",
+					description: "The item tag required for this command to apply.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("feature").describe("This command is attached to a specific room feature."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room containing the feature.",
 				layout: {
@@ -268,7 +253,7 @@ export const CommandScopeSchema = editorScope(
 					order: 1,
 				},
 			}),
-			featureId: editorReference("feature", {
+			featureId: editor.reference("feature", {
 				title: "Feature",
 				description: "The id of the feature this command is attached to.",
 				layout: {
@@ -282,17 +267,19 @@ export const CommandScopeSchema = editorScope(
 			type: z
 				.literal("feature-tag")
 				.describe("This command applies to room features with a specific tag."),
-			tag: editorInput({
-				title: "Feature Tag",
-				description: "The feature tag required for this command to apply.",
-				placeholder: "door",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
-			roomId: editorReference("room", {
+			tag: editor
+				.input({
+					title: "Feature Tag",
+					description: "The feature tag required for this command to apply.",
+					placeholder: "door",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "Optional room id. If provided, only features in this room are considered.",
 				required: false,
@@ -305,7 +292,7 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("npc").describe("This command is attached to a specific NPC."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC this command is attached to.",
 				layout: {
@@ -317,21 +304,23 @@ export const CommandScopeSchema = editorScope(
 
 		z.object({
 			type: z.literal("npc-tag").describe("This command applies to NPCs with a specific tag."),
-			tag: editorInput({
-				title: "NPC Tag",
-				description: "The NPC tag required for this command to apply.",
-				placeholder: "guard",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "NPC Tag",
+					description: "The NPC tag required for this command to apply.",
+					placeholder: "guard",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("quest").describe("This command is available during a specific quest context."),
-			questId: editorReference("quest", {
+			questId: editor.reference("quest", {
 				title: "Quest",
 				description: "The quest id this command belongs to.",
 				layout: {
@@ -363,7 +352,7 @@ export const CommandScopeSchema = editorScope(
 	},
 );
 
-export const ResolvableEntityTypeSchema = editorSelect(
+export const ResolvableEntityTypeSchema = editor.select(
 	z.enum([
 		"room",
 		"exit",
@@ -446,21 +435,23 @@ export const ResolvableEntityTypeSchema = editorSelect(
 	},
 );
 
-export const CommandTargetRequirementSchema = editorDiscriminatedUnion(
+export const CommandTargetRequirementSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		z.object({
 			type: z.literal("exact").describe("The command target must resolve to one specific entity id."),
-			entityId: editorInput({
-				title: "Entity ID",
-				description:
-					"The exact entity id required for this target. This stays as a flexible id field because the entity type can vary.",
-				placeholder: "apple",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
+			entityId: editor
+				.input({
+					title: "Entity ID",
+					description:
+						"The exact entity id required for this target. This stays as a flexible id field because the entity type can vary.",
+					placeholder: "apple",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
 			entityType: ResolvableEntityTypeSchema.default("any").describe("The kind of entity expected."),
 		}),
 
@@ -468,16 +459,18 @@ export const CommandTargetRequirementSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("tag")
 				.describe("The command target must resolve to an entity with a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The tag required on the resolved entity.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The tag required on the resolved entity.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
 			entityType: ResolvableEntityTypeSchema.default("any").describe("The kind of entity expected."),
 		}),
 
@@ -494,7 +487,7 @@ export const CommandTargetRequirementSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("one-of")
 				.describe("The command target must resolve to one of several specific entity ids."),
-			entityIds: editorStringList(
+			entityIds: editor.stringList(
 				{
 					title: "Allowed Entity IDs",
 					description:
@@ -520,42 +513,47 @@ export const CommandTargetRequirementSchema = editorDiscriminatedUnion(
 				.describe(
 					"The command target is matched against raw normalized text instead of a resolved entity.",
 				),
-			text: editorInput({
-				title: "Raw Text",
-				description: "The normalized text that must appear in the command.",
-				placeholder: "mothmark",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
+			text: editor
+				.input({
+					title: "Raw Text",
+					description: "The normalized text that must appear in the command.",
+					placeholder: "mothmark",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
+			match: editor.select(
+				z.enum(["exact", "includes", "starts-with", "ends-with"]).default("exact"),
+				{
+					title: "Match Mode",
+					description: "How the raw command text should be compared.",
+					options: [
+						{
+							label: "Exact",
+							value: "exact",
+							description: "The raw text must exactly match.",
+						},
+						{
+							label: "Includes",
+							value: "includes",
+							description: "The raw text may appear anywhere in the command.",
+						},
+						{
+							label: "Starts With",
+							value: "starts-with",
+							description: "The command must start with this raw text.",
+						},
+						{
+							label: "Ends With",
+							value: "ends-with",
+							description: "The command must end with this raw text.",
+						},
+					],
 				},
-			}).min(1),
-			match: editorSelect(z.enum(["exact", "includes", "starts-with", "ends-with"]).default("exact"), {
-				title: "Match Mode",
-				description: "How the raw command text should be compared.",
-				options: [
-					{
-						label: "Exact",
-						value: "exact",
-						description: "The raw text must exactly match.",
-					},
-					{
-						label: "Includes",
-						value: "includes",
-						description: "The raw text may appear anywhere in the command.",
-					},
-					{
-						label: "Starts With",
-						value: "starts-with",
-						description: "The command must start with this raw text.",
-					},
-					{
-						label: "Ends With",
-						value: "ends-with",
-						description: "The command must end with this raw text.",
-					},
-				],
-			}),
+			),
 		}),
 
 		z.object({
@@ -585,11 +583,11 @@ export const CommandTargetRequirementSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CommandPatternSchema = editorDiscriminatedUnion(
+export const CommandPatternSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		z.object({
 			type: z.literal("verb-only").describe("Matches commands made of only a verb or verb alias."),
-			verbs: editorStringList(
+			verbs: editor.stringList(
 				{
 					title: "Verbs",
 					description:
@@ -610,7 +608,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("verb-target").describe("Matches commands shaped like verb + target."),
-			verbs: editorStringList(
+			verbs: editor.stringList(
 				{
 					title: "Verbs",
 					description:
@@ -634,7 +632,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("verb-object-connector-target")
 				.describe("Matches commands shaped like verb + object + connector + target."),
-			verbs: editorStringList(
+			verbs: editor.stringList(
 				{
 					title: "Verbs",
 					description:
@@ -654,7 +652,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			object: CommandTargetRequirementSchema.describe(
 				"The left-side object, such as apple in 'put apple on table'.",
 			),
-			connectors: editorStringList(
+			connectors: editor.stringList(
 				{
 					title: "Connectors",
 					description:
@@ -680,27 +678,31 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("speech-phrase")
 				.describe("Matches speech commands shaped like say/speak/whisper + phrase."),
-			verbs: editorStringList({
-				title: "Speech Verbs",
-				description: "Speech verbs that can trigger this pattern.",
-				emptyState: {
-					emptyTitle: "No speech verbs",
-					emptyDescription: "Add at least one speech verb.",
-					emptyActionLabel: "Add speech verb",
-				},
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).default([...DEFAULT_SPEECH_VERBS]),
+			verbs: editor
+				.stringList({
+					title: "Speech Verbs",
+					description: "Speech verbs that can trigger this pattern.",
+					emptyState: {
+						emptyTitle: "No speech verbs",
+						emptyDescription: "Add at least one speech verb.",
+						emptyActionLabel: "Add speech verb",
+					},
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.default([...DEFAULT_SPEECH_VERBS]),
 			phrase: z
 				.union([
-					editorInput({
-						title: "Phrase",
-						description: "The required spoken phrase.",
-						placeholder: "mothmark",
-						required: true,
-					}).min(1),
+					editor
+						.input({
+							title: "Phrase",
+							description: "The required spoken phrase.",
+							placeholder: "mothmark",
+							required: true,
+						})
+						.min(1),
 					CommandTargetRequirementSchema,
 				])
 				.describe("The required spoken phrase or topic-like phrase requirement."),
@@ -710,33 +712,37 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("speech-npc-topic")
 				.describe("Matches speech commands shaped like ask/tell + npc + about + topic."),
-			verbs: editorStringList({
-				title: "Speech Verbs",
-				description: "Speech verbs that can trigger this pattern.",
-				emptyState: {
-					emptyTitle: "No speech verbs",
-					emptyDescription: "Add at least one speech verb.",
-					emptyActionLabel: "Add speech verb",
-				},
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).default(["ask", "tell"]),
+			verbs: editor
+				.stringList({
+					title: "Speech Verbs",
+					description: "Speech verbs that can trigger this pattern.",
+					emptyState: {
+						emptyTitle: "No speech verbs",
+						emptyDescription: "Add at least one speech verb.",
+						emptyActionLabel: "Add speech verb",
+					},
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.default(["ask", "tell"]),
 			npc: CommandTargetRequirementSchema.describe("The NPC being asked or told."),
-			connectors: editorStringList({
-				title: "Topic Connectors",
-				description: "Topic connectors, usually about.",
-				emptyState: {
-					emptyTitle: "No topic connectors",
-					emptyDescription: "Add at least one topic connector.",
-					emptyActionLabel: "Add connector",
-				},
-				layout: {
-					width: "full",
-					order: 3,
-				},
-			}).default(["about"]),
+			connectors: editor
+				.stringList({
+					title: "Topic Connectors",
+					description: "Topic connectors, usually about.",
+					emptyState: {
+						emptyTitle: "No topic connectors",
+						emptyDescription: "Add at least one topic connector.",
+						emptyActionLabel: "Add connector",
+					},
+					layout: {
+						width: "full",
+						order: 3,
+					},
+				})
+				.default(["about"]),
 			topic: CommandTargetRequirementSchema.describe("The topic being discussed."),
 		}),
 
@@ -744,7 +750,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("direction-only")
 				.describe("Matches a bare direction command, such as north, south, up, or out."),
-			directions: editorStringList(
+			directions: editor.stringList(
 				{
 					title: "Directions",
 					description: "Direction aliases that can trigger this command.",
@@ -766,7 +772,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("verb-direction")
 				.describe("Matches movement-like commands shaped like verb + direction or verb + destination."),
-			verbs: editorStringList(
+			verbs: editor.stringList(
 				{
 					title: "Movement Verbs",
 					description: "Movement verbs such as go, enter, climb, crawl, cross, descend, or ascend.",
@@ -791,7 +797,7 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("raw-phrase")
 				.describe("Matches one or more exact or fuzzy raw command phrases."),
-			phrases: editorStringList(
+			phrases: editor.stringList(
 				{
 					title: "Raw Phrases",
 					description: "Raw normalized phrases that can trigger this command.",
@@ -807,32 +813,35 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 				},
 				z.array(z.string().min(1)).min(1),
 			),
-			match: editorSelect(z.enum(["exact", "includes", "starts-with", "ends-with"]).default("exact"), {
-				title: "Match Mode",
-				description: "How the raw phrase should be matched against player input.",
-				options: [
-					{
-						label: "Exact",
-						value: "exact",
-						description: "The raw phrase must exactly match the player input.",
-					},
-					{
-						label: "Includes",
-						value: "includes",
-						description: "The raw phrase may appear anywhere inside the player input.",
-					},
-					{
-						label: "Starts With",
-						value: "starts-with",
-						description: "The player input must start with the raw phrase.",
-					},
-					{
-						label: "Ends With",
-						value: "ends-with",
-						description: "The player input must end with the raw phrase.",
-					},
-				],
-			}),
+			match: editor.select(
+				z.enum(["exact", "includes", "starts-with", "ends-with"]).default("exact"),
+				{
+					title: "Match Mode",
+					description: "How the raw phrase should be matched against player input.",
+					options: [
+						{
+							label: "Exact",
+							value: "exact",
+							description: "The raw phrase must exactly match the player input.",
+						},
+						{
+							label: "Includes",
+							value: "includes",
+							description: "The raw phrase may appear anywhere inside the player input.",
+						},
+						{
+							label: "Starts With",
+							value: "starts-with",
+							description: "The player input must start with the raw phrase.",
+						},
+						{
+							label: "Ends With",
+							value: "ends-with",
+							description: "The player input must end with the raw phrase.",
+						},
+					],
+				},
+			),
 		}),
 	]),
 	{
@@ -861,73 +870,87 @@ export const CommandPatternSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CommandResolutionSchema = editorObject(
+export const CommandResolutionSchema = editor.object(
 	z.object({
-		stripLeadingArticles: editorBoolean({
-			title: "Strip Leading Articles",
-			description: "If true, target resolution ignores leading articles like a, an, and the.",
-			layout: {
-				width: "half",
-				order: 1,
-			},
-		}).default(true),
+		stripLeadingArticles: editor
+			.boolean({
+				title: "Strip Leading Articles",
+				description: "If true, target resolution ignores leading articles like a, an, and the.",
+				layout: {
+					width: "half",
+					order: 1,
+				},
+			})
+			.default(true),
 
-		preferInventory: editorBoolean({
-			title: "Prefer Inventory",
-			description: "If true, inventory items are preferred when resolving ambiguous targets.",
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).default(true),
+		preferInventory: editor
+			.boolean({
+				title: "Prefer Inventory",
+				description: "If true, inventory items are preferred when resolving ambiguous targets.",
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.default(true),
 
-		preferCurrentRoom: editorBoolean({
-			title: "Prefer Current Room",
-			description:
-				"If true, visible entities in the current room are preferred when resolving ambiguous targets.",
-			layout: {
-				width: "half",
-				order: 3,
-			},
-		}).default(true),
+		preferCurrentRoom: editor
+			.boolean({
+				title: "Prefer Current Room",
+				description:
+					"If true, visible entities in the current room are preferred when resolving ambiguous targets.",
+				layout: {
+					width: "half",
+					order: 3,
+				},
+			})
+			.default(true),
 
-		allowInvisibleTargets: editorBoolean({
-			title: "Allow Invisible Targets",
-			description: "If true, this command can resolve targets that are not currently visible.",
-			layout: {
-				width: "half",
-				order: 4,
-			},
-		}).default(false),
+		allowInvisibleTargets: editor
+			.boolean({
+				title: "Allow Invisible Targets",
+				description: "If true, this command can resolve targets that are not currently visible.",
+				layout: {
+					width: "half",
+					order: 4,
+				},
+			})
+			.default(false),
 
-		allowUnreachableTargets: editorBoolean({
-			title: "Allow Unreachable Targets",
-			description: "If true, this command can resolve targets that are visible but not reachable.",
-			layout: {
-				width: "half",
-				order: 5,
-			},
-		}).default(false),
+		allowUnreachableTargets: editor
+			.boolean({
+				title: "Allow Unreachable Targets",
+				description: "If true, this command can resolve targets that are visible but not reachable.",
+				layout: {
+					width: "half",
+					order: 5,
+				},
+			})
+			.default(false),
 
-		allowAmbiguousTargets: editorBoolean({
-			title: "Allow Ambiguous Targets",
-			description: "If true, the command may proceed even if multiple targets match.",
-			layout: {
-				width: "half",
-				order: 6,
-			},
-		}).default(false),
+		allowAmbiguousTargets: editor
+			.boolean({
+				title: "Allow Ambiguous Targets",
+				description: "If true, the command may proceed even if multiple targets match.",
+				layout: {
+					width: "half",
+					order: 6,
+				},
+			})
+			.default(false),
 
-		ambiguousTargetMessage: editorMessage({
-			title: "Ambiguous Target Message",
-			description:
-				"Optional message to show when multiple targets match and the engine needs clarification.",
-			placeholder: "Which one do you mean?",
-			layout: {
-				width: "full",
-				order: 7,
-			},
-		}).default(""),
+		ambiguousTargetMessage: editor
+			.message({
+				title: "Ambiguous Target Message",
+				description:
+					"Optional message to show when multiple targets match and the engine needs clarification.",
+				placeholder: "Which one do you mean?",
+				layout: {
+					width: "full",
+					order: 7,
+				},
+			})
+			.default(""),
 	}),
 	{
 		title: "Command Resolution",
@@ -954,7 +977,7 @@ export const DefaultCommandResolution = {
 	ambiguousTargetMessage: "",
 } as const;
 
-export const CommandBranchKindSchema = editorSelect(
+export const CommandBranchKindSchema = editor.select(
 	z.enum(["success", "failure", "before", "after"]),
 	{
 		title: "Branch Kind",
@@ -1000,25 +1023,27 @@ export const CommandBranchKindSchema = editorSelect(
 	},
 );
 
-export const CommandBranchSchema = editorObject(
+export const CommandBranchSchema = editor.object(
 	z.object({
-		id: editorId("command-branch"),
+		id: editor.id("command-branch"),
 
-		name: editorInput({
-			title: "Name",
-			description: "Human-readable editor label for this branch.",
-			placeholder: "Success with key",
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).default(""),
+		name: editor
+			.input({
+				title: "Name",
+				description: "Human-readable editor label for this branch.",
+				placeholder: "Success with key",
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.default(""),
 
 		kind: CommandBranchKindSchema.default("success").describe(
 			"Whether this branch is success, failure, before, or after behavior.",
 		),
 
-		priority: editorPriority({
+		priority: editor.priority({
 			title: "Priority",
 			description: "Branch priority. Higher-priority matching branches should be considered first.",
 			layout: {
@@ -1027,20 +1052,22 @@ export const CommandBranchSchema = editorObject(
 			},
 		}),
 
-		conditions: editorConditionList(ConditionUsageSchema, {
-			title: "Conditions",
-			description: "Conditions that must pass for this branch to run.",
-			layout: {
-				width: "full",
-				order: 5,
-			},
-			summary: {
-				enabled: true,
-				mode: "deterministic",
-			},
-		}).default(DefaultEmptyConditions),
+		conditions: editor
+			.conditionList(ConditionUsageSchema, {
+				title: "Conditions",
+				description: "Conditions that must pass for this branch to run.",
+				layout: {
+					width: "full",
+					order: 5,
+				},
+				summary: {
+					enabled: true,
+					mode: "deterministic",
+				},
+			})
+			.default(DefaultEmptyConditions),
 
-		effects: editorEffects(EffectUsageSchema, {
+		effects: editor.effects(EffectUsageSchema, {
 			title: "Effects",
 			description: "Effects to run when this branch is selected.",
 			layout: {
@@ -1059,16 +1086,18 @@ export const CommandBranchSchema = editorObject(
 
 		consumeTurn: CommandTurnBehaviorSchema.describe("Whether this branch consumes a turn."),
 
-		once: editorBoolean({
-			title: "Run Once",
-			description: "If true, this branch should only be allowed to run once per playthrough.",
-			layout: {
-				width: "half",
-				order: 9,
-			},
-		}).default(false),
+		once: editor
+			.boolean({
+				title: "Run Once",
+				description: "If true, this branch should only be allowed to run once per playthrough.",
+				layout: {
+					width: "half",
+					order: 9,
+				},
+			})
+			.default(false),
 
-		setOnceFlag: editorOptionalFlagKey({
+		setOnceFlag: editor.optionalFlagKey({
 			title: "Set Once Flag",
 			description:
 				"Optional flag key to set after this branch runs, used to enforce once-only behavior.",
@@ -1113,9 +1142,9 @@ export const CommandBranchSchema = editorObject(
 	},
 );
 
-export const CommandMessageVariableSchema = editorObject(
+export const CommandMessageVariableSchema = editor.object(
 	z.object({
-		key: editorInput({
+		key: editor.input({
 			title: "Variable Key",
 			description:
 				"The variable token available in messages, such as object.theName or target.displayName.",
@@ -1127,24 +1156,28 @@ export const CommandMessageVariableSchema = editorObject(
 			},
 		}),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Editor-facing explanation of what this variable inserts.",
-			layout: {
-				width: "full",
-				order: 2,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "Editor-facing explanation of what this variable inserts.",
+				layout: {
+					width: "full",
+					order: 2,
+				},
+			})
+			.default(""),
 
-		example: editorInput({
-			title: "Example",
-			description: "Example rendered value for this variable.",
-			placeholder: "the brass key",
-			layout: {
-				width: "half",
-				order: 3,
-			},
-		}).default(""),
+		example: editor
+			.input({
+				title: "Example",
+				description: "Example rendered value for this variable.",
+				placeholder: "the brass key",
+				layout: {
+					width: "half",
+					order: 3,
+				},
+			})
+			.default(""),
 	}),
 	{
 		title: "Message Variable",
@@ -1169,9 +1202,9 @@ export const CommandMessageVariableSchema = editorObject(
 	},
 );
 
-export const AuthorCommandSchema = editorObject(
+export const AuthorCommandSchema = editor.object(
 	z.object({
-		id: editorId("command", {
+		id: editor.id("command", {
 			title: "Command ID",
 			description: "Stable unique id for this authored command.",
 			required: true,
@@ -1181,7 +1214,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
+		name: editor.input({
 			title: "Name",
 			description: "Human-readable editor name for this authored command.",
 			placeholder: "Unlock Cellar Door",
@@ -1192,26 +1225,31 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Editor-facing notes explaining what this command does and when it should be used.",
-			placeholder: "Handles unlocking the cellar door with the brass key.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description:
+					"Editor-facing notes explaining what this command does and when it should be used.",
+				placeholder: "Handles unlocking the cellar door with the brass key.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 
-		enabled: editorBoolean({
-			title: "Enabled",
-			description: "If false, this command is ignored without deleting it from the world.",
-			layout: {
-				width: "half",
-				order: 4,
-			},
-		}).default(true),
+		enabled: editor
+			.boolean({
+				title: "Enabled",
+				description: "If false, this command is ignored without deleting it from the world.",
+				layout: {
+					width: "half",
+					order: 4,
+				},
+			})
+			.default(true),
 
-		priority: editorPriority({
+		priority: editor.priority({
 			title: "Priority",
 			description:
 				"Command priority. Higher-priority authored commands should match before lower-priority ones.",
@@ -1227,7 +1265,7 @@ export const AuthorCommandSchema = editorObject(
 
 		scope: CommandScopeSchema.default({type: "global"}).describe("Where this command is available."),
 
-		tags: editorTagList("commands", {
+		tags: editor.tagList("commands", {
 			title: "Tags",
 			description: "Editor and runtime tags used to organize, filter, or batch commands.",
 			layout: {
@@ -1236,7 +1274,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		aliases: editorAliasList({
+		aliases: editor.aliasList({
 			title: "Aliases",
 			description:
 				"Optional top-level verb aliases. Prefer putting verbs on patterns unless the command shares aliases across many patterns.",
@@ -1246,22 +1284,24 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		connectors: editorStringList({
-			title: "Connectors",
-			description:
-				"Connector words this command can use. These should be sorted longest-first by the parser before matching.",
-			emptyState: {
-				emptyTitle: "No connectors",
-				emptyDescription: "Add connector words such as on, in, with, to, or about.",
-				emptyActionLabel: "Add connector",
-			},
-			layout: {
-				width: "full",
-				order: 10,
-			},
-		}).default([...DEFAULT_COMMAND_CONNECTORS]),
+		connectors: editor
+			.stringList({
+				title: "Connectors",
+				description:
+					"Connector words this command can use. These should be sorted longest-first by the parser before matching.",
+				emptyState: {
+					emptyTitle: "No connectors",
+					emptyDescription: "Add connector words such as on, in, with, to, or about.",
+					emptyActionLabel: "Add connector",
+				},
+				layout: {
+					width: "full",
+					order: 10,
+				},
+			})
+			.default([...DEFAULT_COMMAND_CONNECTORS]),
 
-		patterns: editorArray(CommandPatternSchema, {
+		patterns: editor.array(CommandPatternSchema, {
 			title: "Patterns",
 			description: "Structured command patterns that can trigger this authored command.",
 			emptyState: {
@@ -1282,20 +1322,22 @@ export const AuthorCommandSchema = editorObject(
 			"Target resolution behavior for this command.",
 		),
 
-		conditions: editorConditionList(ConditionUsageSchema, {
-			title: "Conditions",
-			description: "Top-level conditions that must pass before success branches are considered.",
-			layout: {
-				width: "full",
-				order: 13,
-			},
-			summary: {
-				enabled: true,
-				mode: "deterministic",
-			},
-		}).default(DefaultEmptyConditions),
+		conditions: editor
+			.conditionList(ConditionUsageSchema, {
+				title: "Conditions",
+				description: "Top-level conditions that must pass before success branches are considered.",
+				layout: {
+					width: "full",
+					order: 13,
+				},
+				summary: {
+					enabled: true,
+					mode: "deterministic",
+				},
+			})
+			.default(DefaultEmptyConditions),
 
-		effects: editorEffects(EffectUsageSchema, {
+		effects: editor.effects(EffectUsageSchema, {
 			title: "Effects",
 			description:
 				"Default success effects for this command. Prefer branches for complex commands with multiple outcomes.",
@@ -1309,7 +1351,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		elseEffects: editorEffects(EffectUsageSchema, {
+		elseEffects: editor.effects(EffectUsageSchema, {
 			title: "Else Effects",
 			description:
 				"Default effects to run when the command matches but top-level conditions fail and no failure branch handles it.",
@@ -1323,7 +1365,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		branches: editorArray(CommandBranchSchema, {
+		branches: editor.array(CommandBranchSchema, {
 			title: "Branches",
 			description: "Conditional success, failure, before, or after branches for this command.",
 			emptyState: {
@@ -1342,28 +1384,32 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		failureMessage: editorMessage({
-			title: "Failure Message",
-			description:
-				"Default fallback message when the command matches but cannot run and no failure branch handles it.",
-			placeholder: "You cannot do that right now.",
-			layout: {
-				width: "full",
-				order: 17,
-			},
-		}).default(""),
+		failureMessage: editor
+			.message({
+				title: "Failure Message",
+				description:
+					"Default fallback message when the command matches but cannot run and no failure branch handles it.",
+				placeholder: "You cannot do that right now.",
+				layout: {
+					width: "full",
+					order: 17,
+				},
+			})
+			.default(""),
 
-		noMatchMessage: editorMessage({
-			title: "No Match Message",
-			description:
-				"Optional message for editor/debug use when this command does not match. Usually not shown to players.",
-			placeholder: "This command did not match.",
-			advanced: true,
-			layout: {
-				width: "full",
-				order: 18,
-			},
-		}).default(""),
+		noMatchMessage: editor
+			.message({
+				title: "No Match Message",
+				description:
+					"Optional message for editor/debug use when this command does not match. Usually not shown to players.",
+				placeholder: "This command did not match.",
+				advanced: true,
+				layout: {
+					width: "full",
+					order: 18,
+				},
+			})
+			.default(""),
 
 		consumeTurn: CommandTurnBehaviorSchema.describe(
 			"Default turn consumption behavior for this command.",
@@ -1373,27 +1419,31 @@ export const AuthorCommandSchema = editorObject(
 			"Default command processing behavior after this command runs.",
 		),
 
-		stopProcessing: editorBoolean({
-			title: "Stop Processing",
-			description:
-				"Legacy convenience field. If true, this command usually prevents lower-priority authored commands and generic coded commands from running.",
-			advanced: true,
-			layout: {
-				width: "half",
-				order: 21,
-			},
-		}).default(true),
+		stopProcessing: editor
+			.boolean({
+				title: "Stop Processing",
+				description:
+					"Legacy convenience field. If true, this command usually prevents lower-priority authored commands and generic coded commands from running.",
+				advanced: true,
+				layout: {
+					width: "half",
+					order: 21,
+				},
+			})
+			.default(true),
 
-		allowRepeat: editorBoolean({
-			title: "Allow Repeat",
-			description: "If false, this command should only succeed once unless reset by other state.",
-			layout: {
-				width: "half",
-				order: 22,
-			},
-		}).default(true),
+		allowRepeat: editor
+			.boolean({
+				title: "Allow Repeat",
+				description: "If false, this command should only succeed once unless reset by other state.",
+				layout: {
+					width: "half",
+					order: 22,
+				},
+			})
+			.default(true),
 
-		onceFlag: editorOptionalFlagKey({
+		onceFlag: editor.optionalFlagKey({
 			title: "Once Flag",
 			description: "Optional flag used to track whether this command has already succeeded.",
 			layout: {
@@ -1402,7 +1452,7 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		messageVariables: editorArray(CommandMessageVariableSchema, {
+		messageVariables: editor.array(CommandMessageVariableSchema, {
 			title: "Message Variables",
 			description: "Optional documentation for message variables this command expects or exposes.",
 			advanced: true,
@@ -1420,15 +1470,17 @@ export const AuthorCommandSchema = editorObject(
 			},
 		}),
 
-		debugNotes: editorTextarea({
-			title: "Debug Notes",
-			description: "Optional implementation or debugging notes for developers and advanced authors.",
-			advanced: true,
-			layout: {
-				width: "full",
-				order: 25,
-			},
-		}).default(""),
+		debugNotes: editor
+			.textarea({
+				title: "Debug Notes",
+				description: "Optional implementation or debugging notes for developers and advanced authors.",
+				advanced: true,
+				layout: {
+					width: "full",
+					order: 25,
+				},
+			})
+			.default(""),
 	}),
 	{
 		title: "Authored Command",

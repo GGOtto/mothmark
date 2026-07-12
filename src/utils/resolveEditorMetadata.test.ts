@@ -1,6 +1,7 @@
 import {z} from "zod";
 import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import {editor} from "@/schemas/editorSchemaHelpers";
+import {DescriptionSchema} from "@/schemas/descriptionSchema";
 import {ConnectionSchema, RoomFeatureSchema, RoomSchema} from "@/schemas/roomSchema";
 import {resolveEditorMetadata} from "./resolveEditorMetadata";
 
@@ -9,7 +10,48 @@ function getObjectFields(schema: z.ZodTypeAny) {
 	return metadata.features?.fields as ObjectFieldMetadata[];
 }
 
+function getFieldGroups(schema: z.ZodTypeAny) {
+	return Object.fromEntries(
+		getObjectFields(schema).map((field) => [field.key, field.metadata.layout?.group]),
+	);
+}
+
 describe("resolveEditorMetadata object fields", () => {
+	it("does not synthesize titles or descriptions for unannotated fields", () => {
+		const fields = getObjectFields(z.object({plainField: z.string()}));
+
+		expect(fields[0].metadata.title).toBeUndefined();
+		expect(fields[0].metadata.description).toBeUndefined();
+	});
+
+	it("does not expose Zod describe blocks as control descriptions", () => {
+		const described = resolveEditorMetadata(z.string().describe("Schema documentation only"));
+		const editorDescribed = resolveEditorMetadata(
+			editor.input({description: "Explicit editor help text"}).describe("Schema documentation only"),
+		);
+
+		expect(described.description).toBeUndefined();
+		expect(editorDescribed.description).toBe("Explicit editor help text");
+	});
+
+	it("exposes schema-defined children to specialized object-backed controls", () => {
+		const metadata = resolveEditorMetadata(DescriptionSchema);
+
+		expect(metadata.childControls?.default).toMatchObject({
+			control: "rich-text",
+			title: "Description",
+			description: "A default description with optional conditional variants.",
+		});
+		expect(metadata.childControls?.variants).toMatchObject({
+			control: "array",
+			title: "Description Variants",
+			appearance: {
+				chrome: "collapse",
+				defaultCollapsed: true,
+			},
+		});
+	});
+
 	it("merges childControls before sorting object fields", () => {
 		const schema = editor.object(
 			z.object({
@@ -67,6 +109,69 @@ describe("resolveEditorMetadata object fields", () => {
 		]);
 		expect(fields.at(-1)?.metadata).toMatchObject({
 			type: "hidden",
+		});
+	});
+
+	it("exposes the room's schema-defined sections and field groups", () => {
+		const metadata = resolveEditorMetadata(RoomSchema);
+
+		expect(metadata.features?.groups).toEqual([
+			expect.objectContaining({id: "details", title: "Details", order: 10}),
+			expect.objectContaining({id: "description", title: "Description", order: 20}),
+			expect.objectContaining({id: "features", title: "Features", order: 30}),
+			expect.objectContaining({
+				id: "availability",
+				title: "Availability",
+				order: 40,
+				defaultCollapsed: true,
+			}),
+			expect.objectContaining({
+				id: "editor",
+				title: "Editor",
+				order: 50,
+				defaultCollapsed: true,
+			}),
+		]);
+		expect(getFieldGroups(RoomSchema)).toMatchObject({
+			id: "details",
+			name: "details",
+			description: "description",
+			shortDescription: "description",
+			aliases: "details",
+			tags: "details",
+			features: "features",
+			position: "editor",
+			visitedFlag: "availability",
+			viewedFlag: "availability",
+			activeWhen: "availability",
+		});
+	});
+
+	it("exposes the connection's independently ordered sections and field groups", () => {
+		const metadata = resolveEditorMetadata(ConnectionSchema);
+
+		expect(metadata.features?.groups).toEqual([
+			expect.objectContaining({id: "route", title: "Route", order: 10}),
+			expect.objectContaining({id: "details", title: "Details", order: 20}),
+			expect.objectContaining({id: "messages", title: "Messages", order: 30}),
+			expect.objectContaining({id: "availability", title: "Availability", order: 40}),
+			expect.objectContaining({id: "state", title: "State", order: 50}),
+		]);
+		expect(getFieldGroups(ConnectionSchema)).toMatchObject({
+			id: "details",
+			name: "details",
+			fromRoomId: "route",
+			toRoomId: "route",
+			direction: "route",
+			returnDirection: "route",
+			pathway: "route",
+			aliases: "details",
+			description: "messages",
+			blockedMessage: "messages",
+			visibleWhen: "availability",
+			travelAllowedWhen: "availability",
+			lockedWhen: "availability",
+			state: "state",
 		});
 	});
 

@@ -25,7 +25,7 @@ const UNION_METADATA: Omit<DiscriminatedUnionControlMetadata, "type" | "appearan
 				value: "message",
 				description: "Shows text to the player.",
 				defaultValue: {type: "message", text: ""},
-				fields: [{key: "text", metadata: {type: "textarea", title: "Text", features: {minRows: 2}}}],
+				fields: [{key: "text", metadata: {type: "textarea", features: {minRows: 2}}}],
 			},
 			{
 				label: "Flag",

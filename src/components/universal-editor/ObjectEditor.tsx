@@ -184,6 +184,10 @@ function inferFieldGroupId(field: ObjectFieldMetadata) {
 	return "details";
 }
 
+function resolveFieldGroupId(field: ObjectFieldMetadata) {
+	return field.metadata.layout?.group ?? field.metadata.layout?.section ?? inferFieldGroupId(field);
+}
+
 function getFieldImportance(field: ObjectFieldMetadata) {
 	return (
 		(field.metadata.advanced || field.metadata.disclosure?.advanced ? "advanced" : undefined) ??
@@ -270,7 +274,7 @@ function buildGroupMetadata(
 	const shouldDefaultCollapse =
 		configuredGroup?.defaultCollapsed ??
 		inferredGroup?.defaultCollapsed ??
-		(fields.some((field) => field.metadata.disclosure?.defaultCollapsed) ||
+		(fields.some((field) => field.metadata.appearance?.defaultCollapsed) ||
 			inferredImportance === "advanced" ||
 			inferredImportance === "internal");
 
@@ -368,7 +372,7 @@ export function ObjectEditor({
 	const groupedSections = useMemo(() => {
 		const groups = new Map<string, ObjectFieldMetadata[]>();
 		for (const field of fields) {
-			const groupId = shouldRenderSections ? inferFieldGroupId(field) : "details";
+			const groupId = shouldRenderSections ? resolveFieldGroupId(field) : "details";
 			const groupFields = groups.get(groupId) ?? [];
 			groupFields.push(field);
 			groups.set(groupId, groupFields);
@@ -510,7 +514,7 @@ export function ObjectEditor({
 			.slice(0, 3)
 			.join(" · ");
 		const shouldCollapse =
-			!visibleSearchTerm && (section.group.defaultCollapsed || metadata.disclosure?.defaultCollapsed);
+			!visibleSearchTerm && (section.group.defaultCollapsed || metadata.appearance?.defaultCollapsed);
 		const savedOpenState = context.editorChrome?.getSectionDisclosure?.(path, section.group.id);
 		const isOpen = Boolean(visibleSearchTerm) || (savedOpenState ?? !shouldCollapse);
 		const body = (

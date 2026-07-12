@@ -1,26 +1,8 @@
 import {z} from "zod";
 import {docify} from "../utils/docify";
-import {
-	editorBoolean,
-	editorCondition,
-	editorCounterKey,
-	editorDirection,
-	editorDiscriminatedUnion,
-	editorReference,
-	editorFlagKey,
-	editorId,
-	editorInput,
-	editorNonNegativeInteger,
-	editorNumber,
-	editorObject,
-	editorPositiveInteger,
-	editorSelect,
-	editorStringList,
-	editorConditionList,
-	editorRichText,
-} from "@/schemas/editorSchemaHelpers";
+import {editor} from "@/schemas/editorSchemaHelpers";
 
-export const ComparisonOperatorSchema = editorSelect(
+export const ComparisonOperatorSchema = editor.select(
 	z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]),
 	{
 		title: "Operator",
@@ -69,7 +51,7 @@ export const ComparisonOperatorSchema = editorSelect(
 	},
 );
 
-export const StringComparisonOperatorSchema = editorSelect(
+export const StringComparisonOperatorSchema = editor.select(
 	z.enum(["eq", "neq", "includes", "starts-with", "ends-with"]),
 	{
 		title: "String Operator",
@@ -113,36 +95,42 @@ export const StringComparisonOperatorSchema = editorSelect(
 );
 
 const ConditionIdentitySchema = z.object({
-	id: editorId("condition", {
-		title: "Condition ID",
-		description: "Stable world-unique identifier used when reusing this condition.",
-		advanced: true,
-	}).optional(),
-	name: editorInput({
-		title: "Condition Name",
-		description: "Display name shown in condition lists and reuse pickers.",
-	}).optional(),
-	allowMultipleUsesInWorld: editorBoolean({
-		title: "Allow multiple uses in world",
-		description: "When checked, this condition can be selected from other condition lists.",
-		features: {
-			display: "checkbox",
-			labels: {
-				on: "Allow multiple uses in world",
-				off: "Allow multiple uses in world",
+	id: editor
+		.id("condition", {
+			title: "Condition ID",
+			description: "Stable world-unique identifier used when reusing this condition.",
+			advanced: true,
+		})
+		.optional(),
+	name: editor
+		.input({
+			title: "Condition Name",
+			description: "Display name shown in condition lists and reuse pickers.",
+		})
+		.optional(),
+	allowMultipleUsesInWorld: editor
+		.boolean({
+			title: "Allow multiple uses in world",
+			description: "When checked, this condition can be selected from other condition lists.",
+			features: {
+				display: "checkbox",
+				labels: {
+					on: "Allow multiple uses in world",
+					off: "Allow multiple uses in world",
+				},
 			},
-		},
-		layout: {
-			width: "full",
-			order: 3,
-		},
-	}).default(false),
+			layout: {
+				width: "full",
+				order: 3,
+			},
+		})
+		.default(false),
 });
 
-export const ConditionReferenceSchema = editorObject(
+export const ConditionReferenceSchema = editor.object(
 	z.object({
 		type: z.literal("condition-ref").describe("References a condition stored in the world."),
-		conditionId: editorReference("condition", {
+		conditionId: editor.reference("condition", {
 			title: "Condition",
 			description: "The world condition this usage should evaluate.",
 			layout: {
@@ -163,14 +151,14 @@ export const ConditionReferenceSchema = editorObject(
 
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
-export const FlagConditionSchema = editorDiscriminatedUnion(
+export const FlagConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("flag").describe("Checks a boolean world flag."),
 			operation: z
 				.literal("equals")
 				.describe("Checks whether a flag equals a specific boolean value."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The id of the flag to check, such as kitchen.appleOnTable.",
 				layout: {
@@ -178,14 +166,16 @@ export const FlagConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			value: editorBoolean({
-				title: "Value",
-				description: "The required boolean value for the flag. Defaults to true.",
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).default(true),
+			value: editor
+				.boolean({
+					title: "Value",
+					description: "The required boolean value for the flag. Defaults to true.",
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.default(true),
 		}),
 
 		z.object({
@@ -193,7 +183,7 @@ export const FlagConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("exists")
 				.describe("Checks whether the flag exists in game state, regardless of its value."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The id of the flag to check.",
 				layout: {
@@ -208,7 +198,7 @@ export const FlagConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing")
 				.describe("Checks whether the flag does not exist in game state."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The id of the flag to check.",
 				layout: {
@@ -239,12 +229,12 @@ export const FlagConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CounterConditionSchema = editorDiscriminatedUnion(
+export const CounterConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("counter").describe("Checks a numeric counter."),
 			operation: z.literal("compare").describe("Compares a counter against one numeric value."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The id of the counter to check, such as rats.turnsUntilArrival.",
 				layout: {
@@ -255,7 +245,7 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 			operator: ComparisonOperatorSchema.describe(
 				"The comparison operator used to compare the counter against the target value.",
 			),
-			value: editorNumber({
+			value: editor.number({
 				title: "Value",
 				description: "The numeric value to compare the counter against.",
 				layout: {
@@ -270,7 +260,7 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("between")
 				.describe("Checks whether a counter is between two values, inclusive by default."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The id of the counter to check.",
 				layout: {
@@ -278,7 +268,7 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			min: editorNumber({
+			min: editor.number({
 				title: "Minimum",
 				description: "The lower bound for the counter.",
 				layout: {
@@ -286,7 +276,7 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 					order: 2,
 				},
 			}),
-			max: editorNumber({
+			max: editor.number({
 				title: "Maximum",
 				description: "The upper bound for the counter.",
 				layout: {
@@ -294,20 +284,22 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 					order: 3,
 				},
 			}),
-			inclusive: editorBoolean({
-				title: "Inclusive",
-				description: "If true, the min and max values count as passing values.",
-				layout: {
-					width: "half",
-					order: 4,
-				},
-			}).default(true),
+			inclusive: editor
+				.boolean({
+					title: "Inclusive",
+					description: "If true, the min and max values count as passing values.",
+					layout: {
+						width: "half",
+						order: 4,
+					},
+				})
+				.default(true),
 		}),
 
 		z.object({
 			type: z.literal("counter").describe("Checks a numeric counter."),
 			operation: z.literal("exists").describe("Checks whether a counter exists in game state."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The id of the counter to check.",
 				layout: {
@@ -322,7 +314,7 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing")
 				.describe("Checks whether a counter does not exist in game state."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The id of the counter to check.",
 				layout: {
@@ -352,14 +344,14 @@ export const CounterConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CurrentRoomConditionSchema = editorDiscriminatedUnion(
+export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("current-room").describe("Checks the player's current room."),
 			operation: z
 				.literal("is")
 				.describe("Checks whether the player is currently in a specific room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The room id to compare against.",
 				layout: {
@@ -374,7 +366,7 @@ export const CurrentRoomConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("is-not")
 				.describe("Checks whether the player is not currently in a specific room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The room id to compare against.",
 				layout: {
@@ -387,16 +379,18 @@ export const CurrentRoomConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("current-room").describe("Checks the player's current room."),
 			operation: z.literal("has-tag").describe("Checks whether the current room has a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The room tag to check for.",
-				placeholder: "outdoors",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The room tag to check for.",
+					placeholder: "outdoors",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -404,16 +398,18 @@ export const CurrentRoomConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing-tag")
 				.describe("Checks whether the current room does not have a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The room tag to check for.",
-				placeholder: "outdoors",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The room tag to check for.",
+					placeholder: "outdoors",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 	]),
 	{
@@ -433,11 +429,11 @@ export const CurrentRoomConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const RoomHistoryConditionSchema = editorObject(
+export const RoomHistoryConditionSchema = editor.object(
 	z.object({
 		type: z.literal("room-history").describe("Checks whether a room has been visited or viewed."),
 
-		roomId: editorReference("room", {
+		roomId: editor.reference("room", {
 			title: "Room",
 			description: "The room id to check.",
 			layout: {
@@ -446,7 +442,7 @@ export const RoomHistoryConditionSchema = editorObject(
 			},
 		}),
 
-		history: editorSelect(z.enum(["visited", "viewed"]), {
+		history: editor.select(z.enum(["visited", "viewed"]), {
 			title: "History",
 			description: "The kind of room history to check.",
 			options: [
@@ -467,14 +463,16 @@ export const RoomHistoryConditionSchema = editorObject(
 			},
 		}),
 
-		value: editorBoolean({
-			title: "Value",
-			description: "The required history state. Defaults to true.",
-			layout: {
-				width: "half",
-				order: 3,
-			},
-		}).default(true),
+		value: editor
+			.boolean({
+				title: "Value",
+				description: "The required history state. Defaults to true.",
+				layout: {
+					width: "half",
+					order: 3,
+				},
+			})
+			.default(true),
 	}),
 	{
 		title: "Room History Condition",
@@ -495,11 +493,11 @@ export const RoomHistoryConditionSchema = editorObject(
 	},
 );
 
-export const FeatureExaminedConditionSchema = editorObject(
+export const FeatureExaminedConditionSchema = editor.object(
 	z.object({
 		type: z.literal("feature-examined").describe("Checks whether a room feature has been examined."),
 
-		roomId: editorReference("room", {
+		roomId: editor.reference("room", {
 			title: "Room",
 			description: "The id of the room containing the feature.",
 			layout: {
@@ -508,7 +506,7 @@ export const FeatureExaminedConditionSchema = editorObject(
 			},
 		}),
 
-		featureId: editorReference("feature", {
+		featureId: editor.reference("feature", {
 			title: "Feature",
 			description: "The id of the feature to check.",
 			layout: {
@@ -517,14 +515,16 @@ export const FeatureExaminedConditionSchema = editorObject(
 			},
 		}),
 
-		value: editorBoolean({
-			title: "Value",
-			description: "The required examined state. Defaults to true.",
-			layout: {
-				width: "half",
-				order: 3,
-			},
-		}).default(true),
+		value: editor
+			.boolean({
+				title: "Value",
+				description: "The required examined state. Defaults to true.",
+				layout: {
+					width: "half",
+					order: 3,
+				},
+			})
+			.default(true),
 	}),
 	{
 		title: "Feature Examined Condition",
@@ -542,12 +542,12 @@ export const FeatureExaminedConditionSchema = editorObject(
 	},
 );
 
-export const InventoryConditionSchema = editorDiscriminatedUnion(
+export const InventoryConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("inventory").describe("Checks the player's inventory."),
 			operation: z.literal("has-item").describe("Checks whether the player has a specific item."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check for.",
 				layout: {
@@ -562,7 +562,7 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing-item")
 				.describe("Checks whether the player does not have a specific item."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check for.",
 				layout: {
@@ -577,7 +577,7 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("has-all-items")
 				.describe("Checks whether the player has every listed item."),
-			itemIds: editorStringList(
+			itemIds: editor.stringList(
 				{
 					title: "Items",
 					description: "The item ids the player must all have.",
@@ -600,7 +600,7 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("has-any-item")
 				.describe("Checks whether the player has at least one listed item."),
-			itemIds: editorStringList(
+			itemIds: editor.stringList(
 				{
 					title: "Items",
 					description: "The item ids where at least one must be in inventory.",
@@ -623,16 +623,18 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("contains-tag")
 				.describe("Checks whether the player's inventory contains any item with a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The item tag to check for.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The item tag to check for.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -640,16 +642,18 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing-tag")
 				.describe("Checks whether the player's inventory contains no item with a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The item tag to check for.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The item tag to check for.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -660,7 +664,7 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operator: ComparisonOperatorSchema.describe(
 				"The comparison operator used against the inventory count.",
 			),
-			value: editorNonNegativeInteger({
+			value: editor.nonNegativeInteger({
 				title: "Count",
 				description: "The inventory count to compare against.",
 				layout: {
@@ -675,20 +679,22 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("tag-count")
 				.describe("Compares the number of inventory items with a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The item tag to count.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The item tag to count.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 			operator: ComparisonOperatorSchema.describe(
 				"The comparison operator used against the tagged inventory count.",
 			),
-			value: editorNonNegativeInteger({
+			value: editor.nonNegativeInteger({
 				title: "Count",
 				description: "The tagged item count to compare against.",
 				layout: {
@@ -717,11 +723,11 @@ export const InventoryConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const HasItemConditionSchema = editorObject(
+export const HasItemConditionSchema = editor.object(
 	z.object({
 		type: z.literal("has-item").describe("Checks the player's inventory."),
 
-		itemId: editorReference("item", {
+		itemId: editor.reference("item", {
 			title: "Item",
 			description: "The item id to check for.",
 			layout: {
@@ -730,14 +736,16 @@ export const HasItemConditionSchema = editorObject(
 			},
 		}),
 
-		negate: editorBoolean({
-			title: "Negate",
-			description: "If true, this condition passes when the player does not have the item.",
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).default(false),
+		negate: editor
+			.boolean({
+				title: "Negate",
+				description: "If true, this condition passes when the player does not have the item.",
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.default(false),
 	}),
 	{
 		title: "Legacy Has Item Condition",
@@ -756,14 +764,14 @@ export const HasItemConditionSchema = editorObject(
 	},
 );
 
-export const ItemLocationConditionSchema = editorDiscriminatedUnion(
+export const ItemLocationConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("item-location").describe("Checks where an item exists in the world."),
 			operation: z
 				.literal("in-inventory")
 				.describe("Checks whether an item is in the player's inventory."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -778,7 +786,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("in-current-room")
 				.describe("Checks whether an item is in the player's current room."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -791,7 +799,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Checks where an item exists in the world."),
 			operation: z.literal("in-room").describe("Checks whether an item is in a specific room."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -799,7 +807,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The room id to check against.",
 				layout: {
@@ -812,7 +820,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Checks where an item exists in the world."),
 			operation: z.literal("on-surface").describe("Checks whether an item is on a specific surface."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -820,7 +828,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			surfaceId: editorReference("surface", {
+			surfaceId: editor.reference("surface", {
 				title: "Surface",
 				description: "The surface id to check against.",
 				layout: {
@@ -835,7 +843,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("in-container")
 				.describe("Checks whether an item is inside a specific container."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -843,7 +851,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			containerId: editorReference("container", {
+			containerId: editor.reference("container", {
 				title: "Container",
 				description: "The container id to check against.",
 				layout: {
@@ -858,7 +866,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("held-by-npc")
 				.describe("Checks whether an item is held by a specific NPC."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -866,7 +874,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check against.",
 				layout: {
@@ -879,7 +887,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Checks where an item exists in the world."),
 			operation: z.literal("hidden").describe("Checks whether an item is hidden."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -892,7 +900,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Checks where an item exists in the world."),
 			operation: z.literal("destroyed").describe("Checks whether an item has been destroyed."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -907,7 +915,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("visible")
 				.describe("Checks whether an item is currently visible to the player."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -922,7 +930,7 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("reachable")
 				.describe("Checks whether an item is currently reachable by the player."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check.",
 				layout: {
@@ -951,13 +959,13 @@ export const ItemLocationConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ObjectStateConditionSchema = editorDiscriminatedUnion(
+export const ObjectStateConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z
 				.literal("object-state")
 				.describe("Checks the state of an object, feature, item, door, surface, or container."),
-			operation: editorSelect(
+			operation: editor.select(
 				z.enum([
 					"open",
 					"closed",
@@ -987,7 +995,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					],
 				},
 			),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The object id to check.",
 				layout: {
@@ -1004,7 +1012,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("contains-item")
 				.describe("Checks whether an object or container contains a specific item."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The object or container id to check.",
 				layout: {
@@ -1012,7 +1020,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id that should be contained.",
 				layout: {
@@ -1029,7 +1037,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("missing-item")
 				.describe("Checks whether an object or container does not contain a specific item."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The object or container id to check.",
 				layout: {
@@ -1037,7 +1045,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id that should not be contained.",
 				layout: {
@@ -1054,7 +1062,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("surface-has-item")
 				.describe("Checks whether a surface has a specific item on it."),
-			surfaceId: editorReference("surface", {
+			surfaceId: editor.reference("surface", {
 				title: "Surface",
 				description: "The surface id to check.",
 				layout: {
@@ -1062,7 +1070,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id that should be on the surface.",
 				layout: {
@@ -1079,7 +1087,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("surface-missing-item")
 				.describe("Checks whether a surface does not have a specific item on it."),
-			surfaceId: editorReference("surface", {
+			surfaceId: editor.reference("surface", {
 				title: "Surface",
 				description: "The surface id to check.",
 				layout: {
@@ -1087,7 +1095,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id that should not be on the surface.",
 				layout: {
@@ -1104,7 +1112,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("empty")
 				.describe("Checks whether a container, surface, or object has no contained/placed items."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The object id to check.",
 				layout: {
@@ -1119,7 +1127,7 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 				.literal("object-state")
 				.describe("Checks the state of an object, feature, item, door, surface, or container."),
 			operation: z.literal("custom").describe("Checks a custom object state value."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The object id to check.",
 				layout: {
@@ -1127,16 +1135,18 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			key: editorInput({
-				title: "Key",
-				description: "The custom state key to check.",
-				placeholder: "freshness",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			key: editor
+				.input({
+					title: "Key",
+					description: "The custom state key to check.",
+					placeholder: "freshness",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 			operator: z
 				.union([StringComparisonOperatorSchema, ComparisonOperatorSchema])
 				.describe("The comparison operator to use against the custom value."),
@@ -1163,14 +1173,14 @@ export const ObjectStateConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const NpcConditionSchema = editorDiscriminatedUnion(
+export const NpcConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
 			operation: z
 				.literal("in-current-room")
 				.describe("Checks whether an NPC is in the player's current room."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1183,7 +1193,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
 			operation: z.literal("in-room").describe("Checks whether an NPC is in a specific room."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1191,7 +1201,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The room id to check against.",
 				layout: {
@@ -1204,7 +1214,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
 			operation: z.literal("has-item").describe("Checks whether an NPC has a specific item."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1212,7 +1222,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The item id to check for.",
 				layout: {
@@ -1225,7 +1235,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
 			operation: z.literal("mood-is").describe("Checks whether an NPC has a specific mood."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1233,22 +1243,24 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			mood: editorInput({
-				title: "Mood",
-				description: "The required NPC mood.",
-				placeholder: "friendly",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			mood: editor
+				.input({
+					title: "Mood",
+					description: "The required NPC mood.",
+					placeholder: "friendly",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
 			operation: z.literal("trust").describe("Compares an NPC trust value against a number."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1259,7 +1271,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 			operator: ComparisonOperatorSchema.describe(
 				"The comparison operator used against the NPC trust value.",
 			),
-			value: editorNumber({
+			value: editor.number({
 				title: "Trust",
 				description: "The trust value to compare against.",
 				layout: {
@@ -1271,7 +1283,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("npc").describe("Checks NPC state."),
-			operation: editorSelect(
+			operation: editor.select(
 				z.enum([
 					"met-player",
 					"not-met-player",
@@ -1300,7 +1312,7 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 					// TODO: Stuff like this should belong to the schema for npc conditions, but we'll wait on that
 				},
 			),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC id to check.",
 				layout: {
@@ -1329,23 +1341,25 @@ export const NpcConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
+export const CommandHistoryConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("command-history").describe("Checks recent player command history."),
 			operation: z
 				.literal("previous-command-was")
 				.describe("Checks whether the immediately previous command matched a command name."),
-			commandName: editorInput({
-				title: "Command",
-				description: "The command name to check, such as examine, sing, knock, or say.",
-				placeholder: "examine",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			commandName: editor
+				.input({
+					title: "Command",
+					description: "The command name to check, such as examine, sing, knock, or say.",
+					placeholder: "examine",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1356,16 +1370,18 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operator: StringComparisonOperatorSchema.default("eq").describe(
 				"How to compare the raw command text.",
 			),
-			value: editorInput({
-				title: "Raw Command",
-				description: "The raw command text to compare against.",
-				placeholder: "knock on door",
-				required: true,
-				layout: {
-					width: "full",
-					order: 2,
-				},
-			}).min(1),
+			value: editor
+				.input({
+					title: "Raw Command",
+					description: "The raw command text to compare against.",
+					placeholder: "knock on door",
+					required: true,
+					layout: {
+						width: "full",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1375,7 +1391,7 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 				.describe(
 					"Checks whether the previous command targeted a specific object, item, NPC, feature, topic, or room.",
 				),
-			targetId: editorReference("object", {
+			targetId: editor.reference("object", {
 				title: "Target",
 				description: "The resolved target id to check.",
 				layout: {
@@ -1390,16 +1406,18 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("used-command-before")
 				.describe("Checks whether the player has ever used a specific command before."),
-			commandName: editorInput({
-				title: "Command",
-				description: "The command name to check.",
-				placeholder: "knock",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			commandName: editor
+				.input({
+					title: "Command",
+					description: "The command name to check.",
+					placeholder: "knock",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1407,16 +1425,18 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("never-used-command")
 				.describe("Checks whether the player has never used a specific command."),
-			commandName: editorInput({
-				title: "Command",
-				description: "The command name to check.",
-				placeholder: "knock",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			commandName: editor
+				.input({
+					title: "Command",
+					description: "The command name to check.",
+					placeholder: "knock",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1424,17 +1444,19 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("used-command-within-turns")
 				.describe("Checks whether the player used a command within the last N turns."),
-			commandName: editorInput({
-				title: "Command",
-				description: "The command name to check.",
-				placeholder: "say",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
-			turns: editorPositiveInteger({
+			commandName: editor
+				.input({
+					title: "Command",
+					description: "The command name to check.",
+					placeholder: "say",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
+			turns: editor.positiveInteger({
 				title: "Turns",
 				description: "How many turns back to search.",
 				layout: {
@@ -1449,17 +1471,19 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("repeated-command")
 				.describe("Checks whether the player repeated a command a specific number of times."),
-			commandName: editorInput({
-				title: "Command",
-				description: "The command name to check.",
-				placeholder: "knock",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
-			count: editorPositiveInteger({
+			commandName: editor
+				.input({
+					title: "Command",
+					description: "The command name to check.",
+					placeholder: "knock",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
+			count: editor.positiveInteger({
 				title: "Count",
 				description: "How many times the command must have been repeated.",
 				layout: {
@@ -1467,14 +1491,16 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 					order: 2,
 				},
 			}),
-			consecutive: editorBoolean({
-				title: "Consecutive",
-				description: "If true, the repeated commands must be consecutive.",
-				layout: {
-					width: "half",
-					order: 3,
-				},
-			}).default(true),
+			consecutive: editor
+				.boolean({
+					title: "Consecutive",
+					description: "If true, the repeated commands must be consecutive.",
+					layout: {
+						width: "half",
+						order: 3,
+					},
+				})
+				.default(true),
 		}),
 
 		z.object({
@@ -1482,7 +1508,7 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("sequence")
 				.describe("Checks whether the player performed a sequence of command names in order."),
-			commands: editorStringList(
+			commands: editor.stringList(
 				{
 					title: "Commands",
 					description: "The ordered command names that must appear in recent command history.",
@@ -1498,14 +1524,16 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 				},
 				z.array(z.string().min(1)).min(1),
 			),
-			withinTurns: editorPositiveInteger({
-				title: "Within Turns",
-				description: "Optional maximum number of recent turns to search for the sequence.",
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).optional(),
+			withinTurns: editor
+				.positiveInteger({
+					title: "Within Turns",
+					description: "Optional maximum number of recent turns to search for the sequence.",
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.optional(),
 		}),
 	]),
 	{
@@ -1529,11 +1557,11 @@ export const CommandHistoryConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const RandomChanceConditionSchema = editorObject(
+export const RandomChanceConditionSchema = editor.object(
 	z.object({
 		type: z.literal("random-chance").describe("Checks whether a random chance succeeds."),
 
-		chance: editorNumber(
+		chance: editor.number(
 			{
 				title: "Chance",
 				description: "The chance to succeed, from 0 to 1. For example, 0.25 means 25%.",
@@ -1545,27 +1573,30 @@ export const RandomChanceConditionSchema = editorObject(
 			z.number().min(0).max(1),
 		),
 
-		seedKey: editorInput({
-			title: "Seed Key",
-			description:
-				"Optional key used by seeded random systems to make this chance deterministic across saves.",
-			placeholder: "rats-arrive",
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		})
+		seedKey: editor
+			.input({
+				title: "Seed Key",
+				description:
+					"Optional key used by seeded random systems to make this chance deterministic across saves.",
+				placeholder: "rats-arrive",
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
 			.min(1)
 			.optional(),
 
-		invert: editorBoolean({
-			title: "Invert",
-			description: "If true, this condition passes when the random chance fails.",
-			layout: {
-				width: "half",
-				order: 3,
-			},
-		}).default(false),
+		invert: editor
+			.boolean({
+				title: "Invert",
+				description: "If true, this condition passes when the random chance fails.",
+				layout: {
+					width: "half",
+					order: 3,
+				},
+			})
+			.default(false),
 	}),
 	{
 		title: "Random Chance Condition",
@@ -1588,11 +1619,11 @@ export const RandomChanceConditionSchema = editorObject(
 	},
 );
 
-export const QuestConditionSchema = editorDiscriminatedUnion(
+export const QuestConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("quest").describe("Checks quest state."),
-			operation: editorSelect(z.enum(["not-started", "active", "completed", "failed"]), {
+			operation: editor.select(z.enum(["not-started", "active", "completed", "failed"]), {
 				title: "Quest Status",
 				description: "The quest status to check.",
 				options: [
@@ -1602,7 +1633,7 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 					{label: "Failed", value: "failed"},
 				],
 			}),
-			questId: editorReference("quest", {
+			questId: editor.reference("quest", {
 				title: "Quest",
 				description: "The quest id to check.",
 				layout: {
@@ -1617,7 +1648,7 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("objective-complete")
 				.describe("Checks whether a quest objective is complete."),
-			questId: editorReference("quest", {
+			questId: editor.reference("quest", {
 				title: "Quest",
 				description: "The quest id to check.",
 				layout: {
@@ -1625,7 +1656,7 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			objectiveId: editorReference("quest-objective", {
+			objectiveId: editor.reference("quest-objective", {
 				title: "Objective",
 				description: "The objective id to check.",
 				layout: {
@@ -1640,7 +1671,7 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("objective-incomplete")
 				.describe("Checks whether a quest objective is incomplete."),
-			questId: editorReference("quest", {
+			questId: editor.reference("quest", {
 				title: "Quest",
 				description: "The quest id to check.",
 				layout: {
@@ -1648,7 +1679,7 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			objectiveId: editorReference("quest-objective", {
+			objectiveId: editor.reference("quest-objective", {
 				title: "Objective",
 				description: "The objective id to check.",
 				layout: {
@@ -1675,36 +1706,40 @@ export const QuestConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
+export const ScheduledEventConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("scheduled-event").describe("Checks scheduled event runtime state."),
 			operation: z.literal("exists").describe("Checks whether an event instance exists."),
-			instanceId: editorInput({
-				title: "Instance ID",
-				description: "The scheduled event instance id to check.",
-				placeholder: "rats-arrive-instance",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			instanceId: editor
+				.input({
+					title: "Instance ID",
+					description: "The scheduled event instance id to check.",
+					placeholder: "rats-arrive-instance",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("scheduled-event").describe("Checks scheduled event runtime state."),
 			operation: z.literal("missing").describe("Checks whether an event instance does not exist."),
-			instanceId: editorInput({
-				title: "Instance ID",
-				description: "The scheduled event instance id to check.",
-				placeholder: "rats-arrive-instance",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			instanceId: editor
+				.input({
+					title: "Instance ID",
+					description: "The scheduled event instance id to check.",
+					placeholder: "rats-arrive-instance",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1712,7 +1747,7 @@ export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("event-scheduled")
 				.describe("Checks whether any scheduled instance exists for an authored event id."),
-			eventId: editorReference("event", {
+			eventId: editor.reference("event", {
 				title: "Event",
 				description: "The authored event id to check.",
 				layout: {
@@ -1727,7 +1762,7 @@ export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("event-not-scheduled")
 				.describe("Checks whether no scheduled instance exists for an authored event id."),
-			eventId: editorReference("event", {
+			eventId: editor.reference("event", {
 				title: "Event",
 				description: "The authored event id to check.",
 				layout: {
@@ -1742,16 +1777,18 @@ export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("tag-scheduled")
 				.describe("Checks whether any scheduled event instance has a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The scheduled event tag to check.",
-				placeholder: "rats",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The scheduled event tag to check.",
+					placeholder: "rats",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1759,16 +1796,18 @@ export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("tag-not-scheduled")
 				.describe("Checks whether no scheduled event instance has a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The scheduled event tag to check.",
-				placeholder: "rats",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The scheduled event tag to check.",
+					placeholder: "rats",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 	]),
 	{
@@ -1791,7 +1830,7 @@ export const ScheduledEventConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const TurnConditionSchema = editorDiscriminatedUnion(
+export const TurnConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("turn").describe("Checks the global turn count."),
@@ -1799,7 +1838,7 @@ export const TurnConditionSchema = editorDiscriminatedUnion(
 			operator: ComparisonOperatorSchema.describe(
 				"The comparison operator used against the turn count.",
 			),
-			value: editorNonNegativeInteger({
+			value: editor.nonNegativeInteger({
 				title: "Turn",
 				description: "The turn count to compare against.",
 				layout: {
@@ -1814,7 +1853,7 @@ export const TurnConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("multiple-of")
 				.describe("Checks whether the current turn count is a multiple of a value."),
-			value: editorPositiveInteger({
+			value: editor.positiveInteger({
 				title: "Multiple",
 				description: "The divisor used to check the current turn count.",
 				layout: {
@@ -1843,7 +1882,7 @@ export const TurnConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
+export const ResolvedTargetConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z
@@ -1852,7 +1891,7 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("object-is")
 				.describe("Checks the resolved object/left-side target of the current command."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The expected resolved object id.",
 				layout: {
@@ -1869,7 +1908,7 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("target-is")
 				.describe("Checks the resolved target/right-side target of the current command."),
-			targetId: editorReference("object", {
+			targetId: editor.reference("object", {
 				title: "Target",
 				description: "The expected resolved target id.",
 				layout: {
@@ -1886,16 +1925,18 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("connector-is")
 				.describe("Checks the connector used by the current command."),
-			connector: editorInput({
-				title: "Connector",
-				description: "The expected connector, such as on, in, with, to, under, or at.",
-				placeholder: "on",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			connector: editor
+				.input({
+					title: "Connector",
+					description: "The expected connector, such as on, in, with, to, under, or at.",
+					placeholder: "on",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1903,7 +1944,7 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 				.literal("resolved-target")
 				.describe("Checks resolved entities from the current parsed command."),
 			operation: z.literal("topic-is").describe("Checks the resolved topic from a speech command."),
-			topicId: editorReference("topic", {
+			topicId: editor.reference("topic", {
 				title: "Topic",
 				description: "The expected topic id.",
 				layout: {
@@ -1920,7 +1961,7 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("direction-is")
 				.describe("Checks the resolved direction from a movement-like command."),
-			direction: editorDirection({
+			direction: editor.direction({
 				title: "Direction",
 				description: "The expected direction, such as n, north, up, or out.",
 				layout: {
@@ -1952,7 +1993,7 @@ export const ResolvedTargetConditionSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const SingleConditionSchema = editorDiscriminatedUnion(
+export const SingleConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		FlagConditionSchema,
 		CounterConditionSchema,
@@ -2000,17 +2041,17 @@ export type ConditionReference = z.infer<typeof ConditionReferenceSchema>;
 export type Condition = SingleCondition | ConditionGroup | ConditionReference;
 
 export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> = z.lazy(() =>
-	editorCondition(
+	editor.condition(
 		z
 			.union([
 				z.intersection(SingleConditionSchema, ConditionIdentitySchema),
 
-				editorObject(
+				editor.object(
 					z.object({
 						...ConditionIdentitySchema.shape,
 						type: z.literal("group").describe("Groups multiple conditions together."),
 
-						operator: editorSelect(z.enum(["all", "any", "none"]).default("all"), {
+						operator: editor.select(z.enum(["all", "any", "none"]).default("all"), {
 							title: "Group Operator",
 							description: docify(`
 							How this group evaluates its child conditions.
@@ -2096,7 +2137,7 @@ export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> =
 );
 
 export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
-	editorCondition(
+	editor.condition(
 		z.union([ConditionReferenceSchema, WorldConditionSchema]).describe(
 			docify(`
 				A universal condition.
@@ -2123,26 +2164,30 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 
 export const ConditionUsageSchema = ConditionReferenceSchema;
 
-export const ConditionalTextSchema = editorObject(
+export const ConditionalTextSchema = editor.object(
 	z.object({
-		text: editorRichText({
-			title: "Variant Text",
-			description: "The text that will be used when all required conditions are met.",
-			placeholder: "Describe the conditional text...",
-			required: true,
-			layout: {
-				width: "full",
-				order: 1,
-				group: "text",
-			},
-		}).min(1),
+		text: editor
+			.richText({
+				title: "Variant Text",
+				description: "The text that will be used when all required conditions are met.",
+				placeholder: "Describe the conditional text...",
+				required: true,
+				layout: {
+					width: "full",
+					order: 1,
+					group: "text",
+				},
+			})
+			.min(1),
 
-		when: editorConditionList(ConditionUsageSchema, {
+		when: editor.conditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description: "Conditions that must all be true before this text can be used.",
+			appearance: {
+				defaultCollapsed: false,
+			},
 			disclosure: {
 				collapsible: true,
-				defaultCollapsed: false,
 				preview: "summary",
 			},
 			layout: {

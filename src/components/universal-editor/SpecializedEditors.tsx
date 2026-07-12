@@ -747,7 +747,7 @@ export function ConditionalTextEditor(props: SpecializedEditorProps) {
 					childKey: "default",
 					value: String(record.default ?? ""),
 					onChange: (nextValue) => updateField("default", nextValue),
-					metadata: {title: "Default text", features: {minRows: 4, showPreview: true}},
+					metadata: {features: {minRows: 4, showPreview: true}},
 					parentMetadata: metadata,
 					path: [...path, "default"],
 					disabled,

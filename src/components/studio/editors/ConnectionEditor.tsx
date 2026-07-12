@@ -95,7 +95,6 @@ export function ConnectionEditor({
 				appearance={{
 					theme: "auto",
 					scheme: theme,
-					chrome: "card",
 				}}
 				className="connectionEditorUniversal"
 				allowDelete={true}

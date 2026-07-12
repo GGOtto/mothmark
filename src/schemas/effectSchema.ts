@@ -1,59 +1,45 @@
 import {z} from "zod";
 import {ConditionUsageSchema} from "./conditionSchema";
-import {
-	editorBoolean,
-	editorConditionList,
-	editorCounterKey,
-	editorDirection,
-	editorDiscriminatedUnion,
-	editorEffects,
-	editorFlagKey,
-	editorId,
-	editorInput,
-	editorMessage,
-	editorNonNegativeInteger,
-	editorNumber,
-	editorObject,
-	editorPositiveInteger,
-	editorReference,
-	editorSelect,
-	editorStringList,
-	editorTagList,
-	editorTextarea,
-} from "@/schemas/editorSchemaHelpers";
+import {editor} from "@/schemas/editorSchemaHelpers";
 
 const StateValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 const EffectIdentitySchema = z.object({
-	id: editorId("effect", {
-		title: "Effect ID",
-		description: "Stable world-unique identifier used when reusing this effect.",
-	}).optional(),
-	name: editorInput({
-		title: "Effect Name",
-		description: "Display name shown in effect lists and reuse pickers.",
-	}).optional(),
-	allowMultipleUsesInWorld: editorBoolean({
-		title: "Allow multiple uses in world",
-		description: "When checked, this effect can be selected from other effect lists.",
-		features: {
-			display: "checkbox",
-			labels: {
-				on: "Allow multiple uses in world",
-				off: "Allow multiple uses in world",
+	id: editor
+		.id("effect", {
+			title: "Effect ID",
+			description: "Stable world-unique identifier used when reusing this effect.",
+		})
+		.optional(),
+	name: editor
+		.input({
+			title: "Effect Name",
+			description: "Display name shown in effect lists and reuse pickers.",
+		})
+		.optional(),
+	allowMultipleUsesInWorld: editor
+		.boolean({
+			title: "Allow multiple uses in world",
+			description: "When checked, this effect can be selected from other effect lists.",
+			features: {
+				display: "checkbox",
+				labels: {
+					on: "Allow multiple uses in world",
+					off: "Allow multiple uses in world",
+				},
 			},
-		},
-		layout: {
-			width: "full",
-			order: 3,
-		},
-	}).default(false),
+			layout: {
+				width: "full",
+				order: 3,
+			},
+		})
+		.default(false),
 });
 
-export const EffectReferenceSchema = editorObject(
+export const EffectReferenceSchema = editor.object(
 	z.object({
 		type: z.literal("effect-ref").describe("References an effect stored in the world."),
-		effectId: editorReference("effect", {
+		effectId: editor.reference("effect", {
 			title: "Effect",
 			description: "The world effect this usage should run.",
 			layout: {
@@ -72,7 +58,7 @@ export const EffectReferenceSchema = editorObject(
 	},
 );
 
-export const EffectTimingSchema = editorDiscriminatedUnion(
+export const EffectTimingSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		z.object({
 			type: z
@@ -84,7 +70,7 @@ export const EffectTimingSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("after-turns")
 				.describe("Runs the scheduled effect or event after a number of player turns."),
-			turns: editorPositiveInteger({
+			turns: editor.positiveInteger({
 				title: "Turns",
 				description: "The number of turns to wait before running the scheduled effect or event.",
 				layout: {
@@ -100,7 +86,7 @@ export const EffectTimingSchema = editorDiscriminatedUnion(
 				.describe(
 					"Runs the scheduled effect or event when the global turn count reaches a specific value.",
 				),
-			turn: editorNonNegativeInteger({
+			turn: editor.nonNegativeInteger({
 				title: "Turn",
 				description: "The global turn count at which this scheduled effect or event should run.",
 				layout: {
@@ -114,7 +100,7 @@ export const EffectTimingSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("every-turns")
 				.describe("Runs the scheduled effect or event repeatedly every set number of turns."),
-			turns: editorPositiveInteger({
+			turns: editor.positiveInteger({
 				title: "Every Turns",
 				description: "How many turns should pass between each repeated run.",
 				layout: {
@@ -122,15 +108,17 @@ export const EffectTimingSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			limit: editorPositiveInteger({
-				title: "Limit",
-				description:
-					"The maximum number of times this repeated effect or event may run. If omitted, it may repeat until cancelled.",
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).optional(),
+			limit: editor
+				.positiveInteger({
+					title: "Limit",
+					description:
+						"The maximum number of times this repeated effect or event may run. If omitted, it may repeat until cancelled.",
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.optional(),
 		}),
 	]),
 	{
@@ -145,21 +133,23 @@ export const EffectTimingSchema = editorDiscriminatedUnion(
 
 export type EffectTiming = z.infer<typeof EffectTimingSchema>;
 
-export const MessageEffectSchema = editorDiscriminatedUnion(
+export const MessageEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("messageType", [
 		z.object({
 			type: z.literal("message").describe("Displays or modifies player-facing text."),
 			messageType: z.literal("show").describe("Shows a specific message to the player."),
-			text: editorMessage({
-				title: "Message",
-				description: "The exact message text to show to the player.",
-				placeholder: "You hear something moving in the walls.",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			text: editor
+				.message({
+					title: "Message",
+					description: "The exact message text to show to the player.",
+					placeholder: "You hear something moving in the walls.",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -167,7 +157,7 @@ export const MessageEffectSchema = editorDiscriminatedUnion(
 			messageType: z
 				.literal("random")
 				.describe("Shows one random message from a list of possible options."),
-			options: editorStringList(
+			options: editor.stringList(
 				{
 					title: "Message Options",
 					description: "The possible messages that may be randomly selected and shown to the player.",
@@ -190,16 +180,18 @@ export const MessageEffectSchema = editorDiscriminatedUnion(
 			messageType: z
 				.literal("append-room-description")
 				.describe("Adds extra text to the current room description output."),
-			text: editorMessage({
-				title: "Appended Text",
-				description: "The text to append to the room description.",
-				placeholder: "A thin trail of dust leads toward the cellar door.",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			text: editor
+				.message({
+					title: "Appended Text",
+					description: "The text to append to the room description.",
+					placeholder: "A thin trail of dust leads toward the cellar door.",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 	]),
 	{
@@ -212,12 +204,12 @@ export const MessageEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const FlagEffectSchema = editorDiscriminatedUnion(
+export const FlagEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("flag").describe("Changes a boolean world or game-state flag."),
 			operation: z.literal("set").describe("Sets a flag to a specific boolean value."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The unique flag key to update, such as kitchen.appleOnTable.",
 				layout: {
@@ -225,7 +217,7 @@ export const FlagEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			value: editorBoolean({
+			value: editor.boolean({
 				title: "Value",
 				description: "The boolean value to assign to the flag.",
 				layout: {
@@ -240,7 +232,7 @@ export const FlagEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("toggle")
 				.describe("Flips a flag from true to false, or from false to true."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The unique flag key to toggle.",
 				layout: {
@@ -253,7 +245,7 @@ export const FlagEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("flag").describe("Changes a boolean world or game-state flag."),
 			operation: z.literal("clear").describe("Removes or resets a flag from the game state."),
-			flag: editorFlagKey({
+			flag: editor.flagKey({
 				title: "Flag",
 				description: "The unique flag key to clear.",
 				layout: {
@@ -274,12 +266,12 @@ export const FlagEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const CounterEffectSchema = editorDiscriminatedUnion(
+export const CounterEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("counter").describe("Changes a numeric game-state counter."),
 			operation: z.literal("set").describe("Sets a counter to a specific number."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The unique counter key to update, such as library.timesVisited.",
 				layout: {
@@ -287,7 +279,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			value: editorNumber({
+			value: editor.number({
 				title: "Value",
 				description: "The exact numeric value to assign to the counter.",
 				layout: {
@@ -300,7 +292,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("counter").describe("Changes a numeric game-state counter."),
 			operation: z.literal("increase").describe("Increases a counter by a specific amount."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The unique counter key to increase.",
 				layout: {
@@ -308,7 +300,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			amount: editorNumber({
+			amount: editor.number({
 				title: "Amount",
 				description: "The amount to add to the counter.",
 				layout: {
@@ -321,7 +313,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("counter").describe("Changes a numeric game-state counter."),
 			operation: z.literal("decrease").describe("Decreases a counter by a specific amount."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The unique counter key to decrease.",
 				layout: {
@@ -329,7 +321,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			amount: editorNumber({
+			amount: editor.number({
 				title: "Amount",
 				description: "The amount to subtract from the counter.",
 				layout: {
@@ -344,7 +336,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("reset")
 				.describe("Resets a counter back to its default value, usually zero."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The unique counter key to reset.",
 				layout: {
@@ -359,7 +351,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("clamp")
 				.describe("Restricts a counter so it stays between a minimum and maximum value."),
-			counter: editorCounterKey({
+			counter: editor.counterKey({
 				title: "Counter",
 				description: "The unique counter key to clamp.",
 				layout: {
@@ -367,7 +359,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			min: editorNumber({
+			min: editor.number({
 				title: "Minimum",
 				description: "The minimum allowed value for the counter.",
 				layout: {
@@ -375,7 +367,7 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 					order: 2,
 				},
 			}),
-			max: editorNumber({
+			max: editor.number({
 				title: "Maximum",
 				description: "The maximum allowed value for the counter.",
 				layout: {
@@ -396,12 +388,12 @@ export const CounterEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const InventoryEffectSchema = editorDiscriminatedUnion(
+export const InventoryEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("add").describe("Adds an item to the player's inventory."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to add to the player's inventory.",
 				layout: {
@@ -414,7 +406,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("remove").describe("Removes an item from the player's inventory."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to remove from the player's inventory.",
 				layout: {
@@ -429,22 +421,24 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("remove-all-with-tag")
 				.describe("Removes every inventory item that has a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The item tag used to decide which inventory items should be removed.",
-				placeholder: "food",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The item tag used to decide which inventory items should be removed.",
+					placeholder: "food",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("inventory").describe("Changes the player's inventory."),
 			operation: z.literal("replace").describe("Replaces one inventory item with another."),
-			fromItemId: editorReference("item", {
+			fromItemId: editor.reference("item", {
 				title: "From Item",
 				description: "The id of the inventory item to remove.",
 				layout: {
@@ -452,7 +446,7 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			toItemId: editorReference("item", {
+			toItemId: editor.reference("item", {
 				title: "To Item",
 				description: "The id of the inventory item to add in its place.",
 				layout: {
@@ -472,12 +466,12 @@ export const InventoryEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ItemLocationEffectSchema = editorDiscriminatedUnion(
+export const ItemLocationEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("move-to-room").describe("Moves an item to a specific room."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to move.",
 				layout: {
@@ -485,7 +479,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room where the item should be moved.",
 				layout: {
@@ -500,7 +494,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("move-to-current-room")
 				.describe("Moves an item to the player's current room."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to move into the current room.",
 				layout: {
@@ -515,7 +509,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("place-on-surface")
 				.describe("Places an item on a surface, such as a table, shelf, desk, or altar."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to place.",
 				layout: {
@@ -523,7 +517,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			surfaceId: editorReference("surface", {
+			surfaceId: editor.reference("surface", {
 				title: "Surface",
 				description: "The id of the surface where the item should be placed.",
 				layout: {
@@ -538,7 +532,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("place-in-container")
 				.describe("Places an item inside a container, such as a box, chest, drawer, or bag."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to place.",
 				layout: {
@@ -546,7 +540,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			containerId: editorReference("container", {
+			containerId: editor.reference("container", {
 				title: "Container",
 				description: "The id of the container where the item should be placed.",
 				layout: {
@@ -559,7 +553,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("give-to-npc").describe("Moves an item into an NPC's possession."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to give to the NPC.",
 				layout: {
@@ -567,7 +561,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC who should receive the item.",
 				layout: {
@@ -584,7 +578,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 				.describe(
 					"Hides an item so it is no longer discoverable or visible through normal interactions.",
 				),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to hide.",
 				layout: {
@@ -599,7 +593,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("reveal")
 				.describe("Reveals a hidden item so it can be discovered or interacted with again."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to reveal.",
 				layout: {
@@ -614,7 +608,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("destroy")
 				.describe("Removes an item from the game world permanently or semi-permanently."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to destroy.",
 				layout: {
@@ -627,7 +621,7 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("item-location").describe("Changes where an item exists in the world."),
 			operation: z.literal("create").describe("Creates or spawns an item into the game world."),
-			itemId: editorReference("item", {
+			itemId: editor.reference("item", {
 				title: "Item",
 				description: "The id of the item to create or spawn.",
 				layout: {
@@ -635,16 +629,17 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			locationId: editorInput({
-				title: "Location ID",
-				description:
-					"The optional id of the room, surface, container, NPC, or other location where the item should appear.",
-				placeholder: "kitchen",
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			})
+			locationId: editor
+				.input({
+					title: "Location ID",
+					description:
+						"The optional id of the room, surface, container, NPC, or other location where the item should appear.",
+					placeholder: "kitchen",
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
 				.min(1)
 				.optional(),
 		}),
@@ -659,13 +654,13 @@ export const ItemLocationEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ObjectStateEffectSchema = editorDiscriminatedUnion(
+export const ObjectStateEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z
 				.literal("object-state")
 				.describe("Changes the state of a world object, feature, container, surface, door, or item."),
-			operation: editorSelect(
+			operation: editor.select(
 				z.enum([
 					"open",
 					"close",
@@ -695,7 +690,7 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 					],
 				},
 			),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The id of the object whose state should change.",
 				layout: {
@@ -710,7 +705,7 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 				.literal("object-state")
 				.describe("Changes the state of a world object, feature, container, surface, door, or item."),
 			operation: z.literal("set-custom").describe("Sets a custom state key on an object."),
-			objectId: editorReference("object", {
+			objectId: editor.reference("object", {
 				title: "Object",
 				description: "The id of the object whose custom state should change.",
 				layout: {
@@ -718,16 +713,18 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			key: editorInput({
-				title: "Key",
-				description: "The custom state key to set on the object.",
-				placeholder: "freshness",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			key: editor
+				.input({
+					title: "Key",
+					description: "The custom state key to set on the object.",
+					placeholder: "freshness",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 			value: StateValueSchema.describe("The custom value to assign to the object's state key."),
 		}),
 	]),
@@ -742,12 +739,12 @@ export const ObjectStateEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const RoomEffectSchema = editorDiscriminatedUnion(
+export const RoomEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("move-player").describe("Moves the player directly to a specific room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room where the player should be moved.",
 				layout: {
@@ -762,7 +759,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("set-description-variant")
 				.describe("Forces or selects a specific description variant for a room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room whose description variant should change.",
 				layout: {
@@ -770,21 +767,23 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			variantId: editorInput({
-				title: "Variant ID",
-				description: "The id of the description variant to activate or select.",
-				placeholder: "after-rats-arrive",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			variantId: editor
+				.input({
+					title: "Variant ID",
+					description: "The id of the description variant to activate or select.",
+					placeholder: "after-rats-arrive",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
-			operation: editorSelect(z.enum(["reveal-exit", "hide-exit", "lock-exit", "unlock-exit"]), {
+			operation: editor.select(z.enum(["reveal-exit", "hide-exit", "lock-exit", "unlock-exit"]), {
 				title: "Exit Operation",
 				description: "Changes whether an exit is visible or usable.",
 				options: [
@@ -794,7 +793,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					{label: "Unlock Exit", value: "unlock-exit"},
 				],
 			}),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room containing the exit.",
 				layout: {
@@ -802,7 +801,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					order: 2,
 				},
 			}),
-			direction: editorDirection({
+			direction: editor.direction({
 				title: "Direction",
 				description: "The direction of the exit to modify, such as n, south, or up.",
 				layout: {
@@ -815,7 +814,7 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("add-tag").describe("Adds a tag to a room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room that should receive the tag.",
 				layout: {
@@ -823,22 +822,24 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			tag: editorInput({
-				title: "Tag",
-				description: "The room tag to add.",
-				placeholder: "dark",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The room tag to add.",
+					placeholder: "dark",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
 			type: z.literal("room").describe("Changes room-level state or moves the player between rooms."),
 			operation: z.literal("remove-tag").describe("Removes a tag from a room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room that should lose the tag.",
 				layout: {
@@ -846,16 +847,18 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			tag: editorInput({
-				title: "Tag",
-				description: "The room tag to remove.",
-				placeholder: "dark",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The room tag to remove.",
+					placeholder: "dark",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 	]),
 	{
@@ -868,14 +871,14 @@ export const RoomEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const NpcEffectSchema = editorDiscriminatedUnion(
+export const NpcEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("move-to-room").describe("Moves an NPC to a specific room."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to move.",
 				layout: {
@@ -883,7 +886,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The id of the room where the NPC should be moved.",
 				layout: {
@@ -900,7 +903,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("move-to-current-room")
 				.describe("Moves an NPC to the player's current room."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to move into the current room.",
 				layout: {
@@ -915,7 +918,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("remove").describe("Removes an NPC from the active game world."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to remove.",
 				layout: {
@@ -930,7 +933,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
 			operation: z.literal("set-mood").describe("Sets the NPC's current mood or emotional state."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose mood should change.",
 				layout: {
@@ -938,16 +941,18 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			mood: editorInput({
-				title: "Mood",
-				description: "The new mood value for the NPC, such as friendly, afraid, or angry.",
-				placeholder: "friendly",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			}).min(1),
+			mood: editor
+				.input({
+					title: "Mood",
+					description: "The new mood value for the NPC, such as friendly, afraid, or angry.",
+					placeholder: "friendly",
+					required: true,
+					layout: {
+						width: "half",
+						order: 2,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -957,7 +962,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("increase-trust")
 				.describe("Increases an NPC's trust, affinity, or relationship score."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose trust should increase.",
 				layout: {
@@ -965,7 +970,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			amount: editorNumber({
+			amount: editor.number({
 				title: "Amount",
 				description: "The amount of trust to add.",
 				layout: {
@@ -982,7 +987,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("decrease-trust")
 				.describe("Decreases an NPC's trust, affinity, or relationship score."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC whose trust should decrease.",
 				layout: {
@@ -990,7 +995,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			amount: editorNumber({
+			amount: editor.number({
 				title: "Amount",
 				description: "The amount of trust to subtract.",
 				layout: {
@@ -1004,7 +1009,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 			type: z
 				.literal("npc")
 				.describe("Changes an NPC's location, behavior, relationship, or dialogue state."),
-			operation: editorSelect(
+			operation: editor.select(
 				z.enum(["make-hostile", "make-friendly", "start-dialogue", "end-dialogue"]),
 				{
 					title: "NPC Operation",
@@ -1017,7 +1022,7 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 					],
 				},
 			),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The id of the NPC to update.",
 				layout: {
@@ -1038,14 +1043,14 @@ export const NpcEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const EventEffectSchema = editorDiscriminatedUnion(
+export const EventEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("event").describe("Schedules, cancels, delays, or repeats authored events."),
 			operation: z
 				.literal("schedule")
 				.describe("Schedules an authored event to run at a later time or immediately."),
-			eventId: editorReference("event", {
+			eventId: editor.reference("event", {
 				title: "Event",
 				description: "The id of the authored event to schedule.",
 				layout: {
@@ -1053,20 +1058,21 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			instanceId: editorInput({
-				title: "Instance ID",
-				description:
-					"An optional unique id for this scheduled event instance. Use this when you may need to cancel or delay this exact instance later.",
-				placeholder: "rats-arrive-instance",
-				layout: {
-					width: "full",
-					order: 2,
-				},
-			})
+			instanceId: editor
+				.input({
+					title: "Instance ID",
+					description:
+						"An optional unique id for this scheduled event instance. Use this when you may need to cancel or delay this exact instance later.",
+					placeholder: "rats-arrive-instance",
+					layout: {
+						width: "full",
+						order: 2,
+					},
+				})
 				.min(1)
 				.optional(),
 			timing: EffectTimingSchema.describe("When the authored event should run."),
-			cancelIf: editorConditionList(ConditionUsageSchema, {
+			cancelIf: editor.conditionList(ConditionUsageSchema, {
 				title: "Cancel If",
 				description: "Conditions that cancel this scheduled event instance before it runs.",
 				layout: {
@@ -1074,7 +1080,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 4,
 				},
 			}),
-			tags: editorTagList("events", {
+			tags: editor.tagList("events", {
 				title: "Tags",
 				description: "Tags used to organize, find, or cancel groups of scheduled event instances.",
 				layout: {
@@ -1089,16 +1095,18 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("cancel")
 				.describe("Cancels one scheduled event instance by its instance id."),
-			instanceId: editorInput({
-				title: "Instance ID",
-				description: "The unique id of the scheduled event instance to cancel.",
-				placeholder: "rats-arrive-instance",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			instanceId: editor
+				.input({
+					title: "Instance ID",
+					description: "The unique id of the scheduled event instance to cancel.",
+					placeholder: "rats-arrive-instance",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1106,7 +1114,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("cancel-by-event-id")
 				.describe("Cancels all scheduled instances of a specific authored event."),
-			eventId: editorReference("event", {
+			eventId: editor.reference("event", {
 				title: "Event",
 				description: "The authored event id whose scheduled instances should be cancelled.",
 				layout: {
@@ -1121,16 +1129,18 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("cancel-with-tag")
 				.describe("Cancels all scheduled event instances that have a specific tag."),
-			tag: editorInput({
-				title: "Tag",
-				description: "The tag used to find scheduled event instances to cancel.",
-				placeholder: "rats",
-				required: true,
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			}).min(1),
+			tag: editor
+				.input({
+					title: "Tag",
+					description: "The tag used to find scheduled event instances to cancel.",
+					placeholder: "rats",
+					required: true,
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
+				.min(1),
 		}),
 
 		z.object({
@@ -1138,17 +1148,19 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("delay")
 				.describe("Pushes a scheduled event instance further into the future."),
-			instanceId: editorInput({
-				title: "Instance ID",
-				description: "The unique id of the scheduled event instance to delay.",
-				placeholder: "rats-arrive-instance",
-				required: true,
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).min(1),
-			turns: editorPositiveInteger({
+			instanceId: editor
+				.input({
+					title: "Instance ID",
+					description: "The unique id of the scheduled event instance to delay.",
+					placeholder: "rats-arrive-instance",
+					required: true,
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.min(1),
+			turns: editor.positiveInteger({
 				title: "Turns",
 				description: "The number of additional turns to delay the scheduled event instance.",
 				layout: {
@@ -1163,7 +1175,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("repeat")
 				.describe("Schedules an authored event to repeat every set number of turns."),
-			eventId: editorReference("event", {
+			eventId: editor.reference("event", {
 				title: "Event",
 				description: "The id of the authored event to repeat.",
 				layout: {
@@ -1171,7 +1183,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 1,
 				},
 			}),
-			everyTurns: editorPositiveInteger({
+			everyTurns: editor.positiveInteger({
 				title: "Every Turns",
 				description: "How many turns should pass between each repeated run.",
 				layout: {
@@ -1179,16 +1191,18 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 2,
 				},
 			}),
-			limit: editorPositiveInteger({
-				title: "Limit",
-				description:
-					"The maximum number of times the event may repeat. If omitted, it repeats until cancelled.",
-				layout: {
-					width: "half",
-					order: 3,
-				},
-			}).optional(),
-			cancelIf: editorConditionList(ConditionUsageSchema, {
+			limit: editor
+				.positiveInteger({
+					title: "Limit",
+					description:
+						"The maximum number of times the event may repeat. If omitted, it repeats until cancelled.",
+					layout: {
+						width: "half",
+						order: 3,
+					},
+				})
+				.optional(),
+			cancelIf: editor.conditionList(ConditionUsageSchema, {
 				title: "Cancel If",
 				description: "Conditions that cancel this repeating scheduled event.",
 				layout: {
@@ -1196,7 +1210,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 					order: 4,
 				},
 			}),
-			tags: editorTagList("events", {
+			tags: editor.tagList("events", {
 				title: "Tags",
 				description: "Tags used to organize, find, or cancel this repeating scheduled event.",
 				layout: {
@@ -1217,7 +1231,7 @@ export const EventEffectSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const FlowEffectSchema = editorDiscriminatedUnion(
+export const FlowEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("flow").describe("Controls how command processing continues after effects run."),
@@ -1254,14 +1268,16 @@ export const FlowEffectSchema = editorDiscriminatedUnion(
 			operation: z
 				.literal("consume-extra-turn")
 				.describe("Consumes additional turns after this command resolves."),
-			turns: editorPositiveInteger({
-				title: "Turns",
-				description: "The number of extra turns to consume.",
-				layout: {
-					width: "half",
-					order: 1,
-				},
-			}).default(1),
+			turns: editor
+				.positiveInteger({
+					title: "Turns",
+					description: "The number of extra turns to consume.",
+					layout: {
+						width: "half",
+						order: 1,
+					},
+				})
+				.default(1),
 		}),
 	]),
 	{
@@ -1335,16 +1351,16 @@ const SingleEffectSchema = z.union([
 ]);
 
 export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.lazy(() =>
-	editorDiscriminatedUnion(
+	editor.discriminatedUnion(
 		z
 			.union([
 				SingleEffectSchema,
 
-				editorObject(
+				editor.object(
 					z.object({
 						...EffectIdentitySchema.shape,
 						type: z.literal("group").describe("Runs multiple effects together as one effect."),
-						effects: editorEffects(EffectReferenceSchema, {
+						effects: editor.effects(EffectReferenceSchema, {
 							title: "Effects",
 							description:
 								"The effect references to run in order. Later effects can depend on state changed by earlier effects.",
@@ -1369,13 +1385,13 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 					},
 				),
 
-				editorObject(
+				editor.object(
 					z.object({
 						...EffectIdentitySchema.shape,
 						type: z
 							.literal("conditional")
 							.describe("Runs different effects depending on whether conditions pass."),
-						when: editorConditionList(ConditionUsageSchema, {
+						when: editor.conditionList(ConditionUsageSchema, {
 							title: "When",
 							description: "The conditions that must pass for the then effects to run.",
 							layout: {
@@ -1383,7 +1399,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 								order: 1,
 							},
 						}),
-						then: editorEffects(EffectReferenceSchema, {
+						then: editor.effects(EffectReferenceSchema, {
 							title: "Then",
 							description: "The effect references to run when all conditions pass.",
 							layout: {
@@ -1391,7 +1407,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 								order: 2,
 							},
 						}),
-						otherwise: editorEffects(EffectReferenceSchema, {
+						otherwise: editor.effects(EffectReferenceSchema, {
 							title: "Otherwise",
 							description: "The effect references to run when the conditions do not pass.",
 							layout: {
@@ -1426,7 +1442,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 );
 
 export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
-	editorDiscriminatedUnion(
+	editor.discriminatedUnion(
 		z
 			.union([EffectReferenceSchema, WorldEffectSchema])
 			.describe(
@@ -1446,9 +1462,9 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 
 export const EffectUsageSchema = EffectReferenceSchema;
 
-export const AuthoredEventSchema = editorObject(
+export const AuthoredEventSchema = editor.object(
 	z.object({
-		id: editorId("event", {
+		id: editor.id("event", {
 			title: "Event ID",
 			description:
 				"The unique id of this authored event. Event effects reference this id when scheduling, repeating, or cancelling events.",
@@ -1459,28 +1475,32 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The human-readable name of this authored event for the editor.",
-			placeholder: "Rats Arrive",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The human-readable name of this authored event for the editor.",
+				placeholder: "Rats Arrive",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Editor-facing notes explaining what this event does and when it should be used.",
-			placeholder: "Runs when the rats arrive after the player waits too long.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "Editor-facing notes explaining what this event does and when it should be used.",
+				placeholder: "Runs when the rats arrive after the player waits too long.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 
-		conditions: editorConditionList(ConditionUsageSchema, {
+		conditions: editor.conditionList(ConditionUsageSchema, {
 			title: "Conditions",
 			description:
 				"Conditions that must pass when this event tries to run. If these fail, the event does not apply its effects.",
@@ -1490,7 +1510,7 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		cancelIf: editorConditionList(ConditionUsageSchema, {
+		cancelIf: editor.conditionList(ConditionUsageSchema, {
 			title: "Cancel If",
 			description:
 				"Conditions that cancel this event before it runs. Use this for delayed events that should become invalid if the world changes.",
@@ -1500,7 +1520,7 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		effects: editorEffects(EffectUsageSchema, {
+		effects: editor.effects(EffectUsageSchema, {
 			title: "Effects",
 			description: "The effects this authored event runs when triggered.",
 			layout: {
@@ -1509,7 +1529,7 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		tags: editorTagList("events", {
+		tags: editor.tagList("events", {
 			title: "Tags",
 			description:
 				"Tags used to organize this event in the editor or cancel scheduled instances by group.",
@@ -1519,14 +1539,16 @@ export const AuthoredEventSchema = editorObject(
 			},
 		}),
 
-		once: editorBoolean({
-			title: "Run Once",
-			description: "Whether this event should only be allowed to run once per playthrough.",
-			layout: {
-				width: "half",
-				order: 8,
-			},
-		}).default(false),
+		once: editor
+			.boolean({
+				title: "Run Once",
+				description: "Whether this event should only be allowed to run once per playthrough.",
+				layout: {
+					width: "half",
+					order: 8,
+				},
+			})
+			.default(false),
 	}),
 	{
 		title: "Authored Event",
@@ -1546,9 +1568,9 @@ export const AuthoredEventSchema = editorObject(
 
 export type AuthoredEvent = z.infer<typeof AuthoredEventSchema>;
 
-export const ScheduledEventInstanceSchema = editorObject(
+export const ScheduledEventInstanceSchema = editor.object(
 	z.object({
-		id: editorId("event-instance", {
+		id: editor.id("event-instance", {
 			title: "Instance ID",
 			description: "The unique runtime id for this scheduled event instance.",
 			required: true,
@@ -1558,7 +1580,7 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}),
 
-		eventId: editorReference("event", {
+		eventId: editor.reference("event", {
 			title: "Event",
 			description: "The authored event id this scheduled instance will run.",
 			layout: {
@@ -1567,7 +1589,7 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}),
 
-		createdAtTurn: editorNonNegativeInteger({
+		createdAtTurn: editor.nonNegativeInteger({
 			title: "Created At Turn",
 			description: "The global turn count when this event instance was scheduled.",
 			layout: {
@@ -1576,53 +1598,63 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}),
 
-		triggerAtTurn: editorNonNegativeInteger({
-			title: "Trigger At Turn",
-			description: "The global turn count when this event instance should run.",
-			layout: {
-				width: "half",
-				order: 4,
-			},
-		}).optional(),
+		triggerAtTurn: editor
+			.nonNegativeInteger({
+				title: "Trigger At Turn",
+				description: "The global turn count when this event instance should run.",
+				layout: {
+					width: "half",
+					order: 4,
+				},
+			})
+			.optional(),
 
-		remainingTurns: editorNonNegativeInteger({
-			title: "Remaining Turns",
-			description:
-				"The number of turns remaining before this event instance should run. Useful for countdown-style scheduling.",
-			layout: {
-				width: "half",
-				order: 5,
-			},
-		}).optional(),
+		remainingTurns: editor
+			.nonNegativeInteger({
+				title: "Remaining Turns",
+				description:
+					"The number of turns remaining before this event instance should run. Useful for countdown-style scheduling.",
+				layout: {
+					width: "half",
+					order: 5,
+				},
+			})
+			.optional(),
 
-		repeatEveryTurns: editorPositiveInteger({
-			title: "Repeat Every Turns",
-			description: "How often this scheduled event instance should repeat, measured in turns.",
-			layout: {
-				width: "half",
-				order: 6,
-			},
-		}).optional(),
+		repeatEveryTurns: editor
+			.positiveInteger({
+				title: "Repeat Every Turns",
+				description: "How often this scheduled event instance should repeat, measured in turns.",
+				layout: {
+					width: "half",
+					order: 6,
+				},
+			})
+			.optional(),
 
-		repeatLimit: editorPositiveInteger({
-			title: "Repeat Limit",
-			description: "The maximum number of times this scheduled event instance may repeat.",
-			layout: {
-				width: "half",
-				order: 7,
-			},
-		}).optional(),
+		repeatLimit: editor
+			.positiveInteger({
+				title: "Repeat Limit",
+				description: "The maximum number of times this scheduled event instance may repeat.",
+				layout: {
+					width: "half",
+					order: 7,
+				},
+			})
+			.optional(),
 
-		repeatCount: editorNonNegativeInteger({
-			title: "Repeat Count",
-			description: "How many times this scheduled event instance has already repeated.",
-			layout: {
-				width: "half",
-				order: 8,
-			},
-		}).default(0),
+		repeatCount: editor
+			.nonNegativeInteger({
+				title: "Repeat Count",
+				description: "How many times this scheduled event instance has already repeated.",
+				layout: {
+					width: "half",
+					order: 8,
+				},
+			})
+			.default(0),
 
-		cancelIf: editorConditionList(ConditionUsageSchema, {
+		cancelIf: editor.conditionList(ConditionUsageSchema, {
 			title: "Cancel If",
 			description:
 				"Runtime cancellation conditions checked before this scheduled event instance runs.",
@@ -1632,7 +1664,7 @@ export const ScheduledEventInstanceSchema = editorObject(
 			},
 		}),
 
-		tags: editorTagList("events", {
+		tags: editor.tagList("events", {
 			title: "Tags",
 			description: "Runtime tags used to find, organize, delay, or cancel scheduled event instances.",
 			layout: {

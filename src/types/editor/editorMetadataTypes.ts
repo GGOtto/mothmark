@@ -127,7 +127,6 @@ export type EditorFieldLayoutMetadata = {
 export type EditorFieldImportance = "primary" | "secondary" | "advanced" | "internal";
 
 export type EditorDisclosure = {
-	defaultCollapsed?: boolean;
 	collapsible?: boolean;
 	preview?: "none" | "summary" | "count" | "first-item" | "custom";
 	advanced?: boolean;
@@ -174,6 +173,7 @@ export type EditorControlAppearance = {
 	tone?: EditorControlTone;
 	chrome?: EditorControlChrome;
 	size?: EditorControlSize;
+	defaultCollapsed?: boolean;
 };
 
 export type ResolvedEditorControlAppearance = {
@@ -182,6 +182,7 @@ export type ResolvedEditorControlAppearance = {
 	tone: EditorControlTone;
 	chrome: EditorControlChrome;
 	size: EditorControlSize;
+	defaultCollapsed: boolean;
 };
 
 export const DEFAULT_EDITOR_CONTROL_APPEARANCE: ResolvedEditorControlAppearance = {
@@ -190,16 +191,19 @@ export const DEFAULT_EDITOR_CONTROL_APPEARANCE: ResolvedEditorControlAppearance 
 	tone: "default",
 	chrome: "field",
 	size: "md",
+	defaultCollapsed: false,
 };
 
 export function resolveEditorControlAppearance(
 	contextAppearance?: EditorControlAppearance,
-	metadataAppearance?: EditorControlAppearance,
+	controlAppearance?: EditorControlAppearance,
 ): ResolvedEditorControlAppearance {
 	return {
 		...DEFAULT_EDITOR_CONTROL_APPEARANCE,
 		...contextAppearance,
-		...metadataAppearance,
+		// A control's metadata is the most specific appearance source. Keep it
+		// last so individual fields can override their inherited editor context.
+		...controlAppearance,
 	};
 }
 

@@ -73,7 +73,7 @@ export function FieldShell({
 		disclosureValue.path,
 		"__control__",
 	);
-	const isOpen = savedOpenState ?? !disclosureValue?.metadata.disclosure?.defaultCollapsed;
+	const isOpen = savedOpenState ?? !appearance.defaultCollapsed;
 	const classes = [
 		"universalField",
 		`universalField--theme-${appearance.theme}`,

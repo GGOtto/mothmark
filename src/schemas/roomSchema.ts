@@ -321,8 +321,6 @@ export const RoomFeatureSchema = editor.object(
 				},
 			},
 			description: {
-				title: "Description",
-				description: "The description shown when the player examines or interacts with this feature.",
 				layout: {
 					width: "full",
 					order: 4,
@@ -347,6 +345,7 @@ export const RoomSchema = editor.object(
 			description: "The unique id used to identify this room.",
 			required: true,
 			layout: {
+				group: "details",
 				width: "half",
 				order: -1,
 			},
@@ -359,6 +358,7 @@ export const RoomSchema = editor.object(
 				placeholder: "Kitchen",
 				required: true,
 				layout: {
+					group: "details",
 					width: "half",
 					order: 2,
 				},
@@ -366,7 +366,7 @@ export const RoomSchema = editor.object(
 			.min(1),
 
 		description: DescriptionSchema.describe(
-			"The description shown when the player enters or looks around this room.",
+			"The description shown when the player enters or looks around this room. Please tell me this isn't displaying",
 		),
 
 		shortDescription: editor
@@ -375,8 +375,13 @@ export const RoomSchema = editor.object(
 				description: "Optional shorter description used after the room has already been visited.",
 				placeholder: "You are back in the kitchen.",
 				layout: {
+					group: "description",
 					width: "full",
 					order: 4,
+				},
+				appearance: {
+					chrome: "collapse",
+					defaultCollapsed: true,
 				},
 			})
 			.default(""),
@@ -385,6 +390,7 @@ export const RoomSchema = editor.object(
 			title: "Aliases",
 			description: "Alternative names for this room.",
 			layout: {
+				group: "details",
 				width: "full",
 				order: 5,
 			},
@@ -394,6 +400,7 @@ export const RoomSchema = editor.object(
 			title: "Tags",
 			description: "Tags used to group this room, such as indoors, outdoors, safe, dark, or kitchen.",
 			layout: {
+				group: "details",
 				width: "full",
 				order: 6,
 			},
@@ -404,6 +411,7 @@ export const RoomSchema = editor.object(
 				title: "Features",
 				description: "Interactive room features that exist inside this room.",
 				layout: {
+					group: "features",
 					width: "full",
 					order: 7,
 				},
@@ -434,6 +442,7 @@ export const RoomSchema = editor.object(
 			title: "Visited Flag",
 			description: "Optional flag set when the player visits this room.",
 			layout: {
+				group: "availability",
 				width: "half",
 				order: 9,
 			},
@@ -443,6 +452,7 @@ export const RoomSchema = editor.object(
 			title: "Viewed Flag",
 			description: "Optional flag set when this room's description is shown.",
 			layout: {
+				group: "availability",
 				width: "half",
 				order: 10,
 			},
@@ -453,6 +463,7 @@ export const RoomSchema = editor.object(
 			description:
 				"The room is available only when all of these conditions pass. Passages to this room will be blocked.",
 			layout: {
+				group: "availability",
 				width: "full",
 				order: 11,
 			},
@@ -463,9 +474,8 @@ export const RoomSchema = editor.object(
 		description: "A location in the world that the player can visit.",
 		childControls: {
 			description: {
-				title: "Description",
-				description: "The description shown when the player enters or looks around this room.",
 				layout: {
+					group: "description",
 					width: "full",
 					order: 3,
 				},
@@ -474,6 +484,7 @@ export const RoomSchema = editor.object(
 				title: "Position",
 				description: "The room's position in the editor canvas.",
 				layout: {
+					group: "editor",
 					width: "full",
 					order: 8,
 				},
@@ -481,6 +492,44 @@ export const RoomSchema = editor.object(
 					chrome: "compact",
 				},
 			},
+		},
+		features: {
+			layout: "section",
+			groups: [
+				{
+					id: "details",
+					title: "Details",
+					description: "The room's name, identifier, aliases, and tags.",
+					order: 10,
+				},
+				{
+					id: "description",
+					title: "Description",
+					description: "Text used when presenting this room to the player.",
+					order: 20,
+				},
+				{
+					id: "features",
+					title: "Features",
+					description: "Interactive features located in this room.",
+					order: 30,
+				},
+				{
+					id: "availability",
+					title: "Availability",
+					description: "State tracking and conditions that control this room.",
+					order: 40,
+					defaultCollapsed: true,
+				},
+				{
+					id: "editor",
+					title: "Editor",
+					description: "Map-editor-specific information.",
+					order: 50,
+					defaultCollapsed: true,
+					importance: "advanced",
+				},
+			],
 		},
 		duplicate: {
 			duplicateBehavior: "with-new-id",
@@ -497,6 +546,7 @@ export const ConnectionSchema = editor.object(
 			description: "The unique id used to identify this connection.",
 			required: true,
 			layout: {
+				group: "details",
 				width: "half",
 				order: 1,
 			},
@@ -509,6 +559,7 @@ export const ConnectionSchema = editor.object(
 				placeholder: "Connection Name",
 				required: true,
 				layout: {
+					group: "details",
 					width: "half",
 					order: 2,
 				},
@@ -520,6 +571,7 @@ export const ConnectionSchema = editor.object(
 			title: "From Room",
 			description: "The id of the room where this connection starts.",
 			layout: {
+				group: "route",
 				width: "half",
 				order: 2,
 			},
@@ -529,6 +581,7 @@ export const ConnectionSchema = editor.object(
 			title: "To Room",
 			description: "The id of the room where this connection leads.",
 			layout: {
+				group: "route",
 				width: "half",
 				order: 3,
 			},
@@ -550,6 +603,7 @@ export const ConnectionSchema = editor.object(
 			title: "Aliases",
 			description: "Alternative words or phrases that can trigger travel through this connection.",
 			layout: {
+				group: "details",
 				width: "full",
 				order: 7,
 			},
@@ -561,6 +615,7 @@ export const ConnectionSchema = editor.object(
 				description: "Optional description of the exit or passage.",
 				placeholder: "A narrow stairway leads down into the cellar.",
 				layout: {
+					group: "messages",
 					width: "full",
 					order: 8,
 				},
@@ -573,6 +628,7 @@ export const ConnectionSchema = editor.object(
 				description: "Optional message shown when this connection exists but cannot be traveled.",
 				placeholder: "The way is blocked.",
 				layout: {
+					group: "messages",
 					width: "full",
 					order: 9,
 				},
@@ -583,6 +639,7 @@ export const ConnectionSchema = editor.object(
 			title: "Visible When",
 			description: "The connection is visible only when all of these conditions pass.",
 			layout: {
+				group: "availability",
 				width: "full",
 				order: 10,
 			},
@@ -592,6 +649,7 @@ export const ConnectionSchema = editor.object(
 			title: "Travel Allowed When",
 			description: "The connection can be traveled only when all of these conditions pass.",
 			layout: {
+				group: "availability",
 				width: "full",
 				order: 11,
 			},
@@ -601,6 +659,7 @@ export const ConnectionSchema = editor.object(
 			title: "Locked When",
 			description: "The connection is considered locked when any of these conditions pass.",
 			layout: {
+				group: "availability",
 				width: "full",
 				order: 12,
 			},
@@ -629,6 +688,7 @@ export const ConnectionSchema = editor.object(
 				description:
 					"The direction the player uses to travel from the starting room to the destination room.",
 				layout: {
+					group: "route",
 					width: "half",
 					order: 4,
 				},
@@ -638,6 +698,7 @@ export const ConnectionSchema = editor.object(
 				description:
 					"The direction the player uses to travel back from the destination room to the starting room.",
 				layout: {
+					group: "route",
 					width: "half",
 					order: 5,
 				},
@@ -647,6 +708,7 @@ export const ConnectionSchema = editor.object(
 				description:
 					"Controls whether this connection can be traveled both ways, only forwards, only backwards, or not at all.",
 				layout: {
+					group: "route",
 					width: "full",
 					order: 6,
 				},
@@ -655,10 +717,48 @@ export const ConnectionSchema = editor.object(
 				title: "State",
 				description: "Initial state for this connection or exit, such as locked or open.",
 				layout: {
+					group: "state",
 					width: "full",
 					order: 13,
 				},
 			},
+		},
+		features: {
+			layout: "section",
+			groups: [
+				{
+					id: "route",
+					title: "Route",
+					description: "The connected rooms, travel directions, and permitted pathway.",
+					order: 10,
+				},
+				{
+					id: "details",
+					title: "Details",
+					description: "The connection's identifier, name, and travel aliases.",
+					order: 20,
+				},
+				{
+					id: "messages",
+					title: "Messages",
+					description: "Player-facing descriptions and blocked-travel feedback.",
+					order: 30,
+				},
+				{
+					id: "availability",
+					title: "Availability",
+					description: "Conditions controlling visibility, travel, and locking.",
+					order: 40,
+					defaultCollapsed: true,
+				},
+				{
+					id: "state",
+					title: "State",
+					description: "The connection's initial object state.",
+					order: 50,
+					defaultCollapsed: true,
+				},
+			],
 		},
 	},
 );

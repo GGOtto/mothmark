@@ -7,43 +7,26 @@ import {ObjectStateDefaultsSchema, DefaultObjectStateDefaults} from "./objectSta
 import {RoomSchema, ConnectionSchema} from "./roomSchema";
 import {docify} from "../utils/docify";
 import {idValue, isID} from "../utils/idUtils";
-import {
-	editorAliasList,
-	editorArray,
-	editorBoolean,
-	editorConditionList,
-	editorDiscriminatedUnion,
-	editorReference,
-	editorFlagKey,
-	editorId,
-	editorInput,
-	editorMessage,
-	editorMultiSelect,
-	editorNumber,
-	editorObject,
-	editorSelect,
-	editorTagList,
-	editorTextarea,
-} from "@/schemas/editorSchemaHelpers";
+import {editor} from "@/schemas/editorSchemaHelpers";
 
-export const IdSchema = editorId("object", {
+export const IdSchema = editor.id("object", {
 	title: "ID",
 	description: "A stable unique id used by schemas, conditions, effects, and editor references.",
 });
 
-export const AliasListSchema = editorAliasList({
+export const AliasListSchema = editor.aliasList({
 	title: "Aliases",
 	description: "Alternative names the player can use to refer to this entity.",
 });
 
-export const TagListSchema = editorTagList("all", {
+export const TagListSchema = editor.tagList("all", {
 	title: "Tags",
 	description: "Tags used for grouping, filtering, command scopes, and condition/effect targeting.",
 });
 
-export const EntityVisibilitySchema = editorObject(
+export const EntityVisibilitySchema = editor.object(
 	z.object({
-		visibleWhen: editorConditionList(ConditionUsageSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The entity is only visible when all of these conditions pass.",
 			layout: {
@@ -52,7 +35,7 @@ export const EntityVisibilitySchema = editorObject(
 			},
 		}),
 
-		hiddenWhen: editorConditionList(ConditionUsageSchema, {
+		hiddenWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Hidden When",
 			description: "The entity is hidden when any of these conditions pass.",
 			layout: {
@@ -81,9 +64,9 @@ export const DefaultEntityVisibility = {
 	hiddenWhen: [],
 } satisfies z.infer<typeof EntityVisibilitySchema>;
 
-export const InteractionRuleSchema = editorObject(
+export const InteractionRuleSchema = editor.object(
 	z.object({
-		allowedWhen: editorConditionList(ConditionUsageSchema, {
+		allowedWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Allowed When",
 			description: "The interaction is allowed only when all of these conditions pass.",
 			layout: {
@@ -92,7 +75,7 @@ export const InteractionRuleSchema = editorObject(
 			},
 		}),
 
-		blockedWhen: editorConditionList(ConditionUsageSchema, {
+		blockedWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Blocked When",
 			description: "The interaction is blocked when any of these conditions pass.",
 			layout: {
@@ -101,15 +84,17 @@ export const InteractionRuleSchema = editorObject(
 			},
 		}),
 
-		failureMessage: editorMessage({
-			title: "Failure Message",
-			description: "Optional message shown when this interaction is blocked.",
-			placeholder: "You cannot do that right now.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		failureMessage: editor
+			.message({
+				title: "Failure Message",
+				description: "Optional message shown when this interaction is blocked.",
+				placeholder: "You cannot do that right now.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 	}),
 	{
 		title: "Interaction Rule",
@@ -127,7 +112,7 @@ export const DefaultInteractionRule = {
 	failureMessage: "",
 } satisfies z.infer<typeof InteractionRuleSchema>;
 
-export const ItemLocationSchema = editorDiscriminatedUnion(
+export const ItemLocationSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		z.object({
 			type: z.literal("inventory").describe("The item starts in the player's inventory."),
@@ -135,7 +120,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("room").describe("The item starts loose in a room."),
-			roomId: editorReference("room", {
+			roomId: editor.reference("room", {
 				title: "Room",
 				description: "The room where the item starts.",
 				layout: {
@@ -147,7 +132,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("container").describe("The item starts inside a container."),
-			containerId: editorReference("container", {
+			containerId: editor.reference("container", {
 				title: "Container",
 				description: "The container where the item starts.",
 				layout: {
@@ -159,7 +144,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("surface").describe("The item starts on a surface."),
-			surfaceId: editorReference("surface", {
+			surfaceId: editor.reference("surface", {
 				title: "Surface",
 				description: "The surface where the item starts.",
 				layout: {
@@ -171,7 +156,7 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("npc").describe("The item starts held by an NPC."),
-			npcId: editorReference("npc", {
+			npcId: editor.reference("npc", {
 				title: "NPC",
 				description: "The NPC who starts with the item.",
 				layout: {
@@ -183,16 +168,17 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 
 		z.object({
 			type: z.literal("hidden").describe("The item starts hidden from normal discovery."),
-			locationId: editorInput({
-				title: "Associated Location",
-				description:
-					"Optional room, object, surface, container, or NPC associated with the hidden item.",
-				placeholder: "kitchen",
-				layout: {
-					width: "full",
-					order: 1,
-				},
-			})
+			locationId: editor
+				.input({
+					title: "Associated Location",
+					description:
+						"Optional room, object, surface, container, or NPC associated with the hidden item.",
+					placeholder: "kitchen",
+					layout: {
+						width: "full",
+						order: 1,
+					},
+				})
 				.min(1)
 				.optional(),
 		}),
@@ -216,9 +202,9 @@ export const ItemLocationSchema = editorDiscriminatedUnion(
 	},
 );
 
-export const ItemSchema = editorObject(
+export const ItemSchema = editor.object(
 	z.object({
-		id: editorId("item", {
+		id: editor.id("item", {
 			title: "Item ID",
 			description: "The unique id used to identify this item.",
 			required: true,
@@ -228,18 +214,20 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The display name of the item.",
-			placeholder: "Brass Key",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of the item.",
+				placeholder: "Brass Key",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		aliases: editorAliasList({
+		aliases: editor.aliasList({
 			title: "Aliases",
 			description: "Alternative names the player can use for this item.",
 			layout: {
@@ -248,7 +236,7 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		tags: editorTagList("items", {
+		tags: editor.tagList("items", {
 			title: "Tags",
 			description: "Tags used to group this item, such as food, key, tool, weapon, or quest-item.",
 			layout: {
@@ -265,16 +253,18 @@ export const ItemSchema = editorObject(
 			"Where this item starts in the world.",
 		),
 
-		portable: editorBoolean({
-			title: "Portable",
-			description: "Whether the player can normally take this item.",
-			layout: {
-				width: "half",
-				order: 7,
-			},
-		}).default(true),
+		portable: editor
+			.boolean({
+				title: "Portable",
+				description: "Whether the player can normally take this item.",
+				layout: {
+					width: "half",
+					order: 7,
+				},
+			})
+			.default(true),
 
-		visibleWhen: editorConditionList(ConditionUsageSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The item is visible only when all of these conditions pass.",
 			layout: {
@@ -283,7 +273,7 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		takeableWhen: editorConditionList(ConditionUsageSchema, {
+		takeableWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Takeable When",
 			description: "The item can be taken only when all of these conditions pass.",
 			layout: {
@@ -292,7 +282,7 @@ export const ItemSchema = editorObject(
 			},
 		}),
 
-		usableWhen: editorConditionList(ConditionUsageSchema, {
+		usableWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Usable When",
 			description: "The item can be used only when all of these conditions pass.",
 			layout: {
@@ -330,7 +320,7 @@ export const ItemSchema = editorObject(
 	},
 );
 
-export const NpcDispositionSchema = editorSelect(
+export const NpcDispositionSchema = editor.select(
 	z.enum(["neutral", "friendly", "hostile", "afraid", "asleep", "unavailable"]).default("neutral"),
 	{
 		title: "NPC Disposition",
@@ -346,9 +336,9 @@ export const NpcDispositionSchema = editorSelect(
 	},
 );
 
-export const NpcScheduleEntrySchema = editorObject(
+export const NpcScheduleEntrySchema = editor.object(
 	z.object({
-		id: editorId("npc-schedule-entry", {
+		id: editor.id("npc-schedule-entry", {
 			title: "Schedule Entry ID",
 			description: "Unique id for this schedule entry.",
 			required: true,
@@ -358,7 +348,7 @@ export const NpcScheduleEntrySchema = editorObject(
 			},
 		}),
 
-		roomId: editorReference("room", {
+		roomId: editor.reference("room", {
 			title: "Room",
 			description: "The room where the NPC should be for this schedule entry.",
 			layout: {
@@ -367,7 +357,7 @@ export const NpcScheduleEntrySchema = editorObject(
 			},
 		}),
 
-		when: editorConditionList(ConditionUsageSchema, {
+		when: editor.conditionList(ConditionUsageSchema, {
 			title: "When",
 			description: "Conditions that activate this schedule entry.",
 			layout: {
@@ -391,9 +381,9 @@ export const NpcScheduleEntrySchema = editorObject(
 	},
 );
 
-export const NpcSchema = editorObject(
+export const NpcSchema = editor.object(
 	z.object({
-		id: editorId("npc", {
+		id: editor.id("npc", {
 			title: "NPC ID",
 			description: "The unique id used to identify this NPC.",
 			required: true,
@@ -403,18 +393,20 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The display name of the NPC.",
-			placeholder: "The Cook",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of the NPC.",
+				placeholder: "The Cook",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		aliases: editorAliasList({
+		aliases: editor.aliasList({
 			title: "Aliases",
 			description: "Alternative names the player can use for this NPC.",
 			layout: {
@@ -423,7 +415,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		tags: editorTagList("npcs", {
+		tags: editor.tagList("npcs", {
 			title: "Tags",
 			description: "Tags used to group this NPC.",
 			layout: {
@@ -436,7 +428,7 @@ export const NpcSchema = editorObject(
 			"The description shown when the player examines this NPC.",
 		),
 
-		initialRoomId: editorReference("room", {
+		initialRoomId: editor.reference("room", {
 			title: "Initial Room",
 			description: "The room where this NPC starts. Omit if the NPC starts unavailable or hidden.",
 			required: false,
@@ -446,28 +438,32 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		initialMood: editorInput({
-			title: "Initial Mood",
-			description: "The NPC's starting mood value.",
-			placeholder: "neutral",
-			layout: {
-				width: "half",
-				order: 7,
-			},
-		}).default("neutral"),
+		initialMood: editor
+			.input({
+				title: "Initial Mood",
+				description: "The NPC's starting mood value.",
+				placeholder: "neutral",
+				layout: {
+					width: "half",
+					order: 7,
+				},
+			})
+			.default("neutral"),
 
 		initialDisposition: NpcDispositionSchema.describe("The NPC's starting broad disposition."),
 
-		initialTrust: editorNumber({
-			title: "Initial Trust",
-			description: "The NPC's starting trust or affinity score.",
-			layout: {
-				width: "half",
-				order: 9,
-			},
-		}).default(0),
+		initialTrust: editor
+			.number({
+				title: "Initial Trust",
+				description: "The NPC's starting trust or affinity score.",
+				layout: {
+					width: "half",
+					order: 9,
+				},
+			})
+			.default(0),
 
-		initialInventory: editorMultiSelect({
+		initialInventory: editor.multiSelect({
 			title: "Initial Inventory",
 			description: "Item ids this NPC starts with.",
 			entityType: "item",
@@ -477,12 +473,14 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		isDead: editorBoolean({
-			title: "Is Dead",
-			description: "Flag indicating whether the NPC is dead or alive.",
-		}).default(true),
+		isDead: editor
+			.boolean({
+				title: "Is Dead",
+				description: "Flag indicating whether the NPC is dead or alive.",
+			})
+			.default(true),
 
-		visibleWhen: editorConditionList(ConditionUsageSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "The NPC is visible only when all of these conditions pass.",
 			layout: {
@@ -491,7 +489,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		talkableWhen: editorConditionList(ConditionUsageSchema, {
+		talkableWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Talkable When",
 			description: "The NPC can be spoken to only when all of these conditions pass.",
 			layout: {
@@ -500,7 +498,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		diesWhen: editorConditionList(ConditionUsageSchema, {
+		diesWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Dies When",
 			description: "The NPC dies when all these conditions pass.",
 			layout: {
@@ -509,7 +507,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		knownTopics: editorMultiSelect({
+		knownTopics: editor.multiSelect({
 			title: "Known Topics",
 			description: "Topic ids this NPC can discuss.",
 			entityType: "topic",
@@ -519,7 +517,7 @@ export const NpcSchema = editorObject(
 			},
 		}),
 
-		schedule: editorArray(NpcScheduleEntrySchema, {
+		schedule: editor.array(NpcScheduleEntrySchema, {
 			title: "Schedule",
 			description: "Optional conditional room schedule for this NPC.",
 			emptyState: {
@@ -558,9 +556,9 @@ export const NpcSchema = editorObject(
 	},
 );
 
-export const TopicSchema = editorObject(
+export const TopicSchema = editor.object(
 	z.object({
-		id: editorId("topic", {
+		id: editor.id("topic", {
 			title: "Topic ID",
 			description: "The unique id used to identify this conversation topic.",
 			required: true,
@@ -570,18 +568,20 @@ export const TopicSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The display name of this topic.",
-			placeholder: "Rats",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of this topic.",
+				placeholder: "Rats",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		aliases: editorAliasList({
+		aliases: editor.aliasList({
 			title: "Aliases",
 			description: "Alternative names or phrases for this topic.",
 			layout: {
@@ -590,7 +590,7 @@ export const TopicSchema = editorObject(
 			},
 		}),
 
-		tags: editorTagList("topics", {
+		tags: editor.tagList("topics", {
 			title: "Tags",
 			description: "Tags used to group this topic.",
 			layout: {
@@ -599,25 +599,29 @@ export const TopicSchema = editorObject(
 			},
 		}),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Editor-facing description of what this topic represents.",
-			layout: {
-				width: "full",
-				order: 5,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "Editor-facing description of what this topic represents.",
+				layout: {
+					width: "full",
+					order: 5,
+				},
+			})
+			.default(""),
 
-		knownByDefault: editorBoolean({
-			title: "Known by Default",
-			description: "Whether the player knows this topic at the start of the game.",
-			layout: {
-				width: "half",
-				order: 6,
-			},
-		}).default(false),
+		knownByDefault: editor
+			.boolean({
+				title: "Known by Default",
+				description: "Whether the player knows this topic at the start of the game.",
+				layout: {
+					width: "half",
+					order: 6,
+				},
+			})
+			.default(false),
 
-		knownWhen: editorConditionList(ConditionUsageSchema, {
+		knownWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Known When",
 			description: "The topic becomes known when all of these conditions pass.",
 			layout: {
@@ -644,9 +648,9 @@ export const TopicSchema = editorObject(
 	},
 );
 
-export const QuestObjectiveSchema = editorObject(
+export const QuestObjectiveSchema = editor.object(
 	z.object({
-		id: editorId("quest-objective", {
+		id: editor.id("quest-objective", {
 			title: "Objective ID",
 			description: "The unique id for this quest objective.",
 			required: true,
@@ -656,26 +660,30 @@ export const QuestObjectiveSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The display name of this objective.",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of this objective.",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Editor-facing notes or player-facing objective description.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "Editor-facing notes or player-facing objective description.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 
-		completeWhen: editorConditionList(ConditionUsageSchema, {
+		completeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Complete When",
 			description: "Conditions that mark this objective complete.",
 			layout: {
@@ -684,7 +692,7 @@ export const QuestObjectiveSchema = editorObject(
 			},
 		}),
 
-		visibleWhen: editorConditionList(ConditionUsageSchema, {
+		visibleWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Visible When",
 			description: "Conditions that make this objective visible.",
 			layout: {
@@ -704,9 +712,9 @@ export const QuestObjectiveSchema = editorObject(
 	},
 );
 
-export const QuestSchema = editorObject(
+export const QuestSchema = editor.object(
 	z.object({
-		id: editorId("quest", {
+		id: editor.id("quest", {
 			title: "Quest ID",
 			description: "The unique id used to identify this quest.",
 			required: true,
@@ -716,26 +724,30 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		name: editorInput({
-			title: "Name",
-			description: "The display name of this quest.",
-			required: true,
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).min(1),
+		name: editor
+			.input({
+				title: "Name",
+				description: "The display name of this quest.",
+				required: true,
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.min(1),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "The quest description or editor-facing notes.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "The quest description or editor-facing notes.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 
-		tags: editorTagList("quests", {
+		tags: editor.tagList("quests", {
 			title: "Tags",
 			description: "Tags used to group this quest.",
 			layout: {
@@ -744,7 +756,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		startWhen: editorConditionList(ConditionUsageSchema, {
+		startWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Start When",
 			description: "Conditions that make this quest active.",
 			layout: {
@@ -753,7 +765,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		completeWhen: editorConditionList(ConditionUsageSchema, {
+		completeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Complete When",
 			description: "Conditions that mark this quest completed.",
 			layout: {
@@ -762,7 +774,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		failWhen: editorConditionList(ConditionUsageSchema, {
+		failWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Fail When",
 			description: "Conditions that mark this quest failed.",
 			layout: {
@@ -771,7 +783,7 @@ export const QuestSchema = editorObject(
 			},
 		}),
 
-		objectives: editorArray(QuestObjectiveSchema, {
+		objectives: editor.array(QuestObjectiveSchema, {
 			title: "Objectives",
 			description: "Objectives contained in this quest.",
 			emptyState: {
@@ -806,9 +818,9 @@ export const QuestSchema = editorObject(
 	},
 );
 
-export const InitialObjectStateSchema = editorObject(
+export const InitialObjectStateSchema = editor.object(
 	z.object({
-		objectId: editorReference("object", {
+		objectId: editor.reference("object", {
 			title: "Object",
 			description:
 				"The object id whose state should be initialized, such as item:lantern or feature:kitchen.table.",
@@ -830,9 +842,9 @@ export const InitialObjectStateSchema = editorObject(
 	},
 );
 
-export const InitialFlagSchema = editorObject(
+export const InitialFlagSchema = editor.object(
 	z.object({
-		flag: editorFlagKey({
+		flag: editor.flagKey({
 			title: "Flag",
 			description: "The flag key to initialize.",
 			layout: {
@@ -841,7 +853,7 @@ export const InitialFlagSchema = editorObject(
 			},
 		}),
 
-		value: editorBoolean({
+		value: editor.boolean({
 			title: "Value",
 			description: "The starting boolean value for the flag.",
 			layout: {
@@ -856,19 +868,21 @@ export const InitialFlagSchema = editorObject(
 	},
 );
 
-export const InitialCounterSchema = editorObject(
+export const InitialCounterSchema = editor.object(
 	z.object({
-		counter: editorInput({
-			title: "Counter",
-			description: "The counter key to initialize.",
-			required: true,
-			layout: {
-				width: "full",
-				order: 1,
-			},
-		}).min(1),
+		counter: editor
+			.input({
+				title: "Counter",
+				description: "The counter key to initialize.",
+				required: true,
+				layout: {
+					width: "full",
+					order: 1,
+				},
+			})
+			.min(1),
 
-		value: editorNumber({
+		value: editor.number({
 			title: "Value",
 			description: "The starting numeric value for the counter.",
 			layout: {
@@ -883,9 +897,9 @@ export const InitialCounterSchema = editorObject(
 	},
 );
 
-export const WorldInitialStateSchema = editorObject(
+export const WorldInitialStateSchema = editor.object(
 	z.object({
-		flags: editorArray(InitialFlagSchema, {
+		flags: editor.array(InitialFlagSchema, {
 			title: "Flags",
 			description: "Boolean flags that should exist when the game starts.",
 			emptyState: {
@@ -899,7 +913,7 @@ export const WorldInitialStateSchema = editorObject(
 			},
 		}),
 
-		counters: editorArray(InitialCounterSchema, {
+		counters: editor.array(InitialCounterSchema, {
 			title: "Counters",
 			description: "Numeric counters that should exist when the game starts.",
 			emptyState: {
@@ -913,7 +927,7 @@ export const WorldInitialStateSchema = editorObject(
 			},
 		}),
 
-		objectStates: editorArray(InitialObjectStateSchema, {
+		objectStates: editor.array(InitialObjectStateSchema, {
 			title: "Object States",
 			description: "Initial object states that should exist when the game starts.",
 			emptyState: {
@@ -928,7 +942,7 @@ export const WorldInitialStateSchema = editorObject(
 			},
 		}),
 
-		knownTopics: editorMultiSelect({
+		knownTopics: editor.multiSelect({
 			title: "Known Topics",
 			description: "Topic ids the player knows when the game starts.",
 			entityType: "topic",
@@ -938,7 +952,7 @@ export const WorldInitialStateSchema = editorObject(
 			},
 		}),
 
-		inventory: editorMultiSelect({
+		inventory: editor.multiSelect({
 			title: "Inventory",
 			description: "Item ids the player starts with. Prefer item.initialLocation when possible.",
 			entityType: "item",
@@ -967,45 +981,53 @@ export const DefaultWorldInitialState = {
 	inventory: [],
 } satisfies z.infer<typeof WorldInitialStateSchema>;
 
-export const WorldMetadataSchema = editorObject(
+export const WorldMetadataSchema = editor.object(
 	z.object({
-		title: editorInput({
-			title: "Title",
-			description: "The title of the world.",
-			placeholder: "Untitled World",
-			layout: {
-				width: "half",
-				order: 1,
-			},
-		}).default(""),
+		title: editor
+			.input({
+				title: "Title",
+				description: "The title of the world.",
+				placeholder: "Untitled World",
+				layout: {
+					width: "half",
+					order: 1,
+				},
+			})
+			.default(""),
 
-		author: editorInput({
-			title: "Author",
-			description: "The author name shown in editor metadata.",
-			layout: {
-				width: "half",
-				order: 2,
-			},
-		}).default(""),
+		author: editor
+			.input({
+				title: "Author",
+				description: "The author name shown in editor metadata.",
+				layout: {
+					width: "half",
+					order: 2,
+				},
+			})
+			.default(""),
 
-		description: editorTextarea({
-			title: "Description",
-			description: "Short editor-facing or player-facing world description.",
-			layout: {
-				width: "full",
-				order: 3,
-			},
-		}).default(""),
+		description: editor
+			.textarea({
+				title: "Description",
+				description: "Short editor-facing or player-facing world description.",
+				layout: {
+					width: "full",
+					order: 3,
+				},
+			})
+			.default(""),
 
-		version: editorInput({
-			title: "Version",
-			description: "The world data version.",
-			placeholder: "0.1.0",
-			layout: {
-				width: "half",
-				order: 4,
-			},
-		}).default("0.1.0"),
+		version: editor
+			.input({
+				title: "Version",
+				description: "The world data version.",
+				placeholder: "0.1.0",
+				layout: {
+					width: "half",
+					order: 4,
+				},
+			})
+			.default("0.1.0"),
 	}),
 	{
 		title: "World Metadata",
@@ -1020,14 +1042,14 @@ export const DefaultWorldMetadata = {
 	version: "0.1.0",
 } satisfies z.infer<typeof WorldMetadataSchema>;
 
-export const WorldSchema = editorObject(
+export const WorldSchema = editor.object(
 	z
 		.object({
 			metadata: WorldMetadataSchema.default(DefaultWorldMetadata).describe(
 				"Optional metadata about this world.",
 			),
 
-			startRoomId: editorReference("room", {
+			startRoomId: editor.reference("room", {
 				title: "Start Room",
 				description: "The id of the room where the player starts.",
 				layout: {
@@ -1036,7 +1058,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			rooms: editorArray(RoomSchema, {
+			rooms: editor.array(RoomSchema, {
 				title: "Rooms",
 				description: "All rooms that exist in the world.",
 				emptyState: {
@@ -1055,7 +1077,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			connections: editorArray(ConnectionSchema, {
+			connections: editor.array(ConnectionSchema, {
 				title: "Connections",
 				description: "All connections between rooms in the world.",
 				emptyState: {
@@ -1074,7 +1096,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			conditions: editorArray(WorldConditionSchema, {
+			conditions: editor.array(WorldConditionSchema, {
 				title: "Conditions",
 				description: "Named condition definitions that can be attached throughout the world.",
 				emptyState: {
@@ -1094,7 +1116,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			effects: editorArray(WorldEffectSchema, {
+			effects: editor.array(WorldEffectSchema, {
 				title: "Effects",
 				description: "Named effect definitions that can be attached throughout the world.",
 				emptyState: {
@@ -1113,7 +1135,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			items: editorArray(ItemSchema, {
+			items: editor.array(ItemSchema, {
 				title: "Items",
 				description: "All item definitions in the world.",
 				emptyState: {
@@ -1132,7 +1154,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			npcs: editorArray(NpcSchema, {
+			npcs: editor.array(NpcSchema, {
 				title: "NPCs",
 				description: "All NPC definitions in the world.",
 				emptyState: {
@@ -1151,7 +1173,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			topics: editorArray(TopicSchema, {
+			topics: editor.array(TopicSchema, {
 				title: "Topics",
 				description: "All known conversation or knowledge topics in the world.",
 				emptyState: {
@@ -1170,7 +1192,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			quests: editorArray(QuestSchema, {
+			quests: editor.array(QuestSchema, {
 				title: "Quests",
 				description: "All quest definitions in the world.",
 				emptyState: {
@@ -1189,7 +1211,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			authoredCommands: editorArray(AuthorCommandSchema, {
+			authoredCommands: editor.array(AuthorCommandSchema, {
 				title: "Authored Commands",
 				description: "Editor-authored command rules saved as world data.",
 				emptyState: {
@@ -1208,7 +1230,7 @@ export const WorldSchema = editorObject(
 				},
 			}),
 
-			authoredEvents: editorArray(AuthoredEventSchema, {
+			authoredEvents: editor.array(AuthoredEventSchema, {
 				title: "Authored Events",
 				description: "Reusable authored events that commands and other events can schedule.",
 				emptyState: {

@@ -175,9 +175,7 @@ function buildObjectFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadat
 	const fields = shape
 		? sortEditorObjectFields(
 				Object.entries(shape).map(([key, fieldSchema], index) => {
-					const fieldMetadata = resolveEditorMetadata(fieldSchema, {
-						title: titleFromKey(key),
-					});
+					const fieldMetadata = resolveEditorMetadata(fieldSchema);
 
 					return {
 						key,
@@ -240,6 +238,23 @@ function buildPickerFeatures(metadata?: EditorFieldMetadata) {
 	};
 }
 
+function buildChildControls(schema: z.ZodTypeAny, metadata?: EditorFieldMetadata) {
+	const shape = getObjectShape(schema);
+	if (!shape) return metadata?.childControls;
+
+	return Object.fromEntries(
+		Object.entries(shape).map(([key, childSchema]) => {
+			const {type, ...childMetadata} = resolveEditorMetadata(childSchema);
+			const schemaMetadata = {
+				...childMetadata,
+				control: type,
+			} satisfies EditorFieldMetadata;
+
+			return [key, mergeEditorMetadata(schemaMetadata, metadata?.childControls?.[key])];
+		}),
+	);
+}
+
 function buildFeatures(
 	schema: z.ZodTypeAny,
 	type: EditorControlType,
@@ -271,13 +286,18 @@ export function resolveEditorMetadata(
 ): EditorControlMetadata {
 	const {schema: metadataSchema, metadata} = resolveSchemaParts(schema);
 	const type = metadata?.control ?? fallback.type ?? inferControlType(metadataSchema);
-	const description = metadataSchema.description ?? metadata?.description ?? fallback.description;
+	const description = metadata?.description ?? fallback.description;
 
 	return {
 		...fallback,
 		...metadata,
 		type,
 		description,
+		childControls: buildChildControls(metadataSchema, {
+			...fallback,
+			...metadata,
+			control: type,
+		}),
 		features: {
 			...buildFeatures(metadataSchema, type, metadata),
 			...(metadata?.features ?? {}),
