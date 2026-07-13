@@ -10,6 +10,7 @@ import type {
 } from "../../types/universalEditorTypes";
 import type {EntityType} from "../../types/editor/editorRegistryTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {idValue, isID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import "./LinkListEditor.scss";
 
@@ -60,18 +61,18 @@ function isEditorLinkRef(value: unknown): value is EditorLinkRef {
 	);
 }
 
-function isRecordWithId(value: unknown): value is Record<string, unknown> & {id: string} {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		!Array.isArray(value) &&
-		typeof (value as {id?: unknown}).id === "string"
-	);
+function recordId(value: unknown) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+
+	const id = (value as {id?: unknown}).id;
+	if (typeof id === "string") return id;
+	if (isID(id)) return idValue(id);
+	return undefined;
 }
 
 function labelFromRecord(value: Record<string, unknown>) {
-	const label = value.label ?? value.name ?? value.title ?? value.id;
-	return label == null ? undefined : String(label);
+	const label = value.label ?? value.name ?? value.title;
+	return label == null ? recordId(value) : String(label);
 }
 
 function stringValues(value: LinkListValue | SingleLinkValue) {
@@ -79,21 +80,30 @@ function stringValues(value: LinkListValue | SingleLinkValue) {
 	return typeof value === "string" && value.length > 0 ? [value] : [];
 }
 
-function editorValues(value: LinkListValue | SingleLinkValue, target?: EditorLinkTargetMetadata) {
+export function editorValues(
+	value: LinkListValue | SingleLinkValue | Record<string, unknown>[],
+	target?: EditorLinkTargetMetadata,
+) {
 	const type = editorTypeForTarget(target);
 
 	if (Array.isArray(value)) {
 		return value
 			.map((item): EditorLinkRef | undefined => {
 				if (isEditorLinkRef(item)) return item;
-				if (isRecordWithId(item)) return {type, id: item.id, label: labelFromRecord(item)};
+				const id = recordId(item);
+				if (id && typeof item === "object" && item !== null) {
+					return {type, id, label: labelFromRecord(item as Record<string, unknown>)};
+				}
 				return undefined;
 			})
 			.filter((item): item is EditorLinkRef => Boolean(item));
 	}
 
 	if (isEditorLinkRef(value)) return [value];
-	if (isRecordWithId(value)) return [{type, id: value.id, label: labelFromRecord(value)}];
+	const id = recordId(value);
+	if (id && typeof value === "object" && value !== null) {
+		return [{type, id, label: labelFromRecord(value as Record<string, unknown>)}];
+	}
 	return [];
 }
 

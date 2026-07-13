@@ -16,6 +16,61 @@ export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	out: {x: -1, y: 0},
 };
 
+export const ROOM_DIRECTIONS: Direction[] = [
+	"n",
+	"ne",
+	"e",
+	"se",
+	"s",
+	"sw",
+	"w",
+	"nw",
+	"up",
+	"down",
+	"in",
+	"out",
+];
+
+export const DIRECTION_LABELS: Record<Direction, string> = {
+	n: "North",
+	ne: "Northeast",
+	e: "East",
+	se: "Southeast",
+	s: "South",
+	sw: "Southwest",
+	w: "West",
+	nw: "Northwest",
+	up: "Up",
+	down: "Down",
+	in: "In",
+	out: "Out",
+};
+
+export function getRoomNodePosition(direction: Direction, width: number, height: number): Point {
+	if (direction === "in" || direction === "out" || direction === "up" || direction === "down") {
+		const isTopNode = direction === "out" || direction === "up";
+		const isLeftNode = direction === "out" || direction === "in";
+
+		return {
+			x: (isLeftNode ? -width : width) / 4,
+			y: (isTopNode ? -height : height) / 2,
+		};
+	}
+
+	const vector = DIRECTION_VECTORS[direction];
+	return {
+		x: (vector.x * width) / 2,
+		y: (vector.y * height) / 2,
+	};
+}
+
+export function getRoomNodeAnchorVector(direction: Direction): Point {
+	if (direction === "out" || direction === "up") return {x: 0, y: -1};
+	if (direction === "in" || direction === "down") return {x: 0, y: 1};
+
+	return DIRECTION_VECTORS[direction];
+}
+
 export const REVERSE_DIRECTION: Record<Direction, Direction> = {
 	n: "s",
 	ne: "sw",

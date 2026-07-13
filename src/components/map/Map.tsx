@@ -3,7 +3,7 @@
 import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
-import {DIRECTION_VECTORS} from "../../types/mapTypes";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
@@ -14,6 +14,7 @@ import {
 } from "../../utils/connectionUtils";
 import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
 import {createDefaultConnection, createDefaultRoom} from "../../utils/createDefaultWorld";
+import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
 
 type DragState = {
@@ -37,12 +38,13 @@ type MapProps = {
 	setIsConnectionSelected: React.Dispatch<React.SetStateAction<boolean>>;
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
+	updateStatus: UpdateStatus;
 };
 
 export type MapTheme = "light" | "dark";
 export type MapTool = "edit" | "pan";
 export type ConnectionDraft =
-	| {state: "idle"; message?: string}
+	| {state: "idle"}
 	| {state: "choosing-destination"; fromRoomId: string; fromDirection: Direction}
 	| {
 			state: "choosing-return";
@@ -68,7 +70,6 @@ const ROOM_HEIGHT = 80;
 const ROOM_DRAG_THRESHOLD = 2;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
-const ROOM_DIRECTIONS: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 
 export function Map({
 	tool,
@@ -84,6 +85,7 @@ export function Map({
 	setIsConnectionSelected,
 	connectionDraft,
 	setConnectionDraft,
+	updateStatus,
 }: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const [viewport, setViewport] = useState<Viewport>({x: 0, y: 0, zoom: 1});
@@ -91,12 +93,15 @@ export function Map({
 	const viewportRef = useRef(viewport);
 	const mapRef = useRef<HTMLDivElement | null>(null);
 	const cancelConnectionDraft = useCallback(() => {
-		setConnectionDraft({state: "idle", message: "Connection cancelled"});
-	}, [setConnectionDraft]);
+		setConnectionDraft({state: "idle"});
+		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
+	}, [setConnectionDraft, updateStatus]);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
 	}, [viewport]);
+
+	useEffect(() => () => updateStatus(null), [updateStatus]);
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
@@ -147,16 +152,18 @@ export function Map({
 	}
 
 	function handleConnectionPathwayChange(connection: ConnectionType) {
+		const pathway = getNextAvailablePathway(connection, connections);
 		setConnections((currentConnections) =>
 			currentConnections.map((currentConnection) => {
 				if (idValue(currentConnection.id) !== idValue(connection.id)) return currentConnection;
 
 				return {
 					...currentConnection,
-					pathway: getNextAvailablePathway(currentConnection, currentConnections),
+					pathway,
 				};
 			}),
 		);
+		return pathway;
 	}
 
 	function addRoomAt(position: Point) {
@@ -170,12 +177,7 @@ export function Map({
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
-		const vector = DIRECTION_VECTORS[direction];
-
-		return addPoints(room.position, {
-			x: (vector.x * ROOM_WIDTH) / 2.1,
-			y: (vector.y * ROOM_HEIGHT) / 2.1,
-		});
+		return addPoints(room.position, getRoomNodePosition(direction, ROOM_WIDTH, ROOM_HEIGHT));
 	}
 
 	function getRoom(roomReference: string | ID<"room">, direction?: Direction) {
@@ -468,6 +470,7 @@ export function Map({
 								toRoom={toRoom}
 								selectConnection={handleConnectionSelect}
 								changePathway={handleConnectionPathwayChange}
+								updateStatus={updateStatus}
 								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
 								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
 							/>
@@ -496,6 +499,7 @@ export function Map({
 						)}
 						onPointerDown={handleRoomPointerDown}
 						onNodeClick={addConnection}
+						updateStatus={updateStatus}
 					/>
 				))}
 			</div>

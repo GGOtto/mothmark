@@ -1,14 +1,10 @@
 import {ArrowLeftRight, ArrowRight, X} from "lucide-react";
 import type React from "react";
 import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
-import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
-import {
-	addPoints,
-	subtractPoints,
-	getMidpoint,
-	scalePoint,
-	getDistance,
-} from "../../utils/pointUtils";
+import {getRoomNodeAnchorVector} from "../../types/mapTypes";
+import {getPathwayLabel} from "../../utils/connectionUtils";
+import {addPoints, scalePoint, getDistance} from "../../utils/pointUtils";
+import type {ToolBarStatus, UpdateStatus} from "../studio/ToolBar";
 import "./Connection.scss";
 
 type ConnectionProps = {
@@ -16,7 +12,8 @@ type ConnectionProps = {
 	fromRoom: Room;
 	toRoom: Room;
 	selectConnection: (connection?: ConnectionType) => void;
-	changePathway: (connection: ConnectionType) => void;
+	changePathway: (connection: ConnectionType) => ConnectionType["pathway"];
+	updateStatus: UpdateStatus;
 	isEditing?: boolean;
 	isSelected?: boolean;
 };
@@ -32,6 +29,10 @@ type ConnectionPathPlacement = {
 	point: Point;
 	angle: number;
 };
+
+function normalizeSvgNumber(value: number) {
+	return Math.round(value * 1_000_000) / 1_000_000;
+}
 
 function getCubicBezierPoint(
 	start: Point,
@@ -72,34 +73,6 @@ function getCubicBezierLength(segment: CubicBezierSegment, samples = 24) {
 	}
 
 	return length;
-}
-
-function getConnectionPathSegments(points: Point[]): CubicBezierSegment[] {
-	if (points.length < 2) return [];
-
-	const segments: CubicBezierSegment[] = [];
-
-	for (let i = 0; i < points.length - 1; i++) {
-		const p0 = points[i - 1] ?? points[i];
-		const p1 = points[i];
-		const p2 = points[i + 1];
-		const p3 = points[i + 2] ?? p2;
-		const segmentLength = getDistance(p1, p2);
-		const tension = 1 / 6;
-		const maxControlLength = Math.min(segmentLength * 0.45, 40);
-		const incoming = subtractPoints(p2, p0);
-		const outgoing = subtractPoints(p3, p1);
-		const incomingLength = Math.hypot(incoming.x, incoming.y) || 1;
-		const outgoingLength = Math.hypot(outgoing.x, outgoing.y) || 1;
-		const control1Length = Math.min(incomingLength * tension, maxControlLength);
-		const control2Length = Math.min(outgoingLength * tension, maxControlLength);
-		const control1 = addPoints(p1, scalePoint(incoming, control1Length / incomingLength));
-		const control2 = subtractPoints(p2, scalePoint(outgoing, control2Length / outgoingLength));
-
-		segments.push({start: p1, control1, control2, end: p2});
-	}
-
-	return segments;
 }
 
 function getPointOnCubicBezierAtDistance(
@@ -163,11 +136,8 @@ function getPointOnConnectionPathAtDistance(
 	return segments[segments.length - 1].end;
 }
 
-function getConnectionPathMidpointPlacement(pathPoints: Point[]): ConnectionPathPlacement {
-	const segments = getConnectionPathSegments(pathPoints);
-
-	if (segments.length === 0) return {point: pathPoints[0] ?? {x: 0, y: 0}, angle: 0};
-
+function getConnectionPathMidpointPlacement(segment: CubicBezierSegment): ConnectionPathPlacement {
+	const segments = [segment];
 	const segmentLengths = segments.map((segment) => getCubicBezierLength(segment));
 	const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
 	const midpointDistance = totalLength / 2;
@@ -185,43 +155,36 @@ function getConnectionPathMidpointPlacement(pathPoints: Point[]): ConnectionPath
 	);
 
 	return {
-		point,
-		angle: Math.atan2(afterPoint.y - beforePoint.y, afterPoint.x - beforePoint.x) * (180 / Math.PI),
+		point: {
+			x: normalizeSvgNumber(point.x),
+			y: normalizeSvgNumber(point.y),
+		},
+		angle: normalizeSvgNumber(
+			Math.atan2(afterPoint.y - beforePoint.y, afterPoint.x - beforePoint.x) * (180 / Math.PI),
+		),
 	};
 }
 
-function getPath(points: Point[]) {
-	if (points.length < 2) return "";
-
-	const segments = getConnectionPathSegments(points);
-	if (segments.length === 0) return "";
-
-	let path = `M ${points[0].x} ${points[0].y}`;
-
-	for (const segment of segments) {
-		path += ` C ${segment.control1.x} ${segment.control1.y} ${segment.control2.x} ${segment.control2.y} ${segment.end.x} ${segment.end.y}`;
-	}
-
-	return path;
+function getPath(segment: CubicBezierSegment) {
+	return `M ${segment.start.x} ${segment.start.y} C ${segment.control1.x} ${segment.control1.y} ${segment.control2.x} ${segment.control2.y} ${segment.end.x} ${segment.end.y}`;
 }
 
-function getControlPoints(
+function getConnectionCurve(
 	startPoint: Point,
 	endPoint: Point,
 	startDirection: Direction,
 	endDirection: Direction,
-): Point[] {
-	const startDirectionVector = DIRECTION_VECTORS[startDirection];
-	const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
-	const handleLength = Math.min(15, getDistance(startPoint, endPoint) * (15 / 80));
-	const startHandle = scalePoint(startDirectionVector, handleLength);
-	const endHandle = scalePoint(endDirectionVector, -handleLength);
+): CubicBezierSegment {
+	const startDirectionVector = getRoomNodeAnchorVector(startDirection);
+	const endDirectionVector = getRoomNodeAnchorVector(endDirection);
+	const handleLength = Math.min(40, Math.max(15, getDistance(startPoint, endPoint) * 0.25));
 
-	return [
-		addPoints(startPoint, startHandle),
-		addPoints(getMidpoint(startPoint, endPoint), addPoints(startHandle, endHandle)),
-		addPoints(endPoint, endHandle),
-	];
+	return {
+		start: startPoint,
+		control1: addPoints(startPoint, scalePoint(startDirectionVector, handleLength)),
+		control2: addPoints(endPoint, scalePoint(endDirectionVector, handleLength)),
+		end: endPoint,
+	};
 }
 
 function getMidpointGlyphRotation(pathway: ConnectionType["pathway"], angle: number) {
@@ -253,25 +216,31 @@ function getMidpointGlyphIcon(pathway: ConnectionType["pathway"]) {
 	return <ArrowRight {...iconProps} />;
 }
 
+export function getPathwayStatus(pathway: ConnectionType["pathway"]): ToolBarStatus {
+	return {
+		kind: "pathway",
+		label: `${getPathwayLabel(pathway)} pathway · Click to change`,
+	};
+}
+
 export function Connection({
 	connection,
 	fromRoom,
 	toRoom,
 	selectConnection,
 	changePathway,
+	updateStatus,
 	isEditing = false,
 	isSelected = false,
 }: ConnectionProps) {
-	const curvePoints = getControlPoints(
+	const curve = getConnectionCurve(
 		fromRoom.position,
 		toRoom.position,
 		connection.direction,
 		connection.returnDirection,
 	);
-
-	const pathPoints = [fromRoom.position, ...curvePoints, toRoom.position];
-	const path = getPath(pathPoints);
-	const midpointPlacement = getConnectionPathMidpointPlacement(pathPoints);
+	const path = getPath(curve);
+	const midpointPlacement = getConnectionPathMidpointPlacement(curve);
 	const midpointIcon = getMidpointGlyphIcon(connection.pathway);
 	const midpointGlyphRotation = getMidpointGlyphRotation(
 		connection.pathway,
@@ -292,7 +261,8 @@ export function Connection({
 	}
 
 	function cyclePathway() {
-		changePathway(connection);
+		const pathway = changePathway(connection);
+		updateStatus(getPathwayStatus(pathway));
 	}
 
 	function handleGlyphClick(event: React.MouseEvent<SVGGElement>) {
@@ -383,10 +353,15 @@ export function Connection({
 			transform={`translate(${midpointPlacement.point.x} ${midpointPlacement.point.y})`}
 			role="button"
 			tabIndex={0}
-			aria-label={`Change pathway from ${connection.pathway}`}
+			aria-label={`Change ${getPathwayLabel(connection.pathway)} pathway`}
+			onPointerEnter={() => updateStatus(getPathwayStatus(connection.pathway))}
+			onPointerLeave={() => updateStatus(null)}
+			onFocus={() => updateStatus(getPathwayStatus(connection.pathway))}
+			onBlur={() => updateStatus(null)}
 			onClick={handleGlyphClick}
 			onKeyDown={handleGlyphKeyDown}
 		>
+			<title>{`${getPathwayLabel(connection.pathway)} pathway`}</title>
 			<circle cx={0} cy={0} r={12} />
 		</g>
 	);

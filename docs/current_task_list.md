@@ -28,7 +28,7 @@ Verification:
 - Confirm room drag does not accidentally create a room.
 - Browser-test all paths and confirm no native context menu or console error regressions.
 
-[ ] ## Slice 2: Pathway-aware capacity and fast pathway editing
+[x] ## Slice 2: Pathway-aware capacity and fast pathway editing
 
 **Outcome:** Shared nodes and directional pathway constraints are understandable and safe.
 

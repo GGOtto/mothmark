@@ -24,7 +24,14 @@ import type {
 	EditorPath,
 } from "@/types/universalEditorTypes";
 import {buildEditorRegistries} from "@/utils/buildEditorRegistries";
-import {deleteWorldEntity, generateUniqueId, ID, resolveWorldEntityId} from "@/utils/idUtils";
+import {
+	deleteWorldEntity,
+	generateUniqueId,
+	idValue,
+	isID,
+	type ID,
+	resolveWorldEntityId,
+} from "@/utils/idUtils";
 import {createDefaultValue, resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
 import {getArrayElement, getSchemaAtPath} from "@/utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
@@ -197,6 +204,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isIdentifiableRecord(
+	value: unknown,
+): value is Record<string, unknown> & {id: string | ID} {
+	return isRecord(value) && (typeof value.id === "string" || isID(value.id));
+}
+
+function recordId(value: unknown) {
+	return isIdentifiableRecord(value) ? idValue(value.id) : undefined;
+}
+
 function findArrayEntityPath(
 	value: unknown,
 	collectionPath: EditorPath,
@@ -205,7 +222,7 @@ function findArrayEntityPath(
 	const collection = getValueAtPath(value, collectionPath);
 	if (!Array.isArray(collection)) return undefined;
 
-	const index = collection.findIndex((item) => isRecord(item) && item.id === id);
+	const index = collection.findIndex((item) => recordId(item) === id);
 	return index >= 0 ? [...collectionPath, index] : undefined;
 }
 
@@ -262,7 +279,7 @@ function resolvePathTemplate(
 
 		const collection = getValueAtPath(value, resolvedPath);
 		if (Array.isArray(collection)) {
-			const index = collection.findIndex((item) => isRecord(item) && item.id === ref.id);
+			const index = collection.findIndex((item) => recordId(item) === ref.id);
 			if (index < 0) return undefined;
 			resolvedPath.push(index);
 			continue;
@@ -546,12 +563,7 @@ export function UniversalEditor<TValue>({
 			const itemSchema = collectionSchema ? getArrayElement(collectionSchema) : undefined;
 			if (!itemSchema) return undefined;
 
-			const id = generateUniqueId(
-				idPrefixForTarget(target),
-				collection.filter(
-					(item): item is {id: string} => isRecord(item) && typeof item.id === "string",
-				),
-			);
+			const id = generateUniqueId(idPrefixForTarget(target), collection.filter(isIdentifiableRecord));
 			const defaultItem = assignCreatedEntityDefaults(createDefaultValue(itemSchema), id, target);
 			const nextCollection = [...collection, defaultItem];
 			const nextPath = [...sourcePath, collection.length];

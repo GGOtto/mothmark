@@ -10,6 +10,7 @@ import {
 	getNearestNodeInRadius,
 	getNextAvailablePathway,
 	getNodeSelectionKey,
+	getPathwayLabel,
 	getPathwayForEditedDrop,
 	getPathwayForNewDrop,
 	isConnectionFromRoom,
@@ -23,6 +24,17 @@ const ROOM_HEIGHT = 40;
 const CONNECTOR_LENGTH = 40;
 const MIN_CONNECTOR_LENGTH = 12;
 const CONNECTOR_STEP = 4;
+
+describe("getPathwayLabel", () => {
+	it.each([
+		["two-way", "Two way"],
+		["forwards", "One way"],
+		["backwards", "One way"],
+		["no-way", "No way"],
+	] as const)("labels %s as %s", (pathway, label) => {
+		expect(getPathwayLabel(pathway)).toBe(label);
+	});
+});
 
 function room(id: string, x: number, y: number): Room {
 	return createDefaultRoom(id, id, {x, y});

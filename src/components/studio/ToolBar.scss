@@ -73,7 +73,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	max-width: 160px;
+	max-width: min(300px, 40vw);
 	color: var(--panel-muted);
 	font-size: 12px;
 	white-space: nowrap;

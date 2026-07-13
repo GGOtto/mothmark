@@ -1,5 +1,5 @@
 import type {Connection, Direction, Point, Room} from "../schemas/roomSchema";
-import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../types/mapTypes";
+import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "../types/mapTypes";
 import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
 import {compareIds, generateUniqueId, idValue} from "./idUtils";
 import {subtractPoints} from "./pointUtils";
@@ -30,8 +30,15 @@ export type SnapTarget = {
 
 export type MovingConnectionSide = "from" | "to";
 
-const DIRECTIONS: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 const PATHWAY_CYCLE: Connection["pathway"][] = ["two-way", "forwards", "backwards", "no-way"];
+
+export function getPathwayLabel(pathway: Connection["pathway"]) {
+	return pathway === "forwards" || pathway === "backwards"
+		? "One way"
+		: pathway === "two-way"
+			? "Two way"
+			: "No way";
+}
 
 export function isConnectionFromRoom(
 	roomId: string,
@@ -179,7 +186,7 @@ export function getNearestNodeInRadius({
 		if (idValue(room.id) === ignoredRoomId) continue;
 		if (idValue(room.id) === lockedRoomId) continue;
 
-		for (const direction of DIRECTIONS) {
+		for (const direction of ROOM_DIRECTIONS) {
 			const point = getRoomConnectionPoint(room, direction);
 			const distance = Math.hypot(pointer.x - point.x, pointer.y - point.y);
 

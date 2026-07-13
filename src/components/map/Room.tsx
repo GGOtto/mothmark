@@ -1,6 +1,7 @@
 import type {RoomNode} from "../../types/mapTypes";
 import type {Room, Direction} from "../../schemas/roomSchema";
-import {DIRECTION_VECTORS} from "../../types/mapTypes";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../types/mapTypes";
+import type {UpdateStatus} from "../studio/ToolBar";
 import {Node} from "./Node";
 import "./Room.scss";
 
@@ -12,6 +13,7 @@ type RoomProps = {
 	isSelected: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, room: Room) => void;
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
+	updateStatus: UpdateStatus;
 	armedDirection: Direction | null;
 	pulseNodes: boolean;
 	outgoingDirections: Direction[];
@@ -25,26 +27,21 @@ export function RoomCard({
 	isSelected,
 	onPointerDown,
 	onNodeClick,
+	updateStatus,
 	armedDirection,
 	pulseNodes,
 	outgoingDirections,
 }: RoomProps) {
 	function buildNode(direction: Direction): RoomNode {
-		const vector = DIRECTION_VECTORS[direction];
-
 		return {
 			room,
 			direction,
-			position: {
-				x: (vector.x * width) / 2,
-				y: (vector.y * height) / 2,
-			},
+			position: getRoomNodePosition(direction, width, height),
 			isConnected: false,
 		};
 	}
 
-	const directions: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
-	const nodes = directions.map((direction) => buildNode(direction));
+	const nodes = ROOM_DIRECTIONS.map((direction) => buildNode(direction));
 
 	const className = [
 		"roomCard",
@@ -73,6 +70,7 @@ export function RoomCard({
 					node={node}
 					key={node.direction}
 					onNodeClick={onNodeClick}
+					updateStatus={updateStatus}
 					status={armedDirection === node.direction ? "armed" : pulseNodes ? "pulse" : "idle"}
 					hasOutgoingPath={outgoingDirections.includes(node.direction)}
 				/>

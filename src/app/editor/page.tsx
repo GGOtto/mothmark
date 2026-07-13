@@ -2,7 +2,12 @@
 
 import type React from "react";
 import {useCallback, useMemo, useState} from "react";
-import {ToolBar, type ToolBarStatus} from "@/components/studio/ToolBar";
+import {
+	ToolBar,
+	type ToolBarStatus,
+	type UpdateStatus,
+	useToolBarStatus,
+} from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
@@ -57,20 +62,21 @@ function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): 
 	return typeof action === "function" ? (action as (value: T) => T)(currentValue) : action;
 }
 
-function getConnectionDraftStatus(draft: ConnectionDraft, rooms: Room[]): ToolBarStatus {
-	if (draft.state === "idle")
-		return draft.message
-			? {kind: "cancelled", label: "Cancelled"}
-			: {kind: "idle", label: `${rooms.length} rooms`};
+export function getConnectionDraftStatus(
+	draft: ConnectionDraft,
+	rooms: Room[],
+	hoverStatus: ToolBarStatus | null,
+	noticeStatus: ToolBarStatus | null,
+): ToolBarStatus {
 	if (draft.state === "choosing-destination")
 		return {
 			kind: "destination",
 			label: "Choose destination",
 		};
-	return {
-		kind: "return",
-		label: "Choose return",
-	};
+	if (draft.state === "choosing-return") return {kind: "return", label: "Choose return"};
+	if (hoverStatus) return hoverStatus;
+	if (noticeStatus) return noticeStatus;
+	return {kind: "idle", label: `${rooms.length} rooms`};
 }
 
 export default function EditorPage() {
@@ -245,6 +251,8 @@ function EditorMainPanel({
 	connectionDraft,
 	setConnectionDraft,
 }: EditorMainPanelProps) {
+	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
+
 	return (
 		<section className="editorMainPanel">
 			<EditorToolbar
@@ -255,6 +263,8 @@ function EditorMainPanel({
 				mapZoom={mapZoom}
 				onMapRecenter={onMapRecenter}
 				connectionDraft={connectionDraft}
+				hoverStatus={hoverStatus}
+				noticeStatus={noticeStatus}
 			/>
 
 			<div className="editorWorkspaceShell">
@@ -271,6 +281,7 @@ function EditorMainPanel({
 					recenterRequest={mapRecenterRequest}
 					connectionDraft={connectionDraft}
 					setConnectionDraft={setConnectionDraft}
+					updateStatus={updateStatus}
 				/>
 			</div>
 
@@ -287,6 +298,8 @@ type EditorToolbarProps = {
 	mapZoom: number;
 	onMapRecenter: () => void;
 	connectionDraft: ConnectionDraft;
+	hoverStatus: ToolBarStatus | null;
+	noticeStatus: ToolBarStatus | null;
 };
 
 function EditorToolbar({
@@ -297,6 +310,8 @@ function EditorToolbar({
 	mapZoom,
 	onMapRecenter,
 	connectionDraft,
+	hoverStatus,
+	noticeStatus,
 }: EditorToolbarProps) {
 	if (activeTab === "map") {
 		return (
@@ -305,7 +320,7 @@ function EditorToolbar({
 				onToolChange={setMapTool}
 				zoom={mapZoom}
 				onRecenter={onMapRecenter}
-				status={getConnectionDraftStatus(connectionDraft, rooms)}
+				status={getConnectionDraftStatus(connectionDraft, rooms, hoverStatus, noticeStatus)}
 			/>
 		);
 	}
@@ -335,6 +350,7 @@ type EditorWorkspaceProps = {
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
+	updateStatus: UpdateStatus;
 };
 
 function EditorWorkspace({
@@ -350,6 +366,7 @@ function EditorWorkspace({
 	recenterRequest,
 	connectionDraft,
 	setConnectionDraft,
+	updateStatus,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -365,6 +382,7 @@ function EditorWorkspace({
 				recenterRequest={recenterRequest}
 				connectionDraft={connectionDraft}
 				setConnectionDraft={setConnectionDraft}
+				updateStatus={updateStatus}
 			/>
 		);
 	}
@@ -384,6 +402,7 @@ type MapWorkspaceProps = {
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
+	updateStatus: UpdateStatus;
 };
 
 function MapWorkspace({
@@ -398,6 +417,7 @@ function MapWorkspace({
 	recenterRequest,
 	connectionDraft,
 	setConnectionDraft,
+	updateStatus,
 }: MapWorkspaceProps) {
 	return (
 		<Map
@@ -429,6 +449,7 @@ function MapWorkspace({
 			}
 			connectionDraft={connectionDraft}
 			setConnectionDraft={setConnectionDraft}
+			updateStatus={updateStatus}
 		/>
 	);
 }
