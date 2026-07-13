@@ -5,6 +5,8 @@
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
+		"pages:build": "next build --webpack",
+		"deploy": "pnpm pages:build && wrangler pages deploy out --project-name mothmark",
 		"start": "next start",
 		"lint": "eslint",
 		"format": "prettier --write .",
@@ -46,6 +48,7 @@
 		"prettier": "^3.9.4",
 		"tailwindcss": "^4",
 		"ts-node": "^10.9.2",
-		"typescript": "^5"
+		"typescript": "^5",
+		"wrangler": "^4.110.0"
 	}
 }

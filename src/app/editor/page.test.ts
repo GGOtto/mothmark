@@ -1,4 +1,4 @@
-import {getConnectionDraftStatus} from "./page";
+import {getConnectionDraftStatus} from "./editorPageUtils";
 
 describe("map toolbar node status", () => {
 	it("describes the hovered node when no connection draft is active", () => {

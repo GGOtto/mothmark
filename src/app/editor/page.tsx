@@ -15,6 +15,7 @@ import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
+import {getConnectionDraftStatus} from "./editorPageUtils";
 import "./page.scss";
 
 type EditorSelection = {
@@ -60,23 +61,6 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 
 function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): T {
 	return typeof action === "function" ? (action as (value: T) => T)(currentValue) : action;
-}
-
-export function getConnectionDraftStatus(
-	draft: ConnectionDraft,
-	rooms: Room[],
-	hoverStatus: ToolBarStatus | null,
-	noticeStatus: ToolBarStatus | null,
-): ToolBarStatus {
-	if (draft.state === "choosing-destination")
-		return {
-			kind: "destination",
-			label: "Choose destination",
-		};
-	if (draft.state === "choosing-return") return {kind: "return", label: "Choose return"};
-	if (hoverStatus) return hoverStatus;
-	if (noticeStatus) return noticeStatus;
-	return {kind: "idle", label: `${rooms.length} rooms`};
 }
 
 export default function EditorPage() {

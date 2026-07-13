@@ -29,8 +29,30 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy on Cloudflare Pages
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is configured as a static Next.js export, which Cloudflare Pages serves from
+the generated `out` directory.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create a Pages project from this repository and use:
+
+- Framework preset: `Next.js (Static HTML Export)`
+- Build command: `pnpm pages:build`
+- Build output directory: `out`
+- Node.js version: `22`
+
+Cloudflare detects `pnpm-lock.yaml` and installs dependencies with pnpm. Preview the
+same artifact locally with:
+
+```bash
+pnpm pages:build
+python3 -m http.server 3000 --directory out
+```
+
+To build and directly publish the `out` directory to the `mothmark` Pages project, log
+in with `pnpm wrangler login` once and run `pnpm deploy`.
+
+The `/api/health` route is generated at build time as a static JSON response. If the app
+later needs runtime API routes, server-side rendering, or middleware, migrate the deployment
+to Cloudflare Workers using the OpenNext adapter; those features are not part of a static
+Pages export.
