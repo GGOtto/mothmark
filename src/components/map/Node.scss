@@ -27,7 +27,39 @@
 	&:hover {
 		transform: translate(-50%, -50%) scale(1.25);
 		border-color: var(--map-accent-strong);
-		background: var(--map-node-surface);
-		box-shadow: 0 0 0 2px var(--map-accent-soft);
+		background: var(--map-selection-contrast);
+		box-shadow: 0 1px 2px var(--map-shadow);
+	}
+}
+
+.node.node--armed,
+.node.node--armed:hover {
+	--node-pulse-border: #8f2929;
+	--node-pulse-fill: #ffd6d2;
+	--node-pulse-ring: #d84b45;
+
+	animation: nodePulse 1s ease-out infinite;
+}
+
+.node--pulse {
+	animation: nodePulse 1s ease-out infinite;
+}
+
+@keyframes nodePulse {
+	0% {
+		transform: translate(-50%, -50%) scale(1);
+		border-color: var(--node-pulse-border, var(--map-accent-strong));
+		background: var(--node-pulse-fill, var(--map-selection-contrast));
+		outline: 2px solid var(--node-pulse-ring, var(--map-accent));
+		outline-offset: 0;
+	}
+
+	70%,
+	100% {
+		transform: translate(-50%, -50%) scale(1);
+		border-color: var(--node-pulse-border, var(--map-accent-strong));
+		background: var(--node-pulse-fill, var(--map-selection-contrast));
+		outline: 2px solid transparent;
+		outline-offset: 6px;
 	}
 }

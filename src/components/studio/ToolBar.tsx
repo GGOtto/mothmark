@@ -1,6 +1,14 @@
 "use client";
 
-import {Focus, Hand, MousePointer2, Plus} from "lucide-react";
+import {
+	CircleX,
+	CornerDownLeft,
+	Focus,
+	Hand,
+	Map,
+	MousePointer2,
+	MousePointerClick,
+} from "lucide-react";
 import type {MapTool} from "../map/Map";
 import "./ToolBar.scss";
 
@@ -9,9 +17,22 @@ type ToolBarProps = {
 	onToolChange: (tool: MapTool) => void;
 	zoom: number;
 	onRecenter: () => void;
+	status: ToolBarStatus;
 };
 
-export function ToolBar({activeTool, onToolChange, zoom, onRecenter}: ToolBarProps) {
+export type ToolBarStatus = {
+	kind: "cancelled" | "destination" | "idle" | "return";
+	label: string;
+};
+
+export function ToolBar({activeTool, onToolChange, zoom, onRecenter, status}: ToolBarProps) {
+	const StatusIcon = {
+		cancelled: CircleX,
+		destination: MousePointerClick,
+		idle: Map,
+		return: CornerDownLeft,
+	}[status.kind];
+
 	return (
 		<div className="toolbar" aria-label="Map tools">
 			<div className="toolbarTools" role="group" aria-label="Pointer tool">
@@ -45,15 +66,10 @@ export function ToolBar({activeTool, onToolChange, zoom, onRecenter}: ToolBarPro
 				{Math.round(zoom * 100)}%
 			</div>
 			<div className="toolbarHint">Scroll to zoom</div>
-			<button
-				type="button"
-				className="toolbarTool toolbarAddRoom"
-				onClick={() => window.dispatchEvent(new Event("mothmark:add-room"))}
-				title="Add room at top right"
-			>
-				<Plus size={17} strokeWidth={1.9} />
-				<span>Add room</span>
-			</button>
+			<div className="toolbarStatus" aria-label={status.label}>
+				<StatusIcon size={14} strokeWidth={2} aria-hidden="true" />
+				<span>{status.label}</span>
+			</div>
 		</div>
 	);
 }

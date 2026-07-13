@@ -29,7 +29,6 @@
 		text-align: center;
 		overflow-wrap: anywhere;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 4;
 	}
 
 	&:hover {
@@ -40,15 +39,15 @@
 	}
 
 	&.roomCardSelected {
-		border: 2px solid var(--map-accent);
-		background: var(--map-room-hover);
+		border: 3px solid var(--map-accent);
+		background: var(--map-room-selected);
 		box-shadow:
 			inset 0 1px 0 var(--map-highlight),
-			0 0 0 2px var(--map-accent-soft),
+			0 0 0 1px var(--map-accent-strong),
 			0 3px 7px var(--map-shadow);
 
 		.node {
-			border-color: var(--map-accent-strong);
+			border-color: var(--map-room-border);
 		}
 	}
 

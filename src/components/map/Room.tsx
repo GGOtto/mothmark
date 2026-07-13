@@ -12,14 +12,8 @@ type RoomProps = {
 	isSelected: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, room: Room) => void;
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
-	onConnectionDragStart: (
-		event: React.PointerEvent<HTMLDivElement>,
-		fromRoom: Room,
-		direction: Direction,
-	) => void;
-	onConnectionDragMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-	onConnectionDragEnd: (event: React.PointerEvent<HTMLDivElement>) => void;
-	onConnectionDragCancel: () => void;
+	armedDirection: Direction | null;
+	pulseNodes: boolean;
 };
 
 export function RoomCard({
@@ -30,10 +24,8 @@ export function RoomCard({
 	isSelected,
 	onPointerDown,
 	onNodeClick,
-	onConnectionDragStart,
-	onConnectionDragMove,
-	onConnectionDragEnd,
-	onConnectionDragCancel,
+	armedDirection,
+	pulseNodes,
 }: RoomProps) {
 	function buildNode(direction: Direction): RoomNode {
 		const vector = DIRECTION_VECTORS[direction];
@@ -79,10 +71,7 @@ export function RoomCard({
 					node={node}
 					key={node.direction}
 					onNodeClick={onNodeClick}
-					onConnectionDragStart={onConnectionDragStart}
-					onConnectionDragMove={onConnectionDragMove}
-					onConnectionDragEnd={onConnectionDragEnd}
-					onConnectionDragCancel={onConnectionDragCancel}
+					status={armedDirection === node.direction ? "armed" : pulseNodes ? "pulse" : "idle"}
 				/>
 			))}
 

@@ -67,6 +67,27 @@
 	font-size: 11px;
 }
 
+.toolbarStatus {
+	margin-left: auto;
+	min-width: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	max-width: 160px;
+	color: var(--panel-muted);
+	font-size: 12px;
+	white-space: nowrap;
+
+	svg {
+		flex: 0 0 auto;
+	}
+
+	span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
 .toolbarAddRoom {
 	margin-left: auto;
 	border-color: var(--panel-border);

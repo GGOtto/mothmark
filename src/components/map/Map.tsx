@@ -1,16 +1,15 @@
 "use client";
 
 import type React from "react";
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
-import {buildAddConnectionResult} from "../../utils/connectionUtils";
+import {getPathwayForNewDrop, isConnectionFromRoom} from "../../utils/connectionUtils";
 import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
-import {createDefaultRoom} from "../../utils/createDefaultWorld";
-import {useConnectionDrag} from "./useConnectionDrag";
+import {createDefaultConnection, createDefaultRoom} from "../../utils/createDefaultWorld";
 import "./Map.scss";
 
 type DragState = {
@@ -32,10 +31,21 @@ type MapProps = {
 	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
 	isConnectionSelected: boolean;
 	setIsConnectionSelected: React.Dispatch<React.SetStateAction<boolean>>;
+	connectionDraft: ConnectionDraft;
+	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 };
 
 export type MapTheme = "light" | "dark";
 export type MapTool = "edit" | "pan";
+export type ConnectionDraft =
+	| {state: "idle"; message?: string}
+	| {state: "choosing-destination"; fromRoomId: string; fromDirection: Direction}
+	| {
+			state: "choosing-return";
+			fromRoomId: string;
+			fromDirection: Direction;
+			toRoomId: string;
+	  };
 
 type Viewport = {
 	x: number;
@@ -54,6 +64,7 @@ const ROOM_HEIGHT = 80;
 const ROOM_DRAG_THRESHOLD = 2;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
+const ROOM_DIRECTIONS: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 
 export function Map({
 	tool,
@@ -67,12 +78,17 @@ export function Map({
 	setSelectedId,
 	isConnectionSelected,
 	setIsConnectionSelected,
+	connectionDraft,
+	setConnectionDraft,
 }: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const [viewport, setViewport] = useState<Viewport>({x: 0, y: 0, zoom: 1});
 	const [panState, setPanState] = useState<PanState | null>(null);
 	const viewportRef = useRef(viewport);
 	const mapRef = useRef<HTMLDivElement | null>(null);
+	const cancelConnectionDraft = useCallback(() => {
+		setConnectionDraft({state: "idle", message: "Connection cancelled"});
+	}, [setConnectionDraft]);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -80,6 +96,10 @@ export function Map({
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape" && connectionDraft.state !== "idle") {
+				cancelConnectionDraft();
+				return;
+			}
 			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
 				return;
 			if (event.key.toLowerCase() === "v")
@@ -90,7 +110,11 @@ export function Map({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [cancelConnectionDraft, connectionDraft]);
+
+	useEffect(() => {
+		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
+	}, [tool, cancelConnectionDraft, connectionDraft]);
 
 	function clientToMapPoint(clientX: number, clientY: number): Point | null {
 		const mapElement = mapRef.current;
@@ -113,6 +137,11 @@ export function Map({
 		setIsConnectionSelected(true);
 	}
 
+	function handleConnectionSelect(connection?: ConnectionType) {
+		if (connectionDraft.state === "choosing-return") cancelConnectionDraft();
+		selectConnection(connection);
+	}
+
 	function addRoomAt(position: Point) {
 		const room = createDefaultRoom(
 			generateUniqueId("room", rooms),
@@ -121,27 +150,6 @@ export function Map({
 		);
 		setRooms((currentRooms) => [...currentRooms, room]);
 		selectRoom(room);
-	}
-
-	useEffect(() => {
-		function handleAddRoomRequest() {
-			const mapElement = mapRef.current;
-			if (!mapElement) return;
-			const bounds = mapElement.getBoundingClientRect();
-			const current = viewportRef.current;
-			addRoomAt({
-				x: (bounds.width - current.x - ROOM_WIDTH / 2 - 24) / current.zoom,
-				y: (ROOM_HEIGHT / 2 + 24 - current.y) / current.zoom,
-			});
-		}
-
-		window.addEventListener("mothmark:add-room", handleAddRoomRequest);
-		return () => window.removeEventListener("mothmark:add-room", handleAddRoomRequest);
-	});
-
-	function requestConnectionSelection(connectionId: string) {
-		setSelectedId(connectionId);
-		setIsConnectionSelected(true);
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
@@ -167,56 +175,92 @@ export function Map({
 		return room;
 	}
 
-	const {
-		connectionDragState,
-		addOrUpdateConnectionByShape,
-		handleConnectionDragStart,
-		handleConnectionDragMove,
-		handleConnectionDragEnd,
-		handleConnectionDragCancel,
-	} = useConnectionDrag({
-		rooms,
-		connections,
-		setConnections,
-		getRoomConnectionPoint,
-		onConnectionSelectionRequested: requestConnectionSelection,
-		clientToMapPoint,
-		mapRef,
-	});
-
 	function addConnection(fromRoom: Room, direction: Direction) {
-		const result = buildAddConnectionResult({
-			fromRoom,
-			direction,
-			rooms,
-			connections,
-			roomWidth: ROOM_WIDTH,
-			roomHeight: ROOM_HEIGHT,
-			connectorLength: 40,
-			minConnectorLength: 12,
-			connectorStep: 4,
-		});
-
-		if (!result) {
-			return;
-		}
-
-		if (result.roomToAdd) {
-			const roomToAdd = result.roomToAdd;
-
-			selectRoom(roomToAdd);
-			setRooms((rooms) => [...rooms, roomToAdd]);
-
-			addOrUpdateConnectionByShape(result.connection, {
-				selectConnection: false,
+		const roomId = idValue(fromRoom.id);
+		if (connectionDraft.state === "idle") {
+			setConnectionDraft({
+				state: "choosing-destination",
+				fromRoomId: roomId,
+				fromDirection: direction,
 			});
-
 			return;
 		}
-
-		addOrUpdateConnectionByShape(result.connection, {
-			selectConnection: true,
+		if (connectionDraft.state === "choosing-destination") {
+			if (connectionDraft.fromRoomId === roomId && connectionDraft.fromDirection === direction) {
+				cancelConnectionDraft();
+				return;
+			}
+			if (connectionDraft.fromRoomId === roomId) return;
+			createDraftConnection(connectionDraft, fromRoom, direction);
+			return;
+		}
+		if (connectionDraft.toRoomId === roomId) {
+			createDraftConnection(connectionDraft, fromRoom, direction);
+			return;
+		}
+		if (connectionDraft.fromRoomId === roomId && connectionDraft.fromDirection === direction) {
+			cancelConnectionDraft();
+			return;
+		}
+		setConnectionDraft({
+			state: "choosing-destination",
+			fromRoomId: roomId,
+			fromDirection: direction,
 		});
+	}
+
+	function createDraftConnection(
+		draft: Exclude<ConnectionDraft, {state: "idle"}>,
+		toRoom: Room,
+		returnDirection: Direction,
+		pathway?: ConnectionType["pathway"],
+	) {
+		const connection = createDefaultConnection({
+			id: generateUniqueId("connection", connections),
+			fromRoomId: draft.fromRoomId,
+			toRoomId: toRoom.id,
+			direction: draft.fromDirection,
+			returnDirection,
+			pathway:
+				pathway ??
+				getPathwayForNewDrop(
+					draft.fromRoomId,
+					draft.fromDirection,
+					idValue(toRoom.id),
+					returnDirection,
+					connections,
+				),
+		});
+		setConnections((current) => [...current, connection]);
+		selectConnection(connection);
+		setConnectionDraft({state: "idle"});
+	}
+
+	function connectDraftToRoom(toRoom: Room) {
+		if (connectionDraft.state !== "choosing-destination") return false;
+		if (connectionDraft.fromRoomId === idValue(toRoom.id)) return false;
+
+		const fromRoom = rooms.find((room) => idValue(room.id) === connectionDraft.fromRoomId);
+		if (!fromRoom) return false;
+
+		const sourcePoint = getRoomConnectionPoint(fromRoom, connectionDraft.fromDirection);
+		const returnDirection = ROOM_DIRECTIONS.reduce((closestDirection, direction) => {
+			const closestPoint = getRoomConnectionPoint(toRoom, closestDirection);
+			const candidatePoint = getRoomConnectionPoint(toRoom, direction);
+			return getDistance(sourcePoint, candidatePoint) < getDistance(sourcePoint, closestPoint)
+				? direction
+				: closestDirection;
+		});
+		const pathway = isConnectionFromRoom(
+			connectionDraft.fromRoomId,
+			connectionDraft.fromDirection,
+			connections,
+		)
+			? "no-way"
+			: "forwards";
+
+		createDraftConnection(connectionDraft, toRoom, returnDirection, pathway);
+		return true;
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
@@ -282,7 +326,10 @@ export function Map({
 		const selectedRoom = rooms.find((room) => idValue(room.id) === dragState.roomId);
 
 		if (selectedRoom && !dragState.hasDragged) {
-			selectRoom(selectedRoom);
+			if (connectionDraft.state === "choosing-return") {
+				cancelConnectionDraft();
+				selectRoom(selectedRoom);
+			} else if (!connectDraftToRoom(selectedRoom)) selectRoom(selectedRoom);
 		}
 
 		setDragState(null);
@@ -330,10 +377,30 @@ export function Map({
 
 	function handleBlankMapClick(event: React.MouseEvent<HTMLDivElement>) {
 		if (tool !== "edit") return;
-		if (event.target instanceof Element && event.target.closest(".roomCard, .connectionClickTarget"))
+		if (
+			event.target instanceof Element &&
+			event.target.closest(".roomCard, .node, .connectionClickTarget")
+		)
 			return;
 		const position = clientToMapPoint(event.clientX, event.clientY);
-		if (position) addRoomAt(position);
+		if (!position) return;
+		if (connectionDraft.state === "choosing-return") {
+			cancelConnectionDraft();
+			addRoomAt(position);
+			return;
+		}
+		if (connectionDraft.state === "idle") {
+			addRoomAt(position);
+			return;
+		}
+		const room = createDefaultRoom(
+			generateUniqueId("room", rooms),
+			`Room ${rooms.length + 1}`,
+			position,
+		);
+		setRooms((current) => [...current, room]);
+		selectRoom(room);
+		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
 	return (
@@ -370,31 +437,12 @@ export function Map({
 								connection={connection}
 								fromRoom={fromRoom}
 								toRoom={toRoom}
-								selectConnection={selectConnection}
+								selectConnection={handleConnectionSelect}
 								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
 								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
 							/>
 						);
 					})}
-
-					{connectionDragState?.hasDragged ? (
-						<path
-							className="mapConnectionDragPath"
-							d={`M ${connectionDragState.startPoint.x} ${connectionDragState.startPoint.y} L ${connectionDragState.currentPoint.x} ${connectionDragState.currentPoint.y}`}
-							fill="none"
-							strokeLinecap="round"
-						/>
-					) : null}
-
-					{connectionDragState?.snapTarget ? (
-						<circle
-							className="mapSnapTarget"
-							cx={connectionDragState.snapTarget.point.x}
-							cy={connectionDragState.snapTarget.point.y}
-							r={8}
-							fill="none"
-						/>
-					) : null}
 				</svg>
 
 				{rooms.map((room) => (
@@ -405,12 +453,16 @@ export function Map({
 						height={ROOM_HEIGHT}
 						isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
 						isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
+						armedDirection={
+							connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
+								? connectionDraft.fromDirection
+								: null
+						}
+						pulseNodes={
+							connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
+						}
 						onPointerDown={handleRoomPointerDown}
 						onNodeClick={addConnection}
-						onConnectionDragStart={handleConnectionDragStart}
-						onConnectionDragMove={handleConnectionDragMove}
-						onConnectionDragEnd={handleConnectionDragEnd}
-						onConnectionDragCancel={handleConnectionDragCancel}
 					/>
 				))}
 			</div>

@@ -2,11 +2,11 @@
 
 import type React from "react";
 import {useCallback, useMemo, useState} from "react";
-import {ToolBar} from "@/components/studio/ToolBar";
+import {ToolBar, type ToolBarStatus} from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
-import {Map, type MapTool} from "@/components/map/Map";
+import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
@@ -35,7 +35,7 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		title: "Logic",
 		description: "Edit commands, triggers, states, flags, and conditions.",
 	},
-	issues: {
+	debug: {
 		title: "Issues",
 		description: "Review validation errors and broken world logic.",
 	},
@@ -47,7 +47,7 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		title: "Settings",
 		description: "Configure editor preferences.",
 	},
-	story: {
+	npcs: {
 		title: "Story",
 		description: "Examine the text connection to world entities.",
 	},
@@ -57,11 +57,28 @@ function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): 
 	return typeof action === "function" ? (action as (value: T) => T)(currentValue) : action;
 }
 
+function getConnectionDraftStatus(draft: ConnectionDraft, rooms: Room[]): ToolBarStatus {
+	if (draft.state === "idle")
+		return draft.message
+			? {kind: "cancelled", label: "Cancelled"}
+			: {kind: "idle", label: `${rooms.length} rooms`};
+	if (draft.state === "choosing-destination")
+		return {
+			kind: "destination",
+			label: "Choose destination",
+		};
+	return {
+		kind: "return",
+		label: "Choose return",
+	};
+}
+
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
 	const [mapZoom, setMapZoom] = useState(1);
 	const [mapRecenterRequest, setMapRecenterRequest] = useState(0);
+	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 
@@ -166,6 +183,8 @@ export default function EditorPage() {
 				mapZoom={mapZoom}
 				setMapZoom={setMapZoom}
 				mapRecenterRequest={mapRecenterRequest}
+				connectionDraft={connectionDraft}
+				setConnectionDraft={setConnectionDraft}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -203,6 +222,8 @@ type EditorMainPanelProps = {
 	setMapZoom: (zoom: number) => void;
 	mapRecenterRequest: number;
 	onMapRecenter: () => void;
+	connectionDraft: ConnectionDraft;
+	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 };
 
 function EditorMainPanel({
@@ -221,15 +242,19 @@ function EditorMainPanel({
 	setMapZoom,
 	mapRecenterRequest,
 	onMapRecenter,
+	connectionDraft,
+	setConnectionDraft,
 }: EditorMainPanelProps) {
 	return (
 		<section className="editorMainPanel">
 			<EditorToolbar
 				activeTab={activeTab}
+				rooms={rooms}
 				mapTool={mapTool}
 				setMapTool={setMapTool}
 				mapZoom={mapZoom}
 				onMapRecenter={onMapRecenter}
+				connectionDraft={connectionDraft}
 			/>
 
 			<div className="editorWorkspaceShell">
@@ -244,6 +269,8 @@ function EditorMainPanel({
 					mapTool={mapTool}
 					onZoomChange={setMapZoom}
 					recenterRequest={mapRecenterRequest}
+					connectionDraft={connectionDraft}
+					setConnectionDraft={setConnectionDraft}
 				/>
 			</div>
 
@@ -254,18 +281,22 @@ function EditorMainPanel({
 
 type EditorToolbarProps = {
 	activeTab: EditorTab;
+	rooms: Room[];
 	mapTool: MapTool;
 	setMapTool: (tool: MapTool) => void;
 	mapZoom: number;
 	onMapRecenter: () => void;
+	connectionDraft: ConnectionDraft;
 };
 
 function EditorToolbar({
 	activeTab,
+	rooms,
 	mapTool,
 	setMapTool,
 	mapZoom,
 	onMapRecenter,
+	connectionDraft,
 }: EditorToolbarProps) {
 	if (activeTab === "map") {
 		return (
@@ -274,6 +305,7 @@ function EditorToolbar({
 				onToolChange={setMapTool}
 				zoom={mapZoom}
 				onRecenter={onMapRecenter}
+				status={getConnectionDraftStatus(connectionDraft, rooms)}
 			/>
 		);
 	}
@@ -301,6 +333,8 @@ type EditorWorkspaceProps = {
 	mapTool: MapTool;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
+	connectionDraft: ConnectionDraft;
+	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 };
 
 function EditorWorkspace({
@@ -314,6 +348,8 @@ function EditorWorkspace({
 	mapTool,
 	onZoomChange,
 	recenterRequest,
+	connectionDraft,
+	setConnectionDraft,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -327,6 +363,8 @@ function EditorWorkspace({
 				mapTool={mapTool}
 				onZoomChange={onZoomChange}
 				recenterRequest={recenterRequest}
+				connectionDraft={connectionDraft}
+				setConnectionDraft={setConnectionDraft}
 			/>
 		);
 	}
@@ -344,6 +382,8 @@ type MapWorkspaceProps = {
 	mapTool: MapTool;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
+	connectionDraft: ConnectionDraft;
+	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 };
 
 function MapWorkspace({
@@ -356,6 +396,8 @@ function MapWorkspace({
 	mapTool,
 	onZoomChange,
 	recenterRequest,
+	connectionDraft,
+	setConnectionDraft,
 }: MapWorkspaceProps) {
 	return (
 		<Map
@@ -385,6 +427,8 @@ function MapWorkspace({
 							: isConnectionSelected,
 				}))
 			}
+			connectionDraft={connectionDraft}
+			setConnectionDraft={setConnectionDraft}
 		/>
 	);
 }

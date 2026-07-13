@@ -118,13 +118,26 @@ export function Connection({
 		/>
 	);
 	const selectedPathUnderlay = isSelected ? (
-		<path
-			className="connectionPathUnderlay"
-			d={path}
-			fill="none"
-			strokeLinecap="round"
-			pointerEvents="none"
-		/>
+		<>
+			<path
+				className={`connectionPathUnderlay ${connection.pathway === "two-way" ? "" : "connectionPathDashed"}`}
+				d={path}
+				fill="none"
+				strokeLinecap="round"
+				pointerEvents="none"
+			/>
+			{connection.pathway === "forwards" || connection.pathway === "backwards" ? (
+				<path
+					className="connectionPathUnderlay connectionPathDirectional"
+					d={path}
+					pathLength={100}
+					fill="none"
+					strokeLinecap="round"
+					strokeDashoffset={connection.pathway === "backwards" ? -50 : 0}
+					pointerEvents="none"
+				/>
+			) : null}
+		</>
 	) : null;
 
 	if (connection.pathway === "two-way") {
