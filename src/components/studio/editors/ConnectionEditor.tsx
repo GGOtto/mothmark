@@ -1,5 +1,5 @@
 import {useMemo} from "react";
-import {ArrowLeft, ArrowLeftRight, ArrowRight, Minus} from "lucide-react";
+import {ArrowLeft, ArrowLeftRight, ArrowRight, X} from "lucide-react";
 import {type World} from "../../../schemas/worldSchema";
 import {ConnectionSchema, type Connection, type Pathway} from "../../../schemas/roomSchema";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
@@ -25,7 +25,7 @@ export function PathwayIndicator({pathway}: PathwayIndicatorProps) {
 			);
 
 		case "no-way":
-			return <Minus className="connectionEditorPathwayIcon" aria-label="No-way connection" />;
+			return <X className="connectionEditorPathwayIcon" aria-label="No-way connection" />;
 
 		default:
 			return null;

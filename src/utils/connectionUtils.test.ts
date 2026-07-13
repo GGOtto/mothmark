@@ -8,6 +8,7 @@ import {
 	getConnectionSide,
 	getDuplicateConnectionByShape,
 	getNearestNodeInRadius,
+	getNextAvailablePathway,
 	getNodeSelectionKey,
 	getPathwayForEditedDrop,
 	getPathwayForNewDrop,
@@ -160,6 +161,43 @@ describe("isConnectionFromRoom", () => {
 
 		expect(isConnectionFromRoom("room-1", "e", connections)).toBe(false);
 		expect(isConnectionFromRoom("room-2", "w", connections)).toBe(false);
+	});
+});
+
+describe("getNextAvailablePathway", () => {
+	it("uses the next pathway when neither endpoint node has another outgoing connection", () => {
+		const currentConnection = connection();
+
+		expect(getNextAvailablePathway(currentConnection, [currentConnection])).toBe("forwards");
+	});
+
+	it("skips a backwards pathway when the destination node already has an outgoing connection", () => {
+		const currentConnection = connection({pathway: "forwards"});
+		const destinationOutgoing = connection({
+			id: toID("connection", "connection-2"),
+			fromRoomId: {type: "room", id: "room-2"},
+			toRoomId: {type: "room", id: "room-3"},
+			direction: "w",
+			returnDirection: "e",
+			pathway: "forwards",
+		});
+
+		expect(getNextAvailablePathway(currentConnection, [currentConnection, destinationOutgoing])).toBe(
+			"no-way",
+		);
+	});
+
+	it("skips pathways that leave a source node which already has an outgoing connection", () => {
+		const currentConnection = connection({pathway: "no-way"});
+		const sourceOutgoing = connection({
+			id: toID("connection", "connection-2"),
+			toRoomId: {type: "room", id: "room-3"},
+			pathway: "forwards",
+		});
+
+		expect(getNextAvailablePathway(currentConnection, [currentConnection, sourceOutgoing])).toBe(
+			"backwards",
+		);
 	});
 });
 

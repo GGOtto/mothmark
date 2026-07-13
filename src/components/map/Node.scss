@@ -32,6 +32,18 @@
 	}
 }
 
+.node--outgoing::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 3px;
+	height: 3px;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	background: var(--map-line);
+}
+
 .node.node--armed,
 .node.node--armed:hover {
 	--node-pulse-border: #8f2929;

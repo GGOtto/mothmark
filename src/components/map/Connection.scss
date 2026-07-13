@@ -38,3 +38,73 @@
 		}
 	}
 }
+
+.connectionMidpointGlyph {
+	color: inherit;
+}
+
+.connectionMidpointGlyphInner {
+	transform-box: fill-box;
+	transform-origin: center;
+	transition:
+		transform 120ms ease,
+		filter 120ms ease;
+}
+
+.connectionMidpointGlyphOutline {
+	fill: var(--map-line);
+	stroke: none;
+	transition: fill 120ms ease;
+}
+
+.connectionMidpointGlyphBody {
+	fill: white;
+	stroke: none;
+}
+
+.connectionMidpointGlyphFace {
+	fill: white;
+	stroke: none;
+}
+
+.connectionMidpointGlyphIcon {
+	color: var(--map-line);
+	stroke: currentColor;
+	fill: none;
+	transition: color 120ms ease;
+}
+
+.connectionMidpointGlyphControl {
+	cursor: pointer;
+	pointer-events: all;
+	outline: none;
+
+	circle {
+		fill: transparent;
+	}
+
+	&:focus-visible circle {
+		stroke: var(--map-accent-strong);
+		stroke-width: 2;
+	}
+}
+
+.connection:has(.connectionMidpointGlyphControl:active) .connectionMidpointGlyphFace {
+	fill: #d8d8d8;
+}
+
+.connectionSelected .connectionMidpointGlyphOutline {
+	fill: var(--map-accent-strong);
+}
+
+.connectionSelected .connectionMidpointGlyphBody {
+	fill: var(--map-accent);
+}
+
+.connectionSelected .connectionMidpointGlyphIcon {
+	color: var(--map-accent-strong);
+}
+
+.connection:hover .connectionMidpointGlyphInner {
+	transform: scale(1.06);
+}

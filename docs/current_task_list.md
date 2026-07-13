@@ -2,7 +2,7 @@
 
 Each slice delivers a coherent user-facing improvement across data, interaction, visuals, persistence, and tests. Avoid landing isolated infrastructure that cannot be exercised in the editor.
 
-## Slice 1: Unified click-based map authoring
+[x] ## Slice 1: Unified click-based map authoring
 
 **Outcome:** Authors create rooms with blank clicks and create passages without dragging nodes.
 
@@ -28,7 +28,7 @@ Verification:
 - Confirm room drag does not accidentally create a room.
 - Browser-test all paths and confirm no native context menu or console error regressions.
 
-## Slice 2: Pathway-aware capacity and fast pathway editing
+[ ] ## Slice 2: Pathway-aware capacity and fast pathway editing
 
 **Outcome:** Shared nodes and directional pathway constraints are understandable and safe.
 

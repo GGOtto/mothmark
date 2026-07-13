@@ -14,6 +14,7 @@ type RoomProps = {
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
 	armedDirection: Direction | null;
 	pulseNodes: boolean;
+	outgoingDirections: Direction[];
 };
 
 export function RoomCard({
@@ -26,6 +27,7 @@ export function RoomCard({
 	onNodeClick,
 	armedDirection,
 	pulseNodes,
+	outgoingDirections,
 }: RoomProps) {
 	function buildNode(direction: Direction): RoomNode {
 		const vector = DIRECTION_VECTORS[direction];
@@ -72,6 +74,7 @@ export function RoomCard({
 					key={node.direction}
 					onNodeClick={onNodeClick}
 					status={armedDirection === node.direction ? "armed" : pulseNodes ? "pulse" : "idle"}
+					hasOutgoingPath={outgoingDirections.includes(node.direction)}
 				/>
 			))}
 

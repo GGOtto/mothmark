@@ -1,3 +1,4 @@
+import {ArrowLeftRight, ArrowRight, X} from "lucide-react";
 import type React from "react";
 import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "../../types/mapTypes";
@@ -15,14 +16,68 @@ type ConnectionProps = {
 	fromRoom: Room;
 	toRoom: Room;
 	selectConnection: (connection?: ConnectionType) => void;
+	changePathway: (connection: ConnectionType) => void;
 	isEditing?: boolean;
 	isSelected?: boolean;
 };
 
-function getPath(points: Point[]) {
-	if (points.length < 2) return "";
+type CubicBezierSegment = {
+	start: Point;
+	control1: Point;
+	control2: Point;
+	end: Point;
+};
 
-	let path = `M ${points[0].x} ${points[0].y}`;
+type ConnectionPathPlacement = {
+	point: Point;
+	angle: number;
+};
+
+function getCubicBezierPoint(
+	start: Point,
+	control1: Point,
+	control2: Point,
+	end: Point,
+	t: number,
+): Point {
+	const oneMinusT = 1 - t;
+
+	const a = oneMinusT ** 3;
+	const b = 3 * oneMinusT ** 2 * t;
+	const c = 3 * oneMinusT * t ** 2;
+	const d = t ** 3;
+
+	return {
+		x: a * start.x + b * control1.x + c * control2.x + d * end.x,
+		y: a * start.y + b * control1.y + c * control2.y + d * end.y,
+	};
+}
+
+function getCubicBezierLength(segment: CubicBezierSegment, samples = 24) {
+	let length = 0;
+	let previousPoint = segment.start;
+
+	for (let i = 1; i <= samples; i++) {
+		const t = i / samples;
+		const point = getCubicBezierPoint(
+			segment.start,
+			segment.control1,
+			segment.control2,
+			segment.end,
+			t,
+		);
+
+		length += getDistance(previousPoint, point);
+		previousPoint = point;
+	}
+
+	return length;
+}
+
+function getConnectionPathSegments(points: Point[]): CubicBezierSegment[] {
+	if (points.length < 2) return [];
+
+	const segments: CubicBezierSegment[] = [];
 
 	for (let i = 0; i < points.length - 1; i++) {
 		const p0 = points[i - 1] ?? points[i];
@@ -45,10 +100,129 @@ function getPath(points: Point[]) {
 		const control2Length = Math.min(outgoingLength * tension, maxControlLength);
 
 		const control1 = addPoints(p1, scalePoint(incoming, control1Length / incomingLength));
-
 		const control2 = subtractPoints(p2, scalePoint(outgoing, control2Length / outgoingLength));
 
-		path += ` C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${p2.x} ${p2.y}`;
+		segments.push({
+			start: p1,
+			control1,
+			control2,
+			end: p2,
+		});
+	}
+
+	return segments;
+}
+
+function getPointOnCubicBezierAtDistance(
+	segment: CubicBezierSegment,
+	targetDistance: number,
+	samples = 48,
+): Point {
+	let walkedDistance = 0;
+	let previousPoint = segment.start;
+
+	for (let i = 1; i <= samples; i++) {
+		const t = i / samples;
+		const point = getCubicBezierPoint(
+			segment.start,
+			segment.control1,
+			segment.control2,
+			segment.end,
+			t,
+		);
+
+		const stepDistance = getDistance(previousPoint, point);
+
+		if (walkedDistance + stepDistance >= targetDistance) {
+			const remainingDistance = targetDistance - walkedDistance;
+			const ratio = stepDistance === 0 ? 0 : remainingDistance / stepDistance;
+
+			return {
+				x: previousPoint.x + (point.x - previousPoint.x) * ratio,
+				y: previousPoint.y + (point.y - previousPoint.y) * ratio,
+			};
+		}
+
+		walkedDistance += stepDistance;
+		previousPoint = point;
+	}
+
+	return segment.end;
+}
+
+function getPointOnConnectionPathAtDistance(
+	segments: CubicBezierSegment[],
+	segmentLengths: number[],
+	targetDistance: number,
+): Point {
+	if (segments.length === 0) {
+		return {x: 0, y: 0};
+	}
+
+	const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
+	const clampedDistance = Math.max(0, Math.min(targetDistance, totalLength));
+
+	let walkedDistance = 0;
+
+	for (let i = 0; i < segments.length; i++) {
+		const segmentLength = segmentLengths[i];
+
+		if (walkedDistance + segmentLength >= clampedDistance) {
+			return getPointOnCubicBezierAtDistance(segments[i], clampedDistance - walkedDistance);
+		}
+
+		walkedDistance += segmentLength;
+	}
+
+	return segments[segments.length - 1].end;
+}
+
+function getConnectionPathMidpointPlacement(pathPoints: Point[]): ConnectionPathPlacement {
+	const segments = getConnectionPathSegments(pathPoints);
+
+	if (segments.length === 0) {
+		return {
+			point: pathPoints[0] ?? {x: 0, y: 0},
+			angle: 0,
+		};
+	}
+
+	const segmentLengths = segments.map((segment) => getCubicBezierLength(segment));
+	const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
+	const midpointDistance = totalLength / 2;
+	const tangentSampleDistance = Math.min(8, totalLength / 2);
+
+	const point = getPointOnConnectionPathAtDistance(segments, segmentLengths, midpointDistance);
+
+	const beforePoint = getPointOnConnectionPathAtDistance(
+		segments,
+		segmentLengths,
+		midpointDistance - tangentSampleDistance,
+	);
+
+	const afterPoint = getPointOnConnectionPathAtDistance(
+		segments,
+		segmentLengths,
+		midpointDistance + tangentSampleDistance,
+	);
+
+	return {
+		point,
+		angle: Math.atan2(afterPoint.y - beforePoint.y, afterPoint.x - beforePoint.x) * (180 / Math.PI),
+	};
+}
+
+function getPath(points: Point[]) {
+	if (points.length < 2) return "";
+
+	const segments = getConnectionPathSegments(points);
+
+	if (segments.length === 0) return "";
+
+	let path = `M ${points[0].x} ${points[0].y}`;
+
+	for (const segment of segments) {
+		path += ` C ${segment.control1.x} ${segment.control1.y} ${segment.control2.x} ${segment.control2.y} ${segment.end.x} ${segment.end.y}`;
 	}
 
 	return path;
@@ -74,11 +248,41 @@ function getControlPoints(
 	];
 }
 
+function getMidpointGlyphRotation(pathway: ConnectionType["pathway"], angle: number) {
+	if (pathway === "backwards") {
+		return angle + 180;
+	}
+
+	return angle;
+}
+
+function getMidpointGlyphIcon(pathway: ConnectionType["pathway"]) {
+	const iconProps = {
+		className: "connectionMidpointGlyphIcon",
+		x: -4.75,
+		y: -4.75,
+		width: 9.5,
+		height: 9.5,
+		strokeWidth: 3,
+	};
+
+	if (pathway === "two-way") {
+		return <ArrowLeftRight {...iconProps} />;
+	}
+
+	if (pathway === "no-way") {
+		return <X {...iconProps} />;
+	}
+
+	return <ArrowRight {...iconProps} />;
+}
+
 export function Connection({
 	connection,
 	fromRoom,
 	toRoom,
 	selectConnection,
+	changePathway,
 	isEditing = false,
 	isSelected = false,
 }: ConnectionProps) {
@@ -91,6 +295,12 @@ export function Connection({
 
 	const pathPoints = [fromRoom.position, ...curvePoints, toRoom.position];
 	const path = getPath(pathPoints);
+	const midpointPlacement = getConnectionPathMidpointPlacement(pathPoints);
+	const midpointIcon = getMidpointGlyphIcon(connection.pathway);
+	const midpointGlyphRotation = getMidpointGlyphRotation(
+		connection.pathway,
+		midpointPlacement.angle,
+	);
 
 	const connectionClassNames = [
 		"connection",
@@ -105,6 +315,23 @@ export function Connection({
 		selectConnection(connection);
 	}
 
+	function cyclePathway() {
+		changePathway(connection);
+	}
+
+	function handleGlyphClick(event: React.MouseEvent<SVGGElement>) {
+		event.stopPropagation();
+		cyclePathway();
+	}
+
+	function handleGlyphKeyDown(event: React.KeyboardEvent<SVGGElement>) {
+		if (event.key !== "Enter" && event.key !== " ") return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		cyclePathway();
+	}
+
 	const clickTarget = (
 		<path
 			d={path}
@@ -117,6 +344,7 @@ export function Connection({
 			onClick={handleSelect}
 		/>
 	);
+
 	const selectedPathUnderlay = isSelected ? (
 		<>
 			<path
@@ -140,11 +368,59 @@ export function Connection({
 		</>
 	) : null;
 
+	const glyphOutlineRadius = isSelected ? 9.75 : 7.5;
+	const glyphBodyRadius = isSelected ? 8.5 : 6.25;
+	const glyphFaceRadius = 6.25;
+
+	const midpointGlyphTransform = `translate(${midpointPlacement.point.x} ${midpointPlacement.point.y}) rotate(${midpointGlyphRotation})`;
+
+	const midpointGlyphBase = (
+		<g
+			className="connectionMidpointGlyph connectionMidpointGlyphBase"
+			transform={midpointGlyphTransform}
+			pointerEvents="none"
+		>
+			<g className="connectionMidpointGlyphInner">
+				<circle className="connectionMidpointGlyphOutline" cx={0} cy={0} r={glyphOutlineRadius} />
+				<circle className="connectionMidpointGlyphBody" cx={0} cy={0} r={glyphBodyRadius} />
+			</g>
+		</g>
+	);
+
+	const midpointGlyphFace = (
+		<g
+			className="connectionMidpointGlyph connectionMidpointGlyphFaceLayer"
+			transform={midpointGlyphTransform}
+			pointerEvents="none"
+		>
+			<g className="connectionMidpointGlyphInner">
+				<circle className="connectionMidpointGlyphFace" cx={0} cy={0} r={glyphFaceRadius} />
+
+				{midpointIcon}
+			</g>
+		</g>
+	);
+
+	const midpointGlyphControl = (
+		<g
+			className="connectionMidpointGlyphControl"
+			transform={`translate(${midpointPlacement.point.x} ${midpointPlacement.point.y})`}
+			role="button"
+			tabIndex={0}
+			aria-label={`Change pathway from ${connection.pathway}`}
+			onClick={handleGlyphClick}
+			onKeyDown={handleGlyphKeyDown}
+		>
+			<circle cx={0} cy={0} r={12} />
+		</g>
+	);
+
 	if (connection.pathway === "two-way") {
 		return (
 			<g className={connectionClassNames}>
 				{clickTarget}
 				{selectedPathUnderlay}
+				{midpointGlyphBase}
 
 				<path
 					className="connectionPath"
@@ -153,6 +429,9 @@ export function Connection({
 					strokeLinecap="round"
 					pointerEvents="none"
 				/>
+
+				{midpointGlyphFace}
+				{midpointGlyphControl}
 			</g>
 		);
 	}
@@ -162,6 +441,7 @@ export function Connection({
 			<g className={connectionClassNames}>
 				{clickTarget}
 				{selectedPathUnderlay}
+				{midpointGlyphBase}
 
 				<path
 					className="connectionPath connectionPathDashed"
@@ -170,6 +450,9 @@ export function Connection({
 					strokeLinecap="round"
 					pointerEvents="none"
 				/>
+
+				{midpointGlyphFace}
+				{midpointGlyphControl}
 			</g>
 		);
 	}
@@ -178,6 +461,7 @@ export function Connection({
 		<g className={connectionClassNames}>
 			{clickTarget}
 			{selectedPathUnderlay}
+			{midpointGlyphBase}
 
 			<path
 				className="connectionPath connectionPathDashed"
@@ -196,6 +480,9 @@ export function Connection({
 				strokeDashoffset={connection.pathway === "backwards" ? -50 : 0}
 				pointerEvents="none"
 			/>
+
+			{midpointGlyphFace}
+			{midpointGlyphControl}
 		</g>
 	);
 }

@@ -31,6 +31,7 @@ export type SnapTarget = {
 export type MovingConnectionSide = "from" | "to";
 
 const DIRECTIONS: Direction[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+const PATHWAY_CYCLE: Connection["pathway"][] = ["two-way", "forwards", "backwards", "no-way"];
 
 export function isConnectionFromRoom(
 	roomId: string,
@@ -47,6 +48,40 @@ export function isConnectionFromRoom(
 				(connection.pathway === "backwards" || connection.pathway === "two-way"))
 		);
 	});
+}
+
+function pathwayCreatesOutgoingConnection(
+	connection: Connection,
+	pathway: Connection["pathway"],
+	connections: Connection[],
+) {
+	const otherConnections = connections.filter(
+		(candidate) => !compareIds(candidate.id, connection.id),
+	);
+	const leavesFromNode = pathway === "two-way" || pathway === "forwards";
+	const leavesToNode = pathway === "two-way" || pathway === "backwards";
+
+	return (
+		(leavesFromNode &&
+			isConnectionFromRoom(idValue(connection.fromRoomId), connection.direction, otherConnections)) ||
+		(leavesToNode &&
+			isConnectionFromRoom(idValue(connection.toRoomId), connection.returnDirection, otherConnections))
+	);
+}
+
+export function getNextAvailablePathway(
+	connection: Connection,
+	connections: Connection[],
+): Connection["pathway"] {
+	const currentIndex = PATHWAY_CYCLE.indexOf(connection.pathway);
+
+	for (let offset = 1; offset <= PATHWAY_CYCLE.length; offset++) {
+		const pathway = PATHWAY_CYCLE[(currentIndex + offset) % PATHWAY_CYCLE.length];
+
+		if (!pathwayCreatesOutgoingConnection(connection, pathway, connections)) return pathway;
+	}
+
+	return connection.pathway;
 }
 
 export function connectionUsesNode(connection: Connection, roomId: string, direction: Direction) {

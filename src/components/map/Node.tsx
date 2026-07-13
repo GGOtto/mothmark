@@ -7,12 +7,13 @@ type NodeProps = {
 	node: RoomNode;
 	onNodeClick: (fromRoom: Room, direction: Direction) => void;
 	status: "armed" | "idle" | "pulse";
+	hasOutgoingPath: boolean;
 };
 
-export function Node({room, node, onNodeClick, status}: NodeProps) {
+export function Node({room, node, onNodeClick, status, hasOutgoingPath}: NodeProps) {
 	return (
 		<div
-			className={`node node--${status}`}
+			className={`node node--${status} ${hasOutgoingPath ? "node--outgoing" : ""}`}
 			style={{
 				left: `calc(50% + ${node.position.x}px)`,
 				top: `calc(50% + ${node.position.y}px)`,

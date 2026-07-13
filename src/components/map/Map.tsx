@@ -7,7 +7,11 @@ import {DIRECTION_VECTORS} from "../../types/mapTypes";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
-import {getPathwayForNewDrop, isConnectionFromRoom} from "../../utils/connectionUtils";
+import {
+	getNextAvailablePathway,
+	getPathwayForNewDrop,
+	isConnectionFromRoom,
+} from "../../utils/connectionUtils";
 import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
 import {createDefaultConnection, createDefaultRoom} from "../../utils/createDefaultWorld";
 import "./Map.scss";
@@ -140,6 +144,19 @@ export function Map({
 	function handleConnectionSelect(connection?: ConnectionType) {
 		if (connectionDraft.state === "choosing-return") cancelConnectionDraft();
 		selectConnection(connection);
+	}
+
+	function handleConnectionPathwayChange(connection: ConnectionType) {
+		setConnections((currentConnections) =>
+			currentConnections.map((currentConnection) => {
+				if (idValue(currentConnection.id) !== idValue(connection.id)) return currentConnection;
+
+				return {
+					...currentConnection,
+					pathway: getNextAvailablePathway(currentConnection, currentConnections),
+				};
+			}),
+		);
 	}
 
 	function addRoomAt(position: Point) {
@@ -438,6 +455,7 @@ export function Map({
 								fromRoom={fromRoom}
 								toRoom={toRoom}
 								selectConnection={handleConnectionSelect}
+								changePathway={handleConnectionPathwayChange}
 								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
 								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
 							/>
@@ -461,6 +479,9 @@ export function Map({
 						pulseNodes={
 							connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
 						}
+						outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
+							isConnectionFromRoom(idValue(room.id), direction, connections),
+						)}
 						onPointerDown={handleRoomPointerDown}
 						onNodeClick={addConnection}
 					/>
