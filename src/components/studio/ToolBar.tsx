@@ -103,7 +103,7 @@ export function ToolBar({activeTool, onToolChange, zoom, onRecenter, status}: To
 				</button>
 				<button type="button" className="toolbarTool" onClick={onRecenter} title="Recenter map">
 					<Focus size={17} strokeWidth={1.9} />
-					<span>Recenter</span>
+					<span>Focus</span>
 				</button>
 			</div>
 			<div className="toolbarDivider" aria-hidden="true" />

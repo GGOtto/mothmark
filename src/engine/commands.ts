@@ -7,27 +7,28 @@ import {lookAtRoom} from "./rooms";
 const DIRECTION_ALIASES: Record<string, Direction> = {
 	n: "n",
 	north: "n",
-
 	ne: "ne",
 	northeast: "ne",
-
 	e: "e",
 	east: "e",
-
 	se: "se",
 	southeast: "se",
-
 	s: "s",
 	south: "s",
-
 	sw: "sw",
 	southwest: "sw",
-
 	w: "w",
 	west: "w",
-
 	nw: "nw",
 	northwest: "nw",
+	up: "up",
+	u: "up",
+	down: "down",
+	d: "down",
+	in: "in",
+	enter: "in",
+	out: "out",
+	exit: "out",
 };
 
 const OPTIONAL_LEADING_ARTICLES = new Set(["a", "an", "the"]);
@@ -385,7 +386,7 @@ const commands: CommandDefinition[] = [
 	},
 	{
 		name: "go",
-		aliases: ["go", "walk", "move"],
+		aliases: ["go", "walk", "move", "go to"],
 		description: "Move in a direction.",
 		customMatch: (input) => {
 			const direction = DIRECTION_ALIASES[input];
