@@ -84,30 +84,19 @@ function getConnectionPathSegments(points: Point[]): CubicBezierSegment[] {
 		const p1 = points[i];
 		const p2 = points[i + 1];
 		const p3 = points[i + 2] ?? p2;
-
 		const segmentLength = getDistance(p1, p2);
-
 		const tension = 1 / 6;
 		const maxControlLength = Math.min(segmentLength * 0.45, 40);
-
 		const incoming = subtractPoints(p2, p0);
 		const outgoing = subtractPoints(p3, p1);
-
 		const incomingLength = Math.hypot(incoming.x, incoming.y) || 1;
 		const outgoingLength = Math.hypot(outgoing.x, outgoing.y) || 1;
-
 		const control1Length = Math.min(incomingLength * tension, maxControlLength);
 		const control2Length = Math.min(outgoingLength * tension, maxControlLength);
-
 		const control1 = addPoints(p1, scalePoint(incoming, control1Length / incomingLength));
 		const control2 = subtractPoints(p2, scalePoint(outgoing, control2Length / outgoingLength));
 
-		segments.push({
-			start: p1,
-			control1,
-			control2,
-			end: p2,
-		});
+		segments.push({start: p1, control1, control2, end: p2});
 	}
 
 	return segments;
@@ -155,13 +144,10 @@ function getPointOnConnectionPathAtDistance(
 	segmentLengths: number[],
 	targetDistance: number,
 ): Point {
-	if (segments.length === 0) {
-		return {x: 0, y: 0};
-	}
+	if (segments.length === 0) return {x: 0, y: 0};
 
 	const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
 	const clampedDistance = Math.max(0, Math.min(targetDistance, totalLength));
-
 	let walkedDistance = 0;
 
 	for (let i = 0; i < segments.length; i++) {
@@ -180,26 +166,18 @@ function getPointOnConnectionPathAtDistance(
 function getConnectionPathMidpointPlacement(pathPoints: Point[]): ConnectionPathPlacement {
 	const segments = getConnectionPathSegments(pathPoints);
 
-	if (segments.length === 0) {
-		return {
-			point: pathPoints[0] ?? {x: 0, y: 0},
-			angle: 0,
-		};
-	}
+	if (segments.length === 0) return {point: pathPoints[0] ?? {x: 0, y: 0}, angle: 0};
 
 	const segmentLengths = segments.map((segment) => getCubicBezierLength(segment));
 	const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
 	const midpointDistance = totalLength / 2;
 	const tangentSampleDistance = Math.min(8, totalLength / 2);
-
 	const point = getPointOnConnectionPathAtDistance(segments, segmentLengths, midpointDistance);
-
 	const beforePoint = getPointOnConnectionPathAtDistance(
 		segments,
 		segmentLengths,
 		midpointDistance - tangentSampleDistance,
 	);
-
 	const afterPoint = getPointOnConnectionPathAtDistance(
 		segments,
 		segmentLengths,
@@ -216,7 +194,6 @@ function getPath(points: Point[]) {
 	if (points.length < 2) return "";
 
 	const segments = getConnectionPathSegments(points);
-
 	if (segments.length === 0) return "";
 
 	let path = `M ${points[0].x} ${points[0].y}`;
@@ -236,10 +213,9 @@ function getControlPoints(
 ): Point[] {
 	const startDirectionVector = DIRECTION_VECTORS[startDirection];
 	const endDirectionVector = DIRECTION_VECTORS[REVERSE_DIRECTION[endDirection]];
-	const handleLength = 15;
-
-	const startHandle: Point = scalePoint(startDirectionVector, handleLength);
-	const endHandle: Point = scalePoint(endDirectionVector, -handleLength);
+	const handleLength = Math.min(15, getDistance(startPoint, endPoint) * (15 / 80));
+	const startHandle = scalePoint(startDirectionVector, handleLength);
+	const endHandle = scalePoint(endDirectionVector, -handleLength);
 
 	return [
 		addPoints(startPoint, startHandle),

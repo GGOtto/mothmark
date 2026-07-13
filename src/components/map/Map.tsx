@@ -420,6 +420,18 @@ export function Map({
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
+	const selectedConnectionForRender = isConnectionSelected
+		? connections.find((connection) => idValue(connection.id) === selectedId)
+		: undefined;
+	const connectionsInRenderOrder = selectedConnectionForRender
+		? [
+				...connections.filter(
+					(connection) => idValue(connection.id) !== idValue(selectedConnectionForRender.id),
+				),
+				selectedConnectionForRender,
+			]
+		: connections;
+
 	return (
 		<div
 			ref={mapRef}
@@ -442,7 +454,7 @@ export function Map({
 				style={{transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`}}
 			>
 				<svg className="mapSvg" width="100%" height="100%">
-					{connections.map((connection) => {
+					{connectionsInRenderOrder.map((connection) => {
 						const fromRoom = getRoom(connection.fromRoomId, connection.direction);
 						const toRoom = getRoom(connection.toRoomId, connection.returnDirection);
 
