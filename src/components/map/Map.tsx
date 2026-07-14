@@ -4,7 +4,7 @@ import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
 import type {World} from "../../schemas/worldSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
+import {getRoomNodePosition, ROOM_DIRECTIONS, findLayerForRoomId} from "../../utils/mapUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
@@ -96,8 +96,6 @@ export function Map({
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
 	}, [setConnectionDraft, updateStatus]);
 	const [currentLayerIndex, setCurrentLayerIndex] = useState<number>(0);
-
-	useEffect(() => {}, [currentLayerIndex]);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -475,35 +473,41 @@ export function Map({
 								updateStatus={updateStatus}
 								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
 								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
+								currentLayerIndex={currentLayerIndex}
 							/>
 						);
 					})}
 				</svg>
 
-				{world.rooms.map((room) => (
-					<RoomCard
-						key={idValue(room.id)}
-						room={room}
-						width={ROOM_WIDTH}
-						height={ROOM_HEIGHT}
-						isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
-						isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
-						armedDirection={
-							connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
-								? connectionDraft.fromDirection
-								: null
-						}
-						pulseNodes={
-							connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
-						}
-						outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
-							isConnectionFromRoom(idValue(room.id), direction, world.connections),
-						)}
-						onPointerDown={handleRoomPointerDown}
-						onNodeClick={addConnection}
-						updateStatus={updateStatus}
-					/>
-				))}
+				{world.rooms.map(
+					(room) =>
+						findLayerForRoomId(world.metadata.layers, room.id) === currentLayerIndex && (
+							<RoomCard
+								key={idValue(room.id)}
+								room={room}
+								width={ROOM_WIDTH}
+								height={ROOM_HEIGHT}
+								isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
+								isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
+								armedDirection={
+									connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
+										? connectionDraft.fromDirection
+										: null
+								}
+								pulseNodes={
+									connectionDraft.state === "choosing-return" &&
+									connectionDraft.toRoomId === idValue(room.id)
+								}
+								outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
+									isConnectionFromRoom(idValue(room.id), direction, world.connections),
+								)}
+								onPointerDown={handleRoomPointerDown}
+								onNodeClick={addConnection}
+								updateStatus={updateStatus}
+								currentLayerIndex={currentLayerIndex}
+							/>
+						),
+				)}
 			</div>
 		</div>
 	);

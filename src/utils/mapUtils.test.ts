@@ -75,7 +75,7 @@ describe("findLayerForRoom", () => {
 		},
 	];
 
-	it("if layer list is empty, return true for any room (this means we only have the ground floor layer", () => {
+	it("if layer list is empty, return true for any room (this means we only have the ground floor layer)", () => {
 		expect(findLayerForRoomId([], {type: "room", id: "room-1"})).toEqual(0);
 		expect(findLayerForRoomId([], {type: "room", id: "room-2"})).toEqual(0);
 	});
@@ -89,8 +89,8 @@ describe("findLayerForRoom", () => {
 		expect(findLayerForRoomId(layers, {type: "room", id: "room-6"})).toEqual(1);
 	});
 
-	it("return undefined if no reference is found", () => {
-		expect(findLayerForRoomId(layers, {type: "room", id: "room-7"})).toEqual(undefined);
-		expect(findLayerForRoomId(layers, {type: "room", id: "room-8"})).toEqual(undefined);
+	it("return 0 if no reference is found", () => {
+		expect(findLayerForRoomId(layers, {type: "room", id: "room-7"})).toEqual(0);
+		expect(findLayerForRoomId(layers, {type: "room", id: "room-8"})).toEqual(0);
 	});
 });

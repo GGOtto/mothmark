@@ -62,6 +62,22 @@ const rawWorld = {
 		description:
 			"A compact dungeon of flooded chambers, ruined halls, crypts, and forgotten treasure.",
 		version: "0.3.0",
+		layers: [
+			{
+				name: "Cloud Layer",
+				layer: 1,
+				rooms: [
+					{
+						type: "room",
+						id: "forgotten-shrine",
+					},
+					{
+						type: "room",
+						id: "lower-crypt",
+					},
+				],
+			},
+		],
 	},
 	startRoomId: "dungeon-entrance",
 	rooms: [

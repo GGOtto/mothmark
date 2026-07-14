@@ -94,8 +94,8 @@ export type RoomNode = {
 	isConnected?: boolean;
 };
 
-/** Return which later a room ID is on in the world metadata. Returns undefined if the room isn't referenced in a layer. */
-export function findLayerForRoomId(layers: Layer[], roomId: ID<"room">): number | undefined {
+/** Return which later a room ID is on in the world metadata. Returns 0 if the room isn't referenced in a layer. */
+export function findLayerForRoomId(layers: Layer[], roomId: ID<"room">): number {
 	if (layers.length === 0) {
 		return 0;
 	}
@@ -107,4 +107,6 @@ export function findLayerForRoomId(layers: Layer[], roomId: ID<"room">): number 
 			}
 		}
 	}
+
+	return 0;
 }

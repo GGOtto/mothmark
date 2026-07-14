@@ -14,6 +14,7 @@ type ConnectionProps = {
 	selectConnection: (connection?: ConnectionType) => void;
 	changePathway: (connection: ConnectionType) => ConnectionType["pathway"];
 	updateStatus: UpdateStatus;
+	currentLayerIndex: number;
 	isEditing?: boolean;
 	isSelected?: boolean;
 };
@@ -230,6 +231,7 @@ export function Connection({
 	selectConnection,
 	changePathway,
 	updateStatus,
+	currentLayerIndex,
 	isEditing = false,
 	isSelected = false,
 }: ConnectionProps) {

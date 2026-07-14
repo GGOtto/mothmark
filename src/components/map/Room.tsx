@@ -17,6 +17,7 @@ type RoomProps = {
 	armedDirection: Direction | null;
 	pulseNodes: boolean;
 	outgoingDirections: Direction[];
+	currentLayerIndex: number;
 };
 
 export function RoomCard({

@@ -20,6 +20,7 @@ describe("RoomCard special node rails", () => {
 				armedDirection="up"
 				pulseNodes={false}
 				outgoingDirections={["out"]}
+				currentLayerIndex={0}
 			/>,
 		);
 
