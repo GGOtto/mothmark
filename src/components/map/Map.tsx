@@ -3,7 +3,8 @@
 import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../types/mapTypes";
+import type {World} from "../../schemas/worldSchema";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
@@ -25,12 +26,11 @@ type DragState = {
 };
 
 type MapProps = {
+	world: World;
 	tool: MapTool;
 	onZoomChange?: (zoom: number) => void;
 	theme?: MapTheme;
-	rooms: Room[];
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	connections: ConnectionType[];
 	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
 	selectedId: string | null;
 	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -72,12 +72,11 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 
 export function Map({
+	world,
 	tool,
 	onZoomChange,
 	theme = "dark",
-	rooms,
 	setRooms,
-	connections,
 	setConnections,
 	selectedId,
 	setSelectedId,
@@ -96,6 +95,9 @@ export function Map({
 		setConnectionDraft({state: "idle"});
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
 	}, [setConnectionDraft, updateStatus]);
+	const [currentLayerIndex, setCurrentLayerIndex] = useState<number>(0);
+
+	useEffect(() => {}, [currentLayerIndex]);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -152,7 +154,7 @@ export function Map({
 	}
 
 	function handleConnectionPathwayChange(connection: ConnectionType) {
-		const pathway = getNextAvailablePathway(connection, connections);
+		const pathway = getNextAvailablePathway(connection, world.connections);
 		setConnections((currentConnections) =>
 			currentConnections.map((currentConnection) => {
 				if (idValue(currentConnection.id) !== idValue(connection.id)) return currentConnection;
@@ -168,8 +170,8 @@ export function Map({
 
 	function addRoomAt(position: Point) {
 		const room = createDefaultRoom(
-			generateUniqueId("room", rooms),
-			`Room ${rooms.length + 1}`,
+			generateUniqueId("room", world.rooms),
+			`Room ${world.rooms.length + 1}`,
 			position,
 		);
 		setRooms((currentRooms) => [...currentRooms, room]);
@@ -182,7 +184,7 @@ export function Map({
 
 	function getRoom(roomReference: string | ID<"room">, direction?: Direction) {
 		const roomId = idValue(roomReference);
-		const room = rooms.find((room) => idValue(room.id) === roomId);
+		const room = world.rooms.find((room) => idValue(room.id) === roomId);
 
 		if (room && direction) {
 			return {
@@ -235,7 +237,7 @@ export function Map({
 		pathway?: ConnectionType["pathway"],
 	) {
 		const connection = createDefaultConnection({
-			id: generateUniqueId("connection", connections),
+			id: generateUniqueId("connection", world.connections),
 			fromRoomId: draft.fromRoomId,
 			toRoomId: toRoom.id,
 			direction: draft.fromDirection,
@@ -247,7 +249,7 @@ export function Map({
 					draft.fromDirection,
 					idValue(toRoom.id),
 					returnDirection,
-					connections,
+					world.connections,
 				),
 		});
 		setConnections((current) => [...current, connection]);
@@ -259,7 +261,7 @@ export function Map({
 		if (connectionDraft.state !== "choosing-destination") return false;
 		if (connectionDraft.fromRoomId === idValue(toRoom.id)) return false;
 
-		const fromRoom = rooms.find((room) => idValue(room.id) === connectionDraft.fromRoomId);
+		const fromRoom = world.rooms.find((room) => idValue(room.id) === connectionDraft.fromRoomId);
 		if (!fromRoom) return false;
 
 		const sourcePoint = getRoomConnectionPoint(fromRoom, connectionDraft.fromDirection);
@@ -273,7 +275,7 @@ export function Map({
 		const pathway = isConnectionFromRoom(
 			connectionDraft.fromRoomId,
 			connectionDraft.fromDirection,
-			connections,
+			world.connections,
 		)
 			? "no-way"
 			: "forwards";
@@ -342,7 +344,7 @@ export function Map({
 		}
 		if (!dragState) return;
 
-		const selectedRoom = rooms.find((room) => idValue(room.id) === dragState.roomId);
+		const selectedRoom = world.rooms.find((room) => idValue(room.id) === dragState.roomId);
 
 		if (selectedRoom && !dragState.hasDragged) {
 			if (connectionDraft.state === "choosing-return") {
@@ -413,8 +415,8 @@ export function Map({
 			return;
 		}
 		const room = createDefaultRoom(
-			generateUniqueId("room", rooms),
-			`Room ${rooms.length + 1}`,
+			generateUniqueId("room", world.rooms),
+			`Room ${world.rooms.length + 1}`,
 			position,
 		);
 		setRooms((current) => [...current, room]);
@@ -423,16 +425,16 @@ export function Map({
 	}
 
 	const selectedConnectionForRender = isConnectionSelected
-		? connections.find((connection) => idValue(connection.id) === selectedId)
+		? world.connections.find((connection) => idValue(connection.id) === selectedId)
 		: undefined;
 	const connectionsInRenderOrder = selectedConnectionForRender
 		? [
-				...connections.filter(
+				...world.connections.filter(
 					(connection) => idValue(connection.id) !== idValue(selectedConnectionForRender.id),
 				),
 				selectedConnectionForRender,
 			]
-		: connections;
+		: world.connections;
 
 	return (
 		<div
@@ -478,7 +480,7 @@ export function Map({
 					})}
 				</svg>
 
-				{rooms.map((room) => (
+				{world.rooms.map((room) => (
 					<RoomCard
 						key={idValue(room.id)}
 						room={room}
@@ -495,7 +497,7 @@ export function Map({
 							connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
 						}
 						outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
-							isConnectionFromRoom(idValue(room.id), direction, connections),
+							isConnectionFromRoom(idValue(room.id), direction, world.connections),
 						)}
 						onPointerDown={handleRoomPointerDown}
 						onNodeClick={addConnection}

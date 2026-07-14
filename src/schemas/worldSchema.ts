@@ -981,6 +981,19 @@ export const DefaultWorldInitialState = {
 	inventory: [],
 } satisfies z.infer<typeof WorldInitialStateSchema>;
 
+export const LayerSchema = editor.object(
+	{
+		name: z.string().optional(),
+		layer: z.number(),
+		rooms: z.array(editor.id("room", {})).default([]),
+	},
+	{
+		title: "Layer",
+		description:
+			"A layer is a collection of rooms to make things feel 3D. Authors have a stack of layers they can scroll through.",
+	},
+);
+
 export const WorldMetadataSchema = editor.object(
 	{
 		title: editor
@@ -1028,6 +1041,8 @@ export const WorldMetadataSchema = editor.object(
 				},
 			})
 			.default("0.1.0"),
+
+		layers: z.array(LayerSchema).default([]),
 	},
 	{
 		title: "World Metadata",
@@ -1040,6 +1055,7 @@ export const DefaultWorldMetadata = {
 	author: "",
 	description: "",
 	version: "0.1.0",
+	layers: [],
 } satisfies z.infer<typeof WorldMetadataSchema>;
 
 export const WorldSchema = editor
@@ -1636,6 +1652,7 @@ export type Quest = z.infer<typeof QuestSchema>;
 export type InitialObjectState = z.infer<typeof InitialObjectStateSchema>;
 export type InitialFlag = z.infer<typeof InitialFlagSchema>;
 export type InitialCounter = z.infer<typeof InitialCounterSchema>;
+export type Layer = z.infer<typeof LayerSchema>;
 export type WorldInitialState = z.infer<typeof WorldInitialStateSchema>;
 export type WorldMetadata = z.infer<typeof WorldMetadataSchema>;
 export type World = z.infer<typeof WorldSchema>;

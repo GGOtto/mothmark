@@ -1,7 +1,7 @@
 import {ArrowLeftRight, ArrowRight, X} from "lucide-react";
 import type React from "react";
 import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
-import {getRoomNodeAnchorVector} from "../../types/mapTypes";
+import {getRoomNodeAnchorVector} from "../../utils/mapUtils";
 import {getPathwayLabel} from "../../utils/connectionUtils";
 import {addPoints, scalePoint, getDistance} from "../../utils/pointUtils";
 import type {ToolBarStatus, UpdateStatus} from "../studio/ToolBar";

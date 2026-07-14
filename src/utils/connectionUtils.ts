@@ -1,5 +1,5 @@
 import type {Connection, Direction, Point, Room} from "../schemas/roomSchema";
-import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "../types/mapTypes";
+import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "./mapUtils";
 import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
 import {compareIds, generateUniqueId, idValue} from "./idUtils";
 import {subtractPoints} from "./pointUtils";

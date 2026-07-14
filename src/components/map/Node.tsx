@@ -1,4 +1,4 @@
-import {DIRECTION_LABELS, type RoomNode} from "../../types/mapTypes";
+import {DIRECTION_LABELS, type RoomNode} from "../../utils/mapUtils";
 import type {Room, Direction} from "../../schemas/roomSchema";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Node.scss";

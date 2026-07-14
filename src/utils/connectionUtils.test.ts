@@ -1,5 +1,5 @@
 import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
-import {DIRECTION_VECTORS} from "../types/mapTypes";
+import {DIRECTION_VECTORS} from "./mapUtils";
 import {
 	buildAddConnectionResult,
 	connectionUsesNode,

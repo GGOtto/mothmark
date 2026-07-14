@@ -221,7 +221,6 @@ function EditorMainPanel({
 	world,
 	rooms,
 	setRooms,
-	connections,
 	setConnections,
 	selection,
 	setSelection,
@@ -254,9 +253,8 @@ function EditorMainPanel({
 			<div className="editorWorkspaceShell">
 				<EditorWorkspace
 					activeTab={activeTab}
-					rooms={rooms}
+					world={world}
 					setRooms={setRooms}
-					connections={connections}
 					setConnections={setConnections}
 					selection={selection}
 					setSelection={setSelection}
@@ -323,9 +321,8 @@ function EditorToolbar({
 
 type EditorWorkspaceProps = {
 	activeTab: EditorTab;
-	rooms: Room[];
+	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	connections: Connection[];
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
@@ -339,9 +336,8 @@ type EditorWorkspaceProps = {
 
 function EditorWorkspace({
 	activeTab,
-	rooms,
+	world,
 	setRooms,
-	connections,
 	setConnections,
 	selection,
 	setSelection,
@@ -355,9 +351,8 @@ function EditorWorkspace({
 	if (activeTab === "map") {
 		return (
 			<MapWorkspace
-				rooms={rooms}
+				world={world}
 				setRooms={setRooms}
-				connections={connections}
 				setConnections={setConnections}
 				selection={selection}
 				setSelection={setSelection}
@@ -375,9 +370,8 @@ function EditorWorkspace({
 }
 
 type MapWorkspaceProps = {
-	rooms: Room[];
+	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	connections: Connection[];
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
@@ -390,9 +384,8 @@ type MapWorkspaceProps = {
 };
 
 function MapWorkspace({
-	rooms,
+	world,
 	setRooms,
-	connections,
 	setConnections,
 	selection,
 	setSelection,
@@ -406,12 +399,11 @@ function MapWorkspace({
 	return (
 		<Map
 			key={recenterRequest}
+			world={world}
 			tool={mapTool}
 			onZoomChange={onZoomChange}
 			theme="light"
-			rooms={rooms}
 			setRooms={setRooms}
-			connections={connections}
 			setConnections={setConnections}
 			selectedId={selection.selectedId}
 			setSelectedId={(selectedId) =>
