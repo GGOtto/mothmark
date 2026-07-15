@@ -1,6 +1,13 @@
-import type {Connection, Direction, Point, Room} from "../schemas/roomSchema";
+import {
+	ConnectionSchema,
+	RoomSchema,
+	type Connection,
+	type Direction,
+	type Point,
+	type Room,
+} from "../schemas/roomSchema";
 import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "./mapUtils";
-import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
+import {createDefaultFieldObject} from "./createDefaultFieldObject";
 import {compareIds, generateUniqueId, idValue} from "./idUtils";
 import {subtractPoints} from "./pointUtils";
 
@@ -437,7 +444,12 @@ export function buildAddConnectionResult({
 
 	const roomToAdd =
 		overlappingRoom === undefined
-			? createDefaultRoom(generateUniqueId("room", rooms), `Room ${rooms.length + 1}`, targetPosition)
+			? RoomSchema.parse({
+					...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+					id: generateUniqueId("room", rooms),
+					name: `Room ${rooms.length + 1}`,
+					metadata: {position: targetPosition},
+				})
 			: undefined;
 	const toRoom = overlappingRoom ?? roomToAdd;
 
@@ -450,7 +462,8 @@ export function buildAddConnectionResult({
 		!overlappingRoom ||
 		!isConnectionFromRoom(idValue(overlappingRoom.id), targetReturnDirection, connections);
 
-	const connection = createDefaultConnection({
+	const connection = ConnectionSchema.parse({
+		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
 		id: generateUniqueId("connection", connections),
 		fromRoomId: fromRoom.id,
 		toRoomId: toRoom.id,

@@ -1,4 +1,5 @@
 import type {Connection, Direction, Point, Room} from "../schemas/worldSchema";
+import {ConnectionSchema, RoomSchema} from "../schemas/roomSchema";
 import {DIRECTION_VECTORS} from "./mapUtils";
 import {
 	buildAddConnectionResult,
@@ -16,7 +17,7 @@ import {
 	isConnectionFromRoom,
 	isSameConnectionShape,
 } from "./connectionUtils";
-import {createDefaultConnection, createDefaultRoom} from "./createDefaultWorld";
+import {createDefaultFieldObject} from "./createDefaultFieldObject";
 import {idValue, toID} from "./idUtils";
 
 const ROOM_WIDTH = 72;
@@ -24,6 +25,16 @@ const ROOM_HEIGHT = 40;
 const CONNECTOR_LENGTH = 40;
 const MIN_CONNECTOR_LENGTH = 12;
 const CONNECTOR_STEP = 4;
+
+function createDefaultConnection(
+	overrides: Partial<Connection> &
+		Pick<Connection, "id" | "fromRoomId" | "toRoomId" | "direction" | "returnDirection">,
+): Connection {
+	return ConnectionSchema.parse({
+		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+		...overrides,
+	});
+}
 
 describe("getPathwayLabel", () => {
 	it.each([
@@ -37,15 +48,21 @@ describe("getPathwayLabel", () => {
 });
 
 function room(id: string, x: number, y: number): Room {
-	return createDefaultRoom(id, id, {x, y});
+	return generatedRoom(id, id, {x, y});
 }
 
 function generatedRoom(id: string, name: string, position: Point): Room {
-	return createDefaultRoom(id, name, position);
+	return RoomSchema.parse({
+		...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+		id,
+		name,
+		metadata: {position},
+	});
 }
 
 function connection(overrides: Partial<Connection> = {}): Connection {
-	return createDefaultConnection({
+	return ConnectionSchema.parse({
+		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
 		id: toID("connection", "connection-1"),
 		fromRoomId: {type: "room", id: "room-1"},
 		toRoomId: {type: "room", id: "room-2"},

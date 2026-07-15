@@ -2,7 +2,14 @@
 
 import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
-import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
+import {
+	RoomSchema,
+	ConnectionSchema,
+	type Point,
+	type Room,
+	type Connection as ConnectionType,
+	type Direction,
+} from "../../schemas/roomSchema";
 import {type Layer, type World} from "../../schemas/worldSchema";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
 import {isRoomInLayer, getLayer} from "../../utils/layerUtils";
@@ -15,7 +22,7 @@ import {
 	isConnectionFromRoom,
 } from "../../utils/connectionUtils";
 import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
-import {createDefaultConnection, createDefaultRoom} from "../../utils/createDefaultWorld";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
 
@@ -183,11 +190,12 @@ export function Map({
 	}
 
 	function addRoomAt(position: Point) {
-		const room = createDefaultRoom(
-			generateUniqueId("room", world.rooms),
-			`Room ${world.rooms.length + 1}`,
-			position,
-		);
+		const room = RoomSchema.parse({
+			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+			id: generateUniqueId("room", world.rooms),
+			name: `Room ${world.rooms.length + 1}`,
+			metadata: {position},
+		});
 		setRooms((currentRooms) => [...currentRooms, room]);
 		selectRoom(room);
 
@@ -245,7 +253,8 @@ export function Map({
 		returnDirection: Direction,
 		pathway?: ConnectionType["pathway"],
 	) {
-		const connection = createDefaultConnection({
+		const connection = ConnectionSchema.parse({
+			...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
 			id: generateUniqueId("connection", world.connections),
 			fromRoomId: draft.fromRoomId,
 			toRoomId: toRoom.id,
@@ -453,11 +462,12 @@ export function Map({
 			addRoomAt(position);
 			return;
 		}
-		const room = createDefaultRoom(
-			generateUniqueId("room", world.rooms),
-			`Room ${world.rooms.length + 1}`,
-			position,
-		);
+		const room = RoomSchema.parse({
+			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+			id: generateUniqueId("room", world.rooms),
+			name: `Room ${world.rooms.length + 1}`,
+			metadata: {position},
+		});
 		setRooms((current) => [...current, room]);
 		selectRoom(room);
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});

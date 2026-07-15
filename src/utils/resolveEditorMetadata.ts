@@ -9,6 +9,7 @@ import type {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
 import {getEditorMetadata} from "@/utils/editorMetadata";
 import {mergeEditorMetadata} from "@/utils/mergeEditorMetadata";
 import {sortEditorObjectFields} from "@/utils/sortEditorObjectFields";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
 type ZodDef = {
 	type?: string;
@@ -138,28 +139,7 @@ function inferControlType(schema: z.ZodTypeAny): EditorControlType {
 }
 
 export function createDefaultValue(schema: z.ZodTypeAny): unknown {
-	const parsed = schema.safeParse(undefined);
-	if (parsed.success && parsed.data !== undefined) return parsed.data;
-
-	const current = unwrapSchema(schema);
-	const def = getDef(current);
-
-	if (def.type === "object") {
-		const shape = getObjectShape(current) ?? {};
-
-		return Object.fromEntries(
-			Object.entries(shape).map(([key, childSchema]) => [key, createDefaultValue(childSchema)]),
-		);
-	}
-
-	if (def.type === "array") return [];
-	if (def.type === "number") return 0;
-	if (def.type === "boolean") return false;
-	if (def.type === "enum") return getEnumOptions(current)[0]?.value ?? "";
-	if (def.type === "literal") return def.values?.[0] ?? "";
-	if (def.type === "union") return {};
-
-	return "";
+	return createDefaultFieldObject(schema, {populateArrays: false, useMetadata: false});
 }
 
 function featureDefaults(metadata?: EditorFieldMetadata): Record<string, unknown> {

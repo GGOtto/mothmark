@@ -1,5 +1,6 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {createDefaultConnection, createDefaultRoom} from "../../utils/createDefaultWorld";
+import {ConnectionSchema, RoomSchema} from "../../schemas/roomSchema";
+import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {world as exampleWorld} from "../../data/worlds/exampleWorld";
 import {Connection, getStubTagAnchorOffset} from "./Connection";
 
@@ -21,9 +22,24 @@ describe("stub tag anchors", () => {
 
 describe("Connection pathway glyph", () => {
 	it("shows the current pathway through the shared status updater", () => {
-		const fromRoom = createDefaultRoom("room-1", "Gate", {x: 40, y: 40});
-		const toRoom = createDefaultRoom("room-2", "Hall", {x: 200, y: 40});
-		const connection = createDefaultConnection({
+		const roomDefaults = createDefaultFieldObject(RoomSchema, {
+			populateArrays: false,
+			useMetadata: false,
+		});
+		const fromRoom = RoomSchema.parse({
+			...roomDefaults,
+			id: "room-1",
+			name: "Gate",
+			metadata: {position: {x: 40, y: 40}},
+		});
+		const toRoom = RoomSchema.parse({
+			...roomDefaults,
+			id: "room-2",
+			name: "Hall",
+			metadata: {position: {x: 200, y: 40}},
+		});
+		const connection = ConnectionSchema.parse({
+			...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
 			id: "connection-1",
 			fromRoomId: fromRoom.id,
 			toRoomId: toRoom.id,

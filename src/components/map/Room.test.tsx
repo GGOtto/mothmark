@@ -1,10 +1,16 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {createDefaultRoom} from "../../utils/createDefaultWorld";
+import {RoomSchema} from "../../schemas/roomSchema";
+import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {RoomCard} from "./Room";
 
 describe("RoomCard special node rails", () => {
 	it("renders every special node and handles it like a normal node", () => {
-		const room = createDefaultRoom("room-1", "Atrium", {x: 0, y: 0});
+		const room = RoomSchema.parse({
+			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+			id: "room-1",
+			name: "Atrium",
+			metadata: {position: {x: 0, y: 0}},
+		});
 		const onNodeClick = jest.fn();
 		const updateStatus = jest.fn();
 		const {container} = render(
