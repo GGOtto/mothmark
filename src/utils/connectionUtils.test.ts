@@ -31,7 +31,7 @@ function createDefaultConnection(
 		Pick<Connection, "id" | "fromRoomId" | "toRoomId" | "direction" | "returnDirection">,
 ): Connection {
 	return ConnectionSchema.parse({
-		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+		...createDefaultFieldObject(ConnectionSchema),
 		...overrides,
 	});
 }
@@ -53,7 +53,7 @@ function room(id: string, x: number, y: number): Room {
 
 function generatedRoom(id: string, name: string, position: Point): Room {
 	return RoomSchema.parse({
-		...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+		...createDefaultFieldObject(RoomSchema),
 		id,
 		name,
 		metadata: {position},
@@ -62,7 +62,7 @@ function generatedRoom(id: string, name: string, position: Point): Room {
 
 function connection(overrides: Partial<Connection> = {}): Connection {
 	return ConnectionSchema.parse({
-		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+		...createDefaultFieldObject(ConnectionSchema),
 		id: toID("connection", "connection-1"),
 		fromRoomId: {type: "room", id: "room-1"},
 		toRoomId: {type: "room", id: "room-2"},

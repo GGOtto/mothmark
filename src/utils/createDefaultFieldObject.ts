@@ -7,14 +7,12 @@ type CreateDefaultOptions = {
 	populateArrays?: boolean;
 	maxDepth?: number;
 	useZodDefaults?: boolean;
-	useMetadata?: boolean;
 };
 
 const DEFAULT_OPTIONS: Required<CreateDefaultOptions> = {
-	populateArrays: true,
+	populateArrays: false,
 	maxDepth: 20,
 	useZodDefaults: true,
-	useMetadata: true,
 };
 
 export function createDefaultFieldObject<TSchema extends AnyZodSchema>(
@@ -55,23 +53,13 @@ function createDefaultValue(
 		depth: context.depth + 1,
 	};
 
-	const value = createDefaultValueWithoutMetadata(schema, options, nextContext);
-	const metadataValue = options.useMetadata
-		? createDefaultFromMeta(schema, options, nextContext)
-		: undefined;
+	const defaultFieldValue = createDefaultFieldValueFromMetadata(schema, options, nextContext);
 
-	if (isPlainObject(value) && isPlainObject(metadataValue)) {
-		return {
-			...metadataValue,
-			...value,
-		};
+	if (defaultFieldValue.found) {
+		return defaultFieldValue.value;
 	}
 
-	if (metadataValue !== undefined) {
-		return metadataValue;
-	}
-
-	return value;
+	return createDefaultValueWithoutMetadata(schema, options, nextContext);
 }
 
 function createDefaultValueWithoutMetadata(
@@ -332,13 +320,21 @@ function createDefaultFromDefault(
 	}
 
 	const defaultValue = def.defaultValue;
+	const resolvedDefault = typeof defaultValue === "function" ? defaultValue() : defaultValue;
+	const innerSchema = asSchema(def.innerType);
 
-	if (typeof defaultValue === "function") {
-		return defaultValue();
+	if (
+		options.populateArrays &&
+		Array.isArray(resolvedDefault) &&
+		resolvedDefault.length === 0 &&
+		innerSchema !== undefined &&
+		getDef(innerSchema).type === "array"
+	) {
+		return createDefaultFromInnerType(def, options, context);
 	}
 
-	if (defaultValue !== undefined) {
-		return defaultValue;
+	if (resolvedDefault !== undefined) {
+		return resolvedDefault;
 	}
 
 	return createDefaultFromInnerType(def, options, context);
@@ -466,76 +462,33 @@ function createDefaultFromInnerType(
 	});
 }
 
-function createDefaultFromMeta(
+function createDefaultFieldValueFromMetadata(
 	schema: AnyZodSchema,
 	options: Required<CreateDefaultOptions>,
 	context: WalkContext,
-): unknown {
+): {found: boolean; value?: unknown} {
 	const meta = getSchemaMeta(schema);
 
-	if (!meta || !isPlainObject(meta)) {
-		return undefined;
+	if (!isPlainObject(meta) || !("defaultFieldValue" in meta)) {
+		return {found: false};
 	}
 
-	return createDefaultFromMetaObject(meta, options, context);
+	return {
+		found: true,
+		value: resolveDefaultFieldValue(meta.defaultFieldValue, options, context),
+	};
 }
 
-function createDefaultFromMetaObject(
-	metaObject: AnyRecord,
+function resolveDefaultFieldValue(
+	value: unknown,
 	options: Required<CreateDefaultOptions>,
 	context: WalkContext,
 ): unknown {
-	const result: AnyRecord = {};
-
-	for (const [key, value] of Object.entries(metaObject)) {
-		if (isZodSchema(value)) {
-			const childValue = createDefaultValue(value, options, {
-				...context,
-				insideObject: true,
-			});
-
-			if (childValue !== undefined) {
-				result[key] = childValue;
-			}
-
-			continue;
-		}
-
-		if (Array.isArray(value)) {
-			result[key] = value.map((item) => {
-				if (isZodSchema(item)) {
-					return createDefaultValue(item, options, {
-						...context,
-						insideObject: false,
-					});
-				}
-
-				if (isPlainObject(item)) {
-					return createDefaultFromMetaObject(item, options, context);
-				}
-
-				return item;
-			});
-
-			continue;
-		}
-
-		if (isPlainObject(value)) {
-			const childValue = createDefaultFromMetaObject(value, options, context);
-
-			if (childValue !== undefined) {
-				result[key] = childValue;
-			}
-
-			continue;
-		}
-
-		if (value !== undefined) {
-			result[key] = value;
-		}
+	if (isZodSchema(value)) {
+		return createDefaultValue(value, options, {...context, insideObject: false});
 	}
 
-	return Object.keys(result).length > 0 ? result : undefined;
+	return value;
 }
 
 function getSchemaMeta(schema: AnyZodSchema): unknown {

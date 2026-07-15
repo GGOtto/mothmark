@@ -7,6 +7,8 @@ import type {
 	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {ConditionalTextSchema} from "../../schemas/conditionSchema";
+import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {
 	applyTextTransform,
 	generateConditionSummary,
@@ -17,6 +19,8 @@ import {renderChildControl} from "./renderChildControl";
 import "./SpecializedEditors.scss";
 
 type RecordValue = Record<string, unknown>;
+const DEFAULT_CONDITIONAL_TEXT_VARIANT = createDefaultFieldObject(ConditionalTextSchema);
+
 type RoomPickerOption = {
 	id: string;
 	label?: string;
@@ -763,7 +767,7 @@ export function ConditionalTextEditor(props: SpecializedEditorProps) {
 						title: "Conditional variants",
 						features: {
 							addLabel: "Add variant",
-							defaultItem: {text: "", when: {kind: "single", flag: "", value: true}},
+							defaultItem: DEFAULT_CONDITIONAL_TEXT_VARIANT,
 							getItemTitle: "Shown when {when}",
 							itemMetadata: {
 								type: "object",

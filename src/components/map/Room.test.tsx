@@ -6,7 +6,7 @@ import {RoomCard} from "./Room";
 describe("RoomCard special node rails", () => {
 	it("renders every special node and handles it like a normal node", () => {
 		const room = RoomSchema.parse({
-			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+			...createDefaultFieldObject(RoomSchema),
 			id: "room-1",
 			name: "Atrium",
 			metadata: {position: {x: 0, y: 0}},

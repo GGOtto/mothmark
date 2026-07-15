@@ -445,7 +445,7 @@ export function buildAddConnectionResult({
 	const roomToAdd =
 		overlappingRoom === undefined
 			? RoomSchema.parse({
-					...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+					...createDefaultFieldObject(RoomSchema),
 					id: generateUniqueId("room", rooms),
 					name: `Room ${rooms.length + 1}`,
 					metadata: {position: targetPosition},
@@ -463,7 +463,7 @@ export function buildAddConnectionResult({
 		!isConnectionFromRoom(idValue(overlappingRoom.id), targetReturnDirection, connections);
 
 	const connection = ConnectionSchema.parse({
-		...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+		...createDefaultFieldObject(ConnectionSchema),
 		id: generateUniqueId("connection", connections),
 		fromRoomId: fromRoom.id,
 		toRoomId: toRoom.id,

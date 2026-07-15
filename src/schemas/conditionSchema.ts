@@ -227,6 +227,7 @@ export const FlagConditionSchema = editor.discriminatedUnion(
 			mode: "deterministic",
 		},
 	},
+	{type: "flag", operation: "equals", flag: "", value: true},
 );
 
 export const CounterConditionSchema = editor.discriminatedUnion(
@@ -2202,6 +2203,7 @@ export const ConditionalTextSchema = editor.object(
 			enabled: false,
 		},
 	},
+	{text: "", when: []},
 );
 
 export type ConditionalText = z.infer<typeof ConditionalTextSchema>;

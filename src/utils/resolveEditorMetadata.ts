@@ -138,10 +138,6 @@ function inferControlType(schema: z.ZodTypeAny): EditorControlType {
 	return "text";
 }
 
-export function createDefaultValue(schema: z.ZodTypeAny): unknown {
-	return createDefaultFieldObject(schema, {populateArrays: false, useMetadata: false});
-}
-
 function featureDefaults(metadata?: EditorFieldMetadata): Record<string, unknown> {
 	return {
 		...(metadata?.picker ?? {}),
@@ -165,7 +161,7 @@ function buildObjectFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadat
 					return {
 						key,
 						metadata: hasExplicitControl ? mergedMetadata : {...mergedMetadata, type: "hidden" as const},
-						defaultValue: createDefaultValue(fieldSchema),
+						defaultValue: createDefaultFieldObject(fieldSchema),
 						index,
 					};
 				}),
@@ -195,7 +191,7 @@ function buildArrayFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadata
 		getItemTitle: "{name}",
 		getItemSubtitle: "{id}",
 		itemMetadata: itemSchema ? resolveEditorMetadata(itemSchema) : undefined,
-		defaultItem: itemSchema ? createDefaultValue(itemSchema) : "",
+		defaultItem: itemSchema ? createDefaultFieldObject(itemSchema) : "",
 		emptyTitle: metadata?.emptyState?.emptyTitle,
 		emptyDescription: metadata?.emptyState?.emptyDescription,
 		emptyActionLabel: metadata?.emptyState?.emptyActionLabel,

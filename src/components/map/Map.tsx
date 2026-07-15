@@ -191,7 +191,7 @@ export function Map({
 
 	function addRoomAt(position: Point) {
 		const room = RoomSchema.parse({
-			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
+			...createDefaultFieldObject(RoomSchema),
 			id: generateUniqueId("room", world.rooms),
 			name: `Room ${world.rooms.length + 1}`,
 			metadata: {position},
@@ -202,6 +202,8 @@ export function Map({
 		const newLayer = currentLayer;
 		newLayer.rooms = [room.id, ...currentLayer.rooms];
 		setCurrentLayer(currentLayer);
+
+		return room;
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
@@ -254,7 +256,7 @@ export function Map({
 		pathway?: ConnectionType["pathway"],
 	) {
 		const connection = ConnectionSchema.parse({
-			...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+			...createDefaultFieldObject(ConnectionSchema),
 			id: generateUniqueId("connection", world.connections),
 			fromRoomId: draft.fromRoomId,
 			toRoomId: toRoom.id,
@@ -462,14 +464,7 @@ export function Map({
 			addRoomAt(position);
 			return;
 		}
-		const room = RoomSchema.parse({
-			...createDefaultFieldObject(RoomSchema, {populateArrays: false, useMetadata: false}),
-			id: generateUniqueId("room", world.rooms),
-			name: `Room ${world.rooms.length + 1}`,
-			metadata: {position},
-		});
-		setRooms((current) => [...current, room]);
-		selectRoom(room);
+		const room = addRoomAt(position);
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 

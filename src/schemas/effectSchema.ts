@@ -264,6 +264,7 @@ export const FlagEffectSchema = editor.discriminatedUnion(
 			mode: "deterministic",
 		},
 	},
+	{type: "flag", operation: "set", flag: "", value: true},
 );
 
 export const CounterEffectSchema = editor.discriminatedUnion(

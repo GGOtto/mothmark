@@ -1,56 +1,78 @@
 import {z} from "zod";
 import {createDefaultFieldObject} from "./createDefaultFieldObject";
 
+function createDefaultFieldObjectWithLegacyDefaults<TSchema extends z.ZodType>(
+	schema: TSchema,
+	options: Parameters<typeof createDefaultFieldObject>[1] = {},
+): z.infer<TSchema> {
+	return createDefaultFieldObject(schema, {
+		populateArrays: true,
+		...options,
+	});
+}
+
 describe("createDefaultFieldObject", () => {
+	describe("default options", () => {
+		it("does not populate arrays", () => {
+			expect(createDefaultFieldObject(z.array(z.string()))).toEqual([]);
+		});
+
+		it("does not include ordinary schema metadata", () => {
+			expect(createDefaultFieldObject(z.string().meta({title: "Name"}))).toBe("");
+		});
+	});
+
 	describe("primitive schemas", () => {
 		it("creates defaults for strings", () => {
-			expect(createDefaultFieldObject(z.string())).toBe("");
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.string())).toBe("");
 		});
 
 		it("creates defaults for numbers", () => {
-			expect(createDefaultFieldObject(z.number())).toBe(0);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.number())).toBe(0);
 		});
 
 		it("creates defaults for ints", () => {
-			expect(createDefaultFieldObject(z.int())).toBe(0);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.int())).toBe(0);
 		});
 
 		it("creates defaults for booleans", () => {
-			expect(createDefaultFieldObject(z.boolean())).toBe(false);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.boolean())).toBe(false);
 		});
 
 		it("creates defaults for bigints", () => {
-			expect(createDefaultFieldObject(z.bigint())).toBe(BigInt(0));
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.bigint())).toBe(BigInt(0));
 		});
 
 		it("creates defaults for dates", () => {
-			expect(createDefaultFieldObject(z.date())).toEqual(new Date(0));
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.date())).toEqual(new Date(0));
 		});
 
 		it("creates defaults for literals", () => {
-			expect(createDefaultFieldObject(z.literal("room"))).toBe("room");
-			expect(createDefaultFieldObject(z.literal(12))).toBe(12);
-			expect(createDefaultFieldObject(z.literal(false))).toBe(false);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.literal("room"))).toBe("room");
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.literal(12))).toBe(12);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.literal(false))).toBe(false);
 		});
 
 		it("creates defaults for enums using the first option", () => {
-			expect(createDefaultFieldObject(z.enum(["draft", "published", "archived"]))).toBe("draft");
+			expect(
+				createDefaultFieldObjectWithLegacyDefaults(z.enum(["draft", "published", "archived"])),
+			).toBe("draft");
 		});
 
 		it("returns undefined for unknown-ish schemas", () => {
-			expect(createDefaultFieldObject(z.any())).toBeUndefined();
-			expect(createDefaultFieldObject(z.unknown())).toBeUndefined();
-			expect(createDefaultFieldObject(z.undefined())).toBeUndefined();
-			expect(createDefaultFieldObject(z.void())).toBeUndefined();
-			expect(createDefaultFieldObject(z.never())).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.any())).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.unknown())).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.undefined())).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.void())).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.never())).toBeUndefined();
 		});
 
 		it("creates null for z.null", () => {
-			expect(createDefaultFieldObject(z.null())).toBeNull();
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.null())).toBeNull();
 		});
 
 		it("creates NaN for z.nan", () => {
-			expect(Number.isNaN(createDefaultFieldObject(z.nan()))).toBe(true);
+			expect(Number.isNaN(createDefaultFieldObjectWithLegacyDefaults(z.nan()))).toBe(true);
 		});
 	});
 
@@ -66,7 +88,7 @@ describe("createDefaultFieldObject", () => {
 				visible: z.boolean(),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 				name: "",
 				position: {
@@ -84,7 +106,7 @@ describe("createDefaultFieldObject", () => {
 				description: z.string().optional(),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -95,7 +117,7 @@ describe("createDefaultFieldObject", () => {
 				note: z.string().nullable(),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -106,7 +128,7 @@ describe("createDefaultFieldObject", () => {
 				note: z.string().nullish(),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -117,7 +139,7 @@ describe("createDefaultFieldObject", () => {
 				count: z.number().catch(5),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -129,7 +151,7 @@ describe("createDefaultFieldObject", () => {
 				count: z.number().default(7),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 				name: "Untitled",
 				count: 7,
@@ -143,7 +165,7 @@ describe("createDefaultFieldObject", () => {
 				count: z.number().default(7),
 			});
 
-			expect(createDefaultFieldObject(schema, {useZodDefaults: false})).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema, {useZodDefaults: false})).toEqual({
 				id: "",
 			});
 		});
@@ -163,7 +185,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				world: {
 					region: {
 						room: {
@@ -180,10 +202,24 @@ describe("createDefaultFieldObject", () => {
 	});
 
 	describe("arrays", () => {
+		it("populates an array through an empty Zod default when requested", () => {
+			expect(
+				createDefaultFieldObject(z.array(z.string()).default([]), {populateArrays: true}),
+			).toEqual([""]);
+		});
+
+		it("preserves a non-empty Zod array default", () => {
+			expect(
+				createDefaultFieldObject(z.array(z.string()).default(["existing"]), {
+					populateArrays: true,
+				}),
+			).toEqual(["existing"]);
+		});
+
 		it("creates one default item for primitive arrays", () => {
-			expect(createDefaultFieldObject(z.array(z.string()))).toEqual([""]);
-			expect(createDefaultFieldObject(z.array(z.number()))).toEqual([0]);
-			expect(createDefaultFieldObject(z.array(z.boolean()))).toEqual([false]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.array(z.string()))).toEqual([""]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.array(z.number()))).toEqual([0]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.array(z.boolean()))).toEqual([false]);
 		});
 
 		it("creates one default item for object arrays", () => {
@@ -195,7 +231,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			);
 
-			expect(createDefaultFieldObject(schema)).toEqual([
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual([
 				{
 					id: "",
 					name: "",
@@ -212,7 +248,7 @@ describe("createDefaultFieldObject", () => {
 				),
 			);
 
-			expect(createDefaultFieldObject(schema)).toEqual([
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual([
 				[
 					{
 						value: 0,
@@ -230,14 +266,14 @@ describe("createDefaultFieldObject", () => {
 				),
 			});
 
-			expect(createDefaultFieldObject(schema, {populateArrays: false})).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema, {populateArrays: false})).toEqual({
 				rooms: [],
 			});
 		});
 
 		it("does not add an array item when item default resolves to undefined", () => {
-			expect(createDefaultFieldObject(z.array(z.optional(z.string())))).toEqual([]);
-			expect(createDefaultFieldObject(z.array(z.unknown()))).toEqual([]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.array(z.optional(z.string())))).toEqual([]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.array(z.unknown()))).toEqual([]);
 		});
 	});
 
@@ -245,7 +281,7 @@ describe("createDefaultFieldObject", () => {
 		it("creates defaults for tuple items", () => {
 			const schema = z.tuple([z.string(), z.number(), z.boolean()]);
 
-			expect(createDefaultFieldObject(schema)).toEqual(["", 0, false]);
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual(["", 0, false]);
 		});
 
 		it("handles object tuple items", () => {
@@ -258,7 +294,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			]);
 
-			expect(createDefaultFieldObject(schema)).toEqual([
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual([
 				{
 					id: "",
 				},
@@ -271,18 +307,18 @@ describe("createDefaultFieldObject", () => {
 
 	describe("records, maps, and sets", () => {
 		it("creates empty records", () => {
-			expect(createDefaultFieldObject(z.record(z.string(), z.number()))).toEqual({});
+			expect(createDefaultFieldObjectWithLegacyDefaults(z.record(z.string(), z.number()))).toEqual({});
 		});
 
 		it("creates empty maps", () => {
-			const result = createDefaultFieldObject(z.map(z.string(), z.number()));
+			const result = createDefaultFieldObjectWithLegacyDefaults(z.map(z.string(), z.number()));
 
 			expect(result).toBeInstanceOf(Map);
 			expect(result.size).toBe(0);
 		});
 
 		it("creates empty sets", () => {
-			const result = createDefaultFieldObject(z.set(z.string()));
+			const result = createDefaultFieldObjectWithLegacyDefaults(z.set(z.string()));
 
 			expect(result).toBeInstanceOf(Set);
 			expect(result.size).toBe(0);
@@ -293,13 +329,13 @@ describe("createDefaultFieldObject", () => {
 		it("uses the first union option that can create a value", () => {
 			const schema = z.union([z.string(), z.number()]);
 
-			expect(createDefaultFieldObject(schema)).toBe("");
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toBe("");
 		});
 
 		it("skips undefined-producing union options", () => {
 			const schema = z.union([z.undefined(), z.object({id: z.string()})]);
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -318,7 +354,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			]);
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				type: "room",
 				id: "",
 				name: "",
@@ -339,7 +375,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			);
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 				name: "",
 				active: false,
@@ -350,7 +386,7 @@ describe("createDefaultFieldObject", () => {
 		it("prefers the right value for non-object intersections when available", () => {
 			const schema = z.intersection(z.literal("left"), z.literal("right"));
 
-			expect(createDefaultFieldObject(schema)).toBe("right");
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toBe("right");
 		});
 	});
 
@@ -363,7 +399,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			);
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 				name: "",
 			});
@@ -382,7 +418,7 @@ describe("createDefaultFieldObject", () => {
 				}),
 			);
 
-			expect(createDefaultFieldObject(TreeSchema, {maxDepth: 4})).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(TreeSchema, {maxDepth: 4})).toEqual({
 				name: "",
 				children: [
 					{
@@ -406,157 +442,35 @@ describe("createDefaultFieldObject", () => {
 				}),
 			);
 
-			expect(createDefaultFieldObject(NodeSchema, {maxDepth: 1})).toEqual({});
+			expect(createDefaultFieldObjectWithLegacyDefaults(NodeSchema, {maxDepth: 1})).toEqual({});
 		});
 	});
 
-	describe("metadata from .meta()", () => {
-		it("copies concrete metadata values", () => {
+	describe("defaultFieldValue metadata", () => {
+		it("uses a concrete defaultFieldValue value", () => {
+			const schema = z.string().meta({defaultFieldValue: "New field"});
+
+			expect(createDefaultFieldObject(schema)).toBe("New field");
+		});
+
+		it("creates a default from a defaultFieldValue schema", () => {
 			const schema = z.string().meta({
-				title: "Name",
-				description: "The display name.",
-				control: "text",
+				defaultFieldValue: z.object({title: z.string(), enabled: z.boolean()}),
 			});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
-				title: "Name",
-				description: "The display name.",
-				control: "text",
-			});
+			expect(createDefaultFieldObject(schema)).toEqual({title: "", enabled: false});
 		});
 
-		it("creates recursive defaults from metadata zod schemas", () => {
-			const schema = z.string().meta({
-				editor: z.object({
-					title: z.string(),
-					collapsed: z.boolean(),
-					priority: z.number(),
-				}),
-			});
+		it("allows defaultFieldValue to explicitly produce undefined", () => {
+			const schema = z.string().meta({defaultFieldValue: undefined});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					title: "",
-					collapsed: false,
-					priority: 0,
-				},
-			});
+			expect(createDefaultFieldObject(schema)).toBeUndefined();
 		});
 
-		it("merges object schema defaults with metadata defaults", () => {
-			const schema = z
-				.object({
-					id: z.string(),
-					name: z.string(),
-				})
-				.meta({
-					editor: z.object({
-						title: z.string(),
-						collapsed: z.boolean(),
-					}),
-				});
+		it("ignores all other metadata", () => {
+			const schema = z.string().meta({title: "Name", editor: {control: "text"}});
 
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					title: "",
-					collapsed: false,
-				},
-				id: "",
-				name: "",
-			});
-		});
-
-		it("lets actual object fields win over metadata keys when keys collide", () => {
-			const schema = z
-				.object({
-					title: z.string(),
-				})
-				.meta({
-					title: "Metadata Title",
-				});
-
-			expect(createDefaultFieldObject(schema)).toEqual({
-				title: "",
-			});
-		});
-
-		it("skips optional fields inside metadata zod schemas", () => {
-			const schema = z.string().meta({
-				editor: z.object({
-					title: z.string(),
-					description: z.string().optional(),
-					expanded: z.boolean().optional(),
-				}),
-			});
-
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					title: "",
-				},
-			});
-		});
-
-		it("handles nested plain metadata objects containing zod schemas", () => {
-			const schema = z.string().meta({
-				editor: {
-					header: {
-						title: z.string(),
-						count: z.number(),
-						optionalNote: z.string().optional(),
-					},
-				},
-			});
-
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					header: {
-						title: "",
-						count: 0,
-					},
-				},
-			});
-		});
-
-		it("handles arrays inside metadata", () => {
-			const schema = z.string().meta({
-				editor: {
-					tabs: [
-						z.object({
-							label: z.string(),
-							active: z.boolean(),
-						}),
-						"static-tab",
-					],
-				},
-			});
-
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					tabs: [
-						{
-							label: "",
-							active: false,
-						},
-						"static-tab",
-					],
-				},
-			});
-		});
-
-		it("does not mutate metadata objects", () => {
-			const meta = {
-				editor: z.object({
-					title: z.string(),
-				}),
-			};
-
-			const schema = z.string().meta(meta);
-
-			createDefaultFieldObject(schema);
-
-			expect(meta).toEqual({
-				editor: expect.any(z.ZodObject),
-			});
+			expect(createDefaultFieldObject(schema)).toBe("");
 		});
 	});
 
@@ -564,19 +478,19 @@ describe("createDefaultFieldObject", () => {
 		it("handles pipes by using the input schema", () => {
 			const schema = z.string().pipe(z.string().min(1));
 
-			expect(createDefaultFieldObject(schema)).toBe("");
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toBe("");
 		});
 
 		it("returns undefined for transforms that cannot be safely defaulted", () => {
 			const schema = z.string().transform((value) => value.length);
 
-			expect(createDefaultFieldObject(schema)).toBeUndefined();
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toBeUndefined();
 		});
 
 		it("handles readonly by using the inner schema", () => {
 			const schema = z.object({id: z.string()}).readonly();
 
-			expect(createDefaultFieldObject(schema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 			});
 		});
@@ -649,24 +563,14 @@ describe("createDefaultFieldObject", () => {
 				}),
 			});
 
-			expect(createDefaultFieldObject(WorldSchema)).toEqual({
+			expect(createDefaultFieldObjectWithLegacyDefaults(WorldSchema)).toEqual({
 				id: "",
 				title: "",
 				rooms: [
 					{
-						editor: {
-							title: "",
-							collapsible: false,
-							priority: 0,
-						},
 						id: "",
 						name: "",
 						description: {
-							editor: {
-								title: "",
-								icon: "",
-								order: 0,
-							},
 							text: "",
 						},
 						tags: [""],
@@ -685,11 +589,6 @@ describe("createDefaultFieldObject", () => {
 						direction: "n",
 						locked: false,
 						description: {
-							editor: {
-								title: "",
-								icon: "",
-								order: 0,
-							},
 							text: "",
 						},
 					},
@@ -740,16 +639,9 @@ describe("createDefaultFieldObject", () => {
 					},
 				});
 
-			expect(() => createDefaultFieldObject(schema)).not.toThrow();
+			expect(() => createDefaultFieldObjectWithLegacyDefaults(schema)).not.toThrow();
 
-			expect(createDefaultFieldObject(schema)).toEqual({
-				editor: {
-					control: "entity-editor",
-					panel: {
-						title: "",
-						open: false,
-					},
-				},
+			expect(createDefaultFieldObjectWithLegacyDefaults(schema)).toEqual({
 				id: "",
 				type: "entity",
 				status: "draft",
@@ -785,7 +677,7 @@ describe("createDefaultFieldObject", () => {
 				),
 			});
 
-			const value = createDefaultFieldObject(schema);
+			const value = createDefaultFieldObjectWithLegacyDefaults(schema);
 
 			expect(() => schema.parse(value)).not.toThrow();
 		});
@@ -795,7 +687,7 @@ describe("createDefaultFieldObject", () => {
 				name: z.string().min(1),
 			});
 
-			const value = createDefaultFieldObject(schema);
+			const value = createDefaultFieldObjectWithLegacyDefaults(schema);
 
 			expect(value).toEqual({
 				name: "",

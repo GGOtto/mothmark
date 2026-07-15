@@ -32,7 +32,8 @@ import {
 	type ID,
 	resolveWorldEntityId,
 } from "@/utils/idUtils";
-import {createDefaultValue, resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
 import {getArrayElement, getSchemaAtPath} from "@/utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
 import "./UniversalEditor.scss";
@@ -564,7 +565,11 @@ export function UniversalEditor<TValue>({
 			if (!itemSchema) return undefined;
 
 			const id = generateUniqueId(idPrefixForTarget(target), collection.filter(isIdentifiableRecord));
-			const defaultItem = assignCreatedEntityDefaults(createDefaultValue(itemSchema), id, target);
+			const defaultItem = assignCreatedEntityDefaults(
+				createDefaultFieldObject(itemSchema),
+				id,
+				target,
+			);
 			const nextCollection = [...collection, defaultItem];
 			const nextPath = [...sourcePath, collection.length];
 			const childMetadata = metadataForTarget(itemSchema, target);

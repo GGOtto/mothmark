@@ -26,25 +26,40 @@ type OptionalReferenceMetadata = EditorMetadataWithoutControl & {
 	required: false;
 };
 
-export function editorString(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string(), {
-		control: "text",
-		placeholder: "",
-		...metadata,
-	});
+export function editorString(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.string(),
+		{
+			control: "text",
+			placeholder: "",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
-export function editorInput(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string(), {
-		control: "input",
-		placeholder: "",
-		...metadata,
-	});
+export function editorInput(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.string(),
+		{
+			control: "input",
+			placeholder: "",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
 export function editorId<TEntityType extends IdEntityType>(
 	entityType: TEntityType,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue: unknown = "",
 ) {
 	return editorHidden(
 		z
@@ -54,113 +69,171 @@ export function editorId<TEntityType extends IdEntityType>(
 			...metadata,
 			readonly: true,
 		},
+		defaultFieldValue,
 	);
 }
 
-export function editorTextarea(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string(), {
-		control: "textarea",
-		placeholder: "",
-		preview: {
-			showPreview: false,
-			previewMode: "below",
-			...metadata.preview,
+export function editorTextarea(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.string(),
+		{
+			control: "textarea",
+			placeholder: "",
+			preview: {
+				showPreview: false,
+				previewMode: "below",
+				...metadata.preview,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
-export function editorRichText(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string(), {
-		control: "rich-text",
-		placeholder: "",
-		preview: {
-			showPreview: true,
-			previewMode: "below",
-			...metadata.preview,
+export function editorRichText(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.string(),
+		{
+			control: "rich-text",
+			placeholder: "",
+			preview: {
+				showPreview: true,
+				previewMode: "below",
+				...metadata.preview,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
-export function editorMessage(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string(), {
-		control: "message",
-		placeholder: "Message shown to the player...",
-		preview: {
-			showPreview: true,
-			previewMode: "below",
-			...metadata.preview,
+export function editorMessage(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.string(),
+		{
+			control: "message",
+			placeholder: "Message shown to the player...",
+			preview: {
+				showPreview: true,
+				previewMode: "below",
+				...metadata.preview,
+			},
+			appearance: {
+				tone: "paper",
+				chrome: "card",
+				...metadata.appearance,
+			},
+			...metadata,
 		},
-		appearance: {
-			tone: "paper",
-			chrome: "card",
-			...metadata.appearance,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorNumber<TSchema extends z.ZodTypeAny = z.ZodNumber>(
 	metadata: EditorMetadataWithoutControl = {},
 	schema?: TSchema,
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata((schema ?? z.number()) as TSchema, {
-		control: "number",
-		...metadata,
-	});
+	return withEditorMetadata(
+		(schema ?? z.number()) as TSchema,
+		{
+			control: "number",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
-export function editorInteger(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.number().int(), {
-		control: "number",
-		...metadata,
-	});
+export function editorInteger(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.number().int(),
+		{
+			control: "number",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
-export function editorNonNegativeInteger(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.number().int().nonnegative(), {
-		control: "number",
-		...metadata,
-	});
+export function editorNonNegativeInteger(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.number().int().nonnegative(),
+		{
+			control: "number",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
-export function editorPositiveInteger(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.number().int().positive(), {
-		control: "number",
-		...metadata,
-	});
+export function editorPositiveInteger(
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		z.number().int().positive(),
+		{
+			control: "number",
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
 export function editorBoolean<TSchema extends z.ZodTypeAny = z.ZodBoolean>(
 	metadata: EditorMetadataWithoutControl = {},
 	schema?: TSchema,
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata((schema ?? z.boolean()) as TSchema, {
-		control: "toggle",
-		appearance: {
-			chrome: "inline",
-			...metadata.appearance,
+	return withEditorMetadata(
+		(schema ?? z.boolean()) as TSchema,
+		{
+			control: "toggle",
+			appearance: {
+				chrome: "inline",
+				...metadata.appearance,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorSelect<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "select",
-		picker: {
-			searchable: false,
-			clearable: false,
-			showDescriptions: false,
-			showBadges: true,
-			...metadata.picker,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "select",
+			picker: {
+				searchable: false,
+				clearable: false,
+				showDescriptions: false,
+				showBadges: true,
+				...metadata.picker,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorMultiSelect(
@@ -196,14 +269,17 @@ export function editorMultiSelect<TSchema extends z.ZodTypeAny>(
 export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata: OptionalReferenceMetadata,
+	defaultFieldValue?: unknown,
 ): z.ZodOptional<z.ZodType<ID<TEntityType>>>;
 export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata?: EditorMetadataWithoutControl,
+	defaultFieldValue?: unknown,
 ): z.ZodType<ID<TEntityType>>;
 export function editorReference<TEntityType extends WorldIdEntityType>(
 	entityType: TEntityType,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
 	const referenceObjectSchema = z
 		.object({
@@ -218,19 +294,23 @@ export function editorReference<TEntityType extends WorldIdEntityType>(
 	const schema = z.union([referenceObjectSchema, legacyStringReferenceSchema]);
 	const isRequired = metadata.required ?? true;
 
-	return editorSelect(isRequired ? schema : schema.optional(), {
-		entityType,
-		required: isRequired,
-		picker: {
-			searchable: true,
-			clearable: !isRequired,
-			clearButton: !isRequired,
-			showDescriptions: false,
-			showBadges: true,
-			...metadata.picker,
+	return editorSelect(
+		isRequired ? schema : schema.optional(),
+		{
+			entityType,
+			required: isRequired,
+			picker: {
+				searchable: true,
+				clearable: !isRequired,
+				clearButton: !isRequired,
+				showDescriptions: false,
+				showBadges: true,
+				...metadata.picker,
+			},
+			...metadata,
 		},
-		...metadata,
-	}) as z.ZodType<ID<TEntityType>> | z.ZodOptional<z.ZodType<ID<TEntityType>>>;
+		defaultFieldValue ?? (isRequired ? {type: entityType, id: ""} : undefined),
+	) as z.ZodType<ID<TEntityType>> | z.ZodOptional<z.ZodType<ID<TEntityType>>>;
 }
 
 export function editorStringList(
@@ -495,18 +575,23 @@ export function editorDirection(metadata: EditorMetadataWithoutControl = {}) {
 export function editorScope<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "scope-picker",
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: false,
-			...metadata.picker,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "scope-picker",
+			picker: {
+				searchable: true,
+				showDescriptions: false,
+				showBadges: true,
+				clearable: false,
+				...metadata.picker,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorPriority(metadata: EditorMetadataWithoutControl = {}) {
@@ -523,241 +608,291 @@ export function editorPriority(metadata: EditorMetadataWithoutControl = {}) {
 export function editorCondition<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "condition-builder",
-		features: {
-			conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
-			groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
-			comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
-			operatorOptionSourcesByType: Object.fromEntries(
-				Object.keys(conditionOperationOptionsByType).map((type) => [
-					type,
-					`schema.condition.${type}.operations`,
-				]),
-			),
-			...metadata.features,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "condition-builder",
+			features: {
+				conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
+				groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
+				comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
+				operatorOptionSourcesByType: Object.fromEntries(
+					Object.keys(conditionOperationOptionsByType).map((type) => [
+						type,
+						`schema.condition.${type}.operations`,
+					]),
+				),
+				...metadata.features,
+			},
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No condition",
+				emptyDescription: "Add a condition or condition group.",
+				emptyActionLabel: "Add condition",
+				...metadata.emptyState,
+			},
+			...metadata,
 		},
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
-		},
-		emptyState: {
-			emptyTitle: "No condition",
-			emptyDescription: "Add a condition or condition group.",
-			emptyActionLabel: "Add condition",
-			...metadata.emptyState,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorConditionList<TSchema extends z.ZodTypeAny>(
 	conditionSchema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(z.array(conditionSchema).default([]), {
-		control: "condition-builder",
-		features: {
-			conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
-			groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
-			comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
-			operatorOptionSourcesByType: Object.fromEntries(
-				Object.keys(conditionOperationOptionsByType).map((type) => [
-					type,
-					`schema.condition.${type}.operations`,
-				]),
-			),
-			...metadata.features,
+	return withEditorMetadata(
+		z.array(conditionSchema).default([]),
+		{
+			control: "condition-builder",
+			features: {
+				conditionTypeOptionSource: CONDITION_TYPE_OPTION_SOURCE,
+				groupOperatorOptionSource: CONDITION_GROUP_OPERATOR_OPTION_SOURCE,
+				comparisonOperatorOptionSource: CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE,
+				operatorOptionSourcesByType: Object.fromEntries(
+					Object.keys(conditionOperationOptionsByType).map((type) => [
+						type,
+						`schema.condition.${type}.operations`,
+					]),
+				),
+				...metadata.features,
+			},
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No conditions",
+				emptyDescription: "Add one or more conditions.",
+				emptyActionLabel: "Add condition",
+				...metadata.emptyState,
+			},
+			...metadata,
 		},
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
-		},
-		emptyState: {
-			emptyTitle: "No conditions",
-			emptyDescription: "Add one or more conditions.",
-			emptyActionLabel: "Add condition",
-			...metadata.emptyState,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorEffects<TSchema extends z.ZodTypeAny>(
 	effectSchema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(z.array(effectSchema).default([]), {
-		control: "effect-list",
-		features: {
-			effectTypeOptionSource: EFFECT_TYPE_OPTION_SOURCE,
-			operationOptionSourcesByType: Object.fromEntries(
-				Object.keys(effectOperationOptionsByType).map((type) => [
-					type,
-					`schema.effect.${type}.operations`,
-				]),
-			),
-			...metadata.features,
+	return withEditorMetadata(
+		z.array(effectSchema).default([]),
+		{
+			control: "effect-list",
+			features: {
+				effectTypeOptionSource: EFFECT_TYPE_OPTION_SOURCE,
+				operationOptionSourcesByType: Object.fromEntries(
+					Object.keys(effectOperationOptionsByType).map((type) => [
+						type,
+						`schema.effect.${type}.operations`,
+					]),
+				),
+				...metadata.features,
+			},
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No effects",
+				emptyDescription: "Add effects to change game state or show output.",
+				emptyActionLabel: "Add effect",
+				...metadata.emptyState,
+			},
+			duplicate: {
+				duplicateBehavior: "exact",
+				...metadata.duplicate,
+			},
+			...metadata,
 		},
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
-		},
-		emptyState: {
-			emptyTitle: "No effects",
-			emptyDescription: "Add effects to change game state or show output.",
-			emptyActionLabel: "Add effect",
-			...metadata.emptyState,
-		},
-		duplicate: {
-			duplicateBehavior: "exact",
-			...metadata.duplicate,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorLogicBranchList<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "logic-branch-list",
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "logic-branch-list",
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No branches",
+				emptyDescription: "Add success, failure, before, or after branches.",
+				emptyActionLabel: "Add branch",
+				...metadata.emptyState,
+			},
+			duplicate: {
+				duplicateBehavior: "with-new-id",
+				idField: "id",
+				...metadata.duplicate,
+			},
+			...metadata,
 		},
-		emptyState: {
-			emptyTitle: "No branches",
-			emptyDescription: "Add success, failure, before, or after branches.",
-			emptyActionLabel: "Add branch",
-			...metadata.emptyState,
-		},
-		duplicate: {
-			duplicateBehavior: "with-new-id",
-			idField: "id",
-			...metadata.duplicate,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorCommandPattern<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "command-pattern",
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "command-pattern",
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No patterns",
+				emptyDescription: "Add at least one command pattern.",
+				emptyActionLabel: "Add pattern",
+				...metadata.emptyState,
+			},
+			...metadata,
 		},
-		emptyState: {
-			emptyTitle: "No patterns",
-			emptyDescription: "Add at least one command pattern.",
-			emptyActionLabel: "Add pattern",
-			...metadata.emptyState,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorConditionalText<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "conditional-text",
-		preview: {
-			showPreview: true,
-			previewMode: "below",
-			...metadata.preview,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "conditional-text",
+			preview: {
+				showPreview: true,
+				previewMode: "below",
+				...metadata.preview,
+			},
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
+			emptyState: {
+				emptyTitle: "No conditional text",
+				emptyDescription: "Add default text or conditional variants.",
+				emptyActionLabel: "Add variant",
+				...metadata.emptyState,
+			},
+			...metadata,
 		},
-		summary: {
-			enabled: true,
-			mode: "deterministic",
-			...metadata.summary,
-		},
-		emptyState: {
-			emptyTitle: "No conditional text",
-			emptyDescription: "Add default text or conditional variants.",
-			emptyActionLabel: "Add variant",
-			...metadata.emptyState,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorDiscriminatedUnion<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "discriminated-union",
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			showBadges: true,
-			clearable: false,
-			...metadata.picker,
+	return withEditorMetadata(
+		schema,
+		{
+			control: "discriminated-union",
+			picker: {
+				searchable: true,
+				showDescriptions: false,
+				showBadges: true,
+				clearable: false,
+				...metadata.picker,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorObject<TShape extends z.ZodRawShape>(
 	shape: TShape,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(z.object(shape), {
-		control: "object",
-		appearance: {
-			chrome: "card",
-			...metadata.appearance,
+	return withEditorMetadata(
+		z.object(shape),
+		{
+			control: "object",
+			appearance: {
+				chrome: "card",
+				...metadata.appearance,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorRecord<TValueSchema extends z.ZodTypeAny>(
 	valueSchema: TValueSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(z.record(z.string(), valueSchema).default({}), {
-		control: "object",
-		appearance: {
-			chrome: "card",
-			...metadata.appearance,
+	return withEditorMetadata(
+		z.record(z.string(), valueSchema).default({}),
+		{
+			control: "object",
+			appearance: {
+				chrome: "card",
+				...metadata.appearance,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorArray<TItemSchema extends z.ZodTypeAny>(
 	itemSchema: TItemSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(z.array(itemSchema).default([]), {
-		control: "array",
-		emptyState: {
-			emptyTitle: "No entries",
-			emptyDescription: "Add one or more entries.",
-			emptyActionLabel: "Add entry",
-			...metadata.emptyState,
+	return withEditorMetadata(
+		z.array(itemSchema).default([]),
+		{
+			control: "array",
+			emptyState: {
+				emptyTitle: "No entries",
+				emptyDescription: "Add one or more entries.",
+				emptyActionLabel: "Add entry",
+				...metadata.emptyState,
+			},
+			duplicate: {
+				duplicateBehavior: "with-new-id",
+				idField: "id",
+				...metadata.duplicate,
+			},
+			...metadata,
 		},
-		duplicate: {
-			duplicateBehavior: "with-new-id",
-			idField: "id",
-			...metadata.duplicate,
-		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
 }
 
 export function editorValidationSummary<TSchema extends z.ZodTypeAny>(
@@ -842,12 +977,17 @@ export function editorDiffPreview<TSchema extends z.ZodTypeAny>(
 export function editorHidden<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
 ) {
-	return withEditorMetadata(schema, {
-		control: "hidden",
-		hidden: true,
-		...metadata,
-	});
+	return withEditorMetadata(
+		schema,
+		{
+			control: "hidden",
+			hidden: true,
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
 export const editor = {

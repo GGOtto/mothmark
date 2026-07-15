@@ -8,7 +8,7 @@ import "./page.scss";
 export default function StarterWorldPage() {
 	const [hasCopied, setHasCopied] = useState(false);
 	const starterWorldJson = useMemo(
-		() => JSON.stringify(createDefaultFieldObject(WorldSchema, {useMetadata: false}), null, 2),
+		() => JSON.stringify(createDefaultFieldObject(WorldSchema, {populateArrays: true}), null, 2),
 		[],
 	);
 

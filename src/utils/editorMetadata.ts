@@ -4,9 +4,11 @@ import type {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
 export function withEditorMetadata<TSchema extends z.ZodTypeAny>(
 	schema: TSchema,
 	metadata: EditorFieldMetadata,
+	defaultFieldValue?: unknown,
 ): TSchema {
 	return schema.meta({
 		...(schema.meta() ?? {}),
+		...(defaultFieldValue !== undefined ? {defaultFieldValue} : {}),
 		editor: metadata,
 	}) as TSchema;
 }

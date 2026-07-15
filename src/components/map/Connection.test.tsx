@@ -22,10 +22,7 @@ describe("stub tag anchors", () => {
 
 describe("Connection pathway glyph", () => {
 	it("shows the current pathway through the shared status updater", () => {
-		const roomDefaults = createDefaultFieldObject(RoomSchema, {
-			populateArrays: false,
-			useMetadata: false,
-		});
+		const roomDefaults = createDefaultFieldObject(RoomSchema);
 		const fromRoom = RoomSchema.parse({
 			...roomDefaults,
 			id: "room-1",
@@ -39,7 +36,7 @@ describe("Connection pathway glyph", () => {
 			metadata: {position: {x: 200, y: 40}},
 		});
 		const connection = ConnectionSchema.parse({
-			...createDefaultFieldObject(ConnectionSchema, {populateArrays: false, useMetadata: false}),
+			...createDefaultFieldObject(ConnectionSchema),
 			id: "connection-1",
 			fromRoomId: fromRoom.id,
 			toRoomId: toRoom.id,
