@@ -1,11 +1,12 @@
 import {render} from "@testing-library/react";
 import type {EditorControlContext} from "@/types/universalEditorTypes";
+import type {EditorRegistries} from "@/types/editor/editorRegistryTypes";
 import {ObjectEditor, type ObjectControlMetadata} from "./ObjectEditor";
 
 function context(disclosures: Record<string, boolean> = {}): EditorControlContext {
 	return {
 		mode: "edit",
-		registries: {},
+		registries: {} as EditorRegistries,
 		getValue: () => undefined,
 		setValue: () => undefined,
 		editorChrome: {

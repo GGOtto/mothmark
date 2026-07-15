@@ -69,6 +69,18 @@ export const PointSchema = z.object({
 	y: z.number(),
 });
 
+export const RoomMetadataSchema = z.object({
+	position: PointSchema.describe("The room's position in the editor canvas."),
+});
+
+export const ConnectionMetadataSchema = z
+	.object({
+		stubPoint: PointSchema.optional().describe(
+			"An optional editor-canvas position for this connection's cross-layer stub.",
+		),
+	})
+	.default({});
+
 export const RoomFeatureKindSchema = editor.select(
 	z
 		.enum(["feature", "container", "surface", "door", "exit", "decoration", "hazard"])
@@ -405,7 +417,7 @@ export const RoomSchema = editor.object(
 			z.array(RoomFeatureSchema).default([]),
 		),
 
-		position: PointSchema.describe("The room's position in the editor canvas."),
+		metadata: RoomMetadataSchema,
 
 		activeWhen: editor.conditionList(ConditionUsageSchema, {
 			title: "Active When",
@@ -530,6 +542,8 @@ export const ConnectionSchema = editor.object(
 		pathway: PathwaySchema.describe(
 			"Controls whether this connection can be traveled both ways, only forwards, only backwards, or not at all.",
 		),
+
+		metadata: ConnectionMetadataSchema,
 
 		aliases: editor.aliasList({
 			title: "Aliases",

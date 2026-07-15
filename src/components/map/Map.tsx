@@ -3,8 +3,9 @@
 import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import type {Point, Room, Connection as ConnectionType, Direction} from "../../schemas/roomSchema";
-import type {World} from "../../schemas/worldSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS, findLayerForRoomId} from "../../utils/mapUtils";
+import {type Layer, type World} from "../../schemas/worldSchema";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
+import {isRoomInLayer, getLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
@@ -22,6 +23,8 @@ type DragState = {
 	roomId: string;
 	offset: Point;
 	startPointer: Point;
+	startRoomPosition: Point;
+	stubPoints: Record<string, Point>;
 	hasDragged: boolean;
 };
 
@@ -95,7 +98,7 @@ export function Map({
 		setConnectionDraft({state: "idle"});
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
 	}, [setConnectionDraft, updateStatus]);
-	const [currentLayerIndex, setCurrentLayerIndex] = useState<number>(0);
+	const [currentLayer, setCurrentLayer] = useState<Layer>(getLayer(world, 0));
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -166,6 +169,19 @@ export function Map({
 		return pathway;
 	}
 
+	function handleConnectionStubPointChange(connection: ConnectionType, stubPoint: Point) {
+		setConnections((currentConnections) =>
+			currentConnections.map((currentConnection) =>
+				idValue(currentConnection.id) === idValue(connection.id)
+					? {
+							...currentConnection,
+							metadata: {...currentConnection.metadata, stubPoint},
+						}
+					: currentConnection,
+			),
+		);
+	}
+
 	function addRoomAt(position: Point) {
 		const room = createDefaultRoom(
 			generateUniqueId("room", world.rooms),
@@ -174,24 +190,19 @@ export function Map({
 		);
 		setRooms((currentRooms) => [...currentRooms, room]);
 		selectRoom(room);
+
+		const newLayer = currentLayer;
+		newLayer.rooms = [room.id, ...currentLayer.rooms];
+		setCurrentLayer(currentLayer);
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
-		return addPoints(room.position, getRoomNodePosition(direction, ROOM_WIDTH, ROOM_HEIGHT));
+		return addPoints(room.metadata.position, getRoomNodePosition(direction, ROOM_WIDTH, ROOM_HEIGHT));
 	}
 
-	function getRoom(roomReference: string | ID<"room">, direction?: Direction) {
+	function getRoom(roomReference: string | ID<"room">) {
 		const roomId = idValue(roomReference);
-		const room = world.rooms.find((room) => idValue(room.id) === roomId);
-
-		if (room && direction) {
-			return {
-				...room,
-				position: getRoomConnectionPoint(room, direction),
-			};
-		}
-
-		return room;
+		return world.rooms.find((room) => idValue(room.id) === roomId);
 	}
 
 	function addConnection(fromRoom: Room, direction: Direction) {
@@ -292,8 +303,19 @@ export function Map({
 
 		setDragState({
 			roomId: idValue(room.id),
-			offset: subtractPoints(pointer, room.position),
+			offset: subtractPoints(pointer, room.metadata.position),
 			startPointer: pointer,
+			startRoomPosition: room.metadata.position,
+			stubPoints: Object.fromEntries(
+				world.connections.flatMap((connection) => {
+					const isIncident =
+						idValue(connection.fromRoomId) === idValue(room.id) ||
+						idValue(connection.toRoomId) === idValue(room.id);
+					return isIncident && connection.metadata.stubPoint
+						? [[idValue(connection.id), connection.metadata.stubPoint]]
+						: [];
+				}),
+			),
 			hasDragged: false,
 		});
 	}
@@ -323,13 +345,32 @@ export function Map({
 			hasDragged,
 		});
 
+		const nextPosition = subtractPoints(pointer, dragState.offset);
+		const delta = subtractPoints(nextPosition, dragState.startRoomPosition);
+		setConnections((connections) =>
+			connections.map((connection) => {
+				const startStubPoint = dragState.stubPoints[idValue(connection.id)];
+				if (!startStubPoint) return connection;
+				return {
+					...connection,
+					metadata: {
+						...connection.metadata,
+						stubPoint: addPoints(startStubPoint, delta),
+					},
+				};
+			}),
+		);
+
 		setRooms((rooms) =>
 			rooms.map((room) => {
 				if (idValue(room.id) !== dragState.roomId) return room;
 
 				return {
 					...room,
-					position: subtractPoints(pointer, dragState.offset),
+					metadata: {
+						...room.metadata,
+						position: nextPosition,
+					},
 				};
 			}),
 		);
@@ -457,14 +498,15 @@ export function Map({
 			>
 				<svg className="mapSvg" width="100%" height="100%">
 					{connectionsInRenderOrder.map((connection) => {
-						const fromRoom = getRoom(connection.fromRoomId, connection.direction);
-						const toRoom = getRoom(connection.toRoomId, connection.returnDirection);
+						const fromRoom = getRoom(connection.fromRoomId);
+						const toRoom = getRoom(connection.toRoomId);
 
 						if (!fromRoom || !toRoom) return null;
 
 						return (
 							<Connection
 								key={idValue(connection.id)}
+								world={world}
 								connection={connection}
 								fromRoom={fromRoom}
 								toRoom={toRoom}
@@ -473,7 +515,8 @@ export function Map({
 								updateStatus={updateStatus}
 								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
 								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
-								currentLayerIndex={currentLayerIndex}
+								currentLayer={currentLayer}
+								onStubPointChange={handleConnectionStubPointChange}
 							/>
 						);
 					})}
@@ -481,7 +524,7 @@ export function Map({
 
 				{world.rooms.map(
 					(room) =>
-						findLayerForRoomId(world.metadata.layers, room.id) === currentLayerIndex && (
+						isRoomInLayer(currentLayer, room.id) && (
 							<RoomCard
 								key={idValue(room.id)}
 								room={room}
@@ -504,7 +547,6 @@ export function Map({
 								onPointerDown={handleRoomPointerDown}
 								onNodeClick={addConnection}
 								updateStatus={updateStatus}
-								currentLayerIndex={currentLayerIndex}
 							/>
 						),
 				)}

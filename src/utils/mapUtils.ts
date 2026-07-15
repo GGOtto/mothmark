@@ -1,6 +1,4 @@
 import type {Direction, Point, Room} from "../schemas/roomSchema";
-import type {Layer} from "../schemas/worldSchema";
-import {compareIds, type ID} from "./idUtils";
 
 export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	n: {x: 0, y: -1},
@@ -93,20 +91,3 @@ export type RoomNode = {
 	position: Point;
 	isConnected?: boolean;
 };
-
-/** Return which later a room ID is on in the world metadata. Returns 0 if the room isn't referenced in a layer. */
-export function findLayerForRoomId(layers: Layer[], roomId: ID<"room">): number {
-	if (layers.length === 0) {
-		return 0;
-	}
-
-	for (const layer of layers) {
-		for (const room of layer.rooms) {
-			if (compareIds(room, roomId)) {
-				return layer.layer;
-			}
-		}
-	}
-
-	return 0;
-}

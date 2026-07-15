@@ -20,7 +20,7 @@ export function createDefaultRoom(id: string, name: string, position: Point): Ro
 		name,
 		aliases: [],
 		tags: [],
-		position,
+		metadata: {position},
 		description: {
 			default: "",
 			variants: [],
@@ -73,6 +73,7 @@ export function createDefaultConnection({
 		toRoomId,
 		direction,
 		returnDirection,
+		metadata: {},
 		aliases: [],
 		pathway,
 		description: "",

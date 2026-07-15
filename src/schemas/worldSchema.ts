@@ -983,7 +983,7 @@ export const DefaultWorldInitialState = {
 
 export const LayerSchema = editor.object(
 	{
-		name: z.string().optional(),
+		name: z.string(),
 		layer: z.number(),
 		rooms: z.array(editor.id("room", {})).default([]),
 	},

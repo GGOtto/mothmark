@@ -258,14 +258,14 @@ function getTargetPosition(
 	const vector = DIRECTION_VECTORS[direction];
 
 	return {
-		x: sourceRoom.position.x + vector.x * (length + roomWidth),
-		y: sourceRoom.position.y + vector.y * (length + roomHeight),
+		x: sourceRoom.metadata.position.x + vector.x * (length + roomWidth),
+		y: sourceRoom.metadata.position.y + vector.y * (length + roomHeight),
 	};
 }
 
 function getDirectionAlignmentScore(sourceRoom: Room, direction: Direction, room: Room) {
 	const vector = DIRECTION_VECTORS[direction];
-	const roomOffset = subtractPoints(room.position, sourceRoom.position);
+	const roomOffset = subtractPoints(room.metadata.position, sourceRoom.metadata.position);
 
 	const vectorLength = Math.hypot(vector.x, vector.y);
 	const unitDirection = {
@@ -306,8 +306,8 @@ function getBestOverlappingRoom({
 	const candidates = rooms
 		.filter((room) => !compareIds(room.id, sourceRoom.id))
 		.map((room) => {
-			const dx = Math.abs(room.position.x - position.x);
-			const dy = Math.abs(room.position.y - position.y);
+			const dx = Math.abs(room.metadata.position.x - position.x);
+			const dy = Math.abs(room.metadata.position.y - position.y);
 
 			const overlapsTargetArea =
 				dx < roomWidth + minConnectorLength && dy < roomHeight + minConnectorLength;
@@ -315,8 +315,8 @@ function getBestOverlappingRoom({
 			if (!overlapsTargetArea) return null;
 
 			const distanceFromTarget = Math.hypot(
-				room.position.x - position.x,
-				room.position.y - position.y,
+				room.metadata.position.x - position.x,
+				room.metadata.position.y - position.y,
 			);
 			const directionAlignment = getDirectionAlignmentScore(sourceRoom, direction, room);
 

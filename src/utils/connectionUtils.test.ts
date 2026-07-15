@@ -84,8 +84,8 @@ function getRoomConnectionPoint(room: Room, direction: Direction): Point {
 	const vector = DIRECTION_VECTORS[direction];
 
 	return {
-		x: room.position.x + vector.x * 10,
-		y: room.position.y + vector.y * 10,
+		x: room.metadata.position.x + vector.x * 10,
+		y: room.metadata.position.y + vector.y * 10,
 	};
 }
 
@@ -819,7 +819,7 @@ describe("buildAddConnectionResult", () => {
 			pathway: "two-way",
 		});
 
-		expect(result?.roomToAdd?.position).toEqual({
+		expect(result?.roomToAdd?.metadata.position).toEqual({
 			x: 100 + ROOM_WIDTH + CONNECTOR_LENGTH,
 			y: 100 - (ROOM_HEIGHT + CONNECTOR_LENGTH),
 		});

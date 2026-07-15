@@ -113,10 +113,8 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"features",
-			"position",
-			"visitedFlag",
-			"viewedFlag",
 			"activeWhen",
+			"metadata",
 			"id",
 		]);
 		expect(fields.at(-1)?.metadata).toMatchObject({
@@ -128,8 +126,7 @@ describe("resolveEditorMetadata object fields", () => {
 		const metadata = resolveEditorMetadata(RoomSchema);
 
 		expect(metadata.features?.groups).toEqual([
-			expect.objectContaining({id: "details", title: "Details", order: 10}),
-			expect.objectContaining({id: "description", title: "Description", order: 20}),
+			expect.objectContaining({id: "details", title: "Presentation", order: 10}),
 			expect.objectContaining({id: "features", title: "Features", order: 30}),
 			expect.objectContaining({
 				id: "availability",
@@ -137,24 +134,15 @@ describe("resolveEditorMetadata object fields", () => {
 				order: 40,
 				defaultCollapsed: true,
 			}),
-			expect.objectContaining({
-				id: "editor",
-				title: "Editor",
-				order: 50,
-				defaultCollapsed: true,
-			}),
 		]);
 		expect(getFieldGroups(RoomSchema)).toMatchObject({
 			id: "details",
 			name: "details",
-			description: "description",
-			shortDescription: "description",
-			aliases: "details",
-			tags: "details",
+			description: "details",
+			shortDescription: "details",
+			aliases: "identify",
+			tags: "identify",
 			features: "features",
-			position: "editor",
-			visitedFlag: "availability",
-			viewedFlag: "availability",
 			activeWhen: "availability",
 		});
 	});
@@ -244,6 +232,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"travelAllowedWhen",
 			"lockedWhen",
 			"state",
+			"metadata",
 		]);
 		expect(fields[0].metadata).toMatchObject({
 			type: "hidden",

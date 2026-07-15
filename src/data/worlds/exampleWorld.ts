@@ -31,7 +31,7 @@ function room(
 		name,
 		aliases: id === "dungeon-entrance" ? ["entrance", "stairs"] : [],
 		tags: ["dungeon", y < 100 ? "upper-level" : y > 250 ? "lower-level" : "main-level"],
-		position: {x, y},
+		metadata: {position: {x, y}},
 		description: {default: description, variants: []},
 		features,
 	};
@@ -52,6 +52,7 @@ function connection(
 		direction,
 		returnDirection,
 		pathway,
+		metadata: {},
 	};
 }
 
@@ -64,17 +65,32 @@ const rawWorld = {
 		version: "0.3.0",
 		layers: [
 			{
-				name: "Cloud Layer",
+				name: "Lower Crypts",
+				layer: -1,
+				rooms: [
+					{type: "room", id: "fungal-grotto"},
+					{type: "room", id: "lower-crypt"},
+					{type: "room", id: "ossuary"},
+					{type: "room", id: "sunken-vault"},
+				],
+			},
+			{
+				name: "Ground Level",
+				layer: 0,
+				rooms: [
+					{type: "room", id: "dungeon-entrance"},
+					{type: "room", id: "guardroom"},
+					{type: "room", id: "collapsed-gallery"},
+					{type: "room", id: "forgotten-shrine"},
+					{type: "room", id: "prison-block"},
+				],
+			},
+			{
+				name: "Upper Works",
 				layer: 1,
 				rooms: [
-					{
-						type: "room",
-						id: "forgotten-shrine",
-					},
-					{
-						type: "room",
-						id: "lower-crypt",
-					},
+					{type: "room", id: "flooded-cistern"},
+					{type: "room", id: "old-armory"},
 				],
 			},
 		],

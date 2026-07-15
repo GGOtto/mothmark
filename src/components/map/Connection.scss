@@ -108,3 +108,75 @@
 .connection:hover .connectionMidpointGlyphInner {
 	transform: scale(1.06);
 }
+
+.connectionLayerTag {
+	cursor: grab;
+	outline: none;
+	pointer-events: all;
+	touch-action: none;
+
+	rect {
+		fill: var(--map-room-surface);
+		stroke: var(--map-line);
+		stroke-width: 1.5;
+		filter: drop-shadow(0 2px 3px var(--map-shadow));
+		transition:
+			fill 120ms ease,
+			stroke 120ms ease;
+	}
+
+	.connectionLayerTagSelectionOutline {
+		display: none;
+		fill: none;
+		stroke: var(--map-accent-strong);
+		stroke-width: 5;
+	}
+
+	text {
+		fill: var(--map-room-text);
+		font-size: 12px;
+		font-weight: 600;
+		pointer-events: none;
+		user-select: none;
+	}
+
+	.connectionLayerTagIcon {
+		fill: none;
+		stroke: var(--map-line);
+		pointer-events: none;
+	}
+
+	&:hover rect {
+		fill: var(--map-room-hover);
+	}
+
+	&:focus-visible rect {
+		stroke: var(--map-accent-strong);
+		stroke-width: 2.5;
+	}
+}
+
+.connectionLayerTagDragging {
+	cursor: grabbing;
+}
+
+.connectionSelected {
+	.connectionLayerTag rect {
+		fill: var(--map-room-selected);
+		stroke: var(--map-accent);
+		stroke-width: 3;
+		filter: drop-shadow(0 3px 7px var(--map-shadow));
+	}
+
+	.connectionLayerTag .connectionLayerTagSelectionOutline {
+		display: block;
+		fill: none;
+		stroke: var(--map-accent-strong);
+		stroke-width: 5;
+		filter: none;
+	}
+
+	.connectionLayerTagIcon {
+		stroke: var(--map-accent-strong);
+	}
+}

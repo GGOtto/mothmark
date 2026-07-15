@@ -17,7 +17,6 @@ type RoomProps = {
 	armedDirection: Direction | null;
 	pulseNodes: boolean;
 	outgoingDirections: Direction[];
-	currentLayerIndex: number;
 };
 
 export function RoomCard({
@@ -59,8 +58,8 @@ export function RoomCard({
 			title={room.name}
 			onPointerDown={(event) => onPointerDown(event, room)}
 			style={{
-				left: room.position.x,
-				top: room.position.y,
+				left: room.metadata.position.x,
+				top: room.metadata.position.y,
 				width,
 				height,
 			}}
