@@ -12,21 +12,20 @@ import {
 } from "../../schemas/roomSchema";
 import {DefaultViewport, type Layer, type World, type Viewport} from "../../schemas/worldSchema";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
-import {isRoomInLayer, getLayer, upsertLayer} from "../../utils/layerUtils";
+import {getLayer, upsertLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
-import {RoomCard} from "./Room";
-import {Connection} from "./Connection";
 import {
 	getNextAvailablePathway,
 	getPathwayForNewDrop,
 	isConnectionFromRoom,
 } from "../../utils/connectionUtils";
-import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
+import {generateUniqueId, idValue} from "../../utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
 import {LayoutControl} from "./LayoutControl";
 import {LayerMenu} from "./LayerMenu";
+import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 
 type DragState = {
 	roomId: string;
@@ -73,8 +72,6 @@ type PanState = {
 	startViewport: Point;
 };
 
-const ROOM_WIDTH = 128;
-const ROOM_HEIGHT = 80;
 const ROOM_DRAG_THRESHOLD = 2;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
@@ -242,12 +239,10 @@ export function Map({
 	}
 
 	function getRoomConnectionPoint(room: Room, direction: Direction): Point {
-		return addPoints(room.metadata.position, getRoomNodePosition(direction, ROOM_WIDTH, ROOM_HEIGHT));
-	}
-
-	function getRoom(roomReference: string | ID<"room">) {
-		const roomId = idValue(roomReference);
-		return world.rooms.find((room) => idValue(room.id) === roomId);
+		return addPoints(
+			room.metadata.position,
+			getRoomNodePosition(direction, MAP_ROOM_WIDTH, MAP_ROOM_HEIGHT),
+		);
 	}
 
 	function addConnection(fromRoom: Room, direction: Direction) {
@@ -502,18 +497,6 @@ export function Map({
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
-	const selectedConnectionForRender = isConnectionSelected
-		? world.connections.find((connection) => idValue(connection.id) === selectedId)
-		: undefined;
-	const connectionsInRenderOrder = selectedConnectionForRender
-		? [
-				...world.connections.filter(
-					(connection) => idValue(connection.id) !== idValue(selectedConnectionForRender.id),
-				),
-				selectedConnectionForRender,
-			]
-		: world.connections;
-
 	return (
 		<div
 			ref={mapRef}
@@ -532,66 +515,40 @@ export function Map({
 			onContextMenu={(event) => event.preventDefault()}
 		>
 			{isLayerMenuOpen ? (
-				<LayerMenu world={world} setIsLayerMenuOpen={setIsLayerMenuOpen} />
+				<LayerMenu
+					world={world}
+					setIsLayerMenuOpen={setIsLayerMenuOpen}
+					selectedId={selectedId}
+					isConnectionSelected={isConnectionSelected}
+					setCurrentLayer={changeCurrentLayer}
+				/>
 			) : (
 				<>
 					<div
 						className="mapViewport"
 						style={{transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`}}
 					>
-						<svg className="mapSvg" width="100%" height="100%">
-							{connectionsInRenderOrder.map((connection) => {
-								const fromRoom = getRoom(connection.fromRoomId);
-								const toRoom = getRoom(connection.toRoomId);
-
-								if (!fromRoom || !toRoom) return null;
-
-								return (
-									<Connection
-										key={idValue(connection.id)}
-										world={world}
-										connection={connection}
-										fromRoom={fromRoom}
-										toRoom={toRoom}
-										selectConnection={handleConnectionSelect}
-										changePathway={handleConnectionPathwayChange}
-										updateStatus={updateStatus}
-										isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
-										isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
-										currentLayer={currentLayer}
-										onStubPointChange={handleConnectionStubPointChange}
-									/>
-								);
-							})}
-						</svg>
-						{world.rooms.map(
-							(room) =>
-								isRoomInLayer(currentLayer, room.id) && (
-									<RoomCard
-										key={idValue(room.id)}
-										room={room}
-										width={ROOM_WIDTH}
-										height={ROOM_HEIGHT}
-										isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
-										isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
-										armedDirection={
-											connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
-												? connectionDraft.fromDirection
-												: null
-										}
-										pulseNodes={
-											connectionDraft.state === "choosing-return" &&
-											connectionDraft.toRoomId === idValue(room.id)
-										}
-										outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
-											isConnectionFromRoom(idValue(room.id), direction, world.connections),
-										)}
-										onPointerDown={handleRoomPointerDown}
-										onNodeClick={addConnection}
-										updateStatus={updateStatus}
-									/>
-								),
-						)}
+						<MapLayerContent
+							world={world}
+							layer={currentLayer}
+							selectedId={selectedId}
+							isConnectionSelected={isConnectionSelected}
+							onRoomPointerDown={handleRoomPointerDown}
+							onNodeClick={addConnection}
+							selectConnection={handleConnectionSelect}
+							changePathway={handleConnectionPathwayChange}
+							onStubPointChange={handleConnectionStubPointChange}
+							updateStatus={updateStatus}
+							isRoomDragging={(room) => dragState?.roomId === idValue(room.id) && dragState.hasDragged}
+							getArmedDirection={(room) =>
+								connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
+									? connectionDraft.fromDirection
+									: null
+							}
+							shouldPulseNodes={(room) =>
+								connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
+							}
+						/>
 					</div>
 					<LayoutControl
 						world={world}

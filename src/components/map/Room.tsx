@@ -17,6 +17,7 @@ type RoomProps = {
 	armedDirection: Direction | null;
 	pulseNodes: boolean;
 	outgoingDirections: Direction[];
+	isInteractive?: boolean;
 };
 
 export function RoomCard({
@@ -31,6 +32,7 @@ export function RoomCard({
 	armedDirection,
 	pulseNodes,
 	outgoingDirections,
+	isInteractive = true,
 }: RoomProps) {
 	function buildNode(direction: Direction): RoomNode {
 		return {
@@ -51,32 +53,44 @@ export function RoomCard({
 		.filter(Boolean)
 		.join(" ");
 
-	return (
+	const contents = (
+		<>
+			{isInteractive
+				? nodes.map((node) => (
+						<Node
+							room={room}
+							node={node}
+							key={node.direction}
+							onNodeClick={onNodeClick}
+							updateStatus={updateStatus}
+							status={armedDirection === node.direction ? "armed" : pulseNodes ? "pulse" : "idle"}
+							hasOutgoingPath={outgoingDirections.includes(node.direction)}
+						/>
+					))
+				: null}
+			<span className="roomCardName">{room.name}</span>
+		</>
+	);
+	const style = {
+		left: room.metadata.position.x,
+		top: room.metadata.position.y,
+		width,
+		height,
+	};
+
+	return isInteractive ? (
 		<button
 			type="button"
 			className={className}
 			title={room.name}
 			onPointerDown={(event) => onPointerDown(event, room)}
-			style={{
-				left: room.metadata.position.x,
-				top: room.metadata.position.y,
-				width,
-				height,
-			}}
+			style={style}
 		>
-			{nodes.map((node) => (
-				<Node
-					room={room}
-					node={node}
-					key={node.direction}
-					onNodeClick={onNodeClick}
-					updateStatus={updateStatus}
-					status={armedDirection === node.direction ? "armed" : pulseNodes ? "pulse" : "idle"}
-					hasOutgoingPath={outgoingDirections.includes(node.direction)}
-				/>
-			))}
-
-			<span className="roomCardName">{room.name}</span>
+			{contents}
 		</button>
+	) : (
+		<div className={`${className} roomCardPreview`} title={room.name} style={style}>
+			{contents}
+		</div>
 	);
 }

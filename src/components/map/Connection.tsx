@@ -23,6 +23,7 @@ type ConnectionProps = {
 	onStubPointChange: (connection: ConnectionType, point: Point) => void;
 	isEditing?: boolean;
 	isSelected?: boolean;
+	isInteractive?: boolean;
 };
 
 type ConnectionStubProps = {
@@ -37,6 +38,7 @@ type ConnectionStubProps = {
 	onStubPointChange: (connection: ConnectionType, point: Point) => void;
 	isEditing?: boolean;
 	isSelected?: boolean;
+	isInteractive?: boolean;
 };
 
 type StubSide = "top" | "right" | "bottom" | "left";
@@ -155,6 +157,13 @@ type CubicBezierSegment = {
 type ConnectionPathPlacement = {
 	point: Point;
 	angle: number;
+};
+
+export type ConnectionVisualBounds = {
+	minX: number;
+	maxX: number;
+	minY: number;
+	maxY: number;
 };
 
 function normalizeSvgNumber(value: number) {
@@ -326,6 +335,93 @@ function getConnectionCurveFromVectors(
 	};
 }
 
+function getCurveBounds(curve: CubicBezierSegment, margin = 14): ConnectionVisualBounds {
+	const points = [curve.start, curve.control1, curve.control2, curve.end];
+	return {
+		minX: Math.min(...points.map((point) => point.x)) - margin,
+		maxX: Math.max(...points.map((point) => point.x)) + margin,
+		minY: Math.min(...points.map((point) => point.y)) - margin,
+		maxY: Math.max(...points.map((point) => point.y)) + margin,
+	};
+}
+
+function mergeVisualBounds(
+	left: ConnectionVisualBounds | null,
+	right: ConnectionVisualBounds,
+): ConnectionVisualBounds {
+	if (!left) return right;
+	return {
+		minX: Math.min(left.minX, right.minX),
+		maxX: Math.max(left.maxX, right.maxX),
+		minY: Math.min(left.minY, right.minY),
+		maxY: Math.max(left.maxY, right.maxY),
+	};
+}
+
+/** Returns the complete rendered extent of connections visible on a layer, including stub tags. */
+export function getConnectionVisualBounds(
+	world: World,
+	currentLayer: Layer,
+): ConnectionVisualBounds | null {
+	let bounds: ConnectionVisualBounds | null = null;
+
+	for (const connection of world.connections) {
+		const fromRoom = world.rooms.find((room) => idValue(room.id) === idValue(connection.fromRoomId));
+		const toRoom = world.rooms.find((room) => idValue(room.id) === idValue(connection.toRoomId));
+		if (!fromRoom || !toRoom) continue;
+
+		const startLayer = findLayerForRoomId(world, fromRoom.id);
+		const endLayer = findLayerForRoomId(world, toRoom.id);
+		if (startLayer.layer !== currentLayer.layer && endLayer.layer !== currentLayer.layer) continue;
+
+		if (startLayer.layer !== endLayer.layer) {
+			const isStartLocal = startLayer.layer === currentLayer.layer;
+			const localRoom = isStartLocal ? fromRoom : toRoom;
+			const direction = isStartLocal ? connection.direction : connection.returnDirection;
+			const destinationLayer = isStartLocal ? endLayer : startLayer;
+			const tagWidth = getLayerTagWidth(destinationLayer.name);
+			const tagPoint = getStubTagPoint(world, connection, idValue(localRoom.id));
+			const fromPoint = addPoints(
+				localRoom.metadata.position,
+				getRoomNodePosition(direction, ROOM_WIDTH, ROOM_HEIGHT),
+			);
+			const pathEnd = addPoints(tagPoint, getStubTagAnchorOffset(direction, tagWidth));
+			const curve = getConnectionCurveFromVectors(
+				fromPoint,
+				pathEnd,
+				getRoomNodeAnchorVector(direction),
+				scalePoint(getRoomNodeAnchorVector(direction), -1),
+			);
+
+			bounds = mergeVisualBounds(bounds, getCurveBounds(curve));
+			bounds = mergeVisualBounds(bounds, {
+				minX: tagPoint.x - tagWidth / 2 - 5,
+				maxX: tagPoint.x + tagWidth / 2 + 5,
+				minY: tagPoint.y - TAG_HEIGHT / 2 - 5,
+				maxY: tagPoint.y + TAG_HEIGHT / 2 + 5,
+			});
+			continue;
+		}
+
+		const fromPoint = addPoints(
+			fromRoom.metadata.position,
+			getRoomNodePosition(connection.direction, ROOM_WIDTH, ROOM_HEIGHT),
+		);
+		const toPoint = addPoints(
+			toRoom.metadata.position,
+			getRoomNodePosition(connection.returnDirection, ROOM_WIDTH, ROOM_HEIGHT),
+		);
+		bounds = mergeVisualBounds(
+			bounds,
+			getCurveBounds(
+				getConnectionCurve(fromPoint, toPoint, connection.direction, connection.returnDirection),
+			),
+		);
+	}
+
+	return bounds;
+}
+
 function getMidpointGlyphRotation(pathway: ConnectionType["pathway"], angle: number) {
 	if (pathway === "backwards") {
 		return angle + 180;
@@ -373,6 +469,7 @@ type ConnectionPathProps = {
 	className?: string;
 	dataRoomId?: string;
 	children?: React.ReactNode;
+	isInteractive?: boolean;
 };
 
 function ConnectionPath({
@@ -386,6 +483,7 @@ function ConnectionPath({
 	className,
 	dataRoomId,
 	children,
+	isInteractive = true,
 }: ConnectionPathProps) {
 	const path = getPath(curve);
 	const midpointPlacement = getConnectionPathMidpointPlacement(curve);
@@ -432,16 +530,18 @@ function ConnectionPath({
 
 	return (
 		<g className={connectionClassNames} data-room-id={dataRoomId}>
-			<path
-				d={path}
-				fill="none"
-				stroke="transparent"
-				strokeWidth={18}
-				strokeLinecap="round"
-				pointerEvents="stroke"
-				className="connectionClickTarget"
-				onClick={handleSelect}
-			/>
+			{isInteractive ? (
+				<path
+					d={path}
+					fill="none"
+					stroke="transparent"
+					strokeWidth={18}
+					strokeLinecap="round"
+					pointerEvents="stroke"
+					className="connectionClickTarget"
+					onClick={handleSelect}
+				/>
+			) : null}
 
 			{isSelected ? (
 				<>
@@ -507,22 +607,24 @@ function ConnectionPath({
 				</g>
 			</g>
 
-			<g
-				className="connectionMidpointGlyphControl"
-				transform={`translate(${midpointPlacement.point.x} ${midpointPlacement.point.y})`}
-				role="button"
-				tabIndex={0}
-				aria-label={`Change ${getPathwayLabel(connection.pathway)} pathway`}
-				onPointerEnter={() => updateStatus(getPathwayStatus(connection.pathway))}
-				onPointerLeave={() => updateStatus(null)}
-				onFocus={() => updateStatus(getPathwayStatus(connection.pathway))}
-				onBlur={() => updateStatus(null)}
-				onClick={handleGlyphClick}
-				onKeyDown={handleGlyphKeyDown}
-			>
-				<title>{`${getPathwayLabel(connection.pathway)} pathway`}</title>
-				<circle cx={0} cy={0} r={12} />
-			</g>
+			{isInteractive ? (
+				<g
+					className="connectionMidpointGlyphControl"
+					transform={`translate(${midpointPlacement.point.x} ${midpointPlacement.point.y})`}
+					role="button"
+					tabIndex={0}
+					aria-label={`Change ${getPathwayLabel(connection.pathway)} pathway`}
+					onPointerEnter={() => updateStatus(getPathwayStatus(connection.pathway))}
+					onPointerLeave={() => updateStatus(null)}
+					onFocus={() => updateStatus(getPathwayStatus(connection.pathway))}
+					onBlur={() => updateStatus(null)}
+					onClick={handleGlyphClick}
+					onKeyDown={handleGlyphKeyDown}
+				>
+					<title>{`${getPathwayLabel(connection.pathway)} pathway`}</title>
+					<circle cx={0} cy={0} r={12} />
+				</g>
+			) : null}
 
 			{children}
 		</g>
@@ -541,6 +643,7 @@ export function ConnectionStub({
 	onStubPointChange,
 	isEditing = false,
 	isSelected = false,
+	isInteractive = true,
 }: ConnectionStubProps) {
 	const tagWidth = getLayerTagWidth(destinationLayer.name);
 	const persistedTagPoint = getStubTagPoint(world, connection, idValue(fromRoom.id));
@@ -638,25 +741,30 @@ export function ConnectionStub({
 			updateStatus={updateStatus}
 			isEditing={isEditing}
 			isSelected={isSelected}
+			isInteractive={isInteractive}
 			className="connectionStub"
 			dataRoomId={idValue(fromRoom.id)}
 		>
 			<g
 				className={`connectionLayerTag ${isDragging ? "connectionLayerTagDragging" : ""}`}
 				transform={`translate(${tagPoint.x} ${tagPoint.y})`}
-				role="button"
-				tabIndex={0}
-				aria-label={`Connection to ${destinationLayer.name}`}
-				onPointerDown={handlePointerDown}
-				onPointerMove={handlePointerMove}
-				onPointerUp={handlePointerUp}
-				onPointerCancel={handlePointerCancel}
-				onClick={handleClick}
-				onKeyDown={(event) => {
-					if (event.key !== "Enter" && event.key !== " ") return;
-					event.preventDefault();
-					selectConnection(connection);
-				}}
+				role={isInteractive ? "button" : undefined}
+				tabIndex={isInteractive ? 0 : undefined}
+				aria-label={isInteractive ? `Connection to ${destinationLayer.name}` : undefined}
+				onPointerDown={isInteractive ? handlePointerDown : undefined}
+				onPointerMove={isInteractive ? handlePointerMove : undefined}
+				onPointerUp={isInteractive ? handlePointerUp : undefined}
+				onPointerCancel={isInteractive ? handlePointerCancel : undefined}
+				onClick={isInteractive ? handleClick : undefined}
+				onKeyDown={
+					isInteractive
+						? (event) => {
+								if (event.key !== "Enter" && event.key !== " ") return;
+								event.preventDefault();
+								selectConnection(connection);
+							}
+						: undefined
+				}
 			>
 				<rect
 					className="connectionLayerTagSelectionOutline"
@@ -694,6 +802,7 @@ export function Connection({
 	onStubPointChange,
 	isEditing = false,
 	isSelected = false,
+	isInteractive = true,
 }: ConnectionProps) {
 	const startLayer = findLayerForRoomId(world, fromRoom.id);
 	const endLayer = findLayerForRoomId(world, toRoom.id);
@@ -718,6 +827,7 @@ export function Connection({
 				onStubPointChange={onStubPointChange}
 				isEditing={isEditing}
 				isSelected={isSelected}
+				isInteractive={isInteractive}
 			/>
 		);
 	}
@@ -735,6 +845,7 @@ export function Connection({
 				onStubPointChange={onStubPointChange}
 				isEditing={isEditing}
 				isSelected={isSelected}
+				isInteractive={isInteractive}
 			/>
 		);
 	}
@@ -764,6 +875,7 @@ export function Connection({
 			updateStatus={updateStatus}
 			isEditing={isEditing}
 			isSelected={isSelected}
+			isInteractive={isInteractive}
 		/>
 	);
 }

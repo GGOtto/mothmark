@@ -3,7 +3,24 @@ import {ConnectionSchema, RoomSchema} from "../../schemas/roomSchema";
 import {DefaultViewport} from "../../schemas/worldSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {world as exampleWorld} from "../../data/worlds/exampleWorld";
-import {Connection, getStubTagAnchorOffset} from "./Connection";
+import {getLayer} from "../../utils/layerUtils";
+import {idValue} from "../../utils/idUtils";
+import {Connection, getConnectionVisualBounds, getStubTagAnchorOffset} from "./Connection";
+
+describe("connection visual bounds", () => {
+	it("include cross-layer stub tags beyond the room cards", () => {
+		const upperLayer = getLayer(exampleWorld, 1);
+		const rooms = exampleWorld.rooms.filter((room) =>
+			upperLayer.rooms.some((roomId) => idValue(roomId) === idValue(room.id)),
+		);
+		const roomMinX = Math.min(...rooms.map((room) => room.metadata.position.x - 64));
+		const roomMaxX = Math.max(...rooms.map((room) => room.metadata.position.x + 64));
+		const bounds = getConnectionVisualBounds(exampleWorld, upperLayer)!;
+
+		expect(bounds.minX).toBeLessThan(roomMinX);
+		expect(bounds.maxX).toBeGreaterThan(roomMaxX);
+	});
+});
 
 describe("stub tag anchors", () => {
 	it("uses the opposite fixed edge or corner", () => {

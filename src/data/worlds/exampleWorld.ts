@@ -25,12 +25,13 @@ function room(
 	y: number,
 	description: string,
 	features: ReturnType<typeof feature>[],
+	levelTag: "upper-level" | "main-level" | "lower-level" = "main-level",
 ) {
 	return {
 		id,
 		name,
 		aliases: id === "dungeon-entrance" ? ["entrance", "stairs"] : [],
-		tags: ["dungeon", y < 100 ? "upper-level" : y > 250 ? "lower-level" : "main-level"],
+		tags: ["dungeon", levelTag],
 		metadata: {position: {x, y}},
 		description: {default: description, variants: []},
 		features,
@@ -67,6 +68,7 @@ const rawWorld = {
 			{
 				name: "Lower Crypts",
 				layer: -1,
+				viewport: {x: 26, y: -120, zoom: 1},
 				rooms: [
 					{type: "room", id: "fungal-grotto"},
 					{type: "room", id: "lower-crypt"},
@@ -77,6 +79,7 @@ const rawWorld = {
 			{
 				name: "Ground Level",
 				layer: 0,
+				viewport: {x: 34, y: 14, zoom: 1},
 				rooms: [
 					{type: "room", id: "dungeon-entrance"},
 					{type: "room", id: "guardroom"},
@@ -88,6 +91,7 @@ const rawWorld = {
 			{
 				name: "Upper Works",
 				layer: 1,
+				viewport: {x: 12, y: 90, zoom: 1},
 				rooms: [
 					{type: "room", id: "flooded-cistern"},
 					{type: "room", id: "old-armory"},
@@ -100,7 +104,7 @@ const rawWorld = {
 		room(
 			"dungeon-entrance",
 			"Dungeon Entrance",
-			90,
+			100,
 			185,
 			"Weathered steps descend beneath a split stone arch. Cold air rises from the dark, carrying the smell of wet earth and old iron.",
 			[
@@ -121,7 +125,7 @@ const rawWorld = {
 		room(
 			"flooded-cistern",
 			"Flooded Cistern",
-			170,
+			500,
 			55,
 			"Black water covers the lower steps of a round cistern. Drops fall from the vaulted ceiling and send slow rings across the surface.",
 			[
@@ -138,11 +142,12 @@ const rawWorld = {
 					"A stone knight stands beneath the water with both hands wrapped around an empty scabbard.",
 				),
 			],
+			"upper-level",
 		),
 		room(
 			"guardroom",
 			"Guardroom",
-			245,
+			260,
 			175,
 			"Overturned bunks and a cracked table crowd this low chamber. A draft stirs old playing cards across the floor.",
 			[
@@ -163,7 +168,7 @@ const rawWorld = {
 		room(
 			"fungal-grotto",
 			"Fungal Grotto",
-			105,
+			100,
 			300,
 			"The worked stone gives way to a damp natural cavern. Blue mushrooms grow in thick shelves around a shallow stream.",
 			[
@@ -180,11 +185,12 @@ const rawWorld = {
 					"Claw marks score the earth around a tunnel too narrow to enter safely.",
 				),
 			],
+			"lower-level",
 		),
 		room(
 			"collapsed-gallery",
 			"Collapsed Gallery",
-			335,
+			260,
 			55,
 			"Broken pillars lean across a gallery lined with faded battle murals. Rubble forces the passage into a crooked path.",
 			[
@@ -205,7 +211,7 @@ const rawWorld = {
 		room(
 			"forgotten-shrine",
 			"Forgotten Shrine",
-			405,
+			420,
 			175,
 			"A small domed shrine stands strangely untouched. Ash surrounds a stone altar, and pale candles burn without giving off heat.",
 			[
@@ -226,7 +232,7 @@ const rawWorld = {
 		room(
 			"lower-crypt",
 			"Lower Crypt",
-			290,
+			280,
 			300,
 			"Narrow burial niches fill the walls from floor to ceiling. Several stone covers have fallen open, and their occupants are gone.",
 			[
@@ -243,11 +249,12 @@ const rawWorld = {
 					"Most names have been carefully chiseled away. A few dates remain legible.",
 				),
 			],
+			"lower-level",
 		),
 		room(
 			"old-armory",
 			"Old Armory",
-			510,
+			220,
 			65,
 			"Rows of stone lockers divide the armory. Rusted chain hangs from ceiling hooks, and the floor is littered with broken arrowheads.",
 			[
@@ -264,11 +271,12 @@ const rawWorld = {
 					"Deep cuts cover the straw dummy. One recent blade mark crosses the older damage.",
 				),
 			],
+			"upper-level",
 		),
 		room(
 			"prison-block",
 			"Prison Block",
-			570,
+			580,
 			190,
 			"Iron-barred cells face a central drain. Most doors hang open, but one remains firmly locked at the end of the block.",
 			[
@@ -289,7 +297,7 @@ const rawWorld = {
 		room(
 			"ossuary",
 			"Ossuary",
-			455,
+			460,
 			300,
 			"Bones are stacked in careful geometric patterns along the walls. A narrow aisle winds between columns made from skulls and mortar.",
 			[
@@ -306,6 +314,7 @@ const rawWorld = {
 					"A cord runs from the bell into a sealed stone coffin beneath the floor.",
 				),
 			],
+			"lower-level",
 		),
 		room(
 			"sunken-vault",
@@ -327,6 +336,7 @@ const rawWorld = {
 					"Most have rusted shut. One lid stands open, showing velvet compartments stripped bare.",
 				),
 			],
+			"lower-level",
 		),
 	],
 	connections: [
