@@ -12,7 +12,7 @@ import {
 } from "../../schemas/roomSchema";
 import {DefaultViewport, type Layer, type World, type Viewport} from "../../schemas/worldSchema";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
-import {getLayer, upsertLayer} from "../../utils/layerUtils";
+import {findLayerForRoomId, getLayer, upsertLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {
 	getNextAvailablePathway,
@@ -26,13 +26,12 @@ import "./Map.scss";
 import {LayoutControl} from "./LayoutControl";
 import {LayerMenu} from "./LayerMenu";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
+import {initializeConnectionStubPoints, type ConnectionStubPointField} from "./Connection";
 
 type DragState = {
 	roomId: string;
 	offset: Point;
 	startPointer: Point;
-	startRoomPosition: Point;
-	stubPoints: Record<string, Point>;
 	hasDragged: boolean;
 };
 
@@ -99,6 +98,7 @@ export function Map({
 	const [panState, setPanState] = useState<PanState | null>(null);
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
+	const initializedStubLayoutKeys = useRef(new Set<string>());
 	const mapRef = useRef<HTMLDivElement | null>(null);
 	const cancelConnectionDraft = useCallback(() => {
 		setConnectionDraft({state: "idle"});
@@ -141,6 +141,37 @@ export function Map({
 	}, [recenterRequest, updateViewport]);
 
 	useEffect(() => () => updateStatus(null), [updateStatus]);
+
+	useEffect(() => {
+		const initializedById = new globalThis.Map<string, ConnectionType>();
+		for (const connection of world.connections) {
+			const fromLayer = findLayerForRoomId(world, connection.fromRoomId);
+			const toLayer = findLayerForRoomId(world, connection.toRoomId);
+			const layoutKey = `${idValue(connection.id)}:${fromLayer.layer}:${toLayer.layer}`;
+			if (initializedStubLayoutKeys.current.has(layoutKey)) continue;
+			initializedStubLayoutKeys.current.add(layoutKey);
+			const initialized = initializeConnectionStubPoints(world, connection);
+			if (initialized !== connection) initializedById.set(idValue(connection.id), initialized);
+		}
+
+		if (initializedById.size === 0) return;
+		setConnections((currentConnections) =>
+			currentConnections.map((connection) => {
+				const initialized = initializedById.get(idValue(connection.id));
+				if (!initialized) return connection;
+				return {
+					...connection,
+					metadata: {
+						...connection.metadata,
+						fromLayerStubPoint:
+							connection.metadata.fromLayerStubPoint ?? initialized.metadata.fromLayerStubPoint,
+						toLayerStubPoint:
+							connection.metadata.toLayerStubPoint ?? initialized.metadata.toLayerStubPoint,
+					},
+				};
+			}),
+		);
+	}, [setConnections, world]);
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
@@ -205,13 +236,17 @@ export function Map({
 		return pathway;
 	}
 
-	function handleConnectionStubPointChange(connection: ConnectionType, stubPoint: Point) {
+	function handleConnectionStubPointChange(
+		connection: ConnectionType,
+		stubPoint: Point,
+		field: ConnectionStubPointField,
+	) {
 		setConnections((currentConnections) =>
 			currentConnections.map((currentConnection) =>
 				idValue(currentConnection.id) === idValue(connection.id)
 					? {
 							...currentConnection,
-							metadata: {...currentConnection.metadata, stubPoint},
+							metadata: {...currentConnection.metadata, [field]: stubPoint},
 						}
 					: currentConnection,
 			),
@@ -285,7 +320,7 @@ export function Map({
 		returnDirection: Direction,
 		pathway?: ConnectionType["pathway"],
 	) {
-		const connection = ConnectionSchema.parse({
+		const parsedConnection = ConnectionSchema.parse({
 			...createDefaultFieldObject(ConnectionSchema),
 			id: generateUniqueId("connection", world.connections),
 			fromRoomId: draft.fromRoomId,
@@ -302,6 +337,10 @@ export function Map({
 					world.connections,
 				),
 		});
+		const connection = initializeConnectionStubPoints(
+			{...world, connections: [...world.connections, parsedConnection]},
+			parsedConnection,
+		);
 		setConnections((current) => [...current, connection]);
 		selectConnection(connection);
 		setConnectionDraft({state: "idle"});
@@ -346,23 +385,12 @@ export function Map({
 			roomId: idValue(room.id),
 			offset: subtractPoints(pointer, room.metadata.position),
 			startPointer: pointer,
-			startRoomPosition: room.metadata.position,
-			stubPoints: Object.fromEntries(
-				world.connections.flatMap((connection) => {
-					const isIncident =
-						idValue(connection.fromRoomId) === idValue(room.id) ||
-						idValue(connection.toRoomId) === idValue(room.id);
-					return isIncident && connection.metadata.stubPoint
-						? [[idValue(connection.id), connection.metadata.stubPoint]]
-						: [];
-				}),
-			),
 			hasDragged: false,
 		});
 	}
 
 	function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-		if (panState?.pointerId === event.pointerId) {
+		if (panState && panState.pointerId === event.pointerId) {
 			updateViewport({
 				...viewportRef.current,
 				x: panState.startViewport.x + event.clientX - panState.startPointer.x,
@@ -381,27 +409,11 @@ export function Map({
 
 		if (!hasDragged) return;
 
-		setDragState({
-			...dragState,
-			hasDragged,
-		});
+		if (!dragState.hasDragged) {
+			setDragState((current) => (current ? {...current, hasDragged: true} : current));
+		}
 
 		const nextPosition = subtractPoints(pointer, dragState.offset);
-		const delta = subtractPoints(nextPosition, dragState.startRoomPosition);
-		setConnections((connections) =>
-			connections.map((connection) => {
-				const startStubPoint = dragState.stubPoints[idValue(connection.id)];
-				if (!startStubPoint) return connection;
-				return {
-					...connection,
-					metadata: {
-						...connection.metadata,
-						stubPoint: addPoints(startStubPoint, delta),
-					},
-				};
-			}),
-		);
-
 		setRooms((rooms) =>
 			rooms.map((room) => {
 				if (idValue(room.id) !== dragState.roomId) return room;
@@ -418,7 +430,7 @@ export function Map({
 	}
 
 	function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
-		if (panState?.pointerId === event.pointerId) {
+		if (panState && panState.pointerId === event.pointerId) {
 			setPanState(null);
 			return;
 		}

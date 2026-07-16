@@ -7,6 +7,10 @@ import {getRoomNodeAnchorVector, getRoomNodePosition} from "../../utils/mapUtils
 import {findLayerForRoomId} from "../../utils/layerUtils";
 import {idValue} from "../../utils/idUtils";
 import {getPathwayLabel} from "../../utils/connectionUtils";
+import {
+	findConnectionStubPoint,
+	type PlacementRectangle,
+} from "../../utils/connectionStubPlacement";
 import {addPoints, scalePoint, getDistance} from "../../utils/pointUtils";
 import type {ToolBarStatus, UpdateStatus} from "../studio/ToolBar";
 import "./Connection.scss";
@@ -20,10 +24,15 @@ type ConnectionProps = {
 	changePathway: (connection: ConnectionType) => ConnectionType["pathway"];
 	updateStatus: UpdateStatus;
 	currentLayer: Layer;
-	onStubPointChange: (connection: ConnectionType, point: Point) => void;
+	onStubPointChange: (
+		connection: ConnectionType,
+		point: Point,
+		field: ConnectionStubPointField,
+	) => void;
 	isEditing?: boolean;
 	isSelected?: boolean;
 	isInteractive?: boolean;
+	stubPart?: StubRenderPart;
 };
 
 type ConnectionStubProps = {
@@ -35,20 +44,20 @@ type ConnectionStubProps = {
 	changePathway: (connection: ConnectionType) => ConnectionType["pathway"];
 	updateStatus: UpdateStatus;
 	destinationLayer: Layer;
-	onStubPointChange: (connection: ConnectionType, point: Point) => void;
+	onStubPointChange: (
+		connection: ConnectionType,
+		point: Point,
+		field: ConnectionStubPointField,
+	) => void;
+	stubPointField: ConnectionStubPointField;
 	isEditing?: boolean;
 	isSelected?: boolean;
 	isInteractive?: boolean;
+	stubPart?: StubRenderPart;
 };
 
-type StubSide = "top" | "right" | "bottom" | "left";
-
-type StubLayoutItem = {
-	connectionId: string;
-	direction: Direction;
-	side: StubSide;
-	tagWidth: number;
-};
+export type ConnectionStubPointField = "fromLayerStubPoint" | "toLayerStubPoint";
+export type StubRenderPart = "all" | "path" | "tag";
 
 const ROOM_WIDTH = 128;
 const ROOM_HEIGHT = 80;
@@ -56,22 +65,15 @@ const STUB_LENGTH = 52;
 const TAG_HEIGHT = 26;
 const TAG_GAP = 8;
 
-const DIRECTIONS_BY_SIDE: Record<StubSide, Direction[]> = {
-	top: ["out", "n", "up"],
-	right: ["ne", "e", "se"],
-	bottom: ["in", "s", "down"],
-	left: ["nw", "w", "sw"],
-};
-
-function getStubSide(direction: Direction): StubSide {
-	for (const [side, directions] of Object.entries(DIRECTIONS_BY_SIDE)) {
-		if (directions.includes(direction)) return side as StubSide;
-	}
-	return "right";
-}
-
 function getLayerTagWidth(name: string) {
 	return Math.max(84, name.length * 7 + 46);
+}
+
+export function getConnectionStubPointField(
+	connection: ConnectionType,
+	localRoomId: string,
+): ConnectionStubPointField {
+	return idValue(connection.fromRoomId) === localRoomId ? "fromLayerStubPoint" : "toLayerStubPoint";
 }
 
 export function getStubTagAnchorOffset(direction: Direction, tagWidth: number): Point {
@@ -89,62 +91,119 @@ export function getStubTagAnchorOffset(direction: Direction, tagWidth: number): 
 	};
 }
 
-function getStubTagPoint(world: World, connection: ConnectionType, localRoomId: string): Point {
+export function getStubTagPoint(
+	world: World,
+	connection: ConnectionType,
+	localRoomId: string,
+): Point {
 	const room = world.rooms.find((candidate) => idValue(candidate.id) === localRoomId);
 	if (!room) return {x: 0, y: 0};
-	if (connection.metadata.stubPoint) return connection.metadata.stubPoint;
+	const persistedStubPoint =
+		connection.metadata[getConnectionStubPointField(connection, localRoomId)];
+	if (persistedStubPoint) return persistedStubPoint;
 
 	const localLayer = findLayerForRoomId(world, room.id);
-	const items: StubLayoutItem[] = [];
+	type LayerStub = {
+		connection: ConnectionType;
+		localRoom: Room;
+		direction: Direction;
+		width: number;
+		persistedPoint?: Point;
+	};
+	const layerStubs: LayerStub[] = [];
 
 	for (const candidate of world.connections) {
-		const isFromRoom = idValue(candidate.fromRoomId) === localRoomId;
-		const isToRoom = idValue(candidate.toRoomId) === localRoomId;
-		if (!isFromRoom && !isToRoom) continue;
+		const fromRoom = world.rooms.find((item) => idValue(item.id) === idValue(candidate.fromRoomId));
+		const toRoom = world.rooms.find((item) => idValue(item.id) === idValue(candidate.toRoomId));
+		if (!fromRoom || !toRoom) continue;
+		const fromLayer = findLayerForRoomId(world, fromRoom.id);
+		const toLayer = findLayerForRoomId(world, toRoom.id);
+		if (fromLayer.layer === toLayer.layer) continue;
 
-		const otherRoomId = isFromRoom ? candidate.toRoomId : candidate.fromRoomId;
-		const otherLayer = findLayerForRoomId(world, otherRoomId);
-		if (otherLayer.layer === localLayer.layer) continue;
-
-		const direction = isFromRoom ? candidate.direction : candidate.returnDirection;
-		items.push({
-			connectionId: idValue(candidate.id),
-			direction,
-			side: getStubSide(direction),
-			tagWidth: getLayerTagWidth(otherLayer.name),
+		const isFromLayer = fromLayer.layer === localLayer.layer;
+		const isToLayer = toLayer.layer === localLayer.layer;
+		if (!isFromLayer && !isToLayer) continue;
+		const candidateRoom = isFromLayer ? fromRoom : toRoom;
+		const destinationLayer = isFromLayer ? toLayer : fromLayer;
+		layerStubs.push({
+			connection: candidate,
+			localRoom: candidateRoom,
+			direction: isFromLayer ? candidate.direction : candidate.returnDirection,
+			width: getLayerTagWidth(destinationLayer.name),
+			persistedPoint:
+				candidate.metadata[getConnectionStubPointField(candidate, idValue(candidateRoom.id))],
 		});
 	}
 
-	const item = items.find((candidate) => candidate.connectionId === idValue(connection.id));
-	if (!item) return room.metadata.position;
+	const roomObstacles: PlacementRectangle[] = world.rooms
+		.filter((candidate) =>
+			localLayer.rooms.some((roomId) => idValue(roomId) === idValue(candidate.id)),
+		)
+		.map((candidate) => ({
+			center: candidate.metadata.position,
+			width: ROOM_WIDTH,
+			height: ROOM_HEIGHT,
+		}));
+	const stubObstacles: PlacementRectangle[] = layerStubs.flatMap((item) =>
+		item.persistedPoint ? [{center: item.persistedPoint, width: item.width, height: TAG_HEIGHT}] : [],
+	);
+	const placements = new Map<string, Point>();
 
-	const sideItems = items
-		.filter((candidate) => candidate.side === item.side)
-		.sort((a, b) => {
-			const directionOrder =
-				DIRECTIONS_BY_SIDE[item.side].indexOf(a.direction) -
-				DIRECTIONS_BY_SIDE[item.side].indexOf(b.direction);
-			return directionOrder || a.connectionId.localeCompare(b.connectionId);
+	for (const item of layerStubs.sort((first, second) =>
+		idValue(first.connection.id).localeCompare(idValue(second.connection.id)),
+	)) {
+		const connectionId = idValue(item.connection.id);
+		if (item.persistedPoint) {
+			placements.set(connectionId, item.persistedPoint);
+			continue;
+		}
+
+		const point = findConnectionStubPoint({
+			room: {center: item.localRoom.metadata.position, width: ROOM_WIDTH, height: ROOM_HEIGHT},
+			direction: item.direction,
+			stubSize: {width: item.width, height: TAG_HEIGHT},
+			connectorLength: STUB_LENGTH,
+			obstacles: [...roomObstacles, ...stubObstacles],
+			gap: TAG_GAP,
 		});
-	const itemIndex = sideItems.findIndex((candidate) => candidate.connectionId === item.connectionId);
-
-	if (item.side === "top" || item.side === "bottom") {
-		const totalWidth =
-			sideItems.reduce((total, candidate) => total + candidate.tagWidth, 0) +
-			Math.max(0, sideItems.length - 1) * TAG_GAP;
-		const precedingWidth = sideItems
-			.slice(0, itemIndex)
-			.reduce((total, candidate) => total + candidate.tagWidth + TAG_GAP, 0);
-		const x = room.metadata.position.x - totalWidth / 2 + precedingWidth + item.tagWidth / 2;
-		const yOffset = ROOM_HEIGHT / 2 + STUB_LENGTH + TAG_HEIGHT / 2;
-		return {x, y: room.metadata.position.y + (item.side === "top" ? -yOffset : yOffset)};
+		placements.set(connectionId, point);
+		stubObstacles.push({center: point, width: item.width, height: TAG_HEIGHT});
 	}
 
-	const totalHeight = sideItems.length * TAG_HEIGHT + Math.max(0, sideItems.length - 1) * TAG_GAP;
-	const y =
-		room.metadata.position.y - totalHeight / 2 + itemIndex * (TAG_HEIGHT + TAG_GAP) + TAG_HEIGHT / 2;
-	const xOffset = ROOM_WIDTH / 2 + STUB_LENGTH + item.tagWidth / 2;
-	return {x: room.metadata.position.x + (item.side === "left" ? -xOffset : xOffset), y};
+	return placements.get(idValue(connection.id)) ?? room.metadata.position;
+}
+
+/** Persists automatic positions once, when a cross-layer connection first gains stubs. */
+export function initializeConnectionStubPoints(
+	world: World,
+	connection: ConnectionType,
+): ConnectionType {
+	const fromLayer = findLayerForRoomId(world, connection.fromRoomId);
+	const toLayer = findLayerForRoomId(world, connection.toRoomId);
+	if (fromLayer.layer === toLayer.layer) return connection;
+	if (connection.metadata.fromLayerStubPoint && connection.metadata.toLayerStubPoint) {
+		return connection;
+	}
+
+	const connectionId = idValue(connection.id);
+	const placementWorld = world.connections.some(
+		(candidate) => idValue(candidate.id) === connectionId,
+	)
+		? world
+		: {...world, connections: [...world.connections, connection]};
+
+	return {
+		...connection,
+		metadata: {
+			...connection.metadata,
+			fromLayerStubPoint:
+				connection.metadata.fromLayerStubPoint ??
+				getStubTagPoint(placementWorld, connection, idValue(connection.fromRoomId)),
+			toLayerStubPoint:
+				connection.metadata.toLayerStubPoint ??
+				getStubTagPoint(placementWorld, connection, idValue(connection.toRoomId)),
+		},
+	};
 }
 
 type CubicBezierSegment = {
@@ -641,9 +700,11 @@ export function ConnectionStub({
 	updateStatus,
 	destinationLayer,
 	onStubPointChange,
+	stubPointField,
 	isEditing = false,
 	isSelected = false,
 	isInteractive = true,
+	stubPart = "all",
 }: ConnectionStubProps) {
 	const tagWidth = getLayerTagWidth(destinationLayer.name);
 	const persistedTagPoint = getStubTagPoint(world, connection, idValue(fromRoom.id));
@@ -702,6 +763,7 @@ export function ConnectionStub({
 		didDrag.current = true;
 		latestDragPoint.current = nextPoint;
 		setDragPoint(nextPoint);
+		onStubPointChange(connection, nextPoint, stubPointField);
 	}
 
 	function handlePointerUp(event: React.PointerEvent<SVGGElement>) {
@@ -710,7 +772,7 @@ export function ConnectionStub({
 		dragPointerId.current = null;
 		setIsDragging(false);
 		if (didDrag.current && latestDragPoint.current) {
-			onStubPointChange(connection, latestDragPoint.current);
+			onStubPointChange(connection, latestDragPoint.current, stubPointField);
 		}
 		setDragPoint(null);
 		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -732,6 +794,66 @@ export function ConnectionStub({
 		didDrag.current = false;
 	}
 
+	const tag = (
+		<g
+			className={`connectionLayerTag ${isDragging ? "connectionLayerTagDragging" : ""}`}
+			transform={`translate(${tagPoint.x} ${tagPoint.y})`}
+			role={isInteractive ? "button" : undefined}
+			tabIndex={isInteractive ? 0 : undefined}
+			aria-label={isInteractive ? `Connection to ${destinationLayer.name}` : undefined}
+			onPointerDown={isInteractive ? handlePointerDown : undefined}
+			onPointerMove={isInteractive ? handlePointerMove : undefined}
+			onPointerUp={isInteractive ? handlePointerUp : undefined}
+			onPointerCancel={isInteractive ? handlePointerCancel : undefined}
+			onClick={isInteractive ? handleClick : undefined}
+			onKeyDown={
+				isInteractive
+					? (event) => {
+							if (event.key !== "Enter" && event.key !== " ") return;
+							event.preventDefault();
+							selectConnection(connection);
+						}
+					: undefined
+			}
+		>
+			<rect
+				className="connectionLayerTagSelectionOutline"
+				x={-tagWidth / 2}
+				y={-TAG_HEIGHT / 2}
+				width={tagWidth}
+				height={TAG_HEIGHT}
+			/>
+			<rect x={-tagWidth / 2} y={-TAG_HEIGHT / 2} width={tagWidth} height={TAG_HEIGHT} />
+			<Layers
+				className="connectionLayerTagIcon"
+				x={-tagWidth / 2 + 9}
+				y={-7}
+				width={14}
+				height={14}
+				strokeWidth={2}
+			/>
+			<text x={7} textAnchor="middle" dominantBaseline="central">
+				{destinationLayer.name}
+			</text>
+		</g>
+	);
+
+	if (stubPart === "tag") {
+		const className = [
+			"connection",
+			"connectionStub",
+			isEditing ? "connectionEditing" : "",
+			isSelected ? "connectionSelected" : "",
+		]
+			.filter(Boolean)
+			.join(" ");
+		return (
+			<g className={className} data-room-id={idValue(fromRoom.id)}>
+				{tag}
+			</g>
+		);
+	}
+
 	return (
 		<ConnectionPath
 			connection={connection}
@@ -745,47 +867,7 @@ export function ConnectionStub({
 			className="connectionStub"
 			dataRoomId={idValue(fromRoom.id)}
 		>
-			<g
-				className={`connectionLayerTag ${isDragging ? "connectionLayerTagDragging" : ""}`}
-				transform={`translate(${tagPoint.x} ${tagPoint.y})`}
-				role={isInteractive ? "button" : undefined}
-				tabIndex={isInteractive ? 0 : undefined}
-				aria-label={isInteractive ? `Connection to ${destinationLayer.name}` : undefined}
-				onPointerDown={isInteractive ? handlePointerDown : undefined}
-				onPointerMove={isInteractive ? handlePointerMove : undefined}
-				onPointerUp={isInteractive ? handlePointerUp : undefined}
-				onPointerCancel={isInteractive ? handlePointerCancel : undefined}
-				onClick={isInteractive ? handleClick : undefined}
-				onKeyDown={
-					isInteractive
-						? (event) => {
-								if (event.key !== "Enter" && event.key !== " ") return;
-								event.preventDefault();
-								selectConnection(connection);
-							}
-						: undefined
-				}
-			>
-				<rect
-					className="connectionLayerTagSelectionOutline"
-					x={-tagWidth / 2}
-					y={-TAG_HEIGHT / 2}
-					width={tagWidth}
-					height={TAG_HEIGHT}
-				/>
-				<rect x={-tagWidth / 2} y={-TAG_HEIGHT / 2} width={tagWidth} height={TAG_HEIGHT} />
-				<Layers
-					className="connectionLayerTagIcon"
-					x={-tagWidth / 2 + 9}
-					y={-7}
-					width={14}
-					height={14}
-					strokeWidth={2}
-				/>
-				<text x={7} textAnchor="middle" dominantBaseline="central">
-					{destinationLayer.name}
-				</text>
-			</g>
+			{stubPart === "all" ? tag : null}
 		</ConnectionPath>
 	);
 }
@@ -803,6 +885,7 @@ export function Connection({
 	isEditing = false,
 	isSelected = false,
 	isInteractive = true,
+	stubPart = "all",
 }: ConnectionProps) {
 	const startLayer = findLayerForRoomId(world, fromRoom.id);
 	const endLayer = findLayerForRoomId(world, toRoom.id);
@@ -828,6 +911,8 @@ export function Connection({
 				isEditing={isEditing}
 				isSelected={isSelected}
 				isInteractive={isInteractive}
+				stubPointField="fromLayerStubPoint"
+				stubPart={stubPart}
 			/>
 		);
 	}
@@ -846,6 +931,8 @@ export function Connection({
 				isEditing={isEditing}
 				isSelected={isSelected}
 				isInteractive={isInteractive}
+				stubPointField="toLayerStubPoint"
+				stubPart={stubPart}
 			/>
 		);
 	}

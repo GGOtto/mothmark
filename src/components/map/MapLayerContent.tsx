@@ -7,6 +7,7 @@ import {isRoomInLayer} from "../../utils/layerUtils";
 import {ROOM_DIRECTIONS} from "../../utils/mapUtils";
 import type {UpdateStatus} from "../studio/ToolBar";
 import {Connection} from "./Connection";
+import type {ConnectionStubPointField, StubRenderPart} from "./Connection";
 import {RoomCard} from "./Room";
 
 export const MAP_ROOM_WIDTH = 128;
@@ -22,7 +23,11 @@ type MapLayerContentProps = {
 	onNodeClick?: (room: Room, direction: Direction) => void;
 	selectConnection?: (connection?: ConnectionType) => void;
 	changePathway?: (connection: ConnectionType) => ConnectionType["pathway"];
-	onStubPointChange?: (connection: ConnectionType, point: Point) => void;
+	onStubPointChange?: (
+		connection: ConnectionType,
+		point: Point,
+		field: ConnectionStubPointField,
+	) => void;
 	updateStatus?: UpdateStatus;
 	isRoomDragging?: (room: Room) => boolean;
 	getArmedDirection?: (room: Room) => Direction | null;
@@ -65,33 +70,52 @@ export function MapLayerContent({
 			]
 		: world.connections;
 
+	function rendersAsStub(connection: ConnectionType) {
+		const fromIsOnLayer = isRoomInLayer(layer, connection.fromRoomId);
+		const toIsOnLayer = isRoomInLayer(layer, connection.toRoomId);
+		return fromIsOnLayer !== toIsOnLayer;
+	}
+
+	function renderConnection(connection: ConnectionType, stubPart?: StubRenderPart) {
+		const fromRoom = getRoom(connection.fromRoomId);
+		const toRoom = getRoom(connection.toRoomId);
+		if (!fromRoom || !toRoom) return null;
+
+		const isSelected = isConnectionSelected && idValue(connection.id) === selectedId;
+		return (
+			<Connection
+				key={idValue(connection.id)}
+				world={world}
+				connection={connection}
+				fromRoom={fromRoom}
+				toRoom={toRoom}
+				selectConnection={selectConnection ?? (() => {})}
+				changePathway={changePathway ?? ((item) => item.pathway)}
+				updateStatus={updateStatus}
+				isEditing={isInteractive && isSelected}
+				isSelected={isSelected}
+				currentLayer={layer}
+				onStubPointChange={onStubPointChange ?? (() => {})}
+				isInteractive={isInteractive}
+				stubPart={stubPart}
+			/>
+		);
+	}
+
 	return (
 		<>
-			<svg className="mapSvg" width="100%" height="100%">
-				{connections.map((connection) => {
-					const fromRoom = getRoom(connection.fromRoomId);
-					const toRoom = getRoom(connection.toRoomId);
-					if (!fromRoom || !toRoom) return null;
+			<svg className="mapSvg mapSvgConnections" width="100%" height="100%">
+				{connections
+					.filter((connection) => !rendersAsStub(connection))
+					.map((connection) => renderConnection(connection))}
+			</svg>
 
-					const isSelected = isConnectionSelected && idValue(connection.id) === selectedId;
-					return (
-						<Connection
-							key={idValue(connection.id)}
-							world={world}
-							connection={connection}
-							fromRoom={fromRoom}
-							toRoom={toRoom}
-							selectConnection={selectConnection ?? (() => {})}
-							changePathway={changePathway ?? ((item) => item.pathway)}
-							updateStatus={updateStatus}
-							isEditing={isInteractive && isSelected}
-							isSelected={isSelected}
-							currentLayer={layer}
-							onStubPointChange={onStubPointChange ?? (() => {})}
-							isInteractive={isInteractive}
-						/>
-					);
-				})}
+			<svg className="mapSvg mapSvgStubPaths" width="100%" height="100%">
+				{connections.filter(rendersAsStub).map((connection) => renderConnection(connection, "path"))}
+			</svg>
+
+			<svg className="mapSvg mapSvgStubs" width="100%" height="100%">
+				{connections.filter(rendersAsStub).map((connection) => renderConnection(connection, "tag"))}
 			</svg>
 
 			{world.rooms.map((room) =>

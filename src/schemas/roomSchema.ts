@@ -75,9 +75,8 @@ export const RoomMetadataSchema = z.object({
 
 export const ConnectionMetadataSchema = z
 	.object({
-		stubPoint: PointSchema.optional().describe(
-			"An optional editor-canvas position for this connection's cross-layer stub.",
-		),
+		fromLayerStubPoint: PointSchema.optional(),
+		toLayerStubPoint: PointSchema.optional(),
 	})
 	.default({});
 

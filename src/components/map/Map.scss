@@ -92,6 +92,18 @@
 		overflow: visible;
 	}
 
+	.mapSvgConnections {
+		z-index: 0;
+	}
+
+	.mapSvgStubPaths {
+		z-index: 1;
+	}
+
+	.mapSvgStubs {
+		z-index: 2;
+	}
+
 	.mapConnectionDragPath {
 		stroke: var(--map-accent);
 		stroke-width: 2;
