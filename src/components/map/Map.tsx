@@ -25,6 +25,7 @@ import {generateUniqueId, idValue, type ID} from "../../utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
+import {LayoutControl} from "./LayoutControl";
 
 type DragState = {
 	roomId: string;
@@ -134,6 +135,10 @@ export function Map({
 	useEffect(() => {
 		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
 	}, [tool, cancelConnectionDraft, connectionDraft]);
+
+	function openLayerMenu() {
+		// TODO: fill this out
+	}
 
 	function clientToMapPoint(clientX: number, clientY: number): Point | null {
 		const mapElement = mapRef.current;
@@ -526,7 +531,6 @@ export function Map({
 						);
 					})}
 				</svg>
-
 				{world.rooms.map(
 					(room) =>
 						isRoomInLayer(currentLayer, room.id) && (
@@ -556,6 +560,12 @@ export function Map({
 						),
 				)}
 			</div>
+			<LayoutControl
+				world={world}
+				setCurrentLayer={setCurrentLayer}
+				currentLayer={currentLayer}
+				openLayerMenu={openLayerMenu}
+			/>
 		</div>
 	);
 }

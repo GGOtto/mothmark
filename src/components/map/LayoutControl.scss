@@ -1,0 +1,40 @@
+.layoutControl {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	display: flex;
+	flex-direction: column;
+	background-color: rgb(203, 203, 203);
+	cursor: pointer;
+	border-radius: 20px 20px 20px 20px;
+
+	.layoutControl--up,
+	.layoutControl--menu,
+	.layoutControl--down {
+		color: black;
+		cursor: pointer;
+		padding-right: 10px;
+		padding-left: 10px;
+
+		&:hover {
+			color: grey;
+		}
+	}
+
+	.layoutControl--up {
+		padding-top: 10px;
+		padding-bottom: 5px;
+		border-radius: 20px 20px 0 0;
+	}
+
+	.layoutControl--menu {
+		padding-top: 5px;
+		padding-bottom: 5px;
+	}
+
+	.layoutControl--down {
+		padding-bottom: 10px;
+		padding-top: 5px;
+		border-radius: 0 0 20px 20px;
+	}
+}
