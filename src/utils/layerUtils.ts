@@ -1,19 +1,22 @@
-import type {Layer, World} from "../schemas/worldSchema";
+import {DefaultViewport, type Layer, type World} from "../schemas/worldSchema";
 import {compareIds, type ID} from "./idUtils";
 
 /** Returns a default layer */
 export function getDefaultLayer(world: World, layerIndex: number): Layer {
+	const viewport = {...DefaultViewport};
 	if (layerIndex === 0) {
 		return {
 			name: "Ground",
 			layer: 0,
 			rooms: world.rooms.map((room) => room.id),
+			viewport,
 		};
 	}
 	return {
 		name: layerIndex > 0 ? `Upper ${layerIndex}` : `Lower ${Math.abs(layerIndex)}`,
 		layer: layerIndex,
 		rooms: [],
+		viewport,
 	};
 }
 
@@ -25,6 +28,16 @@ export function getLayer(world: World, layerIndex: number): Layer {
 		}
 	}
 	return getDefaultLayer(world, layerIndex);
+}
+
+/** Replaces a persisted layer, or inserts a newly created layer in stack order. */
+export function upsertLayer(layers: Layer[], nextLayer: Layer): Layer[] {
+	const existingIndex = layers.findIndex((layer) => layer.layer === nextLayer.layer);
+	if (existingIndex === -1) {
+		return [...layers, nextLayer].sort((left, right) => left.layer - right.layer);
+	}
+
+	return layers.map((layer, index) => (index === existingIndex ? nextLayer : layer));
 }
 
 /** Search a layer and return true or false if a room id has been found in that layer */

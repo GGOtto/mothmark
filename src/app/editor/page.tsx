@@ -13,7 +13,7 @@ import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
-import type {Connection, Room, World} from "@/schemas/worldSchema";
+import type {Connection, Layer, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
 import {getConnectionDraftStatus} from "./editorPageUtils";
 import "./page.scss";
@@ -97,6 +97,16 @@ export default function EditorPage() {
 		[],
 	);
 
+	const setLayers = useCallback<React.Dispatch<React.SetStateAction<Layer[]>>>((layersAction) => {
+		setEditorWorld((currentWorld) => ({
+			...currentWorld,
+			metadata: {
+				...currentWorld.metadata,
+				layers: applyStateAction(layersAction, currentWorld.metadata.layers),
+			},
+		}));
+	}, []);
+
 	const selectedRoom = useMemo(() => {
 		if (selection.isConnectionSelected) return null;
 
@@ -165,6 +175,7 @@ export default function EditorPage() {
 				setRooms={setRooms}
 				connections={connections}
 				setConnections={setConnections}
+				setLayers={setLayers}
 				selection={selection}
 				setSelection={setSelection}
 				selectedRoom={selectedRoom}
@@ -203,6 +214,7 @@ type EditorMainPanelProps = {
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	connections: Connection[];
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
+	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	selectedRoom: Room | null;
@@ -222,6 +234,7 @@ function EditorMainPanel({
 	rooms,
 	setRooms,
 	setConnections,
+	setLayers,
 	selection,
 	setSelection,
 	selectedRoom,
@@ -256,6 +269,7 @@ function EditorMainPanel({
 					world={world}
 					setRooms={setRooms}
 					setConnections={setConnections}
+					setLayers={setLayers}
 					selection={selection}
 					setSelection={setSelection}
 					mapTool={mapTool}
@@ -324,6 +338,7 @@ type EditorWorkspaceProps = {
 	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
+	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
@@ -339,6 +354,7 @@ function EditorWorkspace({
 	world,
 	setRooms,
 	setConnections,
+	setLayers,
 	selection,
 	setSelection,
 	mapTool,
@@ -354,6 +370,7 @@ function EditorWorkspace({
 				world={world}
 				setRooms={setRooms}
 				setConnections={setConnections}
+				setLayers={setLayers}
 				selection={selection}
 				setSelection={setSelection}
 				mapTool={mapTool}
@@ -373,6 +390,7 @@ type MapWorkspaceProps = {
 	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
+	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
@@ -387,6 +405,7 @@ function MapWorkspace({
 	world,
 	setRooms,
 	setConnections,
+	setLayers,
 	selection,
 	setSelection,
 	mapTool,
@@ -398,13 +417,13 @@ function MapWorkspace({
 }: MapWorkspaceProps) {
 	return (
 		<Map
-			key={recenterRequest}
 			world={world}
 			tool={mapTool}
 			onZoomChange={onZoomChange}
 			theme="light"
 			setRooms={setRooms}
 			setConnections={setConnections}
+			setLayers={setLayers}
 			selectedId={selection.selectedId}
 			setSelectedId={(selectedId) =>
 				setSelection((currentSelection) => ({
@@ -426,6 +445,7 @@ function MapWorkspace({
 			connectionDraft={connectionDraft}
 			setConnectionDraft={setConnectionDraft}
 			updateStatus={updateStatus}
+			recenterRequest={recenterRequest}
 		/>
 	);
 }

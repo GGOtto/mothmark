@@ -10,9 +10,9 @@ import {
 	type Connection as ConnectionType,
 	type Direction,
 } from "../../schemas/roomSchema";
-import {type Layer, type World} from "../../schemas/worldSchema";
+import {DefaultViewport, type Layer, type World, type Viewport} from "../../schemas/worldSchema";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
-import {isRoomInLayer, getLayer} from "../../utils/layerUtils";
+import {isRoomInLayer, getLayer, upsertLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {RoomCard} from "./Room";
 import {Connection} from "./Connection";
@@ -44,6 +44,7 @@ type MapProps = {
 	theme?: MapTheme;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
+	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
 	selectedId: string | null;
 	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
 	isConnectionSelected: boolean;
@@ -51,6 +52,7 @@ type MapProps = {
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 	updateStatus: UpdateStatus;
+	recenterRequest: number;
 };
 
 export type MapTheme = "light" | "dark";
@@ -64,12 +66,6 @@ export type ConnectionDraft =
 			fromDirection: Direction;
 			toRoomId: string;
 	  };
-
-type Viewport = {
-	x: number;
-	y: number;
-	zoom: number;
-};
 
 type PanState = {
 	pointerId: number;
@@ -90,6 +86,7 @@ export function Map({
 	theme = "dark",
 	setRooms,
 	setConnections,
+	setLayers,
 	selectedId,
 	setSelectedId,
 	isConnectionSelected,
@@ -97,22 +94,54 @@ export function Map({
 	connectionDraft,
 	setConnectionDraft,
 	updateStatus,
+	recenterRequest,
 }: MapProps) {
 	const [dragState, setDragState] = useState<DragState | null>(null);
-	const [viewport, setViewport] = useState<Viewport>({x: 0, y: 0, zoom: 1});
+	const initialLayer = useRef(getLayer(world, 0));
+	const [viewport, setViewport] = useState<Viewport>(initialLayer.current.viewport);
 	const [panState, setPanState] = useState<PanState | null>(null);
 	const viewportRef = useRef(viewport);
+	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
 	const cancelConnectionDraft = useCallback(() => {
 		setConnectionDraft({state: "idle"});
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
 	}, [setConnectionDraft, updateStatus]);
-	const [currentLayer, setCurrentLayer] = useState<Layer>(getLayer(world, 0));
+	const [currentLayer, setCurrentLayer] = useState<Layer>(initialLayer.current);
 	const [isLayerMenuOpen, setIsLayerMenuOpen] = useState<boolean>(false);
+
+	const updateViewport = useCallback(
+		(nextViewport: Viewport) => {
+			viewportRef.current = nextViewport;
+			setViewport(nextViewport);
+			setCurrentLayer((layer) => ({...layer, viewport: nextViewport}));
+			setLayers((layers) => {
+				const persistedLayer = layers.find((layer) => layer.layer === currentLayer.layer);
+				return upsertLayer(layers, {
+					...(persistedLayer ?? currentLayer),
+					viewport: nextViewport,
+				});
+			});
+		},
+		[currentLayer, setLayers],
+	);
+
+	const changeCurrentLayer = useCallback((layer: Layer) => {
+		setCurrentLayer(layer);
+		viewportRef.current = layer.viewport;
+		setViewport(layer.viewport);
+	}, []);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
-	}, [viewport]);
+		onZoomChange?.(viewport.zoom);
+	}, [onZoomChange, viewport]);
+
+	useEffect(() => {
+		if (lastRecenterRequest.current === recenterRequest) return;
+		lastRecenterRequest.current = recenterRequest;
+		updateViewport({...DefaultViewport});
+	}, [recenterRequest, updateViewport]);
 
 	useEffect(() => () => updateStatus(null), [updateStatus]);
 
@@ -202,9 +231,12 @@ export function Map({
 		setRooms((currentRooms) => [...currentRooms, room]);
 		selectRoom(room);
 
-		const newLayer = currentLayer;
-		newLayer.rooms = [room.id, ...currentLayer.rooms];
-		setCurrentLayer(currentLayer);
+		const nextLayer = {
+			...currentLayer,
+			rooms: [room.id, ...currentLayer.rooms],
+		};
+		setCurrentLayer(nextLayer);
+		setLayers((layers) => upsertLayer(layers, nextLayer));
 
 		return room;
 	}
@@ -336,11 +368,11 @@ export function Map({
 
 	function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
 		if (panState?.pointerId === event.pointerId) {
-			setViewport((current) => ({
-				...current,
+			updateViewport({
+				...viewportRef.current,
 				x: panState.startViewport.x + event.clientX - panState.startPointer.x,
 				y: panState.startViewport.y + event.clientY - panState.startPointer.y,
-			}));
+			});
 			return;
 		}
 
@@ -445,8 +477,7 @@ export function Map({
 			zoom: nextZoom,
 		};
 		viewportRef.current = next;
-		setViewport(next);
-		onZoomChange?.(nextZoom);
+		updateViewport(next);
 	}
 
 	function handleBlankMapClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -564,7 +595,7 @@ export function Map({
 					</div>
 					<LayoutControl
 						world={world}
-						setCurrentLayer={setCurrentLayer}
+						setCurrentLayer={changeCurrentLayer}
 						currentLayer={currentLayer}
 						isLayerMenuOpen={isLayerMenuOpen}
 						setIsLayerMenuOpen={setIsLayerMenuOpen}

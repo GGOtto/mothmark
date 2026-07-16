@@ -26,6 +26,16 @@ type OptionalReferenceMetadata = EditorMetadataWithoutControl & {
 	required: false;
 };
 
+export function editorSetDefault<TSchema extends z.ZodTypeAny>(
+	schema: TSchema,
+	defaultFieldValue: unknown,
+): TSchema {
+	return schema.meta({
+		...(schema.meta() ?? {}),
+		defaultFieldValue,
+	}) as TSchema;
+}
+
 export function editorString(
 	metadata: EditorMetadataWithoutControl = {},
 	defaultFieldValue?: unknown,
@@ -1029,6 +1039,7 @@ export const editor = {
 	richText: editorRichText,
 	scope: editorScope,
 	select: editorSelect,
+	setDefault: editorSetDefault,
 	singleEditorLink: editorSingleEditorLink,
 	string: editorString,
 	stringList: editorStringList,

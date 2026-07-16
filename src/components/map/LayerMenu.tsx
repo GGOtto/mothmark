@@ -1,5 +1,7 @@
 import {World} from "@/schemas/worldSchema";
 import "./LayerMenu.scss";
+import {LayerPreview} from "./LayerPreview";
+import {getLayer} from "@/utils/layerUtils";
 
 type LayerMenuProps = {
 	world: World;
@@ -14,6 +16,7 @@ export function LayerMenu({world, setIsLayerMenuOpen}: LayerMenuProps) {
 	return (
 		<div className="layerMenu">
 			<button onClick={exitMenu}>X</button>
+			<LayerPreview world={world} layer={getLayer(world, 0)} isFramed={true} mode="static" />
 		</div>
 	);
 }

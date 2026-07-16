@@ -1,5 +1,6 @@
 import {fireEvent, render, screen} from "@testing-library/react";
 import {ConnectionSchema, RoomSchema} from "../../schemas/roomSchema";
+import {DefaultViewport} from "../../schemas/worldSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {world as exampleWorld} from "../../data/worlds/exampleWorld";
 import {Connection, getStubTagAnchorOffset} from "./Connection";
@@ -50,6 +51,7 @@ describe("Connection pathway glyph", () => {
 			name: "Ground",
 			layer: 0,
 			rooms: [fromRoom.id, toRoom.id],
+			viewport: DefaultViewport,
 		};
 		const world = {
 			...exampleWorld,

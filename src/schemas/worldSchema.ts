@@ -981,11 +981,27 @@ export const DefaultWorldInitialState = {
 	inventory: [],
 } satisfies z.infer<typeof WorldInitialStateSchema>;
 
+export const DefaultViewport = {
+	x: 0,
+	y: 0,
+	zoom: 1,
+};
+
+export const ViewportSchema = editor.setDefault(
+	editor.object({
+		x: editor.setDefault(editor.number({}, z.number()), DefaultViewport.x),
+		y: editor.setDefault(editor.number({}, z.number()), DefaultViewport.y),
+		zoom: editor.setDefault(editor.number({}, z.number()), DefaultViewport.zoom),
+	}),
+	DefaultViewport,
+);
+
 export const LayerSchema = editor.object(
 	{
 		name: z.string(),
 		layer: z.number(),
 		rooms: z.array(editor.id("room", {})).default([]),
+		viewport: ViewportSchema.default(DefaultViewport),
 	},
 	{
 		title: "Layer",
@@ -1657,3 +1673,4 @@ export type WorldInitialState = z.infer<typeof WorldInitialStateSchema>;
 export type WorldMetadata = z.infer<typeof WorldMetadataSchema>;
 export type World = z.infer<typeof WorldSchema>;
 export type {Connection, Direction, Point, Room} from "./roomSchema";
+export type Viewport = z.infer<typeof ViewportSchema>;

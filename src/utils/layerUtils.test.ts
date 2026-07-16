@@ -1,4 +1,4 @@
-import type {Layer} from "@/schemas/worldSchema";
+import {DefaultViewport, type Layer} from "@/schemas/worldSchema";
 import {world} from "@/data/worlds/exampleWorld";
 import {findLayerForRoomId} from "./layerUtils";
 
@@ -7,6 +7,7 @@ describe("findLayerForRoom", () => {
 		{
 			name: "Lower 1",
 			layer: -1,
+			viewport: DefaultViewport,
 			rooms: [
 				{
 					type: "room",
@@ -21,6 +22,7 @@ describe("findLayerForRoom", () => {
 		{
 			name: "Ground",
 			layer: 0,
+			viewport: DefaultViewport,
 			rooms: [
 				{
 					type: "room",
@@ -35,6 +37,7 @@ describe("findLayerForRoom", () => {
 		{
 			name: "Upper 1",
 			layer: 1,
+			viewport: DefaultViewport,
 			rooms: [
 				{
 					type: "room",
