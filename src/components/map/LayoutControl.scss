@@ -1,40 +1,134 @@
 .layoutControl {
+	--layer-control-hover: var(--map-accent-strong);
+
 	position: absolute;
 	top: 20px;
 	right: 20px;
+	z-index: 10;
 	display: flex;
 	flex-direction: column;
-	background-color: rgb(203, 203, 203);
-	cursor: pointer;
-	border-radius: 20px 20px 20px 20px;
+	width: 42px;
+	background: var(--map-room-surface);
+	border: 1px solid var(--map-room-border);
+	border-radius: 14px;
+	box-shadow:
+		0 8px 18px var(--map-shadow),
+		inset 0 1px 0 var(--map-highlight);
+	cursor: default;
+	touch-action: manipulation;
+	user-select: none;
+
+	.map--theme-dark & {
+		--layer-control-hover: var(--map-accent);
+	}
+
+	.layoutControl--scrollIndicator {
+		position: absolute;
+		top: 50%;
+		right: calc(100% + 10px);
+		transform: translateY(-50%);
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+		padding: 7px 11px;
+		border: 1px solid var(--map-room-border);
+		border-radius: 10px;
+		background: var(--map-room-surface);
+		box-shadow: 0 5px 14px var(--map-shadow);
+		color: var(--map-room-text);
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		pointer-events: none;
+		animation: layerScrollIndicatorIn 140ms ease-out;
+
+		.pendingLayerIcon {
+			display: none;
+			padding-right: 3px;
+			padding-bottom: 2px;
+			line-height: 9px;
+		}
+	}
 
 	.layoutControl--up,
 	.layoutControl--menu,
 	.layoutControl--down {
-		color: black;
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 38px;
+		margin: 0;
+		padding: 0;
+		appearance: none;
+		border: 0;
+		background: transparent;
+		color: var(--map-room-text);
 		cursor: pointer;
-		padding-right: 10px;
-		padding-left: 10px;
+		line-height: 0;
+		transition:
+			background-color 120ms ease,
+			color 120ms ease,
+			transform 80ms ease;
 
 		&:hover {
-			color: grey;
+			background: var(--map-room-hover);
+			color: var(--layer-control-hover);
+		}
+
+		&:active {
+			transform: translateY(1px);
+			background: var(--map-accent-soft);
+		}
+
+		&:focus-visible {
+			z-index: 1;
+			outline: 2px solid var(--map-accent);
+			outline-offset: -3px;
 		}
 	}
 
 	.layoutControl--up {
-		padding-top: 10px;
-		padding-bottom: 5px;
-		border-radius: 20px 20px 0 0;
+		border-radius: 13px 13px 0 0;
 	}
 
 	.layoutControl--menu {
-		padding-top: 5px;
-		padding-bottom: 5px;
+		height: 42px;
+		border-top: 1px solid var(--map-grid);
+		border-bottom: 1px solid var(--map-grid);
+
+		&[aria-expanded="true"] {
+			background: var(--map-accent);
+			color: var(--map-accent-strong);
+		}
 	}
 
 	.layoutControl--down {
-		padding-bottom: 10px;
-		padding-top: 5px;
-		border-radius: 0 0 20px 20px;
+		border-radius: 0 0 13px 13px;
+	}
+}
+
+@keyframes layerScrollIndicatorIn {
+	from {
+		opacity: 0;
+		transform: translate(4px, -50%);
+	}
+
+	to {
+		opacity: 1;
+		transform: translate(0, -50%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.layoutControl {
+		.layoutControl--scrollIndicator {
+			animation: none;
+		}
+
+		.layoutControl--up,
+		.layoutControl--menu,
+		.layoutControl--down {
+			transition: none;
+		}
 	}
 }
