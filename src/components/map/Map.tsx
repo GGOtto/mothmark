@@ -26,6 +26,7 @@ import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
 import {LayoutControl} from "./LayoutControl";
+import {LayerMenu} from "./LayerMenu";
 
 type DragState = {
 	roomId: string;
@@ -107,6 +108,7 @@ export function Map({
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
 	}, [setConnectionDraft, updateStatus]);
 	const [currentLayer, setCurrentLayer] = useState<Layer>(getLayer(world, 0));
+	const [isLayerMenuOpen, setIsLayerMenuOpen] = useState<boolean>(false);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -135,10 +137,6 @@ export function Map({
 	useEffect(() => {
 		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
 	}, [tool, cancelConnectionDraft, connectionDraft]);
-
-	function openLayerMenu() {
-		// TODO: fill this out
-	}
 
 	function clientToMapPoint(clientX: number, clientY: number): Point | null {
 		const mapElement = mapRef.current;
@@ -502,70 +500,77 @@ export function Map({
 			onClick={handleBlankMapClick}
 			onContextMenu={(event) => event.preventDefault()}
 		>
-			<div
-				className="mapViewport"
-				style={{transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`}}
-			>
-				<svg className="mapSvg" width="100%" height="100%">
-					{connectionsInRenderOrder.map((connection) => {
-						const fromRoom = getRoom(connection.fromRoomId);
-						const toRoom = getRoom(connection.toRoomId);
+			{isLayerMenuOpen ? (
+				<LayerMenu world={world} setIsLayerMenuOpen={setIsLayerMenuOpen} />
+			) : (
+				<>
+					<div
+						className="mapViewport"
+						style={{transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`}}
+					>
+						<svg className="mapSvg" width="100%" height="100%">
+							{connectionsInRenderOrder.map((connection) => {
+								const fromRoom = getRoom(connection.fromRoomId);
+								const toRoom = getRoom(connection.toRoomId);
 
-						if (!fromRoom || !toRoom) return null;
+								if (!fromRoom || !toRoom) return null;
 
-						return (
-							<Connection
-								key={idValue(connection.id)}
-								world={world}
-								connection={connection}
-								fromRoom={fromRoom}
-								toRoom={toRoom}
-								selectConnection={handleConnectionSelect}
-								changePathway={handleConnectionPathwayChange}
-								updateStatus={updateStatus}
-								isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
-								isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
-								currentLayer={currentLayer}
-								onStubPointChange={handleConnectionStubPointChange}
-							/>
-						);
-					})}
-				</svg>
-				{world.rooms.map(
-					(room) =>
-						isRoomInLayer(currentLayer, room.id) && (
-							<RoomCard
-								key={idValue(room.id)}
-								room={room}
-								width={ROOM_WIDTH}
-								height={ROOM_HEIGHT}
-								isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
-								isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
-								armedDirection={
-									connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
-										? connectionDraft.fromDirection
-										: null
-								}
-								pulseNodes={
-									connectionDraft.state === "choosing-return" &&
-									connectionDraft.toRoomId === idValue(room.id)
-								}
-								outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
-									isConnectionFromRoom(idValue(room.id), direction, world.connections),
-								)}
-								onPointerDown={handleRoomPointerDown}
-								onNodeClick={addConnection}
-								updateStatus={updateStatus}
-							/>
-						),
-				)}
-			</div>
-			<LayoutControl
-				world={world}
-				setCurrentLayer={setCurrentLayer}
-				currentLayer={currentLayer}
-				openLayerMenu={openLayerMenu}
-			/>
+								return (
+									<Connection
+										key={idValue(connection.id)}
+										world={world}
+										connection={connection}
+										fromRoom={fromRoom}
+										toRoom={toRoom}
+										selectConnection={handleConnectionSelect}
+										changePathway={handleConnectionPathwayChange}
+										updateStatus={updateStatus}
+										isEditing={isConnectionSelected && idValue(connection.id) === selectedId}
+										isSelected={isConnectionSelected && idValue(connection.id) === selectedId}
+										currentLayer={currentLayer}
+										onStubPointChange={handleConnectionStubPointChange}
+									/>
+								);
+							})}
+						</svg>
+						{world.rooms.map(
+							(room) =>
+								isRoomInLayer(currentLayer, room.id) && (
+									<RoomCard
+										key={idValue(room.id)}
+										room={room}
+										width={ROOM_WIDTH}
+										height={ROOM_HEIGHT}
+										isSelected={!isConnectionSelected && selectedId === idValue(room.id)}
+										isDragging={dragState?.roomId === idValue(room.id) && dragState.hasDragged}
+										armedDirection={
+											connectionDraft.state !== "idle" && connectionDraft.fromRoomId === idValue(room.id)
+												? connectionDraft.fromDirection
+												: null
+										}
+										pulseNodes={
+											connectionDraft.state === "choosing-return" &&
+											connectionDraft.toRoomId === idValue(room.id)
+										}
+										outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
+											isConnectionFromRoom(idValue(room.id), direction, world.connections),
+										)}
+										onPointerDown={handleRoomPointerDown}
+										onNodeClick={addConnection}
+										updateStatus={updateStatus}
+									/>
+								),
+						)}
+					</div>
+					<LayoutControl
+						world={world}
+						setCurrentLayer={setCurrentLayer}
+						currentLayer={currentLayer}
+						isLayerMenuOpen={isLayerMenuOpen}
+						setIsLayerMenuOpen={setIsLayerMenuOpen}
+					/>
+				</>
+			)}
 		</div>
 	);
 }

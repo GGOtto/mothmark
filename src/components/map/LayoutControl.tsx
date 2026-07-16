@@ -7,14 +7,16 @@ type LayoutControlProps = {
 	world: World;
 	setCurrentLayer: (layer: Layer) => void;
 	currentLayer: Layer;
-	openLayerMenu: () => void;
+	isLayerMenuOpen: boolean;
+	setIsLayerMenuOpen: (value: boolean) => void;
 };
 
 export function LayoutControl({
 	world,
 	setCurrentLayer,
 	currentLayer,
-	openLayerMenu,
+	isLayerMenuOpen,
+	setIsLayerMenuOpen,
 }: LayoutControlProps) {
 	function moveUpLayer(event: React.PointerEvent<HTMLButtonElement>) {
 		event.stopPropagation();
@@ -24,7 +26,7 @@ export function LayoutControl({
 
 	function openMenu(event: React.PointerEvent<HTMLButtonElement>) {
 		event.stopPropagation();
-		openLayerMenu();
+		setIsLayerMenuOpen(!isLayerMenuOpen);
 	}
 
 	function moveDownLayer(event: React.PointerEvent<HTMLButtonElement>) {
