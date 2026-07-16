@@ -138,6 +138,7 @@ describe("cross-layer stub positions", () => {
 		});
 		const tag = container.querySelector<SVGGElement>(".connectionLayerTag")!;
 		tag.setPointerCapture = jest.fn();
+		tag.hasPointerCapture = jest.fn(() => false);
 		const pointerDown = new MouseEvent("pointerdown", {
 			bubbles: true,
 			button: 0,
@@ -146,12 +147,35 @@ describe("cross-layer stub positions", () => {
 		});
 		Object.defineProperty(pointerDown, "pointerId", {value: 1});
 		fireEvent(tag, pointerDown);
+		const pointerJitter = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 327,
+			clientY: 411,
+		});
+		Object.defineProperty(pointerJitter, "pointerId", {value: 1});
+		fireEvent(tag, pointerJitter);
+		expect(onStubPointChange).not.toHaveBeenCalled();
+
+		const pointerUp = new MouseEvent("pointerup", {bubbles: true});
+		Object.defineProperty(pointerUp, "pointerId", {value: 1});
+		fireEvent(tag, pointerUp);
+		fireEvent.click(tag);
+		expect(props.selectConnection).toHaveBeenCalledWith(connection);
+
+		const dragPointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 325,
+			clientY: 410,
+		});
+		Object.defineProperty(dragPointerDown, "pointerId", {value: 2});
+		fireEvent(tag, dragPointerDown);
 		const pointerMove = new MouseEvent("pointermove", {
 			bubbles: true,
 			clientX: 345,
 			clientY: 425,
 		});
-		Object.defineProperty(pointerMove, "pointerId", {value: 1});
+		Object.defineProperty(pointerMove, "pointerId", {value: 2});
 		fireEvent(tag, pointerMove);
 
 		expect(onStubPointChange).toHaveBeenCalledWith(connection, {x: 345, y: 425}, "toLayerStubPoint");

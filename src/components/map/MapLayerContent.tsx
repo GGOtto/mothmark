@@ -62,12 +62,9 @@ export function MapLayerContent({
 		? world.connections.find((connection) => idValue(connection.id) === selectedId)
 		: undefined;
 	const connections = selectedConnection
-		? [
-				...world.connections.filter(
-					(connection) => idValue(connection.id) !== idValue(selectedConnection.id),
-				),
-				selectedConnection,
-			]
+		? world.connections.filter(
+				(connection) => idValue(connection.id) !== idValue(selectedConnection.id),
+			)
 		: world.connections;
 
 	function rendersAsStub(connection: ConnectionType) {
@@ -139,6 +136,18 @@ export function MapLayerContent({
 					/>
 				) : null,
 			)}
+
+			<svg className="mapSvg mapSvgSelectedConnection" width="100%" height="100%">
+				{selectedConnection
+					? renderConnection(selectedConnection, rendersAsStub(selectedConnection) ? "path" : undefined)
+					: null}
+			</svg>
+
+			<svg className="mapSvg mapSvgSelectedStub" width="100%" height="100%">
+				{selectedConnection && rendersAsStub(selectedConnection)
+					? renderConnection(selectedConnection, "tag")
+					: null}
+			</svg>
 		</>
 	);
 }

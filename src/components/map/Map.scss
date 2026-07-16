@@ -104,6 +104,14 @@
 		z-index: 2;
 	}
 
+	.mapSvgSelectedConnection {
+		z-index: 4;
+	}
+
+	.mapSvgSelectedStub {
+		z-index: 5;
+	}
+
 	.mapConnectionDragPath {
 		stroke: var(--map-accent);
 		stroke-width: 2;

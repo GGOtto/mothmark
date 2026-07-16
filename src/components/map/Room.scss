@@ -39,6 +39,7 @@
 	}
 
 	&.roomCardSelected {
+		z-index: 6;
 		border: 3px solid var(--map-accent);
 		background: var(--map-room-selected);
 		box-shadow:

@@ -1,6 +1,8 @@
 import type {Direction, Point} from "../schemas/roomSchema";
 import {getRoomNodeAnchorVector} from "./mapUtils";
 
+export const DEFAULT_STUB_CONNECTOR_LENGTH = 60;
+
 export type PlacementRectangle = {
 	center: Point;
 	width: number;
@@ -39,7 +41,9 @@ export function getDefaultConnectionStubPoint({
 	const horizontalDistance = room.width / 2 + connectorLength + stubSize.width / 2;
 	const verticalDistance = room.height / 2 + connectorLength + stubSize.height / 2;
 	const isDiagonal = vector.x !== 0 && vector.y !== 0;
-	const diagonalDistance = Math.max(horizontalDistance, verticalDistance);
+	// Equal diagonal offsets preserve the authored direction. Vertical clearance also
+	// keeps the actual corner-to-tag connector close to the cardinal connector length.
+	const diagonalDistance = verticalDistance;
 
 	return {
 		x: room.center.x + vector.x * (isDiagonal ? diagonalDistance : horizontalDistance),
@@ -78,10 +82,12 @@ export function findConnectionStubPoint({
 		stubSize,
 		connectorLength,
 	});
-	const vector = getRoomNodeAnchorVector(direction);
 	const isAvailable = (center: Point) => {
 		const stub = {...stubSize, center};
-		return obstacles.every((obstacle) => !rectanglesOverlap(stub, obstacle, gap));
+		return (
+			!rectanglesOverlap(stub, room, gap) &&
+			obstacles.every((obstacle) => !rectanglesOverlap(stub, obstacle, gap))
+		);
 	};
 
 	if (isAvailable(defaultPoint)) return defaultPoint;
@@ -97,16 +103,18 @@ export function findConnectionStubPoint({
 	}
 
 	candidates.sort((first, second) => {
+		const connectionLengthDifference =
+			Math.hypot(first.x - room.center.x, first.y - room.center.y) -
+			Math.hypot(second.x - room.center.x, second.y - room.center.y);
+		if (connectionLengthDifference !== 0) return connectionLengthDifference;
+
 		const firstOffset = {x: first.x - defaultPoint.x, y: first.y - defaultPoint.y};
 		const secondOffset = {x: second.x - defaultPoint.x, y: second.y - defaultPoint.y};
 		const distanceDifference =
 			Math.hypot(firstOffset.x, firstOffset.y) - Math.hypot(secondOffset.x, secondOffset.y);
 		if (distanceDifference !== 0) return distanceDifference;
 
-		// At the same distance, prefer moving farther outward over moving sideways.
-		const firstOutward = firstOffset.x * vector.x + firstOffset.y * vector.y;
-		const secondOutward = secondOffset.x * vector.x + secondOffset.y * vector.y;
-		return secondOutward - firstOutward || first.y - second.y || first.x - second.x;
+		return first.y - second.y || first.x - second.x;
 	});
 
 	return candidates.find(isAvailable) ?? defaultPoint;

@@ -12,14 +12,18 @@ function MapHarness({
 	initialWorld,
 	onZoomChange,
 	tool = "pan",
+	initialSelectedId = null,
+	initialIsConnectionSelected = false,
 }: {
 	initialWorld: World;
 	onZoomChange: jest.Mock;
 	tool?: "edit" | "pan";
+	initialSelectedId?: string | null;
+	initialIsConnectionSelected?: boolean;
 }) {
 	const [world, setWorld] = useState(initialWorld);
-	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [isConnectionSelected, setIsConnectionSelected] = useState(false);
+	const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+	const [isConnectionSelected, setIsConnectionSelected] = useState(initialIsConnectionSelected);
 	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
 
 	const setRooms: React.Dispatch<React.SetStateAction<Room[]>> = (action) =>
@@ -152,5 +156,58 @@ describe("Map visual layers", () => {
 
 		expect(room).toHaveStyle({left: "140px", top: "215px"});
 		expect(getStubTransforms()).toEqual(stubTransforms);
+	});
+
+	it("moves a selected connection above rooms and returns it to its base layer when unselected", () => {
+		const {container} = render(
+			<MapHarness
+				initialWorld={exampleWorld}
+				onZoomChange={jest.fn()}
+				tool="edit"
+				initialSelectedId="entrance-guardroom"
+				initialIsConnectionSelected
+			/>,
+		);
+		const selectedLayer = container.querySelector(".mapSvgSelectedConnection")!;
+		const baseLayer = container.querySelector(".mapSvgConnections")!;
+		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const baseConnectionCount = baseLayer.querySelectorAll(".connection").length;
+
+		expect(selectedLayer.querySelector(".connectionSelected")).toBeInTheDocument();
+		expect(
+			room.compareDocumentPosition(selectedLayer) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+
+		room.setPointerCapture = jest.fn();
+		const pointerDown = new MouseEvent("pointerdown", {bubbles: true, button: 0});
+		Object.defineProperty(pointerDown, "pointerId", {value: 1});
+		fireEvent(room, pointerDown);
+		const pointerUp = new MouseEvent("pointerup", {bubbles: true});
+		Object.defineProperty(pointerUp, "pointerId", {value: 1});
+		fireEvent(map, pointerUp);
+
+		expect(selectedLayer.querySelector(".connection")).not.toBeInTheDocument();
+		expect(baseLayer.querySelectorAll(".connection")).toHaveLength(baseConnectionCount + 1);
+		expect(room).toHaveClass("roomCardSelected");
+	});
+
+	it("keeps a selected connection's stub above its selected path", () => {
+		const {container} = render(
+			<MapHarness
+				initialWorld={exampleWorld}
+				onZoomChange={jest.fn()}
+				initialSelectedId="entrance-cistern"
+				initialIsConnectionSelected
+			/>,
+		);
+		const selectedPath = container.querySelector(".mapSvgSelectedConnection")!;
+		const selectedStub = container.querySelector(".mapSvgSelectedStub")!;
+
+		expect(selectedPath.querySelector(".connectionPath")).toBeInTheDocument();
+		expect(selectedStub.querySelector(".connectionLayerTag")).toBeInTheDocument();
+		expect(
+			selectedPath.compareDocumentPosition(selectedStub) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
 	});
 });

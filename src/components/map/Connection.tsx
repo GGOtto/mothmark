@@ -8,6 +8,7 @@ import {findLayerForRoomId} from "../../utils/layerUtils";
 import {idValue} from "../../utils/idUtils";
 import {getPathwayLabel} from "../../utils/connectionUtils";
 import {
+	DEFAULT_STUB_CONNECTOR_LENGTH,
 	findConnectionStubPoint,
 	type PlacementRectangle,
 } from "../../utils/connectionStubPlacement";
@@ -61,9 +62,10 @@ export type StubRenderPart = "all" | "path" | "tag";
 
 const ROOM_WIDTH = 128;
 const ROOM_HEIGHT = 80;
-const STUB_LENGTH = 52;
+const STUB_LENGTH = DEFAULT_STUB_CONNECTOR_LENGTH;
 const TAG_HEIGHT = 26;
 const TAG_GAP = 8;
+const STUB_DRAG_THRESHOLD = 4;
 
 function getLayerTagWidth(name: string) {
 	return Math.max(84, name.length * 7 + 46);
@@ -723,6 +725,7 @@ export function ConnectionStub({
 		stubAnchorDirection,
 	);
 	const dragPointerId = useRef<number | null>(null);
+	const dragStartClientPoint = useRef<Point | null>(null);
 	const dragOffset = useRef<Point>({x: 0, y: 0});
 	const latestDragPoint = useRef<Point | null>(null);
 	const didDrag = useRef(false);
@@ -745,22 +748,29 @@ export function ConnectionStub({
 		event.preventDefault();
 		event.stopPropagation();
 		dragPointerId.current = event.pointerId;
+		dragStartClientPoint.current = {x: event.clientX, y: event.clientY};
 		dragOffset.current = {x: pointer.x - tagPoint.x, y: pointer.y - tagPoint.y};
 		latestDragPoint.current = tagPoint;
 		didDrag.current = false;
-		setIsDragging(true);
 		event.currentTarget.setPointerCapture(event.pointerId);
 	}
 
 	function handlePointerMove(event: React.PointerEvent<SVGGElement>) {
 		if (dragPointerId.current !== event.pointerId) return;
+		const dragStart = dragStartClientPoint.current;
+		if (!didDrag.current && dragStart) {
+			const deltaX = event.clientX - dragStart.x;
+			const deltaY = event.clientY - dragStart.y;
+			if (Math.hypot(deltaX, deltaY) < STUB_DRAG_THRESHOLD) return;
+			didDrag.current = true;
+			setIsDragging(true);
+		}
 		const point = clientToSvgPoint(event);
 		if (!point) return;
 		const nextPoint = {
 			x: point.x - dragOffset.current.x,
 			y: point.y - dragOffset.current.y,
 		};
-		didDrag.current = true;
 		latestDragPoint.current = nextPoint;
 		setDragPoint(nextPoint);
 		onStubPointChange(connection, nextPoint, stubPointField);
@@ -770,6 +780,7 @@ export function ConnectionStub({
 		if (dragPointerId.current !== event.pointerId) return;
 		event.stopPropagation();
 		dragPointerId.current = null;
+		dragStartClientPoint.current = null;
 		setIsDragging(false);
 		if (didDrag.current && latestDragPoint.current) {
 			onStubPointChange(connection, latestDragPoint.current, stubPointField);
@@ -783,6 +794,7 @@ export function ConnectionStub({
 	function handlePointerCancel(event: React.PointerEvent<SVGGElement>) {
 		if (dragPointerId.current !== event.pointerId) return;
 		dragPointerId.current = null;
+		dragStartClientPoint.current = null;
 		latestDragPoint.current = null;
 		setIsDragging(false);
 		setDragPoint(null);
