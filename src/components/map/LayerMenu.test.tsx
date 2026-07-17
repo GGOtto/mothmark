@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import {world} from "@/data/worlds/exampleWorld";
 import {getLayer} from "@/utils/layerUtils";
 import {LayerMenu} from "./LayerMenu";
@@ -63,5 +63,35 @@ describe("LayerMenu", () => {
 		fireEvent.click(screen.getByRole("button", {name: "Close layer menu"}));
 
 		expect(setIsLayerMenuOpen).toHaveBeenCalledWith(false);
+	});
+
+	it("steps layers on the same 500ms cadence while scrolling over the preview", () => {
+		jest.useFakeTimers();
+		renderLayerMenu();
+
+		fireEvent.wheel(screen.getByLabelText("Ground Level preview"), {deltaY: -100});
+		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
+
+		fireEvent.wheel(screen.getByLabelText("Upper Works preview"), {deltaY: 100});
+		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
+
+		act(() => jest.advanceTimersByTime(500));
+		fireEvent.wheel(screen.getByLabelText("Upper Works preview"), {deltaY: 100});
+		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+
+		jest.useRealTimers();
+	});
+
+	it("steps the displayed layer with arrow and page keys", () => {
+		renderLayerMenu();
+
+		fireEvent.keyDown(window, {key: "ArrowUp"});
+		expect(screen.getByLabelText("Lower Crypts preview")).toBeInTheDocument();
+		fireEvent.keyDown(window, {key: "ArrowDown"});
+		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		fireEvent.keyDown(window, {key: "PageDown"});
+		expect(screen.getByLabelText("Lower Crypts preview")).toBeInTheDocument();
+		fireEvent.keyDown(window, {key: "PageUp"});
+		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
 	});
 });

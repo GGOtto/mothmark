@@ -2,6 +2,7 @@
 
 import type React from "react";
 import {useCallback, useEffect, useRef, useState} from "react";
+import {createPortal} from "react-dom";
 import {
 	RoomSchema,
 	ConnectionSchema,
@@ -14,6 +15,7 @@ import {DefaultViewport, type Layer, type World, type Viewport} from "../../sche
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
 import {findLayerForRoomId, getLayer, upsertLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
+import {getLayerNavigationDirection} from "../../utils/layerNavigation";
 import {
 	getNextAvailablePathway,
 	getPathwayForNewDrop,
@@ -179,8 +181,25 @@ export function Map({
 				cancelConnectionDraft();
 				return;
 			}
-			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+			if (
+				event.target instanceof HTMLInputElement ||
+				event.target instanceof HTMLTextAreaElement ||
+				event.target instanceof HTMLSelectElement ||
+				(event.target instanceof HTMLElement && event.target.isContentEditable)
+			)
 				return;
+			if (isLayerMenuOpen) return;
+
+			const layerDirection = getLayerNavigationDirection(event.key);
+			if (layerDirection) {
+				event.preventDefault();
+				mapRef.current
+					?.querySelector<HTMLButtonElement>(
+						layerDirection === 1 ? ".layoutControl--up" : ".layoutControl--down",
+					)
+					?.click();
+				return;
+			}
 			if (event.key.toLowerCase() === "v")
 				document.querySelector<HTMLButtonElement>('[title="Edit map (V)"]')?.click();
 			if (event.key.toLowerCase() === "h")
@@ -189,7 +208,14 @@ export function Map({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [cancelConnectionDraft, connectionDraft]);
+	}, [
+		cancelConnectionDraft,
+		changeCurrentLayer,
+		connectionDraft,
+		currentLayer.layer,
+		isLayerMenuOpen,
+		world,
+	]);
 
 	useEffect(() => {
 		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
@@ -509,6 +535,18 @@ export function Map({
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
+	const layerMenuHost = mapRef.current?.closest<HTMLElement>(".editorMapArea") ?? null;
+	const layerMenu = (
+		<LayerMenu
+			world={world}
+			currentLayer={currentLayer}
+			setIsLayerMenuOpen={setIsLayerMenuOpen}
+			selectedId={selectedId}
+			isConnectionSelected={isConnectionSelected}
+			setCurrentLayer={changeCurrentLayer}
+		/>
+	);
+
 	return (
 		<div
 			ref={mapRef}
@@ -527,14 +565,11 @@ export function Map({
 			onContextMenu={(event) => event.preventDefault()}
 		>
 			{isLayerMenuOpen ? (
-				<LayerMenu
-					world={world}
-					currentLayer={currentLayer}
-					setIsLayerMenuOpen={setIsLayerMenuOpen}
-					selectedId={selectedId}
-					isConnectionSelected={isConnectionSelected}
-					setCurrentLayer={changeCurrentLayer}
-				/>
+				layerMenuHost ? (
+					createPortal(layerMenu, layerMenuHost)
+				) : (
+					layerMenu
+				)
 			) : (
 				<>
 					<div

@@ -106,6 +106,36 @@ describe("Map layer viewports", () => {
 });
 
 describe("Map visual layers", () => {
+	it("steps the active map layer with arrow and page keys", () => {
+		render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
+
+		fireEvent.keyDown(window, {key: "ArrowUp"});
+		expect(screen.getByRole("button", {name: "Layers · Lower Crypts"})).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("Lower Crypts");
+		fireEvent.keyDown(window, {key: "ArrowDown"});
+		expect(screen.getByRole("button", {name: "Layers · Ground Level"})).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("Ground Level");
+		fireEvent.keyDown(window, {key: "PageDown"});
+		expect(screen.getByRole("button", {name: "Layers · Lower Crypts"})).toBeInTheDocument();
+		fireEvent.keyDown(window, {key: "PageUp"});
+		expect(screen.getByRole("button", {name: "Layers · Ground Level"})).toBeInTheDocument();
+	});
+
+	it("renders the layer menu over the shared toolbar and map area", () => {
+		const {container} = render(
+			<div className="editorMapArea">
+				<div data-testid="map-toolbar" />
+				<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />
+			</div>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Layers · Ground Level"}));
+
+		const menu = container.querySelector(".layerMenu");
+		expect(menu).toBeInTheDocument();
+		expect(menu?.parentElement).toHaveClass("editorMapArea");
+	});
+
 	it("renders connection paths below stubs and rooms above both", () => {
 		const {container} = render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
 		const connections = container.querySelector(".mapSvgConnections")!;

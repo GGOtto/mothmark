@@ -2,4 +2,121 @@
 	position: absolute;
 	inset: 0;
 	z-index: 20;
+	display: grid;
+	grid-template-columns: clamp(160px, 24%, 240px) minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+	gap: clamp(12px, 2vw, 24px);
+	padding: clamp(16px, 3vw, 32px);
+	overflow: hidden;
+	box-sizing: border-box;
+	background-color: #111;
+	cursor: pointer;
+
+	> button:first-child {
+		position: absolute;
+		top: clamp(16px, 3vw, 32px);
+		right: clamp(16px, 3vw, 32px);
+		z-index: 1;
+		max-width: calc(100% - 32px);
+		cursor: pointer;
+	}
+}
+
+.layerMenu--left,
+.layerMenu--right,
+.layerMenu--preview {
+	min-width: 0;
+	min-height: 0;
+	box-sizing: border-box;
+}
+
+.layerMenu--left {
+	height: 100%;
+	overflow: auto;
+	width: 100%;
+
+	.layerMenu--left__button,
+	.layerMenu--left__selected {
+		display: block;
+		background-color: red;
+	}
+
+	.layerMenu--left__selected {
+		background-color: blue;
+	}
+}
+
+.layerMenu--right {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	gap: clamp(10px, 1.5vw, 16px);
+	height: 100%;
+}
+
+.layerMenu--header {
+	min-height: 40px;
+	padding-right: clamp(120px, 18vw, 160px);
+}
+
+.layerMenu--preview {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.layerMenu--controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-width: 0;
+}
+
+.layerMenu--info {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.layerMenu--open {
+	flex: 0 0 auto;
+	min-height: 36px;
+	padding-inline: 16px;
+	cursor: pointer;
+}
+
+@media (max-width: 640px) {
+	.layerMenu {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr);
+	}
+
+	.layerMenu--left {
+		width: 100%;
+		max-height: 136px;
+	}
+
+	.layerMenu--header {
+		padding-right: 0;
+	}
+}
+
+@media (max-width: 420px) {
+	.layerMenu--right {
+		padding-top: 44px;
+	}
+
+	.layerMenu--controls {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.layerMenu--info {
+		white-space: normal;
+	}
+
+	.layerMenu--open {
+		width: 100%;
+	}
 }

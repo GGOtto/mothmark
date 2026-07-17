@@ -251,34 +251,36 @@ function EditorMainPanel({
 
 	return (
 		<section className="editorMainPanel">
-			<EditorToolbar
-				activeTab={activeTab}
-				rooms={rooms}
-				mapTool={mapTool}
-				setMapTool={setMapTool}
-				mapZoom={mapZoom}
-				onMapRecenter={onMapRecenter}
-				connectionDraft={connectionDraft}
-				hoverStatus={hoverStatus}
-				noticeStatus={noticeStatus}
-			/>
-
-			<div className="editorWorkspaceShell">
-				<EditorWorkspace
+			<div className="editorMapArea">
+				<EditorToolbar
 					activeTab={activeTab}
-					world={world}
-					setRooms={setRooms}
-					setConnections={setConnections}
-					setLayers={setLayers}
-					selection={selection}
-					setSelection={setSelection}
+					rooms={rooms}
 					mapTool={mapTool}
-					onZoomChange={setMapZoom}
-					recenterRequest={mapRecenterRequest}
+					setMapTool={setMapTool}
+					mapZoom={mapZoom}
+					onMapRecenter={onMapRecenter}
 					connectionDraft={connectionDraft}
-					setConnectionDraft={setConnectionDraft}
-					updateStatus={updateStatus}
+					hoverStatus={hoverStatus}
+					noticeStatus={noticeStatus}
 				/>
+
+				<div className="editorWorkspaceShell">
+					<EditorWorkspace
+						activeTab={activeTab}
+						world={world}
+						setRooms={setRooms}
+						setConnections={setConnections}
+						setLayers={setLayers}
+						selection={selection}
+						setSelection={setSelection}
+						mapTool={mapTool}
+						onZoomChange={setMapZoom}
+						recenterRequest={mapRecenterRequest}
+						connectionDraft={connectionDraft}
+						setConnectionDraft={setConnectionDraft}
+						updateStatus={updateStatus}
+					/>
+				</div>
 			</div>
 
 			<CommandLine world={world} selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null} />

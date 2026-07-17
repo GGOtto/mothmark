@@ -2,10 +2,8 @@ import {Layer, World} from "@/schemas/worldSchema";
 import {Layers, ArrowDown, ArrowUp} from "lucide-react";
 import "./LayoutControl.scss";
 import {getLayer} from "@/utils/layerUtils";
+import {LAYER_SCROLL_END_DELAY, LAYER_SCROLL_STEP_DELAY} from "@/utils/layerNavigation";
 import {useEffect, useRef, useState} from "react";
-
-const SCROLL_STEP_DELAY = 500;
-const SCROLL_END_DELAY = 500;
 
 type LayoutControlProps = {
 	world: World;
@@ -43,7 +41,7 @@ export function LayoutControl({
 
 	function schedulePendingLayerClear() {
 		if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
-		scrollEndTimer.current = setTimeout(clearPendingLayer, SCROLL_END_DELAY);
+		scrollEndTimer.current = setTimeout(clearPendingLayer, LAYER_SCROLL_END_DELAY);
 	}
 
 	function showPendingLayer(layer: Layer, direction: 1 | -1) {
@@ -80,7 +78,7 @@ export function LayoutControl({
 		if (event.deltaY === 0) return;
 
 		const now = Date.now();
-		if (!pendingLayerRef.current || now - lastScrollStepAt.current >= SCROLL_STEP_DELAY) {
+		if (!pendingLayerRef.current || now - lastScrollStepAt.current >= LAYER_SCROLL_STEP_DELAY) {
 			const direction = event.deltaY < 0 ? 1 : -1;
 			const startingLayer = pendingLayerRef.current ?? currentLayer;
 			const targetLayer = getLayer(world, startingLayer.layer + direction);
