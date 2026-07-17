@@ -529,6 +529,7 @@ export function Map({
 			{isLayerMenuOpen ? (
 				<LayerMenu
 					world={world}
+					currentLayer={currentLayer}
 					setIsLayerMenuOpen={setIsLayerMenuOpen}
 					selectedId={selectedId}
 					isConnectionSelected={isConnectionSelected}
