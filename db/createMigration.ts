@@ -10,9 +10,16 @@ if (!migrationName) {
 
 const database = knex(knexConfig);
 
-try {
-	const migrationPath = await database.migrate.make(migrationName);
-	console.log(`Created ${migrationPath}`);
-} finally {
-	await database.destroy();
-}
+const main = async (): Promise<void> => {
+	try {
+		const migrationPath = await database.migrate.make(migrationName);
+		console.log(`Created ${migrationPath}`);
+	} finally {
+		await database.destroy();
+	}
+};
+
+main().catch((error: unknown) => {
+	console.error(error);
+	process.exitCode = 1;
+});
