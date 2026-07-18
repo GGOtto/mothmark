@@ -12,7 +12,7 @@ export type WorldRecord = {
 	name: string;
 	slug: string | null;
 	world: World;
-	schemaVersion: number | null;
+	schemaVersion: number;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -22,7 +22,7 @@ type WorldRow = {
 	name: string;
 	slug: string | null;
 	world: World;
-	schema_version: number | null;
+	schema_version: number;
 	created_at: Date | string;
 	updated_at: Date | string;
 };
@@ -43,7 +43,7 @@ export type CreateDefaultWorldInput = {
 export type UpdateWorldInput = {
 	name?: string;
 	slug?: string | null;
-	world: World;
+	world?: World;
 };
 
 function mapWorldRow(row: WorldRow): WorldRecord {
@@ -67,7 +67,7 @@ export async function createWorld(input: CreateWorldInput): Promise<WorldRecord>
 			name: input.name,
 			slug: input.slug ?? null,
 			world: input.world,
-			schema_version: input.schemaVersion ?? null,
+			schema_version: input.schemaVersion ?? 1,
 		})
 		.returning("*");
 
@@ -88,12 +88,30 @@ export async function createDefaultWorld(input: CreateDefaultWorldInput): Promis
 }
 
 /**
+ * Lists stored worlds with the most recently updated first.
+ */
+export async function listWorlds(): Promise<WorldRecord[]> {
+	const rows = await database<WorldRow>("worlds").orderBy("updated_at", "desc");
+
+	return rows.map(mapWorldRow);
+}
+
+/**
  * Gets a world by its database ID.
  *
  * Returns undefined when no matching world exists.
  */
 export async function getWorld(id: string): Promise<WorldRecord | undefined> {
 	const row = await database<WorldRow>("worlds").where({id}).first();
+
+	return row ? mapWorldRow(row) : undefined;
+}
+
+/**
+ * Gets a world by its public slug.
+ */
+export async function getWorldBySlug(slug: string): Promise<WorldRecord | undefined> {
+	const row = await database<WorldRow>("worlds").where({slug}).first();
 
 	return row ? mapWorldRow(row) : undefined;
 }
@@ -106,23 +124,30 @@ export async function getWorld(id: string): Promise<WorldRecord | undefined> {
  *
  * Returns undefined when no matching world exists.
  */
-export async function updateWorld(id: string, world: World): Promise<WorldRecord | undefined> {
-	const [updatedRow] = await database<WorldRow>("worlds")
+export async function updateWorld(
+	id: string,
+	input: UpdateWorldInput,
+): Promise<WorldRecord | undefined> {
+	const [row] = await database<WorldRow>("worlds")
 		.where({id})
-		.whereRaw("world IS DISTINCT FROM ?::jsonb", [JSON.stringify(world)])
 		.update({
-			world,
+			...(input.name !== undefined && {name: input.name}),
+			...(input.slug !== undefined && {slug: input.slug}),
+			...(input.world !== undefined && {world: input.world}),
 			updated_at: database.fn.now(),
 		})
 		.returning("*");
 
-	if (updatedRow) {
-		return mapWorldRow(updatedRow);
-	}
+	return row ? mapWorldRow(row) : undefined;
+}
 
-	const existingRow = await database<WorldRow>("worlds").where({id}).first();
+/**
+ * Deletes a stored world. Returns false when no matching world exists.
+ */
+export async function deleteWorld(id: string): Promise<boolean> {
+	const deletedCount = await database<WorldRow>("worlds").where({id}).delete();
 
-	return existingRow ? mapWorldRow(existingRow) : undefined;
+	return deletedCount > 0;
 }
 
 /**

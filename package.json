@@ -11,8 +11,6 @@
 		"db:make": "node --env-file-if-exists=.env --import tsx db/createMigration.ts",
 		"migrate": "node --env-file-if-exists=.env --import tsx db/migrate.ts",
 		"build": "next build",
-		"pages:build": "next build --webpack",
-		"deploy": "pnpm pages:build && wrangler pages deploy out --project-name mothmark",
 		"start": "next start",
 		"lint": "eslint",
 		"format": "prettier --write .",

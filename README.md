@@ -51,6 +51,24 @@ commands under the same prefix is more convenient.
 Migration files live in `db/migrations`. Application database access should go through the DBAL in
 `src/db/dbal`; call `getDb()` to get the shared Knex client.
 
+### World API
+
+| Method | Path                            | Purpose                                       |
+| ------ | ------------------------------- | --------------------------------------------- |
+| GET    | `/api/world`                    | List worlds, newest update first              |
+| POST   | `/api/world`                    | Create a world from a complete world document |
+| POST   | `/api/world/default`            | Create a world populated with schema defaults |
+| GET    | `/api/world/:id`                | Get a world by database ID                    |
+| PUT    | `/api/world/:id`                | Update its name, slug, or world document      |
+| PATCH  | `/api/world/:id`                | Partially update the same fields              |
+| DELETE | `/api/world/:id`                | Delete a world                                |
+| GET    | `/api/world/slug/:slug`         | Get a world by slug                           |
+| PATCH  | `/api/world/:id/schema-version` | Update its stored schema version              |
+
+Successful responses use `{ "data": ... }`. Validation, conflicts, missing records, and internal
+failures return an `{ "error": { "code", "message" } }` object with the appropriate HTTP status.
+World documents are validated with `WorldSchema` before they reach PostgreSQL.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -60,30 +78,8 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Cloudflare Pages
+## Deployment
 
-This project is configured as a static Next.js export, which Cloudflare Pages serves from
-the generated `out` directory.
-
-Create a Pages project from this repository and use:
-
-- Framework preset: `Next.js (Static HTML Export)`
-- Build command: `pnpm pages:build`
-- Build output directory: `out`
-- Node.js version: `22`
-
-Cloudflare detects `pnpm-lock.yaml` and installs dependencies with pnpm. Preview the
-same artifact locally with:
-
-```bash
-pnpm pages:build
-python3 -m http.server 3000 --directory out
-```
-
-To build and directly publish the `out` directory to the `mothmark` Pages project, log
-in with `pnpm wrangler login` once and run `pnpm deploy`.
-
-The `/api/health` route is generated at build time as a static JSON response. If the app
-later needs runtime API routes, server-side rendering, or middleware, migrate the deployment
-to Cloudflare Workers using the OpenNext adapter; those features are not part of a static
-Pages export.
+The PostgreSQL-backed API requires a Next.js server runtime, so the project is no longer configured
+as a static export. The former Cloudflare Pages deployment cannot serve these routes. Choose and
+configure Cloudflare Workers with OpenNext or Vercel before the next hosted deployment.
