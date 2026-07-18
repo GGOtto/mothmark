@@ -11,7 +11,7 @@ export default function HomePage() {
 
 				<p className="homeDescription">
 					This home page is just a placeholder for now. The editor is where the actual world-building
-					chaos lives.
+					lives. The editor does not currently work well on a phone.
 				</p>
 
 				<Link href="/editor" className="homeEditorLink">
