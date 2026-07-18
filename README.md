@@ -81,5 +81,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Deployment
 
 The PostgreSQL-backed API requires a Next.js server runtime, so the project is no longer configured
-as a static export. The former Cloudflare Pages deployment cannot serve these routes. Choose and
-configure Cloudflare Workers with OpenNext or Vercel before the next hosted deployment.
+as a static export. The former Cloudflare Pages deployment cannot serve these routes. The selected
+deployment stack is Vercel, Neon PostgreSQL, and Phase. Follow the complete
+[deployment runbook](docs/deployment-runbook.md) for initial setup, routine releases, migrations,
+rollback, and the public shared-world launch gate.
