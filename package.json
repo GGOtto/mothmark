@@ -4,8 +4,9 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
-		"db:up": "docker compose up -d postgres",
-		"db:down": "docker compose stop postgres",
+		"db:up": "\"$(brew --prefix postgresql@17)/bin/pg_ctl\" -D \"$(brew --prefix)/var/postgresql@17\" -l \"$(brew --prefix)/var/log/postgresql@17.log\" start",
+		"db:down": "\"$(brew --prefix postgresql@17)/bin/pg_ctl\" -D \"$(brew --prefix)/var/postgresql@17\" stop",
+		"db:create": "\"$(brew --prefix postgresql@17)/bin/createdb\" mothmark",
 		"db:migrate": "pnpm migrate",
 		"db:make": "node --env-file-if-exists=.env --import tsx db/createMigration.ts",
 		"migrate": "node --env-file-if-exists=.env --import tsx db/migrate.ts",

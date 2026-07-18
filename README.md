@@ -22,8 +22,9 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Database
 
-Development uses PostgreSQL and Knex. The checked-in `.env` contains local-only defaults; Phase can
-populate the same variables in hosted environments.
+Development uses PostgreSQL 17 installed through Homebrew, plus Knex for database access and
+migrations. The checked-in `.env` contains local-only defaults; Phase can populate the same
+variables in hosted environments.
 
 Start PostgreSQL and apply all pending migrations:
 
@@ -38,8 +39,14 @@ There are no application migrations yet. To create one when the first table is r
 pnpm db:make initial_schema
 ```
 
-Use `pnpm db:down` to stop PostgreSQL. `pnpm db:migrate` is also available when keeping all
-database commands under the same prefix is more convenient.
+The local `mothmark` database only needs to be created once:
+
+```bash
+pnpm db:create
+```
+
+Use `pnpm db:down` to stop PostgreSQL. `pnpm db:migrate` is also available when keeping all database
+commands under the same prefix is more convenient.
 
 Migration files live in `db/migrations`. Application database access should go through the DBAL in
 `src/db/dbal`; call `getDb()` to get the shared Knex client.
