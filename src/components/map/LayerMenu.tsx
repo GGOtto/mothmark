@@ -1,13 +1,9 @@
 import type {Layer, World} from "@/schemas/worldSchema";
-import {
-	getLayerNavigationDirection,
-	LAYER_SCROLL_END_DELAY,
-	LAYER_SCROLL_STEP_DELAY,
-} from "@/utils/layerNavigation";
+import {getLayerNavigationDirection} from "@/utils/layerNavigation";
 import {getLayer} from "@/utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "react";
 import {X} from "lucide-react";
 
 export type LayerMenuProps = {
@@ -29,9 +25,8 @@ export function LayerMenu({
 }: LayerMenuProps) {
 	const [displayedLayer, setDisplayedLayer] = useState<Layer>(currentLayer);
 	const displayedLayerRef = useRef(displayedLayer);
-	const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const scrollSequenceActive = useRef(false);
-	const lastScrollStepAt = useRef(0);
+	const selectedLayerButtonRef = useRef<HTMLButtonElement | null>(null);
+	const shouldCenterSelection = useRef(true);
 
 	const showLayer = useCallback((layer: Layer) => {
 		displayedLayerRef.current = layer;
@@ -45,31 +40,37 @@ export function LayerMenu({
 		[showLayer, world],
 	);
 
-	function clearScrollSequence() {
-		scrollSequenceActive.current = false;
-		lastScrollStepAt.current = 0;
-		scrollEndTimer.current = null;
-	}
+	function handleLayerListScroll(event: React.UIEvent<HTMLDivElement>) {
+		const list = event.currentTarget;
+		const listRect = list.getBoundingClientRect();
+		const listCenter = listRect.top + listRect.height / 2;
+		let closestButton: HTMLButtonElement | null = null;
+		let closestDistance = Number.POSITIVE_INFINITY;
 
-	function scheduleScrollSequenceClear() {
-		if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
-		scrollEndTimer.current = setTimeout(clearScrollSequence, LAYER_SCROLL_END_DELAY);
-	}
-
-	function handleLayerMenuWheel(event: React.WheelEvent<HTMLDivElement>) {
-		event.preventDefault();
-		event.stopPropagation();
-		if (event.deltaY === 0) return;
-
-		const now = Date.now();
-		if (!scrollSequenceActive.current || now - lastScrollStepAt.current >= LAYER_SCROLL_STEP_DELAY) {
-			moveDisplayedLayer(event.deltaY < 0 ? 1 : -1);
-			scrollSequenceActive.current = true;
-			lastScrollStepAt.current = now;
+		for (const button of list.querySelectorAll<HTMLButtonElement>("[data-layer-index]")) {
+			const buttonRect = button.getBoundingClientRect();
+			const distance = Math.abs(buttonRect.top + buttonRect.height / 2 - listCenter);
+			if (distance < closestDistance) {
+				closestButton = button;
+				closestDistance = distance;
+			}
 		}
 
-		scheduleScrollSequenceClear();
+		if (!closestButton) return;
+		const index = Number(closestButton.dataset.layerIndex);
+		const layer = world.metadata.layers[index];
+		if (layer && layer.layer !== displayedLayerRef.current.layer) {
+			shouldCenterSelection.current = false;
+			showLayer(layer);
+		}
 	}
+
+	useLayoutEffect(() => {
+		if (shouldCenterSelection.current) {
+			selectedLayerButtonRef.current?.scrollIntoView?.({block: "center", inline: "nearest"});
+		}
+		shouldCenterSelection.current = true;
+	}, [displayedLayer.layer]);
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
@@ -90,7 +91,6 @@ export function LayerMenu({
 		window.addEventListener("keydown", handleKeyDown);
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
-			if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
 		};
 	}, [moveDisplayedLayer]);
 
@@ -107,15 +107,18 @@ export function LayerMenu({
 			onPointerMove={(event) => event.stopPropagation()}
 			onPointerUp={(event) => event.stopPropagation()}
 			onPointerCancel={(event) => event.stopPropagation()}
-			onWheel={handleLayerMenuWheel}
+			onWheel={(event) => event.stopPropagation()}
 		>
 			<button type="button" onClick={() => setIsLayerMenuOpen(false)} aria-label="Close layer menu">
 				<X aria-hidden="true" />
 			</button>
-			<div className="layerMenu--left">
-				{world.metadata.layers.map((layer) => (
+			<div className="layerMenu--left" aria-label="Layers" onScroll={handleLayerListScroll}>
+				{world.metadata.layers.map((layer, index) => (
 					<button
 						key={layer.layer}
+						data-layer-index={index}
+						ref={displayedLayer.layer === layer.layer ? selectedLayerButtonRef : undefined}
+						aria-pressed={displayedLayer.layer === layer.layer}
 						className={`layerMenu--left__button${
 							displayedLayer.layer === layer.layer ? " layerMenu--left__selected" : ""
 						}`}
@@ -135,7 +138,7 @@ export function LayerMenu({
 						world={world}
 						layer={displayedLayer}
 						isFramed={true}
-						mode="pan"
+						mode="zoom-pan"
 						selectedId={selectedId}
 						isConnectionSelected={isConnectionSelected}
 						theme="light"
@@ -143,7 +146,7 @@ export function LayerMenu({
 					/>
 				</div>
 				<div className="layerMenu--controls">
-					<div className="layerMenu--info">Drag to pan · Scroll to change layer</div>
+					<div className="layerMenu--info">Drag to pan · Scroll to zoom</div>
 					<button className="layerMenu--open" onClick={handleOpenLayer}>
 						Open Layer
 					</button>

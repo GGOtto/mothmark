@@ -33,11 +33,30 @@
 .layerMenu--left {
 	height: 100%;
 	overflow: auto;
+	overscroll-behavior: contain;
+	scroll-snap-type: y mandatory;
+	scrollbar-width: none;
 	width: 100%;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	&::before,
+	&::after {
+		content: "";
+		display: block;
+		height: calc(50% - 22px);
+	}
 
 	.layerMenu--left__button,
 	.layerMenu--left__selected {
 		display: block;
+		min-height: 44px;
+		padding: 10px 12px;
+		scroll-snap-align: center;
+		scroll-snap-stop: always;
+		width: 100%;
 		background-color: red;
 	}
 

@@ -1,4 +1,4 @@
-import {act, fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen} from "@testing-library/react";
 import {world} from "@/data/worlds/exampleWorld";
 import {getLayer} from "@/utils/layerUtils";
 import {LayerMenu} from "./LayerMenu";
@@ -65,21 +65,46 @@ describe("LayerMenu", () => {
 		expect(setIsLayerMenuOpen).toHaveBeenCalledWith(false);
 	});
 
-	it("steps layers on the same 500ms cadence while scrolling over the preview", () => {
-		jest.useFakeTimers();
-		renderLayerMenu();
+	it("zooms the preview without changing the displayed layer", () => {
+		const {container} = renderLayerMenu();
+		const preview = screen.getByLabelText("Ground Level preview");
+		const viewport = container.querySelector<HTMLElement>(".layerPreviewViewport")!;
+		const initialTransform = viewport.style.transform;
 
-		fireEvent.wheel(screen.getByLabelText("Ground Level preview"), {deltaY: -100});
-		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
+		fireEvent.wheel(preview, {clientX: 100, clientY: 100, deltaY: -100});
 
-		fireEvent.wheel(screen.getByLabelText("Upper Works preview"), {deltaY: 100});
-		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
-
-		act(() => jest.advanceTimersByTime(500));
-		fireEvent.wheel(screen.getByLabelText("Upper Works preview"), {deltaY: 100});
 		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		expect(viewport.style.transform).not.toBe(initialTransform);
+	});
 
-		jest.useRealTimers();
+	it("lets the list snap naturally while selecting the layer nearest its center", () => {
+		renderLayerMenu();
+		const scrollIntoView = jest.fn();
+		Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+			configurable: true,
+			value: scrollIntoView,
+		});
+		const layerList = screen.getByLabelText("Layers");
+		const layerButtons = Array.from(
+			layerList.querySelectorAll<HTMLButtonElement>("[data-layer-index]"),
+		);
+		const rect = (top: number, height: number) =>
+			({top, bottom: top + height, left: 0, right: 160, x: 0, y: top, width: 160, height}) as DOMRect;
+		jest.spyOn(layerList, "getBoundingClientRect").mockReturnValue(rect(0, 300));
+		const buttonRects = layerButtons.map((button) => jest.spyOn(button, "getBoundingClientRect"));
+		buttonRects[0].mockReturnValue(rect(50, 44));
+		buttonRects[1].mockReturnValue(rect(94, 44));
+		buttonRects[2].mockReturnValue(rect(128, 44));
+
+		fireEvent.scroll(layerList);
+		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
+		expect(scrollIntoView).not.toHaveBeenCalled();
+
+		fireEvent.click(screen.getByRole("button", {name: "Ground Level"}));
+		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		expect(scrollIntoView).toHaveBeenLastCalledWith({block: "center", inline: "nearest"});
+
+		Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
 	});
 
 	it("steps the displayed layer with arrow and page keys", () => {
