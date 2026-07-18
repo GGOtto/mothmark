@@ -1,0 +1,28 @@
+name: Refresh preview database
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: neon-preview-refresh
+  cancel-in-progress: false
+
+jobs:
+  reset-preview:
+    name: Reset preview from production
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reset Neon preview branch to its parent
+        uses: neondatabase/reset-branch-action@v1.3.2
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Record the refresh
+        run: echo "Neon preview was reset from production." >> "$GITHUB_STEP_SUMMARY"

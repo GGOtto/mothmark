@@ -1,0 +1,8 @@
+{
+	"version": "2",
+	"phaseApp": "mothmark",
+	"appId": "a1e3372e-5e59-4f43-b344-edfed16f946d",
+	"defaultEnv": "Development",
+	"envId": "b254b52a-21f8-4bfe-b295-c788c8c56067",
+	"monorepoSupport": false
+}

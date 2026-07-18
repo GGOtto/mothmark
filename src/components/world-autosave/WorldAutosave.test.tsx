@@ -231,4 +231,45 @@ describe("world autosave", () => {
 		window.dispatchEvent(savedUnload);
 		expect(savedUnload.defaultPrevented).toBe(false);
 	});
+
+	it("reports validation details without triggering a blocking console error", async () => {
+		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
+		const error = jest.spyOn(console, "error").mockImplementation(() => {});
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: false,
+			status: 400,
+			json: jest.fn().mockResolvedValue({
+				error: {
+					message: "The request data is invalid.",
+					issues: [{path: ["world", "rooms", 16, "id"], message: "Duplicate room id."}],
+				},
+			}),
+		});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		const updatedWorld = {
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Invalid save response test"},
+		};
+		const view = renderAutosaveHarness(exampleWorld);
+
+		view.rerender(
+			<WorldAutosaveProvider>
+				<AutosaveHarness world={updatedWorld} />
+			</WorldAutosaveProvider>,
+		);
+		await act(async () => {
+			jest.advanceTimersByTime(2_000);
+			await flushPromises();
+		});
+
+		expect(warning).toHaveBeenCalledWith(
+			"Could not autosave the world",
+			"The request data is invalid. world.rooms.16.id: Duplicate room id.",
+		);
+		expect(error).not.toHaveBeenCalled();
+	});
 });

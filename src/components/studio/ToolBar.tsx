@@ -86,7 +86,7 @@ export function ToolBar({activeTool, onToolChange, zoom, onRecenter, status}: To
 					className={`toolbarTool ${activeTool === "edit" ? "toolbarToolActive" : ""}`}
 					onClick={() => onToolChange("edit")}
 					aria-pressed={activeTool === "edit"}
-					title="Edit map (V)"
+					title="Edit map (V or Left Arrow)"
 				>
 					<MousePointer2 size={17} strokeWidth={1.9} />
 					<span>Edit</span>
@@ -96,7 +96,7 @@ export function ToolBar({activeTool, onToolChange, zoom, onRecenter, status}: To
 					className={`toolbarTool ${activeTool === "pan" ? "toolbarToolActive" : ""}`}
 					onClick={() => onToolChange("pan")}
 					aria-pressed={activeTool === "pan"}
-					title="Pan map (H)"
+					title="Pan map (H or Right Arrow)"
 				>
 					<Hand size={17} strokeWidth={1.9} />
 					<span>Pan</span>

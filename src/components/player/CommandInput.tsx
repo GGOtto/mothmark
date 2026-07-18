@@ -65,7 +65,6 @@ export function CommandInput({
 				autoCorrect="off"
 				autoCapitalize="off"
 				spellCheck={false}
-				autoFocus
 			/>
 		</form>
 	);

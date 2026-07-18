@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import type {World} from "../../schemas/worldSchema";
 import {createInitialGameState, type GameState} from "../../engine/gameState";
 import {lookAtRoom, refreshLatestRoomMessage} from "../../engine/rooms";
@@ -44,6 +44,7 @@ function LoadingGamePlayer() {
 }
 
 function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoading">) {
+	const playerRef = useRef<HTMLElement | null>(null);
 	const initialState = useMemo(() => {
 		const state = createInitialGameState(world, startingRoomId);
 		return lookAtRoom(world, state);
@@ -56,6 +57,19 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 	const displayState = useMemo(() => {
 		return refreshLatestRoomMessage(world, gameState);
 	}, [world, gameState]);
+
+	useEffect(() => {
+		function blurCommandInputOutsidePlayer(event: PointerEvent) {
+			const player = playerRef.current;
+			if (!player || !(event.target instanceof Node) || player.contains(event.target)) return;
+
+			const commandInput = player.querySelector<HTMLInputElement>(".command-input__field");
+			if (commandInput && document.activeElement === commandInput) commandInput.blur();
+		}
+
+		document.addEventListener("pointerdown", blurCommandInputOutsidePlayer, true);
+		return () => document.removeEventListener("pointerdown", blurCommandInputOutsidePlayer, true);
+	}, []);
 
 	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
 		setGameState((currentState) => updateGameState(currentState));
@@ -76,7 +90,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 	}
 
 	return (
-		<section className="game-player">
+		<section ref={playerRef} className="game-player">
 			<div className="game-player__output">
 				<OutputLog messages={displayState.messages} />
 			</div>

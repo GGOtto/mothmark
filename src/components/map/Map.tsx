@@ -41,6 +41,8 @@ type MapProps = {
 	world: World;
 	isLoading?: boolean;
 	tool: MapTool;
+	onToolChange: (tool: MapTool) => void;
+	onTemporaryToolChange?: (tool: MapTool | null) => void;
 	onZoomChange?: (zoom: number) => void;
 	theme?: MapTheme;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
@@ -82,6 +84,8 @@ export function Map({
 	world,
 	isLoading = false,
 	tool,
+	onToolChange,
+	onTemporaryToolChange,
 	onZoomChange,
 	theme = "dark",
 	setRooms,
@@ -100,6 +104,11 @@ export function Map({
 	const initialLayer = useRef(getLayer(world, 0));
 	const [viewport, setViewport] = useState<Viewport>(initialLayer.current.viewport);
 	const [panState, setPanState] = useState<PanState | null>(null);
+	const [isSpaceToolActive, setIsSpaceToolActive] = useState(false);
+	const isSpaceToolActiveRef = useRef(false);
+	const isMapPointerDownRef = useRef(false);
+	const suppressNextMapClickRef = useRef(false);
+	const effectiveTool: MapTool = isSpaceToolActive ? (tool === "edit" ? "pan" : "edit") : tool;
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
@@ -144,6 +153,12 @@ export function Map({
 	}, [recenterRequest, updateViewport]);
 
 	useEffect(() => () => updateStatus(null), [updateStatus]);
+	useEffect(
+		() => () => {
+			onTemporaryToolChange?.(null);
+		},
+		[onTemporaryToolChange],
+	);
 
 	useEffect(() => {
 		if (isLoading) return;
@@ -176,18 +191,34 @@ export function Map({
 	useEffect(() => {
 		if (isLoading) return;
 
+		function isTextEntryTarget(target: EventTarget | null) {
+			return (
+				target instanceof HTMLInputElement ||
+				target instanceof HTMLTextAreaElement ||
+				target instanceof HTMLSelectElement ||
+				(target instanceof HTMLElement && target.isContentEditable)
+			);
+		}
+
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.key === "Escape" && connectionDraft.state !== "idle") {
 				cancelConnectionDraft();
 				return;
 			}
-			if (
-				event.target instanceof HTMLInputElement ||
-				event.target instanceof HTMLTextAreaElement ||
-				event.target instanceof HTMLSelectElement ||
-				(event.target instanceof HTMLElement && event.target.isContentEditable)
-			)
+			if (isTextEntryTarget(event.target)) return;
+			if (event.code === "Space") {
+				event.preventDefault();
+				if (event.repeat) return;
+				const temporaryTool = tool === "edit" ? "pan" : "edit";
+				isSpaceToolActiveRef.current = true;
+				setIsSpaceToolActive(true);
+				onTemporaryToolChange?.(temporaryTool);
+				setDragState(null);
+				setPanState(null);
+				const activeElement = document.activeElement as (Element & {blur?: () => void}) | null;
+				activeElement?.blur?.();
 				return;
+			}
 			if (isLayerMenuOpen) return;
 
 			const layerDirection = getLayerNavigationDirection(event.key);
@@ -200,14 +231,52 @@ export function Map({
 					?.click();
 				return;
 			}
-			if (event.key.toLowerCase() === "v")
-				document.querySelector<HTMLButtonElement>('[title="Edit map (V)"]')?.click();
-			if (event.key.toLowerCase() === "h")
-				document.querySelector<HTMLButtonElement>('[title="Pan map (H)"]')?.click();
+			if (event.key.toLowerCase() === "v" || event.key === "ArrowLeft") {
+				event.preventDefault();
+				onToolChange("edit");
+			}
+			if (event.key.toLowerCase() === "h" || event.key === "ArrowRight") {
+				event.preventDefault();
+				onToolChange("pan");
+			}
+		}
+
+		function handleKeyUp(event: KeyboardEvent) {
+			if (event.code !== "Space") return;
+			event.preventDefault();
+			if (isMapPointerDownRef.current) suppressNextMapClickRef.current = true;
+			isSpaceToolActiveRef.current = false;
+			setIsSpaceToolActive(false);
+			onTemporaryToolChange?.(null);
+			setDragState(null);
+			setPanState(null);
+		}
+
+		function handleWindowBlur() {
+			if (isMapPointerDownRef.current) suppressNextMapClickRef.current = true;
+			isSpaceToolActiveRef.current = false;
+			setIsSpaceToolActive(false);
+			onTemporaryToolChange?.(null);
+			setDragState(null);
+			setPanState(null);
+		}
+
+		function handleFocusIn(event: FocusEvent) {
+			if (!isSpaceToolActiveRef.current) return;
+			const focusTarget = event.target as (Element & {blur?: () => void}) | null;
+			focusTarget?.blur?.();
 		}
 
 		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		window.addEventListener("blur", handleWindowBlur);
+		document.addEventListener("focusin", handleFocusIn, true);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+			window.removeEventListener("blur", handleWindowBlur);
+			document.removeEventListener("focusin", handleFocusIn, true);
+		};
 	}, [
 		cancelConnectionDraft,
 		changeCurrentLayer,
@@ -215,12 +284,27 @@ export function Map({
 		currentLayer.layer,
 		isLoading,
 		isLayerMenuOpen,
+		onToolChange,
+		onTemporaryToolChange,
+		tool,
 		world,
 	]);
 
 	useEffect(() => {
-		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
-	}, [tool, cancelConnectionDraft, connectionDraft]);
+		if (effectiveTool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
+	}, [effectiveTool, cancelConnectionDraft, connectionDraft]);
+
+	useEffect(() => {
+		const mapElement = mapRef.current;
+		if (!mapElement) return;
+
+		function preventHorizontalNavigation(event: WheelEvent) {
+			if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) event.preventDefault();
+		}
+
+		mapElement.addEventListener("wheel", preventHorizontalNavigation, {passive: false});
+		return () => mapElement.removeEventListener("wheel", preventHorizontalNavigation);
+	}, [isLoading]);
 
 	if (isLoading) {
 		return (
@@ -412,7 +496,7 @@ export function Map({
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
-		if (event.button !== 0 || tool !== "edit") return;
+		if (event.button !== 0 || effectiveTool !== "edit") return;
 
 		const pointer = clientToMapPoint(event.clientX, event.clientY);
 		if (!pointer) return;
@@ -437,7 +521,7 @@ export function Map({
 			return;
 		}
 
-		if (!dragState) return;
+		if (!dragState || effectiveTool !== "edit") return;
 
 		const pointer = clientToMapPoint(event.clientX, event.clientY);
 		if (!pointer) return;
@@ -492,7 +576,7 @@ export function Map({
 	}
 
 	function handleMapPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-		if (event.button !== 0 || tool !== "pan") return;
+		if (event.button !== 0 || effectiveTool !== "pan") return;
 		event.currentTarget.setPointerCapture(event.pointerId);
 		setPanState({
 			pointerId: event.pointerId,
@@ -503,6 +587,7 @@ export function Map({
 
 	function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
 		event.preventDefault();
+		if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
 		const bounds = event.currentTarget.getBoundingClientRect();
 		const pointer = {x: event.clientX - bounds.left, y: event.clientY - bounds.top};
 		const current = viewportRef.current;
@@ -526,7 +611,7 @@ export function Map({
 	}
 
 	function handleBlankMapClick(event: React.MouseEvent<HTMLDivElement>) {
-		if (tool !== "edit") return;
+		if (effectiveTool !== "edit") return;
 		if (
 			event.target instanceof Element &&
 			event.target.closest(".roomCard, .node, .connectionClickTarget")
@@ -563,12 +648,29 @@ export function Map({
 		<div
 			ref={mapRef}
 			data-map
-			className={`map map--theme-${theme} map--tool-${tool} ${panState ? "map--panning" : ""}`}
+			className={`map map--theme-${theme} map--tool-${effectiveTool} ${panState ? "map--panning" : ""}`}
 			style={{
 				backgroundPosition: `${viewport.x}px ${viewport.y}px`,
 				backgroundSize: `auto, auto, ${48 * viewport.zoom}px ${48 * viewport.zoom}px, ${48 * viewport.zoom}px ${48 * viewport.zoom}px`,
 			}}
 			onPointerDown={handleMapPointerDown}
+			onPointerDownCapture={(event) => {
+				isMapPointerDownRef.current = true;
+				if (isSpaceToolActiveRef.current) event.preventDefault();
+			}}
+			onPointerUpCapture={() => {
+				isMapPointerDownRef.current = false;
+			}}
+			onPointerCancelCapture={() => {
+				isMapPointerDownRef.current = false;
+				suppressNextMapClickRef.current = false;
+			}}
+			onClickCapture={(event) => {
+				if (!suppressNextMapClickRef.current) return;
+				suppressNextMapClickRef.current = false;
+				event.preventDefault();
+				event.stopPropagation();
+			}}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerCancel}
@@ -591,6 +693,7 @@ export function Map({
 						<MapLayerContent
 							world={world}
 							layer={currentLayer}
+							isInteractive={effectiveTool === "edit"}
 							selectedId={selectedId}
 							isConnectionSelected={isConnectionSelected}
 							onRoomPointerDown={handleRoomPointerDown}
@@ -598,6 +701,7 @@ export function Map({
 							selectConnection={handleConnectionSelect}
 							changePathway={handleConnectionPathwayChange}
 							onStubPointChange={handleConnectionStubPointChange}
+							canMoveStubs={effectiveTool === "edit"}
 							updateStatus={updateStatus}
 							isRoomDragging={(room) => dragState?.roomId === idValue(room.id) && dragState.hasDragged}
 							getArmedDirection={(room) =>

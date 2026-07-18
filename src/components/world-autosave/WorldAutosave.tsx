@@ -63,11 +63,24 @@ class WorldSaveError extends Error {
 const readSavedWorld = async (response: Response): Promise<SavedWorld> => {
 	const body = (await response.json()) as {
 		data?: {id?: unknown; revision?: unknown};
-		error?: {message?: unknown};
+		error?: {message?: unknown; issues?: unknown};
 	};
 
 	if (!response.ok) {
-		const message = typeof body.error?.message === "string" ? body.error.message : "Save failed.";
+		const baseMessage = typeof body.error?.message === "string" ? body.error.message : "Save failed.";
+		const issueDetails = Array.isArray(body.error?.issues)
+			? body.error.issues
+					.slice(0, 3)
+					.flatMap((issue) => {
+						if (!issue || typeof issue !== "object") return [];
+						const {path, message} = issue as {path?: unknown; message?: unknown};
+						if (typeof message !== "string") return [];
+						const location = Array.isArray(path) ? path.join(".") : "request";
+						return [`${location || "request"}: ${message}`];
+					})
+					.join("; ")
+			: "";
+		const message = issueDetails ? `${baseMessage} ${issueDetails}` : baseMessage;
 		const retryable = response.status >= 500 || response.status === 408 || response.status === 429;
 		throw new WorldSaveError(message, retryable);
 	}
@@ -212,7 +225,11 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			} catch (error) {
 				if (generationRef.current !== generationAtSaveStart) return;
 
-				console.error("Could not autosave the world", error);
+				if (error instanceof WorldSaveError && !error.retryable) {
+					console.warn("Could not autosave the world", error.message);
+				} else {
+					console.error("Could not autosave the world", error);
+				}
 				setStatus("error");
 				if (error instanceof WorldSaveError && !error.retryable) return;
 

@@ -28,6 +28,7 @@ type MapLayerContentProps = {
 		point: Point,
 		field: ConnectionStubPointField,
 	) => void;
+	canMoveStubs?: boolean;
 	updateStatus?: UpdateStatus;
 	isRoomDragging?: (room: Room) => boolean;
 	getArmedDirection?: (room: Room) => Direction | null;
@@ -48,6 +49,7 @@ export function MapLayerContent({
 	selectConnection,
 	changePathway,
 	onStubPointChange,
+	canMoveStubs = true,
 	updateStatus = noopStatus,
 	isRoomDragging,
 	getArmedDirection,
@@ -93,6 +95,7 @@ export function MapLayerContent({
 				isSelected={isSelected}
 				currentLayer={layer}
 				onStubPointChange={onStubPointChange ?? (() => {})}
+				canMoveStubs={canMoveStubs}
 				isInteractive={isInteractive}
 				stubPart={stubPart}
 			/>

@@ -1,5 +1,9 @@
 .roomCard {
 	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
 	transform: translate(-50%, -50%);
 	border: 1px solid var(--map-room-border);
 	border-radius: 2px;

@@ -30,6 +30,7 @@ type ConnectionProps = {
 		point: Point,
 		field: ConnectionStubPointField,
 	) => void;
+	canMoveStubs?: boolean;
 	isEditing?: boolean;
 	isSelected?: boolean;
 	isInteractive?: boolean;
@@ -51,6 +52,7 @@ type ConnectionStubProps = {
 		field: ConnectionStubPointField,
 	) => void;
 	stubPointField: ConnectionStubPointField;
+	canMove?: boolean;
 	isEditing?: boolean;
 	isSelected?: boolean;
 	isInteractive?: boolean;
@@ -578,7 +580,7 @@ function ConnectionPath({
 	}
 
 	function handleGlyphKeyDown(event: React.KeyboardEvent<SVGGElement>) {
-		if (event.key !== "Enter" && event.key !== " ") return;
+		if (event.key !== "Enter") return;
 		event.preventDefault();
 		event.stopPropagation();
 		cyclePathway();
@@ -703,6 +705,7 @@ export function ConnectionStub({
 	destinationLayer,
 	onStubPointChange,
 	stubPointField,
+	canMove = true,
 	isEditing = false,
 	isSelected = false,
 	isInteractive = true,
@@ -742,7 +745,7 @@ export function ConnectionStub({
 	}
 
 	function handlePointerDown(event: React.PointerEvent<SVGGElement>) {
-		if (event.button !== 0) return;
+		if (event.button !== 0 || !canMove) return;
 		const pointer = clientToSvgPoint(event);
 		if (!pointer) return;
 		event.preventDefault();
@@ -756,7 +759,7 @@ export function ConnectionStub({
 	}
 
 	function handlePointerMove(event: React.PointerEvent<SVGGElement>) {
-		if (dragPointerId.current !== event.pointerId) return;
+		if (dragPointerId.current !== event.pointerId || !canMove) return;
 		const dragStart = dragStartClientPoint.current;
 		if (!didDrag.current && dragStart) {
 			const deltaX = event.clientX - dragStart.x;
@@ -821,7 +824,7 @@ export function ConnectionStub({
 			onKeyDown={
 				isInteractive
 					? (event) => {
-							if (event.key !== "Enter" && event.key !== " ") return;
+							if (event.key !== "Enter") return;
 							event.preventDefault();
 							selectConnection(connection);
 						}
@@ -894,6 +897,7 @@ export function Connection({
 	updateStatus,
 	currentLayer,
 	onStubPointChange,
+	canMoveStubs = true,
 	isEditing = false,
 	isSelected = false,
 	isInteractive = true,
@@ -911,6 +915,7 @@ export function Connection({
 	if (startLayer.layer !== endLayer.layer && startLayer.layer === currentLayer.layer) {
 		return (
 			<ConnectionStub
+				key={canMoveStubs ? "movable" : "fixed"}
 				world={world}
 				connection={connection}
 				fromRoom={fromRoom}
@@ -920,6 +925,7 @@ export function Connection({
 				updateStatus={updateStatus}
 				destinationLayer={findLayerForRoomId(world, toRoom.id)}
 				onStubPointChange={onStubPointChange}
+				canMove={canMoveStubs}
 				isEditing={isEditing}
 				isSelected={isSelected}
 				isInteractive={isInteractive}
@@ -931,6 +937,7 @@ export function Connection({
 	if (startLayer.layer !== endLayer.layer && endLayer.layer === currentLayer.layer) {
 		return (
 			<ConnectionStub
+				key={canMoveStubs ? "movable" : "fixed"}
 				world={world}
 				connection={connection}
 				fromRoom={toRoom}
@@ -940,6 +947,7 @@ export function Connection({
 				updateStatus={updateStatus}
 				destinationLayer={findLayerForRoomId(world, fromRoom.id)}
 				onStubPointChange={onStubPointChange}
+				canMove={canMoveStubs}
 				isEditing={isEditing}
 				isSelected={isSelected}
 				isInteractive={isInteractive}

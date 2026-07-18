@@ -293,6 +293,7 @@ function EditorMainPanel({
 	setConnectionDraft,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
+	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
 
 	return (
 		<section className="editorMainPanel">
@@ -300,7 +301,7 @@ function EditorMainPanel({
 				<EditorToolbar
 					activeTab={activeTab}
 					rooms={isLoading ? [] : rooms}
-					mapTool={mapTool}
+					mapTool={temporaryMapTool ?? mapTool}
 					setMapTool={setMapTool}
 					mapZoom={mapZoom}
 					onMapRecenter={onMapRecenter}
@@ -320,6 +321,8 @@ function EditorMainPanel({
 						selection={selection}
 						setSelection={setSelection}
 						mapTool={mapTool}
+						setMapTool={setMapTool}
+						onTemporaryToolChange={setTemporaryMapTool}
 						onZoomChange={setMapZoom}
 						recenterRequest={mapRecenterRequest}
 						connectionDraft={connectionDraft}
@@ -395,6 +398,8 @@ type EditorWorkspaceProps = {
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
+	setMapTool: (tool: MapTool) => void;
+	onTemporaryToolChange: (tool: MapTool | null) => void;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
@@ -412,6 +417,8 @@ function EditorWorkspace({
 	selection,
 	setSelection,
 	mapTool,
+	setMapTool,
+	onTemporaryToolChange,
 	onZoomChange,
 	recenterRequest,
 	connectionDraft,
@@ -429,6 +436,8 @@ function EditorWorkspace({
 				selection={selection}
 				setSelection={setSelection}
 				mapTool={mapTool}
+				setMapTool={setMapTool}
+				onTemporaryToolChange={onTemporaryToolChange}
 				onZoomChange={onZoomChange}
 				recenterRequest={recenterRequest}
 				connectionDraft={connectionDraft}
@@ -450,6 +459,8 @@ type MapWorkspaceProps = {
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
+	setMapTool: (tool: MapTool) => void;
+	onTemporaryToolChange: (tool: MapTool | null) => void;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
@@ -466,6 +477,8 @@ function MapWorkspace({
 	selection,
 	setSelection,
 	mapTool,
+	setMapTool,
+	onTemporaryToolChange,
 	onZoomChange,
 	recenterRequest,
 	connectionDraft,
@@ -478,6 +491,8 @@ function MapWorkspace({
 			world={world}
 			isLoading={isLoading}
 			tool={mapTool}
+			onToolChange={setMapTool}
+			onTemporaryToolChange={onTemporaryToolChange}
 			onZoomChange={onZoomChange}
 			theme="light"
 			setRooms={setRooms}

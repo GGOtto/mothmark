@@ -45,6 +45,10 @@ Never run migrations from `next build` or application startup.
 | Hosted testing    | Any branch except `main` | Preview            | Staging           | `preview`        |
 | Live application  | `main`                   | Production         | Production        | `production`     |
 
+The long-lived Neon `preview` branch is reset from its `production` parent every Monday at 12:00
+UTC. This replaces all preview-only schema and data with the current production state while keeping
+the preview connection configuration stable.
+
 Use these variables in Phase `Staging` and `Production`:
 
 | Variable                 | Value                                              | Synced to Vercel? |
@@ -237,6 +241,33 @@ continuing.
 
 Delete the test Git branch after verification using the team's normal Git workflow.
 
+### 11. Enable the weekly preview refresh
+
+The repository includes
+[`.github/workflows/refresh-preview-database.yml`](../.github/workflows/refresh-preview-database.yml).
+It resets Neon `preview` from its parent every Monday at 12:00 UTC and can also be run manually from
+GitHub Actions.
+
+Configure the workflow:
+
+1. Install Neon's GitHub integration for `GGOtto/mothmark`, or create a narrowly scoped Neon API
+   key.
+2. In **GitHub → Repository → Settings → Secrets and variables → Actions**, add:
+   - repository variable `NEON_PROJECT_ID` containing the Mothmark Neon project ID;
+   - repository secret `NEON_API_KEY` containing the Neon API key.
+3. Open **GitHub → Actions → Refresh preview database**.
+4. Select **Run workflow** for the first manual refresh.
+5. Confirm the action succeeds.
+6. Open the preview editor and verify that it now contains the current production `main` world.
+
+Neon's reset operation makes a child branch match the latest state of its parent and discards the
+child's changes. The workflow uses Neon's official [Reset Branch
+Action](https://github.com/neondatabase/reset-branch-action).
+
+The reset does not require a Vercel redeployment or a Phase resync. The existing preview connection
+continues to target the same Neon branch. Any editor tab open during the reset may hold a stale world
+revision and should be refreshed.
+
 ## Public launch gate
 
 Vercel Authentication protects the entire app, so it is appropriate during private development.
@@ -318,6 +349,28 @@ Use the Vercel preview link to test at minimum:
 
 Merge the branch into `main`. Vercel deploys the merge automatically. After the deployment becomes
 Ready, repeat the production smoke test and check logs.
+
+## Weekly preview database refresh
+
+The scheduled workflow runs every Monday at 12:00 UTC. Treat all data and schema changes made only
+in `preview` as disposable.
+
+The refresh:
+
+1. discards preview-only world edits;
+2. discards preview-only migrations;
+3. copies the latest production schema and data into preview;
+4. does not modify production;
+5. does not require new Phase or Vercel environment variables.
+
+If a migration is actively being tested when the weekly reset runs, reapply it afterward:
+
+```bash
+phase run --env staging 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm migrate'
+```
+
+To refresh preview immediately, open **GitHub → Actions → Refresh preview database → Run
+workflow**. Check the workflow result before relying on preview for testing.
 
 ## Deploying a database migration
 
