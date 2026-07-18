@@ -20,6 +20,30 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database
+
+Development uses PostgreSQL and Knex. The checked-in `.env` contains local-only defaults; Phase can
+populate the same variables in hosted environments.
+
+Start PostgreSQL and apply all pending migrations:
+
+```bash
+pnpm db:up
+pnpm migrate
+```
+
+There are no application migrations yet. To create one when the first table is ready, run:
+
+```bash
+pnpm db:make initial_schema
+```
+
+Use `pnpm db:down` to stop PostgreSQL. `pnpm db:migrate` is also available when keeping all
+database commands under the same prefix is more convenient.
+
+Migration files live in `db/migrations`. Application database access should go through the DBAL in
+`src/db/dbal`; call `getDb()` to get the shared Knex client.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
