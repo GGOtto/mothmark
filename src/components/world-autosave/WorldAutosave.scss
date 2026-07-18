@@ -1,0 +1,98 @@
+.worldAutosaveIndicatorSlot {
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	width: 72px;
+	min-width: 72px;
+}
+
+.worldAutosaveIndicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--chrome-muted);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+}
+
+.worldAutosaveIndicatorDot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: currentColor;
+	animation: world-autosave-pulse 900ms ease-in-out infinite alternate;
+}
+
+@keyframes world-autosave-pulse {
+	from {
+		opacity: 0.35;
+	}
+
+	to {
+		opacity: 0.9;
+	}
+}
+
+.worldSaveButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	height: 34px;
+	box-sizing: border-box;
+	padding: 0 14px;
+	border: 1px solid #ffe76a;
+	border-radius: 8px;
+	background: #ffe45c;
+	color: #211b00;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 800;
+	letter-spacing: 0.01em;
+	box-shadow:
+		0 0 0 1px rgb(255 229 92 / 18%),
+		0 4px 16px rgb(255 214 32 / 22%);
+	cursor: pointer;
+	transition:
+		background-color 120ms ease,
+		box-shadow 120ms ease,
+		transform 120ms ease,
+		opacity 120ms ease;
+
+	&:hover:not(:disabled) {
+		background: #fff17f;
+		box-shadow:
+			0 0 0 2px rgb(255 229 92 / 22%),
+			0 6px 20px rgb(255 214 32 / 30%);
+		transform: translateY(-1px);
+	}
+
+	&:focus-visible {
+		outline: 3px solid rgb(255 228 92 / 38%);
+		outline-offset: 2px;
+	}
+
+	&:disabled {
+		border-color: var(--chrome-border);
+		background: var(--chrome-raised);
+		color: var(--chrome-muted);
+		box-shadow: none;
+		cursor: default;
+		opacity: 0.8;
+	}
+}
+
+.worldSaveButtonDirty {
+	animation: world-save-attention 220ms ease-out;
+}
+
+@keyframes world-save-attention {
+	0% {
+		transform: scale(0.96);
+	}
+
+	100% {
+		transform: scale(1);
+	}
+}

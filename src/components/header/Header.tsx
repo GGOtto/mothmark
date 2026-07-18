@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {MapPinned, Moon, Sun} from "lucide-react";
 import {useTheme} from "../theme/ThemeProvider";
+import {WorldAutosaveIndicator} from "../world-autosave/WorldAutosave";
 import "./Header.scss";
 
 export function Header() {
@@ -20,6 +21,8 @@ export function Header() {
 			</Link>
 
 			<nav className="headerNav" aria-label="Primary navigation">
+				<WorldAutosaveIndicator />
+
 				<Link href="/" className="headerLink">
 					Home
 				</Link>

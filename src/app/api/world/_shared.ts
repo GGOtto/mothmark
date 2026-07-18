@@ -23,10 +23,14 @@ export const UpdateWorldRequestSchema = z
 		name: z.string().trim().min(1).optional(),
 		slug: z.string().trim().min(1).nullable().optional(),
 		world: WorldSchema.optional(),
+		expectedRevision: z.number().int().positive().optional(),
 	})
-	.refine((input) => Object.keys(input).length > 0, {
-		message: "At least one world field must be provided.",
-	});
+	.refine(
+		(input) => input.name !== undefined || input.slug !== undefined || input.world !== undefined,
+		{
+			message: "At least one world field must be provided.",
+		},
+	);
 
 export const UpdateSchemaVersionRequestSchema = z.object({
 	schemaVersion: z.number().int().positive(),
@@ -64,6 +68,17 @@ export const worldNotFoundResponse = (): NextResponse =>
 			},
 		},
 		{status: 404},
+	);
+
+export const worldRevisionConflictResponse = (): NextResponse =>
+	NextResponse.json(
+		{
+			error: {
+				code: "WORLD_REVISION_CONFLICT",
+				message: "This world was changed by another editor. Reload before saving again.",
+			},
+		},
+		{status: 409},
 	);
 
 export const handleWorldRouteError = (error: unknown): NextResponse => {

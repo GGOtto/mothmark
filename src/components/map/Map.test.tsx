@@ -2,6 +2,7 @@ import {fireEvent, render, screen} from "@testing-library/react";
 import {useState} from "react";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Layer, Room, World} from "@/schemas/worldSchema";
+import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
 
 function applyStateAction<T>(action: React.SetStateAction<T>, current: T): T {
@@ -14,12 +15,14 @@ function MapHarness({
 	tool = "pan",
 	initialSelectedId = null,
 	initialIsConnectionSelected = false,
+	replacementWorld,
 }: {
 	initialWorld: World;
 	onZoomChange: jest.Mock;
 	tool?: "edit" | "pan";
 	initialSelectedId?: string | null;
 	initialIsConnectionSelected?: boolean;
+	replacementWorld?: World;
 }) {
 	const [world, setWorld] = useState(initialWorld);
 	const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
@@ -43,22 +46,29 @@ function MapHarness({
 		}));
 
 	return (
-		<Map
-			world={world}
-			tool={tool}
-			onZoomChange={onZoomChange}
-			setRooms={setRooms}
-			setConnections={setConnections}
-			setLayers={setLayers}
-			selectedId={selectedId}
-			setSelectedId={setSelectedId}
-			isConnectionSelected={isConnectionSelected}
-			setIsConnectionSelected={setIsConnectionSelected}
-			connectionDraft={connectionDraft}
-			setConnectionDraft={setConnectionDraft}
-			updateStatus={jest.fn()}
-			recenterRequest={0}
-		/>
+		<>
+			{replacementWorld ? (
+				<button type="button" onClick={() => setWorld(replacementWorld)}>
+					Replace test world
+				</button>
+			) : null}
+			<Map
+				world={world}
+				tool={tool}
+				onZoomChange={onZoomChange}
+				setRooms={setRooms}
+				setConnections={setConnections}
+				setLayers={setLayers}
+				selectedId={selectedId}
+				setSelectedId={setSelectedId}
+				isConnectionSelected={isConnectionSelected}
+				setIsConnectionSelected={setIsConnectionSelected}
+				connectionDraft={connectionDraft}
+				setConnectionDraft={setConnectionDraft}
+				updateStatus={jest.fn()}
+				recenterRequest={0}
+			/>
+		</>
 	);
 }
 
@@ -185,6 +195,52 @@ describe("Map visual layers", () => {
 		fireEvent(map, pointerMove);
 
 		expect(room).toHaveStyle({left: "140px", top: "215px"});
+		expect(getStubTransforms()).toEqual(stubTransforms);
+	});
+
+	it("initializes stubs again when the loaded world replaces a world with the same IDs", () => {
+		const worldWithPersistedStubs: World = {
+			...exampleWorld,
+			connections: exampleWorld.connections.map((connection) =>
+				initializeConnectionStubPoints(exampleWorld, connection),
+			),
+		};
+		const {container} = render(
+			<MapHarness
+				initialWorld={worldWithPersistedStubs}
+				replacementWorld={exampleWorld}
+				onZoomChange={jest.fn()}
+				tool="edit"
+			/>,
+		);
+		fireEvent.click(screen.getByRole("button", {name: "Replace test world"}));
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const getStubTransforms = () =>
+			Array.from(
+				container.querySelectorAll(
+					'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
+				),
+			).map((stub) => stub.getAttribute("transform"));
+		const stubTransforms = getStubTransforms();
+		room.setPointerCapture = jest.fn();
+
+		const pointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 134,
+			clientY: 199,
+		});
+		Object.defineProperty(pointerDown, "pointerId", {value: 1});
+		fireEvent(room, pointerDown);
+		const pointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 174,
+			clientY: 229,
+		});
+		Object.defineProperty(pointerMove, "pointerId", {value: 1});
+		fireEvent(map, pointerMove);
+
 		expect(getStubTransforms()).toEqual(stubTransforms);
 	});
 

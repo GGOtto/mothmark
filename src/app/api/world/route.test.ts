@@ -37,6 +37,7 @@ const storedWorld: WorldRecord = {
 	name: "Main World",
 	slug: "main",
 	world: exampleWorld,
+	revision: 1,
 	schemaVersion: 1,
 	createdAt: new Date("2026-07-18T01:00:00.000Z"),
 	updatedAt: new Date("2026-07-18T02:00:00.000Z"),
@@ -137,7 +138,28 @@ describe("world API", () => {
 		);
 
 		expect(response.status).toBe(200);
-		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: exampleWorld});
+		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: exampleWorld}, undefined);
+	});
+
+	it("rejects an update based on a stale revision", async () => {
+		jest.mocked(updateWorld).mockResolvedValue(undefined);
+
+		const response = await PUT(
+			jsonRequest(`http://localhost/api/world/${worldId}`, "PUT", {
+				world: exampleWorld,
+				expectedRevision: 3,
+			}),
+			{params: Promise.resolve({id: worldId})},
+		);
+
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({
+			error: {
+				code: "WORLD_REVISION_CONFLICT",
+				message: "This world was changed by another editor. Reload before saving again.",
+			},
+		});
+		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: exampleWorld}, 3);
 	});
 
 	it("deletes a world by ID", async () => {

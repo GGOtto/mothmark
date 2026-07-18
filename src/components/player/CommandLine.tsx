@@ -9,11 +9,12 @@ import {idValue} from "../../utils/idUtils";
 import "./CommandLine.scss";
 
 type CommandLineProps = {
+	isLoading?: boolean;
 	world: World;
 	selectedRoomId?: string | null;
 };
 
-export function CommandLine({world, selectedRoomId}: CommandLineProps) {
+export function CommandLine({isLoading = false, world, selectedRoomId}: CommandLineProps) {
 	const [syncVersion, setSyncVersion] = useState(0);
 	const startingRoomId = selectedRoomId ?? idValue(world.startRoomId);
 
@@ -44,6 +45,7 @@ export function CommandLine({world, selectedRoomId}: CommandLineProps) {
 			</div>
 
 			<GamePlayer
+				isLoading={isLoading}
 				key={`${startingRoomId}:${syncVersion}`}
 				world={world}
 				startingRoomId={startingRoomId}

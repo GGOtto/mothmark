@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import {useCallback, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {
 	ToolBar,
 	type ToolBarStatus,
@@ -12,10 +12,12 @@ import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
+import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Connection, Layer, Room, World} from "@/schemas/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
 import {getConnectionDraftStatus} from "./editorPageUtils";
+import {loadMainWorld} from "./loadMainWorld";
 import "./page.scss";
 
 type EditorSelection = {
@@ -71,10 +73,50 @@ export default function EditorPage() {
 	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
+	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
+	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
+	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
 
 	const [selection, setSelection] = useState<EditorSelection>({
-		selectedId: idValue(initialWorld.startRoomId),
+		selectedId: null,
 		isConnectionSelected: false,
+	});
+
+	useEffect(() => {
+		const abortController = new AbortController();
+
+		loadMainWorld(fetch, abortController.signal)
+			.then(({world, worldId, revision}) => {
+				setEditorWorld(world);
+				setPersistedWorldId(worldId);
+				setPersistedWorldRevision(revision);
+				setSelection({
+					selectedId: idValue(world.startRoomId),
+					isConnectionSelected: false,
+				});
+				setConnectionDraft({state: "idle"});
+				setWorldIsLoaded(true);
+			})
+			.catch((error: unknown) => {
+				if ((error as {name?: string}).name !== "AbortError") {
+					console.error("Could not load the main world", error);
+				}
+			});
+
+		return () => abortController.abort();
+	}, []);
+
+	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
+		setPersistedWorldId(worldId);
+		setPersistedWorldRevision(revision);
+	}, []);
+
+	useWorldAutosaveRegistration({
+		ready: worldIsLoaded,
+		world: editorWorld,
+		worldId: persistedWorldId,
+		revision: persistedWorldRevision,
+		onPersisted: handleWorldPersisted,
 	});
 
 	const rooms = editorWorld.rooms;
@@ -169,6 +211,7 @@ export default function EditorPage() {
 			<LeftSideBar activeTab={activeTab} onTabChange={setActiveTab} />
 
 			<EditorMainPanel
+				isLoading={!worldIsLoaded}
 				activeTab={activeTab}
 				world={editorWorld}
 				rooms={rooms}
@@ -208,6 +251,7 @@ export default function EditorPage() {
 }
 
 type EditorMainPanelProps = {
+	isLoading: boolean;
 	activeTab: EditorTab;
 	world: World;
 	rooms: Room[];
@@ -229,6 +273,7 @@ type EditorMainPanelProps = {
 };
 
 function EditorMainPanel({
+	isLoading,
 	activeTab,
 	world,
 	rooms,
@@ -254,7 +299,7 @@ function EditorMainPanel({
 			<div className="editorMapArea">
 				<EditorToolbar
 					activeTab={activeTab}
-					rooms={rooms}
+					rooms={isLoading ? [] : rooms}
 					mapTool={mapTool}
 					setMapTool={setMapTool}
 					mapZoom={mapZoom}
@@ -266,6 +311,7 @@ function EditorMainPanel({
 
 				<div className="editorWorkspaceShell">
 					<EditorWorkspace
+						isLoading={isLoading}
 						activeTab={activeTab}
 						world={world}
 						setRooms={setRooms}
@@ -283,7 +329,11 @@ function EditorMainPanel({
 				</div>
 			</div>
 
-			<CommandLine world={world} selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null} />
+			<CommandLine
+				isLoading={isLoading}
+				world={world}
+				selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null}
+			/>
 		</section>
 	);
 }
@@ -336,6 +386,7 @@ function EditorToolbar({
 }
 
 type EditorWorkspaceProps = {
+	isLoading: boolean;
 	activeTab: EditorTab;
 	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
@@ -352,6 +403,7 @@ type EditorWorkspaceProps = {
 };
 
 function EditorWorkspace({
+	isLoading,
 	activeTab,
 	world,
 	setRooms,
@@ -369,6 +421,7 @@ function EditorWorkspace({
 	if (activeTab === "map") {
 		return (
 			<MapWorkspace
+				isLoading={isLoading}
 				world={world}
 				setRooms={setRooms}
 				setConnections={setConnections}
@@ -389,6 +442,7 @@ function EditorWorkspace({
 }
 
 type MapWorkspaceProps = {
+	isLoading: boolean;
 	world: World;
 	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
 	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
@@ -404,6 +458,7 @@ type MapWorkspaceProps = {
 };
 
 function MapWorkspace({
+	isLoading,
 	world,
 	setRooms,
 	setConnections,
@@ -419,7 +474,9 @@ function MapWorkspace({
 }: MapWorkspaceProps) {
 	return (
 		<Map
+			key={isLoading ? "loading" : "loaded"}
 			world={world}
+			isLoading={isLoading}
 			tool={mapTool}
 			onZoomChange={onZoomChange}
 			theme="light"

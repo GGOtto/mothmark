@@ -24,7 +24,7 @@ export function OutputLog({messages}: OutputLogProps) {
 	const bottomRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
-		bottomRef.current?.scrollIntoView({
+		bottomRef.current?.scrollIntoView?.({
 			block: "end",
 		});
 	}, [messages]);

@@ -31,3 +31,8 @@
 .command-input__field:focus {
 	outline: none;
 }
+
+.command-input__field:disabled {
+	cursor: wait;
+	opacity: 0.45;
+}

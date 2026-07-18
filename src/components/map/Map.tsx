@@ -13,7 +13,7 @@ import {
 } from "../../schemas/roomSchema";
 import {DefaultViewport, type Layer, type World, type Viewport} from "../../schemas/worldSchema";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
-import {findLayerForRoomId, getLayer, upsertLayer} from "../../utils/layerUtils";
+import {getLayer, upsertLayer} from "../../utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
 import {getLayerNavigationDirection} from "../../utils/layerNavigation";
 import {
@@ -39,6 +39,7 @@ type DragState = {
 
 type MapProps = {
 	world: World;
+	isLoading?: boolean;
 	tool: MapTool;
 	onZoomChange?: (zoom: number) => void;
 	theme?: MapTheme;
@@ -79,6 +80,7 @@ const MAX_ZOOM = 2.5;
 
 export function Map({
 	world,
+	isLoading = false,
 	tool,
 	onZoomChange,
 	theme = "dark",
@@ -100,7 +102,6 @@ export function Map({
 	const [panState, setPanState] = useState<PanState | null>(null);
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
-	const initializedStubLayoutKeys = useRef(new Set<string>());
 	const mapRef = useRef<HTMLDivElement | null>(null);
 	const cancelConnectionDraft = useCallback(() => {
 		setConnectionDraft({state: "idle"});
@@ -145,13 +146,10 @@ export function Map({
 	useEffect(() => () => updateStatus(null), [updateStatus]);
 
 	useEffect(() => {
+		if (isLoading) return;
+
 		const initializedById = new globalThis.Map<string, ConnectionType>();
 		for (const connection of world.connections) {
-			const fromLayer = findLayerForRoomId(world, connection.fromRoomId);
-			const toLayer = findLayerForRoomId(world, connection.toRoomId);
-			const layoutKey = `${idValue(connection.id)}:${fromLayer.layer}:${toLayer.layer}`;
-			if (initializedStubLayoutKeys.current.has(layoutKey)) continue;
-			initializedStubLayoutKeys.current.add(layoutKey);
 			const initialized = initializeConnectionStubPoints(world, connection);
 			if (initialized !== connection) initializedById.set(idValue(connection.id), initialized);
 		}
@@ -173,9 +171,11 @@ export function Map({
 				};
 			}),
 		);
-	}, [setConnections, world]);
+	}, [isLoading, setConnections, world]);
 
 	useEffect(() => {
+		if (isLoading) return;
+
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.key === "Escape" && connectionDraft.state !== "idle") {
 				cancelConnectionDraft();
@@ -213,6 +213,7 @@ export function Map({
 		changeCurrentLayer,
 		connectionDraft,
 		currentLayer.layer,
+		isLoading,
 		isLayerMenuOpen,
 		world,
 	]);
@@ -220,6 +221,17 @@ export function Map({
 	useEffect(() => {
 		if (tool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
 	}, [tool, cancelConnectionDraft, connectionDraft]);
+
+	if (isLoading) {
+		return (
+			<div data-map className={`map map--theme-${theme} map--loading`} aria-busy="true">
+				<div className="mapLoadingState" role="status">
+					<span className="mapLoadingMark" aria-hidden="true" />
+					<span>Loading world…</span>
+				</div>
+			</div>
+		);
+	}
 
 	function clientToMapPoint(clientX: number, clientY: number): Point | null {
 		const mapElement = mapRef.current;

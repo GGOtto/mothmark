@@ -2,6 +2,7 @@ import "./CommandInput.scss";
 
 type CommandInputProps = {
 	command: string;
+	disabled?: boolean;
 	commandList: string[];
 	currentCommandInHistory: number;
 	setCurrentCommandInHistory: (currentCommand: number) => void;
@@ -11,6 +12,7 @@ type CommandInputProps = {
 
 export function CommandInput({
 	command,
+	disabled = false,
 	commandList,
 	currentCommandInHistory,
 	setCurrentCommandInHistory,
@@ -43,6 +45,8 @@ export function CommandInput({
 			<span className="command-input__prompt">&gt;&gt;</span>
 
 			<input
+				disabled={disabled}
+				aria-label="Game command"
 				value={command}
 				onChange={(event) => setCommand(event.target.value)}
 				onKeyDown={(event) => {

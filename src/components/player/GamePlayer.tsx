@@ -10,11 +10,40 @@ import {CommandInput} from "./CommandInput";
 import "./GamePlayer.scss";
 
 type GamePlayerProps = {
+	isLoading?: boolean;
 	world: World;
 	startingRoomId: string;
 };
 
-export function GamePlayer({world, startingRoomId}: GamePlayerProps) {
+export function GamePlayer({isLoading = false, world, startingRoomId}: GamePlayerProps) {
+	return isLoading ? (
+		<LoadingGamePlayer />
+	) : (
+		<ActiveGamePlayer world={world} startingRoomId={startingRoomId} />
+	);
+}
+
+function LoadingGamePlayer() {
+	return (
+		<section className="game-player" aria-busy="true">
+			<div className="game-player__output">
+				<OutputLog messages={[]} />
+			</div>
+
+			<CommandInput
+				disabled
+				command=""
+				setCommand={() => {}}
+				submitCommand={(event) => event.preventDefault()}
+				commandList={[]}
+				currentCommandInHistory={0}
+				setCurrentCommandInHistory={() => {}}
+			/>
+		</section>
+	);
+}
+
+function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoading">) {
 	const initialState = useMemo(() => {
 		const state = createInitialGameState(world, startingRoomId);
 		return lookAtRoom(world, state);

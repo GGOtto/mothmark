@@ -12,6 +12,7 @@ export type WorldRecord = {
 	name: string;
 	slug: string | null;
 	world: World;
+	revision: number;
 	schemaVersion: number;
 	createdAt: Date;
 	updatedAt: Date;
@@ -22,6 +23,7 @@ type WorldRow = {
 	name: string;
 	slug: string | null;
 	world: World;
+	revision: number;
 	schema_version: number;
 	created_at: Date | string;
 	updated_at: Date | string;
@@ -52,6 +54,7 @@ function mapWorldRow(row: WorldRow): WorldRecord {
 		name: row.name,
 		slug: row.slug,
 		world: row.world,
+		revision: row.revision,
 		schemaVersion: row.schema_version,
 		createdAt: new Date(row.created_at),
 		updatedAt: new Date(row.updated_at),
@@ -127,13 +130,20 @@ export async function getWorldBySlug(slug: string): Promise<WorldRecord | undefi
 export async function updateWorld(
 	id: string,
 	input: UpdateWorldInput,
+	expectedRevision?: number,
 ): Promise<WorldRecord | undefined> {
-	const [row] = await database<WorldRow>("worlds")
-		.where({id})
+	const query = database<WorldRow>("worlds").where({id});
+
+	if (expectedRevision !== undefined) {
+		query.where({revision: expectedRevision});
+	}
+
+	const [row] = await query
 		.update({
 			...(input.name !== undefined && {name: input.name}),
 			...(input.slug !== undefined && {slug: input.slug}),
 			...(input.world !== undefined && {world: input.world}),
+			revision: database.raw("?? + 1", ["revision"]),
 			updated_at: database.fn.now(),
 		})
 		.returning("*");

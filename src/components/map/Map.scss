@@ -52,6 +52,37 @@
 		cursor: grabbing;
 	}
 
+	&.map--loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: wait;
+	}
+
+	.mapLoadingState {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 9px 13px;
+		border: 1px solid color-mix(in srgb, var(--map-border) 58%, transparent);
+		border-radius: 9px;
+		background: color-mix(in srgb, var(--map-surface) 82%, transparent);
+		color: var(--map-room-text);
+		font-size: 13px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		box-shadow: 0 8px 24px rgb(32 25 20 / 12%);
+	}
+
+	.mapLoadingMark {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--map-accent);
+		box-shadow: 0 0 14px color-mix(in srgb, var(--map-accent) 70%, transparent);
+		animation: map-loading-pulse 900ms ease-in-out infinite alternate;
+	}
+
 	.mapViewport {
 		position: absolute;
 		inset: 0;
@@ -122,5 +153,17 @@
 		stroke: var(--map-accent);
 		stroke-width: 2;
 		filter: drop-shadow(0 0 2px #ffffff);
+	}
+}
+
+@keyframes map-loading-pulse {
+	from {
+		opacity: 0.35;
+		transform: scale(0.8);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
 	}
 }

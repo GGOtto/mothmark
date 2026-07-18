@@ -9,6 +9,7 @@ import {
 	UpdateWorldRequestSchema,
 	validationErrorResponse,
 	worldNotFoundResponse,
+	worldRevisionConflictResponse,
 } from "../_shared";
 
 export const dynamic = "force-dynamic";
@@ -60,8 +61,12 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	}
 
 	try {
-		const world = await updateWorld(idResult.data, bodyResult.data);
-		return world ? NextResponse.json({data: world}) : worldNotFoundResponse();
+		const {expectedRevision, ...update} = bodyResult.data;
+		const world = await updateWorld(idResult.data, update, expectedRevision);
+
+		if (world) return NextResponse.json({data: world});
+
+		return expectedRevision === undefined ? worldNotFoundResponse() : worldRevisionConflictResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
 	}
