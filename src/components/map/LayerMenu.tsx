@@ -3,8 +3,38 @@ import {getLayerNavigationDirection} from "@/utils/layerNavigation";
 import {getLayer} from "@/utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
-import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import {X} from "lucide-react";
+
+export const LAYER_MENU_SCROLL_BUFFER_ROWS = 50;
+
+export type LayerMenuButtonProps = {
+	layer: Layer;
+	layerIndex: number;
+	displayedLayer: Layer;
+	centerLayer: (button: HTMLButtonElement, layer: Layer) => void;
+};
+
+export function LayerMenuButton({
+	layer,
+	layerIndex,
+	displayedLayer,
+	centerLayer,
+}: LayerMenuButtonProps) {
+	const isSelected = displayedLayer.layer === layer.layer;
+
+	return (
+		<button
+			data-layer-index={layerIndex}
+			data-layer-value={layer.layer}
+			aria-pressed={isSelected}
+			className={`layerMenu--left__button${isSelected ? " layerMenu--left__selected" : ""}`}
+			onClick={(event) => centerLayer(event.currentTarget, layer)}
+		>
+			{layer.name}
+		</button>
+	);
+}
 
 export type LayerMenuProps = {
 	world: World;
@@ -25,19 +55,28 @@ export function LayerMenu({
 }: LayerMenuProps) {
 	const [displayedLayer, setDisplayedLayer] = useState<Layer>(currentLayer);
 	const displayedLayerRef = useRef(displayedLayer);
-	const selectedLayerButtonRef = useRef<HTMLButtonElement | null>(null);
-	const shouldCenterSelection = useRef(true);
+	const layerListRef = useRef<HTMLDivElement | null>(null);
+	const hasCenteredInitialLayer = useRef(false);
+	const displayedLayers = useMemo(() => {
+		return Array.from({length: LAYER_MENU_SCROLL_BUFFER_ROWS * 2 + 1}, (_, index) =>
+			getLayer(world, currentLayer.layer + LAYER_MENU_SCROLL_BUFFER_ROWS - index),
+		);
+	}, [currentLayer.layer, world]);
 
 	const showLayer = useCallback((layer: Layer) => {
 		displayedLayerRef.current = layer;
 		setDisplayedLayer(layer);
 	}, []);
 
-	const moveDisplayedLayer = useCallback(
-		(direction: 1 | -1) => {
-			showLayer(getLayer(world, displayedLayerRef.current.layer + direction));
+	const centerLayer = useCallback(
+		(button: HTMLButtonElement, layer: Layer, behavior: ScrollBehavior = "smooth") => {
+			if (typeof button.scrollIntoView === "function") {
+				button.scrollIntoView({behavior, block: "center", inline: "nearest"});
+				return;
+			}
+			showLayer(layer);
 		},
-		[showLayer, world],
+		[showLayer],
 	);
 
 	function handleLayerListScroll(event: React.UIEvent<HTMLDivElement>) {
@@ -47,7 +86,7 @@ export function LayerMenu({
 		let closestButton: HTMLButtonElement | null = null;
 		let closestDistance = Number.POSITIVE_INFINITY;
 
-		for (const button of list.querySelectorAll<HTMLButtonElement>("[data-layer-index]")) {
+		for (const button of list.querySelectorAll<HTMLButtonElement>("[data-layer-value]")) {
 			const buttonRect = button.getBoundingClientRect();
 			const distance = Math.abs(buttonRect.top + buttonRect.height / 2 - listCenter);
 			if (distance < closestDistance) {
@@ -57,20 +96,22 @@ export function LayerMenu({
 		}
 
 		if (!closestButton) return;
-		const index = Number(closestButton.dataset.layerIndex);
-		const layer = world.metadata.layers[index];
-		if (layer && layer.layer !== displayedLayerRef.current.layer) {
-			shouldCenterSelection.current = false;
-			showLayer(layer);
-		}
+		const layerValue = Number(closestButton.dataset.layerValue);
+		if (layerValue !== displayedLayerRef.current.layer) showLayer(getLayer(world, layerValue));
 	}
 
 	useLayoutEffect(() => {
-		if (shouldCenterSelection.current) {
-			selectedLayerButtonRef.current?.scrollIntoView?.({block: "center", inline: "nearest"});
+		if (hasCenteredInitialLayer.current) return;
+		const layerList = layerListRef.current;
+		if (!layerList) return;
+		const selectedButton = layerList.querySelector<HTMLButtonElement>(
+			`[data-layer-value="${currentLayer.layer}"]`,
+		);
+		if (selectedButton) {
+			hasCenteredInitialLayer.current = true;
+			centerLayer(selectedButton, currentLayer, "auto");
 		}
-		shouldCenterSelection.current = true;
-	}, [displayedLayer.layer]);
+	}, [centerLayer, currentLayer]);
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
@@ -85,14 +126,18 @@ export function LayerMenu({
 			const direction = getLayerNavigationDirection(event.key);
 			if (!direction) return;
 			event.preventDefault();
-			moveDisplayedLayer(direction);
+			const targetLayer = getLayer(world, displayedLayerRef.current.layer + direction);
+			const targetButton = layerListRef.current?.querySelector<HTMLButtonElement>(
+				`[data-layer-value="${targetLayer.layer}"]`,
+			);
+			if (targetButton) centerLayer(targetButton, targetLayer);
 		}
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 		};
-	}, [moveDisplayedLayer]);
+	}, [centerLayer, world]);
 
 	function handleOpenLayer() {
 		setCurrentLayer(displayedLayer);
@@ -112,21 +157,24 @@ export function LayerMenu({
 			<button type="button" onClick={() => setIsLayerMenuOpen(false)} aria-label="Close layer menu">
 				<X aria-hidden="true" />
 			</button>
-			<div className="layerMenu--left" aria-label="Layers" onScroll={handleLayerListScroll}>
-				{world.metadata.layers.map((layer, index) => (
-					<button
-						key={layer.layer}
-						data-layer-index={index}
-						ref={displayedLayer.layer === layer.layer ? selectedLayerButtonRef : undefined}
-						aria-pressed={displayedLayer.layer === layer.layer}
-						className={`layerMenu--left__button${
-							displayedLayer.layer === layer.layer ? " layerMenu--left__selected" : ""
-						}`}
-						onClick={() => showLayer(layer)}
-					>
-						{layer.name}
-					</button>
-				))}
+			<div className="layerMenu--leftShell">
+				<div
+					ref={layerListRef}
+					className="layerMenu--left"
+					aria-label="Layers"
+					onScroll={handleLayerListScroll}
+				>
+					{displayedLayers.map((layer, index) => (
+						<LayerMenuButton
+							key={layer.layer}
+							layer={layer}
+							layerIndex={index}
+							displayedLayer={displayedLayer}
+							centerLayer={centerLayer}
+						/>
+					))}
+				</div>
+				<div className="layerMenu--left__centerIndicator" aria-hidden="true" />
 			</div>
 			<div className="layerMenu--right">
 				<div className="layerMenu--header">

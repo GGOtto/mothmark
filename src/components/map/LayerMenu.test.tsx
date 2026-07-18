@@ -3,11 +3,24 @@ import {world} from "@/data/worlds/exampleWorld";
 import {getLayer} from "@/utils/layerUtils";
 import {LayerMenu} from "./LayerMenu";
 
-function renderLayerMenu(setIsLayerMenuOpen = jest.fn()) {
+function domRect(top: number, height: number) {
+	return {
+		top,
+		bottom: top + height,
+		left: 0,
+		right: 160,
+		x: 0,
+		y: top,
+		width: 160,
+		height,
+	} as DOMRect;
+}
+
+function renderLayerMenu(setIsLayerMenuOpen = jest.fn(), sourceWorld = world) {
 	return render(
 		<LayerMenu
-			world={world}
-			currentLayer={getLayer(world, 0)}
+			world={sourceWorld}
+			currentLayer={getLayer(sourceWorld, 0)}
 			setIsLayerMenuOpen={setIsLayerMenuOpen}
 			selectedId={null}
 			isConnectionSelected={false}
@@ -77,46 +90,89 @@ describe("LayerMenu", () => {
 		expect(viewport.style.transform).not.toBe(initialTransform);
 	});
 
-	it("lets the list snap naturally while selecting the layer nearest its center", () => {
+	it("renders the layer stack with upper layers above lower layers", () => {
 		renderLayerMenu();
-		const scrollIntoView = jest.fn();
-		Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
-			configurable: true,
-			value: scrollIntoView,
-		});
 		const layerList = screen.getByLabelText("Layers");
-		const layerButtons = Array.from(
-			layerList.querySelectorAll<HTMLButtonElement>("[data-layer-index]"),
-		);
-		const rect = (top: number, height: number) =>
-			({top, bottom: top + height, left: 0, right: 160, x: 0, y: top, width: 160, height}) as DOMRect;
-		jest.spyOn(layerList, "getBoundingClientRect").mockReturnValue(rect(0, 300));
-		const buttonRects = layerButtons.map((button) => jest.spyOn(button, "getBoundingClientRect"));
-		buttonRects[0].mockReturnValue(rect(50, 44));
-		buttonRects[1].mockReturnValue(rect(94, 44));
-		buttonRects[2].mockReturnValue(rect(128, 44));
+		const buttons = layerList.querySelectorAll("[data-layer-index]");
+
+		expect(buttons).toHaveLength(101);
+		expect(buttons[0]).toHaveTextContent("Upper 50");
+		expect(buttons[49]).toHaveTextContent("Upper Works");
+		expect(buttons[50]).toHaveTextContent("Ground Level");
+		expect(buttons[51]).toHaveTextContent("Lower Crypts");
+		expect(buttons[100]).toHaveTextContent("Lower 50");
+	});
+
+	it("renders a stationary center indicator over the real scroll container", () => {
+		const {container} = renderLayerMenu();
+
+		expect(container.querySelector(".layerMenu--left__centerIndicator")).toBeInTheDocument();
+		expect(screen.getByLabelText("Layers")).toHaveClass("layerMenu--left");
+	});
+
+	it("fills both sides of layer zero when no layers exist", () => {
+		const emptyWorld = {...world, metadata: {...world.metadata, layers: []}};
+		renderLayerMenu(jest.fn(), emptyWorld);
+		const layerList = screen.getByLabelText("Layers");
+
+		expect(layerList.querySelectorAll("[data-layer-index]")).toHaveLength(101);
+		expect(screen.getByRole("button", {name: "Upper 50"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Ground"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Lower 50"})).toBeInTheDocument();
+	});
+
+	it("selects whichever layer is closest to the center while scrolling", () => {
+		renderLayerMenu();
+		const layerList = screen.getByLabelText("Layers");
+		const buttons = Array.from(layerList.querySelectorAll<HTMLButtonElement>("[data-layer-value]"));
+		jest.spyOn(layerList, "getBoundingClientRect").mockReturnValue(domRect(0, 300));
+		for (const button of buttons) {
+			jest.spyOn(button, "getBoundingClientRect").mockReturnValue(domRect(1000, 44));
+		}
+		jest
+			.spyOn(screen.getByRole("button", {name: "Upper Works"}), "getBoundingClientRect")
+			.mockReturnValue(domRect(128, 44));
 
 		fireEvent.scroll(layerList);
+
 		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
-		expect(scrollIntoView).not.toHaveBeenCalled();
+		expect(screen.getByRole("button", {name: "Upper Works"})).toHaveClass(
+			"layerMenu--left__selected",
+		);
+	});
 
-		fireEvent.click(screen.getByRole("button", {name: "Ground Level"}));
+	it("smoothly centers a clicked layer instead of selecting it off-center", () => {
+		renderLayerMenu();
+		const upperLayerButton = screen.getByRole("button", {name: "Upper Works"});
+		const scrollIntoView = jest.fn();
+		Object.defineProperty(upperLayerButton, "scrollIntoView", {value: scrollIntoView});
+
+		fireEvent.click(upperLayerButton);
+
 		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
-		expect(scrollIntoView).toHaveBeenLastCalledWith({block: "center", inline: "nearest"});
-
-		Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "smooth",
+			block: "center",
+			inline: "nearest",
+		});
 	});
 
 	it("steps the displayed layer with arrow and page keys", () => {
 		renderLayerMenu();
+		const scrollIntoView = jest.fn();
+		for (const button of screen.getByLabelText("Layers").querySelectorAll("button")) {
+			Object.defineProperty(button, "scrollIntoView", {value: scrollIntoView});
+		}
 
 		fireEvent.keyDown(window, {key: "ArrowUp"});
-		expect(screen.getByLabelText("Lower Crypts preview")).toBeInTheDocument();
+		expect(scrollIntoView).toHaveBeenLastCalledWith({
+			behavior: "smooth",
+			block: "center",
+			inline: "nearest",
+		});
 		fireEvent.keyDown(window, {key: "ArrowDown"});
-		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
 		fireEvent.keyDown(window, {key: "PageDown"});
-		expect(screen.getByLabelText("Lower Crypts preview")).toBeInTheDocument();
 		fireEvent.keyDown(window, {key: "PageUp"});
-		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		expect(scrollIntoView).toHaveBeenCalledTimes(4);
 	});
 });

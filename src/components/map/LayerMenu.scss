@@ -23,6 +23,7 @@
 }
 
 .layerMenu--left,
+.layerMenu--leftShell,
 .layerMenu--right,
 .layerMenu--preview {
 	min-width: 0;
@@ -30,13 +31,23 @@
 	box-sizing: border-box;
 }
 
+.layerMenu--leftShell {
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+	width: 100%;
+	cursor: ns-resize;
+}
+
 .layerMenu--left {
 	height: 100%;
-	overflow: auto;
+	overflow-y: auto;
+	overflow-x: hidden;
 	overscroll-behavior: contain;
-	scroll-snap-type: y mandatory;
+	scroll-snap-type: y proximity;
 	scrollbar-width: none;
 	width: 100%;
+	cursor: ns-resize;
 
 	&::-webkit-scrollbar {
 		display: none;
@@ -47,22 +58,37 @@
 		content: "";
 		display: block;
 		height: calc(50% - 22px);
+		flex: 0 0 auto;
 	}
 
 	.layerMenu--left__button,
 	.layerMenu--left__selected {
 		display: block;
 		min-height: 44px;
+		height: 44px;
 		padding: 10px 12px;
-		scroll-snap-align: center;
-		scroll-snap-stop: always;
 		width: 100%;
 		background-color: red;
+		box-sizing: border-box;
+		cursor: ns-resize;
+		scroll-snap-align: center;
+		transition: background-color 110ms ease-out;
 	}
+}
 
-	.layerMenu--left__selected {
-		background-color: blue;
-	}
+.layerMenu--left__centerIndicator {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	z-index: 1;
+	width: 100%;
+	height: 44px;
+	border: 2px solid rgb(255 255 255 / 72%);
+	border-radius: 3px;
+	background: transparent;
+	box-sizing: border-box;
+	pointer-events: none;
+	transform: translateY(-50%);
 }
 
 .layerMenu--right {
@@ -111,8 +137,9 @@
 		grid-template-rows: auto minmax(0, 1fr);
 	}
 
-	.layerMenu--left {
+	.layerMenu--leftShell {
 		width: 100%;
+		height: 136px;
 		max-height: 136px;
 	}
 
