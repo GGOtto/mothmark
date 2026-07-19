@@ -4,7 +4,7 @@ import {docify} from "@/schemas/utils/docify";
 import {WorldConditionSchema} from "./conditionSchema";
 import {WorldEffectSchema} from "./effectSchema";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
-import {idValue, isID} from "../../utils/idUtils";
+import {idValue} from "../../utils/idUtils";
 
 export const InitialFlagSchema = editor.object({
 	flag: editor.flagKey({title: "Flag"}),
@@ -106,7 +106,11 @@ export const WorldSchema = editor
 			conditions: editor.array(WorldConditionSchema, {
 				title: "Conditions",
 				description: "Reusable conditions for rooms and features.",
-				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "condition"},
+				duplicate: {
+					duplicateBehavior: "with-new-id",
+					idField: "identity",
+					idPrefix: "condition",
+				},
 			}),
 			effects: editor.array(WorldEffectSchema, {
 				title: "Effects",
@@ -184,14 +188,14 @@ export const WorldSchema = editor
 		}
 
 		for (const [conditionIndex, condition] of world.conditions.entries()) {
-			const conditionId = "id" in condition && isID(condition.id) ? idValue(condition.id) : "";
+			const conditionId = idValue(condition.identity);
 			if (!conditionId || conditionIds.has(conditionId)) {
 				ctx.addIssue({
 					code: "custom",
 					message: conditionId
 						? `Duplicate condition id: ${conditionId}`
 						: "World conditions need a condition id.",
-					path: ["conditions", conditionIndex, "id"],
+					path: ["conditions", conditionIndex, "identity"],
 				});
 			}
 			conditionIds.add(conditionId);

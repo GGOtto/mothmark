@@ -17,12 +17,6 @@ export const ComparisonOperatorSchema = editor.select(
 	},
 );
 
-const ConditionIdentitySchema = z.object({
-	id: editor.id("condition", {title: "Condition ID", advanced: true}).optional(),
-	name: editor.input({title: "Condition Name"}).optional(),
-	allowMultipleUsesInWorld: editor.boolean({title: "Allow multiple uses in world"}).default(false),
-});
-
 export const ConditionReferenceSchema = editor.object(
 	{
 		type: z.literal("condition-ref"),
@@ -176,27 +170,28 @@ export type ConditionGroup = {
 	type: "group";
 	operation: "all" | "any" | "none";
 	conditions: Condition[];
-	id?: unknown;
-	name?: string;
-	allowMultipleUsesInWorld: boolean;
 };
-export type Condition = SingleCondition | ConditionGroup | ConditionReference;
+export type ConditionDefinition = SingleCondition | ConditionGroup;
+export type Condition = ConditionDefinition | ConditionReference;
 
-export const WorldConditionSchema: z.ZodType<SingleCondition | ConditionGroup> = z.lazy(() =>
-	z.union([
-		SingleConditionSchema.and(ConditionIdentitySchema),
-		z.object({
-			type: z.literal("group"),
-			operation: z.enum(["all", "any", "none"]),
-			conditions: z.array(ConditionSchema),
-			...ConditionIdentitySchema.shape,
-		}),
-	]),
+export const ConditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
+	z.object({
+		type: z.literal("group"),
+		operation: z.enum(["all", "any", "none"]),
+		conditions: z.array(ConditionSchema),
+	}),
 );
 
 export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
-	z.union([WorldConditionSchema, ConditionReferenceSchema]),
+	z.union([SingleConditionSchema, ConditionGroupSchema, ConditionReferenceSchema]),
 );
+
+export const WorldConditionSchema = z.object({
+	identity: editor.id("condition"),
+	condition: z.union([SingleConditionSchema, ConditionGroupSchema]),
+});
+
+export type WorldCondition = z.infer<typeof WorldConditionSchema>;
 export const ConditionUsageSchema = ConditionReferenceSchema;
 
 export const ConditionalTextSchema = editor.object(

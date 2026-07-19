@@ -1,3 +1,4 @@
+import type {ConditionDefinition} from "@/schemas/world/conditionSchema";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID, idValue} from "@/utils/idUtils";
 
@@ -8,4 +9,13 @@ export function getRoom(world: World, roomId: ID<"room"> | string): Room {
 	);
 	if (!room) throw new Error(`Missing room: ${typeof roomId === "string" ? roomId : roomId.id}`);
 	return room;
+}
+
+/** Finds a condition using a condition reference */
+export function getCondition(world: World, conditionId: ID<"condition">): ConditionDefinition {
+	const storedCondition = world.conditions.find((candidate) =>
+		compareIds(candidate.identity, conditionId),
+	);
+	if (!storedCondition) throw new Error(`Missing condition: ${conditionId.id}`);
+	return storedCondition.condition;
 }
