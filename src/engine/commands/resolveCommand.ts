@@ -96,73 +96,7 @@ export const commands: CommandDefinition[] = [
 			return addSystemMessage(gameState, `You examine ${formatTargetWithArticle(parsed.targetText)}.`);
 		},
 	},
-	{
-		name: "take",
-		aliases: ["take", "get", "pick up"],
-		description: "Take an item.",
-		run: ({gameState, parsed}) =>
-			parsed.targetText
-				? addSystemMessage(gameState, `You take ${formatTargetWithArticle(parsed.targetText)}.`)
-				: addSystemMessage(gameState, "Take what?"),
-	},
-	{
-		name: "use",
-		aliases: ["use"],
-		description: "Use an item, optionally on something else.",
-		connectors: ["on", "with"],
-		run: ({gameState, parsed}) => {
-			if (!parsed.targetText) return addSystemMessage(gameState, "Use what?");
-			if (parsed.connector) {
-				return addSystemMessage(
-					gameState,
-					`You use ${formatTargetWithArticle(parsed.connector.left)} ${parsed.connector.connector} ${formatTargetWithArticle(parsed.connector.right)}.`,
-				);
-			}
-			return addSystemMessage(gameState, `You use ${formatTargetWithArticle(parsed.targetText)}.`);
-		},
-	},
-	{
-		name: "put",
-		aliases: ["put", "place", "set"],
-		description: "Put something somewhere.",
-		connectors: ["in", "into", "on"],
-		run: ({gameState, parsed}) => {
-			if (!parsed.targetText) return addSystemMessage(gameState, "Put what?");
-			if (!parsed.connector) return addSystemMessage(gameState, "Put it where?");
-			return addSystemMessage(
-				gameState,
-				`You put ${formatTargetWithArticle(parsed.connector.left)} ${parsed.connector.connector} ${formatTargetWithArticle(parsed.connector.right)}.`,
-			);
-		},
-	},
-	{
-		name: "give",
-		aliases: ["give", "hand", "hand over"],
-		description: "Give something to someone.",
-		connectors: ["to"],
-		run: ({gameState, parsed}) => {
-			if (!parsed.targetText) return addSystemMessage(gameState, "Give what?");
-			if (!parsed.connector) return addSystemMessage(gameState, "Give it to whom?");
-			return addSystemMessage(
-				gameState,
-				`You give ${formatTargetWithArticle(parsed.connector.left)} to ${formatTargetWithArticle(parsed.connector.right)}.`,
-			);
-		},
-	},
-	{
-		name: "unlock",
-		aliases: ["unlock", "open"],
-		description: "Unlock something with an item.",
-		connectors: ["with"],
-		run: ({gameState, parsed}) => {
-			if (!parsed.targetText) return addSystemMessage(gameState, "Unlock what?");
-			if (!parsed.connector) return addSystemMessage(gameState, "Unlock it with what?");
-			return addSystemMessage(
-				gameState,
-				`You unlock ${formatTargetWithArticle(parsed.connector.left)} with ${formatTargetWithArticle(parsed.connector.right)}.`,
-			);
-		},
-	},
+	// TODO: Restore item and NPC commands when those runtime domains return.
 	{
 		name: "go",
 		aliases: ["go", "walk", "move", "go to"],

@@ -1,5 +1,9 @@
 import type {EditorOption} from "@/types/editor/editorMetadataTypes";
 
+// Dormant UI catalogs are intentionally retained while their item, NPC, quest,
+// event, and authored-command schemas/runtime models are out of scope.
+// TODO: Reconnect these options only as each domain is reintroduced.
+
 export const CONDITION_TYPE_OPTION_SOURCE = "schema.condition.types";
 export const CONDITION_GROUP_OPERATOR_OPTION_SOURCE = "schema.condition.group.operations";
 export const CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE = "schema.condition.comparison-operators";

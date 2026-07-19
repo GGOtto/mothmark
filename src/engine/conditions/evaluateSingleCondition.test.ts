@@ -8,7 +8,6 @@ const currentRoom = toID("room", "atrium");
 
 const game: GameState = {
 	currentRoom,
-	inventory: {items: [], capacity: 10},
 	turns: 0,
 	variables: {
 		flags: [{"gate.open": true}, {"lamp.lit": false}],

@@ -205,8 +205,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"visibleWhen",
 			"usableWhen",
 			"examineSetsFlag",
-			"capacity",
-			"initialItems",
 			"state",
 		]);
 		expect(fields[0].metadata).toMatchObject({

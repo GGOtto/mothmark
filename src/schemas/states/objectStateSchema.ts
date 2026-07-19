@@ -26,7 +26,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 		locked: editor
 			.boolean({
 				title: "Locked",
-				description: "Initial locked state for an object, door, feature, or container.",
+				description: "Initial locked state for a connection, door, or room feature.",
 				layout: {
 					width: "half",
 					order: 2,
@@ -37,7 +37,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 		lit: editor
 			.boolean({
 				title: "Lit",
-				description: "Initial lit state for an object, item, or feature.",
+				description: "Initial lit state for a room feature.",
 				layout: {
 					width: "half",
 					order: 3,
@@ -48,7 +48,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 		broken: editor
 			.boolean({
 				title: "Broken",
-				description: "Initial broken state for an object, item, or feature.",
+				description: "Initial broken state for a room feature.",
 				layout: {
 					width: "half",
 					order: 4,
@@ -59,7 +59,7 @@ export const ObjectStateDefaultsSchema = editor.object(
 		clean: editor
 			.boolean({
 				title: "Clean",
-				description: "Initial clean state for an object, item, surface, or feature.",
+				description: "Initial clean state for a room feature.",
 				layout: {
 					width: "half",
 					order: 5,
@@ -82,8 +82,8 @@ export const ObjectStateDefaultsSchema = editor.object(
 		description: docify(`
             Initial built-in and custom object state.
 
-            These values seed gameState.objectStates and can be checked by object-state
-            conditions or changed by object-state effects.
+			These values seed connection and feature state. They can be checked by
+			feature-state conditions or changed by feature-state effects.
         `),
 	},
 );

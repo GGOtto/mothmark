@@ -93,10 +93,10 @@ export const RoomFeatureKindSchema = editor.select(
 			A normal interactable object that cannot be picked up.
 
 			container:
-			Can contain items, such as a chest, cabinet, drawer, box, or bag.
+			An enclosed feature, such as a chest, cabinet, drawer, box, or bag.
 
 			surface:
-			Can have items placed on it, such as a table, shelf, desk, altar, or counter.
+			An open supporting feature, such as a table, shelf, desk, altar, or counter.
 
 			door:
 			A feature that may control movement or locked/unlocked state.
@@ -119,12 +119,12 @@ export const RoomFeatureKindSchema = editor.select(
 			{
 				label: "Container",
 				value: "container",
-				description: "Can contain items, such as a chest, cabinet, drawer, box, or bag.",
+				description: "An enclosed feature, such as a chest, cabinet, drawer, box, or bag.",
 			},
 			{
 				label: "Surface",
 				value: "surface",
-				description: "Can have items placed on it, such as a table, shelf, desk, altar, or counter.",
+				description: "An open supporting feature, such as a table, shelf, desk, altar, or counter.",
 			},
 			{
 				label: "Door",
@@ -251,28 +251,6 @@ export const RoomFeatureSchema = editor.object(
 			},
 		}),
 
-		capacity: editor
-			.positiveInteger({
-				title: "Capacity",
-				description: "Optional maximum number of items this container or surface can hold.",
-				layout: {
-					width: "half",
-					order: 12,
-				},
-			})
-			.optional(),
-
-		initialItems: editor.multiSelect({
-			title: "Initial Items",
-			description:
-				"Item ids initially inside this container or on this surface. Prefer item.initialLocation as the source of truth when possible.",
-			entityType: "item",
-			layout: {
-				width: "full",
-				order: 13,
-			},
-		}),
-
 		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
 			"Initial object state for this feature.",
 		),
@@ -311,7 +289,7 @@ export const RoomFeatureSchema = editor.object(
 				description: "Initial object state for this feature.",
 				layout: {
 					width: "full",
-					order: 14,
+					order: 12,
 				},
 			},
 		},
@@ -619,8 +597,8 @@ export const ConnectionSchema = editor.object(
 		description: docify(`
 			A directional link between two rooms.
 
-			Connections are used by movement commands and may also be referenced by
-			authored commands, conditions, and effects.
+			Connections are used by movement and may also be referenced by conditions
+			and effects.
 		`),
 		duplicate: {
 			duplicateBehavior: "with-new-id",
