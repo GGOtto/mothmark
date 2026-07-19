@@ -1,10 +1,9 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import type {World} from "../../schemas/world/worldSchema";
 import {createInitialGameState} from "../../engine/states/createInitialState";
-import type {GameState} from "@/schemas/states/gameStateSchema";
-import {runCommand} from "../../engine/commands/execute";
+import {resolveTurn} from "../../engine/player/resolveTurn";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
 import "./GamePlayer.scss";
@@ -45,18 +44,10 @@ function LoadingGamePlayer() {
 
 function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoading">) {
 	const playerRef = useRef<HTMLElement | null>(null);
-	const initialState = useMemo(() => {
-		const state = createInitialGameState(world, startingRoomId);
-		// TODO make this a message
-	}, [world, startingRoomId]);
-
-	const [gameState, setGameState] = useState(initialState);
+	const [gameState, setGameState] = useState(() => createInitialGameState(world, startingRoomId));
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState<number>(0);
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
-	const displayState = useMemo(() => {
-		// TODO refresh initial game state
-	}, [world, gameState]);
 
 	useEffect(() => {
 		function blurCommandInputOutsidePlayer(event: PointerEvent) {
@@ -71,10 +62,6 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 		return () => document.removeEventListener("pointerdown", blurCommandInputOutsidePlayer, true);
 	}, []);
 
-	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
-		// setGameState((currentState) => updateGameState(currentState));
-	}
-
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 
@@ -82,7 +69,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 
 		if (!trimmedCommand) return;
 
-		pushGameState((currentState) => runCommand(world, currentState, trimmedCommand));
+		setGameState((currentState) => resolveTurn(world, currentState, trimmedCommand));
 
 		setCommandList((prevCommands) => [...prevCommands, trimmedCommand].slice(-20));
 		setCommand("");
@@ -91,7 +78,9 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 
 	return (
 		<section ref={playerRef} className="game-player">
-			<div className="game-player__output">{/*<OutputLog messages={displayState.messages} />*/}</div>
+			<div className="game-player__output">
+				<OutputLog messages={gameState.messages} />
+			</div>
 
 			<CommandInput
 				command={command}

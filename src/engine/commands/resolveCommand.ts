@@ -1,7 +1,8 @@
+import {produce} from "immer";
 import type {Direction, World} from "@/schemas/world/worldSchema";
-import type {GameState} from "../states/createInitialState";
+import type {GameState} from "@/schemas/states/gameStateSchema";
 import {createGameMessage} from "../messages/createMessage";
-import {movePlayer} from "../player/move";
+import {move} from "../player/move";
 import {lookAtRoom} from "../states/changeStates";
 import {
 	formatTargetWithArticle,
@@ -57,10 +58,9 @@ export type CommandDefinition = {
 };
 
 function addSystemMessage(gameState: GameState, text: string): GameState {
-	return {
-		...gameState,
-		messages: [...gameState.messages, createGameMessage(text, "system")],
-	};
+	return produce(gameState, (draft) => {
+		draft.messages.push(createGameMessage(text, "system"));
+	});
 }
 
 export function buildHelpText(commandList: CommandDefinition[]): string {
@@ -171,9 +171,7 @@ export const commands: CommandDefinition[] = [
 			DIRECTION_ALIASES[input] ? {input, matchedAlias: input, targetText: input} : null,
 		run: ({world, gameState, parsed}) => {
 			const direction = DIRECTION_ALIASES[parsed.targetText];
-			return direction
-				? movePlayer(world, gameState, direction)
-				: addSystemMessage(gameState, "Go where?");
+			return direction ? move(world, gameState, direction) : addSystemMessage(gameState, "Go where?");
 		},
 	},
 	{

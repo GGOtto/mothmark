@@ -9,7 +9,6 @@ export const GameMessageSchema = z.object({
 	id: z.string(),
 	text: z.string(),
 	type: GameMessageTypeSchema,
-	roomId: editor.id("room").optional(),
 });
 
 export const InventorySchema = z.object({
@@ -32,6 +31,7 @@ export const GameStateSchema = z.object({
 	turns: z.number().default(0),
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
+	messages: z.array(GameMessageSchema),
 });
 
 export type GameMessageType = z.infer<typeof GameMessageTypeSchema>;

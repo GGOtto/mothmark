@@ -15,6 +15,7 @@ const game: GameState = {
 		counter: [{steps: 3}, {score: 10}],
 	},
 	roomStates: [],
+	messages: [],
 };
 
 const world = {
