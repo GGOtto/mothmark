@@ -1,6 +1,6 @@
 import "server-only";
 
-import {WorldSchema, type World} from "@/schemas/worldSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
 import {getDb} from "./knex";

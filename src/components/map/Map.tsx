@@ -10,17 +10,22 @@ import {
 	type Room,
 	type Connection as ConnectionType,
 	type Direction,
-} from "../../schemas/roomSchema";
-import {DefaultViewport, type Layer, type World, type Viewport} from "../../schemas/worldSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
-import {getLayer, upsertLayer} from "../../utils/layerUtils";
-import {addPoints, subtractPoints, getDistance} from "../../utils/pointUtils";
-import {getLayerNavigationDirection} from "../../utils/layerNavigation";
+} from "../../schemas/world/roomSchema";
+import {
+	DefaultViewport,
+	type Layer,
+	type World,
+	type Viewport,
+} from "../../schemas/world/worldSchema";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
+import {getLayer, upsertLayer} from "./utils/layerUtils";
+import {addPoints, subtractPoints, getDistance} from "./utils/pointUtils";
+import {getLayerNavigationDirection} from "./utils/layerNavigation";
 import {
 	getNextAvailablePathway,
 	getPathwayForNewDrop,
 	isConnectionFromRoom,
-} from "../../utils/connectionUtils";
+} from "./utils/connectionUtils";
 import {generateUniqueId, idValue} from "../../utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";

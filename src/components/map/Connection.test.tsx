@@ -1,9 +1,9 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {ConnectionSchema, RoomSchema} from "../../schemas/roomSchema";
-import {DefaultViewport} from "../../schemas/worldSchema";
+import {ConnectionSchema, RoomSchema} from "../../schemas/world/roomSchema";
+import {DefaultViewport} from "../../schemas/world/worldSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {world as exampleWorld} from "../../data/worlds/exampleWorld";
-import {getLayer} from "../../utils/layerUtils";
+import {getLayer} from "./utils/layerUtils";
 import {idValue} from "../../utils/idUtils";
 import {
 	Connection,

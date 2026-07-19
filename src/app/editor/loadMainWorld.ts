@@ -1,7 +1,7 @@
 import {z} from "zod";
 
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import {WorldSchema, type World} from "@/schemas/worldSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 
 const MAIN_WORLD_ENDPOINT = "/api/world/slug/main";
 

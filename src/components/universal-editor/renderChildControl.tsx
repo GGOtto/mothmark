@@ -5,7 +5,7 @@ import type {
 	EditorControlType,
 	EditorPath,
 } from "../../types/universalEditorTypes";
-import {mergeEditorMetadata} from "../../utils/mergeEditorMetadata";
+import {mergeEditorMetadata} from "./utils/mergeEditorMetadata";
 import {renderEditorControl} from "./renderEditorControl";
 
 type RenderChildControlArgs<TValue> = {

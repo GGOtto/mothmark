@@ -2,8 +2,8 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import type {z} from "zod";
-import {editorOptionCatalogs} from "@/schemas/editorCatalogs";
-import {WorldSchema, type World} from "@/schemas/worldSchema";
+import {editorOptionCatalogs} from "@/schemas/utils/editorCatalogs";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {
 	EditorEntityOption,
 	EditorKeyOption,
@@ -23,7 +23,7 @@ import type {
 	EditorNavigationEntry,
 	EditorPath,
 } from "@/types/universalEditorTypes";
-import {buildEditorRegistries} from "@/utils/buildEditorRegistries";
+import {buildEditorRegistries} from "./utils/buildEditorRegistries";
 import {
 	deleteWorldEntity,
 	generateUniqueId,
@@ -33,8 +33,8 @@ import {
 	resolveWorldEntityId,
 } from "@/utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
-import {resolveEditorMetadata} from "@/utils/resolveEditorMetadata";
-import {getArrayElement, getSchemaAtPath} from "@/utils/schemaIntrospection";
+import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
+import {getArrayElement, getSchemaAtPath} from "./utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
 import "./UniversalEditor.scss";
 

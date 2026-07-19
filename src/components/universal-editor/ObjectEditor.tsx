@@ -8,7 +8,7 @@ import type {
 	EditorPath,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
-import {generateEditorSummary} from "../../utils/universalEditorUtils";
+import {generateEditorSummary} from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ObjectEditor.scss";

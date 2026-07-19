@@ -1,7 +1,7 @@
 import {fireEvent, render, screen} from "@testing-library/react";
 import {world} from "@/data/worlds/exampleWorld";
 import {idValue} from "@/utils/idUtils";
-import {getLayer} from "@/utils/layerUtils";
+import {getLayer} from "./utils/layerUtils";
 import {LayerPreview} from "./LayerPreview";
 
 describe("LayerPreview", () => {

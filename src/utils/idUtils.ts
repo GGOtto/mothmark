@@ -1,5 +1,5 @@
-import type {World} from "@/schemas/worldSchema";
-import type {RoomFeature} from "@/schemas/roomSchema";
+import type {World} from "@/schemas/world/worldSchema";
+import type {RoomFeature} from "@/schemas/world/roomSchema";
 
 /** Minimal shape required by helpers that inspect or generate IDs. */
 export type Identifiable = {

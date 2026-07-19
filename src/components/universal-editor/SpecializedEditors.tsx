@@ -7,13 +7,13 @@ import type {
 	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
-import {ConditionalTextSchema} from "../../schemas/conditionSchema";
+import {ConditionalTextSchema} from "../../schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {
 	applyTextTransform,
 	generateConditionSummary,
 	generateEffectSummary,
-} from "../../utils/universalEditorUtils";
+} from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./SpecializedEditors.scss";

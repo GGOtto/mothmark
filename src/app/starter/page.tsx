@@ -1,7 +1,7 @@
 "use client";
 
 import {useMemo, useState} from "react";
-import {WorldSchema} from "../../schemas/worldSchema";
+import {WorldSchema} from "../../schemas/world/worldSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import "./page.scss";
 

@@ -1,10 +1,15 @@
 import type React from "react";
-import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
-import type {Layer, World} from "../../schemas/worldSchema";
-import {isConnectionFromRoom} from "../../utils/connectionUtils";
+import type {
+	Connection as ConnectionType,
+	Direction,
+	Point,
+	Room,
+} from "../../schemas/world/roomSchema";
+import type {Layer, World} from "../../schemas/world/worldSchema";
+import {isConnectionFromRoom} from "./utils/connectionUtils";
 import {idValue} from "../../utils/idUtils";
-import {isRoomInLayer} from "../../utils/layerUtils";
-import {ROOM_DIRECTIONS} from "../../utils/mapUtils";
+import {isRoomInLayer} from "./utils/layerUtils";
+import {ROOM_DIRECTIONS} from "./utils/mapUtils";
 import type {UpdateStatus} from "../studio/ToolBar";
 import {Connection} from "./Connection";
 import type {ConnectionStubPointField, StubRenderPart} from "./Connection";

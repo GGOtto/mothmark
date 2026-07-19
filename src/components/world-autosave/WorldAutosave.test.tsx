@@ -1,7 +1,7 @@
 import {act, render, screen} from "@testing-library/react";
 
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {World} from "@/schemas/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
 
 import {
 	WorldAutosaveIndicator,

@@ -1,5 +1,5 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {RoomSchema} from "../../schemas/roomSchema";
+import {RoomSchema} from "../../schemas/world/roomSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {RoomCard} from "./Room";
 

@@ -14,9 +14,9 @@ import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
-import type {Connection, Layer, Room, World} from "@/schemas/worldSchema";
+import type {Connection, Layer, Room, World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue} from "@/utils/idUtils";
-import {getConnectionDraftStatus} from "./editorPageUtils";
+import {getConnectionDraftStatus} from "./utils/editorPageUtils";
 import {loadMainWorld} from "./loadMainWorld";
 import "./page.scss";
 

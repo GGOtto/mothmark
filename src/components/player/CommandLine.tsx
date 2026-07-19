@@ -4,7 +4,7 @@ import {useState} from "react";
 import {RefreshCw} from "lucide-react";
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {GamePlayer} from "./GamePlayer";
-import type {World} from "../../schemas/worldSchema";
+import type {World} from "../../schemas/world/worldSchema";
 import {idValue} from "../../utils/idUtils";
 import "./CommandLine.scss";
 

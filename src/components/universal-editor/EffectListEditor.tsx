@@ -5,7 +5,7 @@ import {
 	createDefaultEffectValue,
 	effectOperationOptionsByType,
 	effectTypeOptions as defaultEffectTypeOptions,
-} from "@/schemas/editorCatalogs";
+} from "@/schemas/utils/editorCatalogs";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -13,7 +13,7 @@ import type {
 	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
-import {generateEffectSummary} from "../../utils/universalEditorUtils";
+import {generateEffectSummary} from "./utils/universalEditorUtils";
 import {idValue, isID, toID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";

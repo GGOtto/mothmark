@@ -1,6 +1,6 @@
-import type {Layer, World} from "@/schemas/worldSchema";
-import {getLayerNavigationDirection} from "@/utils/layerNavigation";
-import {getLayer} from "@/utils/layerUtils";
+import type {Layer, World} from "@/schemas/world/worldSchema";
+import {getLayerNavigationDirection} from "./utils/layerNavigation";
+import {getLayer} from "./utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";

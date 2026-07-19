@@ -1,7 +1,7 @@
 import {z} from "zod";
-import {editor} from "@/schemas/editorSchemaHelpers";
-import {ConditionalTextSchema, FlagConditionSchema} from "@/schemas/conditionSchema";
-import {FlagEffectSchema} from "@/schemas/effectSchema";
+import {editor} from "@/schemas/utils/editorSchemaHelpers";
+import {ConditionalTextSchema, FlagConditionSchema} from "@/schemas/world/conditionSchema";
+import {FlagEffectSchema} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "./createDefaultFieldObject";
 import {getEditorMetadata} from "./editorMetadata";
 

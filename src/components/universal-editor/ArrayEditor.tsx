@@ -7,7 +7,7 @@ import {
 	createStableId,
 	generateConditionSummary,
 	generateEditorSummary,
-} from "../../utils/universalEditorUtils";
+} from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
 import "./ArrayEditor.scss";

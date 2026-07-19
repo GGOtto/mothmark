@@ -1,7 +1,7 @@
 import {fireEvent, render, screen} from "@testing-library/react";
 import {useState} from "react";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {Connection, Layer, Room, World} from "@/schemas/worldSchema";
+import type {Connection, Layer, Room, World} from "@/schemas/world/worldSchema";
 import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
 

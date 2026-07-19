@@ -1,4 +1,4 @@
-import type {World} from "../../schemas/worldSchema";
+import type {World} from "../../schemas/world/worldSchema";
 import type {
 	EditorControlAppearance,
 	EditorControlType,

@@ -1,8 +1,8 @@
-import {Layer, World} from "@/schemas/worldSchema";
+import {Layer, World} from "@/schemas/world/worldSchema";
 import {Layers, ArrowDown, ArrowUp} from "lucide-react";
 import "./LayoutControl.scss";
-import {getLayer} from "@/utils/layerUtils";
-import {LAYER_SCROLL_END_DELAY, LAYER_SCROLL_STEP_DELAY} from "@/utils/layerNavigation";
+import {getLayer} from "./utils/layerUtils";
+import {LAYER_SCROLL_END_DELAY, LAYER_SCROLL_STEP_DELAY} from "./utils/layerNavigation";
 import {useEffect, useRef, useState} from "react";
 
 type LayoutControlProps = {

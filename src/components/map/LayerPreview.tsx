@@ -6,8 +6,8 @@
 
 import type React from "react";
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from "react";
-import type {Layer, Viewport, World} from "@/schemas/worldSchema";
-import {isRoomInLayer} from "@/utils/layerUtils";
+import type {Layer, Viewport, World} from "@/schemas/world/worldSchema";
+import {isRoomInLayer} from "./utils/layerUtils";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 import {getConnectionVisualBounds} from "./Connection";
 import type {MapTheme} from "./Map";

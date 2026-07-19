@@ -12,7 +12,7 @@ import {
 	type ReactNode,
 } from "react";
 
-import type {World} from "@/schemas/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
 
 import "./WorldAutosave.scss";
 

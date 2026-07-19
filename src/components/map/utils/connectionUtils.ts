@@ -1,0 +1,483 @@
+import {
+	ConnectionSchema,
+	RoomSchema,
+	type Connection,
+	type Direction,
+	type Point,
+	type Room,
+} from "@/schemas/world/roomSchema";
+import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "./mapUtils";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {compareIds, generateUniqueId, idValue} from "@/utils/idUtils";
+import {subtractPoints} from "./pointUtils";
+
+type BuildAddConnectionResultOptions = {
+	fromRoom: Room;
+	direction: Direction;
+	rooms: Room[];
+	connections: Connection[];
+	roomWidth: number;
+	roomHeight: number;
+	connectorLength: number;
+	minConnectorLength: number;
+	connectorStep: number;
+};
+
+type BuildAddConnectionResult = {
+	connection: Connection;
+	roomToAdd?: Room;
+};
+
+export type SnapTarget = {
+	room: Room;
+	direction: Direction;
+	point: Point;
+	distance: number;
+};
+
+export type MovingConnectionSide = "from" | "to";
+
+const PATHWAY_CYCLE: Connection["pathway"][] = ["two-way", "forwards", "backwards", "no-way"];
+
+export function getPathwayLabel(pathway: Connection["pathway"]) {
+	return pathway === "forwards" || pathway === "backwards"
+		? "One way"
+		: pathway === "two-way"
+			? "Two way"
+			: "No way";
+}
+
+export function isConnectionFromRoom(
+	roomId: string,
+	direction: Direction,
+	connections: Connection[],
+) {
+	return connections.some((connection) => {
+		return (
+			(idValue(connection.fromRoomId) === roomId &&
+				connection.direction === direction &&
+				(connection.pathway === "forwards" || connection.pathway === "two-way")) ||
+			(idValue(connection.toRoomId) === roomId &&
+				connection.returnDirection === direction &&
+				(connection.pathway === "backwards" || connection.pathway === "two-way"))
+		);
+	});
+}
+
+function pathwayCreatesOutgoingConnection(
+	connection: Connection,
+	pathway: Connection["pathway"],
+	connections: Connection[],
+) {
+	const otherConnections = connections.filter(
+		(candidate) => !compareIds(candidate.id, connection.id),
+	);
+	const leavesFromNode = pathway === "two-way" || pathway === "forwards";
+	const leavesToNode = pathway === "two-way" || pathway === "backwards";
+
+	return (
+		(leavesFromNode &&
+			isConnectionFromRoom(idValue(connection.fromRoomId), connection.direction, otherConnections)) ||
+		(leavesToNode &&
+			isConnectionFromRoom(idValue(connection.toRoomId), connection.returnDirection, otherConnections))
+	);
+}
+
+export function getNextAvailablePathway(
+	connection: Connection,
+	connections: Connection[],
+): Connection["pathway"] {
+	const currentIndex = PATHWAY_CYCLE.indexOf(connection.pathway);
+
+	for (let offset = 1; offset <= PATHWAY_CYCLE.length; offset++) {
+		const pathway = PATHWAY_CYCLE[(currentIndex + offset) % PATHWAY_CYCLE.length];
+
+		if (!pathwayCreatesOutgoingConnection(connection, pathway, connections)) return pathway;
+	}
+
+	return connection.pathway;
+}
+
+export function connectionUsesNode(connection: Connection, roomId: string, direction: Direction) {
+	return (
+		(idValue(connection.fromRoomId) === roomId && connection.direction === direction) ||
+		(idValue(connection.toRoomId) === roomId && connection.returnDirection === direction)
+	);
+}
+
+export function getConnectionOnNode(
+	connections: Connection[],
+	roomId: string,
+	direction: Direction,
+	ignoredConnectionId?: string,
+) {
+	return connections.find((connection) => {
+		if (idValue(connection.id) === ignoredConnectionId) return false;
+
+		return connectionUsesNode(connection, roomId, direction);
+	});
+}
+
+export function getConnectionsOnNode(
+	connections: Connection[],
+	roomId: string,
+	direction: Direction,
+	ignoredConnectionId?: string,
+) {
+	return connections.filter((connection) => {
+		if (idValue(connection.id) === ignoredConnectionId) return false;
+
+		return connectionUsesNode(connection, roomId, direction);
+	});
+}
+
+export function getConnectionSide(
+	connection: Connection,
+	roomId: string,
+	direction: Direction,
+): MovingConnectionSide | null {
+	if (idValue(connection.fromRoomId) === roomId && connection.direction === direction) {
+		return "from";
+	}
+
+	if (idValue(connection.toRoomId) === roomId && connection.returnDirection === direction) {
+		return "to";
+	}
+
+	return null;
+}
+
+export function isSameConnectionShape(connection: Connection, candidate: Connection) {
+	return (
+		idValue(connection.fromRoomId) === idValue(candidate.fromRoomId) &&
+		idValue(connection.toRoomId) === idValue(candidate.toRoomId) &&
+		connection.direction === candidate.direction &&
+		connection.returnDirection === candidate.returnDirection
+	);
+}
+
+export function getDuplicateConnectionByShape(
+	connections: Connection[],
+	candidate: Connection,
+	ignoredConnectionId?: string,
+) {
+	return connections.find((connection) => {
+		if (idValue(connection.id) === ignoredConnectionId) return false;
+
+		return isSameConnectionShape(connection, candidate);
+	});
+}
+
+export function getNodeSelectionKey(roomId: string, direction: Direction) {
+	return `${roomId}:${direction}`;
+}
+
+export function getNearestNodeInRadius({
+	pointer,
+	rooms,
+	getRoomConnectionPoint,
+	snapDistance,
+	ignoredRoomId,
+	lockedRoomId,
+}: {
+	pointer: Point;
+	rooms: Room[];
+	getRoomConnectionPoint: (room: Room, direction: Direction) => Point;
+	snapDistance: number;
+	ignoredRoomId?: string;
+	lockedRoomId?: string;
+}): SnapTarget | null {
+	let nearestTarget: SnapTarget | null = null;
+
+	for (const room of rooms) {
+		if (idValue(room.id) === ignoredRoomId) continue;
+		if (idValue(room.id) === lockedRoomId) continue;
+
+		for (const direction of ROOM_DIRECTIONS) {
+			const point = getRoomConnectionPoint(room, direction);
+			const distance = Math.hypot(pointer.x - point.x, pointer.y - point.y);
+
+			if (distance > snapDistance) continue;
+
+			if (!nearestTarget || distance < nearestTarget.distance) {
+				nearestTarget = {
+					room,
+					direction,
+					point,
+					distance,
+				};
+			}
+		}
+	}
+
+	return nearestTarget;
+}
+
+export function getPathwayForNewDrop(
+	sourceRoomId: string,
+	sourceDirection: Direction,
+	targetRoomId: string,
+	targetDirection: Direction,
+	currentConnections: Connection[],
+): Connection["pathway"] {
+	const sourceConnection = getConnectionOnNode(currentConnections, sourceRoomId, sourceDirection);
+
+	const targetConnection = getConnectionOnNode(currentConnections, targetRoomId, targetDirection);
+
+	if (sourceConnection && targetConnection) {
+		return "no-way";
+	}
+
+	if (sourceConnection) {
+		return "backwards";
+	}
+
+	if (targetConnection) {
+		return "forwards";
+	}
+
+	return "two-way";
+}
+
+export function getPathwayForEditedDrop(
+	targetRoomId: string,
+	targetDirection: Direction,
+	currentConnections: Connection[],
+	ignoredConnectionId: string,
+): Connection["pathway"] {
+	const targetConnection = getConnectionOnNode(
+		currentConnections,
+		targetRoomId,
+		targetDirection,
+		ignoredConnectionId,
+	);
+
+	return targetConnection ? "forwards" : "two-way";
+}
+
+function getTargetPosition(
+	sourceRoom: Room,
+	direction: Direction,
+	length: number,
+	roomWidth: number,
+	roomHeight: number,
+): Point {
+	const vector = DIRECTION_VECTORS[direction];
+
+	return {
+		x: sourceRoom.metadata.position.x + vector.x * (length + roomWidth),
+		y: sourceRoom.metadata.position.y + vector.y * (length + roomHeight),
+	};
+}
+
+function getDirectionAlignmentScore(sourceRoom: Room, direction: Direction, room: Room) {
+	const vector = DIRECTION_VECTORS[direction];
+	const roomOffset = subtractPoints(room.metadata.position, sourceRoom.metadata.position);
+
+	const vectorLength = Math.hypot(vector.x, vector.y);
+	const unitDirection = {
+		x: vector.x / vectorLength,
+		y: vector.y / vectorLength,
+	};
+
+	const forwardDistance = roomOffset.x * unitDirection.x + roomOffset.y * unitDirection.y;
+
+	if (forwardDistance <= 0) {
+		return Number.POSITIVE_INFINITY;
+	}
+
+	const perpendicularDistance = Math.abs(
+		roomOffset.x * unitDirection.y - roomOffset.y * unitDirection.x,
+	);
+
+	return perpendicularDistance;
+}
+
+function getBestOverlappingRoom({
+	position,
+	sourceRoom,
+	direction,
+	rooms,
+	roomWidth,
+	roomHeight,
+	minConnectorLength,
+}: {
+	position: Point;
+	sourceRoom: Room;
+	direction: Direction;
+	rooms: Room[];
+	roomWidth: number;
+	roomHeight: number;
+	minConnectorLength: number;
+}) {
+	const candidates = rooms
+		.filter((room) => !compareIds(room.id, sourceRoom.id))
+		.map((room) => {
+			const dx = Math.abs(room.metadata.position.x - position.x);
+			const dy = Math.abs(room.metadata.position.y - position.y);
+
+			const overlapsTargetArea =
+				dx < roomWidth + minConnectorLength && dy < roomHeight + minConnectorLength;
+
+			if (!overlapsTargetArea) return null;
+
+			const distanceFromTarget = Math.hypot(
+				room.metadata.position.x - position.x,
+				room.metadata.position.y - position.y,
+			);
+			const directionAlignment = getDirectionAlignmentScore(sourceRoom, direction, room);
+
+			if (!Number.isFinite(directionAlignment)) return null;
+
+			return {
+				room,
+				score: directionAlignment * 2 + distanceFromTarget,
+			};
+		})
+		.filter((candidate): candidate is {room: Room; score: number} => candidate !== null)
+		.sort((a, b) => a.score - b.score);
+
+	return candidates[0]?.room;
+}
+
+function findTargetRoomOrPosition({
+	fromRoom,
+	direction,
+	rooms,
+	roomWidth,
+	roomHeight,
+	connectorLength,
+	minConnectorLength,
+	connectorStep,
+}: Pick<
+	BuildAddConnectionResultOptions,
+	| "fromRoom"
+	| "direction"
+	| "rooms"
+	| "roomWidth"
+	| "roomHeight"
+	| "connectorLength"
+	| "minConnectorLength"
+	| "connectorStep"
+>) {
+	let targetPosition = getTargetPosition(
+		fromRoom,
+		direction,
+		connectorLength,
+		roomWidth,
+		roomHeight,
+	);
+	let overlappingRoom: Room | undefined = getBestOverlappingRoom({
+		position: targetPosition,
+		sourceRoom: fromRoom,
+		direction,
+		rooms,
+		roomWidth,
+		roomHeight,
+		minConnectorLength,
+	});
+
+	for (let length = connectorLength; length >= minConnectorLength; length -= connectorStep) {
+		const position = getTargetPosition(fromRoom, direction, length, roomWidth, roomHeight);
+
+		const overlap = getBestOverlappingRoom({
+			position,
+			sourceRoom: fromRoom,
+			direction,
+			rooms,
+			roomWidth,
+			roomHeight,
+			minConnectorLength,
+		});
+
+		if (!overlap) {
+			targetPosition = position;
+			overlappingRoom = undefined;
+			break;
+		}
+
+		targetPosition = position;
+		overlappingRoom = overlap;
+	}
+
+	return {
+		targetPosition,
+		overlappingRoom,
+	};
+}
+
+function connectionAlreadyExists(connectionToAdd: Connection, connections: Connection[]) {
+	return connections.some((connection) => {
+		return (
+			idValue(connection.fromRoomId) === idValue(connectionToAdd.fromRoomId) &&
+			idValue(connection.toRoomId) === idValue(connectionToAdd.toRoomId) &&
+			connection.direction === connectionToAdd.direction
+		);
+	});
+}
+
+export function buildAddConnectionResult({
+	fromRoom,
+	direction,
+	rooms,
+	connections,
+	roomWidth,
+	roomHeight,
+	connectorLength,
+	minConnectorLength,
+	connectorStep,
+}: BuildAddConnectionResultOptions): BuildAddConnectionResult | null {
+	if (isConnectionFromRoom(idValue(fromRoom.id), direction, connections)) {
+		return null;
+	}
+
+	const {targetPosition, overlappingRoom} = findTargetRoomOrPosition({
+		fromRoom,
+		direction,
+		rooms,
+		roomWidth,
+		roomHeight,
+		connectorLength,
+		minConnectorLength,
+		connectorStep,
+	});
+
+	const roomToAdd =
+		overlappingRoom === undefined
+			? RoomSchema.parse({
+					...createDefaultFieldObject(RoomSchema),
+					id: generateUniqueId("room", rooms),
+					name: `Room ${rooms.length + 1}`,
+					metadata: {position: targetPosition},
+				})
+			: undefined;
+	const toRoom = overlappingRoom ?? roomToAdd;
+
+	if (!toRoom) {
+		return null;
+	}
+
+	const targetReturnDirection = REVERSE_DIRECTION[direction];
+	const targetCanReturn =
+		!overlappingRoom ||
+		!isConnectionFromRoom(idValue(overlappingRoom.id), targetReturnDirection, connections);
+
+	const connection = ConnectionSchema.parse({
+		...createDefaultFieldObject(ConnectionSchema),
+		id: generateUniqueId("connection", connections),
+		fromRoomId: fromRoom.id,
+		toRoomId: toRoom.id,
+		direction,
+		returnDirection: targetReturnDirection,
+		pathway: targetCanReturn ? "two-way" : "forwards",
+	});
+
+	if (connectionAlreadyExists(connection, connections)) {
+		return null;
+	}
+
+	return {
+		connection,
+		roomToAdd,
+	};
+}

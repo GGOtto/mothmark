@@ -1,6 +1,6 @@
 import {useMemo} from "react";
-import {type World} from "../../../schemas/worldSchema";
-import {RoomSchema, type Room} from "../../../schemas/roomSchema";
+import {type World} from "../../../schemas/world/worldSchema";
+import {RoomSchema, type Room} from "../../../schemas/world/roomSchema";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
 import {compareIds} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";

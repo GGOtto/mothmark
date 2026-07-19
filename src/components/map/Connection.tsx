@@ -1,18 +1,23 @@
 import {ArrowLeftRight, ArrowRight, Layers, X} from "lucide-react";
 import type React from "react";
 import {useRef, useState} from "react";
-import type {Connection as ConnectionType, Direction, Point, Room} from "../../schemas/roomSchema";
-import type {World, Layer} from "../../schemas/worldSchema";
-import {getRoomNodeAnchorVector, getRoomNodePosition} from "../../utils/mapUtils";
-import {findLayerForRoomId} from "../../utils/layerUtils";
+import type {
+	Connection as ConnectionType,
+	Direction,
+	Point,
+	Room,
+} from "../../schemas/world/roomSchema";
+import type {World, Layer} from "../../schemas/world/worldSchema";
+import {getRoomNodeAnchorVector, getRoomNodePosition} from "./utils/mapUtils";
+import {findLayerForRoomId} from "./utils/layerUtils";
 import {idValue} from "../../utils/idUtils";
-import {getPathwayLabel} from "../../utils/connectionUtils";
+import {getPathwayLabel} from "./utils/connectionUtils";
 import {
 	DEFAULT_STUB_CONNECTOR_LENGTH,
 	findConnectionStubPoint,
 	type PlacementRectangle,
-} from "../../utils/connectionStubPlacement";
-import {addPoints, scalePoint, getDistance} from "../../utils/pointUtils";
+} from "./utils/connectionStubPlacement";
+import {addPoints, scalePoint, getDistance} from "./utils/pointUtils";
 import type {ToolBarStatus, UpdateStatus} from "../studio/ToolBar";
 import "./Connection.scss";
 

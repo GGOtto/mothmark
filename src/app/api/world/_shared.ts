@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
-import {WorldSchema} from "@/schemas/worldSchema";
+import {WorldSchema} from "@/schemas/world/worldSchema";
 
 export const WorldIdSchema = z.uuid();
 

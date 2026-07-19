@@ -1,10 +1,10 @@
 "use client";
 
 import {useEffect, useMemo, useRef, useState} from "react";
-import type {World} from "../../schemas/worldSchema";
-import {createInitialGameState, type GameState} from "../../engine/gameState";
-import {lookAtRoom, refreshLatestRoomMessage} from "../../engine/rooms";
-import {runCommand} from "../../engine/commands";
+import type {World} from "../../schemas/world/worldSchema";
+import {createInitialGameState} from "../../engine/states/createInitialState";
+import type {GameState} from "@/schemas/states/gameStateSchema";
+import {runCommand} from "../../engine/commands/execute";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
 import "./GamePlayer.scss";
@@ -47,7 +47,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 	const playerRef = useRef<HTMLElement | null>(null);
 	const initialState = useMemo(() => {
 		const state = createInitialGameState(world, startingRoomId);
-		return lookAtRoom(world, state);
+		// TODO make this a message
 	}, [world, startingRoomId]);
 
 	const [gameState, setGameState] = useState(initialState);
@@ -55,7 +55,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
 	const displayState = useMemo(() => {
-		return refreshLatestRoomMessage(world, gameState);
+		// TODO refresh initial game state
 	}, [world, gameState]);
 
 	useEffect(() => {
@@ -72,7 +72,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 	}, []);
 
 	function pushGameState(updateGameState: (currentState: GameState) => GameState) {
-		setGameState((currentState) => updateGameState(currentState));
+		// setGameState((currentState) => updateGameState(currentState));
 	}
 
 	function submitCommand(event: React.FormEvent<HTMLFormElement>) {
@@ -91,9 +91,7 @@ function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoad
 
 	return (
 		<section ref={playerRef} className="game-player">
-			<div className="game-player__output">
-				<OutputLog messages={displayState.messages} />
-			</div>
+			<div className="game-player__output">{/*<OutputLog messages={displayState.messages} />*/}</div>
 
 			<CommandInput
 				command={command}

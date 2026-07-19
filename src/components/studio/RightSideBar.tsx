@@ -1,5 +1,5 @@
-import type {Room, Connection} from "../../schemas/roomSchema";
-import type {World} from "@/schemas/worldSchema";
+import type {Room, Connection} from "../../schemas/world/roomSchema";
+import type {World} from "@/schemas/world/worldSchema";
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {RoomEditor} from "./editors/RoomEditor";
 import {ConnectionEditor} from "./editors/ConnectionEditor";

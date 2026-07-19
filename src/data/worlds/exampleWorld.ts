@@ -1,4 +1,4 @@
-import {WorldSchema} from "../../schemas/worldSchema";
+import {WorldSchema} from "../../schemas/world/worldSchema";
 
 function feature(
 	id: string,

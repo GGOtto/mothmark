@@ -1,6 +1,6 @@
-import type {RoomNode} from "../../utils/mapUtils";
-import type {Room, Direction} from "../../schemas/roomSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "../../utils/mapUtils";
+import type {RoomNode} from "./utils/mapUtils";
+import type {Room, Direction} from "../../schemas/world/roomSchema";
+import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
 import type {UpdateStatus} from "../studio/ToolBar";
 import {Node} from "./Node";
 import "./Room.scss";
