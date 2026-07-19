@@ -16,12 +16,13 @@ export function createInitialGameState(world: World, startingRoomId: string): Ga
 			})),
 		},
 		roomStates: world.rooms.map((room) => ({
-			roomId: room.id,
+			type: "room",
+			id: room.id,
 			visited: false,
 			featureStates: room.features.map((feature) => ({
-				featureId: feature.id,
+				type: "feature",
+				id: feature.id,
 				examined: false,
-				objectState: feature.state,
 			})),
 		})),
 		messages: [],
@@ -31,7 +32,7 @@ export function createInitialGameState(world: World, startingRoomId: string): Ga
 		...game,
 		roomStates: game.roomStates.map((roomState) => ({
 			...roomState,
-			visited: idValue(roomState.roomId) === idValue(startingRoom.id),
+			visited: idValue(roomState.id) === idValue(startingRoom.id),
 		})),
 		messages: [createRoomMessage(world, startingRoom, game)],
 	};

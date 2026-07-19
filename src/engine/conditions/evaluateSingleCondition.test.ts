@@ -148,4 +148,35 @@ describe("evaluateSingleCondition", () => {
 			),
 		).toBe(true);
 	});
+
+	it("evaluate room state: visited and not-visited", () => {
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "is", roomId: toID("room", "atrium")}),
+			),
+		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "is-not", roomId: toID("room", "cellar")}),
+			),
+		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "has-tag", tag: "safe"}),
+			),
+		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "missing-tag", tag: "outdoors"}),
+			),
+		).toBe(true);
+	});
 });

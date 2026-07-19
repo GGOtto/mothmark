@@ -114,37 +114,32 @@ export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 	{title: "Current Room Condition", description: "Checks the player's current room or its tags."},
 );
 
-export const RoomHistoryConditionSchema = editor.discriminatedUnion(
-	z.discriminatedUnion("operation", [
-		z.object({
-			type: z.literal("room-history"),
-			operation: z.literal("visited"),
-			roomId: editor.reference("room", {title: "Room"}),
-		}),
-		z.object({
-			type: z.literal("room-history"),
-			operation: z.literal("not-visited"),
-			roomId: editor.reference("room", {title: "Room"}),
-		}),
-	]),
+export const RoomStateConditionSchema = editor.object(
+	{
+		type: z.literal("room-state"),
+		state: editor.select(z.enum(["visited", "not-visited"])),
+		roomId: editor.reference("room", {title: "Room"}),
+	},
 	{title: "Room History Condition"},
 );
 
-export const FeatureExaminedConditionSchema = editor.object(
+export const FeatureStateConditionSchema = editor.object(
 	{
-		type: z.literal("feature-examined"),
+		type: z.literal("feature-state"),
 		roomId: editor.reference("room", {title: "Room"}),
 		featureId: editor.reference("feature", {title: "Feature"}),
-		examined: editor.boolean({title: "Examined"}).default(true),
+		state: editor.select(z.enum(["examined", "not-examined"])),
 	},
 	{title: "Feature Examined Condition"},
 );
 
+// TODO: overhaul the object state system. For now, this is out
 export const ObjectStateConditionSchema = editor.object(
 	{
 		type: z.literal("object-state"),
 		operation: editor.select(
 			z.enum([
+				"examined",
 				"open",
 				"closed",
 				"locked",
@@ -168,8 +163,8 @@ export const SingleConditionSchema = editor.discriminatedUnion(
 		FlagConditionSchema,
 		CounterConditionSchema,
 		CurrentRoomConditionSchema,
-		RoomHistoryConditionSchema,
-		FeatureExaminedConditionSchema,
+		RoomStateConditionSchema,
+		FeatureStateConditionSchema,
 		ObjectStateConditionSchema,
 	]),
 	{title: "Condition"},

@@ -1,8 +1,9 @@
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds} from "@/utils/idUtils";
+import {compareIds, getEntityType, ID} from "@/utils/idUtils";
 import {getRoom} from "../utils/worldLookupUtils";
+import {EntityState} from "@/schemas/states/entityStates";
 
 type VariableLookup<TValue> = {exists: true; value: TValue} | {exists: false; value: undefined};
 
@@ -17,6 +18,14 @@ function findVariable<TValue>(
 	}
 
 	return {exists: false, value: undefined};
+}
+
+function findStateById(states: EntityState[], id: ID): EntityState | undefined {
+	for (const state of states) {
+		if (compareIds(state.id, id)) {
+			return state;
+		}
+	}
 }
 
 function evaluateFlag(
@@ -94,6 +103,48 @@ function evaluateCurrentRoom(
 	}
 }
 
+function evaluateRoomState(
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "room-state"}>,
+): boolean {
+	const state = findStateById(game.roomStates, condition.roomId);
+	if (!state || state.type !== "room") {
+		return false;
+	}
+	switch (condition.state) {
+		case "visited":
+			return state.visited;
+		case "not-visited":
+			return !state.visited;
+		default:
+			return false;
+	}
+}
+
+function evaluateFeatureState(
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "feature-state"}>,
+): boolean {
+	const room = findStateById(game.roomStates, condition.roomId);
+	if (!room || room.type !== "room") {
+		return false;
+	}
+
+	const feature = findStateById(room.featureStates, condition.featureId);
+	if (!feature || feature.type !== "feature") {
+		return false;
+	}
+
+	switch (condition.state) {
+		case "examined":
+			return feature.examined;
+		case "not-examined":
+			return !feature.examined;
+		default:
+			return false;
+	}
+}
+
 export function evaluateSingleCondition(
 	world: World,
 	game: GameState,
@@ -106,6 +157,10 @@ export function evaluateSingleCondition(
 			return evaluateCounter(game, condition);
 		case "current-room":
 			return evaluateCurrentRoom(world, game, condition);
+		case "room-state":
+			return evaluateRoomState(game, condition);
+		case "feature-state":
+			return evaluateFeatureState(game, condition);
 		default:
 			return false;
 	}
