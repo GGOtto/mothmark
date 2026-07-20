@@ -291,7 +291,7 @@ for (const [type, options] of Object.entries(effectOperationOptionsByType)) {
 }
 
 export function createDefaultConditionValue(type = "flag"): Record<string, unknown> {
-	if (type === "group") return {type: "group", kind: "group", operator: "all", conditions: []};
+	if (type === "group") return {type: "group", operation: "all", conditions: []};
 	if (type === "counter") return {type, operation: "compare", counter: "", operator: "eq", value: 0};
 	if (type === "current-room") return {type, operation: "is", roomId: ""};
 	if (type === "inventory") return {type, operation: "has-item", itemId: ""};
@@ -307,7 +307,7 @@ export function createDefaultConditionValue(type = "flag"): Record<string, unkno
 	if (type === "has-item") return {type, itemId: "", negate: false};
 	if (type === "room-history") return {type, roomId: "", history: "visited", value: true};
 	if (type === "feature-examined") return {type, roomId: "", featureId: "", value: true};
-	return {type, operation: "equals", flag: "", value: true};
+	return {type, operation: "true", flag: ""};
 }
 
 export function createDefaultEffectValue(
@@ -326,6 +326,7 @@ export function createDefaultEffectValue(
 	if (type === "npc") return {type, operation: operation ?? "move-to-room", npcId: "", roomId: ""};
 	if (type === "event") return {type, operation: operation ?? "schedule", eventId: ""};
 	if (type === "group") return {type, effects: []};
-	if (type === "conditional") return {type, when: [], then: [], otherwise: []};
+	if (type === "conditional")
+		return {type, condition: createDefaultConditionValue(), then: [], otherwise: []};
 	return {type, operation: operation ?? "stop-processing"};
 }

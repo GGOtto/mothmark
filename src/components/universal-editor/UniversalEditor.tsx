@@ -212,7 +212,11 @@ function isIdentifiableRecord(
 }
 
 function recordId(value: unknown) {
-	return isIdentifiableRecord(value) ? idValue(value.id) : undefined;
+	if (isIdentifiableRecord(value)) return idValue(value.id);
+	if (isRecord(value) && (typeof value.identity === "string" || isID(value.identity))) {
+		return idValue(value.identity);
+	}
+	return undefined;
 }
 
 function findArrayEntityPath(
@@ -230,7 +234,14 @@ function findArrayEntityPath(
 function getEntityPathByRef(value: unknown, ref: EditorLinkRef): EditorPath | undefined {
 	if (ref.type === "room") return findArrayEntityPath(value, ["rooms"], ref.id);
 	if (ref.type === "connection") return findArrayEntityPath(value, ["connections"], ref.id);
-	if (ref.type === "condition") return findArrayEntityPath(value, ["conditions"], ref.id);
+	if (ref.type === "condition") {
+		const conditionPath = findArrayEntityPath(value, ["conditions"], ref.id);
+		if (!conditionPath) return undefined;
+		const storedCondition = getValueAtPath(value, conditionPath);
+		return isRecord(storedCondition) && "condition" in storedCondition
+			? [...conditionPath, "condition"]
+			: conditionPath;
+	}
 	if (ref.type === "effect") return findArrayEntityPath(value, ["effects"], ref.id);
 	if (ref.type === "item") return findArrayEntityPath(value, ["items"], ref.id);
 	if (ref.type === "npc" || ref.type === "character") {

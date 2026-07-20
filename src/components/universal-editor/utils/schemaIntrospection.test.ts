@@ -31,6 +31,19 @@ describe("getSchemaAtPath", () => {
 		expect(resolveEditorMetadata(childSchema!).title).toBe("Room Name");
 	});
 
+	it("resolves condition-control children through a preprocess schema", () => {
+		const schema = editor.object({
+			activeWhen: editor.conditionControl(
+				editor.object({type: z.literal("flag"), flag: editor.flagKey()}),
+			),
+		});
+
+		const childSchema = getSchemaAtPath(schema, ["activeWhen", "conditions", 0]);
+
+		expect(childSchema).toBeDefined();
+		expect(childSchema?.safeParse({type: "flag", flag: "gate.open"}).success).toBe(true);
+	});
+
 	it("returns undefined for unsupported paths", () => {
 		const schema = z.array(z.string());
 

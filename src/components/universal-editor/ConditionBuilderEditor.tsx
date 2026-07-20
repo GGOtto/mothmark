@@ -49,6 +49,7 @@ export type ConditionBuilderFeatures = {
 	compact?: boolean;
 	addConditionLabel?: string;
 	addGroupLabel?: string;
+	rootGroup?: boolean;
 };
 
 export type ConditionBuilderControlMetadata = EditorControlMetadata & {
@@ -158,7 +159,10 @@ function normalizeCondition(condition: ConditionValue): ConditionValue {
 	if (condition.type === "condition-ref") {
 		return {
 			type: "condition-ref",
-			conditionId: typeof condition.conditionId === "string" ? condition.conditionId : "",
+			conditionId:
+				typeof condition.conditionId === "string" || isID(condition.conditionId)
+					? idValue(condition.conditionId)
+					: "",
 		};
 	}
 
@@ -167,7 +171,7 @@ function normalizeCondition(condition: ConditionValue): ConditionValue {
 			...condition,
 			kind: "group",
 			type: "group",
-			operator: normalizeGroupOperator(condition.operator),
+			operation: normalizeGroupOperator(condition.operation ?? condition.operator),
 			conditions: Array.isArray(condition.conditions) ? condition.conditions : [],
 		};
 	}
@@ -197,7 +201,7 @@ function typeLabel(
 	);
 }
 
-function conditionListName(
+function conditionLinkName(
 	condition: ConditionValue,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
@@ -294,7 +298,7 @@ function ensureConditionIdentity(
 		id: toID("condition", storedConditionId(condition) ?? uniqueConditionId(condition, siblings)),
 		name:
 			storedConditionName(condition) ??
-			uniqueConditionName(conditionListName(condition, metadata, context, index), siblings),
+			uniqueConditionName(conditionLinkName(condition, metadata, context, index), siblings),
 	};
 }
 
@@ -340,13 +344,50 @@ function conditionDisplayNameFields(condition: ConditionValue) {
 		name: condition.name,
 		label: condition.label,
 		title: condition.title,
-		allowMultipleUsesInWorld: condition.allowMultipleUsesInWorld,
 	};
 }
 
 function worldConditions(context: EditorControlContext) {
 	const conditions = context.getWorldValue?.(["conditions"]) ?? context.getValue(["conditions"]);
-	return Array.isArray(conditions) ? (conditions as ConditionValue[]).map(normalizeCondition) : [];
+	if (!Array.isArray(conditions)) return [];
+	return (conditions as ConditionValue[]).map((storedCondition) => {
+		if (
+			isID(storedCondition.identity) &&
+			typeof storedCondition.condition === "object" &&
+			storedCondition.condition !== null &&
+			!Array.isArray(storedCondition.condition)
+		) {
+			return {
+				...normalizeCondition(storedCondition.condition as ConditionValue),
+				id: storedCondition.identity,
+			};
+		}
+		return normalizeCondition(storedCondition);
+	});
+}
+
+function storedWorldCondition(condition: ConditionValue) {
+	const conditionId = storedConditionId(condition);
+	if (!conditionId) return condition;
+	const definition = {...condition};
+	delete definition.id;
+	delete definition.name;
+	delete definition.label;
+	delete definition.title;
+	delete definition.allowMultipleUsesInWorld;
+	return {
+		identity: toID("condition", conditionId),
+		condition: definition,
+	};
+}
+
+function setWorldConditions(context: EditorControlContext, conditions: ConditionValue[]) {
+	const storedConditions = conditions.map(storedWorldCondition);
+	if (context.setWorldValue) {
+		context.setWorldValue(["conditions"], storedConditions);
+	} else {
+		context.setValue(["conditions"], storedConditions);
+	}
 }
 
 function worldConditionById(context: EditorControlContext, id: unknown) {
@@ -374,11 +415,7 @@ function updateWorldConditionById(
 		index === conditionIndex ? nextCondition : condition,
 	);
 
-	if (context.setWorldValue) {
-		context.setWorldValue(["conditions"], nextConditions);
-	} else {
-		context.setValue(["conditions"], nextConditions);
-	}
+	setWorldConditions(context, nextConditions);
 
 	return true;
 }
@@ -397,7 +434,10 @@ function conditionUsage(
 	seenConditionIds = new Set<string>(),
 ): ConditionValue {
 	if (isConditionReference(condition)) {
-		const conditionId = typeof condition.conditionId === "string" ? condition.conditionId.trim() : "";
+		const conditionId =
+			typeof condition.conditionId === "string" || isID(condition.conditionId)
+				? idValue(condition.conditionId).trim()
+				: "";
 		if (!conditionId || seenConditionIds.has(conditionId)) return condition;
 
 		const worldCondition = worldConditionById(context, conditionId);
@@ -454,7 +494,6 @@ function createWorldConditionDefinition(
 		...condition,
 		id: uniqueWorldConditionId(condition, context),
 		name: uniqueWorldConditionName(condition, metadata, context),
-		allowMultipleUsesInWorld: false,
 	};
 	return nextCondition;
 }
@@ -467,11 +506,7 @@ function createWorldCondition(
 ) {
 	const nextCondition = createWorldConditionDefinition(type, metadata, context, overrides);
 	const conditions = worldConditions(context);
-	if (context.setWorldValue) {
-		context.setWorldValue(["conditions"], [...conditions, nextCondition]);
-	} else {
-		context.setValue(["conditions"], [...conditions, nextCondition]);
-	}
+	setWorldConditions(context, [...conditions, nextCondition]);
 
 	return nextCondition;
 }
@@ -526,9 +561,7 @@ function materializeWorldConditionDefinition(
 }
 
 function reusableWorldConditions(context: EditorControlContext) {
-	return worldConditions(context).filter(
-		(condition) => condition.allowMultipleUsesInWorld === true && storedConditionId(condition),
-	);
+	return worldConditions(context).filter((condition) => storedConditionId(condition));
 }
 
 function hasWorldConditionLibrary(context: EditorControlContext) {
@@ -587,11 +620,7 @@ export function ConditionBuilderEditor({
 			return conditionRefFor(nextCondition);
 		});
 
-		if (context.setWorldValue) {
-			context.setWorldValue(["conditions"], [...nextWorldConditions, ...pendingConditions]);
-		} else {
-			context.setValue(["conditions"], [...nextWorldConditions, ...pendingConditions]);
-		}
+		setWorldConditions(context, [...nextWorldConditions, ...pendingConditions]);
 		onChange(nextRefs);
 	}, [canEdit, context, isConditionList, metadata, onChange, value]);
 
@@ -621,7 +650,7 @@ export function ConditionBuilderEditor({
 		const summaryConditions = conditions.map((condition) => conditionUsage(condition, context));
 		const summaryCondition = {
 			type: "group",
-			operator: "all",
+			operation: "all",
 			conditions: summaryConditions,
 		};
 		const canAddGroup = canEdit && (metadata.features?.allowGroups ?? true);
@@ -647,7 +676,7 @@ export function ConditionBuilderEditor({
 					type,
 					metadata,
 					context,
-					type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+					type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
 				);
 				onChange([...conditions, conditionRefFor(nextCondition)]);
 				return;
@@ -659,7 +688,7 @@ export function ConditionBuilderEditor({
 					metadata,
 					context,
 					conditions,
-					type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+					type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
 				),
 			]);
 		}
@@ -847,7 +876,7 @@ function ConditionLinkList({
 	function openCondition(index: number) {
 		const condition = conditions[index];
 		const usage = conditionUsage(condition, context);
-		const name = conditionListName(usage, metadata, context, index);
+		const name = conditionLinkName(usage, metadata, context, index);
 
 		if (
 			canEdit &&
@@ -869,7 +898,7 @@ function ConditionLinkList({
 			context.editorNavigation?.openEditorLink?.({
 				ref: {
 					type: "condition",
-					id: conditionId ?? String(index),
+					id: opensWorldCondition ? (conditionId ?? String(index)) : String(index),
 					label: name,
 				},
 				target: {
@@ -899,7 +928,7 @@ function ConditionLinkList({
 				{conditions.length === 0 ? emptyState : null}
 				{conditions.map((condition, index) => {
 					const usage = conditionUsage(condition, context);
-					const name = conditionListName(usage, metadata, context, index);
+					const name = conditionLinkName(usage, metadata, context, index);
 					const summary = generateConditionSummary(usage);
 					const isSelected = !canOpenChildEditor && index === safeSelectedIndex;
 					const missingReference = isConditionReference(condition) && usage === condition;
@@ -958,7 +987,7 @@ function ConditionLinkList({
 
 			{selectedCondition ? (
 				<ConditionItemShell
-					title={conditionListName(
+					title={conditionLinkName(
 						conditionUsage(selectedCondition, context),
 						metadata,
 						context,
@@ -989,7 +1018,7 @@ function ConditionLinkList({
 						disabled={disabled}
 						readonly={readonly}
 						context={context}
-						editorTitle={`Editing ${conditionListName(
+						editorTitle={`Editing ${conditionLinkName(
 							selectedCondition,
 							metadata,
 							context,
@@ -1106,6 +1135,7 @@ function ConditionNodeEditor({
 	const canEdit = !isDisabled && !isReadonly;
 	const type = getConditionType(value);
 	const isGroup = type === "group";
+	const isFixedRootGroup = depth === 0 && metadata.features?.rootGroup === true;
 	const maxDepth = metadata.features?.maxDepth ?? 5;
 	const canAddGroup =
 		canEdit &&
@@ -1135,7 +1165,7 @@ function ConditionNodeEditor({
 				type,
 				metadata,
 				context,
-				type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+				type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
 			);
 			const nextChildConditions = [...childConditions, conditionRefFor(nextCondition)];
 
@@ -1146,12 +1176,12 @@ function ConditionNodeEditor({
 					...value,
 					conditions: nextChildConditions,
 				};
-				context.setWorldValue(["conditions"], nextConditions);
+				setWorldConditions(context, nextConditions);
 				return;
 			}
 
 			if (context.setWorldValue) {
-				context.setWorldValue(["conditions"], [...worldConditions(context), nextCondition]);
+				setWorldConditions(context, [...worldConditions(context), nextCondition]);
 			}
 			updateField("conditions", [...childConditions, conditionRefFor(nextCondition)]);
 			return;
@@ -1163,7 +1193,7 @@ function ConditionNodeEditor({
 				metadata,
 				context,
 				childConditions,
-				type === "group" ? {operator: metadata.features?.defaultGroupOperator ?? "all"} : {},
+				type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
 			),
 		]);
 	}
@@ -1203,63 +1233,30 @@ function ConditionNodeEditor({
 		>
 			{editorTitle ? <div className="conditionBuilderEditor__editingTitle">{editorTitle}</div> : null}
 			<div className="conditionBuilderEditor__row">
-				{renderTextField(
-					"name",
-					String(value.name ?? value.label ?? value.title ?? ""),
-					isGroup ? "Group name in list" : "Condition name in list",
-					updateField,
-					metadata,
-					path,
-					disabled,
-					readonly,
-					context,
-					"Shown in the parent condition list",
-				)}
-				{renderTextField(
-					"id",
-					isID(value.id) ? idValue(value.id) : "",
-					isGroup ? "Group ID" : "Condition ID",
-					updateField,
-					metadata,
-					path,
-					disabled,
-					readonly,
-					context,
-					"Stable identifier used when reusing this condition",
-				)}
-				{isWorldConditionEditorPath(path)
-					? renderReuseToggleField(
-							Boolean(value.allowMultipleUsesInWorld),
-							updateField,
+				{isFixedRootGroup
+					? null
+					: renderSelect({
+							childKey: "conditionType",
+							value: type,
+							onChange: (nextType) => changeType(String(nextType)),
+							title: "Type",
+							options: availableTypes,
 							metadata,
-							path,
+							path: [...path, "type"],
 							disabled,
 							readonly,
 							context,
-						)
-					: null}
-				{renderSelect({
-					childKey: "conditionType",
-					value: type,
-					onChange: (nextType) => changeType(String(nextType)),
-					title: "Type",
-					options: availableTypes,
-					metadata,
-					path: [...path, "type"],
-					disabled,
-					readonly,
-					context,
-				})}
+						})}
 
 				{isGroup
 					? renderSelect({
 							childKey: "groupOperator",
-							value: normalizeGroupOperator(value.operator),
-							onChange: (nextOperator) => updateField("operator", nextOperator),
+							value: normalizeGroupOperator(value.operation ?? value.operator),
+							onChange: (nextOperation) => updateField("operation", nextOperation),
 							title: "Group logic",
 							options: groupOperatorOptions(metadata, context),
 							metadata,
-							path: [...path, "operator"],
+							path: [...path, "operation"],
 							disabled,
 							readonly,
 							context,
@@ -1270,7 +1267,7 @@ function ConditionNodeEditor({
 			{isGroup ? (
 				<div className="conditionBuilderEditor__group">
 					<div className="conditionBuilderEditor__groupHeader">
-						<strong>{groupTitle(value.operator)}</strong>
+						<strong>{groupTitle(value.operation ?? value.operator)}</strong>
 						<span>
 							{childConditions.length} condition{childConditions.length === 1 ? "" : "s"}
 						</span>
@@ -2609,40 +2606,6 @@ function renderToggleField(
 		},
 		parentMetadata: metadata,
 		path: [...path, key],
-		disabled,
-		readonly,
-		context,
-	});
-}
-
-function renderReuseToggleField(
-	value: boolean,
-	onChange: (key: string, nextValue: unknown) => void,
-	metadata: ConditionBuilderControlMetadata,
-	path: Array<string | number>,
-	disabled: boolean | undefined,
-	readonly: boolean | undefined,
-	context: ConditionBuilderEditorProps["context"],
-) {
-	return renderChildControl({
-		type: "toggle",
-		childKey: "allowMultipleUsesInWorld",
-		value,
-		onChange: (nextValue) => onChange("allowMultipleUsesInWorld", nextValue),
-		metadata: {
-			title: "Allow multiple uses in world",
-			description: "Makes this condition available in existing-condition pickers.",
-			appearance: {chrome: "inline", size: "sm"},
-			features: {
-				display: "checkbox",
-				labels: {
-					on: "Allow multiple uses in world",
-					off: "Allow multiple uses in world",
-				},
-			},
-		},
-		parentMetadata: metadata,
-		path: [...path, "allowMultipleUsesInWorld"],
 		disabled,
 		readonly,
 		context,

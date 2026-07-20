@@ -13,6 +13,7 @@ export type {EditorRegistries};
 
 type WorldEntity = {
 	id: string | ID;
+	type?: string;
 	name?: string;
 	title?: string;
 	description?: unknown;
@@ -88,12 +89,22 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		description: descriptionText(connection.description),
 		path: ["connections", index],
 	}));
-	const conditions = ((worldRecord.conditions as WorldEntity[] | undefined) ?? []).map(
-		(condition, index) => ({
-			...entityOption(condition, ["conditions", index]),
-			description: descriptionText(condition.description),
-		}),
-	);
+	const conditions = world.conditions.map((storedCondition, index) => {
+		const legacyCondition = storedCondition as unknown as WorldEntity;
+		const isWrapped =
+			"identity" in storedCondition &&
+			"condition" in storedCondition &&
+			storedCondition.condition !== undefined;
+		const conditionId = isWrapped ? idValue(storedCondition.identity) : idValue(legacyCondition.id);
+		const conditionType = isWrapped ? storedCondition.condition.type : legacyCondition.type;
+
+		return {
+			id: conditionId,
+			label: legacyCondition.name ?? legacyCondition.title ?? conditionId,
+			description: conditionType ? `Stored ${conditionType} condition` : "Stored condition",
+			path: isWrapped ? ["conditions", index, "condition"] : ["conditions", index],
+		};
+	});
 	const items = ((worldRecord.items as WorldEntity[] | undefined) ?? []).map((item, index) =>
 		entityOption(item, ["items", index]),
 	);

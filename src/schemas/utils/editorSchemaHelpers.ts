@@ -653,13 +653,21 @@ export function editorCondition<TSchema extends z.ZodTypeAny>(
 	);
 }
 
-export function editorConditionList<TSchema extends z.ZodTypeAny>(
+export function editorConditionControl<TSchema extends z.ZodTypeAny>(
 	conditionSchema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
-	defaultFieldValue?: unknown,
 ) {
 	return withEditorMetadata(
-		z.array(conditionSchema).default([]),
+		z.preprocess(
+			(value) => (Array.isArray(value) ? {type: "group", operation: "all", conditions: value} : value),
+			z
+				.object({
+					type: z.literal("group"),
+					operation: z.enum(["all", "any", "none"]),
+					conditions: z.array(conditionSchema),
+				})
+				.default({type: "group", operation: "all", conditions: []}),
+		),
 		{
 			control: "condition-builder",
 			features: {
@@ -672,6 +680,7 @@ export function editorConditionList<TSchema extends z.ZodTypeAny>(
 						`schema.condition.${type}.operations`,
 					]),
 				),
+				rootGroup: true,
 				...metadata.features,
 			},
 			summary: {
@@ -687,7 +696,7 @@ export function editorConditionList<TSchema extends z.ZodTypeAny>(
 			},
 			...metadata,
 		},
-		defaultFieldValue,
+		{type: "group", operation: "all", conditions: []},
 	);
 }
 
@@ -1007,7 +1016,7 @@ export const editor = {
 	codePreview: editorCodePreview,
 	commandPattern: editorCommandPattern,
 	condition: editorCondition,
-	conditionList: editorConditionList,
+	conditionControl: editorConditionControl,
 	conditionalText: editorConditionalText,
 	counterKey: editorCounterKey,
 	diffPreview: editorDiffPreview,

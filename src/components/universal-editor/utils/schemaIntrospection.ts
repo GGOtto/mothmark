@@ -4,6 +4,7 @@ import type {EditorPath} from "@/types/universalEditorTypes";
 export type ZodDef = {
 	type?: string;
 	innerType?: z.ZodTypeAny;
+	out?: z.ZodTypeAny;
 	element?: z.ZodTypeAny;
 	getter?: () => z.ZodTypeAny;
 	shape?: Record<string, z.ZodTypeAny> | (() => Record<string, z.ZodTypeAny>);
@@ -36,6 +37,11 @@ export function unwrapSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 			const innerType = def.innerType;
 			if (!innerType) break;
 			current = innerType;
+			continue;
+		}
+
+		if (def.type === "pipe" && def.out) {
+			current = def.out;
 			continue;
 		}
 

@@ -14,7 +14,6 @@ function feature(
 		tags: ["room-feature"],
 		description: {default: description, variants: []},
 		listedInRoom,
-		activeWhen: [],
 	};
 }
 

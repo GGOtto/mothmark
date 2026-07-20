@@ -303,7 +303,7 @@ function generateConditionSummaryAtDepth(
 	const kind = String(condition.kind ?? condition.type ?? "single");
 
 	if (kind === "group") {
-		const rawOperator = String(condition.operator ?? "all");
+		const rawOperator = String(condition.operation ?? condition.operator ?? "all");
 		const operator = rawOperator === "and" ? "all" : rawOperator === "or" ? "any" : rawOperator;
 		const childSummaries = (Array.isArray(condition.conditions) ? condition.conditions : [])
 			.map((child) => (isRecord(child) ? generateConditionSummaryAtDepth(child, depth + 1) : ""))

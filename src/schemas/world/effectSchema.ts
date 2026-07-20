@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {ConditionUsageSchema} from "./conditionSchema";
+import {ConditionSchema, type Condition} from "./conditionSchema";
 
 const EffectIdentitySchema = z.object({
 	id: editor.id("effect", {title: "Effect ID", advanced: true}).optional(),
@@ -159,7 +159,7 @@ export type EffectGroup = {
 };
 export type ConditionalEffect = {
 	type: "conditional";
-	conditions: z.infer<typeof ConditionUsageSchema>[];
+	condition: Condition;
 	then: Effect[];
 	else: Effect[];
 	id?: unknown;
@@ -195,7 +195,9 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 		}),
 		z.object({
 			type: z.literal("conditional"),
-			conditions: z.array(ConditionUsageSchema),
+			condition: editor.conditionControl(ConditionSchema, {
+				title: "Condition",
+			}),
 			then: z.array(EffectSchema),
 			else: z.array(EffectSchema).default([]),
 			...EffectIdentitySchema.shape,

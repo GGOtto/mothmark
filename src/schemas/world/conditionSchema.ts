@@ -174,6 +174,12 @@ export type ConditionGroup = {
 export type ConditionDefinition = SingleCondition | ConditionGroup;
 export type Condition = ConditionDefinition | ConditionReference;
 
+export const DefaultConditionGroup: ConditionGroup = {
+	type: "group",
+	operation: "all",
+	conditions: [],
+};
+
 export const ConditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
 	z.object({
 		type: z.literal("group"),
@@ -186,17 +192,32 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 	z.union([SingleConditionSchema, ConditionGroupSchema, ConditionReferenceSchema]),
 );
 
-export const WorldConditionSchema = z.object({
-	identity: editor.id("condition"),
-	condition: z.union([SingleConditionSchema, ConditionGroupSchema]),
-});
+export const WorldConditionSchema = z.preprocess(
+	(value) => {
+		if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+		if ("identity" in value && "condition" in value) return value;
+		if (!("id" in value)) return value;
+
+		const id = value.id;
+		const condition: Record<string, unknown> = {...value};
+		delete condition.id;
+		delete condition.name;
+		delete condition.allowMultipleUsesInWorld;
+		return {identity: id, condition};
+	},
+	z.object({
+		identity: editor.id("condition"),
+		condition: editor.condition(z.union([SingleConditionSchema, ConditionGroupSchema]), {
+			title: "Condition",
+		}),
+	}),
+);
 
 export type WorldCondition = z.infer<typeof WorldConditionSchema>;
-export const ConditionUsageSchema = ConditionReferenceSchema;
 
 export const ConditionalTextSchema = editor.object(
 	{
-		when: editor.conditionList(ConditionUsageSchema, {title: "Conditions"}),
+		when: editor.conditionControl(ConditionSchema, {title: "Conditions"}),
 		text: editor.textarea({title: "Text"}).default(""),
 	},
 	{

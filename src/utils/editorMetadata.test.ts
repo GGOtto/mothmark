@@ -49,7 +49,10 @@ describe("editor schema defaultFieldValue", () => {
 	});
 
 	it("reads defaults declared on actual schemas", () => {
-		expect(createDefaultFieldObject(ConditionalTextSchema)).toEqual({text: "", when: []});
+		expect(createDefaultFieldObject(ConditionalTextSchema)).toEqual({
+			text: "",
+			when: {type: "group", operation: "all", conditions: []},
+		});
 		expect(createDefaultFieldObject(FlagConditionSchema)).toEqual({
 			type: "flag",
 			operation: "true",
