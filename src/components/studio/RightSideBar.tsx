@@ -1,5 +1,6 @@
 import type {Room, Connection} from "../../schemas/world/roomSchema";
 import type {World} from "@/schemas/world/worldSchema";
+import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {AdjustableBox} from "../ui/AdjustableBox";
 import {RoomEditor} from "./editors/RoomEditor";
 import {ConnectionEditor} from "./editors/ConnectionEditor";
@@ -7,24 +8,20 @@ import "./RightSideBar.scss";
 
 type RightSideBarProps = {
 	world?: World;
-	onWorldChange?: (world: World) => void;
-	rooms?: Room[];
+	updateWorld?: UpdateWorld;
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
-	onRoomChange: (room: Room) => void;
-	onConnectionChange: (connection: Connection) => void;
+	onSelectedIdChange?: (selectedId: string) => void;
 	title?: string;
 	description?: string;
 };
 
 export function RightSideBar({
 	world,
-	onWorldChange,
-	rooms = [],
+	updateWorld,
 	selectedRoom,
 	selectedConnection,
-	onRoomChange,
-	onConnectionChange,
+	onSelectedIdChange,
 	title,
 	description,
 }: RightSideBarProps) {
@@ -39,18 +36,17 @@ export function RightSideBar({
 			{selectedRoom ? (
 				<RoomEditor
 					selectedRoom={selectedRoom}
-					rooms={rooms}
 					world={world}
-					onWorldChange={onWorldChange}
-					onRoomChange={onRoomChange}
+					updateWorld={updateWorld}
+					onSelectedIdChange={onSelectedIdChange}
 				/>
 			) : selectedConnection ? (
 				<ConnectionEditor
 					selectedConnection={selectedConnection}
-					onConnectionChange={onConnectionChange}
 					connections={world?.connections}
 					world={world}
-					onWorldChange={onWorldChange}
+					updateWorld={updateWorld}
+					onSelectedIdChange={onSelectedIdChange}
 				/>
 			) : title ? (
 				<EmptyTabPanel title={title} description={description} />

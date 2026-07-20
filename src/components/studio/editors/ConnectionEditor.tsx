@@ -1,9 +1,18 @@
 import {useMemo} from "react";
+import {produce} from "immer";
 import {ArrowLeft, ArrowLeftRight, ArrowRight, X} from "lucide-react";
 import {type World} from "../../../schemas/world/worldSchema";
 import {ConnectionSchema, type Connection, type Pathway} from "../../../schemas/world/roomSchema";
+import type {UpdateWorld} from "@/types/worldUpdaterTypes";
+import {replaceConnectionDraft} from "@/app/editor/utils/worldDraftUtils";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
-import {compareIds, idValue, resolveWorldEntityName, toID} from "@/utils/idUtils";
+import {
+	compareIds,
+	idValue,
+	resolveWorldEntityName,
+	toID,
+	updateWorldEntityId,
+} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import "./ConnectionEditor.scss";
 
@@ -36,16 +45,16 @@ type ConnectionEditorProps = {
 	selectedConnection: Connection;
 	connections?: Pick<Connection, "id">[];
 	world?: World;
-	onWorldChange?: (world: World) => void;
-	onConnectionChange: (connection: Connection) => void;
+	updateWorld?: UpdateWorld;
+	onSelectedIdChange?: (selectedId: string) => void;
 };
 
 export function ConnectionEditor({
 	selectedConnection,
 	connections = [],
 	world,
-	onWorldChange,
-	onConnectionChange,
+	updateWorld,
+	onSelectedIdChange,
 }: ConnectionEditorProps) {
 	const {theme} = useTheme();
 	const duplicateConnectionId = useMemo(() => {
@@ -63,6 +72,33 @@ export function ConnectionEditor({
 	const toRoomLabel =
 		(world ? resolveWorldEntityName(world, toID("room", selectedConnection.toRoomId)) : undefined) ??
 		idValue(selectedConnection.toRoomId);
+
+	function handleConnectionChange(updatedConnection: Connection) {
+		const selectedConnectionId = idValue(selectedConnection.id);
+		const updatedConnectionId = idValue(updatedConnection.id);
+
+		if (world && updatedConnectionId !== selectedConnectionId) {
+			const worldWithConnectionChanges = produce(world, (draft) => {
+				replaceConnectionDraft(draft, selectedConnection.id, {
+					...updatedConnection,
+					id: selectedConnection.id,
+				});
+			});
+			const renamedWorld = updateWorldEntityId(
+				worldWithConnectionChanges,
+				toID("connection", selectedConnection.id),
+				updatedConnection.id,
+			);
+
+			updateWorld?.(renamedWorld);
+			if (renamedWorld !== worldWithConnectionChanges) onSelectedIdChange?.(updatedConnectionId);
+			return;
+		}
+
+		updateWorld?.((world) => {
+			replaceConnectionDraft(world, selectedConnection.id, updatedConnection);
+		});
+	}
 
 	return (
 		<div className="rightSideBarSection connectionEditor">
@@ -89,9 +125,9 @@ export function ConnectionEditor({
 			<UniversalEditor
 				schema={ConnectionSchema}
 				value={selectedConnection}
-				onChange={onConnectionChange}
+				onChange={handleConnectionChange}
 				world={world}
-				onWorldChange={onWorldChange}
+				updateWorld={updateWorld}
 				appearance={{
 					theme: "auto",
 					scheme: theme,

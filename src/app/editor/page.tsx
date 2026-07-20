@@ -2,6 +2,7 @@
 
 import type React from "react";
 import {useCallback, useEffect, useMemo, useState} from "react";
+import {produce} from "immer";
 import {
 	ToolBar,
 	type ToolBarStatus,
@@ -14,8 +15,9 @@ import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
-import type {Connection, Layer, Room, World} from "@/schemas/world/worldSchema";
-import {compareIds, idValue} from "@/utils/idUtils";
+import type {Room, World} from "@/schemas/world/worldSchema";
+import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
+import {idValue} from "@/utils/idUtils";
 import {getConnectionDraftStatus} from "./utils/editorPageUtils";
 import {loadMainWorld} from "./loadMainWorld";
 import "./page.scss";
@@ -61,10 +63,6 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
-function applyStateAction<T>(action: React.SetStateAction<T>, currentValue: T): T {
-	return typeof action === "function" ? (action as (value: T) => T)(currentValue) : action;
-}
-
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
@@ -82,12 +80,16 @@ export default function EditorPage() {
 		isConnectionSelected: false,
 	});
 
+	const updateWorld = useCallback<UpdateWorld>((update: WorldUpdate) => {
+		setEditorWorld((world) => (typeof update === "function" ? produce(world, update) : update));
+	}, []);
+
 	useEffect(() => {
 		const abortController = new AbortController();
 
 		loadMainWorld(fetch, abortController.signal)
 			.then(({world, worldId, revision}) => {
-				setEditorWorld(world);
+				updateWorld(world);
 				setPersistedWorldId(worldId);
 				setPersistedWorldRevision(revision);
 				setSelection({
@@ -104,7 +106,7 @@ export default function EditorPage() {
 			});
 
 		return () => abortController.abort();
-	}, []);
+	}, [updateWorld]);
 
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
@@ -122,33 +124,6 @@ export default function EditorPage() {
 	const rooms = editorWorld.rooms;
 	const connections = editorWorld.connections;
 
-	const setRooms = useCallback<React.Dispatch<React.SetStateAction<Room[]>>>((roomsAction) => {
-		setEditorWorld((currentWorld) => ({
-			...currentWorld,
-			rooms: applyStateAction(roomsAction, currentWorld.rooms),
-		}));
-	}, []);
-
-	const setConnections = useCallback<React.Dispatch<React.SetStateAction<Connection[]>>>(
-		(connectionsAction) => {
-			setEditorWorld((currentWorld) => ({
-				...currentWorld,
-				connections: applyStateAction(connectionsAction, currentWorld.connections),
-			}));
-		},
-		[],
-	);
-
-	const setLayers = useCallback<React.Dispatch<React.SetStateAction<Layer[]>>>((layersAction) => {
-		setEditorWorld((currentWorld) => ({
-			...currentWorld,
-			metadata: {
-				...currentWorld.metadata,
-				layers: applyStateAction(layersAction, currentWorld.metadata.layers),
-			},
-		}));
-	}, []);
-
 	const selectedRoom = useMemo(() => {
 		if (selection.isConnectionSelected) return null;
 
@@ -161,51 +136,6 @@ export default function EditorPage() {
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
 
-	function updateRoom(updatedRoom: Room) {
-		const selectedRoomId = selection.isConnectionSelected ? null : selection.selectedId;
-
-		setRooms((currentRooms) =>
-			currentRooms.map((room) =>
-				idValue(room.id) === (selectedRoomId ?? idValue(updatedRoom.id)) ? updatedRoom : room,
-			),
-		);
-
-		if (selectedRoomId && selectedRoomId !== idValue(updatedRoom.id)) {
-			setSelection({
-				selectedId: idValue(updatedRoom.id),
-				isConnectionSelected: false,
-			});
-		}
-	}
-
-	function updateConnection(updatedConnection: Connection) {
-		setConnections((currentConnections) =>
-			currentConnections.map((connection) =>
-				compareIds(connection.id, updatedConnection.id) ? updatedConnection : connection,
-			),
-		);
-	}
-
-	function deleteConnection(connectionToDelete: Connection) {
-		setConnections((currentConnections) =>
-			currentConnections.filter((connection) => !compareIds(connection.id, connectionToDelete.id)),
-		);
-
-		setSelection((currentSelection) => {
-			if (
-				currentSelection.isConnectionSelected &&
-				currentSelection.selectedId === idValue(connectionToDelete.id)
-			) {
-				return {
-					selectedId: null,
-					isConnectionSelected: false,
-				};
-			}
-
-			return currentSelection;
-		});
-	}
-
 	return (
 		<main className="editorPage">
 			<LeftSideBar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -215,10 +145,7 @@ export default function EditorPage() {
 				activeTab={activeTab}
 				world={editorWorld}
 				rooms={rooms}
-				setRooms={setRooms}
-				connections={connections}
-				setConnections={setConnections}
-				setLayers={setLayers}
+				updateWorld={updateWorld}
 				selection={selection}
 				setSelection={setSelection}
 				selectedRoom={selectedRoom}
@@ -238,13 +165,10 @@ export default function EditorPage() {
 			<EditorInspector
 				activeTab={activeTab}
 				world={editorWorld}
-				rooms={rooms}
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
-				onRoomChange={updateRoom}
-				onConnectionChange={updateConnection}
-				onWorldChange={setEditorWorld}
-				deleteConnection={deleteConnection}
+				updateWorld={updateWorld}
+				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
 			/>
 		</main>
 	);
@@ -255,10 +179,7 @@ type EditorMainPanelProps = {
 	activeTab: EditorTab;
 	world: World;
 	rooms: Room[];
-	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	connections: Connection[];
-	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
-	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
+	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	selectedRoom: Room | null;
@@ -277,9 +198,7 @@ function EditorMainPanel({
 	activeTab,
 	world,
 	rooms,
-	setRooms,
-	setConnections,
-	setLayers,
+	updateWorld,
 	selection,
 	setSelection,
 	selectedRoom,
@@ -315,9 +234,7 @@ function EditorMainPanel({
 						isLoading={isLoading}
 						activeTab={activeTab}
 						world={world}
-						setRooms={setRooms}
-						setConnections={setConnections}
-						setLayers={setLayers}
+						updateWorld={updateWorld}
 						selection={selection}
 						setSelection={setSelection}
 						mapTool={mapTool}
@@ -392,9 +309,7 @@ type EditorWorkspaceProps = {
 	isLoading: boolean;
 	activeTab: EditorTab;
 	world: World;
-	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
-	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
+	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
@@ -411,9 +326,7 @@ function EditorWorkspace({
 	isLoading,
 	activeTab,
 	world,
-	setRooms,
-	setConnections,
-	setLayers,
+	updateWorld,
 	selection,
 	setSelection,
 	mapTool,
@@ -430,9 +343,7 @@ function EditorWorkspace({
 			<MapWorkspace
 				isLoading={isLoading}
 				world={world}
-				setRooms={setRooms}
-				setConnections={setConnections}
-				setLayers={setLayers}
+				updateWorld={updateWorld}
 				selection={selection}
 				setSelection={setSelection}
 				mapTool={mapTool}
@@ -453,9 +364,7 @@ function EditorWorkspace({
 type MapWorkspaceProps = {
 	isLoading: boolean;
 	world: World;
-	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
-	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
+	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
 	mapTool: MapTool;
@@ -471,9 +380,7 @@ type MapWorkspaceProps = {
 function MapWorkspace({
 	isLoading,
 	world,
-	setRooms,
-	setConnections,
-	setLayers,
+	updateWorld,
 	selection,
 	setSelection,
 	mapTool,
@@ -495,9 +402,7 @@ function MapWorkspace({
 			onTemporaryToolChange={onTemporaryToolChange}
 			onZoomChange={onZoomChange}
 			theme="light"
-			setRooms={setRooms}
-			setConnections={setConnections}
-			setLayers={setLayers}
+			updateWorld={updateWorld}
 			selectedId={selection.selectedId}
 			setSelectedId={(selectedId) =>
 				setSelection((currentSelection) => ({
@@ -548,36 +453,28 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 type EditorInspectorProps = {
 	activeTab: EditorTab;
 	world: World;
-	rooms: Room[];
 	selectedRoom: Room | null;
-	selectedConnection: Connection | null;
-	onRoomChange: (room: Room) => void;
-	onConnectionChange: (connection: Connection) => void;
-	onWorldChange: (world: World) => void;
-	deleteConnection: (connection: Connection) => void;
+	selectedConnection: World["connections"][number] | null;
+	updateWorld: UpdateWorld;
+	onSelectedIdChange: (selectedId: string) => void;
 };
 
 function EditorInspector({
 	activeTab,
 	world,
-	rooms,
 	selectedRoom,
 	selectedConnection,
-	onRoomChange,
-	onConnectionChange,
-	onWorldChange,
-	deleteConnection,
+	updateWorld,
+	onSelectedIdChange,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
 			<RightSideBar
 				world={world}
-				onWorldChange={onWorldChange}
-				rooms={rooms}
+				updateWorld={updateWorld}
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
-				onRoomChange={onRoomChange}
-				onConnectionChange={onConnectionChange}
+				onSelectedIdChange={onSelectedIdChange}
 			/>
 		);
 	}
@@ -587,12 +484,10 @@ function EditorInspector({
 	return (
 		<RightSideBar
 			world={world}
-			onWorldChange={onWorldChange}
-			rooms={rooms}
+			updateWorld={updateWorld}
 			selectedRoom={null}
 			selectedConnection={null}
-			onRoomChange={onRoomChange}
-			onConnectionChange={onConnectionChange}
+			onSelectedIdChange={onSelectedIdChange}
 			title={metadata.title}
 			description={metadata.description}
 		/>

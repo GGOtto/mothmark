@@ -1,3 +1,4 @@
+import {produce} from "immer";
 import type {World} from "@/schemas/world/worldSchema";
 import type {RoomFeature} from "@/schemas/world/roomSchema";
 
@@ -105,12 +106,21 @@ export function updateWorldEntityId(
 	oldReference: ID<WorldIdEntityType>,
 	newReference: ID<WorldIdEntityType> | string,
 ) {
-	if (!isActiveEntityType(oldReference.type)) return false;
+	return produce(world, (draft) => {
+		updateWorldEntityIdDraft(draft, oldReference, newReference);
+	});
+}
+
+function updateWorldEntityIdDraft(
+	world: World,
+	oldReference: ID<WorldIdEntityType>,
+	newReference: ID<WorldIdEntityType> | string,
+) {
+	if (!isActiveEntityType(oldReference.type)) return;
 	const entity = findWorldEntity(world, oldReference.type, oldReference.id);
 	const newId = idValue(newReference);
-	if (!entity || !newId) return false;
-	if (oldReference.id === newId) return true;
-	if (hasDuplicateId(world, oldReference.type, entity, newId)) return false;
+	if (!entity || !newId || oldReference.id === newId) return;
+	if (hasDuplicateId(world, oldReference.type, entity, newId)) return;
 
 	const oldLocalId = idValue(entity.id);
 	const oldCompositeId = compositeFeatureId(world, oldReference.type, oldReference.id);
@@ -121,17 +131,22 @@ export function updateWorldEntityId(
 	if (oldCompositeId && newCompositeId)
 		updateCompositeReferences(world, oldCompositeId, newCompositeId);
 	if (oldReference.type === "room") updateRoomFeatureReferences(world, oldReference.id, newId);
-	return true;
 }
 
 export function deleteWorldEntity(world: World, reference: ID<WorldIdEntityType>) {
-	if (!isActiveEntityType(reference.type)) return false;
+	return produce(world, (draft) => {
+		deleteWorldEntityDraft(draft, reference);
+	});
+}
+
+function deleteWorldEntityDraft(world: World, reference: ID<WorldIdEntityType>) {
+	if (!isActiveEntityType(reference.type)) return;
 	const entity = findWorldEntity(world, reference.type, reference.id);
-	if (!entity) return false;
+	if (!entity) return;
 
 	if (isFeatureType(reference.type)) {
 		const located = findWorldFeature(world, reference.id);
-		if (!located) return false;
+		if (!located) return;
 		located.room.features.splice(located.room.features.indexOf(located.feature), 1);
 	} else {
 		const key = ENTITY_COLLECTIONS[reference.type];
@@ -145,7 +160,6 @@ export function deleteWorldEntity(world: World, reference: ID<WorldIdEntityType>
 		if (fallback && idValue(world.startRoomId) === reference.id)
 			world.startRoomId = toID("room", idValue(fallback));
 	}
-	return true;
 }
 
 export function resolveWorldEntityId(

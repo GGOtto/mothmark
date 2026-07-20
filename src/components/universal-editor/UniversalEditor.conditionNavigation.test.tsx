@@ -43,7 +43,7 @@ describe("condition link navigation", () => {
 				}}
 				onChange={() => undefined}
 				world={world}
-				onWorldChange={() => undefined}
+				updateWorld={() => undefined}
 			/>,
 		);
 

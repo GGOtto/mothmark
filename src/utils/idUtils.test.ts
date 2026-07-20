@@ -23,12 +23,14 @@ describe("active world entity IDs", () => {
 	it("renames rooms and updates room references", () => {
 		const world = createTestWorld();
 		const originalId = idValue(world.rooms[0].id);
+		const updatedWorld = updateWorldEntityId(world, {type: "room", id: originalId}, "renamed-room");
 
-		expect(updateWorldEntityId(world, {type: "room", id: originalId}, "renamed-room")).toBe(true);
-		expect(idValue(world.rooms[0].id)).toBe("renamed-room");
-		expect(idValue(world.startRoomId)).toBe("renamed-room");
+		expect(updatedWorld).not.toBe(world);
+		expect(idValue(world.rooms[0].id)).toBe(originalId);
+		expect(idValue(updatedWorld.rooms[0].id)).toBe("renamed-room");
+		expect(idValue(updatedWorld.startRoomId)).toBe("renamed-room");
 		expect(
-			world.connections.some(
+			updatedWorld.connections.some(
 				(connection) =>
 					idValue(connection.fromRoomId) === "renamed-room" ||
 					idValue(connection.toRoomId) === "renamed-room",
@@ -41,38 +43,46 @@ describe("active world entity IDs", () => {
 		const roomId = idValue(world.rooms[0].id);
 		const feature = world.rooms[0].features[0];
 		const oldFeatureId = idValue(feature.id);
-
-		expect(
-			updateWorldEntityId(
-				world,
-				{type: "feature", id: `${roomId}.${oldFeatureId}`},
-				"renamed-feature",
-			),
-		).toBe(true);
-		expect(idValue(feature.id)).toBe("renamed-feature");
-		expect(resolveWorldEntityName(world, {type: "feature", id: `${roomId}.renamed-feature`})).toBe(
-			feature.name,
+		const updatedWorld = updateWorldEntityId(
+			world,
+			{type: "feature", id: `${roomId}.${oldFeatureId}`},
+			"renamed-feature",
 		);
+
+		expect(idValue(feature.id)).toBe(oldFeatureId);
+		expect(idValue(updatedWorld.rooms[0].features[0].id)).toBe("renamed-feature");
+		expect(
+			resolveWorldEntityName(updatedWorld, {type: "feature", id: `${roomId}.renamed-feature`}),
+		).toBe(feature.name);
 	});
 
 	it("deletes a room and its connections and chooses a new start room", () => {
 		const world = createTestWorld();
 		const deletedId = idValue(world.startRoomId);
+		const updatedWorld = deleteWorldEntity(world, {type: "room", id: deletedId});
 
-		expect(deleteWorldEntity(world, {type: "room", id: deletedId})).toBe(true);
-		expect(world.rooms.some((room) => idValue(room.id) === deletedId)).toBe(false);
+		expect(updatedWorld).not.toBe(world);
+		expect(world.rooms.some((room) => idValue(room.id) === deletedId)).toBe(true);
+		expect(updatedWorld.rooms.some((room) => idValue(room.id) === deletedId)).toBe(false);
 		expect(
-			world.connections.some(
+			updatedWorld.connections.some(
 				(connection) =>
 					idValue(connection.fromRoomId) === deletedId || idValue(connection.toRoomId) === deletedId,
 			),
 		).toBe(false);
-		expect(idValue(world.startRoomId)).toBe(idValue(world.rooms[0].id));
+		expect(idValue(updatedWorld.startRoomId)).toBe(idValue(updatedWorld.rooms[0].id));
 	});
 
 	it("does not resolve dormant item and NPC entity types", () => {
 		const world = createTestWorld();
 		expect(resolveWorldEntityId({id: {type: "item", id: "key"}}, world)).toBeUndefined();
 		expect(resolveWorldEntityId({id: {type: "npc", id: "guard"}}, world)).toBeUndefined();
+	});
+
+	it("preserves world identity when an entity cannot be changed", () => {
+		const world = createTestWorld();
+
+		expect(deleteWorldEntity(world, {type: "room", id: "missing-room"})).toBe(world);
+		expect(updateWorldEntityId(world, {type: "room", id: "missing-room"}, "new-room")).toBe(world);
 	});
 });

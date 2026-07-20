@@ -155,6 +155,45 @@
 		stroke-width: 2;
 		filter: drop-shadow(0 0 2px #ffffff);
 	}
+
+	.layerClearButton {
+		--layer-control-hover: var(--map-accent-strong);
+		position: absolute;
+		bottom: 20px;
+		right: 20px;
+		z-index: 10;
+		width: 42px;
+		height: 42px;
+		display: block;
+		background: var(--map-room-surface);
+		border: 1px solid var(--map-room-border);
+		border-radius: 14px;
+		box-shadow:
+			0 8px 18px var(--map-shadow),
+			inset 0 1px 0 var(--map-highlight);
+		cursor: default;
+		touch-action: manipulation;
+		user-select: none;
+		color: var(--map-room-text);
+		display: grid;
+		place-items: center;
+
+		&:hover {
+			background: var(--map-room-hover);
+			color: var(--layer-control-hover);
+		}
+
+		&:active {
+			transform: translateY(1px);
+			background: #bfcdb0;
+		}
+
+		&:focus-visible {
+			z-index: 1;
+			outline: 2px solid var(--map-accent);
+			outline-offset: -3px;
+		}
+	}
 }
 
 @keyframes map-loading-pulse {

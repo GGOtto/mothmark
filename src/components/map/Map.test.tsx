@@ -1,13 +1,11 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {useState} from "react";
+import {useCallback, useState} from "react";
+import {produce} from "immer";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {Connection, Layer, Room, World} from "@/schemas/world/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
+import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
-
-function applyStateAction<T>(action: React.SetStateAction<T>, current: T): T {
-	return typeof action === "function" ? (action as (value: T) => T)(current) : action;
-}
 
 function MapHarness({
 	initialWorld,
@@ -31,21 +29,9 @@ function MapHarness({
 	const [isConnectionSelected, setIsConnectionSelected] = useState(initialIsConnectionSelected);
 	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
 
-	const setRooms: React.Dispatch<React.SetStateAction<Room[]>> = (action) =>
-		setWorld((current) => ({...current, rooms: applyStateAction(action, current.rooms)}));
-	const setConnections: React.Dispatch<React.SetStateAction<Connection[]>> = (action) =>
-		setWorld((current) => ({
-			...current,
-			connections: applyStateAction(action, current.connections),
-		}));
-	const setLayers: React.Dispatch<React.SetStateAction<Layer[]>> = (action) =>
-		setWorld((current) => ({
-			...current,
-			metadata: {
-				...current.metadata,
-				layers: applyStateAction(action, current.metadata.layers),
-			},
-		}));
+	const updateWorld = useCallback<UpdateWorld>((update: WorldUpdate) => {
+		setWorld((current) => (typeof update === "function" ? produce(current, update) : update));
+	}, []);
 
 	return (
 		<>
@@ -61,9 +47,7 @@ function MapHarness({
 				onToolChange={setActiveTool}
 				onTemporaryToolChange={setTemporaryTool}
 				onZoomChange={onZoomChange}
-				setRooms={setRooms}
-				setConnections={setConnections}
-				setLayers={setLayers}
+				updateWorld={updateWorld}
 				selectedId={selectedId}
 				setSelectedId={setSelectedId}
 				isConnectionSelected={isConnectionSelected}
@@ -121,6 +105,28 @@ describe("Map layer viewports", () => {
 });
 
 describe("Map visual layers", () => {
+	it("clears every room from the active layer", () => {
+		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
+		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;
+		const groundRoomNames = exampleWorld.rooms
+			.filter((room) => groundLayer.rooms.some((roomId) => roomId.id === room.id.id))
+			.map((room) => room.name);
+		const upperLayerRoom = exampleWorld.rooms.find((room) =>
+			upperLayer.rooms.some((roomId) => roomId.id === room.id.id),
+		)!;
+
+		render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
+
+		fireEvent.click(screen.getByRole("button", {name: `Clear ${groundLayer.name} layer`}));
+
+		for (const roomName of groundRoomNames) {
+			expect(screen.queryByRole("button", {name: roomName})).not.toBeInTheDocument();
+		}
+
+		fireEvent.click(screen.getByRole("button", {name: `Switch to ${upperLayer.name}`}));
+		expect(screen.getByRole("button", {name: upperLayerRoom.name})).toBeInTheDocument();
+	});
+
 	it("switches tools with horizontal arrows", () => {
 		const {container} = render(
 			<>

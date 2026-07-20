@@ -17,8 +17,18 @@ import {
 	type World,
 	type Viewport,
 } from "../../schemas/world/worldSchema";
+import type {UpdateWorld} from "@/types/worldUpdaterTypes";
+import {
+	addConnectionDraft,
+	addRoomDraft,
+	findRoomDraft,
+	setLayerViewportDraft,
+	updateConnectionDraft,
+	updateRoomDraft,
+	upsertLayerDraft,
+} from "@/app/editor/utils/worldDraftUtils";
 import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
-import {getLayer, upsertLayer} from "./utils/layerUtils";
+import {getLayer, isRoomInLayer} from "./utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "./utils/pointUtils";
 import {getLayerNavigationDirection} from "./utils/layerNavigation";
 import {
@@ -26,7 +36,7 @@ import {
 	getPathwayForNewDrop,
 	isConnectionFromRoom,
 } from "./utils/connectionUtils";
-import {generateUniqueId, idValue} from "../../utils/idUtils";
+import {deleteWorldEntity, generateUniqueId, idValue} from "../../utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
@@ -34,6 +44,7 @@ import {LayoutControl} from "./LayoutControl";
 import {LayerMenu} from "./LayerMenu";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 import {initializeConnectionStubPoints, type ConnectionStubPointField} from "./Connection";
+import {Trash} from "lucide-react";
 
 type DragState = {
 	roomId: string;
@@ -50,9 +61,7 @@ type MapProps = {
 	onTemporaryToolChange?: (tool: MapTool | null) => void;
 	onZoomChange?: (zoom: number) => void;
 	theme?: MapTheme;
-	setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
-	setConnections: React.Dispatch<React.SetStateAction<ConnectionType[]>>;
-	setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
+	updateWorld: UpdateWorld;
 	selectedId: string | null;
 	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
 	isConnectionSelected: boolean;
@@ -93,9 +102,7 @@ export function Map({
 	onTemporaryToolChange,
 	onZoomChange,
 	theme = "dark",
-	setRooms,
-	setConnections,
-	setLayers,
+	updateWorld,
 	selectedId,
 	setSelectedId,
 	isConnectionSelected,
@@ -129,15 +136,13 @@ export function Map({
 			viewportRef.current = nextViewport;
 			setViewport(nextViewport);
 			setCurrentLayer((layer) => ({...layer, viewport: nextViewport}));
-			setLayers((layers) => {
-				const persistedLayer = layers.find((layer) => layer.layer === currentLayer.layer);
-				return upsertLayer(layers, {
-					...(persistedLayer ?? currentLayer),
-					viewport: nextViewport,
-				});
+			updateWorld((world) => {
+				if (!setLayerViewportDraft(world, currentLayer.layer, nextViewport)) {
+					upsertLayerDraft(world, {...currentLayer, viewport: nextViewport});
+				}
 			});
 		},
-		[currentLayer, setLayers],
+		[currentLayer, updateWorld],
 	);
 
 	const changeCurrentLayer = useCallback((layer: Layer) => {
@@ -175,23 +180,15 @@ export function Map({
 		}
 
 		if (initializedById.size === 0) return;
-		setConnections((currentConnections) =>
-			currentConnections.map((connection) => {
-				const initialized = initializedById.get(idValue(connection.id));
-				if (!initialized) return connection;
-				return {
-					...connection,
-					metadata: {
-						...connection.metadata,
-						fromLayerStubPoint:
-							connection.metadata.fromLayerStubPoint ?? initialized.metadata.fromLayerStubPoint,
-						toLayerStubPoint:
-							connection.metadata.toLayerStubPoint ?? initialized.metadata.toLayerStubPoint,
-					},
-				};
-			}),
-		);
-	}, [isLoading, setConnections, world]);
+		updateWorld((world) => {
+			for (const [connectionId, initialized] of initializedById) {
+				updateConnectionDraft(world, connectionId, (connection) => {
+					connection.metadata.fromLayerStubPoint ??= initialized.metadata.fromLayerStubPoint;
+					connection.metadata.toLayerStubPoint ??= initialized.metadata.toLayerStubPoint;
+				});
+			}
+		});
+	}, [isLoading, updateWorld, world]);
 
 	useEffect(() => {
 		if (isLoading) return;
@@ -350,16 +347,11 @@ export function Map({
 
 	function handleConnectionPathwayChange(connection: ConnectionType) {
 		const pathway = getNextAvailablePathway(connection, world.connections);
-		setConnections((currentConnections) =>
-			currentConnections.map((currentConnection) => {
-				if (idValue(currentConnection.id) !== idValue(connection.id)) return currentConnection;
-
-				return {
-					...currentConnection,
-					pathway,
-				};
-			}),
-		);
+		updateWorld((world) => {
+			updateConnectionDraft(world, connection.id, (draft) => {
+				draft.pathway = pathway;
+			});
+		});
 		return pathway;
 	}
 
@@ -368,16 +360,11 @@ export function Map({
 		stubPoint: Point,
 		field: ConnectionStubPointField,
 	) {
-		setConnections((currentConnections) =>
-			currentConnections.map((currentConnection) =>
-				idValue(currentConnection.id) === idValue(connection.id)
-					? {
-							...currentConnection,
-							metadata: {...currentConnection.metadata, [field]: stubPoint},
-						}
-					: currentConnection,
-			),
-		);
+		updateWorld((world) => {
+			updateConnectionDraft(world, connection.id, (draft) => {
+				draft.metadata[field] = stubPoint;
+			});
+		});
 	}
 
 	function addRoomAt(position: Point) {
@@ -387,15 +374,16 @@ export function Map({
 			name: `Room ${world.rooms.length + 1}`,
 			metadata: {position},
 		});
-		setRooms((currentRooms) => [...currentRooms, room]);
-		selectRoom(room);
-
 		const nextLayer = {
 			...currentLayer,
 			rooms: [room.id, ...currentLayer.rooms],
 		};
 		setCurrentLayer(nextLayer);
-		setLayers((layers) => upsertLayer(layers, nextLayer));
+		updateWorld((world) => {
+			addRoomDraft(world, room);
+			upsertLayerDraft(world, nextLayer);
+		});
+		selectRoom(room);
 
 		return room;
 	}
@@ -468,7 +456,9 @@ export function Map({
 			{...world, connections: [...world.connections, parsedConnection]},
 			parsedConnection,
 		);
-		setConnections((current) => [...current, connection]);
+		updateWorld((world) => {
+			addConnectionDraft(world, connection);
+		});
 		selectConnection(connection);
 		setConnectionDraft({state: "idle"});
 	}
@@ -477,7 +467,7 @@ export function Map({
 		if (connectionDraft.state !== "choosing-destination") return false;
 		if (connectionDraft.fromRoomId === idValue(toRoom.id)) return false;
 
-		const fromRoom = world.rooms.find((room) => idValue(room.id) === connectionDraft.fromRoomId);
+		const fromRoom = findRoomDraft(world, connectionDraft.fromRoomId);
 		if (!fromRoom) return false;
 
 		const sourcePoint = getRoomConnectionPoint(fromRoom, connectionDraft.fromDirection);
@@ -541,19 +531,11 @@ export function Map({
 		}
 
 		const nextPosition = subtractPoints(pointer, dragState.offset);
-		setRooms((rooms) =>
-			rooms.map((room) => {
-				if (idValue(room.id) !== dragState.roomId) return room;
-
-				return {
-					...room,
-					metadata: {
-						...room.metadata,
-						position: nextPosition,
-					},
-				};
-			}),
-		);
+		updateWorld((world) => {
+			updateRoomDraft(world, dragState.roomId, (room) => {
+				room.metadata.position = nextPosition;
+			});
+		});
 	}
 
 	function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
@@ -563,7 +545,7 @@ export function Map({
 		}
 		if (!dragState) return;
 
-		const selectedRoom = world.rooms.find((room) => idValue(room.id) === dragState.roomId);
+		const selectedRoom = findRoomDraft(world, dragState.roomId);
 
 		if (selectedRoom && !dragState.hasDragged) {
 			if (connectionDraft.state === "choosing-return") {
@@ -635,6 +617,17 @@ export function Map({
 		}
 		const room = addRoomAt(position);
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
+	}
+
+	function handleLayerClear(event: React.MouseEvent<HTMLButtonElement>) {
+		event.stopPropagation();
+		let updatedWorld = world;
+		for (const room of world.rooms) {
+			if (isRoomInLayer(currentLayer, room.id)) {
+				updatedWorld = deleteWorldEntity(updatedWorld, room.id);
+			}
+		}
+		updateWorld(updatedWorld);
 	}
 
 	const layerMenuHost = mapRef.current?.closest<HTMLElement>(".editorMapArea") ?? null;
@@ -726,6 +719,14 @@ export function Map({
 						isLayerMenuOpen={isLayerMenuOpen}
 						setIsLayerMenuOpen={setIsLayerMenuOpen}
 					/>
+					<button
+						type="button"
+						className="layerClearButton"
+						onClick={handleLayerClear}
+						aria-label={`Clear ${currentLayer.name} layer`}
+					>
+						<Trash className="layerClearButton--icon" />
+					</button>
 				</>
 			)}
 		</div>
