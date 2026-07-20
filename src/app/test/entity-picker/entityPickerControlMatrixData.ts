@@ -4,6 +4,7 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "../ControlMatrix";
+import {toID, type ID} from "../../../utils/idUtils";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"auto",
@@ -16,7 +17,7 @@ const THEME_TEST_THEMES: EditorControlTheme[] = [
 
 type EntitySetup = {
 	id: string;
-	value: string;
+	value: ID;
 	error?: string;
 	readonly?: boolean;
 	metadata: Omit<EntityPickerControlMetadata, "type" | "appearance">;
@@ -25,7 +26,7 @@ type EntitySetup = {
 const SETUPS = {
 	basic: {
 		id: "basic",
-		value: "foyer",
+		value: toID("room", "foyer"),
 		metadata: {
 			title: "Room",
 			description: "Uses the matrix sample entity registry.",
@@ -34,12 +35,12 @@ const SETUPS = {
 	},
 	item: {
 		id: "item",
-		value: "brass-key",
+		value: toID("item", "brass-key"),
 		metadata: {title: "Item", features: {entityType: "item", showPreview: true}},
 	},
 	create: {
 		id: "create",
-		value: "new-room",
+		value: toID("room", "new-room"),
 		metadata: {
 			title: "Create Entity ID",
 			features: {entityType: "room", allowCreate: true, clearButton: true},
@@ -47,13 +48,13 @@ const SETUPS = {
 	},
 	error: {
 		id: "error",
-		value: "",
+		value: toID("room", ""),
 		error: "Select a target room.",
 		metadata: {title: "Errored Entity", features: {entityType: "room"}},
 	},
 	readonly: {
 		id: "readonly",
-		value: "library",
+		value: toID("room", "library"),
 		readonly: true,
 		metadata: {title: "Readonly Entity", features: {entityType: "room", showPreview: true}},
 	},
@@ -65,7 +66,7 @@ function makeVariant(
 	appearance: Pick<EditorControlAppearance, "tone" | "chrome" | "size">,
 	setup: EntitySetup,
 	themes?: EditorControlTheme[],
-): ControlMatrixVariant<string, EntityPickerControlMetadata> {
+): ControlMatrixVariant<ID, EntityPickerControlMetadata> {
 	return {
 		id,
 		description,

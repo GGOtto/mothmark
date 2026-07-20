@@ -1,4 +1,5 @@
 import type {EditorOption} from "@/types/editor/editorMetadataTypes";
+import {toID} from "@/utils/idUtils";
 
 // Dormant UI catalogs are intentionally retained while their item, NPC, quest,
 // event, and authored-command schemas/runtime models are out of scope.
@@ -293,20 +294,28 @@ for (const [type, options] of Object.entries(effectOperationOptionsByType)) {
 export function createDefaultConditionValue(type = "flag"): Record<string, unknown> {
 	if (type === "group") return {type: "group", operation: "all", conditions: []};
 	if (type === "counter") return {type, operation: "compare", counter: "", operator: "eq", value: 0};
-	if (type === "current-room") return {type, operation: "is", roomId: ""};
-	if (type === "inventory") return {type, operation: "has-item", itemId: ""};
-	if (type === "item-location") return {type, operation: "in-inventory", itemId: ""};
-	if (type === "object-state") return {type, operation: "open", objectId: ""};
-	if (type === "npc") return {type, operation: "in-current-room", npcId: ""};
+	if (type === "current-room") return {type, operation: "is", roomId: toID("room", "")};
+	if (type === "inventory") return {type, operation: "has-item", itemId: toID("item", "")};
+	if (type === "item-location") return {type, operation: "in-inventory", itemId: toID("item", "")};
+	if (type === "object-state") return {type, operation: "open", objectId: toID("feature", "")};
+	if (type === "npc") return {type, operation: "in-current-room", npcId: toID("npc", "")};
 	if (type === "command-history") return {type, operation: "previous-command-was", commandName: ""};
 	if (type === "random-chance") return {type, chance: 0.5, seedKey: "", invert: false};
-	if (type === "quest") return {type, operation: "active", questId: ""};
+	if (type === "quest") return {type, operation: "active", questId: toID("quest", "")};
 	if (type === "scheduled-event") return {type, operation: "exists", instanceId: ""};
 	if (type === "turn") return {type, operation: "compare", operator: "eq", value: 0};
-	if (type === "resolved-target") return {type, operation: "object-is", objectId: ""};
-	if (type === "has-item") return {type, itemId: "", negate: false};
-	if (type === "room-history") return {type, roomId: "", history: "visited", value: true};
-	if (type === "feature-examined") return {type, roomId: "", featureId: "", value: true};
+	if (type === "resolved-target")
+		return {type, operation: "object-is", objectId: toID("object", "")};
+	if (type === "has-item") return {type, itemId: toID("item", ""), negate: false};
+	if (type === "room-history")
+		return {type, roomId: toID("room", ""), history: "visited", value: true};
+	if (type === "feature-examined")
+		return {
+			type,
+			roomId: toID("room", ""),
+			featureId: toID("feature", ""),
+			value: true,
+		};
 	return {type, operation: "true", flag: ""};
 }
 
@@ -318,13 +327,27 @@ export function createDefaultEffectValue(
 	if (type === "message") return {type, messageType: "show", text: ""};
 	if (type === "flag") return {type, operation: operation ?? "set", flag: "", value: true};
 	if (type === "counter") return {type, operation: operation ?? "set", counter: "", value: 0};
-	if (type === "inventory") return {type, operation: operation ?? "add", itemId: ""};
+	if (type === "inventory") return {type, operation: operation ?? "add", itemId: toID("item", "")};
 	if (type === "item-location")
-		return {type, operation: operation ?? "move-to-room", itemId: "", roomId: ""};
-	if (type === "object-state") return {type, operation: operation ?? "open", objectId: ""};
-	if (type === "room") return {type, operation: operation ?? "move-player", roomId: ""};
-	if (type === "npc") return {type, operation: operation ?? "move-to-room", npcId: "", roomId: ""};
-	if (type === "event") return {type, operation: operation ?? "schedule", eventId: ""};
+		return {
+			type,
+			operation: operation ?? "move-to-room",
+			itemId: toID("item", ""),
+			roomId: toID("room", ""),
+		};
+	if (type === "object-state")
+		return {type, operation: operation ?? "open", objectId: toID("feature", "")};
+	if (type === "room")
+		return {type, operation: operation ?? "move-player", roomId: toID("room", "")};
+	if (type === "npc")
+		return {
+			type,
+			operation: operation ?? "move-to-room",
+			npcId: toID("npc", ""),
+			roomId: toID("room", ""),
+		};
+	if (type === "event")
+		return {type, operation: operation ?? "schedule", eventId: toID("event", "")};
 	if (type === "group") return {type, effects: []};
 	if (type === "conditional")
 		return {type, condition: createDefaultConditionValue(), then: [], otherwise: []};

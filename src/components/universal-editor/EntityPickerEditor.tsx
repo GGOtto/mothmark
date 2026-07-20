@@ -2,12 +2,13 @@
 
 import type {EntityPickerOption, EntityType} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {idValue, toID, type ID, type WorldIdEntityType} from "../../utils/idUtils";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
 import "./EntityPickerEditor.scss";
 
 export type EntityPickerFeatures = {
-	entityType: EntityType | "npc" | "command";
+	entityType: WorldIdEntityType;
 	allowCreate?: boolean;
 	showPreview?: boolean;
 	clearButton?: boolean;
@@ -19,13 +20,16 @@ export type EntityPickerControlMetadata = EditorControlMetadata & {
 	features: EntityPickerFeatures;
 };
 
-export type EntityPickerEditorProps = EditorControlProps<string, EntityPickerControlMetadata>;
+export type EntityPickerEditorProps = EditorControlProps<
+	ID | undefined,
+	EntityPickerControlMetadata
+>;
 
 function registryEntityType(
 	entityType: EntityPickerFeatures["entityType"],
 ): EntityType | undefined {
 	if (entityType === "npc") return "character";
-	if (entityType === "command") return undefined;
+	if (entityType === "command" || entityType === "quest-objective") return undefined;
 	return entityType;
 }
 
@@ -44,6 +48,7 @@ export function EntityPickerEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
+	const selectedId = idValue(value);
 	const entityType = registryEntityType(metadata.features.entityType);
 	const registryOptions =
 		entityType && context.registerEntityPicker
@@ -51,15 +56,19 @@ export function EntityPickerEditor({
 			: [];
 	const options = metadata.features.options ?? registryOptions;
 	const selectedOption =
-		options.find((option) => option.id === value) ??
-		(entityType ? context.registerEntityPicker?.getEntityById(entityType, value) : undefined);
-	const isUnknownValue = value.length > 0 && !selectedOption;
+		options.find((option) => option.id === selectedId) ??
+		(entityType ? context.registerEntityPicker?.getEntityById(entityType, selectedId) : undefined);
+	const isUnknownValue = selectedId.length > 0 && !selectedOption;
+
+	function commitValue(nextId: string) {
+		onChange(nextId ? toID(metadata.features.entityType, nextId) : undefined);
+	}
 
 	function createEntity() {
 		if (!canEdit || !metadata.features.allowCreate) return;
 
-		const nextId = value.trim();
-		if (nextId) onChange(nextId);
+		const nextId = selectedId.trim();
+		if (nextId) commitValue(nextId);
 	}
 
 	return (
@@ -76,10 +85,10 @@ export function EntityPickerEditor({
 				<div className="entityPickerEditor__row">
 					<select
 						className="entityPickerEditor__select"
-						value={selectedOption ? value : ""}
+						value={selectedOption ? selectedId : ""}
 						disabled={isDisabled || isReadonly}
 						autoFocus={autoFocus}
-						onChange={(event) => onChange(event.target.value)}
+						onChange={(event) => commitValue(event.target.value)}
 					>
 						<option value="">{metadata.placeholder ?? "Choose entity"}</option>
 						{options.map((option) => (
@@ -93,8 +102,8 @@ export function EntityPickerEditor({
 						<button
 							className="entityPickerEditor__button"
 							type="button"
-							disabled={!canEdit || value.length === 0}
-							onClick={() => onChange("")}
+							disabled={!canEdit || selectedId.length === 0}
+							onClick={() => commitValue("")}
 						>
 							Clear
 						</button>
@@ -105,10 +114,10 @@ export function EntityPickerEditor({
 					<div className="entityPickerEditor__createRow">
 						<input
 							className="entityPickerEditor__createInput"
-							value={isUnknownValue ? value : ""}
+							value={isUnknownValue ? selectedId : ""}
 							placeholder="new-entity-id"
 							disabled={!canEdit}
-							onChange={(event) => onChange(event.target.value)}
+							onChange={(event) => commitValue(event.target.value)}
 						/>
 						<button
 							className="entityPickerEditor__button"
@@ -129,7 +138,7 @@ export function EntityPickerEditor({
 								<span>{selectedOption.description ?? selectedOption.id}</span>
 							</>
 						) : (
-							<span>{value ? "Unknown entity" : "No entity selected"}</span>
+							<span>{selectedId ? "Unknown entity" : "No entity selected"}</span>
 						)}
 					</div>
 				) : null}

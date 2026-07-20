@@ -4,6 +4,7 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "../ControlMatrix";
+import {toID} from "../../../utils/idUtils";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"auto",
@@ -73,7 +74,12 @@ const SETUPS = {
 		id: "list-driven",
 		value: [
 			{type: "counter", operation: "increase", counter: "turns", amount: 1},
-			{type: "item-location", operation: "move-to-room", itemId: "brass-key", roomId: "library"},
+			{
+				type: "item-location",
+				operation: "move-to-room",
+				itemId: toID("item", "brass-key"),
+				roomId: toID("room", "library"),
+			},
 		],
 		metadata: {
 			title: "World Data Lists",

@@ -1,3 +1,4 @@
+import {toID} from "@/utils/idUtils";
 import {EffectUsageSchema, WorldEffectSchema} from "./effectSchema";
 
 describe("effect storage schemas", () => {
@@ -5,7 +6,7 @@ describe("effect storage schemas", () => {
 		expect(
 			EffectUsageSchema.parse({
 				type: "effect-ref",
-				effectId: "open-gate",
+				effectId: toID("effect", "open-gate"),
 			}),
 		).toEqual({
 			type: "effect-ref",
@@ -22,6 +23,12 @@ describe("effect storage schemas", () => {
 		).toThrow();
 	});
 
+	it("rejects untyped ID references", () => {
+		expect(EffectUsageSchema.safeParse({type: "effect-ref", effectId: "open-gate"}).success).toBe(
+			false,
+		);
+	});
+
 	it("stores world effect definitions with referenced children", () => {
 		expect(
 			WorldEffectSchema.parse({
@@ -31,7 +38,7 @@ describe("effect storage schemas", () => {
 				effects: [
 					{
 						type: "effect-ref",
-						effectId: "set-gate-open",
+						effectId: toID("effect", "set-gate-open"),
 					},
 				],
 			}),

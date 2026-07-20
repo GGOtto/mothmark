@@ -1,11 +1,11 @@
 import type {Room, World} from "@/schemas/world/worldSchema";
-import {idValue} from "@/utils/idUtils";
+import {compareIds} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import {createGameMessage, type GameMessage} from "./createMessage";
 
 export function createRoomMessage(world: World, room: Room, gameState: GameState): GameMessage {
 	const hasVisited = gameState.roomStates.some(
-		(roomState) => idValue(roomState.id) === idValue(room.id) && roomState.visited,
+		(roomState) => compareIds(roomState.id, room.id) && roomState.visited,
 	);
 	const description =
 		hasVisited && room.shortDescription ? room.shortDescription : room.description.default;
@@ -17,5 +17,5 @@ export function createRoomMessage(world: World, room: Room, gameState: GameState
 		}
 	}
 
-	return createGameMessage(`${text}\n`, "room", {roomId: idValue(room.id)});
+	return createGameMessage(`${text}\n`, "room", {roomId: room.id});
 }

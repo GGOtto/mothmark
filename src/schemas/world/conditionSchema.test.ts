@@ -43,6 +43,13 @@ describe("editor.condition", () => {
 	])("accepts $name", ({value}) => {
 		expect(schema.safeParse(value).success).toBe(true);
 	});
+
+	it("rejects untyped ID references", () => {
+		expect(schema.safeParse({type: "condition-ref", conditionId: "gate-open"}).success).toBe(false);
+		expect(schema.safeParse({type: "current-room", operation: "is", roomId: "foyer"}).success).toBe(
+			false,
+		);
+	});
 });
 
 describe("editor.conditionControl", () => {

@@ -1,4 +1,5 @@
 import {WorldSchema} from "../../schemas/world/worldSchema";
+import {toID} from "../../utils/idUtils";
 
 function feature(
 	id: string,
@@ -98,7 +99,7 @@ const rawWorld = {
 			},
 		],
 	},
-	startRoomId: "dungeon-entrance",
+	startRoomId: toID("room", "dungeon-entrance"),
 	rooms: [
 		room(
 			"dungeon-entrance",

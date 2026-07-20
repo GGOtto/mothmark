@@ -297,15 +297,10 @@ export function editorReference<TEntityType extends WorldIdEntityType>(
 			id: z.string().min(1),
 		})
 		.transform((reference) => reference as ID<TEntityType>);
-	const legacyStringReferenceSchema = z
-		.string()
-		.min(1)
-		.transform((id) => ({type: entityType, id}) as ID<TEntityType>);
-	const schema = z.union([referenceObjectSchema, legacyStringReferenceSchema]);
 	const isRequired = metadata.required ?? true;
 
 	return editorSelect(
-		isRequired ? schema : schema.optional(),
+		isRequired ? referenceObjectSchema : referenceObjectSchema.optional(),
 		{
 			entityType,
 			required: isRequired,

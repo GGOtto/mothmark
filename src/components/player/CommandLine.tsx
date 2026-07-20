@@ -3,9 +3,9 @@
 import {useState} from "react";
 import {RefreshCw} from "lucide-react";
 import {AdjustableBox} from "../ui/AdjustableBox";
-import {GamePlayer} from "./GamePlayer";
+import {GamePlayer, type GamePlayerTeleportRequest} from "./GamePlayer";
 import type {World} from "../../schemas/world/worldSchema";
-import {idValue} from "../../utils/idUtils";
+import {toID} from "../../utils/idUtils";
 import "./CommandLine.scss";
 
 type CommandLineProps = {
@@ -15,13 +15,16 @@ type CommandLineProps = {
 };
 
 export function CommandLine({isLoading = false, world, selectedRoomId}: CommandLineProps) {
-	const [syncVersion, setSyncVersion] = useState(0);
-	const startingRoomId = selectedRoomId ?? idValue(world.startRoomId);
+	const [teleportRequest, setTeleportRequest] = useState<GamePlayerTeleportRequest | null>(null);
+	const startingRoomId = world.startRoomId;
 
 	function syncSelectedRoom() {
 		if (!selectedRoomId) return;
 
-		setSyncVersion((currentVersion) => currentVersion + 1);
+		setTeleportRequest((currentRequest) => ({
+			id: (currentRequest?.id ?? 0) + 1,
+			roomId: toID("room", selectedRoomId),
+		}));
 	}
 
 	return (
@@ -46,9 +49,9 @@ export function CommandLine({isLoading = false, world, selectedRoomId}: CommandL
 
 			<GamePlayer
 				isLoading={isLoading}
-				key={`${startingRoomId}:${syncVersion}`}
 				world={world}
 				startingRoomId={startingRoomId}
+				teleportRequest={teleportRequest}
 			/>
 		</AdjustableBox>
 	);

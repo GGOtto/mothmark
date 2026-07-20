@@ -1,5 +1,6 @@
 import {TextFieldControlMetadata} from "../TextFieldEditor";
 import type {EditorSummaryMetadata} from "@/types/universalEditorTypes";
+import {idValue, isID} from "@/utils/idUtils";
 
 export type UniversalCondition =
 	| {
@@ -161,6 +162,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringifySummaryValue(value: unknown): string {
 	if (value === undefined) return "";
+	if (isID(value)) return idValue(value) || "(empty)";
 	if (Array.isArray(value))
 		return value.length ? value.map(stringifySummaryValue).join(", ") : "(none)";
 	if (typeof value === "string") return value.length ? value : "(empty)";
@@ -197,13 +199,15 @@ function conditionSummarySubject(condition: Record<string, unknown>) {
 
 	for (const key of subjectKeys) {
 		const value = condition[key];
+		if (isID(value)) return stringifySummaryValue(value);
 		if (Array.isArray(value) && value.length > 0) return stringifySummaryValue(value);
 		if (typeof value === "string" && value.trim().length > 0) return value.trim();
 		if (typeof value === "number" || typeof value === "boolean") return stringifySummaryValue(value);
 	}
 
 	const type = String(condition.type ?? condition.kind ?? "");
-	if (type === "condition-ref") return String(condition.conditionId ?? "(unchosen) condition");
+	if (type === "condition-ref")
+		return stringifySummaryValue(condition.conditionId) || "(unchosen) condition";
 	if (type === "flag") return "unspecified flag";
 	if (type === "counter") return "unspecified counter";
 	if (type === "current-room") return "unspecified room";

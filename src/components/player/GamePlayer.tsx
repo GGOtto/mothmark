@@ -4,31 +4,44 @@ import {useEffect, useRef, useState} from "react";
 import type {World} from "../../schemas/world/worldSchema";
 import {createInitialGameState} from "../../engine/states/createInitialState";
 import {resolveTurn} from "../../engine/player/resolveTurn";
+import {teleport} from "../../engine/player/teleport";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
-import {idValue} from "../../utils/idUtils";
+import {compareIds, idValue, type ID} from "../../utils/idUtils";
 import "./GamePlayer.scss";
 
 type GamePlayerProps = {
 	isLoading?: boolean;
 	world: World;
-	startingRoomId: string;
+	startingRoomId: ID<"room">;
+	teleportRequest?: GamePlayerTeleportRequest | null;
 };
 
-export function GamePlayer({isLoading = false, world, startingRoomId}: GamePlayerProps) {
-	const resolvedStartingRoomId = world.rooms.some((room) => idValue(room.id) === startingRoomId)
+export type GamePlayerTeleportRequest = {
+	id: number;
+	roomId: ID<"room">;
+};
+
+export function GamePlayer({
+	isLoading = false,
+	world,
+	startingRoomId,
+	teleportRequest,
+}: GamePlayerProps) {
+	const resolvedStartingRoomId = world.rooms.some((room) => compareIds(room.id, startingRoomId))
 		? startingRoomId
 		: world.rooms[0]
-			? idValue(world.rooms[0].id)
+			? world.rooms[0].id
 			: null;
 
 	return isLoading ? (
 		<LoadingGamePlayer />
 	) : resolvedStartingRoomId ? (
 		<ActiveGamePlayer
-			key={resolvedStartingRoomId}
+			key={idValue(resolvedStartingRoomId)}
 			world={world}
 			startingRoomId={resolvedStartingRoomId}
+			teleportRequest={teleportRequest}
 		/>
 	) : (
 		<EmptyGamePlayer />
@@ -75,12 +88,24 @@ function EmptyGamePlayer() {
 	);
 }
 
-function ActiveGamePlayer({world, startingRoomId}: Omit<GamePlayerProps, "isLoading">) {
+function ActiveGamePlayer({
+	world,
+	startingRoomId,
+	teleportRequest,
+}: Omit<GamePlayerProps, "isLoading">) {
 	const playerRef = useRef<HTMLElement | null>(null);
+	const handledTeleportRequestRef = useRef<number | null>(null);
 	const [gameState, setGameState] = useState(() => createInitialGameState(world, startingRoomId));
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState<number>(0);
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
+
+	useEffect(() => {
+		if (!teleportRequest || handledTeleportRequestRef.current === teleportRequest.id) return;
+
+		handledTeleportRequestRef.current = teleportRequest.id;
+		setGameState((currentState) => teleport(world, currentState, teleportRequest.roomId));
+	}, [teleportRequest, world]);
 
 	useEffect(() => {
 		function blurCommandInputOutsidePlayer(event: PointerEvent) {

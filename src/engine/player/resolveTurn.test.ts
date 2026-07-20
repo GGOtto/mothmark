@@ -5,7 +5,7 @@ import {resolveTurn} from "./resolveTurn";
 
 describe("resolveTurn", () => {
 	it("creates output for the initial room and resolves commands immutably", () => {
-		const game = createInitialGameState(world, idValue(world.startRoomId));
+		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "help");
 
 		expect(game.turns).toBe(0);
@@ -17,7 +17,7 @@ describe("resolveTurn", () => {
 	});
 
 	it("moves the player and marks the destination as visited", () => {
-		const game = createInitialGameState(world, idValue(world.startRoomId));
+		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "east");
 
 		expect(idValue(nextGame.currentRoom)).toBe("guardroom");

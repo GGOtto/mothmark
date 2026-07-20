@@ -14,7 +14,7 @@ import type {
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {generateEffectSummary} from "./utils/universalEditorUtils";
-import {idValue, isID, toID} from "../../utils/idUtils";
+import {idValue, isID, toID, type WorldIdEntityType} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./EffectListEditor.scss";
@@ -87,7 +87,10 @@ function normalizeEffect(effect: EffectValue): EffectValue {
 	if (effect.type === "effect-ref") {
 		return {
 			type: "effect-ref",
-			effectId: typeof effect.effectId === "string" ? effect.effectId : "",
+			effectId:
+				isID(effect.effectId) && effect.effectId.type === "effect"
+					? effect.effectId
+					: toID("effect", ""),
 		};
 	}
 
@@ -182,13 +185,17 @@ function hasWorldEffectLibrary(context: EditorControlContext) {
 }
 
 function worldEffectById(context: EditorControlContext, id: unknown) {
-	if (typeof id !== "string" || !id.trim()) return undefined;
-	return worldEffects(context).find((effect) => storedEffectId(effect) === id.trim());
+	if (!isID(id) || id.type !== "effect") return undefined;
+	const effectId = id.id.trim();
+	if (!effectId) return undefined;
+	return worldEffects(context).find((effect) => storedEffectId(effect) === effectId);
 }
 
 function worldEffectIndexById(context: EditorControlContext, id: unknown) {
-	if (typeof id !== "string" || !id.trim()) return -1;
-	return worldEffects(context).findIndex((effect) => storedEffectId(effect) === id.trim());
+	if (!isID(id) || id.type !== "effect") return -1;
+	const effectId = id.id.trim();
+	if (!effectId) return -1;
+	return worldEffects(context).findIndex((effect) => storedEffectId(effect) === effectId);
 }
 
 function updateWorldEffectById(
@@ -217,11 +224,12 @@ function effectUsage(
 	seenEffectIds = new Set<string>(),
 ): EffectValue {
 	if (!isEffectReference(effect)) return effect;
+	if (!isID(effect.effectId) || effect.effectId.type !== "effect") return effect;
 
-	const effectId = typeof effect.effectId === "string" ? effect.effectId.trim() : "";
+	const effectId = effect.effectId.id.trim();
 	if (!effectId || seenEffectIds.has(effectId)) return effect;
 
-	const worldEffect = worldEffectById(context, effectId);
+	const worldEffect = worldEffectById(context, effect.effectId);
 	if (!worldEffect) return effect;
 
 	const nextSeenEffectIds = new Set(seenEffectIds);
@@ -234,6 +242,25 @@ function effectRefFor(effect: EffectValue) {
 		type: "effect-ref",
 		effectId: toID("effect", storedEffectId(effect) ?? ""),
 	};
+}
+
+const EFFECT_REFERENCE_TYPES_BY_FIELD: Partial<Record<string, WorldIdEntityType>> = {
+	roomId: "room",
+	featureId: "feature",
+	itemId: "item",
+	npcId: "npc",
+	surfaceId: "surface",
+	containerId: "container",
+	questId: "quest",
+	objectiveId: "quest-objective",
+	eventId: "event",
+	topicId: "topic",
+	targetId: "object",
+};
+
+function effectReferenceType(effectType: string, key: string): WorldIdEntityType | undefined {
+	if (key === "objectId") return effectType === "object-state" ? "feature" : "object";
+	return EFFECT_REFERENCE_TYPES_BY_FIELD[key];
 }
 
 function ensureEffectIdentity(
@@ -533,36 +560,61 @@ export function EffectListEditor({
 							<div className="effectListEditor__fields">
 								{Object.entries(effect)
 									.filter(([key]) => key !== "type" && key !== "operation" && key !== "messageType")
-									.map(([key, fieldValue]) => (
-										<label key={key}>
-											<span>{key}</span>
-											<input
-												type={
-													typeof fieldValue === "boolean"
-														? "checkbox"
-														: typeof fieldValue === "number"
-															? "number"
-															: "text"
-												}
-												checked={typeof fieldValue === "boolean" ? fieldValue : undefined}
-												value={typeof fieldValue === "boolean" ? undefined : String(fieldValue ?? "")}
-												disabled={!canEdit}
-												onChange={(event) => {
-													if (typeof fieldValue === "boolean") {
-														updateEffectField(index, key, event.target.checked);
-														return;
-													}
+									.map(([key, fieldValue]) => {
+										const referenceType = effectReferenceType(effectType, key);
+										if (referenceType) {
+											return renderChildControl({
+												type: "entity-picker",
+												childKey: key,
+												value: fieldValue,
+												onChange: (nextValue) => updateEffectField(index, key, nextValue),
+												metadata: {
+													title: key,
+													features: {
+														entityType: referenceType,
+														allowCreate: false,
+														clearButton: false,
+													},
+												},
+												parentMetadata: metadata,
+												path: [...path, index, key],
+												disabled,
+												readonly,
+												context,
+											});
+										}
 
-													if (typeof fieldValue === "number") {
-														updateEffectField(index, key, Number(event.target.value));
-														return;
+										return (
+											<label key={key}>
+												<span>{key}</span>
+												<input
+													type={
+														typeof fieldValue === "boolean"
+															? "checkbox"
+															: typeof fieldValue === "number"
+																? "number"
+																: "text"
 													}
+													checked={typeof fieldValue === "boolean" ? fieldValue : undefined}
+													value={typeof fieldValue === "boolean" ? undefined : String(fieldValue ?? "")}
+													disabled={!canEdit}
+													onChange={(event) => {
+														if (typeof fieldValue === "boolean") {
+															updateEffectField(index, key, event.target.checked);
+															return;
+														}
 
-													updateEffectField(index, key, event.target.value);
-												}}
-											/>
-										</label>
-									))}
+														if (typeof fieldValue === "number") {
+															updateEffectField(index, key, Number(event.target.value));
+															return;
+														}
+
+														updateEffectField(index, key, event.target.value);
+													}}
+												/>
+											</label>
+										);
+									})}
 							</div>
 
 							<div className="effectListEditor__actions">

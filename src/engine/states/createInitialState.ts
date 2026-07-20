@@ -1,10 +1,10 @@
 import type {World} from "@/schemas/world/worldSchema";
-import {idValue} from "@/utils/idUtils";
+import {compareIds, type ID} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import {createRoomMessage} from "../messages/createRoomMessage";
 import {getRoom} from "../utils/worldLookupUtils";
 
-export function createInitialGameState(world: World, startingRoomId: string): GameState {
+export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
 	const startingRoom = getRoom(world, startingRoomId);
 	const game: GameState = {
 		currentRoom: startingRoom.id,
@@ -32,7 +32,7 @@ export function createInitialGameState(world: World, startingRoomId: string): Ga
 		...game,
 		roomStates: game.roomStates.map((roomState) => ({
 			...roomState,
-			visited: idValue(roomState.id) === idValue(startingRoom.id),
+			visited: compareIds(roomState.id, startingRoom.id),
 		})),
 		messages: [createRoomMessage(world, startingRoom, game)],
 	};
