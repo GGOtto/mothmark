@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useCallback, useState} from "react";
 import {produce} from "immer";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
@@ -7,6 +7,7 @@ import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
 import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
+import {PopupProvider} from "../popup/Popup";
 
 function MapHarness({
 	initialWorld,
@@ -35,9 +36,12 @@ function MapHarness({
 	}, []);
 
 	return (
-		<>
+		<PopupProvider>
 			<div data-testid="effective-map-tool">{temporaryTool ?? activeTool}</div>
 			<div data-testid="start-room-id">{idValue(world.startRoomId)}</div>
+			<div data-testid="connection-room-references">
+				{JSON.stringify(world.connections.map(({fromRoomId, toRoomId}) => ({fromRoomId, toRoomId})))}
+			</div>
 			{replacementWorld ? (
 				<button type="button" onClick={() => setWorld(replacementWorld)}>
 					Replace test world
@@ -59,7 +63,7 @@ function MapHarness({
 				updateStatus={jest.fn()}
 				recenterRequest={0}
 			/>
-		</>
+		</PopupProvider>
 	);
 }
 
@@ -107,7 +111,42 @@ describe("Map layer viewports", () => {
 });
 
 describe("Map visual layers", () => {
-	it("makes the first room added after an empty clear the start room", () => {
+	it("creates typed room references when connecting two rooms from map nodes", () => {
+		const rooms = exampleWorld.rooms.slice(0, 2);
+		const initialWorld: World = {
+			...exampleWorld,
+			rooms,
+			connections: [],
+			metadata: {
+				...exampleWorld.metadata,
+				layers: [
+					{
+						...exampleWorld.metadata.layers[0],
+						layer: 0,
+						rooms: rooms.map((room) => room.id),
+					},
+				],
+			},
+		};
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		const fromRoom = screen.getByRole("button", {name: rooms[0].name});
+		const toRoom = screen.getByRole("button", {name: rooms[1].name});
+
+		fireEvent.click(fromRoom.querySelector<HTMLElement>('[data-direction="e"]')!);
+		fireEvent.click(toRoom.querySelector<HTMLElement>('[data-direction="w"]')!);
+
+		expect(screen.getByTestId("connection-room-references")).toHaveTextContent(
+			JSON.stringify([
+				{
+					fromRoomId: rooms[0].id,
+					toRoomId: rooms[1].id,
+				},
+			]),
+		);
+		expect(container.querySelectorAll(".connection")).toHaveLength(1);
+	});
+
+	it("makes the first room added after an empty clear the start room", async () => {
 		const onlyRoom = exampleWorld.rooms[0];
 		const initialWorld: World = {
 			...exampleWorld,
@@ -127,6 +166,10 @@ describe("Map visual layers", () => {
 		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.click(screen.getByRole("button", {name: "Clear Ground Level layer"}));
+		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
+		await waitFor(() =>
+			expect(screen.queryByRole("button", {name: onlyRoom.name})).not.toBeInTheDocument(),
+		);
 		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
 			clientX: 100,
 			clientY: 100,
@@ -136,7 +179,7 @@ describe("Map visual layers", () => {
 		expect(screen.getByRole("button", {name: "Room 1"})).toBeInTheDocument();
 	});
 
-	it("clears every room from the active layer", () => {
+	it("clears every room from the active layer", async () => {
 		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
 		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;
 		const groundRoomNames = exampleWorld.rooms
@@ -149,10 +192,14 @@ describe("Map visual layers", () => {
 		render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.click(screen.getByRole("button", {name: `Clear ${groundLayer.name} layer`}));
+		expect(screen.getByRole("dialog")).toHaveTextContent(`Clear ${groundLayer.name}?`);
+		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
 
-		for (const roomName of groundRoomNames) {
-			expect(screen.queryByRole("button", {name: roomName})).not.toBeInTheDocument();
-		}
+		await waitFor(() => {
+			for (const roomName of groundRoomNames) {
+				expect(screen.queryByRole("button", {name: roomName})).not.toBeInTheDocument();
+			}
+		});
 
 		fireEvent.click(screen.getByRole("button", {name: `Switch to ${upperLayer.name}`}));
 		expect(screen.getByRole("button", {name: upperLayerRoom.name})).toBeInTheDocument();

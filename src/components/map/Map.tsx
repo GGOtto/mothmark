@@ -36,7 +36,7 @@ import {
 	getPathwayForNewDrop,
 	isConnectionFromRoom,
 } from "./utils/connectionUtils";
-import {deleteWorldEntity, generateUniqueId, idValue} from "../../utils/idUtils";
+import {deleteWorldEntity, generateUniqueId, idValue, toID} from "../../utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import type {UpdateStatus} from "../studio/ToolBar";
 import "./Map.scss";
@@ -45,6 +45,7 @@ import {LayerMenu} from "./LayerMenu";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 import {initializeConnectionStubPoints, type ConnectionStubPointField} from "./Connection";
 import {Trash} from "lucide-react";
+import {usePopup} from "../popup/Popup";
 
 type DragState = {
 	roomId: string;
@@ -112,6 +113,7 @@ export function Map({
 	updateStatus,
 	recenterRequest,
 }: MapProps) {
+	const popup = usePopup();
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const initialLayer = useRef(getLayer(world, 0));
 	const [viewport, setViewport] = useState<Viewport>(initialLayer.current.viewport);
@@ -439,7 +441,7 @@ export function Map({
 		const parsedConnection = ConnectionSchema.parse({
 			...createDefaultFieldObject(ConnectionSchema),
 			id: generateUniqueId("connection", world.connections),
-			fromRoomId: draft.fromRoomId,
+			fromRoomId: toID("room", draft.fromRoomId),
 			toRoomId: toRoom.id,
 			direction: draft.fromDirection,
 			returnDirection,
@@ -620,15 +622,25 @@ export function Map({
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
-	function handleLayerClear(event: React.MouseEvent<HTMLButtonElement>) {
+	async function handleLayerClear(event: React.MouseEvent<HTMLButtonElement>) {
 		event.stopPropagation();
-		let updatedWorld = world;
-		for (const room of world.rooms) {
-			if (isRoomInLayer(currentLayer, room.id)) {
-				updatedWorld = deleteWorldEntity(updatedWorld, room.id);
+
+		const userResponse = await popup.confirm({
+			title: `Clear ${currentLayer.name}?`,
+			message: "Delete every room on this layer? This action cannot be undone.",
+			confirmLabel: "Clear layer",
+			danger: true,
+		});
+
+		if (userResponse) {
+			let updatedWorld = world;
+			for (const room of world.rooms) {
+				if (isRoomInLayer(currentLayer, room.id)) {
+					updatedWorld = deleteWorldEntity(updatedWorld, room.id);
+				}
 			}
+			updateWorld(updatedWorld);
 		}
-		updateWorld(updatedWorld);
 	}
 
 	const layerMenuHost = mapRef.current?.closest<HTMLElement>(".editorMapArea") ?? null;
