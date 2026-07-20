@@ -380,7 +380,8 @@ export function Map({
 		};
 		setCurrentLayer(nextLayer);
 		updateWorld((world) => {
-			addRoomDraft(world, room);
+			const isFirstRoom = world.rooms.length === 0;
+			if (addRoomDraft(world, room) && isFirstRoom) world.startRoomId = room.id;
 			upsertLayerDraft(world, nextLayer);
 		});
 		selectRoom(room);

@@ -4,6 +4,7 @@ import {produce} from "immer";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
+import {idValue} from "@/utils/idUtils";
 import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
 
@@ -36,6 +37,7 @@ function MapHarness({
 	return (
 		<>
 			<div data-testid="effective-map-tool">{temporaryTool ?? activeTool}</div>
+			<div data-testid="start-room-id">{idValue(world.startRoomId)}</div>
 			{replacementWorld ? (
 				<button type="button" onClick={() => setWorld(replacementWorld)}>
 					Replace test world
@@ -105,6 +107,35 @@ describe("Map layer viewports", () => {
 });
 
 describe("Map visual layers", () => {
+	it("makes the first room added after an empty clear the start room", () => {
+		const onlyRoom = exampleWorld.rooms[0];
+		const initialWorld: World = {
+			...exampleWorld,
+			startRoomId: onlyRoom.id,
+			rooms: [onlyRoom],
+			connections: [],
+			metadata: {
+				...exampleWorld.metadata,
+				layers: [
+					{
+						...exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!,
+						rooms: [onlyRoom.id],
+					},
+				],
+			},
+		};
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+
+		fireEvent.click(screen.getByRole("button", {name: "Clear Ground Level layer"}));
+		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
+			clientX: 100,
+			clientY: 100,
+		});
+
+		expect(screen.getByTestId("start-room-id")).toHaveTextContent("room-1");
+		expect(screen.getByRole("button", {name: "Room 1"})).toBeInTheDocument();
+	});
+
 	it("clears every room from the active layer", () => {
 		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
 		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;

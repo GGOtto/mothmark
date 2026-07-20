@@ -6,6 +6,7 @@ import {createInitialGameState} from "../../engine/states/createInitialState";
 import {resolveTurn} from "../../engine/player/resolveTurn";
 import {OutputLog} from "./OutputLog";
 import {CommandInput} from "./CommandInput";
+import {idValue} from "../../utils/idUtils";
 import "./GamePlayer.scss";
 
 type GamePlayerProps = {
@@ -15,10 +16,22 @@ type GamePlayerProps = {
 };
 
 export function GamePlayer({isLoading = false, world, startingRoomId}: GamePlayerProps) {
+	const resolvedStartingRoomId = world.rooms.some((room) => idValue(room.id) === startingRoomId)
+		? startingRoomId
+		: world.rooms[0]
+			? idValue(world.rooms[0].id)
+			: null;
+
 	return isLoading ? (
 		<LoadingGamePlayer />
+	) : resolvedStartingRoomId ? (
+		<ActiveGamePlayer
+			key={resolvedStartingRoomId}
+			world={world}
+			startingRoomId={resolvedStartingRoomId}
+		/>
 	) : (
-		<ActiveGamePlayer world={world} startingRoomId={startingRoomId} />
+		<EmptyGamePlayer />
 	);
 }
 
@@ -27,6 +40,26 @@ function LoadingGamePlayer() {
 		<section className="game-player" aria-busy="true">
 			<div className="game-player__output">
 				<OutputLog messages={[]} />
+			</div>
+
+			<CommandInput
+				disabled
+				command=""
+				setCommand={() => {}}
+				submitCommand={(event) => event.preventDefault()}
+				commandList={[]}
+				currentCommandInHistory={0}
+				setCurrentCommandInHistory={() => {}}
+			/>
+		</section>
+	);
+}
+
+function EmptyGamePlayer() {
+	return (
+		<section className="game-player">
+			<div className="game-player__output">
+				<p>No rooms available. Add a room to begin exploring.</p>
 			</div>
 
 			<CommandInput
