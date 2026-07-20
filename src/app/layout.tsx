@@ -3,6 +3,7 @@ import "./globals.css";
 import {Header} from "../components/header/Header";
 import {ThemeProvider} from "../components/theme/ThemeProvider";
 import {WorldAutosaveProvider} from "../components/world-autosave/WorldAutosave";
+import {PopupProvider} from "../components/popup/Popup";
 
 export const metadata: Metadata = {
 	title: "Mothmark",
@@ -18,11 +19,13 @@ export default function RootLayout({
 		<html lang="en" className="h-full antialiased" data-theme="dark">
 			<body className="flex h-dvh flex-col overflow-hidden">
 				<ThemeProvider>
-					<WorldAutosaveProvider>
-						<Header />
+					<PopupProvider>
+						<WorldAutosaveProvider>
+							<Header />
 
-						<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
-					</WorldAutosaveProvider>
+							<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+						</WorldAutosaveProvider>
+					</PopupProvider>
 				</ThemeProvider>
 			</body>
 		</html>
