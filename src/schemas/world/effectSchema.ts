@@ -27,8 +27,9 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("message"),
-			operation: z.literal("append-room-description"),
+			operation: z.literal("append-last-message"),
 			message: editor.message({title: "Description Text"}),
+			format: editor.select(z.enum(["inline", "newline"]), {title: "Format"}, "newline"),
 		}),
 	]),
 	{title: "Message Effect", description: "Shows text or augments the current room description."},
@@ -117,7 +118,7 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("room"),
-			operation: z.literal("set-description-variant"),
+			operation: z.literal("set-description"),
 			roomId: editor.reference("room", {title: "Room"}),
 			variantId: editor.input({title: "Variant ID"}).min(1),
 		}),

@@ -7,13 +7,12 @@ export function createRoomMessage(world: World, room: Room, gameState: GameState
 	const hasVisited = gameState.roomStates.some(
 		(roomState) => compareIds(roomState.id, room.id) && roomState.visited,
 	);
-	const description =
-		hasVisited && room.shortDescription ? room.shortDescription : room.description.default;
+	const description = hasVisited && room.shortDescription ? room.shortDescription : room.description;
 	let text = `${room.name}\n${description}\n`;
 
 	for (const feature of room.features ?? []) {
 		if (feature.listedInRoom) {
-			text += `${feature.description.default}\n`;
+			text += `${feature.description}\n`;
 		}
 	}
 

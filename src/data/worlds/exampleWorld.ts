@@ -13,7 +13,7 @@ function feature(
 		name,
 		aliases,
 		tags: ["room-feature"],
-		description: {default: description, variants: []},
+		description,
 		listedInRoom,
 	};
 }
@@ -33,7 +33,7 @@ function room(
 		aliases: id === "dungeon-entrance" ? ["entrance", "stairs"] : [],
 		tags: ["dungeon", levelTag],
 		metadata: {position: {x, y}},
-		description: {default: description, variants: []},
+		description,
 		features,
 	};
 }

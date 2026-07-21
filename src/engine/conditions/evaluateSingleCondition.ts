@@ -1,24 +1,10 @@
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, getEntityType, ID} from "@/utils/idUtils";
+import {compareIds, ID} from "@/utils/idUtils";
 import {getRoom} from "../utils/worldLookupUtils";
 import {EntityState} from "@/schemas/states/entityStates";
-
-type VariableLookup<TValue> = {exists: true; value: TValue} | {exists: false; value: undefined};
-
-function findVariable<TValue>(
-	repository: Record<string, TValue>[],
-	key: string,
-): VariableLookup<TValue> {
-	for (const values of repository) {
-		if (Object.prototype.hasOwnProperty.call(values, key)) {
-			return {exists: true, value: values[key]};
-		}
-	}
-
-	return {exists: false, value: undefined};
-}
+import {findVariable} from "../utils/worldLookupUtils";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
 	for (const state of states) {

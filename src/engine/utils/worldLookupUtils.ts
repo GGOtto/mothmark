@@ -17,3 +17,18 @@ export function getCondition(world: World, conditionId: ID<"condition">): Condit
 	if (!storedCondition) throw new Error(`Missing condition: ${conditionId.id}`);
 	return storedCondition.condition;
 }
+
+type VariableLookup<TValue> = {exists: true; value: TValue} | {exists: false; value: undefined};
+
+export function findVariable<TValue>(
+	repository: Record<string, TValue>[],
+	key: string,
+): VariableLookup<TValue> {
+	for (const values of repository) {
+		if (Object.prototype.hasOwnProperty.call(values, key)) {
+			return {exists: true, value: values[key]};
+		}
+	}
+
+	return {exists: false, value: undefined};
+}

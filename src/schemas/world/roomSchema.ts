@@ -1,6 +1,5 @@
 import {z} from "zod";
 import {ConditionSchema} from "./conditionSchema";
-import {DescriptionSchema} from "./descriptionSchema";
 import {DefaultObjectStateDefaults, ObjectStateDefaultsSchema} from "../states/objectStateSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
@@ -197,9 +196,19 @@ export const RoomFeatureSchema = editor.object(
 
 		kind: RoomFeatureKindSchema.describe("The feature's interaction category."),
 
-		description: DescriptionSchema.describe(
-			"The description shown when the player examines or interacts with this feature.",
-		),
+		description: editor.richText({
+			placeholder: "Describe what the player sees...",
+			layout: {
+				group: "details",
+				width: "full",
+				order: 3,
+			},
+			title: "Description",
+			description: "A default description with optional conditional variants.",
+			appearance: {
+				chrome: "field",
+			},
+		}),
 
 		listedInRoom: editor
 			.boolean({
@@ -323,9 +332,19 @@ export const RoomSchema = editor.object(
 			})
 			.min(1),
 
-		description: DescriptionSchema.describe(
-			"The description shown when the player enters or looks around this room. Please tell me this isn't displaying",
-		),
+		description: editor.richText({
+			placeholder: "Describe what the player sees...",
+			layout: {
+				group: "details",
+				width: "full",
+				order: 3,
+			},
+			title: "Description",
+			description: "A default description with optional conditional variants.",
+			appearance: {
+				chrome: "field",
+			},
+		}),
 
 		shortDescription: editor
 			.textarea({
@@ -410,15 +429,6 @@ export const RoomSchema = editor.object(
 	{
 		title: "Room",
 		description: "A location in the world that the player can visit.",
-		childControls: {
-			description: {
-				layout: {
-					group: "details",
-					width: "full",
-					order: 3,
-				},
-			},
-		},
 		features: {
 			layout: "section",
 			groups: [
