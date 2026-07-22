@@ -16,7 +16,7 @@ export const CounterSchema = z.record(z.string(), z.number().int());
 
 export const VariableRepositorySchema = z.object({
 	flags: z.array(FlagSchema),
-	counter: z.array(CounterSchema),
+	counters: z.array(CounterSchema),
 });
 
 export const GameStateSchema = z.object({

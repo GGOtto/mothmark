@@ -2,7 +2,7 @@ import {produce} from "immer";
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {createRoomMessage} from "../messages/createRoomMessage";
-import {getRoom} from "../utils/worldLookupUtils";
+import {getRoom} from "../utils/lookupUtils";
 
 export function lookAtRoom(world: World, game: GameState): GameState {
 	const room = getRoom(world, game.currentRoom);

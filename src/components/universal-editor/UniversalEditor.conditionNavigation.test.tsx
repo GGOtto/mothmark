@@ -5,7 +5,7 @@ import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {toID} from "@/utils/idUtils";
-import {getCondition} from "@/engine/utils/worldLookupUtils";
+import {getCondition} from "@/engine/utils/lookupUtils";
 import {UniversalEditor} from "./UniversalEditor";
 
 const conditionId = toID("condition", "gate-open");
@@ -137,7 +137,7 @@ describe("condition link navigation", () => {
 				{
 					currentRoom: room4.id,
 					turns: 0,
-					variables: {flags: [], counter: []},
+					variables: {flags: [], counters: []},
 					roomStates: [],
 					messages: [],
 				},

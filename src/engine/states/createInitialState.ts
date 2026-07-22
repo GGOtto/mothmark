@@ -2,7 +2,7 @@ import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import {createRoomMessage} from "../messages/createRoomMessage";
-import {getRoom} from "../utils/worldLookupUtils";
+import {getRoom} from "../utils/lookupUtils";
 
 export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
 	const startingRoom = getRoom(world, startingRoomId);
@@ -11,7 +11,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 		turns: 0,
 		variables: {
 			flags: world.initialState.flags.map(({flag, value}) => ({[String(flag)]: Boolean(value)})),
-			counter: world.initialState.counters.map(({counter, value}) => ({
+			counters: world.initialState.counters.map(({counter, value}) => ({
 				[String(counter)]: Number(value),
 			})),
 		},

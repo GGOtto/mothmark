@@ -39,6 +39,15 @@ export const FlagEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("flag"),
+			operation: z.literal("create"),
+			flag: editor.string({
+				title: "Flag",
+				description: "The name of the new flag. Will overwrite the flag if it already exists.",
+			}),
+			value: editor.boolean({title: "Start Value"}).default(true),
+		}),
+		z.object({
+			type: z.literal("flag"),
 			operation: z.literal("set"),
 			flag: editor.flagKey({title: "Flag"}),
 			value: editor.boolean({title: "Value"}).default(true),
@@ -50,7 +59,7 @@ export const FlagEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("flag"),
-			operation: z.literal("clear"),
+			operation: z.literal("delete"),
 			flag: editor.flagKey({title: "Flag"}),
 		}),
 	]),
@@ -59,6 +68,12 @@ export const FlagEffectSchema = editor.discriminatedUnion(
 
 export const CounterEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("counter"),
+			operation: z.literal("create"),
+			counter: editor.counterKey({title: "Counter"}),
+			value: editor.number({title: "Start Value"}),
+		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("set"),
@@ -79,7 +94,7 @@ export const CounterEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("counter"),
-			operation: z.literal("reset"),
+			operation: z.literal("delete"),
 			counter: editor.counterKey({title: "Counter"}),
 		}),
 	]),

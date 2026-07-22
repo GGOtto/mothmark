@@ -5,7 +5,7 @@ import {compareIds, type ID} from "@/utils/idUtils";
 import {evaluateCondition} from "../conditions/evaluateCondition";
 import {createGameMessage, type GameMessage} from "../messages/createMessage";
 import {createRoomMessage} from "../messages/createRoomMessage";
-import {getRoom} from "../utils/worldLookupUtils";
+import {getRoom} from "../utils/lookupUtils";
 
 export type TeleportOptions = {
 	respectActiveWhen?: boolean;

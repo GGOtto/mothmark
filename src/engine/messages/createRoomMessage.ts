@@ -1,7 +1,8 @@
 import type {Room, World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchema";
-import {createGameMessage, type GameMessage} from "./createMessage";
+import {createGameMessage} from "./createMessage";
+import {GameMessage} from "@/schemas/states/gameStateSchema";
 
 export function createRoomMessage(world: World, room: Room, gameState: GameState): GameMessage {
 	const hasVisited = gameState.roomStates.some(

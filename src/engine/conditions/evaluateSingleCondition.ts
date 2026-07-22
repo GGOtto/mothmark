@@ -2,9 +2,9 @@ import type {GameState} from "@/schemas/states/gameStateSchema";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, ID} from "@/utils/idUtils";
-import {getRoom} from "../utils/worldLookupUtils";
+import {getRoom} from "../utils/lookupUtils";
 import {EntityState} from "@/schemas/states/entityStates";
-import {findVariable} from "../utils/worldLookupUtils";
+import {findVariable} from "../utils/lookupUtils";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
 	for (const state of states) {

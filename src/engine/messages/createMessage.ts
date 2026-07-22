@@ -1,15 +1,9 @@
 import type {ID} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchema";
 import {produce} from "immer";
+import {GameMessage} from "@/schemas/states/gameStateSchema";
 
 export type GameMessageType = "room" | "command" | "system" | "error";
-
-export type GameMessage = {
-	id: string;
-	text: string;
-	type: GameMessageType;
-	roomId?: ID<"room">;
-};
 
 export type CreateGameMessageOptions = {
 	roomId?: ID<"room">;
