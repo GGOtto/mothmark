@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useRef} from "react";
-import type {GameMessage} from "../../engine/messages/createMessage";
+import type {GameMessage} from "../../schemas/states/gameStateSchemas";
 import "./OutputLog.scss";
 
 type OutputLogProps = {

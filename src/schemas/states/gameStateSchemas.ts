@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {RoomStateSchema} from "./entityStates";
+import {RoomStateSchema} from "./entityStateSchemas";
+import {PlayerStateSchemas} from "./playerStateSchemas";
 
 export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error"]);
 
@@ -20,8 +21,7 @@ export const VariableRepositorySchema = z.object({
 });
 
 export const GameStateSchema = z.object({
-	currentRoom: editor.id("room"),
-	turns: z.number().default(0),
+	player: PlayerStateSchemas,
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
 	messages: z.array(GameMessageSchema),

@@ -301,6 +301,53 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 	{title: "Room Effect", description: "Moves the player or changes room and exit state."},
 );
 
+export const PlayerEffectSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("kill"),
+			customDeathMessage: editor.input().optional(),
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("teleport"),
+			roomId: editor.reference("room", {title: "Room"}),
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("teleport"),
+			roomId: editor.reference("room", {title: "Room"}),
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("freeze"),
+			freezeMessage: editor
+				.input({
+					title: "Freeze Message",
+					description: "The message given to the player when they input anything",
+				})
+				.optional(),
+			turns: editor
+				.number({
+					title: "Turns",
+					description:
+						"The number of turns the player is frozen for. If unset, the player will be frozen until an effect unfreezes them.",
+				})
+				.optional(),
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("unfreeze"),
+		}),
+	]),
+	{title: "Player Effect", description: "Perform any effect directly on the player."},
+);
+
+export const GameEffectSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operations", [z.object({})]),
+	{title: "Game Effect", description: "Perform any effect that changes the game state."},
+);
+
 export type MessageEffect = z.infer<typeof MessageEffectSchema>;
 export type FlagEffect = z.infer<typeof FlagEffectSchema>;
 export type CounterEffect = z.infer<typeof CounterEffectSchema>;

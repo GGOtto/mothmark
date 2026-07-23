@@ -1,5 +1,5 @@
 import {produce} from "immer";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {runCommand} from "../commands/execute";
 
@@ -9,6 +9,6 @@ export function resolveTurn(world: World, game: GameState, response: string): Ga
 	const resolvedGame = runCommand(world, game, response);
 
 	return produce(resolvedGame, (draft) => {
-		draft.turns += 1;
+		draft.player.turns += 1;
 	});
 }

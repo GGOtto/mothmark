@@ -1,4 +1,4 @@
-import type {GameMessage, GameState} from "@/schemas/states/gameStateSchema";
+import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
 import {type Effect} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
@@ -263,7 +263,7 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 
 	if (effect.operation === "move-player-to") {
 		return produce(game, (draft) => {
-			draft.currentRoom = effect.roomId;
+			draft.player.currentRoom = effect.roomId;
 			const destinationState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
 			if (destinationState) {
 				destinationState.flags.visited = true;

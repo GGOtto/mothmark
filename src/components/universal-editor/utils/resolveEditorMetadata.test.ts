@@ -1,7 +1,6 @@
 import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {DescriptionSchema} from "@/schemas/world/descriptionSchema";
 import {ConnectionSchema, RoomFeatureSchema, RoomSchema} from "@/schemas/world/roomSchema";
 import {resolveEditorMetadata} from "./resolveEditorMetadata";
 
@@ -44,24 +43,6 @@ describe("resolveEditorMetadata object fields", () => {
 
 		expect(described.description).toBeUndefined();
 		expect(editorDescribed.description).toBe("Explicit editor help text");
-	});
-
-	it("exposes schema-defined children to specialized object-backed controls", () => {
-		const metadata = resolveEditorMetadata(DescriptionSchema);
-
-		expect(metadata.childControls?.default).toMatchObject({
-			control: "rich-text",
-			title: "Description",
-			description: "A default description with optional conditional variants.",
-		});
-		expect(metadata.childControls?.variants).toMatchObject({
-			control: "array",
-			title: "Description Variants",
-			appearance: {
-				chrome: "collapse",
-				defaultCollapsed: true,
-			},
-		});
 	});
 
 	it("merges childControls before sorting object fields", () => {

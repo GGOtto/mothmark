@@ -17,7 +17,7 @@ describe("move", () => {
 
 		const result = move(world, lockedGame, "e");
 
-		expect(result.currentRoom).toEqual(game.currentRoom);
+		expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 		expect(result.messages.at(-1)).toMatchObject({
 			type: "system",
 			text: "You can't go that way.",
@@ -41,7 +41,7 @@ describe("move", () => {
 
 		const result = move(world, unlockedGame, "e");
 
-		expect(idValue(result.currentRoom)).toBe("guardroom");
+		expect(idValue(result.player.currentRoom)).toBe("guardroom");
 		expect(result.messages.at(-1)).toMatchObject({type: "room"});
 	});
 
@@ -55,7 +55,7 @@ describe("move", () => {
 
 		for (const direction of ["up", "e", "s"] as const) {
 			const result = move(world, lockedGame, direction);
-			expect(result.currentRoom).toEqual(game.currentRoom);
+			expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 			expect(result.messages.at(-1)).toMatchObject({type: "system"});
 		}
 	});

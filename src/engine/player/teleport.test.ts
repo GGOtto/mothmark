@@ -1,5 +1,5 @@
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {idValue, toID} from "@/utils/idUtils";
 import {createInitialGameState} from "../states/createInitialState";
@@ -10,7 +10,11 @@ describe("teleport", () => {
 		const initialGame = createInitialGameState(exampleWorld, exampleWorld.startRoomId);
 		const game: GameState = {
 			...initialGame,
-			turns: 7,
+			player: {
+				currentRoom: {type: "room", id: "guardroom"},
+				turns: 7,
+				freezeState: {},
+			},
 			variables: {
 				...initialGame.variables,
 				flags: [{persisted: true}],
@@ -19,8 +23,8 @@ describe("teleport", () => {
 
 		const nextGame = teleport(exampleWorld, game, toID("room", "guardroom"));
 
-		expect(idValue(nextGame.currentRoom)).toBe("guardroom");
-		expect(nextGame.turns).toBe(7);
+		expect(idValue(nextGame.player.currentRoom)).toBe("guardroom");
+		expect(nextGame.player.turns).toBe(7);
 		expect(nextGame.variables.flags).toEqual([{persisted: true}]);
 		expect(
 			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
@@ -73,12 +77,12 @@ describe("teleport", () => {
 		});
 		const teleportedGame = teleport(world, game, toID("room", "guardroom"));
 
-		expect(idValue(blockedGame.currentRoom)).toBe(idValue(game.currentRoom));
+		expect(idValue(blockedGame.player.currentRoom)).toBe(idValue(game.player.currentRoom));
 		expect(blockedGame.messages.at(-1)).toMatchObject({
 			type: "system",
 			text: "You can't go that way.",
 		});
-		expect(idValue(teleportedGame.currentRoom)).toBe("guardroom");
+		expect(idValue(teleportedGame.player.currentRoom)).toBe("guardroom");
 	});
 
 	it("falls back to the authored active flag when runtime room state is missing", () => {
@@ -98,7 +102,7 @@ describe("teleport", () => {
 			respectActiveFlag: true,
 		});
 
-		expect(result.currentRoom).toEqual(game.currentRoom);
+		expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 		expect(result.messages.at(-1)).toMatchObject({type: "system"});
 	});
 });

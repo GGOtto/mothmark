@@ -1,4 +1,4 @@
-import {GameState} from "@/schemas/states/gameStateSchema";
+import {GameState} from "@/schemas/states/gameStateSchemas";
 import type {Condition} from "@/schemas/world/conditionSchema";
 import {World} from "@/schemas/world/worldSchema";
 import {evaluateSingleCondition} from "./evaluateSingleCondition";

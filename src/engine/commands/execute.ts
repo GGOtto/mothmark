@@ -1,6 +1,6 @@
 import {produce} from "immer";
 import type {World} from "@/schemas/world/worldSchema";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {createGameMessage} from "../messages/createMessage";
 import {normalizeInput} from "./parse";
 import {commands, findCommand, type CommandContext, type CommandDefinition} from "./resolveCommand";

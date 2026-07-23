@@ -1,5 +1,5 @@
 import {produce} from "immer";
-import type {GameState, GameMessage} from "@/schemas/states/gameStateSchema";
+import type {GameState, GameMessage} from "@/schemas/states/gameStateSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
@@ -39,7 +39,7 @@ export function teleport(
 	const roomMessage = createRoomMessage(world, destinationRoom, game);
 
 	return produce(game, (draft) => {
-		draft.currentRoom = destinationRoom.id;
+		draft.player.currentRoom = destinationRoom.id;
 		draft.messages.push(roomMessage);
 
 		const roomState = draft.roomStates.find((state) => compareIds(state.id, destinationRoom.id));

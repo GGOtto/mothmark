@@ -2,7 +2,7 @@ import {produce} from "immer";
 import type {Connection, Direction, World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {teleport} from "./teleport";
 
 function canTravelForward(connection: Connection) {
@@ -39,11 +39,13 @@ function getDestinationRoomId(connection: Connection, currentRoomId: ID<"room">)
 
 export function move(world: World, game: GameState, direction: Direction): GameState {
 	const blockedMessage = createGameMessage("You can't go that way.", "system");
-	const currentRoomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
+	const currentRoomState = game.roomStates.find((state) =>
+		compareIds(state.id, game.player.currentRoom),
+	);
 	const exitIsLocked = currentRoomState?.lockedExits?.includes(direction) ?? false;
 	const connection = exitIsLocked
 		? undefined
-		: getConnectionForDirection(world, game.currentRoom, direction);
+		: getConnectionForDirection(world, game.player.currentRoom, direction);
 
 	if (!connection) {
 		return produce(game, (draft) => {
@@ -51,7 +53,7 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 		});
 	}
 
-	const destinationRoomId = getDestinationRoomId(connection, game.currentRoom);
+	const destinationRoomId = getDestinationRoomId(connection, game.player.currentRoom);
 	return teleport(world, game, destinationRoomId, {
 		respectActiveFlag: true,
 		blockedMessage,

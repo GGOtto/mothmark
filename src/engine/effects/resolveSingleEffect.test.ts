@@ -1,4 +1,4 @@
-import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/states/gameStateSchema";
+import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/states/gameStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {choose} from "@/utils/choose";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
@@ -953,7 +953,11 @@ describe("resolveFeatureEffect", () => {
 describe("resolveRoomEffect", () => {
 	function createGameWithRoom(): GameState {
 		return createGameState({
-			currentRoom: {type: "room", id: "hall"},
+			player: {
+				currentRoom: {type: "room", id: "hall"},
+				turns: 0,
+				freezeState: {},
+			},
 			roomStates: [
 				{
 					type: "room",
@@ -996,9 +1000,9 @@ describe("resolveRoomEffect", () => {
 			roomEffect("move-player-to", {roomId: {type: "room", id: "vault"}}),
 		);
 
-		expect(result.currentRoom).toEqual({type: "room", id: "vault"});
+		expect(result.player.currentRoom).toEqual({type: "room", id: "vault"});
 		expect(result.roomStates[1].flags.visited).toBe(true);
-		expect(game.currentRoom).toEqual({type: "room", id: "hall"});
+		expect(game.player.currentRoom).toEqual({type: "room", id: "hall"});
 		expect(game.roomStates[1].flags.visited).toBe(false);
 	});
 

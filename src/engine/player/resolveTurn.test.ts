@@ -8,10 +8,10 @@ describe("resolveTurn", () => {
 		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "help");
 
-		expect(game.turns).toBe(0);
+		expect(game.player.turns).toBe(0);
 		expect(game.messages).toHaveLength(1);
 		expect(game.messages[0]).toMatchObject({type: "room"});
-		expect(nextGame.turns).toBe(1);
+		expect(nextGame.player.turns).toBe(1);
 		expect(nextGame.messages.at(-2)).toMatchObject({type: "command", text: "help"});
 		expect(nextGame.messages.at(-1)).toMatchObject({type: "system"});
 	});
@@ -20,7 +20,7 @@ describe("resolveTurn", () => {
 		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "east");
 
-		expect(idValue(nextGame.currentRoom)).toBe("guardroom");
+		expect(idValue(nextGame.player.currentRoom)).toBe("guardroom");
 		expect(
 			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
 		).toBe(true);

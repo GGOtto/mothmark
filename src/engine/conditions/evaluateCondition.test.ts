@@ -1,4 +1,4 @@
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {Condition, ConditionGroup, SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {toID} from "@/utils/idUtils";
@@ -7,8 +7,11 @@ import {evaluateCondition} from "./evaluateCondition";
 const currentRoom = toID("room", "atrium");
 
 const game = {
-	currentRoom,
-	turns: 0,
+	player: {
+		turns: 0,
+		currentRoom: {type: "room", id: "123"},
+		freezeState: {},
+	},
 	variables: {
 		flags: [{passing: true, failing: false}],
 		counters: [],

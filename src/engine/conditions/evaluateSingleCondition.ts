@@ -1,9 +1,9 @@
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, ID} from "@/utils/idUtils";
 import {getRoom} from "../utils/lookupUtils";
-import {EntityState} from "@/schemas/states/entityStates";
+import {EntityState} from "@/schemas/states/entityStateSchemas";
 import {findVariable} from "../utils/lookupUtils";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
@@ -107,17 +107,17 @@ function evaluateCurrentRoom(
 ): boolean {
 	switch (condition.operation) {
 		case "is":
-			return compareIds(game.currentRoom, condition.roomId);
+			return compareIds(game.player.currentRoom, condition.roomId);
 		case "is-not":
-			return !compareIds(game.currentRoom, condition.roomId);
+			return !compareIds(game.player.currentRoom, condition.roomId);
 		case "has-tag": {
-			const roomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
-			const tags = roomState?.tags ?? getRoom(world, game.currentRoom).tags;
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
 			return tags.includes(condition.tag);
 		}
 		case "missing-tag": {
-			const roomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
-			const tags = roomState?.tags ?? getRoom(world, game.currentRoom).tags;
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
 			return !tags.includes(condition.tag);
 		}
 	}

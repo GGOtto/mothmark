@@ -1,9 +1,9 @@
 import {produce} from "immer";
 import type {Direction, World} from "@/schemas/world/worldSchema";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {createGameMessage} from "../messages/createMessage";
 import {move} from "../player/move";
-import {lookAtRoom} from "../states/changeStates";
+import {lookAtRoom} from "../messages/createRoomMessage";
 import {
 	formatTargetWithArticle,
 	normalizeInput,

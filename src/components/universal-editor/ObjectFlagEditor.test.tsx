@@ -22,7 +22,10 @@ const metadata: ObjectFlagControlMetadata = {
 };
 
 function StatefulEditor() {
-	const [value, setValue] = useState({visited: false, unlocked: false});
+	const [value, setValue] = useState<Record<string, boolean>>({
+		visited: false,
+		unlocked: false,
+	});
 	return (
 		<>
 			<ObjectFlagEditor

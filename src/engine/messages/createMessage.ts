@@ -1,7 +1,7 @@
 import type {ID} from "@/utils/idUtils";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {produce} from "immer";
-import {GameMessage} from "@/schemas/states/gameStateSchema";
+import {GameMessage} from "@/schemas/states/gameStateSchemas";
 
 export type GameMessageType = "room" | "command" | "system" | "error";
 

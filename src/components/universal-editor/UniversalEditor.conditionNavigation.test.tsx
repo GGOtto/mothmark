@@ -135,8 +135,11 @@ describe("condition link navigation", () => {
 			evaluateCondition(
 				nextWorld,
 				{
-					currentRoom: room4.id,
-					turns: 0,
+					player: {
+						currentRoom: room4.id,
+						turns: 0,
+						freezeState: {},
+					},
 					variables: {flags: [], counters: []},
 					roomStates: [],
 					messages: [],
