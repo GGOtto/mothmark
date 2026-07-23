@@ -99,9 +99,9 @@ function evaluateRoomState(
 	}
 	switch (condition.state) {
 		case "visited":
-			return state.visited;
+			return state.flags.visited;
 		case "not-visited":
-			return !state.visited;
+			return !state.flags.visited;
 		default:
 			return false;
 	}
@@ -123,9 +123,9 @@ function evaluateFeatureState(
 
 	switch (condition.state) {
 		case "examined":
-			return feature.examined;
+			return feature.flags.examined;
 		case "not-examined":
-			return !feature.examined;
+			return !feature.flags.examined;
 		default:
 			return false;
 	}

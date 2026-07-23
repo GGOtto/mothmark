@@ -18,11 +18,11 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 		roomStates: world.rooms.map((room) => ({
 			type: "room",
 			id: room.id,
-			visited: false,
+			flags: {...room.flags},
 			featureStates: room.features.map((feature) => ({
 				type: "feature",
 				id: feature.id,
-				examined: false,
+				flags: {...feature.flags},
 			})),
 		})),
 		messages: [],
@@ -32,7 +32,10 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 		...game,
 		roomStates: game.roomStates.map((roomState) => ({
 			...roomState,
-			visited: compareIds(roomState.id, startingRoom.id),
+			flags: {
+				...roomState.flags,
+				visited: compareIds(roomState.id, startingRoom.id) || roomState.flags.visited,
+			},
 		})),
 		messages: [createRoomMessage(world, startingRoom, game)],
 	};

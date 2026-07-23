@@ -533,6 +533,26 @@ export function editorOptionalFlagKey(metadata: EditorMetadataWithoutControl = {
 	});
 }
 
+export function editorObjectFlags(metadata: EditorMetadataWithoutControl = {}) {
+	const flagDefinitions = (metadata.features?.flags ?? {}) as Record<
+		string,
+		{permanent?: boolean; defaultValue?: boolean}
+	>;
+	const permanentDefaults = Object.fromEntries(
+		Object.entries(flagDefinitions)
+			.filter(([, definition]) => definition.permanent)
+			.map(([name, definition]) => [name, definition.defaultValue ?? false]),
+	);
+
+	return withEditorMetadata(
+		z.record(z.string().min(1), z.boolean()).transform((flags) => ({...permanentDefaults, ...flags})),
+		{
+			control: "object-flag-editor",
+			...metadata,
+		},
+	);
+}
+
 export function editorCounterKey(metadata: EditorMetadataWithoutControl = {}) {
 	return withEditorMetadata(z.string().min(1), {
 		control: "counter-picker",
@@ -1037,6 +1057,7 @@ export const editor = {
 	record: editorRecord,
 	optionalCounterKey: editorOptionalCounterKey,
 	optionalFlagKey: editorOptionalFlagKey,
+	objectFlags: editorObjectFlags,
 	positiveInteger: editorPositiveInteger,
 	priority: editorPriority,
 	reference: editorReference,

@@ -22,7 +22,7 @@ describe("resolveTurn", () => {
 
 		expect(idValue(nextGame.currentRoom)).toBe("guardroom");
 		expect(
-			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.visited,
+			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
 		).toBe(true);
 		expect(nextGame.messages.at(-1)).toMatchObject({type: "room"});
 	});

@@ -4,13 +4,13 @@ import {editor} from "../utils/editorSchemaHelpers";
 export const FeatureStateSchema = z.object({
 	type: z.literal("feature"),
 	id: editor.reference("feature"),
-	examined: z.boolean(),
+	flags: z.record(z.string(), z.boolean()),
 });
 
 export const RoomStateSchema = z.object({
 	type: z.literal("room"),
 	id: editor.reference("room"),
-	visited: z.boolean(),
+	flags: z.record(z.string(), z.boolean()),
 	featureStates: z.array(FeatureStateSchema),
 });
 

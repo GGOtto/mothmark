@@ -44,20 +44,22 @@ export function teleport(
 			draft.roomStates.push({
 				type: "room",
 				id: destinationRoom.id,
-				visited: true,
+				flags: {...destinationRoom.flags, visited: true},
 				featureStates: destinationRoom.features.map((feature) => ({
 					type: "feature",
 					id: feature.id,
-					examined: false,
+					flags: {...feature.flags},
 				})),
 			});
 			return;
 		}
 
-		roomState.visited = true;
+		roomState.flags = {...destinationRoom.flags, ...roomState.flags, visited: true};
 		roomState.featureStates = destinationRoom.features.map((feature) => {
 			const existingState = roomState.featureStates.find((state) => compareIds(state.id, feature.id));
-			return existingState ?? {type: "feature", id: feature.id, examined: false};
+			return existingState
+				? {...existingState, flags: {...feature.flags, ...existingState.flags}}
+				: {type: "feature", id: feature.id, flags: {...feature.flags}};
 		});
 	});
 }

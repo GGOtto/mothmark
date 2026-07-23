@@ -1,6 +1,5 @@
 import {z} from "zod";
 import {ConditionSchema} from "./conditionSchema";
-import {DefaultObjectStateDefaults, ObjectStateDefaultsSchema} from "../states/objectStateSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
 
@@ -250,19 +249,25 @@ export const RoomFeatureSchema = editor.object(
 			},
 		}),
 
-		examineSetsFlag: editor.optionalFlagKey({
-			title: "Examine Sets Flag",
-			description:
-				"Optional flag set when this feature is examined. Useful for feature-examined conditions.",
-			layout: {
-				width: "full",
-				order: 11,
-			},
-		}),
-
-		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
-			"Initial object state for this feature.",
-		),
+		flags: editor
+			.objectFlags({
+				title: "Flags",
+				description: "Boolean state attached to this feature and its initial values.",
+				layout: {
+					width: "full",
+					order: 11,
+				},
+				features: {
+					flags: {
+						examined: {
+							permanent: true,
+							defaultReadonly: true,
+							description: "Set when the player examines this feature.",
+						},
+					},
+				},
+			})
+			.default({examined: false}),
 	},
 	{
 		title: "Room Feature",
@@ -291,14 +296,6 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 4,
-				},
-			},
-			state: {
-				title: "State",
-				description: "Initial object state for this feature.",
-				layout: {
-					width: "full",
-					order: 12,
 				},
 			},
 		},
@@ -412,6 +409,27 @@ export const RoomSchema = editor.object(
 			},
 			z.array(RoomFeatureSchema).default([]),
 		),
+
+		flags: editor
+			.objectFlags({
+				title: "Flags",
+				description: "Boolean state attached to this room and its initial values.",
+				layout: {
+					group: "features",
+					width: "full",
+					order: 8,
+				},
+				features: {
+					flags: {
+						visited: {
+							permanent: true,
+							defaultReadonly: true,
+							description: "Set when the player visits this room.",
+						},
+					},
+				},
+			})
+			.default({visited: false}),
 
 		metadata: RoomMetadataSchema,
 
@@ -597,10 +615,6 @@ export const ConnectionSchema = editor.object(
 				order: 12,
 			},
 		}),
-
-		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
-			"Initial state for this connection or exit, such as locked or open.",
-		),
 	},
 	{
 		title: "Connection",
@@ -646,15 +660,6 @@ export const ConnectionSchema = editor.object(
 					order: 6,
 				},
 			},
-			state: {
-				title: "State",
-				description: "Initial state for this connection or exit, such as locked or open.",
-				layout: {
-					group: "state",
-					width: "full",
-					order: 13,
-				},
-			},
 		},
 		features: {
 			layout: "section",
@@ -682,13 +687,6 @@ export const ConnectionSchema = editor.object(
 					title: "Availability",
 					description: "Conditions controlling visibility, travel, and locking.",
 					order: 40,
-					defaultCollapsed: true,
-				},
-				{
-					id: "state",
-					title: "State",
-					description: "The connection's initial object state.",
-					order: 50,
 					defaultCollapsed: true,
 				},
 			],

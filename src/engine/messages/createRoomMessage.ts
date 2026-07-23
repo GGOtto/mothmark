@@ -6,7 +6,7 @@ import {GameMessage} from "@/schemas/states/gameStateSchema";
 
 export function createRoomMessage(world: World, room: Room, gameState: GameState): GameMessage {
 	const hasVisited = gameState.roomStates.some(
-		(roomState) => compareIds(roomState.id, room.id) && roomState.visited,
+		(roomState) => compareIds(roomState.id, room.id) && roomState.flags.visited,
 	);
 	const description = hasVisited && room.shortDescription ? room.shortDescription : room.description;
 	let text = `${room.name}\n${description}\n`;

@@ -167,7 +167,7 @@ export type RoomEffect = z.infer<typeof RoomEffectSchema>;
 export type EffectReference = z.infer<typeof EffectReferenceSchema>;
 export type EffectGroup = {
 	type: "group";
-	mode: "sequence" | "all" | "first";
+	mode: "all" | "first" | "last";
 	effects: Effect[];
 	id?: unknown;
 	name?: string;
@@ -205,7 +205,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 			.and(EffectIdentitySchema),
 		z.object({
 			type: z.literal("group"),
-			mode: z.enum(["sequence", "all", "first"]).default("sequence"),
+			mode: z.enum(["all", "first", "last"]).default("all"),
 			effects: z.array(EffectSchema),
 			...EffectIdentitySchema.shape,
 		}),

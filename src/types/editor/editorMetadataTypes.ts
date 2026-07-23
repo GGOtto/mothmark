@@ -39,6 +39,7 @@ export type EditorControlType =
 	| "flag-picker"
 	| "counter-picker"
 	| "flag-editor"
+	| "object-flag-editor"
 	| "direction-picker"
 	| "scope-picker"
 	| "priority-control"

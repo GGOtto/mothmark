@@ -23,7 +23,7 @@ describe("teleport", () => {
 		expect(nextGame.turns).toBe(7);
 		expect(nextGame.variables.flags).toEqual([{persisted: true}]);
 		expect(
-			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.visited,
+			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
 		).toBe(true);
 		expect(nextGame.messages.at(-1)).toMatchObject({
 			type: "room",
@@ -42,7 +42,7 @@ describe("teleport", () => {
 		const roomState = nextGame.roomStates.find((state) => idValue(state.id) === "guardroom");
 		const authoredRoom = exampleWorld.rooms.find((room) => idValue(room.id) === "guardroom");
 
-		expect(roomState).toMatchObject({type: "room", visited: true});
+		expect(roomState).toMatchObject({type: "room", flags: {visited: true}});
 		expect(roomState?.featureStates.map((state) => idValue(state.id))).toEqual(
 			authoredRoom?.features.map((feature) => idValue(feature.id)),
 		);

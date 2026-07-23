@@ -143,6 +143,7 @@ describe("resolveEditorMetadata object fields", () => {
 			aliases: "identify",
 			tags: "identify",
 			features: "features",
+			flags: "features",
 			activeWhen: "availability",
 		});
 	});
@@ -155,7 +156,6 @@ describe("resolveEditorMetadata object fields", () => {
 			expect.objectContaining({id: "details", title: "Details", order: 20}),
 			expect.objectContaining({id: "messages", title: "Messages", order: 30}),
 			expect.objectContaining({id: "availability", title: "Availability", order: 40}),
-			expect.objectContaining({id: "state", title: "State", order: 50}),
 		]);
 		expect(getFieldGroups(ConnectionSchema)).toMatchObject({
 			id: "details",
@@ -171,7 +171,6 @@ describe("resolveEditorMetadata object fields", () => {
 			visibleWhen: "availability",
 			travelAllowedWhen: "availability",
 			lockedWhen: "availability",
-			state: "state",
 		});
 	});
 
@@ -204,8 +203,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"activeWhen",
 			"visibleWhen",
 			"usableWhen",
-			"examineSetsFlag",
-			"state",
+			"flags",
 		]);
 		expect(fields[0].metadata).toMatchObject({
 			type: "hidden",
@@ -229,7 +227,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"visibleWhen",
 			"travelAllowedWhen",
 			"lockedWhen",
-			"state",
 			"metadata",
 		]);
 		expect(fields[0].metadata).toMatchObject({
