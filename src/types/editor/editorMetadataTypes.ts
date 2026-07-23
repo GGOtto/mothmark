@@ -29,6 +29,7 @@ export type EditorControlType =
 	| "discriminated-union"
 	| "conditional-text"
 	| "condition-builder"
+	| "effect"
 	| "effect-list"
 	| "logic-branch-list"
 	| "command-pattern"

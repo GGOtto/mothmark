@@ -715,6 +715,105 @@ export function editorConditionControl<TSchema extends z.ZodTypeAny>(
 	);
 }
 
+function effectChildControls(
+	overrides: EditorMetadataWithoutControl["childControls"],
+): NonNullable<EditorMetadataWithoutControl["childControls"]> {
+	return {
+		effectType: {
+			control: "select",
+			title: "Effect type",
+			description: "Choose what should happen.",
+		},
+		operator: {
+			control: "select",
+			title: "Action",
+			description: "Choose how the effect changes the game.",
+		},
+		"flag-type": {control: "select", title: "Flag type"},
+		flag: {title: "Flag"},
+		value: {title: "Value"},
+		counter: {control: "input", title: "Counter", placeholder: "Counter name"},
+		amount: {control: "number", title: "Amount", placeholder: "Enter an amount"},
+		message: {
+			control: "textarea",
+			title: "Message",
+			placeholder: "Enter the message shown to the player",
+		},
+		messages: {control: "string-list", title: "Messages"},
+		format: {
+			control: "select",
+			title: "Format",
+			features: {
+				options: [
+					{label: "Inline", value: "inline"},
+					{label: "New line", value: "newline"},
+				],
+			},
+		},
+		freezeMessage: {
+			control: "input",
+			title: "Freeze message",
+			description: "Shown when the player tries to act while frozen.",
+			placeholder: "Optional message while frozen",
+		},
+		turns: {
+			control: "number",
+			title: "Turns",
+			description: "Leave blank to keep the player frozen until another effect unfreezes them.",
+			placeholder: "No turn limit",
+		},
+		customDeathMessage: {
+			control: "input",
+			title: "Death message",
+			placeholder: "Use the default death message",
+		},
+		roomId: {control: "entity-picker", title: "Room"},
+		newRoomId: {control: "entity-picker", title: "New room"},
+		featureId: {control: "entity-picker", title: "Feature"},
+		variantId: {control: "input", title: "Variant ID", placeholder: "Variant ID"},
+		direction: {control: "direction-picker", title: "Direction"},
+		tag: {control: "input", title: "Tag", placeholder: "Tag name"},
+		mode: {
+			control: "select",
+			title: "Run",
+			features: {
+				options: [
+					{label: "All effects", value: "all"},
+					{label: "First effect", value: "first"},
+					{label: "Last effect", value: "last"},
+				],
+			},
+		},
+		effects: {control: "effect-list", title: "Effects"},
+		then: {control: "effect-list", title: "Then"},
+		else: {control: "effect-list", title: "Otherwise"},
+		condition: {control: "condition-builder", title: "Condition"},
+		effectId: {
+			control: "entity-picker",
+			title: "Saved effect",
+			features: {entityType: "effect", allowCreate: false, clearButton: false},
+		},
+		name: {
+			control: "input",
+			title: "Group name",
+			description:
+				"Generated from the group's effects until you choose a custom name. Use Clear to return to the generated name.",
+			placeholder: "Generated from effects",
+		},
+		id: {
+			control: "hidden",
+			title: "Group ID",
+			hidden: true,
+		},
+		allowMultipleUsesInWorld: {
+			control: "hidden",
+			title: "Stored in world effects",
+			hidden: true,
+		},
+		...overrides,
+	};
+}
+
 export function editorEffects<TSchema extends z.ZodTypeAny>(
 	effectSchema: TSchema,
 	metadata: EditorMetadataWithoutControl = {},
@@ -724,6 +823,7 @@ export function editorEffects<TSchema extends z.ZodTypeAny>(
 		z.array(effectSchema).default([]),
 		{
 			control: "effect-list",
+			...metadata,
 			features: {
 				effectTypeOptionSource: EFFECT_TYPE_OPTION_SOURCE,
 				operationOptionSourcesByType: Object.fromEntries(
@@ -734,6 +834,7 @@ export function editorEffects<TSchema extends z.ZodTypeAny>(
 				),
 				...metadata.features,
 			},
+			childControls: effectChildControls(metadata.childControls),
 			summary: {
 				enabled: true,
 				mode: "deterministic",
@@ -749,7 +850,41 @@ export function editorEffects<TSchema extends z.ZodTypeAny>(
 				duplicateBehavior: "exact",
 				...metadata.duplicate,
 			},
+		},
+		defaultFieldValue,
+	);
+}
+
+export function editorEffectControl<TSchema extends z.ZodTypeAny>(
+	effectSchema: TSchema,
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		effectSchema,
+		{
+			control: "effect",
 			...metadata,
+			features: {
+				effectTypeOptionSource: EFFECT_TYPE_OPTION_SOURCE,
+				operationOptionSourcesByType: Object.fromEntries(
+					Object.keys(effectOperationOptionsByType).map((type) => [
+						type,
+						`schema.effect.${type}.operations`,
+					]),
+				),
+				showGeneratedSummary: true,
+				allowedEffectTypes: ["message", "flag", "counter", "feature", "room", "player", "effect-ref"],
+				...metadata.features,
+			},
+			childControls: {
+				...effectChildControls(metadata.childControls),
+			},
+			summary: {
+				enabled: true,
+				mode: "deterministic",
+				...metadata.summary,
+			},
 		},
 		defaultFieldValue,
 	);
@@ -1037,6 +1172,7 @@ export const editor = {
 	diffPreview: editorDiffPreview,
 	direction: editorDirection,
 	discriminatedUnion: editorDiscriminatedUnion,
+	effectControl: editorEffectControl,
 	effects: editorEffects,
 	editorLinkList: editorEditorLinkList,
 	externalLinkList: editorExternalLinkList,

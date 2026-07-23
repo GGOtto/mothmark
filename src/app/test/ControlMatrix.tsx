@@ -43,6 +43,7 @@ export type ControlMatrixVariant<TValue, TMetadata extends EditorControlMetadata
 	disabled?: boolean;
 	readonly?: boolean;
 	autoFocus?: boolean;
+	worldEffects?: Record<string, unknown>[];
 
 	/**
 	 * Most variants should use only ["auto"] so they inherit from the cards.
@@ -64,6 +65,7 @@ type RenderedExample<TValue, TMetadata extends EditorControlMetadata> = {
 	disabled?: boolean;
 	readonly?: boolean;
 	autoFocus?: boolean;
+	worldEffects: Record<string, unknown>[];
 };
 
 type MatrixRow<TValue, TMetadata extends EditorControlMetadata> = {
@@ -287,15 +289,10 @@ const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 		{label: "Message", value: "message"},
 		{label: "Flag", value: "flag"},
 		{label: "Counter", value: "counter"},
-		{label: "Inventory", value: "inventory"},
-		{label: "Item location", value: "item-location"},
 		{label: "Feature", value: "feature"},
 		{label: "Room", value: "room"},
-		{label: "NPC", value: "npc"},
-		{label: "Event", value: "event"},
-		{label: "Flow", value: "flow"},
-		{label: "Group", value: "group"},
-		{label: "Conditional", value: "conditional"},
+		{label: "Player", value: "player"},
+		{label: "Use saved effect", value: "effect-ref"},
 	],
 	"schema.effect.flagOperations": [
 		{label: "Create", value: "create"},
@@ -304,11 +301,17 @@ const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 		{label: "Delete", value: "delete"},
 	],
 	"schema.effect.counterOperations": [
+		{label: "Create", value: "create"},
 		{label: "Set", value: "set"},
 		{label: "Increase", value: "increase"},
 		{label: "Decrease", value: "decrease"},
-		{label: "Reset", value: "reset"},
-		{label: "Clamp", value: "clamp"},
+		{label: "Delete", value: "delete"},
+	],
+	"schema.effect.player.operations": [
+		{label: "Kill player", value: "kill"},
+		{label: "Teleport", value: "teleport"},
+		{label: "Freeze", value: "freeze"},
+		{label: "Unfreeze", value: "unfreeze"},
 	],
 	"schema.world.directions": [
 		{label: "North", value: "n", description: "Compass north."},
@@ -430,6 +433,21 @@ export function ControlMatrix<TValue, TMetadata extends EditorControlMetadata>({
 					autoFocus: example.autoFocus,
 					context: {
 						...baseContext,
+						getWorldValue: (worldPath) =>
+							arePathsEqual(worldPath, ["effects"]) ? example.worldEffects : undefined,
+						setWorldValue: (worldPath, nextValue) => {
+							if (!arePathsEqual(worldPath, ["effects"]) || !Array.isArray(nextValue)) return;
+							setExamples((currentExamples) =>
+								currentExamples.map((currentExample) =>
+									currentExample.id === example.id
+										? {
+												...currentExample,
+												worldEffects: nextValue as Record<string, unknown>[],
+											}
+										: currentExample,
+								),
+							);
+						},
 						appearance: {
 							theme: example.themeVariant.id,
 							scheme: example.parentSurface.scheme,
@@ -506,6 +524,7 @@ function createInitialExamples<TValue, TMetadata extends EditorControlMetadata>(
 					disabled: variant.disabled,
 					readonly: variant.readonly,
 					autoFocus: variant.autoFocus,
+					worldEffects: variant.worldEffects ?? [],
 					metadata: {
 						...variant.metadata,
 						type: controlType,

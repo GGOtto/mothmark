@@ -28,7 +28,8 @@ export type WorldIdEntityType =
 
 export type IdEntityType =
 	| WorldIdEntityType
-	| "command-branch"
+	| "command"
+	| "condition-branch"
 	| "npc-schedule-entry"
 	| "event-instance"
 	| "condition-instance";

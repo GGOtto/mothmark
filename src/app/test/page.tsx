@@ -153,6 +153,11 @@ const CONTROL_TEST_PAGES = [
 		description: "Ordered gameplay effect controls.",
 	},
 	{
+		href: "/test/effect",
+		title: "Effect Group",
+		description: "Metadata-driven effect groups, reusable storage, and references.",
+	},
+	{
 		href: "/test/code-preview",
 		title: "Code Preview",
 		description: "Read-only code and JSON previews.",

@@ -1,13 +1,6 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {ConditionSchema, type Condition} from "./conditionSchema";
 import {entityFlagMutationError} from "./entityFlagDefinitions";
-
-const EffectIdentitySchema = z.object({
-	id: editor.id("effect", {title: "Effect ID", advanced: true}).optional(),
-	name: editor.input({title: "Effect Name"}).optional(),
-	allowMultipleUsesInWorld: editor.boolean({title: "Allow multiple uses in world"}).default(false),
-});
 
 export const EffectReferenceSchema = editor.object(
 	{type: z.literal("effect-ref"), effectId: editor.reference("effect", {title: "Effect"})},
@@ -315,11 +308,6 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("player"),
-			operation: z.literal("teleport"),
-			roomId: editor.reference("room", {title: "Room"}),
-		}),
-		z.object({
-			type: z.literal("player"),
 			operation: z.literal("freeze"),
 			freezeMessage: editor
 				.input({
@@ -353,32 +341,16 @@ export type FlagEffect = z.infer<typeof FlagEffectSchema>;
 export type CounterEffect = z.infer<typeof CounterEffectSchema>;
 export type FeatureEffect = z.infer<typeof FeatureEffectSchema>;
 export type RoomEffect = z.infer<typeof RoomEffectSchema>;
+export type PlayerEffect = z.infer<typeof PlayerEffectSchema>;
 export type EffectReference = z.infer<typeof EffectReferenceSchema>;
-export type EffectGroup = {
-	type: "group";
-	mode: "all" | "first" | "last";
-	effects: Effect[];
-	id?: unknown;
-	name?: string;
-	allowMultipleUsesInWorld: boolean;
-};
-export type ConditionalEffect = {
-	type: "conditional";
-	condition: Condition;
-	then: Effect[];
-	else: Effect[];
-	id?: unknown;
-	name?: string;
-	allowMultipleUsesInWorld: boolean;
-};
+
 export type Effect =
 	| MessageEffect
 	| FlagEffect
 	| CounterEffect
 	| FeatureEffect
 	| RoomEffect
-	| EffectGroup
-	| ConditionalEffect
+	| PlayerEffect
 	| EffectReference;
 
 function normalizeFlagEffect(value: unknown): unknown {
@@ -390,41 +362,84 @@ function normalizeFlagEffect(value: unknown): unknown {
 	return value;
 }
 
-export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.lazy(() =>
+/**
+ * A group contains concrete effects or references to other saved groups.
+ * EffectGroupSchema is deliberately absent, preventing nested inline groups.
+ */
+export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 	z.preprocess(
 		normalizeFlagEffect,
 		z.union([
-			z
-				.union([
-					MessageEffectSchema,
-					FlagEffectSchema,
-					CounterEffectSchema,
-					FeatureEffectSchema,
-					RoomEffectSchema,
-				])
-				.and(EffectIdentitySchema),
-			z.object({
-				type: z.literal("group"),
-				mode: z.enum(["all", "first", "last"]).default("all"),
-				effects: z.array(EffectSchema),
-				...EffectIdentitySchema.shape,
-			}),
-			z.object({
-				type: z.literal("conditional"),
-				condition: editor.conditionControl(ConditionSchema, {
-					title: "Condition",
-				}),
-				then: z.array(EffectSchema),
-				else: z.array(EffectSchema).default([]),
-				...EffectIdentitySchema.shape,
-			}),
+			MessageEffectSchema,
+			FlagEffectSchema,
+			CounterEffectSchema,
+			FeatureEffectSchema,
+			RoomEffectSchema,
+			PlayerEffectSchema,
+			EffectReferenceSchema,
 		]),
 	),
 );
 
-export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
-	z.union([WorldEffectSchema, EffectReferenceSchema]),
+export const EffectGroupSchema = editor.effectControl(
+	z
+		.object({
+			name: editor.input({
+				title: "Group name",
+				description:
+					"Generated from the group's effects until you choose a custom name. Use Clear to return to the generated name.",
+			}),
+			id: editor.id("effect", {title: "Group ID", hidden: true}),
+			type: z.literal("group"),
+			effects: editor.effects(EffectSchema, {
+				title: "Effects",
+				description: "Run concrete effects or reference another saved effect group.",
+				features: {
+					allowedEffectTypes: ["message", "flag", "counter", "feature", "room", "player", "effect-ref"],
+				},
+			}),
+			allowMultipleUsesInWorld: editor.hidden(z.literal(true).default(true), {
+				title: "Stored in world effects",
+			}),
+		})
+		.superRefine((group, ctx) => {
+			const selfId =
+				typeof group.id === "object" && group.id !== null && "id" in group.id
+					? String(group.id.id)
+					: String(group.id);
+			group.effects.forEach((effect, index) => {
+				if (
+					effect.type === "effect-ref" &&
+					typeof effect.effectId === "object" &&
+					effect.effectId !== null &&
+					"id" in effect.effectId &&
+					String(effect.effectId.id) === selfId
+				) {
+					ctx.addIssue({
+						code: "custom",
+						message: "An effect group cannot reference itself.",
+						path: ["effects", index, "effectId"],
+					});
+				}
+			});
+		}),
+	{
+		title: "Effect group",
+		description: "Configure a sequence of effects as one reusable outcome.",
+	},
+	{
+		name: "",
+		id: "",
+		type: "group",
+		effects: [],
+		allowMultipleUsesInWorld: true,
+	},
 );
-export const EffectUsageSchema = EffectReferenceSchema;
+
+export type EffectGroup = z.infer<typeof EffectGroupSchema>;
+
+/** Saved world effects are always complete groups. */
+export const WorldEffectSchema = EffectGroupSchema;
+export const EffectUsageSchema = EffectGroupSchema;
 
 // TODO: Restore item, inventory, NPC, event, and flow effects when their domains return.

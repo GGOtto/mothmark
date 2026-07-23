@@ -85,6 +85,7 @@ export function EntityPickerEditor({
 				<div className="entityPickerEditor__row">
 					<select
 						className="entityPickerEditor__select"
+						aria-label={metadata.title}
 						value={selectedOption ? selectedId : ""}
 						disabled={isDisabled || isReadonly}
 						autoFocus={autoFocus}

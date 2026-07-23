@@ -75,4 +75,28 @@ describe("editor schema defaultFieldValue", () => {
 			id: "",
 		});
 	});
+
+	it("configures a single effect control through schema metadata", () => {
+		const schema = editor.effectControl(FlagEffectSchema, {
+			title: "Outcome",
+			features: {allowedEffectTypes: ["flag"]},
+			childControls: {
+				flag: {control: "flag-picker", title: "World flag"},
+			},
+		});
+
+		expect(getEditorMetadata(schema)).toMatchObject({
+			control: "effect",
+			title: "Outcome",
+			features: {
+				allowedEffectTypes: ["flag"],
+				effectTypeOptionSource: "schema.effect.types",
+				showGeneratedSummary: true,
+			},
+			childControls: {
+				effectType: {control: "select", title: "Effect type"},
+				flag: {control: "flag-picker", title: "World flag"},
+			},
+		});
+	});
 });

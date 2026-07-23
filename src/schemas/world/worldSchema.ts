@@ -2,7 +2,7 @@ import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
 import {WorldConditionSchema} from "./conditionSchema";
-import {WorldEffectSchema} from "./effectSchema";
+import {EffectGroupSchema} from "./effectSchema";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
 import {idValue} from "../../utils/idUtils";
 
@@ -112,7 +112,7 @@ export const WorldSchema = editor
 					idPrefix: "condition",
 				},
 			}),
-			effects: editor.array(WorldEffectSchema, {
+			effects: editor.array(EffectGroupSchema, {
 				title: "Effects",
 				description: "Reusable effects retained for room and feature interactions.",
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "effect"},

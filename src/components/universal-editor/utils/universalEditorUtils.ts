@@ -367,11 +367,19 @@ export function generateEffectSummary(effect: unknown): string {
 	if (!isRecord(effect)) return "Unknown effect";
 
 	const type = String(effect.type ?? "effect");
-	if (type === "message") return `show message ${stringifySummaryValue(effect.text ?? "")}`;
+	if (type === "effect-ref") return `use saved effect ${stringifySummaryValue(effect.effectId)}`;
+	if (type === "message") {
+		const operation = String(effect.operation ?? "show");
+		if (operation === "random") {
+			const count = Array.isArray(effect.messages) ? effect.messages.length : 0;
+			return `show one of ${count} ${count === 1 ? "message" : "messages"}`;
+		}
+		return `${operation === "show" ? "show message" : "append message"} ${stringifySummaryValue(effect.message ?? "")}`;
+	}
 	if (type === "flag")
 		return `${stringifySummaryValue(effect.operation ?? "set")} ${stringifySummaryValue(effect["flag-type"] ?? "normal")} flag ${stringifySummaryValue(effect.flag)}`;
 	if (type === "counter") {
-		return `${stringifySummaryValue(effect.operation ?? "set")} counter ${stringifySummaryValue(effect.counter)} ${stringifySummaryValue(effect.value)}`.trim();
+		return `${stringifySummaryValue(effect.operation ?? "set")} counter ${stringifySummaryValue(effect.counter)} ${stringifySummaryValue(effect.amount ?? effect.value)}`.trim();
 	}
 	if (type === "inventory") {
 		return `${stringifySummaryValue(effect.operation ?? "update")} item ${stringifySummaryValue(effect.itemId)}`;
@@ -382,6 +390,12 @@ export function generateEffectSummary(effect: unknown): string {
 	if (type === "feature") {
 		return `${stringifySummaryValue(effect.operation ?? "change")} ${stringifySummaryValue(effect.roomId)}/${stringifySummaryValue(effect.featureId)}`;
 	}
+	if (type === "player") return `${stringifySummaryValue(effect.operation ?? "change")} player`;
+	if (type === "group") {
+		const count = Array.isArray(effect.effects) ? effect.effects.length : 0;
+		return `${stringifySummaryValue(effect.mode ?? "all")} of ${count} ${count === 1 ? "effect" : "effects"}`;
+	}
+	if (type === "conditional") return "conditional effect";
 
 	return Object.entries(effect)
 		.map(([key, value]) => `${key}: ${stringifySummaryValue(value)}`)

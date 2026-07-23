@@ -21,6 +21,11 @@ export type TextFieldFeatures = {
 	clearButton?: boolean;
 
 	/**
+	 * Value emitted by the Clear button. Defaults to an empty string.
+	 */
+	clearValue?: string;
+
+	/**
 	 * Shows a prefix next to the input.
 	 * Example: "item/"
 	 */
@@ -85,7 +90,7 @@ export function TextField({
 	function clearValue() {
 		if (!canEdit) return;
 
-		onChange("");
+		onChange(metadata.features?.clearValue ?? "");
 	}
 
 	return (
@@ -105,6 +110,7 @@ export function TextField({
 
 				<input
 					className="textField__input"
+					aria-label={metadata.title}
 					value={value}
 					placeholder={metadata.placeholder}
 					disabled={isDisabled}
@@ -134,7 +140,7 @@ export function TextField({
 					<button
 						className="textField__button"
 						type="button"
-						disabled={!canEdit || value.length === 0}
+						disabled={!canEdit || value === (metadata.features?.clearValue ?? "")}
 						onClick={clearValue}
 					>
 						Clear

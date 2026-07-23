@@ -158,22 +158,17 @@ export const effectTypeOptions: EditorOption[] = [
 	{label: "Show message", value: "message"},
 	{label: "Set flag", value: "flag"},
 	{label: "Counter", value: "counter"},
-	{label: "Inventory", value: "inventory"},
-	{label: "Item location", value: "item-location"},
 	{label: "Feature", value: "feature"},
 	{label: "Move room", value: "room"},
-	{label: "NPC", value: "npc"},
-	{label: "Event", value: "event"},
-	{label: "Flow", value: "flow"},
-	{label: "Group", value: "group"},
-	{label: "Conditional", value: "conditional"},
+	{label: "Player", value: "player"},
+	{label: "Use saved effect", value: "effect-ref"},
 ];
 
 export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 	message: [
 		{label: "Show", value: "show"},
 		{label: "Random", value: "random"},
-		{label: "Append room description", value: "append-room-description"},
+		{label: "Append to last message", value: "append-last-message"},
 	],
 	flag: [
 		{label: "Create", value: "create"},
@@ -182,11 +177,11 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Delete", value: "delete"},
 	],
 	counter: [
+		{label: "Create", value: "create"},
 		{label: "Set", value: "set"},
 		{label: "Increase", value: "increase"},
 		{label: "Decrease", value: "decrease"},
-		{label: "Reset", value: "reset"},
-		{label: "Clamp", value: "clamp"},
+		{label: "Delete", value: "delete"},
 	],
 	inventory: [
 		{label: "Add item", value: "add"},
@@ -228,6 +223,12 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Remove tag", value: "remove-tag"},
 		{label: "Set active", value: "set-active"},
 		{label: "Set inactive", value: "set-inactive"},
+	],
+	player: [
+		{label: "Kill player", value: "kill"},
+		{label: "Teleport", value: "teleport"},
+		{label: "Freeze", value: "freeze"},
+		{label: "Unfreeze", value: "unfreeze"},
 	],
 	npc: [
 		{label: "Move to room", value: "move-to-room"},
@@ -304,40 +305,71 @@ export function createDefaultConditionValue(type = "flag"): Record<string, unkno
 export function createDefaultEffectValue(
 	type: string,
 	operationOptions: EditorOption[] = effectOperationOptionsByType[type] ?? [],
+	selectedOperation?: string,
+	flagType: "normal" | "room" | "feature" = "normal",
 ): Record<string, unknown> {
-	const operation = operationOptions[0]?.value;
-	if (type === "message") return {type, messageType: "show", text: ""};
-	if (type === "flag")
-		return {type, "flag-type": "normal", operation: operation ?? "set", flag: "", value: true};
-	if (type === "counter") return {type, operation: operation ?? "set", counter: "", value: 0};
-	if (type === "inventory") return {type, operation: operation ?? "add", itemId: toID("item", "")};
-	if (type === "item-location")
+	const operation = selectedOperation ?? operationOptions[0]?.value;
+
+	if (type === "effect-ref") return {type, effectId: toID("effect", "")};
+	if (type === "message") {
+		if (operation === "random") return {type, operation, messages: []};
+		if (operation === "append-last-message") return {type, operation, message: "", format: "newline"};
+		return {type, operation: operation ?? "show", message: ""};
+	}
+	if (type === "flag") {
+		const base = {type, "flag-type": flagType, operation: operation ?? "set"};
+		const target =
+			flagType === "feature"
+				? {roomId: toID("room", ""), featureId: toID("feature", "")}
+				: flagType === "room"
+					? {roomId: toID("room", "")}
+					: {};
 		return {
-			type,
-			operation: operation ?? "move-to-room",
-			itemId: toID("item", ""),
-			roomId: toID("room", ""),
+			...base,
+			...target,
+			flag: "",
+			...((operation ?? "set") === "set" || (flagType === "normal" && operation === "create")
+				? {value: true}
+				: {}),
 		};
-	if (type === "feature")
-		return {
+	}
+	if (type === "counter") {
+		const base = {type, operation: operation ?? "create", counter: ""};
+		if (operation === "increase" || operation === "decrease") return {...base, amount: 1};
+		if (operation === "delete") return base;
+		return {...base, value: 0};
+	}
+	if (type === "feature") {
+		const base = {
 			type,
 			operation: operation ?? "change-name",
 			roomId: toID("room", ""),
 			featureId: toID("feature", ""),
 		};
-	if (type === "room")
-		return {type, operation: operation ?? "move-player-to", roomId: toID("room", "")};
-	if (type === "npc")
-		return {
-			type,
-			operation: operation ?? "move-to-room",
-			npcId: toID("npc", ""),
-			roomId: toID("room", ""),
-		};
-	if (type === "event")
-		return {type, operation: operation ?? "schedule", eventId: toID("event", "")};
-	if (type === "group") return {type, effects: []};
-	if (type === "conditional")
-		return {type, condition: createDefaultConditionValue(), then: [], otherwise: []};
-	return {type, operation: operation ?? "stop-processing"};
+		if (operation === "change-name" || operation === "change-description")
+			return {...base, value: ""};
+		if (operation === "move-to-room") return {...base, newRoomId: toID("room", "")};
+		return base;
+	}
+	if (type === "room") {
+		const base = {type, operation: operation ?? "move-player-to", roomId: toID("room", "")};
+		if (["set-name", "set-description", "set-short-description"].includes(operation ?? ""))
+			return {...base, variantId: ""};
+		if (operation === "lock-exit" || operation === "unlock-exit") return {...base, direction: ""};
+		if (operation === "add-tag" || operation === "remove-tag") return {...base, tag: ""};
+		return base;
+	}
+	if (type === "player") {
+		if (operation === "teleport") return {type, operation, roomId: toID("room", "")};
+		if (operation === "freeze")
+			return {
+				type,
+				operation,
+				freezeMessage: undefined,
+				turns: undefined,
+			};
+		if (operation === "unfreeze") return {type, operation};
+		return {type, operation: operation ?? "kill", customDeathMessage: undefined};
+	}
+	return {type, operation: operation ?? ""};
 }

@@ -28,7 +28,11 @@ export type NumberControlMetadata = EditorControlMetadata & {
 	features?: NumberFieldFeatures;
 };
 
-export type NumberFieldProps = EditorControlProps<number, NumberControlMetadata>;
+export type NumberFieldProps = EditorControlProps<number | undefined, NumberControlMetadata>;
+
+function numberDraftValue(value: number | undefined) {
+	return typeof value === "number" ? String(value) : "";
+}
 
 function clampValue(value: number, min?: number, max?: number) {
 	if (typeof min === "number" && value < min) return min;
@@ -51,7 +55,7 @@ export function NumberFieldEditor({
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const [draftState, setDraftState] = useState(() => ({
 		sourceValue: value,
-		draftValue: String(value),
+		draftValue: numberDraftValue(value),
 	}));
 
 	const isDisabled = disabled || metadata.disabled;
@@ -62,7 +66,8 @@ export function NumberFieldEditor({
 		metadata.features?.unit ?? metadata.features?.suffix ?? kindSuffix(metadata.features?.kind);
 	const hasSlider =
 		metadata.features?.slider && typeof metadata.min === "number" && typeof metadata.max === "number";
-	const draftValue = draftState.sourceValue === value ? draftState.draftValue : String(value);
+	const draftValue =
+		draftState.sourceValue === value ? draftState.draftValue : numberDraftValue(value);
 
 	function commitNumber(rawValue: string) {
 		setDraftState({
@@ -70,7 +75,10 @@ export function NumberFieldEditor({
 			draftValue: rawValue,
 		});
 
-		if (rawValue.trim() === "") return;
+		if (rawValue.trim() === "") {
+			if (!metadata.required) onChange(undefined);
+			return;
+		}
 
 		const nextValue = Number(rawValue);
 
@@ -81,9 +89,10 @@ export function NumberFieldEditor({
 
 	function restoreOrClampValue() {
 		if (draftValue.trim() === "") {
+			if (!metadata.required) return;
 			setDraftState({
 				sourceValue: value,
-				draftValue: String(value),
+				draftValue: numberDraftValue(value),
 			});
 			return;
 		}
@@ -93,7 +102,7 @@ export function NumberFieldEditor({
 		if (!Number.isFinite(nextValue)) {
 			setDraftState({
 				sourceValue: value,
-				draftValue: String(value),
+				draftValue: numberDraftValue(value),
 			});
 			return;
 		}
@@ -110,6 +119,12 @@ export function NumberFieldEditor({
 
 	function clearValue() {
 		if (!canEdit) return;
+
+		if (!metadata.required) {
+			setDraftState({sourceValue: undefined, draftValue: ""});
+			onChange(undefined);
+			return;
+		}
 
 		const fallbackValue = metadata.min ?? 0;
 		setDraftState({
@@ -155,6 +170,7 @@ export function NumberFieldEditor({
 
 					<input
 						className="numberField__input"
+						aria-label={metadata.title}
 						type="number"
 						value={draftValue}
 						placeholder={metadata.placeholder}
@@ -182,7 +198,7 @@ export function NumberFieldEditor({
 								className="numberField__button"
 								type="button"
 								disabled={!canEdit}
-								onClick={() => setNumber(value - step)}
+								onClick={() => setNumber((value ?? 0) - step)}
 							>
 								- {step}
 							</button>
@@ -190,7 +206,7 @@ export function NumberFieldEditor({
 								className="numberField__button"
 								type="button"
 								disabled={!canEdit}
-								onClick={() => setNumber(value + step)}
+								onClick={() => setNumber((value ?? 0) + step)}
 							>
 								+ {step}
 							</button>

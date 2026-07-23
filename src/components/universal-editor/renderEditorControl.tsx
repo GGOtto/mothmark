@@ -6,6 +6,7 @@ import {
 	type DiscriminatedUnionEditorProps,
 } from "./DiscriminatedUnionEditor";
 import {EffectListEditor, type EffectListEditorProps} from "./EffectListEditor";
+import {EffectEditor, type EffectEditorProps} from "./EffectEditor";
 import {EntityPickerEditor, type EntityPickerEditorProps} from "./EntityPickerEditor";
 import {FlagPickerEditor, type FlagPickerEditorProps} from "./FlagPickerEditor";
 import {HiddenEditor, type HiddenEditorProps} from "./HiddenEditor";
@@ -110,6 +111,9 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 
 		case "condition-builder":
 			return <ConditionBuilderEditor {...(props as ConditionBuilderEditorProps)} />;
+
+		case "effect":
+			return <EffectEditor {...(props as EffectEditorProps)} />;
 
 		case "effect-list":
 			return <EffectListEditor {...(props as EffectListEditorProps)} />;

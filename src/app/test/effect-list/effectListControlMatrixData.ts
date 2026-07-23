@@ -3,8 +3,8 @@ import type {
 	EditorControlAppearance,
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
-import type {ControlMatrixVariant} from "../ControlMatrix";
 import {toID} from "../../../utils/idUtils";
+import type {ControlMatrixVariant} from "../ControlMatrix";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"auto",
@@ -15,95 +15,144 @@ const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"mothmark",
 ];
 
+const FEATURES = {
+	reorderable: true,
+	duplicateable: true,
+	removable: true,
+	effectTypeOptionSource: "schema.effect.types",
+	operationOptionSourcesByType: {
+		message: "schema.effect.message.operations",
+		flag: "schema.effect.flagOperations",
+		counter: "schema.effect.counterOperations",
+		player: "schema.effect.player.operations",
+	},
+	showGeneratedSummary: true,
+};
+
+const CHILD_CONTROLS: EffectListControlMetadata["childControls"] = {
+	effectType: {control: "select", title: "Effect type"},
+	operator: {control: "select", title: "Action"},
+	flag: {title: "Flag"},
+	value: {title: "Value"},
+	counter: {control: "input", title: "Counter", placeholder: "Counter name"},
+	amount: {control: "number", title: "Amount", placeholder: "Enter an amount"},
+	message: {
+		control: "textarea",
+		title: "Message",
+		placeholder: "Enter the message shown to the player",
+	},
+	messages: {control: "string-list", title: "Messages"},
+	freezeMessage: {
+		control: "input",
+		title: "Freeze message",
+		placeholder: "Optional message while frozen",
+	},
+	turns: {
+		control: "number",
+		title: "Turns",
+		description: "Optional. Leave blank to freeze until another effect unfreezes the player.",
+		placeholder: "No turn limit",
+	},
+	customDeathMessage: {
+		control: "input",
+		title: "Death message",
+		placeholder: "Use the default death message",
+	},
+	roomId: {control: "entity-picker", title: "Room"},
+	newRoomId: {control: "entity-picker", title: "New room"},
+	featureId: {control: "entity-picker", title: "Feature"},
+	variantId: {control: "input", title: "Variant ID", placeholder: "Variant ID"},
+	direction: {control: "direction-picker", title: "Direction"},
+	tag: {control: "input", title: "Tag", placeholder: "Tag name"},
+	effectId: {control: "entity-picker", title: "Saved effect"},
+};
+
 type EffectSetup = {
-	id: string;
 	value: Record<string, unknown>[];
+	worldEffects?: Record<string, unknown>[];
 	error?: string;
 	readonly?: boolean;
 	metadata: Omit<EffectListControlMetadata, "type" | "appearance">;
 };
 
+const BASE_METADATA = {
+	features: FEATURES,
+	childControls: CHILD_CONTROLS,
+};
+
 const SETUPS = {
 	basic: {
-		id: "basic",
 		value: [
-			{type: "message", messageType: "show", text: "The door opens."},
-			{type: "flag", operation: "set", flag: "foyer.doorUnlocked", value: true},
+			{type: "message", operation: "show", message: "The door opens."},
+			{
+				type: "flag",
+				"flag-type": "normal",
+				operation: "set",
+				flag: "foyer.doorUnlocked",
+				value: true,
+			},
 		],
 		metadata: {
-			title: "Command Effects",
+			title: "Command effects",
 			description: "Runs in order after a command resolves.",
-			features: {
-				reorderable: true,
-				duplicateable: true,
-				removable: true,
-				effectTypeOptionSource: "schema.effect.types",
-				operationOptionSourcesByType: {
-					flag: "schema.effect.flagOperations",
-					counter: "schema.effect.counterOperations",
-				},
+			...BASE_METADATA,
+		},
+	},
+	freeze: {
+		value: [{type: "player", operation: "freeze"}],
+		metadata: {
+			title: "Freeze player",
+			description: "Optional fields remain visible even when their values are unset.",
+			...BASE_METADATA,
+		},
+	},
+	reference: {
+		value: [{type: "effect-ref", effectId: toID("effect", "ring-bell")}],
+		worldEffects: [
+			{
+				type: "group",
+				id: toID("effect", "ring-bell"),
+				name: "Ring the bell",
+				effects: [{type: "message", operation: "show", message: "A bell rings somewhere below."}],
+				allowMultipleUsesInWorld: true,
 			},
+		],
+		metadata: {
+			title: "Saved effect reference",
+			description: "References choose from definitions already stored in world.effects.",
+			...BASE_METADATA,
 		},
 	},
 	collapsible: {
-		id: "collapsible",
 		value: [{type: "counter", operation: "increase", counter: "turns", amount: 1}],
 		metadata: {
-			title: "Collapsible Effects",
-			features: {
-				collapsibleItems: true,
-				effectTypeOptionSource: "schema.effect.types",
-				operationOptionSourcesByType: {
-					counter: "schema.effect.counterOperations",
-				},
-			},
+			title: "Collapsible effects",
+			features: {...FEATURES, collapsibleItems: true},
+			childControls: CHILD_CONTROLS,
 		},
 	},
 	restricted: {
-		id: "restricted",
-		value: [{type: "flow", operation: "stop-processing"}],
+		value: [{type: "player", operation: "unfreeze"}],
 		metadata: {
-			title: "Restricted Effects",
-			features: {
-				allowedEffectTypes: ["message", "flow"],
-				effectTypeOptionSource: "schema.effect.types",
-			},
-		},
-	},
-	listDriven: {
-		id: "list-driven",
-		value: [
-			{type: "counter", operation: "increase", counter: "turns", amount: 1},
-			{
-				type: "item-location",
-				operation: "move-to-room",
-				itemId: toID("item", "brass-key"),
-				roomId: toID("room", "library"),
-			},
-		],
-		metadata: {
-			title: "World Data Lists",
-			description: "Effect type and action lists are supplied by named option lists.",
-			features: {
-				effectTypeOptionSource: "schema.effect.types",
-				operationOptionSourcesByType: {
-					counter: "schema.effect.counterOperations",
-				},
-				showGeneratedSummary: true,
-			},
+			title: "Restricted effects",
+			features: {...FEATURES, allowedEffectTypes: ["player"]},
+			childControls: CHILD_CONTROLS,
 		},
 	},
 	error: {
-		id: "error",
-		value: [{type: "flag", operation: "set", flag: "", value: true}],
+		value: [
+			{
+				type: "flag",
+				"flag-type": "normal",
+				operation: "set",
+				flag: "",
+				value: true,
+			},
+		],
 		error: "Flag id is required.",
 		metadata: {
-			title: "Errored Effects",
-			features: {
-				removable: true,
-				effectTypeOptionSource: "schema.effect.types",
-				operationOptionSourcesByType: {flag: "schema.effect.flagOperations"},
-			},
+			title: "Errored effects",
+			...BASE_METADATA,
 		},
 	},
 } satisfies Record<string, EffectSetup>;
@@ -119,6 +168,7 @@ function makeVariant(
 		id,
 		description,
 		value: setup.value,
+		worldEffects: setup.worldEffects,
 		error: setup.error,
 		readonly: setup.readonly,
 		appearance,
@@ -130,7 +180,7 @@ function makeVariant(
 export const effectListControlMatrixVariants = [
 	makeVariant(
 		"theme-default-field-md-basic",
-		"Theme test for effect list.",
+		"Theme coverage for an ordered effect list.",
 		{tone: "default", chrome: "field", size: "md"},
 		SETUPS.basic,
 		THEME_TEST_THEMES,
@@ -140,6 +190,18 @@ export const effectListControlMatrixVariants = [
 		"Baseline ordered effect list.",
 		{tone: "default", chrome: "field", size: "md"},
 		SETUPS.basic,
+	),
+	makeVariant(
+		"panel-field-md-freeze",
+		"Freeze action with unset optional message and turns.",
+		{tone: "panel", chrome: "field", size: "md"},
+		SETUPS.freeze,
+	),
+	makeVariant(
+		"default-field-md-reference",
+		"Select an existing saved effect reference.",
+		{tone: "default", chrome: "field", size: "md"},
+		SETUPS.reference,
 	),
 	makeVariant(
 		"default-card-md-collapsible",
@@ -154,15 +216,9 @@ export const effectListControlMatrixVariants = [
 		SETUPS.restricted,
 	),
 	makeVariant(
-		"default-field-md-list-driven",
-		"List-sourced effect types and operations.",
-		{tone: "default", chrome: "field", size: "md"},
-		SETUPS.listDriven,
-	),
-	makeVariant(
-		"default-field-md-error",
+		"danger-card-md-error",
 		"Error state effect list.",
-		{tone: "default", chrome: "field", size: "md"},
+		{tone: "danger", chrome: "card", size: "md"},
 		SETUPS.error,
 	),
 ];
