@@ -101,27 +101,61 @@ export const CounterEffectSchema = editor.discriminatedUnion(
 	{title: "Counter Effect", description: "Changes a numeric world counter."},
 );
 
-export const ObjectStateEffectSchema = editor.object(
-	{
-		type: z.literal("object-state"),
-		operation: editor.select(
-			z.enum([
-				"open",
-				"close",
-				"lock",
-				"unlock",
-				"light",
-				"extinguish",
-				"break",
-				"repair",
-				"clean",
-				"dirty",
-			]),
-			{title: "Operation"},
-		),
-		objectId: editor.reference("feature", {title: "Feature"}),
-	},
-	{title: "Feature State Effect", description: "Changes built-in state on a room feature."},
+export const FeatureEffectSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("change-name"),
+			value: editor.input(),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("change-description"),
+			value: editor.richText(),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("move-to-room"),
+			roomId: editor.reference("room", {title: "Room"}),
+			newRoomId: editor.reference("room", {title: "New Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("hide-from-player"),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("show-to-player"),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("show-in-room-description"),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("hide-in-room-description"),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+		z.object({
+			type: z.literal("feature"),
+			operation: z.literal("destroy"),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+		}),
+	]),
+	{title: "Room Effect", description: "Moves the player or changes room and exit state."},
 );
 
 export const RoomEffectSchema = editor.discriminatedUnion(
@@ -162,7 +196,7 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 export type MessageEffect = z.infer<typeof MessageEffectSchema>;
 export type FlagEffect = z.infer<typeof FlagEffectSchema>;
 export type CounterEffect = z.infer<typeof CounterEffectSchema>;
-export type ObjectStateEffect = z.infer<typeof ObjectStateEffectSchema>;
+export type FeatureEffect = z.infer<typeof FeatureEffectSchema>;
 export type RoomEffect = z.infer<typeof RoomEffectSchema>;
 export type EffectReference = z.infer<typeof EffectReferenceSchema>;
 export type EffectGroup = {
@@ -186,7 +220,7 @@ export type Effect =
 	| MessageEffect
 	| FlagEffect
 	| CounterEffect
-	| ObjectStateEffect
+	| FeatureEffect
 	| RoomEffect
 	| EffectGroup
 	| ConditionalEffect
@@ -199,7 +233,7 @@ export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.
 				MessageEffectSchema,
 				FlagEffectSchema,
 				CounterEffectSchema,
-				ObjectStateEffectSchema,
+				FeatureEffectSchema,
 				RoomEffectSchema,
 			])
 			.and(EffectIdentitySchema),

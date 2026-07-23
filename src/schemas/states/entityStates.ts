@@ -4,6 +4,8 @@ import {editor} from "../utils/editorSchemaHelpers";
 export const FeatureStateSchema = z.object({
 	type: z.literal("feature"),
 	id: editor.reference("feature"),
+	name: z.string().optional(),
+	description: z.string().optional(),
 	flags: z.record(z.string(), z.boolean()),
 });
 

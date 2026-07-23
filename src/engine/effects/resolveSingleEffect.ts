@@ -3,6 +3,7 @@ import {type Effect} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
+import {compareIds} from "@/utils/idUtils";
 
 export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
@@ -141,6 +142,68 @@ export function resolveCounterEffect(game: GameState, effect: Effect): GameState
 				}
 				break;
 			}
+		}
+	});
+}
+
+export function resolveFeatureEffect(game: GameState, effect: Effect): GameState {
+	if (effect.type !== "feature") {
+		return game;
+	}
+
+	return produce(game, (draft) => {
+		const roomState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
+		if (!roomState) {
+			return;
+		}
+
+		const featureStateIndex = roomState.featureStates.findIndex((feature) =>
+			compareIds(feature.id, effect.featureId),
+		);
+		const featureState = roomState.featureStates[featureStateIndex];
+		if (!featureState) {
+			return;
+		}
+
+		switch (effect.operation) {
+			case "change-name":
+				featureState.name = effect.value;
+				break;
+
+			case "change-description":
+				featureState.description = effect.value;
+				break;
+
+			case "move-to-room": {
+				const newRoomState = draft.roomStates.find((room) => compareIds(room.id, effect.newRoomId));
+				if (!newRoomState || newRoomState === roomState) {
+					break;
+				}
+
+				roomState.featureStates.splice(featureStateIndex, 1);
+				newRoomState.featureStates.push(featureState);
+				break;
+			}
+
+			case "hide-from-player":
+				featureState.flags.hidden = true;
+				break;
+
+			case "show-to-player":
+				featureState.flags.hidden = false;
+				break;
+
+			case "show-in-room-description":
+				featureState.flags.listedInRoom = true;
+				break;
+
+			case "hide-in-room-description":
+				featureState.flags.listedInRoom = false;
+				break;
+
+			case "destroy":
+				roomState.featureStates.splice(featureStateIndex, 1);
+				break;
 		}
 	});
 }

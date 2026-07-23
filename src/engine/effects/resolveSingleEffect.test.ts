@@ -2,7 +2,12 @@ import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/state
 import type {Effect} from "@/schemas/world/effectSchema";
 import {choose} from "@/utils/choose";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
-import {resolveCounterEffect, resolveFlagEffect, resolveMessageEffect} from "./resolveSingleEffect";
+import {
+	resolveCounterEffect,
+	resolveFeatureEffect,
+	resolveFlagEffect,
+	resolveMessageEffect,
+} from "./resolveSingleEffect";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
 jest.mock("@/utils/choose", () => ({
@@ -743,5 +748,117 @@ describe("resolveCounterEffect", () => {
 		expect(result.variables.counters).not.toBe(game.variables.counters);
 		expect(result.variables.counters).toEqual([{health: 15}]);
 		expect(game.variables.counters).toEqual([{health: 10}]);
+	});
+});
+
+describe("resolveFeatureEffect", () => {
+	function createGameWithFeatures(): GameState {
+		return createGameState({
+			roomStates: [
+				{
+					type: "room",
+					id: {type: "room", id: "hall"},
+					flags: {},
+					featureStates: [
+						{
+							type: "feature",
+							id: {type: "feature", id: "statue"},
+							flags: {examined: false},
+						},
+					],
+				},
+				{
+					type: "room",
+					id: {type: "room", id: "vault"},
+					flags: {},
+					featureStates: [],
+				},
+			],
+		});
+	}
+
+	function featureEffect(operation: string, values: Record<string, unknown> = {}): Effect {
+		return {
+			type: "feature",
+			operation,
+			roomId: {type: "room", id: "hall"},
+			featureId: {type: "feature", id: "statue"},
+			...values,
+		} as Effect;
+	}
+
+	it("returns the original game for a non-feature effect", () => {
+		const game = createGameWithFeatures();
+
+		expect(
+			resolveFeatureEffect(game, {
+				type: "flag",
+				operation: "toggle",
+				flag: "door-open",
+			} as Effect),
+		).toBe(game);
+	});
+
+	it.each([
+		["change-name", "name", "Ancient statue"],
+		["change-description", "description", "Its eyes are glowing."],
+	] as const)("resolves %s without mutating the original feature", (operation, property, value) => {
+		const game = createGameWithFeatures();
+		const result = resolveFeatureEffect(game, featureEffect(operation, {value}));
+
+		expect(result.roomStates[0].featureStates[0]).toEqual({
+			...game.roomStates[0].featureStates[0],
+			[property]: value,
+		});
+		expect(result).not.toBe(game);
+		expect(game.roomStates[0].featureStates[0]).not.toHaveProperty(property);
+	});
+
+	it.each([
+		["hide-from-player", "hidden", true],
+		["show-to-player", "hidden", false],
+		["show-in-room-description", "listedInRoom", true],
+		["hide-in-room-description", "listedInRoom", false],
+	] as const)("resolves %s by updating the feature flags", (operation, flag, value) => {
+		const game = createGameWithFeatures();
+		const result = resolveFeatureEffect(game, featureEffect(operation));
+
+		expect(result.roomStates[0].featureStates[0].flags).toEqual({
+			examined: false,
+			[flag]: value,
+		});
+		expect(game.roomStates[0].featureStates[0].flags).toEqual({examined: false});
+	});
+
+	it("moves a feature state to another room", () => {
+		const game = createGameWithFeatures();
+		const result = resolveFeatureEffect(
+			game,
+			featureEffect("move-to-room", {newRoomId: {type: "room", id: "vault"}}),
+		);
+
+		expect(result.roomStates[0].featureStates).toEqual([]);
+		expect(result.roomStates[1].featureStates).toEqual([game.roomStates[0].featureStates[0]]);
+		expect(game.roomStates[0].featureStates).toHaveLength(1);
+		expect(game.roomStates[1].featureStates).toEqual([]);
+	});
+
+	it("destroys a feature by removing its runtime state", () => {
+		const game = createGameWithFeatures();
+		const result = resolveFeatureEffect(game, featureEffect("destroy"));
+
+		expect(result.roomStates[0].featureStates).toEqual([]);
+		expect(game.roomStates[0].featureStates).toHaveLength(1);
+	});
+
+	it.each([
+		["missing source room", {roomId: {type: "room", id: "missing"}}],
+		["missing feature", {featureId: {type: "feature", id: "missing"}}],
+		["missing destination room", {newRoomId: {type: "room", id: "missing"}}],
+	] as const)("is a no-op for a %s", (_scenario, values) => {
+		const game = createGameWithFeatures();
+		const operation = "newRoomId" in values ? "move-to-room" : "destroy";
+
+		expect(resolveFeatureEffect(game, featureEffect(operation, values))).toBe(game);
 	});
 });
