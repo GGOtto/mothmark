@@ -4,6 +4,7 @@ import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
 import {compareIds} from "@/utils/idUtils";
+import type {Direction} from "@/schemas/world/worldSchema";
 
 export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
@@ -208,4 +209,74 @@ export function resolveFeatureEffect(game: GameState, effect: Effect): GameState
 	});
 }
 
-export function resolveRoomEffect(game: GameState, effect: Effect): GameState {}
+export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
+	if (effect.type !== "room") {
+		return game;
+	}
+
+	if (effect.operation === "move-player-to") {
+		return produce(game, (draft) => {
+			draft.currentRoom = effect.roomId;
+			const destinationState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
+			if (destinationState) {
+				destinationState.flags.visited = true;
+			}
+		});
+	}
+
+	return produce(game, (draft) => {
+		const roomState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
+		if (!roomState) {
+			return;
+		}
+
+		switch (effect.operation) {
+			case "set-name":
+				roomState.name = effect.variantId;
+				break;
+
+			case "set-description":
+				roomState.description = effect.variantId;
+				break;
+
+			case "set-short-description":
+				roomState.shortDescription = effect.variantId;
+				break;
+
+			case "lock-exit": {
+				const direction = effect.direction as Direction;
+				roomState.lockedExits ??= [];
+				if (!roomState.lockedExits.includes(direction)) {
+					roomState.lockedExits.push(direction);
+				}
+				break;
+			}
+
+			case "unlock-exit": {
+				const direction = effect.direction as Direction;
+				roomState.lockedExits =
+					roomState.lockedExits?.filter((candidate) => candidate !== direction) ?? [];
+				break;
+			}
+
+			case "add-tag":
+				roomState.tags ??= [];
+				if (!roomState.tags.includes(effect.tag)) {
+					roomState.tags.push(effect.tag);
+				}
+				break;
+
+			case "remove-tag":
+				roomState.tags = roomState.tags?.filter((tag) => tag !== effect.tag) ?? [];
+				break;
+
+			case "set-active":
+				roomState.flags.active = true;
+				break;
+
+			case "set-inactive":
+				roomState.flags.active = false;
+				break;
+		}
+	});
+}

@@ -38,8 +38,12 @@ function getDestinationRoomId(connection: Connection, currentRoomId: ID<"room">)
 }
 
 export function move(world: World, game: GameState, direction: Direction): GameState {
-	const connection = getConnectionForDirection(world, game.currentRoom, direction);
 	const blockedMessage = createGameMessage("You can't go that way.", "system");
+	const currentRoomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
+	const exitIsLocked = currentRoomState?.lockedExits?.includes(direction) ?? false;
+	const connection = exitIsLocked
+		? undefined
+		: getConnectionForDirection(world, game.currentRoom, direction);
 
 	if (!connection) {
 		return produce(game, (draft) => {

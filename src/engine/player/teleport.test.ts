@@ -48,26 +48,28 @@ describe("teleport", () => {
 		);
 	});
 
-	it("can respect activeWhen for passage-based movement", () => {
+	it("blocks passage-based movement when the runtime active flag is false", () => {
 		const world: World = {
 			...exampleWorld,
 			rooms: exampleWorld.rooms.map((room) =>
 				idValue(room.id) === "guardroom"
 					? {
 							...room,
-							activeWhen: {
-								type: "group",
-								operation: "all",
-								conditions: [{type: "flag", operation: "true", flag: "guardroom.unlocked"}],
-							},
+							flags: {...room.flags, active: true},
 						}
 					: room,
 			),
 		};
-		const game = createInitialGameState(world, world.startRoomId);
+		const initialGame = createInitialGameState(world, world.startRoomId);
+		const game: GameState = {
+			...initialGame,
+			roomStates: initialGame.roomStates.map((state) =>
+				idValue(state.id) === "guardroom" ? {...state, flags: {...state.flags, active: false}} : state,
+			),
+		};
 
 		const blockedGame = teleport(world, game, toID("room", "guardroom"), {
-			respectActiveWhen: true,
+			respectActiveFlag: true,
 		});
 		const teleportedGame = teleport(world, game, toID("room", "guardroom"));
 
@@ -77,5 +79,26 @@ describe("teleport", () => {
 			text: "You can't go that way.",
 		});
 		expect(idValue(teleportedGame.currentRoom)).toBe("guardroom");
+	});
+
+	it("falls back to the authored active flag when runtime room state is missing", () => {
+		const world: World = {
+			...exampleWorld,
+			rooms: exampleWorld.rooms.map((room) =>
+				idValue(room.id) === "guardroom" ? {...room, flags: {...room.flags, active: false}} : room,
+			),
+		};
+		const initialGame = createInitialGameState(world, world.startRoomId);
+		const game: GameState = {
+			...initialGame,
+			roomStates: initialGame.roomStates.filter((state) => idValue(state.id) !== "guardroom"),
+		};
+
+		const result = teleport(world, game, toID("room", "guardroom"), {
+			respectActiveFlag: true,
+		});
+
+		expect(result.currentRoom).toEqual(game.currentRoom);
+		expect(result.messages.at(-1)).toMatchObject({type: "system"});
 	});
 });

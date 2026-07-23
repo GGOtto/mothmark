@@ -10,14 +10,19 @@ function field(schema: typeof RoomSchema | typeof RoomFeatureSchema, key: string
 }
 
 describe("room and feature object flags", () => {
-	it("gives rooms a permanent visited flag defaulted to false", () => {
+	it("gives rooms permanent visited and active flags", () => {
 		const flags = field(RoomSchema, "flags");
 
 		expect(flags?.metadata).toMatchObject({
 			type: "object-flag-editor",
-			features: {flags: {visited: {permanent: true, defaultReadonly: true}}},
+			features: {
+				flags: {
+					visited: {permanent: true, defaultReadonly: true},
+					active: {permanent: true, defaultValue: true},
+				},
+			},
 		});
-		expect(createDefaultFieldObject(RoomSchema).flags).toEqual({visited: false});
+		expect(createDefaultFieldObject(RoomSchema).flags).toEqual({visited: false, active: true});
 	});
 
 	it("gives features a permanent examined flag defaulted to false", () => {
@@ -34,7 +39,11 @@ describe("room and feature object flags", () => {
 		const roomFlagsSchema = RoomSchema.shape.flags;
 		const featureFlagsSchema = RoomFeatureSchema.shape.flags;
 
-		expect(roomFlagsSchema.parse({custom: true})).toEqual({visited: false, custom: true});
+		expect(roomFlagsSchema.parse({custom: true})).toEqual({
+			visited: false,
+			active: true,
+			custom: true,
+		});
 		expect(featureFlagsSchema.parse({open: true})).toEqual({examined: false, open: true});
 	});
 });

@@ -7,6 +7,7 @@ import {
 	resolveFeatureEffect,
 	resolveFlagEffect,
 	resolveMessageEffect,
+	resolveRoomEffect,
 } from "./resolveSingleEffect";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
@@ -860,5 +861,110 @@ describe("resolveFeatureEffect", () => {
 		const operation = "newRoomId" in values ? "move-to-room" : "destroy";
 
 		expect(resolveFeatureEffect(game, featureEffect(operation, values))).toBe(game);
+	});
+});
+
+describe("resolveRoomEffect", () => {
+	function createGameWithRoom(): GameState {
+		return createGameState({
+			currentRoom: {type: "room", id: "hall"},
+			roomStates: [
+				{
+					type: "room",
+					id: {type: "room", id: "hall"},
+					tags: ["indoors", "safe"],
+					lockedExits: ["n"],
+					flags: {visited: true, active: true},
+					featureStates: [],
+				},
+			],
+		});
+	}
+
+	function roomEffect(operation: string, values: Record<string, unknown> = {}): Effect {
+		return {
+			type: "room",
+			operation,
+			roomId: {type: "room", id: "hall"},
+			...values,
+		} as Effect;
+	}
+
+	it("returns the original game for a non-room effect", () => {
+		const game = createGameWithRoom();
+		expect(resolveRoomEffect(game, {type: "flag", operation: "toggle", flag: "x"} as Effect)).toBe(
+			game,
+		);
+	});
+
+	it("moves the player to the selected room", () => {
+		const game = createGameWithRoom();
+		game.roomStates.push({
+			type: "room",
+			id: {type: "room", id: "vault"},
+			flags: {visited: false, active: true},
+			featureStates: [],
+		});
+		const result = resolveRoomEffect(
+			game,
+			roomEffect("move-player-to", {roomId: {type: "room", id: "vault"}}),
+		);
+
+		expect(result.currentRoom).toEqual({type: "room", id: "vault"});
+		expect(result.roomStates[1].flags.visited).toBe(true);
+		expect(game.currentRoom).toEqual({type: "room", id: "hall"});
+		expect(game.roomStates[1].flags.visited).toBe(false);
+	});
+
+	it.each([
+		["set-name", "name", "ruined-hall"],
+		["set-description", "description", "flooded-hall"],
+		["set-short-description", "shortDescription", "still-flooded-hall"],
+	] as const)("resolves %s", (operation, property, variantId) => {
+		const game = createGameWithRoom();
+		const result = resolveRoomEffect(game, roomEffect(operation, {variantId}));
+
+		expect(result.roomStates[0]).toMatchObject({[property]: variantId});
+		expect(game.roomStates[0]).not.toHaveProperty(property);
+	});
+
+	it("locks an exit once and unlocks it", () => {
+		const game = createGameWithRoom();
+		const locked = resolveRoomEffect(game, roomEffect("lock-exit", {direction: "e"}));
+		const relocked = resolveRoomEffect(locked, roomEffect("lock-exit", {direction: "e"}));
+		const unlocked = resolveRoomEffect(relocked, roomEffect("unlock-exit", {direction: "n"}));
+
+		expect(locked.roomStates[0].lockedExits).toEqual(["n", "e"]);
+		expect(relocked.roomStates[0].lockedExits).toEqual(["n", "e"]);
+		expect(unlocked.roomStates[0].lockedExits).toEqual(["e"]);
+	});
+
+	it("adds a tag once and removes tags", () => {
+		const game = createGameWithRoom();
+		const tagged = resolveRoomEffect(game, roomEffect("add-tag", {tag: "dark"}));
+		const retagged = resolveRoomEffect(tagged, roomEffect("add-tag", {tag: "dark"}));
+		const removed = resolveRoomEffect(retagged, roomEffect("remove-tag", {tag: "safe"}));
+
+		expect(tagged.roomStates[0].tags).toEqual(["indoors", "safe", "dark"]);
+		expect(retagged.roomStates[0].tags).toEqual(["indoors", "safe", "dark"]);
+		expect(removed.roomStates[0].tags).toEqual(["indoors", "dark"]);
+	});
+
+	it.each([
+		["set-active", true],
+		["set-inactive", false],
+	] as const)("resolves %s", (operation, active) => {
+		const game = createGameWithRoom();
+		const result = resolveRoomEffect(game, roomEffect(operation));
+
+		expect(result.roomStates[0].flags.active).toBe(active);
+		expect(game.roomStates[0].flags.active).toBe(true);
+	});
+
+	it("is a no-op when the targeted room state is missing", () => {
+		const game = createGameWithRoom();
+		const effect = roomEffect("set-inactive", {roomId: {type: "room", id: "missing"}});
+
+		expect(resolveRoomEffect(game, effect)).toBe(game);
 	});
 });

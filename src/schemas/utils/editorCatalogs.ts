@@ -237,14 +237,16 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Set custom", value: "set-custom"},
 	],
 	room: [
-		{label: "Move player", value: "move-player"},
-		{label: "Set description variant", value: "set-description-variant"},
-		{label: "Reveal exit", value: "reveal-exit"},
-		{label: "Hide exit", value: "hide-exit"},
+		{label: "Move player", value: "move-player-to"},
+		{label: "Set name", value: "set-name"},
+		{label: "Set description", value: "set-description"},
+		{label: "Set short description", value: "set-short-description"},
 		{label: "Lock exit", value: "lock-exit"},
 		{label: "Unlock exit", value: "unlock-exit"},
 		{label: "Add tag", value: "add-tag"},
 		{label: "Remove tag", value: "remove-tag"},
+		{label: "Set active", value: "set-active"},
+		{label: "Set inactive", value: "set-inactive"},
 	],
 	npc: [
 		{label: "Move to room", value: "move-to-room"},
@@ -338,7 +340,7 @@ export function createDefaultEffectValue(
 	if (type === "object-state")
 		return {type, operation: operation ?? "open", objectId: toID("feature", "")};
 	if (type === "room")
-		return {type, operation: operation ?? "move-player", roomId: toID("room", "")};
+		return {type, operation: operation ?? "move-player-to", roomId: toID("room", "")};
 	if (type === "npc")
 		return {
 			type,

@@ -5,11 +5,13 @@ import {createGameMessage} from "./createMessage";
 import {GameMessage} from "@/schemas/states/gameStateSchema";
 
 export function createRoomMessage(world: World, room: Room, gameState: GameState): GameMessage {
-	const hasVisited = gameState.roomStates.some(
-		(roomState) => compareIds(roomState.id, room.id) && roomState.flags.visited,
-	);
-	const description = hasVisited && room.shortDescription ? room.shortDescription : room.description;
-	let text = `${room.name}\n${description}\n`;
+	const roomState = gameState.roomStates.find((state) => compareIds(state.id, room.id));
+	const hasVisited = roomState?.flags.visited ?? false;
+	const name = roomState?.name ?? room.name;
+	const description = hasVisited
+		? (roomState?.shortDescription ?? (room.shortDescription || room.description))
+		: (roomState?.description ?? room.description);
+	let text = `${name}\n${description}\n`;
 
 	for (const feature of room.features ?? []) {
 		if (feature.listedInRoom) {

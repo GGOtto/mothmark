@@ -18,6 +18,8 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 		roomStates: world.rooms.map((room) => ({
 			type: "room",
 			id: room.id,
+			tags: [...room.tags],
+			lockedExits: [],
 			flags: {...room.flags},
 			featureStates: room.features.map((feature) => ({
 				type: "feature",

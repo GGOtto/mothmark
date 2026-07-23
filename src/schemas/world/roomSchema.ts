@@ -412,7 +412,7 @@ export const RoomSchema = editor.object(
 					},
 				},
 			})
-			.default({visited: false}),
+			.default({visited: false, active: true}),
 
 		metadata: RoomMetadataSchema,
 	},

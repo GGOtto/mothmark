@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
+import {DirectionSchema} from "../world/roomSchema";
 
 export const FeatureStateSchema = z.object({
 	type: z.literal("feature"),
@@ -12,6 +13,11 @@ export const FeatureStateSchema = z.object({
 export const RoomStateSchema = z.object({
 	type: z.literal("room"),
 	id: editor.reference("room"),
+	name: z.string().optional(),
+	description: z.string().optional(),
+	shortDescription: z.string().optional(),
+	tags: z.array(z.string()).optional(),
+	lockedExits: z.array(DirectionSchema).optional(),
 	flags: z.record(z.string(), z.boolean()),
 	featureStates: z.array(FeatureStateSchema),
 });

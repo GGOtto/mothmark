@@ -82,10 +82,16 @@ function evaluateCurrentRoom(
 			return compareIds(game.currentRoom, condition.roomId);
 		case "is-not":
 			return !compareIds(game.currentRoom, condition.roomId);
-		case "has-tag":
-			return getRoom(world, game.currentRoom).tags.includes(condition.tag);
-		case "missing-tag":
-			return !getRoom(world, game.currentRoom).tags.includes(condition.tag);
+		case "has-tag": {
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.currentRoom).tags;
+			return tags.includes(condition.tag);
+		}
+		case "missing-tag": {
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.currentRoom).tags;
+			return !tags.includes(condition.tag);
+		}
 	}
 }
 

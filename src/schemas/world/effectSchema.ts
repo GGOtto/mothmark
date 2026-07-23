@@ -179,6 +179,12 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("room"),
+			operation: z.literal("set-short-description"),
+			roomId: editor.reference("room", {title: "Room"}),
+			variantId: editor.input({title: "Variant ID"}).min(1),
+		}),
+		z.object({
+			type: z.literal("room"),
 			operation: z.literal("lock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
 			direction: editor.direction({title: "Direction"}),

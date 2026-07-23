@@ -2,7 +2,6 @@ import {produce} from "immer";
 import type {GameState, GameMessage} from "@/schemas/states/gameStateSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
-import {evaluateCondition} from "../conditions/evaluateCondition";
 import {createGameMessage} from "../messages/createMessage";
 import {createRoomMessage} from "../messages/createRoomMessage";
 import {getRoom} from "../utils/lookupUtils";
@@ -23,8 +22,13 @@ export function teleport(
 	options: TeleportOptions = {},
 ): GameState {
 	const destinationRoom = getRoom(world, destinationRoomId);
+	const destinationRoomState = game.roomStates.find((state) =>
+		compareIds(state.id, destinationRoom.id),
+	);
+	const destinationIsActive =
+		destinationRoomState?.flags.active ?? destinationRoom.flags.active ?? true;
 
-	if (options.respectActiveFlag && destinationRoom.flags.active) {
+	if (options.respectActiveFlag && !destinationIsActive) {
 		return produce(game, (draft) => {
 			draft.messages.push(
 				options.blockedMessage ?? createGameMessage("You can't go that way.", "system"),
@@ -44,6 +48,8 @@ export function teleport(
 			draft.roomStates.push({
 				type: "room",
 				id: destinationRoom.id,
+				tags: [...destinationRoom.tags],
+				lockedExits: [],
 				flags: {...destinationRoom.flags, visited: true},
 				featureStates: destinationRoom.features.map((feature) => ({
 					type: "feature",
@@ -55,6 +61,8 @@ export function teleport(
 		}
 
 		roomState.flags = {...destinationRoom.flags, ...roomState.flags, visited: true};
+		roomState.tags ??= [...destinationRoom.tags];
+		roomState.lockedExits ??= [];
 		roomState.featureStates = destinationRoom.features.map((feature) => {
 			const existingState = roomState.featureStates.find((state) => compareIds(state.id, feature.id));
 			return existingState
