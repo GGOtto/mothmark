@@ -221,34 +221,6 @@ export const RoomFeatureSchema = editor.object(
 			})
 			.default(false),
 
-		activeWhen: editor.conditionControl(ConditionSchema, {
-			title: "Active When",
-			description:
-				"The feature is not listed or interacted with unless all of these conditions are true.",
-			layout: {
-				width: "full",
-				order: 8,
-			},
-		}),
-
-		visibleWhen: editor.conditionControl(ConditionSchema, {
-			title: "Visible When",
-			description: "The feature is visible only when all of these conditions pass.",
-			layout: {
-				width: "full",
-				order: 9,
-			},
-		}),
-
-		usableWhen: editor.conditionControl(ConditionSchema, {
-			title: "Usable When",
-			description: "The feature can be used only when all of these conditions pass.",
-			layout: {
-				width: "full",
-				order: 10,
-			},
-		}),
-
 		flags: editor
 			.objectFlags({
 				title: "Flags",
@@ -263,6 +235,12 @@ export const RoomFeatureSchema = editor.object(
 							permanent: true,
 							defaultReadonly: true,
 							description: "Set when the player examines this feature.",
+						},
+						hidden: {
+							defaultValue: false,
+						},
+						usable: {
+							defaultValue: true,
 						},
 					},
 				},

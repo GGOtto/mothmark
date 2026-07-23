@@ -162,8 +162,14 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
 		z.object({
 			type: z.literal("room"),
-			operation: z.literal("move-player"),
+			operation: z.literal("move-player-to"),
 			roomId: editor.reference("room", {title: "Room"}),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("set-name"),
+			roomId: editor.reference("room", {title: "Room"}),
+			variantId: editor.input({title: "Variant ID"}).min(1),
 		}),
 		z.object({
 			type: z.literal("room"),
@@ -173,7 +179,13 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("room"),
-			operation: z.enum(["reveal-exit", "hide-exit", "lock-exit", "unlock-exit"]),
+			operation: z.literal("lock-exit"),
+			roomId: editor.reference("room", {title: "Room"}),
+			direction: editor.direction({title: "Direction"}),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("unlock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
 			direction: editor.direction({title: "Direction"}),
 		}),
@@ -188,6 +200,16 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 			operation: z.literal("remove-tag"),
 			roomId: editor.reference("room", {title: "Room"}),
 			tag: editor.input({title: "Tag"}).min(1),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("set-active"),
+			roomId: editor.reference("room", {title: "Room"}),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("set-inactive"),
+			roomId: editor.reference("room", {title: "Room"}),
 		}),
 	]),
 	{title: "Room Effect", description: "Moves the player or changes room and exit state."},

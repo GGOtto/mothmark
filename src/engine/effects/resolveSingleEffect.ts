@@ -207,3 +207,5 @@ export function resolveFeatureEffect(game: GameState, effect: Effect): GameState
 		}
 	});
 }
+
+export function resolveRoomEffect(game: GameState, effect: Effect): GameState {}
