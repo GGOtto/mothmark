@@ -404,23 +404,17 @@ export const RoomSchema = editor.object(
 							defaultReadonly: true,
 							description: "Set when the player visits this room.",
 						},
+						active: {
+							permanent: true,
+							defaultValue: true,
+							description: "If set to false, passages into the room will be blocked.",
+						},
 					},
 				},
 			})
 			.default({visited: false}),
 
 		metadata: RoomMetadataSchema,
-
-		activeWhen: editor.conditionControl(ConditionSchema, {
-			title: "Active When",
-			description:
-				"The room is available only when all of these conditions pass. Passages to this room will be blocked.",
-			layout: {
-				group: "availability",
-				width: "full",
-				order: 11,
-			},
-		}),
 	},
 	{
 		title: "Room",

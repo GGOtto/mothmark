@@ -49,7 +49,7 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 
 	const destinationRoomId = getDestinationRoomId(connection, game.currentRoom);
 	return teleport(world, game, destinationRoomId, {
-		respectActiveWhen: true,
+		respectActiveFlag: true,
 		blockedMessage,
 	});
 }

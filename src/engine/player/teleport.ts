@@ -1,14 +1,14 @@
 import {produce} from "immer";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState, GameMessage} from "@/schemas/states/gameStateSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {evaluateCondition} from "../conditions/evaluateCondition";
-import {createGameMessage, type GameMessage} from "../messages/createMessage";
+import {createGameMessage} from "../messages/createMessage";
 import {createRoomMessage} from "../messages/createRoomMessage";
 import {getRoom} from "../utils/lookupUtils";
 
 export type TeleportOptions = {
-	respectActiveWhen?: boolean;
+	respectActiveFlag?: boolean;
 	blockedMessage?: GameMessage;
 };
 
@@ -24,7 +24,7 @@ export function teleport(
 ): GameState {
 	const destinationRoom = getRoom(world, destinationRoomId);
 
-	if (options.respectActiveWhen && !evaluateCondition(world, game, destinationRoom.activeWhen)) {
+	if (options.respectActiveFlag && destinationRoom.flags.active) {
 		return produce(game, (draft) => {
 			draft.messages.push(
 				options.blockedMessage ?? createGameMessage("You can't go that way.", "system"),
