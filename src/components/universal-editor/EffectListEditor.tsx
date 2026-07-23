@@ -259,7 +259,7 @@ const EFFECT_REFERENCE_TYPES_BY_FIELD: Partial<Record<string, WorldIdEntityType>
 };
 
 function effectReferenceType(effectType: string, key: string): WorldIdEntityType | undefined {
-	if (key === "objectId") return effectType === "object-state" ? "feature" : "object";
+	if (key === "objectId") return "object";
 	return EFFECT_REFERENCE_TYPES_BY_FIELD[key];
 }
 
@@ -435,6 +435,23 @@ export function EffectListEditor({
 		});
 	}
 
+	function updateFlagType(index: number, nextFlagType: string) {
+		const currentEffect = effectUsage(normalizedEffects[index] ?? {}, context);
+		const nextEffect: EffectValue = {...currentEffect, "flag-type": nextFlagType};
+		if (nextFlagType !== "normal" && nextEffect.operation === "create") nextEffect.operation = "set";
+
+		if (nextFlagType === "normal") {
+			delete nextEffect.roomId;
+			delete nextEffect.featureId;
+		} else {
+			nextEffect.roomId ??= toID("room", "");
+			if (nextFlagType === "feature") nextEffect.featureId ??= toID("feature", "");
+			else delete nextEffect.featureId;
+		}
+
+		updateEffect(index, nextEffect);
+	}
+
 	function removeEffect(index: number) {
 		if (!canEdit || !removable) return;
 
@@ -507,7 +524,12 @@ export function EffectListEditor({
 				{normalizedEffects.map((rawEffect, index) => {
 					const effect = effectUsage(rawEffect, context);
 					const effectType = String(effect.type ?? allowedTypes[0]);
-					const operationOptions = operationOptionsForType(effectType, metadata, context);
+					const operationOptions = operationOptionsForType(effectType, metadata, context).filter(
+						(option) =>
+							effectType !== "flag" ||
+							String(effect["flag-type"] ?? "normal") === "normal" ||
+							option.value !== "create",
+					);
 					const title = `${index + 1}. ${generateEffectSummary(effect)}`;
 					const missingReference = isEffectReference(rawEffect) && effect === rawEffect;
 					const body = (
@@ -561,6 +583,30 @@ export function EffectListEditor({
 								{Object.entries(effect)
 									.filter(([key]) => key !== "type" && key !== "operation" && key !== "messageType")
 									.map(([key, fieldValue]) => {
+										if (key === "flag-type") {
+											return renderChildControl({
+												type: "select",
+												childKey: key,
+												value: String(fieldValue ?? "normal"),
+												onChange: (nextValue) => updateFlagType(index, nextValue),
+												metadata: {
+													title: "Flag type",
+													features: {
+														options: [
+															{label: "Normal", value: "normal"},
+															{label: "Room", value: "room"},
+															{label: "Feature", value: "feature"},
+														],
+													},
+												},
+												parentMetadata: metadata,
+												path: [...path, index, key],
+												disabled,
+												readonly,
+												context,
+											});
+										}
+
 										const referenceType = effectReferenceType(effectType, key);
 										if (referenceType) {
 											return renderChildControl({

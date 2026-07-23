@@ -243,12 +243,11 @@ const SAMPLE_FLAG_REGISTRY: FlagRegistry = {
 
 const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 	"schema.condition.types": [
-		{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
+		{label: "Flag", value: "flag", description: "Checks a boolean world, room, or feature flag."},
 		{label: "Counter", value: "counter", description: "Checks a numeric counter."},
 		{label: "Current room", value: "current-room", description: "Checks the player's room."},
 		{label: "Inventory", value: "inventory", description: "Checks inventory state."},
 		{label: "Item location", value: "item-location", description: "Checks where an item exists."},
-		{label: "Object state", value: "object-state", description: "Checks object state."},
 		{label: "NPC", value: "npc", description: "Checks NPC state."},
 		{label: "Command history", value: "command-history", description: "Checks recent commands."},
 		{label: "Quest", value: "quest", description: "Checks quest state."},
@@ -290,7 +289,7 @@ const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 		{label: "Counter", value: "counter"},
 		{label: "Inventory", value: "inventory"},
 		{label: "Item location", value: "item-location"},
-		{label: "Object state", value: "object-state"},
+		{label: "Feature", value: "feature"},
 		{label: "Room", value: "room"},
 		{label: "NPC", value: "npc"},
 		{label: "Event", value: "event"},
@@ -299,9 +298,10 @@ const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 		{label: "Conditional", value: "conditional"},
 	],
 	"schema.effect.flagOperations": [
+		{label: "Create", value: "create"},
 		{label: "Set", value: "set"},
 		{label: "Toggle", value: "toggle"},
-		{label: "Clear", value: "clear"},
+		{label: "Delete", value: "delete"},
 	],
 	"schema.effect.counterOperations": [
 		{label: "Set", value: "set"},

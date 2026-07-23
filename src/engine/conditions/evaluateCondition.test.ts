@@ -11,7 +11,7 @@ const game = {
 	turns: 0,
 	variables: {
 		flags: [{passing: true, failing: false}],
-		counter: [],
+		counters: [],
 	},
 	roomStates: [],
 	messages: [],
@@ -19,12 +19,14 @@ const game = {
 
 const passingCondition = {
 	type: "flag",
+	"flag-type": "normal",
 	operation: "true",
 	flag: "passing",
 } satisfies SingleCondition;
 
 const failingCondition = {
 	type: "flag",
+	"flag-type": "normal",
 	operation: "true",
 	flag: "failing",
 } satisfies SingleCondition;

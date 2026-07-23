@@ -44,4 +44,19 @@ describe("move", () => {
 		expect(idValue(result.currentRoom)).toBe("guardroom");
 		expect(result.messages.at(-1)).toMatchObject({type: "room"});
 	});
+
+	it("blocks every connection after all exits are locked", () => {
+		const game = createInitialGameState(world, world.startRoomId);
+		const lockedGame = resolveRoomEffect(game, {
+			type: "room",
+			operation: "lock-all-exits",
+			roomId: world.startRoomId,
+		} as Effect);
+
+		for (const direction of ["up", "e", "s"] as const) {
+			const result = move(world, lockedGame, direction);
+			expect(result.currentRoom).toEqual(game.currentRoom);
+			expect(result.messages.at(-1)).toMatchObject({type: "system"});
+		}
+	});
 });

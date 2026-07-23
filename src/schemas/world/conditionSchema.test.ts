@@ -50,6 +50,54 @@ describe("editor.condition", () => {
 			false,
 		);
 	});
+
+	it("accepts room and feature flag conditions", () => {
+		expect(
+			schema.safeParse({
+				type: "flag",
+				"flag-type": "room",
+				operation: "true",
+				roomId: toID("room", "foyer"),
+				flag: "visited",
+			}).success,
+		).toBe(true);
+		expect(
+			schema.safeParse({
+				type: "flag",
+				"flag-type": "feature",
+				operation: "false",
+				roomId: toID("room", "foyer"),
+				featureId: toID("feature", "door"),
+				flag: "examined",
+			}).success,
+		).toBe(true);
+	});
+
+	it("defaults legacy flag conditions to normal flags", () => {
+		expect(schema.parse({type: "flag", operation: "true", flag: "gate.open"})).toEqual({
+			type: "flag",
+			"flag-type": "normal",
+			operation: "true",
+			flag: "gate.open",
+		});
+	});
+
+	it("rejects stale object, room-state, and feature-state conditions", () => {
+		expect(
+			schema.safeParse({type: "object-state", operation: "open", objectId: "door"}).success,
+		).toBe(false);
+		expect(
+			schema.safeParse({type: "room-state", state: "visited", roomId: toID("room", "foyer")}).success,
+		).toBe(false);
+		expect(
+			schema.safeParse({
+				type: "feature-state",
+				state: "examined",
+				roomId: toID("room", "foyer"),
+				featureId: toID("feature", "door"),
+			}).success,
+		).toBe(false);
+	});
 });
 
 describe("editor.conditionControl", () => {
@@ -65,7 +113,7 @@ describe("editor.conditionControl", () => {
 		expect(controlSchema.parse([{type: "flag", operation: "true", flag: "gate.open"}])).toEqual({
 			type: "group",
 			operation: "all",
-			conditions: [{type: "flag", operation: "true", flag: "gate.open"}],
+			conditions: [{type: "flag", "flag-type": "normal", operation: "true", flag: "gate.open"}],
 		});
 	});
 
@@ -97,7 +145,7 @@ describe("WorldConditionSchema", () => {
 			}),
 		).toEqual({
 			identity: toID("condition", "gate-open"),
-			condition: {type: "flag", operation: "true", flag: "gate.open"},
+			condition: {type: "flag", "flag-type": "normal", operation: "true", flag: "gate.open"},
 		});
 	});
 });

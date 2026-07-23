@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {ConditionSchema, type Condition} from "./conditionSchema";
+import {entityFlagMutationError} from "./entityFlagDefinitions";
 
 const EffectIdentitySchema = z.object({
 	id: editor.id("effect", {title: "Effect ID", advanced: true}).optional(),
@@ -35,35 +36,104 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 	{title: "Message Effect", description: "Shows text or augments the current room description."},
 );
 
-export const FlagEffectSchema = editor.discriminatedUnion(
-	z.discriminatedUnion("operation", [
-		z.object({
-			type: z.literal("flag"),
-			operation: z.literal("create"),
-			flag: editor.string({
-				title: "Flag",
-				description: "The name of the new flag. Will overwrite the flag if it already exists.",
+const FlagEffectValueSchema = z
+	.discriminatedUnion("flag-type", [
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("create"),
+				flag: editor.string({
+					title: "Flag",
+					description: "The name of the new flag. Will overwrite the flag if it already exists.",
+				}),
+				value: editor.boolean({title: "Start Value"}).default(true),
 			}),
-			value: editor.boolean({title: "Start Value"}).default(true),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			operation: z.literal("set"),
-			flag: editor.flagKey({title: "Flag"}),
-			value: editor.boolean({title: "Value"}).default(true),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			operation: z.literal("toggle"),
-			flag: editor.flagKey({title: "Flag"}),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			operation: z.literal("delete"),
-			flag: editor.flagKey({title: "Flag"}),
-		}),
-	]),
-	{title: "Flag Effect", description: "Changes a boolean world flag."},
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("set"),
+				flag: editor.flagKey({title: "Flag"}),
+				value: editor.boolean({title: "Value"}).default(true),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("toggle"),
+				flag: editor.flagKey({title: "Flag"}),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("delete"),
+				flag: editor.flagKey({title: "Flag"}),
+			}),
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.literal("set"),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor.boolean({title: "Value"}).default(true),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.literal("toggle"),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.literal("delete"),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("feature"),
+				operation: z.literal("set"),
+				roomId: editor.reference("room", {title: "Room"}),
+				featureId: editor.reference("feature", {title: "Feature"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor.boolean({title: "Value"}).default(true),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("feature"),
+				operation: z.literal("toggle"),
+				roomId: editor.reference("room", {title: "Room"}),
+				featureId: editor.reference("feature", {title: "Feature"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("feature"),
+				operation: z.literal("delete"),
+				roomId: editor.reference("room", {title: "Room"}),
+				featureId: editor.reference("feature", {title: "Feature"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
+	])
+	.superRefine((effect, ctx) => {
+		if (effect["flag-type"] === "normal") return;
+		const message = entityFlagMutationError(effect["flag-type"], effect.flag, effect.operation);
+		if (message) ctx.addIssue({code: "custom", message, path: ["flag"]});
+	});
+
+export const FlagEffectSchema = editor.discriminatedUnion(
+	FlagEffectValueSchema,
+	{
+		title: "Flag Effect",
+		description: "Changes a boolean world, room, or feature flag.",
+	},
+	{type: "flag", "flag-type": "normal", operation: "set", flag: "", value: true},
 );
 
 export const CounterEffectSchema = editor.discriminatedUnion(
@@ -155,7 +225,7 @@ export const FeatureEffectSchema = editor.discriminatedUnion(
 			featureId: editor.reference("feature", {title: "Feature"}),
 		}),
 	]),
-	{title: "Room Effect", description: "Moves the player or changes room and exit state."},
+	{title: "Feature Effect", description: "Changes a room feature and its runtime flags."},
 );
 
 export const RoomEffectSchema = editor.discriminatedUnion(
@@ -194,6 +264,16 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 			operation: z.literal("unlock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
 			direction: editor.direction({title: "Direction"}),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("lock-all-exits"),
+			roomId: editor.reference("room", {title: "Room"}),
+		}),
+		z.object({
+			type: z.literal("room"),
+			operation: z.literal("unlock-all-exits"),
+			roomId: editor.reference("room", {title: "Room"}),
 		}),
 		z.object({
 			type: z.literal("room"),
@@ -254,33 +334,45 @@ export type Effect =
 	| ConditionalEffect
 	| EffectReference;
 
+function normalizeFlagEffect(value: unknown): unknown {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+	const effect = value as Record<string, unknown>;
+	if (effect.type === "flag" && !("flag-type" in effect)) {
+		return {...effect, "flag-type": "normal"};
+	}
+	return value;
+}
+
 export const WorldEffectSchema: z.ZodType<Exclude<Effect, EffectReference>> = z.lazy(() =>
-	z.union([
-		z
-			.union([
-				MessageEffectSchema,
-				FlagEffectSchema,
-				CounterEffectSchema,
-				FeatureEffectSchema,
-				RoomEffectSchema,
-			])
-			.and(EffectIdentitySchema),
-		z.object({
-			type: z.literal("group"),
-			mode: z.enum(["all", "first", "last"]).default("all"),
-			effects: z.array(EffectSchema),
-			...EffectIdentitySchema.shape,
-		}),
-		z.object({
-			type: z.literal("conditional"),
-			condition: editor.conditionControl(ConditionSchema, {
-				title: "Condition",
+	z.preprocess(
+		normalizeFlagEffect,
+		z.union([
+			z
+				.union([
+					MessageEffectSchema,
+					FlagEffectSchema,
+					CounterEffectSchema,
+					FeatureEffectSchema,
+					RoomEffectSchema,
+				])
+				.and(EffectIdentitySchema),
+			z.object({
+				type: z.literal("group"),
+				mode: z.enum(["all", "first", "last"]).default("all"),
+				effects: z.array(EffectSchema),
+				...EffectIdentitySchema.shape,
 			}),
-			then: z.array(EffectSchema),
-			else: z.array(EffectSchema).default([]),
-			...EffectIdentitySchema.shape,
-		}),
-	]),
+			z.object({
+				type: z.literal("conditional"),
+				condition: editor.conditionControl(ConditionSchema, {
+					title: "Condition",
+				}),
+				then: z.array(EffectSchema),
+				else: z.array(EffectSchema).default([]),
+				...EffectIdentitySchema.shape,
+			}),
+		]),
+	),
 );
 
 export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>

@@ -11,9 +11,22 @@ const game: GameState = {
 	turns: 0,
 	variables: {
 		flags: [{"gate.open": true}, {"lamp.lit": false}],
-		counter: [{steps: 3}, {score: 10}],
+		counters: [{steps: 3}, {score: 10}],
 	},
-	roomStates: [],
+	roomStates: [
+		{
+			type: "room",
+			id: currentRoom,
+			flags: {visited: true, active: true},
+			featureStates: [
+				{
+					type: "feature",
+					id: toID("feature", "statue"),
+					flags: {examined: false, glowing: true},
+				},
+			],
+		},
+	],
 	messages: [],
 };
 
@@ -149,33 +162,62 @@ describe("evaluateSingleCondition", () => {
 		).toBe(true);
 	});
 
-	it("evaluate room state: visited and not-visited", () => {
+	it("evaluates room flags, including permanent flags", () => {
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is", roomId: toID("room", "atrium")}),
+				condition({
+					type: "flag",
+					"flag-type": "room",
+					operation: "true",
+					roomId: currentRoom,
+					flag: "visited",
+				}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is-not", roomId: toID("room", "cellar")}),
+				condition({
+					type: "flag",
+					"flag-type": "room",
+					operation: "missing",
+					roomId: currentRoom,
+					flag: "dark",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("evaluates feature flags, including permanent flags", () => {
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({
+					type: "flag",
+					"flag-type": "feature",
+					operation: "false",
+					roomId: currentRoom,
+					featureId: toID("feature", "statue"),
+					flag: "examined",
+				}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "has-tag", tag: "safe"}),
-			),
-		).toBe(true);
-		expect(
-			evaluateSingleCondition(
-				world,
-				game,
-				condition({type: "current-room", operation: "missing-tag", tag: "outdoors"}),
+				condition({
+					type: "flag",
+					"flag-type": "feature",
+					operation: "true",
+					roomId: currentRoom,
+					featureId: toID("feature", "statue"),
+					flag: "glowing",
+				}),
 			),
 		).toBe(true);
 	});

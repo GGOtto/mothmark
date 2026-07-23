@@ -6,8 +6,9 @@ describe("editor catalog reference defaults", () => {
 		expect(createDefaultConditionValue("current-room")).toMatchObject({
 			roomId: toID("room", ""),
 		});
-		expect(createDefaultConditionValue("object-state")).toMatchObject({
-			objectId: toID("feature", ""),
+		expect(createDefaultConditionValue("flag")).toMatchObject({
+			"flag-type": "normal",
+			flag: "",
 		});
 	});
 
@@ -15,8 +16,9 @@ describe("editor catalog reference defaults", () => {
 		expect(createDefaultEffectValue("room")).toMatchObject({
 			roomId: toID("room", ""),
 		});
-		expect(createDefaultEffectValue("object-state")).toMatchObject({
-			objectId: toID("feature", ""),
+		expect(createDefaultEffectValue("feature")).toMatchObject({
+			roomId: toID("room", ""),
+			featureId: toID("feature", ""),
 		});
 	});
 });

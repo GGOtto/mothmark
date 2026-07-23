@@ -2,6 +2,7 @@ import {z} from "zod";
 import {ConditionSchema} from "./conditionSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
+import {FEATURE_FLAG_DEFINITIONS, ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
 
 export const DirectionSchema = editor.select(
 	z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw", "up", "down", "in", "out"]),
@@ -229,21 +230,7 @@ export const RoomFeatureSchema = editor.object(
 					width: "full",
 					order: 11,
 				},
-				features: {
-					flags: {
-						examined: {
-							permanent: true,
-							defaultReadonly: true,
-							description: "Set when the player examines this feature.",
-						},
-						hidden: {
-							defaultValue: false,
-						},
-						usable: {
-							defaultValue: true,
-						},
-					},
-				},
+				features: {flags: FEATURE_FLAG_DEFINITIONS},
 			})
 			.default({examined: false}),
 	},
@@ -397,20 +384,7 @@ export const RoomSchema = editor.object(
 					width: "full",
 					order: 8,
 				},
-				features: {
-					flags: {
-						visited: {
-							permanent: true,
-							defaultReadonly: true,
-							description: "Set when the player visits this room.",
-						},
-						active: {
-							permanent: true,
-							defaultValue: true,
-							description: "If set to false, passages into the room will be blocked.",
-						},
-					},
-				},
+				features: {flags: ROOM_FLAG_DEFINITIONS},
 			})
 			.default({visited: false, active: true}),
 

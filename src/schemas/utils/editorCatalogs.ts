@@ -13,12 +13,11 @@ export const CONDITION_STRING_COMPARISON_OPERATOR_OPTION_SOURCE =
 export const EFFECT_TYPE_OPTION_SOURCE = "schema.effect.types";
 
 export const conditionTypeOptions: EditorOption[] = [
-	{label: "Flag", value: "flag", description: "Checks a boolean world flag."},
+	{label: "Flag", value: "flag", description: "Checks a boolean world, room, or feature flag."},
 	{label: "Counter", value: "counter", description: "Compares a numeric counter."},
 	{label: "Current room", value: "current-room", description: "Checks where the player is."},
 	{label: "Inventory", value: "inventory", description: "Checks the player's inventory."},
 	{label: "Item location", value: "item-location", description: "Checks where an item exists."},
-	{label: "Object state", value: "object-state", description: "Checks object state."},
 	{label: "NPC", value: "npc", description: "Checks NPC state."},
 	{label: "Command history", value: "command-history", description: "Checks recent commands."},
 	{label: "Random chance", value: "random-chance", description: "Checks a probability."},
@@ -101,24 +100,6 @@ export const conditionOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Visible", value: "visible"},
 		{label: "Reachable", value: "reachable"},
 	],
-	"object-state": [
-		{label: "Open", value: "open"},
-		{label: "Closed", value: "closed"},
-		{label: "Locked", value: "locked"},
-		{label: "Unlocked", value: "unlocked"},
-		{label: "Lit", value: "lit"},
-		{label: "Unlit", value: "unlit"},
-		{label: "Broken", value: "broken"},
-		{label: "Intact", value: "intact"},
-		{label: "Clean", value: "clean"},
-		{label: "Dirty", value: "dirty"},
-		{label: "Contains item", value: "contains-item"},
-		{label: "Missing item", value: "missing-item"},
-		{label: "Surface has item", value: "surface-has-item"},
-		{label: "Surface missing item", value: "surface-missing-item"},
-		{label: "Empty", value: "empty"},
-		{label: "Custom", value: "custom"},
-	],
 	npc: [
 		{label: "In current room", value: "in-current-room"},
 		{label: "In room", value: "in-room"},
@@ -179,7 +160,7 @@ export const effectTypeOptions: EditorOption[] = [
 	{label: "Counter", value: "counter"},
 	{label: "Inventory", value: "inventory"},
 	{label: "Item location", value: "item-location"},
-	{label: "Object state", value: "object-state"},
+	{label: "Feature", value: "feature"},
 	{label: "Move room", value: "room"},
 	{label: "NPC", value: "npc"},
 	{label: "Event", value: "event"},
@@ -195,9 +176,10 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Append room description", value: "append-room-description"},
 	],
 	flag: [
+		{label: "Create", value: "create"},
 		{label: "Set", value: "set"},
 		{label: "Toggle", value: "toggle"},
-		{label: "Clear", value: "clear"},
+		{label: "Delete", value: "delete"},
 	],
 	counter: [
 		{label: "Set", value: "set"},
@@ -223,18 +205,15 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Destroy", value: "destroy"},
 		{label: "Create", value: "create"},
 	],
-	"object-state": [
-		{label: "Open", value: "open"},
-		{label: "Close", value: "close"},
-		{label: "Lock", value: "lock"},
-		{label: "Unlock", value: "unlock"},
-		{label: "Light", value: "light"},
-		{label: "Extinguish", value: "extinguish"},
-		{label: "Break", value: "break"},
-		{label: "Repair", value: "repair"},
-		{label: "Clean", value: "clean"},
-		{label: "Dirty", value: "dirty"},
-		{label: "Set custom", value: "set-custom"},
+	feature: [
+		{label: "Change name", value: "change-name"},
+		{label: "Change description", value: "change-description"},
+		{label: "Move to room", value: "move-to-room"},
+		{label: "Hide from player", value: "hide-from-player"},
+		{label: "Show to player", value: "show-to-player"},
+		{label: "Show in room description", value: "show-in-room-description"},
+		{label: "Hide in room description", value: "hide-in-room-description"},
+		{label: "Destroy", value: "destroy"},
 	],
 	room: [
 		{label: "Move player", value: "move-player-to"},
@@ -243,6 +222,8 @@ export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
 		{label: "Set short description", value: "set-short-description"},
 		{label: "Lock exit", value: "lock-exit"},
 		{label: "Unlock exit", value: "unlock-exit"},
+		{label: "Lock all exits", value: "lock-all-exits"},
+		{label: "Unlock all exits", value: "unlock-all-exits"},
 		{label: "Add tag", value: "add-tag"},
 		{label: "Remove tag", value: "remove-tag"},
 		{label: "Set active", value: "set-active"},
@@ -299,7 +280,6 @@ export function createDefaultConditionValue(type = "flag"): Record<string, unkno
 	if (type === "current-room") return {type, operation: "is", roomId: toID("room", "")};
 	if (type === "inventory") return {type, operation: "has-item", itemId: toID("item", "")};
 	if (type === "item-location") return {type, operation: "in-inventory", itemId: toID("item", "")};
-	if (type === "object-state") return {type, operation: "open", objectId: toID("feature", "")};
 	if (type === "npc") return {type, operation: "in-current-room", npcId: toID("npc", "")};
 	if (type === "command-history") return {type, operation: "previous-command-was", commandName: ""};
 	if (type === "random-chance") return {type, chance: 0.5, seedKey: "", invert: false};
@@ -318,7 +298,7 @@ export function createDefaultConditionValue(type = "flag"): Record<string, unkno
 			featureId: toID("feature", ""),
 			value: true,
 		};
-	return {type, operation: "true", flag: ""};
+	return {type, "flag-type": "normal", operation: "true", flag: ""};
 }
 
 export function createDefaultEffectValue(
@@ -327,7 +307,8 @@ export function createDefaultEffectValue(
 ): Record<string, unknown> {
 	const operation = operationOptions[0]?.value;
 	if (type === "message") return {type, messageType: "show", text: ""};
-	if (type === "flag") return {type, operation: operation ?? "set", flag: "", value: true};
+	if (type === "flag")
+		return {type, "flag-type": "normal", operation: operation ?? "set", flag: "", value: true};
 	if (type === "counter") return {type, operation: operation ?? "set", counter: "", value: 0};
 	if (type === "inventory") return {type, operation: operation ?? "add", itemId: toID("item", "")};
 	if (type === "item-location")
@@ -337,8 +318,13 @@ export function createDefaultEffectValue(
 			itemId: toID("item", ""),
 			roomId: toID("room", ""),
 		};
-	if (type === "object-state")
-		return {type, operation: operation ?? "open", objectId: toID("feature", "")};
+	if (type === "feature")
+		return {
+			type,
+			operation: operation ?? "change-name",
+			roomId: toID("room", ""),
+			featureId: toID("feature", ""),
+		};
 	if (type === "room")
 		return {type, operation: operation ?? "move-player-to", roomId: toID("room", "")};
 	if (type === "npc")

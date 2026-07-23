@@ -5,6 +5,25 @@ import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
 import {compareIds} from "@/utils/idUtils";
 import type {Direction} from "@/schemas/world/worldSchema";
+import {
+	entityFlagMutationError,
+	getEntityFlagDefinition,
+} from "@/schemas/world/entityFlagDefinitions";
+
+const ALL_DIRECTIONS: Direction[] = [
+	"n",
+	"ne",
+	"e",
+	"se",
+	"s",
+	"sw",
+	"w",
+	"nw",
+	"up",
+	"down",
+	"in",
+	"out",
+];
 
 export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
@@ -33,6 +52,34 @@ export function resolveMessageEffect(game: GameState, effect: Effect): GameState
 export function resolveFlagEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "flag") {
 		return game;
+	}
+
+	if (effect["flag-type"] === "room" || effect["flag-type"] === "feature") {
+		return produce(game, (draft) => {
+			const roomState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
+			if (!roomState) return;
+
+			const isFeatureFlag = effect["flag-type"] === "feature";
+			const definition = getEntityFlagDefinition(effect["flag-type"], effect.flag);
+			if (entityFlagMutationError(effect["flag-type"], effect.flag, effect.operation)) return;
+
+			const flags = isFeatureFlag
+				? roomState.featureStates.find((feature) => compareIds(feature.id, effect.featureId))?.flags
+				: roomState.flags;
+			if (!flags) return;
+
+			switch (effect.operation) {
+				case "set":
+					flags[effect.flag] = effect.value;
+					break;
+				case "toggle":
+					flags[effect.flag] = !flags[effect.flag];
+					break;
+				case "delete":
+					if (!definition?.permanent) delete flags[effect.flag];
+					break;
+			}
+		});
 	}
 
 	return produce(game, (draft) => {
@@ -258,6 +305,14 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 					roomState.lockedExits?.filter((candidate) => candidate !== direction) ?? [];
 				break;
 			}
+
+			case "lock-all-exits":
+				roomState.lockedExits = [...ALL_DIRECTIONS];
+				break;
+
+			case "unlock-all-exits":
+				roomState.lockedExits = [];
+				break;
 
 			case "add-tag":
 				roomState.tags ??= [];

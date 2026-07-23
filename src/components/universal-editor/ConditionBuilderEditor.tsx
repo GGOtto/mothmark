@@ -1345,25 +1345,48 @@ function ConditionLeafFields({
 	const type = getConditionType(value);
 
 	if (type === "flag") {
-		const operation = String(value.operation ?? "equals");
+		const operation = String(value.operation ?? "true");
+		const flagType = String(value["flag-type"] ?? "normal") as "normal" | "room" | "feature";
 
 		return (
 			<div className="conditionBuilderEditor__fields">
+				{renderSelect({
+					childKey: "flag-type",
+					value: flagType,
+					onChange: (nextValue) => onChange("flag-type", nextValue),
+					title: "Flag type",
+					options: [
+						{label: "Normal", value: "normal"},
+						{label: "Room", value: "room"},
+						{label: "Feature", value: "feature"},
+					],
+					metadata,
+					path: [...path, "flag-type"],
+					disabled,
+					readonly,
+					context,
+				})}
 				{renderOperationSelect(type, operation, onChange, metadata, path, disabled, readonly, context)}
-				{renderFlagField(value, onChange, metadata, path, disabled, readonly, context)}
-				{operation === "equals"
-					? renderToggleField(
-							"value",
-							Boolean(value.value ?? true),
-							"Expected",
+				{flagType === "normal" ? (
+					renderFlagField(value, onChange, metadata, path, disabled, readonly, context)
+				) : (
+					<>
+						{renderRoomField(value, onChange, metadata, path, disabled, readonly, context)}
+						{flagType === "feature"
+							? renderScopedFeatureField(value, onChange, metadata, path, disabled, readonly, context)
+							: null}
+						{renderScopedFlagField(
+							flagType,
+							value,
 							onChange,
 							metadata,
 							path,
 							disabled,
 							readonly,
 							context,
-						)
-					: null}
+						)}
+					</>
+				)}
 			</div>
 		);
 	}
@@ -1470,8 +1493,6 @@ function ConditionLeafFields({
 		return renderInventoryFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "item-location")
 		return renderItemLocationFields(value, onChange, metadata, path, disabled, readonly, context);
-	if (type === "object-state")
-		return renderObjectStateFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "npc")
 		return renderNpcFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "command-history")
@@ -1666,101 +1687,6 @@ function renderItemLocationFields(
 						context,
 					)
 				: null}
-		</div>
-	);
-}
-
-function renderObjectStateFields(
-	value: ConditionValue,
-	onChange: (key: string, nextValue: unknown) => void,
-	metadata: ConditionBuilderControlMetadata,
-	path: Array<string | number>,
-	disabled: boolean | undefined,
-	readonly: boolean | undefined,
-	context: ConditionBuilderEditorProps["context"],
-) {
-	const operation = String(value.operation ?? "open");
-
-	return (
-		<div className="conditionBuilderEditor__fields">
-			{renderOperationSelect(
-				"object-state",
-				operation,
-				onChange,
-				metadata,
-				path,
-				disabled,
-				readonly,
-				context,
-			)}
-			{operation === "surface-has-item" || operation === "surface-missing-item"
-				? renderEntityField(
-						"surfaceId",
-						value.surfaceId,
-						"Surface",
-						"surface",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)
-				: renderEntityField(
-						"objectId",
-						value.objectId,
-						"Feature",
-						"feature",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-			{["contains-item", "missing-item", "surface-has-item", "surface-missing-item"].includes(
-				operation,
-			)
-				? renderEntityField(
-						"itemId",
-						value.itemId,
-						"Item",
-						"item",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)
-				: null}
-			{operation === "custom" ? (
-				<>
-					{renderTextField(
-						"key",
-						String(value.key ?? ""),
-						"Key",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-					{renderStringComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)}
-					{renderTextField(
-						"value",
-						String(value.value ?? ""),
-						"Value",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-				</>
-			) : null}
 		</div>
 	);
 }
@@ -2473,6 +2399,71 @@ function renderFlagField(
 			features: {allowCreate: false, clearButton: false, showPreview: false},
 		},
 		parentMetadata: metadata,
+		path: [...path, "flag"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function selectedRoom(value: ConditionValue, context: ConditionBuilderEditorProps["context"]) {
+	const roomId = isID(value.roomId) ? idValue(value.roomId) : String(value.roomId ?? "");
+	return context.world?.rooms.find((room) => idValue(room.id) === roomId);
+}
+
+function selectedFeature(value: ConditionValue, context: ConditionBuilderEditorProps["context"]) {
+	const featureId = isID(value.featureId) ? idValue(value.featureId) : String(value.featureId ?? "");
+	return selectedRoom(value, context)?.features.find((feature) => idValue(feature.id) === featureId);
+}
+
+function renderScopedFeatureField(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const features = selectedRoom(value, context)?.features ?? [];
+	const featureId = isID(value.featureId) ? idValue(value.featureId) : String(value.featureId ?? "");
+
+	return renderSelect({
+		childKey: "featureId",
+		value: featureId,
+		onChange: (nextValue) => onChange("featureId", toID("feature", nextValue)),
+		title: "Feature",
+		options: features.map((feature) => ({label: feature.name, value: idValue(feature.id)})),
+		metadata,
+		path: [...path, "featureId"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderScopedFlagField(
+	flagType: "room" | "feature",
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const flags =
+		flagType === "room"
+			? selectedRoom(value, context)?.flags
+			: selectedFeature(value, context)?.flags;
+
+	return renderSelect({
+		childKey: "flag",
+		value: String(value.flag ?? ""),
+		onChange: (nextValue) => onChange("flag", nextValue),
+		title: "Flag",
+		options: Object.keys(flags ?? {}).map((flag) => ({label: flag, value: flag})),
+		metadata,
 		path: [...path, "flag"],
 		disabled,
 		readonly,

@@ -213,7 +213,6 @@ function conditionSummarySubject(condition: Record<string, unknown>) {
 	if (type === "current-room") return "unspecified room";
 	if (type === "inventory") return "unspecified inventory target";
 	if (type === "item-location") return "unspecified item";
-	if (type === "object-state") return "unspecified object";
 	if (type === "npc") return "unspecified NPC";
 	if (type === "command-history") return "unspecifed command";
 	if (type === "turn") return "turn";
@@ -338,6 +337,20 @@ function generateConditionSummaryAtDepth(
 		)}`.trim();
 	}
 
+	if (kind === "flag" && (condition["flag-type"] ?? "normal") !== "normal") {
+		const flagType = String(condition["flag-type"] ?? "normal");
+		const target =
+			flagType === "room"
+				? conditionSummaryTarget(condition.roomId, "unspecified room")
+				: `${conditionSummaryTarget(condition.roomId, "unspecified room")}/${conditionSummaryTarget(
+						condition.featureId,
+						"unspecified feature",
+					)}`;
+		const flag = conditionSummaryTarget(condition.flag, "unspecified flag");
+		const operator = String(condition.operation ?? "true");
+		return `${target} flag ${flag} is ${operator}`;
+	}
+
 	const subject = conditionSummarySubject(condition);
 	const operator = String(condition.operator ?? condition.operation ?? "equals");
 	const operatorLabel = conditionOperatorSummaryLabels[operator] ?? operator;
@@ -356,7 +369,7 @@ export function generateEffectSummary(effect: unknown): string {
 	const type = String(effect.type ?? "effect");
 	if (type === "message") return `show message ${stringifySummaryValue(effect.text ?? "")}`;
 	if (type === "flag")
-		return `${stringifySummaryValue(effect.operation ?? "set")} flag ${stringifySummaryValue(effect.flag)}`;
+		return `${stringifySummaryValue(effect.operation ?? "set")} ${stringifySummaryValue(effect["flag-type"] ?? "normal")} flag ${stringifySummaryValue(effect.flag)}`;
 	if (type === "counter") {
 		return `${stringifySummaryValue(effect.operation ?? "set")} counter ${stringifySummaryValue(effect.counter)} ${stringifySummaryValue(effect.value)}`.trim();
 	}
@@ -365,6 +378,9 @@ export function generateEffectSummary(effect: unknown): string {
 	}
 	if (type === "room") {
 		return `${stringifySummaryValue(effect.operation ?? "move-player")} ${stringifySummaryValue(effect.roomId)}`;
+	}
+	if (type === "feature") {
+		return `${stringifySummaryValue(effect.operation ?? "change")} ${stringifySummaryValue(effect.roomId)}/${stringifySummaryValue(effect.featureId)}`;
 	}
 
 	return Object.entries(effect)

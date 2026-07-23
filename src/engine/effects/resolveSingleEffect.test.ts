@@ -458,6 +458,92 @@ describe("resolveFlagEffect", () => {
 		expect(result.variables.flags).toEqual([{"door-open": true}]);
 		expect(game.variables.flags).toEqual([{"door-open": false}]);
 	});
+
+	it("edits room and feature flags through scoped flag effects", () => {
+		const game = createGameState({
+			roomStates: [
+				{
+					type: "room",
+					id: {type: "room", id: "hall"},
+					flags: {active: true, dark: false},
+					featureStates: [
+						{
+							type: "feature",
+							id: {type: "feature", id: "statue"},
+							flags: {examined: false, glowing: false},
+						},
+					],
+				},
+			],
+		});
+		const roomSet = resolveFlagEffect(game, {
+			type: "flag",
+			"flag-type": "room",
+			operation: "set",
+			roomId: {type: "room", id: "hall"},
+			flag: "dark",
+			value: true,
+		} as Effect);
+		const featureToggle = resolveFlagEffect(roomSet, {
+			type: "flag",
+			"flag-type": "feature",
+			operation: "toggle",
+			roomId: {type: "room", id: "hall"},
+			featureId: {type: "feature", id: "statue"},
+			flag: "glowing",
+		} as Effect);
+
+		expect(roomSet.roomStates[0].flags.dark).toBe(true);
+		expect(featureToggle.roomStates[0].featureStates[0].flags.glowing).toBe(true);
+		expect(game.roomStates[0].flags.dark).toBe(false);
+		expect(game.roomStates[0].featureStates[0].flags.glowing).toBe(false);
+	});
+
+	it("does not edit readonly flags or delete permanent flags", () => {
+		const game = createGameState({
+			roomStates: [
+				{
+					type: "room",
+					id: {type: "room", id: "hall"},
+					flags: {visited: true, active: true},
+					featureStates: [
+						{
+							type: "feature",
+							id: {type: "feature", id: "statue"},
+							flags: {examined: false},
+						},
+					],
+				},
+			],
+		});
+		const visited = resolveFlagEffect(game, {
+			type: "flag",
+			"flag-type": "room",
+			operation: "toggle",
+			roomId: {type: "room", id: "hall"},
+			flag: "visited",
+		} as Effect);
+		const examined = resolveFlagEffect(game, {
+			type: "flag",
+			"flag-type": "feature",
+			operation: "set",
+			roomId: {type: "room", id: "hall"},
+			featureId: {type: "feature", id: "statue"},
+			flag: "examined",
+			value: true,
+		} as Effect);
+		const active = resolveFlagEffect(game, {
+			type: "flag",
+			"flag-type": "room",
+			operation: "delete",
+			roomId: {type: "room", id: "hall"},
+			flag: "active",
+		} as Effect);
+
+		expect(visited.roomStates[0].flags.visited).toBe(true);
+		expect(examined.roomStates[0].featureStates[0].flags.examined).toBe(false);
+		expect(active.roomStates[0].flags.active).toBe(true);
+	});
 });
 
 describe("resolveCounterEffect", () => {
@@ -937,6 +1023,29 @@ describe("resolveRoomEffect", () => {
 		expect(locked.roomStates[0].lockedExits).toEqual(["n", "e"]);
 		expect(relocked.roomStates[0].lockedExits).toEqual(["n", "e"]);
 		expect(unlocked.roomStates[0].lockedExits).toEqual(["e"]);
+	});
+
+	it("locks and unlocks all exits", () => {
+		const game = createGameWithRoom();
+		const locked = resolveRoomEffect(game, roomEffect("lock-all-exits"));
+		const unlocked = resolveRoomEffect(locked, roomEffect("unlock-all-exits"));
+
+		expect(locked.roomStates[0].lockedExits).toEqual([
+			"n",
+			"ne",
+			"e",
+			"se",
+			"s",
+			"sw",
+			"w",
+			"nw",
+			"up",
+			"down",
+			"in",
+			"out",
+		]);
+		expect(unlocked.roomStates[0].lockedExits).toEqual([]);
+		expect(game.roomStates[0].lockedExits).toEqual(["n"]);
 	});
 
 	it("adds a tag once and removes tags", () => {

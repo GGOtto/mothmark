@@ -54,4 +54,54 @@ describe("effect storage schemas", () => {
 			],
 		});
 	});
+
+	it("accepts room and feature flag effects", () => {
+		expect(
+			WorldEffectSchema.safeParse({
+				type: "flag",
+				"flag-type": "room",
+				operation: "set",
+				roomId: toID("room", "vault"),
+				flag: "dark",
+				value: true,
+			}).success,
+		).toBe(true);
+		expect(
+			WorldEffectSchema.safeParse({
+				type: "flag",
+				"flag-type": "feature",
+				operation: "toggle",
+				roomId: toID("room", "vault"),
+				featureId: toID("feature", "door"),
+				flag: "locked",
+			}).success,
+		).toBe(true);
+	});
+
+	it("defaults legacy flag effects to normal flags", () => {
+		expect(
+			WorldEffectSchema.parse({type: "flag", operation: "set", flag: "gate.open", value: true}),
+		).toMatchObject({"flag-type": "normal"});
+	});
+
+	it("rejects readonly edits and permanent deletion", () => {
+		expect(
+			WorldEffectSchema.safeParse({
+				type: "flag",
+				"flag-type": "room",
+				operation: "toggle",
+				roomId: toID("room", "vault"),
+				flag: "visited",
+			}).success,
+		).toBe(false);
+		expect(
+			WorldEffectSchema.safeParse({
+				type: "flag",
+				"flag-type": "room",
+				operation: "delete",
+				roomId: toID("room", "vault"),
+				flag: "active",
+			}).success,
+		).toBe(false);
+	});
 });
