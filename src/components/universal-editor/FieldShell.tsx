@@ -1,4 +1,16 @@
-import {createContext, useContext, useId, type ReactNode} from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type CSSProperties,
+	type ReactNode,
+} from "react";
+import {createPortal} from "react-dom";
 import type {ResolvedEditorControlAppearance} from "@/types/universalEditorTypes";
 import type {EditorControlContext, EditorPath} from "@/types/universalEditorTypes";
 import type {EditorDisclosure} from "@/types/editor/editorMetadataTypes";
@@ -38,6 +50,12 @@ type FieldShellDisclosureValue = {
 	context: EditorControlContext;
 };
 
+type TooltipPosition = {
+	left: number;
+	bottom: number;
+	shiftX: number;
+};
+
 const FieldShellDisclosureContext = createContext<FieldShellDisclosureValue | undefined>(undefined);
 
 export function FieldShellDisclosureProvider({
@@ -57,7 +75,7 @@ export function FieldShellDisclosureProvider({
 export function FieldShell({
 	title,
 	description,
-	hideInfoInBox,
+	hideInfoInBox = true,
 	error,
 	warnings = [],
 	required,
@@ -71,6 +89,65 @@ export function FieldShell({
 }: FieldShellProps) {
 	const disclosureValue = useContext(FieldShellDisclosureContext);
 	const descriptionId = useId();
+	const infoIconRef = useRef<HTMLSpanElement>(null);
+	const infoBoxRef = useRef<HTMLSpanElement>(null);
+	const [isInfoBoxVisible, setIsInfoBoxVisible] = useState(false);
+	const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition | null>(null);
+	const updateTooltipPosition = useCallback(() => {
+		const icon = infoIconRef.current;
+		if (!icon) {
+			return;
+		}
+
+		const iconBounds = icon.getBoundingClientRect();
+		setTooltipPosition({
+			left: iconBounds.left + iconBounds.width / 2,
+			bottom: window.innerHeight - iconBounds.top + 10,
+			shiftX: 0,
+		});
+	}, []);
+	const showInfoBox = useCallback(() => {
+		updateTooltipPosition();
+		setIsInfoBoxVisible(true);
+	}, [updateTooltipPosition]);
+
+	useEffect(() => {
+		if (!isInfoBoxVisible) {
+			return;
+		}
+
+		window.addEventListener("resize", updateTooltipPosition);
+		window.addEventListener("scroll", updateTooltipPosition, true);
+		return () => {
+			window.removeEventListener("resize", updateTooltipPosition);
+			window.removeEventListener("scroll", updateTooltipPosition, true);
+		};
+	}, [isInfoBoxVisible, updateTooltipPosition]);
+
+	useLayoutEffect(() => {
+		const infoBox = infoBoxRef.current;
+		if (!isInfoBoxVisible || !infoBox || !tooltipPosition) {
+			return;
+		}
+
+		const viewportMargin = 16;
+		const infoBoxBounds = infoBox.getBoundingClientRect();
+		let correction = 0;
+		if (infoBoxBounds.left < viewportMargin) {
+			correction = viewportMargin - infoBoxBounds.left;
+		} else if (infoBoxBounds.right > window.innerWidth - viewportMargin) {
+			correction = window.innerWidth - viewportMargin - infoBoxBounds.right;
+		}
+
+		if (Math.abs(correction) > 0.5) {
+			setTooltipPosition((currentPosition) =>
+				currentPosition
+					? {...currentPosition, shiftX: currentPosition.shiftX + correction}
+					: currentPosition,
+			);
+		}
+	}, [isInfoBoxVisible, tooltipPosition]);
+
 	const isCollapsible =
 		appearance.chrome === "collapse" && disclosureValue?.metadata.disclosure?.collapsible !== false;
 	const savedOpenState = disclosureValue?.context.editorChrome?.getSectionDisclosure?.(
@@ -101,11 +178,38 @@ export function FieldShell({
 						{required ? <span className="universalField__required">Required</span> : null}
 						{readonly ? <span className="universalField__status">Readonly</span> : null}
 						{description && hideInfoInBox && (
-							<span className="universalField__infoIcon" tabIndex={0} aria-describedby={descriptionId}>
-								<Info size={16} aria-hidden="true" />
-								<span className="universalField__infobox" id={descriptionId} role="tooltip">
-									{description}
-								</span>
+							<span
+								ref={infoIconRef}
+								className="universalField__infoIcon"
+								tabIndex={0}
+								aria-describedby={descriptionId}
+								onMouseEnter={showInfoBox}
+								onMouseLeave={() => setIsInfoBoxVisible(false)}
+								onFocus={showInfoBox}
+								onBlur={() => setIsInfoBoxVisible(false)}
+							>
+								<Info size={16} aria-hidden="true" strokeWidth={2.5} />
+								{isInfoBoxVisible &&
+									tooltipPosition &&
+									typeof document !== "undefined" &&
+									createPortal(
+										<span
+											ref={infoBoxRef}
+											className="universalField__infobox"
+											id={descriptionId}
+											role="tooltip"
+											style={
+												{
+													left: tooltipPosition.left,
+													bottom: tooltipPosition.bottom,
+													"--tooltip-shift-x": `${tooltipPosition.shiftX}px`,
+												} as CSSProperties
+											}
+										>
+											{description}
+										</span>,
+										document.body,
+									)}
 							</span>
 						)}
 					</div>
@@ -115,7 +219,7 @@ export function FieldShell({
 						{slots.headerAction}
 					</div>
 				) : null}
-				{hideInfoInBox !== true && description ? (
+				{!hideInfoInBox && description ? (
 					<div className="universalField__description">{description}</div>
 				) : null}
 			</div>
