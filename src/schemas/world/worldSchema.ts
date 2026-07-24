@@ -3,6 +3,7 @@ import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
 import {WorldConditionSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
+import {EventSchema} from "./eventSchema";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
 import {idValue} from "../../utils/idUtils";
 
@@ -117,6 +118,13 @@ export const WorldSchema = editor
 				description: "Reusable effects retained for room and feature interactions.",
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "effect"},
 			}),
+			events: editor
+				.array(EventSchema, {
+					title: "Events",
+					description: "Conditional event branches evaluated while the game is running.",
+					duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "event"},
+				})
+				.optional(),
 			initialState: WorldInitialStateSchema.default(DefaultWorldInitialState),
 		},
 		{

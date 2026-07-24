@@ -1,0 +1,295 @@
+.logicEditor {
+	display: grid;
+	grid-template-columns: 180px minmax(0, 1fr);
+	height: 100%;
+	min-height: 0;
+	color: var(--panel-text);
+}
+
+.logicEventRail {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	min-height: 0;
+	padding: 12px;
+	border-right: 1px solid var(--panel-border);
+	background: var(--panel-bg);
+}
+
+.logicEventRail__title {
+	padding-bottom: 8px;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.logicEventSelector {
+	color: var(--panel-text);
+
+	.centeredScrollSelector__item {
+		color: var(--panel-muted);
+		text-align: center;
+	}
+
+	.centeredScrollSelector__item[aria-pressed="true"] {
+		color: var(--panel-text);
+		font-weight: 700;
+	}
+}
+
+.logicEventRail__add,
+.logicTree button,
+.logicEmpty button,
+.logicToolbar button {
+	cursor: pointer;
+}
+
+.logicEventRail__add {
+	min-height: 32px;
+	border: 1px solid var(--panel-border);
+	background: transparent;
+	color: var(--panel-text);
+}
+
+.logicTree {
+	padding: 16px;
+	overflow: auto;
+}
+
+.logicBranch {
+	margin-bottom: 12px;
+	border: 1px solid var(--panel-border);
+}
+
+.logicBranch__header,
+.logicEffectGroup__row,
+.logicTree__branchActions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.logicBranch__header {
+	min-height: 40px;
+	padding: 6px 8px 6px 12px;
+	border-bottom: 1px solid var(--panel-border);
+}
+
+.logicBranch__label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.logicBranch__condition {
+	margin-left: 8px;
+	border: 0;
+	background: transparent;
+	color: var(--panel-text);
+	font: inherit;
+}
+
+.logicBranch__actions {
+	display: flex;
+	gap: 4px;
+
+	button {
+		min-height: 28px;
+		border: 1px solid var(--panel-border);
+		background: transparent;
+		color: var(--panel-text);
+	}
+}
+
+.logicBranch__effects {
+	padding: 8px;
+}
+
+.logicBranch__empty {
+	width: 100%;
+	min-height: 36px;
+	border: 1px dashed var(--panel-border);
+	background: transparent;
+	color: var(--panel-muted);
+}
+
+.logicEffectGroup + .logicEffectGroup {
+	margin-top: 6px;
+}
+
+.logicEffectGroup[draggable="true"] {
+	cursor: grab;
+}
+
+.logicEffectGroup__select {
+	display: flex;
+	flex: 1;
+	justify-content: space-between;
+	padding: 8px;
+	border: 0;
+	background: var(--panel-bg);
+	color: var(--panel-text);
+	font: inherit;
+	text-align: left;
+}
+
+.logicEffectGroup__count,
+.logicSubEffect,
+.logicEffectGroup--legacy {
+	color: var(--panel-muted);
+	font-size: 12px;
+}
+
+.logicEffectGroup__remove {
+	padding: 6px;
+	border: 0;
+	background: transparent;
+	color: var(--panel-muted);
+}
+
+.logicSubEffect {
+	display: block;
+	width: calc(100% - 18px);
+	margin-left: 18px;
+	padding: 6px 8px;
+	border: 0;
+	border-left: 1px solid var(--panel-border);
+	background: transparent;
+	text-align: left;
+}
+
+.logicEffectGroup--legacy {
+	padding: 8px;
+}
+
+.logicTree__addSection,
+.logicTree__branchActions button {
+	min-height: 32px;
+	margin: 0 8px 12px 0;
+	border: 1px solid var(--panel-border);
+	background: transparent;
+	color: var(--panel-text);
+}
+
+.logicTree__branchActions {
+	justify-content: flex-start;
+}
+
+.logicToolbar {
+	height: 76px !important;
+	gap: 12px;
+	padding-block: 8px !important;
+	color: var(--panel-muted);
+	font-size: 12px;
+
+	label {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	input[type="text"],
+	input[type="number"] {
+		height: 28px;
+		box-sizing: border-box;
+		border: 1px solid var(--panel-border);
+		background: var(--workspace-bg);
+		color: var(--panel-text);
+	}
+
+	input[type="number"] {
+		width: 60px;
+	}
+}
+
+.logicToolbar__name {
+	display: grid !important;
+	align-items: start !important;
+	margin-right: auto;
+
+	input {
+		width: 180px;
+	}
+}
+
+.logicToolbar__back,
+.logicToolbar__delete {
+	min-height: 30px;
+	border: 1px solid var(--panel-border);
+	background: transparent;
+	color: var(--panel-text);
+}
+
+.logicToolbar__id {
+	font-family: monospace;
+}
+
+.logicHome,
+.logicEmpty {
+	display: flex;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	box-sizing: border-box;
+	color: var(--panel-text);
+}
+
+.logicHome__content {
+	width: min(680px, 100%);
+
+	h1,
+	p {
+		margin: 0;
+	}
+
+	p {
+		margin-top: 4px;
+		color: var(--panel-muted);
+	}
+}
+
+.logicHome__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-top: 20px;
+
+	button {
+		display: flex;
+		gap: 10px;
+		min-height: 80px;
+		padding: 14px;
+		border: 1px solid var(--panel-border);
+		background: transparent;
+		color: var(--panel-text);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	span {
+		display: grid;
+		gap: 4px;
+	}
+
+	small {
+		color: var(--panel-muted);
+	}
+}
+
+.logicEmpty {
+	flex-direction: column;
+	gap: 8px;
+	color: var(--panel-muted);
+}
+
+@media (max-width: 700px) {
+	.logicEditor,
+	.logicHome__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.logicEventRail {
+		display: none;
+	}
+}

@@ -3,8 +3,9 @@ import {getLayerNavigationDirection} from "./utils/layerNavigation";
 import {getLayer} from "./utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {X} from "lucide-react";
+import {CenteredScrollSelector} from "../ui/CenteredScrollSelector";
 
 export const LAYER_MENU_SCROLL_BUFFER_ROWS = 50;
 
@@ -56,7 +57,6 @@ export function LayerMenu({
 	const [displayedLayer, setDisplayedLayer] = useState<Layer>(currentLayer);
 	const displayedLayerRef = useRef(displayedLayer);
 	const layerListRef = useRef<HTMLDivElement | null>(null);
-	const hasCenteredInitialLayer = useRef(false);
 	const displayedLayers = useMemo(() => {
 		return Array.from({length: LAYER_MENU_SCROLL_BUFFER_ROWS * 2 + 1}, (_, index) =>
 			getLayer(world, currentLayer.layer + LAYER_MENU_SCROLL_BUFFER_ROWS - index),
@@ -79,40 +79,6 @@ export function LayerMenu({
 		[showLayer],
 	);
 
-	function handleLayerListScroll(event: React.UIEvent<HTMLDivElement>) {
-		const list = event.currentTarget;
-		const listRect = list.getBoundingClientRect();
-		const listCenter = listRect.top + listRect.height / 2;
-		let closestButton: HTMLButtonElement | null = null;
-		let closestDistance = Number.POSITIVE_INFINITY;
-
-		for (const button of list.querySelectorAll<HTMLButtonElement>("[data-layer-value]")) {
-			const buttonRect = button.getBoundingClientRect();
-			const distance = Math.abs(buttonRect.top + buttonRect.height / 2 - listCenter);
-			if (distance < closestDistance) {
-				closestButton = button;
-				closestDistance = distance;
-			}
-		}
-
-		if (!closestButton) return;
-		const layerValue = Number(closestButton.dataset.layerValue);
-		if (layerValue !== displayedLayerRef.current.layer) showLayer(getLayer(world, layerValue));
-	}
-
-	useLayoutEffect(() => {
-		if (hasCenteredInitialLayer.current) return;
-		const layerList = layerListRef.current;
-		if (!layerList) return;
-		const selectedButton = layerList.querySelector<HTMLButtonElement>(
-			`[data-layer-value="${currentLayer.layer}"]`,
-		);
-		if (selectedButton) {
-			hasCenteredInitialLayer.current = true;
-			centerLayer(selectedButton, currentLayer, "auto");
-		}
-	}, [centerLayer, currentLayer]);
-
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (
@@ -127,9 +93,9 @@ export function LayerMenu({
 			if (!direction) return;
 			event.preventDefault();
 			const targetLayer = getLayer(world, displayedLayerRef.current.layer + direction);
-			const targetButton = layerListRef.current?.querySelector<HTMLButtonElement>(
-				`[data-layer-value="${targetLayer.layer}"]`,
-			);
+			const targetButton = Array.from(
+				layerListRef.current?.querySelectorAll<HTMLButtonElement>("[data-layer-value]") ?? [],
+			).find((button) => Number(button.dataset.layerValue) === targetLayer.layer);
 			if (targetButton) centerLayer(targetButton, targetLayer);
 		}
 
@@ -157,25 +123,26 @@ export function LayerMenu({
 			<button type="button" onClick={() => setIsLayerMenuOpen(false)} aria-label="Close layer menu">
 				<X aria-hidden="true" />
 			</button>
-			<div className="layerMenu--leftShell">
-				<div
-					ref={layerListRef}
-					className="layerMenu--left"
-					aria-label="Layers"
-					onScroll={handleLayerListScroll}
-				>
-					{displayedLayers.map((layer, index) => (
-						<LayerMenuButton
-							key={layer.layer}
-							layer={layer}
-							layerIndex={index}
-							displayedLayer={displayedLayer}
-							centerLayer={centerLayer}
-						/>
-					))}
-				</div>
-				<div className="layerMenu--left__centerIndicator" aria-hidden="true" />
-			</div>
+			<CenteredScrollSelector
+				items={displayedLayers}
+				activeId={String(displayedLayer.layer)}
+				onActiveChange={showLayer}
+				getId={(layer) => String(layer.layer)}
+				renderLabel={(layer) => layer.name}
+				ariaLabel="Layers"
+				className="layerMenu--leftShell"
+				listClassName="layerMenu--left"
+				indicatorClassName="layerMenu--left__centerIndicator"
+				itemClassName={(_, isActive) =>
+					isActive ? "layerMenu--left__button layerMenu--left__selected" : "layerMenu--left__button"
+				}
+				getItemProps={(layer, index) => ({
+					"data-layer-index": index,
+					"data-layer-value": layer.layer,
+				})}
+				deferClickActivationUntilScroll={true}
+				listRef={layerListRef}
+			/>
 			<div className="layerMenu--right">
 				<div className="layerMenu--header">
 					<div className="layerMenu--header__name">Layer Name</div>
