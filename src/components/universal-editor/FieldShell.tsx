@@ -1,8 +1,9 @@
-import {createContext, useContext, type ReactNode} from "react";
+import {createContext, useContext, useId, type ReactNode} from "react";
 import type {ResolvedEditorControlAppearance} from "@/types/universalEditorTypes";
 import type {EditorControlContext, EditorPath} from "@/types/universalEditorTypes";
 import type {EditorDisclosure} from "@/types/editor/editorMetadataTypes";
 import "./FieldShell.scss";
+import {Info} from "lucide-react";
 
 export type FieldShellSlots = {
 	headerAction?: ReactNode;
@@ -15,6 +16,7 @@ export type FieldShellSlots = {
 export type FieldShellProps = {
 	title?: string;
 	description?: string;
+	hideInfoInBox?: boolean;
 	error?: string;
 	warnings?: string[];
 	required?: boolean;
@@ -55,6 +57,7 @@ export function FieldShellDisclosureProvider({
 export function FieldShell({
 	title,
 	description,
+	hideInfoInBox,
 	error,
 	warnings = [],
 	required,
@@ -67,6 +70,7 @@ export function FieldShell({
 	children,
 }: FieldShellProps) {
 	const disclosureValue = useContext(FieldShellDisclosureContext);
+	const descriptionId = useId();
 	const isCollapsible =
 		appearance.chrome === "collapse" && disclosureValue?.metadata.disclosure?.collapsible !== false;
 	const savedOpenState = disclosureValue?.context.editorChrome?.getSectionDisclosure?.(
@@ -91,11 +95,19 @@ export function FieldShell({
 	const header =
 		title || description || slots?.headerAction ? (
 			<div className="universalField__header">
-				{title || required || readonly ? (
+				{title || required || readonly || (description && hideInfoInBox) ? (
 					<div className="universalField__titleRow">
 						{title ? <div className="universalField__title">{title}</div> : null}
 						{required ? <span className="universalField__required">Required</span> : null}
 						{readonly ? <span className="universalField__status">Readonly</span> : null}
+						{description && hideInfoInBox && (
+							<span className="universalField__infoIcon" tabIndex={0} aria-describedby={descriptionId}>
+								<Info size={16} aria-hidden="true" />
+								<span className="universalField__infobox" id={descriptionId} role="tooltip">
+									{description}
+								</span>
+							</span>
+						)}
 					</div>
 				) : null}
 				{slots?.headerAction ? (
@@ -103,7 +115,9 @@ export function FieldShell({
 						{slots.headerAction}
 					</div>
 				) : null}
-				{description ? <div className="universalField__description">{description}</div> : null}
+				{hideInfoInBox !== true && description ? (
+					<div className="universalField__description">{description}</div>
+				) : null}
 			</div>
 		) : null;
 	const body = (

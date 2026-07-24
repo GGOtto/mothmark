@@ -10,7 +10,8 @@ export const ConditionWithEffectSchema = z.object({
 
 export const ConditionBranchSchema = z.object({
 	id: editor.id("condition-branch"),
-	if: ConditionWithEffectSchema,
+	perform: EffectGroupSchema.optional(),
+	if: ConditionWithEffectSchema.optional(),
 	elifs: editor.array(ConditionWithEffectSchema).optional(),
 	else: EffectGroupSchema.optional(),
 });

@@ -147,6 +147,7 @@ export type EditorFieldSubgroupMetadata = {
 	id: string;
 	title: string;
 	description?: string;
+	hideInfoInBox?: boolean;
 	icon?: string;
 	defaultCollapsed?: boolean;
 	collapsible?: boolean;
