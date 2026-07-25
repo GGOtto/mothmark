@@ -1,4 +1,5 @@
 import type {ConditionDefinition} from "@/schemas/world/conditionSchema";
+import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 
@@ -16,6 +17,13 @@ export function getCondition(world: World, conditionId: ID<"condition">): Condit
 	);
 	if (!storedCondition) throw new Error(`Missing condition: ${conditionId.id}`);
 	return storedCondition.condition;
+}
+
+/** Finds an effect using an effect reference */
+export function getEffect(world: World, effectId: ID<"effect">): Effect | EffectGroup {
+	const storedEffect = world.effects.find((candidate) => compareIds(candidate.id, effectId));
+	if (!storedEffect) throw new Error(`Missing effect: ${effectId.id}`);
+	return storedEffect;
 }
 
 type VariableLookup<TValue> = {exists: true; value: TValue} | {exists: false; value: undefined};

@@ -8,7 +8,7 @@ import {
 	resolveFlagEffect,
 	resolveMessageEffect,
 	resolveRoomEffect,
-} from "./resolveSingleEffect";
+} from "./resolveEffects";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
 jest.mock("@/utils/choose", () => ({

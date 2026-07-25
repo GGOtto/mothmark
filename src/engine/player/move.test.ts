@@ -1,7 +1,7 @@
 import {world} from "@/data/worlds/exampleWorld";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {idValue} from "@/utils/idUtils";
-import {resolveRoomEffect} from "../effects/resolveSingleEffect";
+import {resolveRoomEffect} from "../effects/resolveEffects";
 import {createInitialGameState} from "../states/createInitialState";
 import {move} from "./move";
 

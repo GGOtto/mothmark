@@ -1,14 +1,15 @@
 import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
-import {type Effect} from "@/schemas/world/effectSchema";
+import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
 import {compareIds} from "@/utils/idUtils";
-import type {Direction} from "@/schemas/world/worldSchema";
+import type {Direction, World} from "@/schemas/world/worldSchema";
 import {
 	entityFlagMutationError,
 	getEntityFlagDefinition,
 } from "@/schemas/world/entityFlagDefinitions";
+import {getEffect} from "../utils/lookupUtils";
 
 const ALL_DIRECTIONS: Direction[] = [
 	"n",
@@ -334,4 +335,38 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 				break;
 		}
 	});
+}
+
+export function resolveEffect(world: World, game: GameState, effect: Effect): GameState {
+	return produce(game, (draft) => {
+		switch (effect.type) {
+			case "effect-ref":
+				const foundEffect = getEffect(world, effect.effectId);
+				return foundEffect.type === "group"
+					? resolveEffects(world, draft, foundEffect)
+					: resolveEffect(world, draft, foundEffect);
+			case "flag":
+				return resolveFlagEffect(draft, effect);
+			case "message":
+				return resolveMessageEffect(draft, effect);
+			case "counter":
+				return resolveCounterEffect(draft, effect);
+			case "feature":
+				return resolveCounterEffect(draft, effect);
+			case "room":
+				return resolveRoomEffect(draft, effect);
+			case "player":
+			//TODO: return resolvePlayerEffect(draft, effect);
+			default:
+				return draft;
+		}
+	});
+}
+
+export function resolveEffects(world: World, game: GameState, group: EffectGroup): GameState {
+	let newGameState = game;
+	for (const effect of group.effects) {
+		newGameState = resolveEffect(world, newGameState, effect);
+	}
+	return newGameState;
 }
