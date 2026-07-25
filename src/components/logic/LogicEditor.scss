@@ -88,6 +88,26 @@
 	font: inherit;
 }
 
+.logicBranch__delay {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: 12px;
+	color: var(--panel-muted);
+	font-size: 12px;
+
+	label {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		white-space: nowrap;
+	}
+
+	input[type="number"] {
+		width: 52px;
+	}
+}
+
 .logicBranch__actions {
 	display: flex;
 	gap: 4px;

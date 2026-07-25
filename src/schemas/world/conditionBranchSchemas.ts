@@ -6,6 +6,18 @@ import {EffectGroupSchema} from "./effectSchema";
 export const ConditionWithEffectSchema = z.object({
 	condition: editor.conditionControl(ConditionSchema),
 	effect: EffectGroupSchema,
+	delayTurns: editor
+		.number({
+			title: "Delay",
+			description: "Delay the effect for a number of turns.",
+		})
+		.default(0),
+	cancelIfConditionFails: editor
+		.boolean({
+			title: "Cancel if condition fails?",
+			description: "Cancel the following effect if this condition becomes false after the delay.",
+		})
+		.default(true),
 });
 
 export const ConditionBranchSchema = z.object({

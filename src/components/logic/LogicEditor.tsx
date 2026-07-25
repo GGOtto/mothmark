@@ -104,7 +104,12 @@ type EventBranchProps = {
 	world: World;
 	group: EffectGroup | undefined;
 	condition?: BranchCondition;
+	delayTurns?: number;
+	cancelIfConditionFails?: boolean;
 	onSelectCondition?: () => void;
+	onDelayEnabledChange?: (enabled: boolean) => void;
+	onDelayTurnsChange?: (turns: number) => void;
+	onCancelIfConditionFailsChange?: (cancel: boolean) => void;
 	onSelectGroup: (effectId: string) => void;
 	onAddEffect: () => void;
 	onRemoveEffect: (index: number) => void;
@@ -117,7 +122,12 @@ function EventBranch({
 	world,
 	group,
 	condition,
+	delayTurns = 0,
+	cancelIfConditionFails = true,
 	onSelectCondition,
+	onDelayEnabledChange,
+	onDelayTurnsChange,
+	onCancelIfConditionFailsChange,
 	onSelectGroup,
 	onAddEffect,
 	onRemoveEffect,
@@ -167,6 +177,40 @@ function EventBranch({
 						<button type="button" className="logicBranch__condition" onClick={onSelectCondition}>
 							{generateConditionSummary(condition)}
 						</button>
+					) : null}
+					{condition && onDelayEnabledChange ? (
+						<span className="logicBranch__delay">
+							<label>
+								<input
+									type="checkbox"
+									checked={delayTurns > 0}
+									onChange={(event) => onDelayEnabledChange(event.target.checked)}
+								/>
+								Delay
+							</label>
+							{delayTurns > 0 ? (
+								<>
+									<label>
+										<input
+											type="number"
+											min={1}
+											aria-label={`${label} delay turns`}
+											value={delayTurns}
+											onChange={(event) => onDelayTurnsChange?.(Math.max(1, Number(event.target.value) || 1))}
+										/>
+										turns
+									</label>
+									<label>
+										<input
+											type="checkbox"
+											checked={cancelIfConditionFails}
+											onChange={(event) => onCancelIfConditionFailsChange?.(event.target.checked)}
+										/>
+										Cancel if condition fails
+									</label>
+								</>
+							) : null}
+						</span>
 					) : null}
 				</div>
 				<div className="logicBranch__actions">
@@ -340,6 +384,8 @@ export function LogicEditor({
 			event.branch.if = {
 				condition: defaultCondition(),
 				effect: conditionEffectGroup(idValue(event.id), "if"),
+				delayTurns: 0,
+				cancelIfConditionFails: true,
 			};
 		});
 		onSelectionChange({kind: "condition", eventId: idValue(selectedEvent.id), branch: "if"});
@@ -352,6 +398,8 @@ export function LogicEditor({
 			(event.branch.elifs ??= []).push({
 				condition: defaultCondition(),
 				effect: conditionEffectGroup(idValue(event.id), `else-if-${index + 1}`),
+				delayTurns: 0,
+				cancelIfConditionFails: true,
 			});
 		});
 		onSelectionChange({
@@ -434,7 +482,26 @@ export function LogicEditor({
 						world={world}
 						group={selectedEvent.branch.if.effect}
 						condition={selectedEvent.branch.if.condition}
+						delayTurns={selectedEvent.branch.if.delayTurns}
+						cancelIfConditionFails={selectedEvent.branch.if.cancelIfConditionFails}
 						onSelectCondition={() => onSelectionChange({kind: "condition", eventId, branch: "if"})}
+						onDelayEnabledChange={(enabled) =>
+							updateEvent((event) => {
+								if (!event.branch.if) return;
+								event.branch.if.delayTurns = enabled ? 1 : 0;
+								if (!enabled) event.branch.if.cancelIfConditionFails = true;
+							})
+						}
+						onDelayTurnsChange={(turns) =>
+							updateEvent((event) => {
+								if (event.branch.if) event.branch.if.delayTurns = turns;
+							})
+						}
+						onCancelIfConditionFailsChange={(cancel) =>
+							updateEvent((event) => {
+								if (event.branch.if) event.branch.if.cancelIfConditionFails = cancel;
+							})
+						}
 						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
@@ -455,12 +522,34 @@ export function LogicEditor({
 						world={world}
 						group={branch.effect}
 						condition={branch.condition}
+						delayTurns={branch.delayTurns}
+						cancelIfConditionFails={branch.cancelIfConditionFails}
 						onSelectCondition={() =>
 							onSelectionChange({
 								kind: "condition",
 								eventId,
 								branch: "elif",
 								elifIndex: index,
+							})
+						}
+						onDelayEnabledChange={(enabled) =>
+							updateEvent((event) => {
+								const target = event.branch.elifs?.[index];
+								if (!target) return;
+								target.delayTurns = enabled ? 1 : 0;
+								if (!enabled) target.cancelIfConditionFails = true;
+							})
+						}
+						onDelayTurnsChange={(turns) =>
+							updateEvent((event) => {
+								const target = event.branch.elifs?.[index];
+								if (target) target.delayTurns = turns;
+							})
+						}
+						onCancelIfConditionFailsChange={(cancel) =>
+							updateEvent((event) => {
+								const target = event.branch.elifs?.[index];
+								if (target) target.cancelIfConditionFails = cancel;
 							})
 						}
 						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
