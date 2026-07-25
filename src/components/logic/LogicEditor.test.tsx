@@ -32,7 +32,7 @@ describe("LogicEditor", () => {
 					priority: 0,
 					branch: {
 						id: toID("condition-branch", "test-event-branch"),
-						perform: {
+						always: {
 							id: toID("effect", "test-event-always"),
 							name: "Always",
 							type: "group",
@@ -63,7 +63,7 @@ describe("LogicEditor", () => {
 
 		expect(world.effects).toHaveLength(1);
 		expect(world.effects[0].effects).toEqual([{type: "message", operation: "show", message: ""}]);
-		expect(world.events?.[0].branch.perform?.effects).toEqual([
+		expect(world.events?.[0].branch.always?.effects).toEqual([
 			{type: "effect-ref", effectId: toID("effect", idValue(world.effects[0].id))},
 		]);
 		expect(onSelectionChange).toHaveBeenCalledWith({
@@ -102,7 +102,7 @@ describe("LogicEditor", () => {
 					priority: 0,
 					branch: {
 						id: toID("condition-branch", "test-event-branch"),
-						perform: {
+						always: {
 							id: toID("effect", "test-event-always"),
 							name: "Always",
 							type: "group",
@@ -138,7 +138,7 @@ describe("LogicEditor", () => {
 		fireEvent.dragStart(rows[0], {dataTransfer});
 		fireEvent.dragOver(rows[1], {dataTransfer});
 
-		expect(world.events?.[0].branch.perform?.effects).toEqual([
+		expect(world.events?.[0].branch.always?.effects).toEqual([
 			{type: "effect-ref", effectId: toID("effect", "second")},
 			{type: "effect-ref", effectId: toID("effect", "first")},
 		]);

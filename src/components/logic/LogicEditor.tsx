@@ -14,7 +14,7 @@ import {
 import {CenteredScrollSelector} from "@/components/ui/CenteredScrollSelector";
 import "./LogicEditor.scss";
 
-export type LogicBranchKey = "perform" | "if" | "elif" | "else";
+export type LogicBranchKey = "always" | "if" | "elif" | "else";
 export type LogicSection = "home" | "events" | "commands" | "conditions" | "effects";
 
 export type LogicSelection =
@@ -63,7 +63,7 @@ function defaultEvent(world: World): Event {
 		priority: 0,
 		branch: {
 			id: toID("condition-branch", `${id}-branch`),
-			perform: emptyEffectGroup(`${id}-always`, "Always"),
+			always: emptyEffectGroup(`${id}-always`, "Always"),
 		},
 	};
 }
@@ -83,7 +83,7 @@ function conditionEffectGroup(eventId: string, label: string) {
 }
 
 function branchGroup(event: Event, branch: LogicBranchKey, elifIndex?: number) {
-	if (branch === "perform") return event.branch.perform;
+	if (branch === "always") return event.branch.always;
 	if (branch === "if") return event.branch.if?.effect;
 	if (branch === "else") return event.branch.else;
 	return event.branch.elifs?.[elifIndex ?? -1]?.effect;
@@ -402,16 +402,16 @@ export function LogicEditor({
 			</aside>
 
 			<div className="logicTree">
-				{selectedEvent.branch.perform ? (
+				{selectedEvent.branch.always ? (
 					<EventBranch
 						label="Always"
 						world={world}
-						group={selectedEvent.branch.perform}
+						group={selectedEvent.branch.always}
 						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
-						onAddEffect={() => addEffect("perform")}
-						onRemoveEffect={(index) => removeEffect("perform", index)}
-						onMoveEffect={(fromIndex, toIndex) => moveEffect("perform", fromIndex, toIndex)}
-						onDeleteBranch={() => updateEvent((event) => delete event.branch.perform)}
+						onAddEffect={() => addEffect("always")}
+						onRemoveEffect={(index) => removeEffect("always", index)}
+						onMoveEffect={(fromIndex, toIndex) => moveEffect("always", fromIndex, toIndex)}
+						onDeleteBranch={() => updateEvent((event) => delete event.branch.always)}
 					/>
 				) : (
 					<button
@@ -419,7 +419,7 @@ export function LogicEditor({
 						className="logicTree__addSection"
 						onClick={() =>
 							updateEvent((event) => {
-								event.branch.perform = conditionEffectGroup(eventId, "always");
+								event.branch.always = conditionEffectGroup(eventId, "always");
 							})
 						}
 					>
