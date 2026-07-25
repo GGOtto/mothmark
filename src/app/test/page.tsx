@@ -3,6 +3,11 @@ import "./page.scss";
 
 const CONTROL_TEST_PAGES = [
 	{
+		href: "/test/popup",
+		title: "Popup",
+		description: "Alert, confirmation, and text prompt dialogs.",
+	},
+	{
 		href: "/test/text",
 		title: "Text Field",
 		description: "Short string input controls.",
@@ -146,6 +151,11 @@ const CONTROL_TEST_PAGES = [
 		href: "/test/effect-list",
 		title: "Effect List",
 		description: "Ordered gameplay effect controls.",
+	},
+	{
+		href: "/test/effect",
+		title: "Effect Group",
+		description: "Metadata-driven effect groups, reusable storage, and references.",
 	},
 	{
 		href: "/test/code-preview",

@@ -55,11 +55,13 @@ describe("editor schema defaultFieldValue", () => {
 		});
 		expect(createDefaultFieldObject(FlagConditionSchema)).toEqual({
 			type: "flag",
+			"flag-type": "normal",
 			operation: "true",
 			flag: "",
 		});
 		expect(createDefaultFieldObject(FlagEffectSchema)).toEqual({
 			type: "flag",
+			"flag-type": "normal",
 			operation: "set",
 			flag: "",
 			value: true,
@@ -71,6 +73,30 @@ describe("editor schema defaultFieldValue", () => {
 		expect(createDefaultFieldObject(editor.reference("room"))).toEqual({
 			type: "room",
 			id: "",
+		});
+	});
+
+	it("configures a single effect control through schema metadata", () => {
+		const schema = editor.effectControl(FlagEffectSchema, {
+			title: "Outcome",
+			features: {allowedEffectTypes: ["flag"]},
+			childControls: {
+				flag: {control: "flag-picker", title: "World flag"},
+			},
+		});
+
+		expect(getEditorMetadata(schema)).toMatchObject({
+			control: "effect",
+			title: "Outcome",
+			features: {
+				allowedEffectTypes: ["flag"],
+				effectTypeOptionSource: "schema.effect.types",
+				showGeneratedSummary: true,
+			},
+			childControls: {
+				effectType: {control: "select", title: "Effect type"},
+				flag: {control: "flag-picker", title: "World flag"},
+			},
 		});
 	});
 });

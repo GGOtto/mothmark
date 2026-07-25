@@ -1,0 +1,28 @@
+.effectEditor {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 5px;
+	color: var(--field-text);
+	font-family: var(--field-font-family);
+}
+
+.effectEditor__identity {
+	min-width: 0;
+}
+
+.effectEditor__identity > .universalField {
+	grid-template-columns: minmax(72px, 30%) minmax(0, 1fr);
+	column-gap: 7px;
+	border: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	padding: 5px 7px;
+}
+
+.effectEditor__identity > .universalField .universalField__header {
+	padding-top: 4px;
+}
+
+.effectEditor__identity > .universalField .textField__input {
+	background: var(--field-bg);
+}

@@ -1,3 +1,4 @@
+import type {ReactNode} from "react";
 import type {Room, Connection} from "../../schemas/world/roomSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
@@ -14,6 +15,7 @@ type RightSideBarProps = {
 	onSelectedIdChange?: (selectedId: string) => void;
 	title?: string;
 	description?: string;
+	children?: ReactNode;
 };
 
 export function RightSideBar({
@@ -24,6 +26,7 @@ export function RightSideBar({
 	onSelectedIdChange,
 	title,
 	description,
+	children,
 }: RightSideBarProps) {
 	return (
 		<AdjustableBox
@@ -33,7 +36,9 @@ export function RightSideBar({
 			className="rightSideBar"
 			adjustableEdges={["left"]}
 		>
-			{selectedRoom ? (
+			{children ? (
+				children
+			) : selectedRoom ? (
 				<RoomEditor
 					selectedRoom={selectedRoom}
 					world={world}

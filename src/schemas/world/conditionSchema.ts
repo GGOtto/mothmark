@@ -26,29 +26,36 @@ export const ConditionReferenceSchema = editor.object(
 );
 
 export const FlagConditionSchema = editor.discriminatedUnion(
-	z.discriminatedUnion("operation", [
+	z.discriminatedUnion("flag-type", [
 		z.object({
 			type: z.literal("flag"),
-			operation: z.literal("true"),
+			"flag-type": z.literal("normal").default("normal"),
+			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
+				title: "Operation",
+			}),
 			flag: editor.flagKey({title: "Flag"}),
 		}),
 		z.object({
 			type: z.literal("flag"),
-			operation: z.literal("false"),
-			flag: editor.flagKey({title: "Flag"}),
+			"flag-type": z.literal("room"),
+			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
+				title: "Operation",
+			}),
+			roomId: editor.reference("room", {title: "Room"}),
+			flag: editor.string({title: "Flag"}).min(1),
 		}),
 		z.object({
 			type: z.literal("flag"),
-			operation: z.literal("exists"),
-			flag: editor.flagKey({title: "Flag"}),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			operation: z.literal("missing"),
-			flag: editor.flagKey({title: "Flag"}),
+			"flag-type": z.literal("feature"),
+			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
+				title: "Operation",
+			}),
+			roomId: editor.reference("room", {title: "Room"}),
+			featureId: editor.reference("feature", {title: "Feature"}),
+			flag: editor.string({title: "Flag"}).min(1),
 		}),
 	]),
-	{title: "Flag Condition", description: "Checks a boolean world flag."},
+	{title: "Flag Condition", description: "Checks a boolean world, room, or feature flag."},
 );
 
 export const CounterConditionSchema = editor.discriminatedUnion(
@@ -108,58 +115,11 @@ export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 	{title: "Current Room Condition", description: "Checks the player's current room or its tags."},
 );
 
-export const RoomStateConditionSchema = editor.object(
-	{
-		type: z.literal("room-state"),
-		state: editor.select(z.enum(["visited", "not-visited"])),
-		roomId: editor.reference("room", {title: "Room"}),
-	},
-	{title: "Room History Condition"},
-);
-
-export const FeatureStateConditionSchema = editor.object(
-	{
-		type: z.literal("feature-state"),
-		roomId: editor.reference("room", {title: "Room"}),
-		featureId: editor.reference("feature", {title: "Feature"}),
-		state: editor.select(z.enum(["examined", "not-examined"])),
-	},
-	{title: "Feature Examined Condition"},
-);
-
-// TODO: overhaul the object state system. For now, this is out
-export const ObjectStateConditionSchema = editor.object(
-	{
-		type: z.literal("object-state"),
-		operation: editor.select(
-			z.enum([
-				"examined",
-				"open",
-				"closed",
-				"locked",
-				"unlocked",
-				"lit",
-				"unlit",
-				"broken",
-				"intact",
-				"clean",
-				"dirty",
-			]),
-			{title: "State"},
-		),
-		objectId: editor.reference("feature", {title: "Feature"}),
-	},
-	{title: "Feature State Condition", description: "Checks built-in state on a room feature."},
-);
-
 export const SingleConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		FlagConditionSchema,
 		CounterConditionSchema,
 		CurrentRoomConditionSchema,
-		RoomStateConditionSchema,
-		FeatureStateConditionSchema,
-		ObjectStateConditionSchema,
 	]),
 	{title: "Condition"},
 );
@@ -188,14 +148,28 @@ export const ConditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
 	}),
 );
 
+function normalizeFlagCondition(value: unknown): unknown {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+	const condition = value as Record<string, unknown>;
+	if (condition.type === "flag" && !("flag-type" in condition)) {
+		return {...condition, "flag-type": "normal"};
+	}
+	return value;
+}
+
 export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
-	z.union([SingleConditionSchema, ConditionGroupSchema, ConditionReferenceSchema]),
+	z.preprocess(
+		normalizeFlagCondition,
+		z.union([SingleConditionSchema, ConditionGroupSchema, ConditionReferenceSchema]),
+	),
 );
 
 export const WorldConditionSchema = z.preprocess(
 	(value) => {
 		if (!value || typeof value !== "object" || Array.isArray(value)) return value;
-		if ("identity" in value && "condition" in value) return value;
+		if ("identity" in value && "condition" in value) {
+			return {...value, condition: normalizeFlagCondition(value.condition)};
+		}
 		if (!("id" in value)) return value;
 
 		const id = value.id;
@@ -203,7 +177,7 @@ export const WorldConditionSchema = z.preprocess(
 		delete condition.id;
 		delete condition.name;
 		delete condition.allowMultipleUsesInWorld;
-		return {identity: id, condition};
+		return {identity: id, condition: normalizeFlagCondition(condition)};
 	},
 	z.object({
 		identity: editor.id("condition"),

@@ -1,4 +1,5 @@
 import {WorldSchema} from "../../schemas/world/worldSchema";
+import {toID} from "../../utils/idUtils";
 
 function feature(
 	id: string,
@@ -12,7 +13,7 @@ function feature(
 		name,
 		aliases,
 		tags: ["room-feature"],
-		description: {default: description, variants: []},
+		description,
 		listedInRoom,
 	};
 }
@@ -32,7 +33,7 @@ function room(
 		aliases: id === "dungeon-entrance" ? ["entrance", "stairs"] : [],
 		tags: ["dungeon", levelTag],
 		metadata: {position: {x, y}},
-		description: {default: description, variants: []},
+		description,
 		features,
 	};
 }
@@ -98,7 +99,8 @@ const rawWorld = {
 			},
 		],
 	},
-	startRoomId: "dungeon-entrance",
+	startRoomId: toID("room", "dungeon-entrance"),
+	deathMessage: "You have died!",
 	rooms: [
 		room(
 			"dungeon-entrance",

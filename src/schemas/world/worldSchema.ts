@@ -2,7 +2,8 @@ import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
 import {WorldConditionSchema} from "./conditionSchema";
-import {WorldEffectSchema} from "./effectSchema";
+import {EffectGroupSchema} from "./effectSchema";
+import {EventSchema} from "./eventSchema";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
 import {idValue} from "../../utils/idUtils";
 
@@ -83,6 +84,7 @@ export const WorldSchema = editor
 				title: "Start Room",
 				description: "The room where exploration starts.",
 			}),
+			deathMessage: editor.string(),
 			rooms: editor.array(RoomSchema, {
 				title: "Rooms",
 				description: "All rooms and their local features.",
@@ -112,11 +114,18 @@ export const WorldSchema = editor
 					idPrefix: "condition",
 				},
 			}),
-			effects: editor.array(WorldEffectSchema, {
+			effects: editor.array(EffectGroupSchema, {
 				title: "Effects",
 				description: "Reusable effects retained for room and feature interactions.",
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "effect"},
 			}),
+			events: editor
+				.array(EventSchema, {
+					title: "Events",
+					description: "Conditional event branches evaluated while the game is running.",
+					duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "event"},
+				})
+				.optional(),
 			initialState: WorldInitialStateSchema.default(DefaultWorldInitialState),
 		},
 		{

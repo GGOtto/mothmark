@@ -1,6 +1,6 @@
 import {produce} from "immer";
 import type {World} from "@/schemas/world/worldSchema";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {createGameMessage} from "../messages/createMessage";
 import {normalizeInput} from "./parse";
 import {commands, findCommand, type CommandContext, type CommandDefinition} from "./resolveCommand";
@@ -13,22 +13,21 @@ function addMessage(gameState: GameState, text: string, type: "command" | "syste
 
 export function runCommand(
 	world: World,
-	gameState: GameState,
+	game: GameState,
 	rawCommand: string,
 	commandList: CommandDefinition[] = commands,
 ): GameState {
-	return produce(gameState, () => {
+	return produce(game, () => {
 		const input = normalizeInput(rawCommand);
-		if (!input) return gameState;
+		if (!input) return game;
 
-		const stateWithCommand = addMessage(gameState, rawCommand, "command");
 		const match = findCommand(input, commandList);
 
-		if (!match) return addMessage(stateWithCommand, "I don't understand that command.", "system");
+		if (!match) return addMessage(game, "I don't understand that command.", "system");
 
 		const context: CommandContext = {
 			world,
-			gameState: stateWithCommand,
+			gameState: game,
 			rawCommand,
 			input,
 			parsed: match.parsed,

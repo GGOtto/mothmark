@@ -1,5 +1,6 @@
 import {TextFieldControlMetadata} from "../TextFieldEditor";
 import type {EditorSummaryMetadata} from "@/types/universalEditorTypes";
+import {idValue, isID} from "@/utils/idUtils";
 
 export type UniversalCondition =
 	| {
@@ -161,6 +162,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringifySummaryValue(value: unknown): string {
 	if (value === undefined) return "";
+	if (isID(value)) return idValue(value) || "(empty)";
 	if (Array.isArray(value))
 		return value.length ? value.map(stringifySummaryValue).join(", ") : "(none)";
 	if (typeof value === "string") return value.length ? value : "(empty)";
@@ -197,19 +199,20 @@ function conditionSummarySubject(condition: Record<string, unknown>) {
 
 	for (const key of subjectKeys) {
 		const value = condition[key];
+		if (isID(value)) return stringifySummaryValue(value);
 		if (Array.isArray(value) && value.length > 0) return stringifySummaryValue(value);
 		if (typeof value === "string" && value.trim().length > 0) return value.trim();
 		if (typeof value === "number" || typeof value === "boolean") return stringifySummaryValue(value);
 	}
 
 	const type = String(condition.type ?? condition.kind ?? "");
-	if (type === "condition-ref") return String(condition.conditionId ?? "(unchosen) condition");
+	if (type === "condition-ref")
+		return stringifySummaryValue(condition.conditionId) || "(unchosen) condition";
 	if (type === "flag") return "unspecified flag";
 	if (type === "counter") return "unspecified counter";
 	if (type === "current-room") return "unspecified room";
 	if (type === "inventory") return "unspecified inventory target";
 	if (type === "item-location") return "unspecified item";
-	if (type === "object-state") return "unspecified object";
 	if (type === "npc") return "unspecified NPC";
 	if (type === "command-history") return "unspecifed command";
 	if (type === "turn") return "turn";
@@ -334,6 +337,20 @@ function generateConditionSummaryAtDepth(
 		)}`.trim();
 	}
 
+	if (kind === "flag" && (condition["flag-type"] ?? "normal") !== "normal") {
+		const flagType = String(condition["flag-type"] ?? "normal");
+		const target =
+			flagType === "room"
+				? conditionSummaryTarget(condition.roomId, "unspecified room")
+				: `${conditionSummaryTarget(condition.roomId, "unspecified room")}/${conditionSummaryTarget(
+						condition.featureId,
+						"unspecified feature",
+					)}`;
+		const flag = conditionSummaryTarget(condition.flag, "unspecified flag");
+		const operator = String(condition.operation ?? "true");
+		return `${target} flag ${flag} is ${operator}`;
+	}
+
 	const subject = conditionSummarySubject(condition);
 	const operator = String(condition.operator ?? condition.operation ?? "equals");
 	const operatorLabel = conditionOperatorSummaryLabels[operator] ?? operator;
@@ -350,11 +367,19 @@ export function generateEffectSummary(effect: unknown): string {
 	if (!isRecord(effect)) return "Unknown effect";
 
 	const type = String(effect.type ?? "effect");
-	if (type === "message") return `show message ${stringifySummaryValue(effect.text ?? "")}`;
+	if (type === "effect-ref") return `use saved effect ${stringifySummaryValue(effect.effectId)}`;
+	if (type === "message") {
+		const operation = String(effect.operation ?? "show");
+		if (operation === "random") {
+			const count = Array.isArray(effect.messages) ? effect.messages.length : 0;
+			return `show one of ${count} ${count === 1 ? "message" : "messages"}`;
+		}
+		return `${operation === "show" ? "show message" : "append message"} ${stringifySummaryValue(effect.message ?? "")}`;
+	}
 	if (type === "flag")
-		return `${stringifySummaryValue(effect.operation ?? "set")} flag ${stringifySummaryValue(effect.flag)}`;
+		return `${stringifySummaryValue(effect.operation ?? "set")} ${stringifySummaryValue(effect["flag-type"] ?? "normal")} flag ${stringifySummaryValue(effect.flag)}`;
 	if (type === "counter") {
-		return `${stringifySummaryValue(effect.operation ?? "set")} counter ${stringifySummaryValue(effect.counter)} ${stringifySummaryValue(effect.value)}`.trim();
+		return `${stringifySummaryValue(effect.operation ?? "set")} counter ${stringifySummaryValue(effect.counter)} ${stringifySummaryValue(effect.amount ?? effect.value)}`.trim();
 	}
 	if (type === "inventory") {
 		return `${stringifySummaryValue(effect.operation ?? "update")} item ${stringifySummaryValue(effect.itemId)}`;
@@ -362,6 +387,15 @@ export function generateEffectSummary(effect: unknown): string {
 	if (type === "room") {
 		return `${stringifySummaryValue(effect.operation ?? "move-player")} ${stringifySummaryValue(effect.roomId)}`;
 	}
+	if (type === "feature") {
+		return `${stringifySummaryValue(effect.operation ?? "change")} ${stringifySummaryValue(effect.roomId)}/${stringifySummaryValue(effect.featureId)}`;
+	}
+	if (type === "player") return `${stringifySummaryValue(effect.operation ?? "change")} player`;
+	if (type === "group") {
+		const count = Array.isArray(effect.effects) ? effect.effects.length : 0;
+		return `${stringifySummaryValue(effect.mode ?? "all")} of ${count} ${count === 1 ? "effect" : "effects"}`;
+	}
+	if (type === "conditional") return "conditional effect";
 
 	return Object.entries(effect)
 		.map(([key, value]) => `${key}: ${stringifySummaryValue(value)}`)

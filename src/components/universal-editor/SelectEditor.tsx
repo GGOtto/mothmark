@@ -126,6 +126,7 @@ export function SelectEditor({
 				<div className="selectEditor__row">
 					<select
 						className="selectEditor__input"
+						aria-label={metadata.title}
 						value={selectedValue}
 						disabled={isDisabled || isReadonly}
 						autoFocus={autoFocus}
@@ -167,6 +168,7 @@ export function SelectEditor({
 					<div className="selectEditor__searchRow">
 						<input
 							className="selectEditor__search"
+							aria-label={metadata.title ? `Search ${metadata.title}` : "Search options"}
 							type="search"
 							value={query}
 							placeholder="Search options"

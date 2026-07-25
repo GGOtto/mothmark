@@ -13,6 +13,15 @@ import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
+import {
+	LogicEditor,
+	LogicHome,
+	LogicSectionPlaceholder,
+	LogicToolbar,
+	type LogicSection,
+	type LogicSelection,
+} from "@/components/logic/LogicEditor";
+import {LogicInspector} from "@/components/logic/LogicInspector";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
 import {world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
@@ -69,6 +78,9 @@ export default function EditorPage() {
 	const [mapZoom, setMapZoom] = useState(1);
 	const [mapRecenterRequest, setMapRecenterRequest] = useState(0);
 	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
+	const [logicSection, setLogicSection] = useState<LogicSection>("home");
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
@@ -156,6 +168,12 @@ export default function EditorPage() {
 				mapRecenterRequest={mapRecenterRequest}
 				connectionDraft={connectionDraft}
 				setConnectionDraft={setConnectionDraft}
+				logicSection={logicSection}
+				setLogicSection={setLogicSection}
+				selectedEventId={selectedEventId}
+				setSelectedEventId={setSelectedEventId}
+				logicSelection={logicSelection}
+				setLogicSelection={setLogicSelection}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -169,6 +187,8 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				updateWorld={updateWorld}
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+				logicSection={logicSection}
+				logicSelection={logicSelection}
 			/>
 		</main>
 	);
@@ -191,6 +211,12 @@ type EditorMainPanelProps = {
 	onMapRecenter: () => void;
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
+	logicSection: LogicSection;
+	setLogicSection: (section: LogicSection) => void;
+	selectedEventId: string | null;
+	setSelectedEventId: (eventId: string | null) => void;
+	logicSelection: LogicSelection | null;
+	setLogicSelection: (selection: LogicSelection | null) => void;
 };
 
 function EditorMainPanel({
@@ -210,6 +236,12 @@ function EditorMainPanel({
 	onMapRecenter,
 	connectionDraft,
 	setConnectionDraft,
+	logicSection,
+	setLogicSection,
+	selectedEventId,
+	setSelectedEventId,
+	logicSelection,
+	setLogicSelection,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -227,6 +259,26 @@ function EditorMainPanel({
 					connectionDraft={connectionDraft}
 					hoverStatus={hoverStatus}
 					noticeStatus={noticeStatus}
+					world={world}
+					updateWorld={updateWorld}
+					logicSection={logicSection}
+					selectedEventId={selectedEventId}
+					onLogicBack={() => {
+						setLogicSection("home");
+						setLogicSelection(null);
+					}}
+					onDeleteEvent={() => {
+						if (!selectedEventId) return;
+						const events = world.events ?? [];
+						const index = events.findIndex((event) => idValue(event.id) === selectedEventId);
+						const nextEvent = events[index + 1] ?? events[index - 1] ?? null;
+						updateWorld((draft) => {
+							const target = draft.events?.findIndex((event) => idValue(event.id) === selectedEventId);
+							if (target != null && target >= 0) draft.events?.splice(target, 1);
+						});
+						setSelectedEventId(nextEvent ? idValue(nextEvent.id) : null);
+						setLogicSelection(nextEvent ? {kind: "event", eventId: idValue(nextEvent.id)} : null);
+					}}
 				/>
 
 				<div className="editorWorkspaceShell">
@@ -245,6 +297,12 @@ function EditorMainPanel({
 						connectionDraft={connectionDraft}
 						setConnectionDraft={setConnectionDraft}
 						updateStatus={updateStatus}
+						logicSection={logicSection}
+						setLogicSection={setLogicSection}
+						selectedEventId={selectedEventId}
+						setSelectedEventId={setSelectedEventId}
+						logicSelection={logicSelection}
+						setLogicSelection={setLogicSelection}
 					/>
 				</div>
 			</div>
@@ -268,6 +326,12 @@ type EditorToolbarProps = {
 	connectionDraft: ConnectionDraft;
 	hoverStatus: ToolBarStatus | null;
 	noticeStatus: ToolBarStatus | null;
+	world: World;
+	updateWorld: UpdateWorld;
+	logicSection: LogicSection;
+	selectedEventId: string | null;
+	onLogicBack: () => void;
+	onDeleteEvent: () => void;
 };
 
 function EditorToolbar({
@@ -280,6 +344,12 @@ function EditorToolbar({
 	connectionDraft,
 	hoverStatus,
 	noticeStatus,
+	world,
+	updateWorld,
+	logicSection,
+	selectedEventId,
+	onLogicBack,
+	onDeleteEvent,
 }: EditorToolbarProps) {
 	if (activeTab === "map") {
 		return (
@@ -289,6 +359,21 @@ function EditorToolbar({
 				zoom={mapZoom}
 				onRecenter={onMapRecenter}
 				status={getConnectionDraftStatus(connectionDraft, rooms, hoverStatus, noticeStatus)}
+			/>
+		);
+	}
+
+	if (activeTab === "logic" && logicSection === "events") {
+		const event =
+			(world.events ?? []).find((candidate) => idValue(candidate.id) === selectedEventId) ??
+			(world.events ?? [])[0] ??
+			null;
+		return (
+			<LogicToolbar
+				event={event}
+				updateWorld={updateWorld}
+				onBack={onLogicBack}
+				onDelete={onDeleteEvent}
 			/>
 		);
 	}
@@ -320,6 +405,12 @@ type EditorWorkspaceProps = {
 	connectionDraft: ConnectionDraft;
 	setConnectionDraft: React.Dispatch<React.SetStateAction<ConnectionDraft>>;
 	updateStatus: UpdateStatus;
+	logicSection: LogicSection;
+	setLogicSection: (section: LogicSection) => void;
+	selectedEventId: string | null;
+	setSelectedEventId: (eventId: string | null) => void;
+	logicSelection: LogicSelection | null;
+	setLogicSelection: (selection: LogicSelection | null) => void;
 };
 
 function EditorWorkspace({
@@ -337,6 +428,12 @@ function EditorWorkspace({
 	connectionDraft,
 	setConnectionDraft,
 	updateStatus,
+	logicSection,
+	setLogicSection,
+	selectedEventId,
+	setSelectedEventId,
+	logicSelection,
+	setLogicSelection,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -356,6 +453,41 @@ function EditorWorkspace({
 				updateStatus={updateStatus}
 			/>
 		);
+	}
+
+	if (activeTab === "logic") {
+		if (logicSection === "home") {
+			return (
+				<LogicHome
+					onOpen={(section) => {
+						setLogicSection(section);
+						if (section !== "events") return;
+						const event = (world.events ?? [])[0];
+						const eventId = event ? idValue(event.id) : null;
+						setSelectedEventId(eventId);
+						setLogicSelection(eventId ? {kind: "event", eventId} : null);
+					}}
+				/>
+			);
+		}
+		if (logicSection === "events") {
+			return (
+				<LogicEditor
+					world={world}
+					updateWorld={updateWorld}
+					selectedEventId={selectedEventId}
+					onSelectedEventIdChange={setSelectedEventId}
+					selection={logicSelection}
+					onSelectionChange={setLogicSelection}
+				/>
+			);
+		}
+		const title = {
+			commands: "Commands",
+			conditions: "Build Complex Conditions",
+			effects: "Build Complex Effects",
+		}[logicSection];
+		return <LogicSectionPlaceholder title={title} onBack={() => setLogicSection("home")} />;
 	}
 
 	return <PlaceholderWorkspace activeTab={activeTab} />;
@@ -457,6 +589,8 @@ type EditorInspectorProps = {
 	selectedConnection: World["connections"][number] | null;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
+	logicSection: LogicSection;
+	logicSelection: LogicSelection | null;
 };
 
 function EditorInspector({
@@ -466,6 +600,8 @@ function EditorInspector({
 	selectedConnection,
 	updateWorld,
 	onSelectedIdChange,
+	logicSection,
+	logicSelection,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -476,6 +612,20 @@ function EditorInspector({
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
 			/>
+		);
+	}
+
+	if (activeTab === "logic" && logicSection === "events") {
+		return (
+			<RightSideBar
+				world={world}
+				updateWorld={updateWorld}
+				selectedRoom={null}
+				selectedConnection={null}
+				onSelectedIdChange={onSelectedIdChange}
+			>
+				<LogicInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
+			</RightSideBar>
 		);
 	}
 

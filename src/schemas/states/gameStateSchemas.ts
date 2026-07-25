@@ -1,8 +1,10 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {RoomStateSchema} from "./entityStates";
+import {RoomStateSchema} from "./entityStateSchemas";
+import {PlayerStateSchemas} from "./playerStateSchemas";
+import {EventSchema} from "../world/eventSchema";
 
-export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error"]);
+export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error", "death"]);
 
 export const GameMessageSchema = z.object({
 	id: z.string(),
@@ -16,15 +18,15 @@ export const CounterSchema = z.record(z.string(), z.number().int());
 
 export const VariableRepositorySchema = z.object({
 	flags: z.array(FlagSchema),
-	counter: z.array(CounterSchema),
+	counters: z.array(CounterSchema),
 });
 
 export const GameStateSchema = z.object({
-	currentRoom: editor.id("room"),
-	turns: z.number().default(0),
+	player: PlayerStateSchemas,
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
 	messages: z.array(GameMessageSchema),
+	events: z.array(EventSchema),
 });
 
 export type GameMessageType = z.infer<typeof GameMessageTypeSchema>;

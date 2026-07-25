@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useRef} from "react";
-import type {GameMessage} from "../../engine/messages/createMessage";
+import type {GameMessage} from "../../schemas/states/gameStateSchemas";
 import "./OutputLog.scss";
 
 type OutputLogProps = {
@@ -11,12 +11,13 @@ type OutputLogProps = {
 function getMessageClassName(type: GameMessage["type"]) {
 	if (type === "error") return "output-log__message output-log__message--error";
 	if (type === "system") return "output-log__message output-log__message--system";
+	if (type === "death") return "output-log__message output-log__message--death";
 	return "output-log__message";
 }
 
 function getPrefix(type: GameMessage["type"]) {
 	if (type === "command") return "> ";
-	if (type === "error") return "error: ";
+	if (type === "error") return "";
 	return "";
 }
 

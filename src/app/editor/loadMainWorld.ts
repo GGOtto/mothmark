@@ -7,7 +7,8 @@ const MAIN_WORLD_ENDPOINT = "/api/world/slug/main";
 
 const WorldResponseSchema = z.object({
 	data: z.object({
-		world: WorldSchema,
+		id: z.uuid(),
+		world: z.unknown(),
 		revision: z.number().int().positive(),
 	}),
 });
@@ -21,7 +22,8 @@ export type LoadedMainWorld = {
 };
 
 /**
- * Loads the persisted main world, falling back only when that record does not exist.
+ * Loads the persisted main world, falling back when that record does not exist or
+ * its world document no longer matches the current schema.
  */
 export async function loadMainWorld(
 	fetchWorld: FetchWorld = fetch,
@@ -37,9 +39,12 @@ export async function loadMainWorld(
 		throw new Error(`Failed to load the main world (${response.status}).`);
 	}
 
-	const result = WorldResponseSchema.extend({
-		data: WorldResponseSchema.shape.data.extend({id: z.uuid()}),
-	}).parse(await response.json()).data;
+	const result = WorldResponseSchema.parse(await response.json()).data;
+	const worldResult = WorldSchema.safeParse(result.world);
 
-	return {world: result.world, worldId: result.id, revision: result.revision};
+	if (!worldResult.success) {
+		return {world: exampleWorld, worldId: result.id, revision: result.revision};
+	}
+
+	return {world: worldResult.data, worldId: result.id, revision: result.revision};
 }

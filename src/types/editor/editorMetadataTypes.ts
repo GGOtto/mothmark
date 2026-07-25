@@ -29,6 +29,7 @@ export type EditorControlType =
 	| "discriminated-union"
 	| "conditional-text"
 	| "condition-builder"
+	| "effect"
 	| "effect-list"
 	| "logic-branch-list"
 	| "command-pattern"
@@ -39,6 +40,7 @@ export type EditorControlType =
 	| "flag-picker"
 	| "counter-picker"
 	| "flag-editor"
+	| "object-flag-editor"
 	| "direction-picker"
 	| "scope-picker"
 	| "priority-control"
@@ -145,6 +147,7 @@ export type EditorFieldSubgroupMetadata = {
 	id: string;
 	title: string;
 	description?: string;
+	hideInfoInBox?: boolean;
 	icon?: string;
 	defaultCollapsed?: boolean;
 	collapsible?: boolean;

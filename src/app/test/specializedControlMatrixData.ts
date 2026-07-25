@@ -11,6 +11,7 @@ import type {
 } from "../../components/universal-editor/SpecializedEditors";
 import type {EditorControlAppearance} from "../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "./ControlMatrix";
+import {toID} from "../../utils/idUtils";
 
 const FIELD_MD: Pick<EditorControlAppearance, "tone" | "chrome" | "size"> = {
 	tone: "default",
@@ -91,7 +92,7 @@ export const logicBranchListControlMatrixVariants: Array<
 				branchType: "if",
 				when: {type: "flag", operation: "equals", flag: "foyer.doorUnlocked", value: true},
 				message: "The door gives way.",
-				effects: [{type: "room", operation: "move-player", roomId: "library"}],
+				effects: [{type: "room", operation: "move-player", roomId: toID("room", "library")}],
 			},
 		],
 		appearance: FIELD_MD,

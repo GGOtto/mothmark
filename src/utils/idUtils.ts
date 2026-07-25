@@ -28,7 +28,8 @@ export type WorldIdEntityType =
 
 export type IdEntityType =
 	| WorldIdEntityType
-	| "command-branch"
+	| "command"
+	| "condition-branch"
 	| "npc-schedule-entry"
 	| "event-instance"
 	| "condition-instance";
@@ -60,11 +61,16 @@ const ENTITY_COLLECTIONS = {
 	effect: "effects",
 } as const;
 
-export function generateUniqueId(prefix: string, existingItems: Identifiable[]) {
+export function generateUniqueId<TEntityType extends IdEntityType>(
+	entityType: TEntityType,
+	existingItems?: Identifiable[],
+): ID<TEntityType> {
+	if (!existingItems) return toID(entityType, crypto.randomUUID());
+
 	const usedIds = new Set(existingItems.map((item) => idValue(item.id)));
 	let nextNumber = 1;
-	while (usedIds.has(`${prefix}-${nextNumber}`)) nextNumber += 1;
-	return `${prefix}-${nextNumber}`;
+	while (usedIds.has(`${entityType}-${nextNumber}`)) nextNumber += 1;
+	return toID(entityType, `${entityType}-${nextNumber}`);
 }
 
 export function isID(value: unknown): value is ID {
@@ -92,13 +98,13 @@ export function getEntityType<TEntityType extends IdEntityType>(
 	return value.type;
 }
 
-export function compareIds(left: ID | undefined | null, right: ID | undefined | null) {
-	return Boolean(left && right && left.type === right.type && left.id === right.id);
+export function compareIds(left: unknown, right: unknown) {
+	return isID(left) && isID(right) && left.type === right.type && left.id === right.id;
 }
 
-export function idValue(value: string | ID | undefined | null) {
-	if (!value) return "";
-	return isID(value) ? value.id : value;
+export function idValue(value: unknown): string {
+	if (typeof value === "string") return value;
+	return isID(value) ? value.id : "";
 }
 
 export function updateWorldEntityId(

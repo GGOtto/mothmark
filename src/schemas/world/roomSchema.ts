@@ -1,9 +1,8 @@
 import {z} from "zod";
 import {ConditionSchema} from "./conditionSchema";
-import {DescriptionSchema} from "./descriptionSchema";
-import {DefaultObjectStateDefaults, ObjectStateDefaultsSchema} from "../states/objectStateSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
+import {FEATURE_FLAG_DEFINITIONS, ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
 
 export const DirectionSchema = editor.select(
 	z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw", "up", "down", "in", "out"]),
@@ -197,9 +196,19 @@ export const RoomFeatureSchema = editor.object(
 
 		kind: RoomFeatureKindSchema.describe("The feature's interaction category."),
 
-		description: DescriptionSchema.describe(
-			"The description shown when the player examines or interacts with this feature.",
-		),
+		description: editor.richText({
+			placeholder: "Describe what the player sees...",
+			layout: {
+				group: "details",
+				width: "full",
+				order: 3,
+			},
+			title: "Description",
+			description: "A default description with optional conditional variants.",
+			appearance: {
+				chrome: "field",
+			},
+		}),
 
 		listedInRoom: editor
 			.boolean({
@@ -213,47 +222,17 @@ export const RoomFeatureSchema = editor.object(
 			})
 			.default(false),
 
-		activeWhen: editor.conditionControl(ConditionSchema, {
-			title: "Active When",
-			description:
-				"The feature is not listed or interacted with unless all of these conditions are true.",
-			layout: {
-				width: "full",
-				order: 8,
-			},
-		}),
-
-		visibleWhen: editor.conditionControl(ConditionSchema, {
-			title: "Visible When",
-			description: "The feature is visible only when all of these conditions pass.",
-			layout: {
-				width: "full",
-				order: 9,
-			},
-		}),
-
-		usableWhen: editor.conditionControl(ConditionSchema, {
-			title: "Usable When",
-			description: "The feature can be used only when all of these conditions pass.",
-			layout: {
-				width: "full",
-				order: 10,
-			},
-		}),
-
-		examineSetsFlag: editor.optionalFlagKey({
-			title: "Examine Sets Flag",
-			description:
-				"Optional flag set when this feature is examined. Useful for feature-examined conditions.",
-			layout: {
-				width: "full",
-				order: 11,
-			},
-		}),
-
-		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
-			"Initial object state for this feature.",
-		),
+		flags: editor
+			.objectFlags({
+				title: "Flags",
+				description: "Boolean state attached to this feature and its initial values.",
+				layout: {
+					width: "full",
+					order: 11,
+				},
+				features: {flags: FEATURE_FLAG_DEFINITIONS},
+			})
+			.default({examined: false}),
 	},
 	{
 		title: "Room Feature",
@@ -282,14 +261,6 @@ export const RoomFeatureSchema = editor.object(
 				layout: {
 					width: "full",
 					order: 4,
-				},
-			},
-			state: {
-				title: "State",
-				description: "Initial object state for this feature.",
-				layout: {
-					width: "full",
-					order: 12,
 				},
 			},
 		},
@@ -323,9 +294,19 @@ export const RoomSchema = editor.object(
 			})
 			.min(1),
 
-		description: DescriptionSchema.describe(
-			"The description shown when the player enters or looks around this room. Please tell me this isn't displaying",
-		),
+		description: editor.richText({
+			placeholder: "Describe what the player sees...",
+			layout: {
+				group: "details",
+				width: "full",
+				order: 3,
+			},
+			title: "Description",
+			description: "A default description with optional conditional variants.",
+			appearance: {
+				chrome: "field",
+			},
+		}),
 
 		shortDescription: editor
 			.textarea({
@@ -394,31 +375,24 @@ export const RoomSchema = editor.object(
 			z.array(RoomFeatureSchema).default([]),
 		),
 
-		metadata: RoomMetadataSchema,
+		flags: editor
+			.objectFlags({
+				title: "Flags",
+				description: "Boolean state attached to this room and its initial values.",
+				layout: {
+					group: "features",
+					width: "full",
+					order: 8,
+				},
+				features: {flags: ROOM_FLAG_DEFINITIONS},
+			})
+			.default({visited: false, active: true}),
 
-		activeWhen: editor.conditionControl(ConditionSchema, {
-			title: "Active When",
-			description:
-				"The room is available only when all of these conditions pass. Passages to this room will be blocked.",
-			layout: {
-				group: "availability",
-				width: "full",
-				order: 11,
-			},
-		}),
+		metadata: RoomMetadataSchema,
 	},
 	{
 		title: "Room",
 		description: "A location in the world that the player can visit.",
-		childControls: {
-			description: {
-				layout: {
-					group: "details",
-					width: "full",
-					order: 3,
-				},
-			},
-		},
 		features: {
 			layout: "section",
 			groups: [
@@ -587,10 +561,6 @@ export const ConnectionSchema = editor.object(
 				order: 12,
 			},
 		}),
-
-		state: ObjectStateDefaultsSchema.default(DefaultObjectStateDefaults).describe(
-			"Initial state for this connection or exit, such as locked or open.",
-		),
 	},
 	{
 		title: "Connection",
@@ -636,15 +606,6 @@ export const ConnectionSchema = editor.object(
 					order: 6,
 				},
 			},
-			state: {
-				title: "State",
-				description: "Initial state for this connection or exit, such as locked or open.",
-				layout: {
-					group: "state",
-					width: "full",
-					order: 13,
-				},
-			},
 		},
 		features: {
 			layout: "section",
@@ -672,13 +633,6 @@ export const ConnectionSchema = editor.object(
 					title: "Availability",
 					description: "Conditions controlling visibility, travel, and locking.",
 					order: 40,
-					defaultCollapsed: true,
-				},
-				{
-					id: "state",
-					title: "State",
-					description: "The connection's initial object state.",
-					order: 50,
 					defaultCollapsed: true,
 				},
 			],

@@ -1,7 +1,6 @@
 import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {DescriptionSchema} from "@/schemas/world/descriptionSchema";
 import {ConnectionSchema, RoomFeatureSchema, RoomSchema} from "@/schemas/world/roomSchema";
 import {resolveEditorMetadata} from "./resolveEditorMetadata";
 
@@ -44,24 +43,6 @@ describe("resolveEditorMetadata object fields", () => {
 
 		expect(described.description).toBeUndefined();
 		expect(editorDescribed.description).toBe("Explicit editor help text");
-	});
-
-	it("exposes schema-defined children to specialized object-backed controls", () => {
-		const metadata = resolveEditorMetadata(DescriptionSchema);
-
-		expect(metadata.childControls?.default).toMatchObject({
-			control: "rich-text",
-			title: "Description",
-			description: "A default description with optional conditional variants.",
-		});
-		expect(metadata.childControls?.variants).toMatchObject({
-			control: "array",
-			title: "Description Variants",
-			appearance: {
-				chrome: "collapse",
-				defaultCollapsed: true,
-			},
-		});
 	});
 
 	it("merges childControls before sorting object fields", () => {
@@ -113,7 +94,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"features",
-			"activeWhen",
+			"flags",
 			"metadata",
 			"id",
 		]);
@@ -143,7 +124,7 @@ describe("resolveEditorMetadata object fields", () => {
 			aliases: "identify",
 			tags: "identify",
 			features: "features",
-			activeWhen: "availability",
+			flags: "features",
 		});
 	});
 
@@ -155,7 +136,6 @@ describe("resolveEditorMetadata object fields", () => {
 			expect.objectContaining({id: "details", title: "Details", order: 20}),
 			expect.objectContaining({id: "messages", title: "Messages", order: 30}),
 			expect.objectContaining({id: "availability", title: "Availability", order: 40}),
-			expect.objectContaining({id: "state", title: "State", order: 50}),
 		]);
 		expect(getFieldGroups(ConnectionSchema)).toMatchObject({
 			id: "details",
@@ -171,7 +151,6 @@ describe("resolveEditorMetadata object fields", () => {
 			visibleWhen: "availability",
 			travelAllowedWhen: "availability",
 			lockedWhen: "availability",
-			state: "state",
 		});
 	});
 
@@ -201,11 +180,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"listedInRoom",
-			"activeWhen",
-			"visibleWhen",
-			"usableWhen",
-			"examineSetsFlag",
-			"state",
+			"flags",
 		]);
 		expect(fields[0].metadata).toMatchObject({
 			type: "hidden",
@@ -229,7 +204,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"visibleWhen",
 			"travelAllowedWhen",
 			"lockedWhen",
-			"state",
 			"metadata",
 		]);
 		expect(fields[0].metadata).toMatchObject({

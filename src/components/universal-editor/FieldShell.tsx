@@ -1,8 +1,21 @@
-import {createContext, useContext, type ReactNode} from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type CSSProperties,
+	type ReactNode,
+} from "react";
+import {createPortal} from "react-dom";
 import type {ResolvedEditorControlAppearance} from "@/types/universalEditorTypes";
 import type {EditorControlContext, EditorPath} from "@/types/universalEditorTypes";
 import type {EditorDisclosure} from "@/types/editor/editorMetadataTypes";
 import "./FieldShell.scss";
+import {Info} from "lucide-react";
 
 export type FieldShellSlots = {
 	headerAction?: ReactNode;
@@ -15,6 +28,7 @@ export type FieldShellSlots = {
 export type FieldShellProps = {
 	title?: string;
 	description?: string;
+	hideInfoInBox?: boolean;
 	error?: string;
 	warnings?: string[];
 	required?: boolean;
@@ -36,6 +50,12 @@ type FieldShellDisclosureValue = {
 	context: EditorControlContext;
 };
 
+type TooltipPosition = {
+	left: number;
+	bottom: number;
+	shiftX: number;
+};
+
 const FieldShellDisclosureContext = createContext<FieldShellDisclosureValue | undefined>(undefined);
 
 export function FieldShellDisclosureProvider({
@@ -55,6 +75,7 @@ export function FieldShellDisclosureProvider({
 export function FieldShell({
 	title,
 	description,
+	hideInfoInBox = true,
 	error,
 	warnings = [],
 	required,
@@ -67,6 +88,66 @@ export function FieldShell({
 	children,
 }: FieldShellProps) {
 	const disclosureValue = useContext(FieldShellDisclosureContext);
+	const descriptionId = useId();
+	const infoIconRef = useRef<HTMLSpanElement>(null);
+	const infoBoxRef = useRef<HTMLSpanElement>(null);
+	const [isInfoBoxVisible, setIsInfoBoxVisible] = useState(false);
+	const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition | null>(null);
+	const updateTooltipPosition = useCallback(() => {
+		const icon = infoIconRef.current;
+		if (!icon) {
+			return;
+		}
+
+		const iconBounds = icon.getBoundingClientRect();
+		setTooltipPosition({
+			left: iconBounds.left + iconBounds.width / 2,
+			bottom: window.innerHeight - iconBounds.top + 10,
+			shiftX: 0,
+		});
+	}, []);
+	const showInfoBox = useCallback(() => {
+		updateTooltipPosition();
+		setIsInfoBoxVisible(true);
+	}, [updateTooltipPosition]);
+
+	useEffect(() => {
+		if (!isInfoBoxVisible) {
+			return;
+		}
+
+		window.addEventListener("resize", updateTooltipPosition);
+		window.addEventListener("scroll", updateTooltipPosition, true);
+		return () => {
+			window.removeEventListener("resize", updateTooltipPosition);
+			window.removeEventListener("scroll", updateTooltipPosition, true);
+		};
+	}, [isInfoBoxVisible, updateTooltipPosition]);
+
+	useLayoutEffect(() => {
+		const infoBox = infoBoxRef.current;
+		if (!isInfoBoxVisible || !infoBox || !tooltipPosition) {
+			return;
+		}
+
+		const viewportMargin = 16;
+		const infoBoxBounds = infoBox.getBoundingClientRect();
+		let correction = 0;
+		if (infoBoxBounds.left < viewportMargin) {
+			correction = viewportMargin - infoBoxBounds.left;
+		} else if (infoBoxBounds.right > window.innerWidth - viewportMargin) {
+			correction = window.innerWidth - viewportMargin - infoBoxBounds.right;
+		}
+
+		if (Math.abs(correction) > 0.5) {
+			setTooltipPosition((currentPosition) =>
+				currentPosition
+					? {...currentPosition, shiftX: currentPosition.shiftX + correction}
+					: currentPosition,
+			);
+		}
+	}, [isInfoBoxVisible, tooltipPosition]);
+
 	const isCollapsible =
 		appearance.chrome === "collapse" && disclosureValue?.metadata.disclosure?.collapsible !== false;
 	const savedOpenState = disclosureValue?.context.editorChrome?.getSectionDisclosure?.(
@@ -91,11 +172,46 @@ export function FieldShell({
 	const header =
 		title || description || slots?.headerAction ? (
 			<div className="universalField__header">
-				{title || required || readonly ? (
+				{title || required || readonly || (description && hideInfoInBox) ? (
 					<div className="universalField__titleRow">
 						{title ? <div className="universalField__title">{title}</div> : null}
 						{required ? <span className="universalField__required">Required</span> : null}
 						{readonly ? <span className="universalField__status">Readonly</span> : null}
+						{description && hideInfoInBox && (
+							<span
+								ref={infoIconRef}
+								className="universalField__infoIcon"
+								tabIndex={0}
+								aria-describedby={descriptionId}
+								onMouseEnter={showInfoBox}
+								onMouseLeave={() => setIsInfoBoxVisible(false)}
+								onFocus={showInfoBox}
+								onBlur={() => setIsInfoBoxVisible(false)}
+							>
+								<Info size={16} aria-hidden="true" strokeWidth={2.5} />
+								{isInfoBoxVisible &&
+									tooltipPosition &&
+									typeof document !== "undefined" &&
+									createPortal(
+										<span
+											ref={infoBoxRef}
+											className="universalField__infobox"
+											id={descriptionId}
+											role="tooltip"
+											style={
+												{
+													left: tooltipPosition.left,
+													bottom: tooltipPosition.bottom,
+													"--tooltip-shift-x": `${tooltipPosition.shiftX}px`,
+												} as CSSProperties
+											}
+										>
+											{description}
+										</span>,
+										document.body,
+									)}
+							</span>
+						)}
 					</div>
 				) : null}
 				{slots?.headerAction ? (
@@ -103,7 +219,9 @@ export function FieldShell({
 						{slots.headerAction}
 					</div>
 				) : null}
-				{description ? <div className="universalField__description">{description}</div> : null}
+				{!hideInfoInBox && description ? (
+					<div className="universalField__description">{description}</div>
+				) : null}
 			</div>
 		) : null;
 	const body = (

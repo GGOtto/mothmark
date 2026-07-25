@@ -6,6 +6,7 @@ import {
 	type DiscriminatedUnionEditorProps,
 } from "./DiscriminatedUnionEditor";
 import {EffectListEditor, type EffectListEditorProps} from "./EffectListEditor";
+import {EffectEditor, type EffectEditorProps} from "./EffectEditor";
 import {EntityPickerEditor, type EntityPickerEditorProps} from "./EntityPickerEditor";
 import {FlagPickerEditor, type FlagPickerEditorProps} from "./FlagPickerEditor";
 import {HiddenEditor, type HiddenEditorProps} from "./HiddenEditor";
@@ -14,6 +15,7 @@ import {MessageEditor, type MessageEditorProps} from "./MessageEditor";
 import {MultiSelectEditor, type MultiSelectEditorProps} from "./MultiSelectEditor";
 import {NumberFieldEditor, type NumberFieldProps} from "./NumberFieldEditor";
 import {ObjectEditor, type ObjectEditorProps} from "./ObjectEditor";
+import {ObjectFlagEditor, type ObjectFlagEditorProps} from "./ObjectFlagEditor";
 import {SelectEditor, type SelectEditorProps} from "./SelectEditor";
 import {StringListEditor, type StringListEditorProps} from "./StringListEditor";
 import {
@@ -110,6 +112,9 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 		case "condition-builder":
 			return <ConditionBuilderEditor {...(props as ConditionBuilderEditorProps)} />;
 
+		case "effect":
+			return <EffectEditor {...(props as EffectEditorProps)} />;
+
 		case "effect-list":
 			return <EffectListEditor {...(props as EffectListEditorProps)} />;
 
@@ -136,6 +141,9 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 
 		case "flag-editor":
 			return <FlagEditor {...(props as SpecializedEditorProps)} />;
+
+		case "object-flag-editor":
+			return <ObjectFlagEditor {...(props as ObjectFlagEditorProps)} />;
 
 		case "direction-picker":
 			return <DirectionPickerEditor {...(props as DirectionPickerProps)} />;

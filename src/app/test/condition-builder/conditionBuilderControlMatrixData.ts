@@ -4,6 +4,7 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "../ControlMatrix";
+import {toID} from "../../../utils/idUtils";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"auto",
@@ -70,7 +71,7 @@ const SETUPS = {
 	},
 	restricted: {
 		id: "restricted",
-		value: {type: "current-room", operation: "is", roomId: "foyer"},
+		value: {type: "current-room", operation: "is", roomId: toID("room", "foyer")},
 		metadata: {
 			title: "Restricted Types",
 			features: {

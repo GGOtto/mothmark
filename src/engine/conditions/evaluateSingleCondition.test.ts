@@ -1,28 +1,51 @@
-import type {GameState} from "@/schemas/states/gameStateSchema";
-import type {SingleCondition} from "@/schemas/world/conditionSchema";
-import type {World} from "@/schemas/world/worldSchema";
+import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas";
+import {FeatureStateSchema, RoomStateSchema} from "@/schemas/states/entityStateSchemas";
+import {SingleConditionSchema, type SingleCondition} from "@/schemas/world/conditionSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+import {RoomSchema} from "@/schemas/world/roomSchema";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import {produce} from "immer";
 import {evaluateSingleCondition} from "./evaluateSingleCondition";
 
 const currentRoom = toID("room", "atrium");
 
-const game: GameState = {
-	currentRoom,
-	turns: 0,
-	variables: {
-		flags: [{"gate.open": true}, {"lamp.lit": false}],
-		counter: [{steps: 3}, {score: 10}],
-	},
-	roomStates: [],
-	messages: [],
-};
+const game: GameState = produce(createDefaultFieldObject(GameStateSchema), (draft) => {
+	draft.player.currentRoom = currentRoom;
+	draft.variables.flags = [{"gate.open": true}, {"lamp.lit": false}];
+	draft.variables.counters = [{steps: 3}, {score: 10}];
+	draft.roomStates = [
+		{
+			...createDefaultFieldObject(RoomStateSchema),
+			id: currentRoom,
+			flags: {visited: true, active: true},
+			featureStates: [
+				{
+					...createDefaultFieldObject(FeatureStateSchema),
+					id: toID("feature", "statue"),
+					flags: {examined: false, glowing: true},
+				},
+			],
+		},
+	];
+});
 
-const world = {
-	rooms: [{id: currentRoom, name: "Atrium", tags: ["indoors", "safe"]}],
-} as unknown as World;
+const world: World = produce(createDefaultFieldObject(WorldSchema), (draft) => {
+	draft.rooms = [
+		{
+			...createDefaultFieldObject(RoomSchema),
+			id: currentRoom,
+			name: "Atrium",
+			tags: ["indoors", "safe"],
+		},
+	];
+});
 
-function condition(value: unknown): SingleCondition {
-	return value as SingleCondition;
+function condition(overrides: Record<string, unknown>): SingleCondition {
+	return SingleConditionSchema.parse({
+		...createDefaultFieldObject(SingleConditionSchema),
+		...overrides,
+	});
 }
 
 describe("evaluateSingleCondition", () => {
@@ -149,33 +172,62 @@ describe("evaluateSingleCondition", () => {
 		).toBe(true);
 	});
 
-	it("evaluate room state: visited and not-visited", () => {
+	it("evaluates room flags, including permanent flags", () => {
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is", roomId: toID("room", "atrium")}),
+				condition({
+					type: "flag",
+					"flag-type": "room",
+					operation: "true",
+					roomId: currentRoom,
+					flag: "visited",
+				}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is-not", roomId: toID("room", "cellar")}),
+				condition({
+					type: "flag",
+					"flag-type": "room",
+					operation: "missing",
+					roomId: currentRoom,
+					flag: "dark",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("evaluates feature flags, including permanent flags", () => {
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({
+					type: "flag",
+					"flag-type": "feature",
+					operation: "false",
+					roomId: currentRoom,
+					featureId: toID("feature", "statue"),
+					flag: "examined",
+				}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "has-tag", tag: "safe"}),
-			),
-		).toBe(true);
-		expect(
-			evaluateSingleCondition(
-				world,
-				game,
-				condition({type: "current-room", operation: "missing-tag", tag: "outdoors"}),
+				condition({
+					type: "flag",
+					"flag-type": "feature",
+					operation: "true",
+					roomId: currentRoom,
+					featureId: toID("feature", "statue"),
+					flag: "glowing",
+				}),
 			),
 		).toBe(true);
 	});

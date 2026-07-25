@@ -2,6 +2,7 @@ import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {World} from "@/schemas/world/worldSchema";
 import {
 	deleteWorldEntity,
+	compareIds,
 	generateUniqueId,
 	idValue,
 	resolveWorldEntityId,
@@ -14,8 +15,29 @@ function createTestWorld(): World {
 }
 
 describe("generateUniqueId", () => {
+	it("returns a typed UUID when there are no existing items", () => {
+		const generatedId = generateUniqueId("room");
+
+		expect(generatedId.type).toBe("room");
+		expect(generatedId.id).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+		);
+	});
+
 	it("returns the first unused numbered id", () => {
-		expect(generateUniqueId("room", [{id: "room-1"}, {id: "room-3"}])).toBe("room-2");
+		expect(generateUniqueId("room", [{id: "room-1"}, {id: "room-3"}])).toEqual({
+			type: "room",
+			id: "room-2",
+		});
+	});
+});
+
+describe("ID compatibility", () => {
+	it("only compares typed IDs", () => {
+		expect(compareIds({type: "room", id: "room-3"}, {type: "room", id: "room-3"})).toBe(true);
+		expect(compareIds({type: "room", id: "room-3"}, "room-3")).toBe(false);
+		expect(compareIds("room-3", {type: "room", id: "room-3"})).toBe(false);
+		expect(compareIds({type: "room", id: "room-3"}, {type: "feature", id: "room-3"})).toBe(false);
 	});
 });
 

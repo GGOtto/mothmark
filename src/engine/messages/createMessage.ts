@@ -1,14 +1,10 @@
-export type GameMessageType = "room" | "command" | "system" | "error";
-
-export type GameMessage = {
-	id: string;
-	text: string;
-	type: GameMessageType;
-	roomId?: string;
-};
+import type {ID} from "@/utils/idUtils";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
+import {produce} from "immer";
+import type {GameMessage, GameMessageType} from "@/schemas/states/gameStateSchemas";
 
 export type CreateGameMessageOptions = {
-	roomId?: string;
+	roomId?: ID<"room">;
 };
 
 export function createGameMessage(
@@ -17,4 +13,26 @@ export function createGameMessage(
 	options: CreateGameMessageOptions = {},
 ): GameMessage {
 	return {id: crypto.randomUUID(), text, type, ...options};
+}
+
+export function appendLastMessage(
+	game: GameState,
+	message: string,
+	format: "inline" | "newline",
+): GameState {
+	const lastMessage = game.messages.at(-1) ?? createGameMessage("", "system");
+
+	if (format === "newline" && lastMessage.text !== "") {
+		lastMessage.text += "\n" + message;
+	} else {
+		lastMessage.text += message;
+	}
+
+	return produce(game, (draft) => {
+		if (draft.messages.length === 0) {
+			draft.messages.push(lastMessage);
+		} else {
+			draft.messages[draft.messages.length - 1] = lastMessage;
+		}
+	});
 }

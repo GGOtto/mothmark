@@ -36,7 +36,7 @@
 	height: 100%;
 	overflow: hidden;
 	width: 100%;
-	cursor: ns-resize;
+	cursor: pointer;
 }
 
 .layerMenu--left {
@@ -47,7 +47,7 @@
 	scroll-snap-type: y proximity;
 	scrollbar-width: none;
 	width: 100%;
-	cursor: ns-resize;
+	cursor: pointer;
 
 	&::-webkit-scrollbar {
 		display: none;
@@ -70,7 +70,7 @@
 		width: 100%;
 		background-color: red;
 		box-sizing: border-box;
-		cursor: ns-resize;
+		cursor: pointer;
 		scroll-snap-align: center;
 		transition: background-color 110ms ease-out;
 	}

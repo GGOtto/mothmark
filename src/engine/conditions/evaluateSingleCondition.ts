@@ -1,24 +1,10 @@
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, getEntityType, ID} from "@/utils/idUtils";
-import {getRoom} from "../utils/worldLookupUtils";
-import {EntityState} from "@/schemas/states/entityStates";
-
-type VariableLookup<TValue> = {exists: true; value: TValue} | {exists: false; value: undefined};
-
-function findVariable<TValue>(
-	repository: Record<string, TValue>[],
-	key: string,
-): VariableLookup<TValue> {
-	for (const values of repository) {
-		if (Object.prototype.hasOwnProperty.call(values, key)) {
-			return {exists: true, value: values[key]};
-		}
-	}
-
-	return {exists: false, value: undefined};
-}
+import {compareIds, ID} from "@/utils/idUtils";
+import {getRoom} from "../utils/lookupUtils";
+import {EntityState} from "@/schemas/states/entityStateSchemas";
+import {findVariable} from "../utils/lookupUtils";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
 	for (const state of states) {
@@ -32,18 +18,46 @@ function evaluateFlag(
 	game: GameState,
 	condition: Extract<SingleCondition, {type: "flag"}>,
 ): boolean {
-	const flag = findVariable(game.variables.flags, condition.flag);
-
-	switch (condition.operation) {
-		case "true":
-			return flag.exists && flag.value;
-		case "false":
-			return flag.exists && !flag.value;
-		case "exists":
-			return flag.exists;
-		case "missing":
-			return !flag.exists;
+	if (condition["flag-type"] === "room") {
+		const room = findStateById(game.roomStates, condition.roomId);
+		if (!room || room.type !== "room") return false;
+		return evaluateFlagValue(room.flags, condition.flag, condition.operation);
 	}
+	if (condition["flag-type"] === "feature") {
+		const room = findStateById(game.roomStates, condition.roomId);
+		if (!room || room.type !== "room") return false;
+		const feature = findStateById(room.featureStates, condition.featureId);
+		if (!feature || feature.type !== "feature") return false;
+		return evaluateFlagValue(feature.flags, condition.flag, condition.operation);
+	}
+
+	const flag = findVariable(game.variables.flags, condition.flag);
+	return evaluateFlagResult(flag.exists, flag.value, condition.operation);
+}
+
+function evaluateFlagResult(
+	exists: boolean,
+	value: boolean | undefined,
+	operation: "true" | "false" | "exists" | "missing",
+): boolean {
+	switch (operation) {
+		case "true":
+			return exists && Boolean(value);
+		case "false":
+			return exists && !value;
+		case "exists":
+			return exists;
+		case "missing":
+			return !exists;
+	}
+}
+
+function evaluateFlagValue(
+	flags: Record<string, boolean>,
+	flag: string,
+	operation: "true" | "false" | "exists" | "missing",
+): boolean {
+	return evaluateFlagResult(Object.hasOwn(flags, flag), flags[flag], operation);
 }
 
 function compareCounter(left: number, operator: string, right: number): boolean {
@@ -69,7 +83,7 @@ function evaluateCounter(
 	game: GameState,
 	condition: Extract<SingleCondition, {type: "counter"}>,
 ): boolean {
-	const counter = findVariable(game.variables.counter, condition.counter);
+	const counter = findVariable(game.variables.counters, condition.counter);
 
 	switch (condition.operation) {
 		case "compare":
@@ -93,55 +107,19 @@ function evaluateCurrentRoom(
 ): boolean {
 	switch (condition.operation) {
 		case "is":
-			return compareIds(game.currentRoom, condition.roomId);
+			return compareIds(game.player.currentRoom, condition.roomId);
 		case "is-not":
-			return !compareIds(game.currentRoom, condition.roomId);
-		case "has-tag":
-			return getRoom(world, game.currentRoom).tags.includes(condition.tag);
-		case "missing-tag":
-			return !getRoom(world, game.currentRoom).tags.includes(condition.tag);
-	}
-}
-
-function evaluateRoomState(
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "room-state"}>,
-): boolean {
-	const state = findStateById(game.roomStates, condition.roomId);
-	if (!state || state.type !== "room") {
-		return false;
-	}
-	switch (condition.state) {
-		case "visited":
-			return state.visited;
-		case "not-visited":
-			return !state.visited;
-		default:
-			return false;
-	}
-}
-
-function evaluateFeatureState(
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "feature-state"}>,
-): boolean {
-	const room = findStateById(game.roomStates, condition.roomId);
-	if (!room || room.type !== "room") {
-		return false;
-	}
-
-	const feature = findStateById(room.featureStates, condition.featureId);
-	if (!feature || feature.type !== "feature") {
-		return false;
-	}
-
-	switch (condition.state) {
-		case "examined":
-			return feature.examined;
-		case "not-examined":
-			return !feature.examined;
-		default:
-			return false;
+			return !compareIds(game.player.currentRoom, condition.roomId);
+		case "has-tag": {
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
+			return tags.includes(condition.tag);
+		}
+		case "missing-tag": {
+			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
+			return !tags.includes(condition.tag);
+		}
 	}
 }
 
@@ -157,10 +135,6 @@ export function evaluateSingleCondition(
 			return evaluateCounter(game, condition);
 		case "current-room":
 			return evaluateCurrentRoom(world, game, condition);
-		case "room-state":
-			return evaluateRoomState(game, condition);
-		case "feature-state":
-			return evaluateFeatureState(game, condition);
 		default:
 			return false;
 	}

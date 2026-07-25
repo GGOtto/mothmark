@@ -21,6 +21,11 @@ export type TextFieldFeatures = {
 	clearButton?: boolean;
 
 	/**
+	 * Value emitted by the Clear button. Defaults to an empty string.
+	 */
+	clearValue?: string;
+
+	/**
 	 * Shows a prefix next to the input.
 	 * Example: "item/"
 	 */
@@ -53,7 +58,7 @@ export type TextFieldControlMetadata = EditorControlMetadata & {
 	features?: TextFieldFeatures;
 };
 
-export type TextFieldProps = EditorControlProps<string, TextFieldControlMetadata>;
+export type TextFieldProps = EditorControlProps<string | undefined, TextFieldControlMetadata>;
 
 export function TextField({
 	value,
@@ -67,6 +72,7 @@ export function TextField({
 	context,
 }: TextFieldProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
+	const inputValue = value ?? "";
 
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -79,13 +85,13 @@ export function TextField({
 	function copyValue() {
 		if (!navigator?.clipboard) return;
 
-		void navigator.clipboard.writeText(value);
+		void navigator.clipboard.writeText(inputValue);
 	}
 
 	function clearValue() {
 		if (!canEdit) return;
 
-		onChange("");
+		onChange(metadata.features?.clearValue ?? "");
 	}
 
 	return (
@@ -105,7 +111,8 @@ export function TextField({
 
 				<input
 					className="textField__input"
-					value={value}
+					aria-label={metadata.title}
+					value={inputValue}
 					placeholder={metadata.placeholder}
 					disabled={isDisabled}
 					readOnly={isReadonly}
@@ -134,7 +141,7 @@ export function TextField({
 					<button
 						className="textField__button"
 						type="button"
-						disabled={!canEdit || value.length === 0}
+						disabled={!canEdit || inputValue === (metadata.features?.clearValue ?? "")}
 						onClick={clearValue}
 					>
 						Clear
@@ -145,7 +152,7 @@ export function TextField({
 					<button
 						className="textField__button"
 						type="button"
-						disabled={value.length === 0}
+						disabled={inputValue.length === 0}
 						onClick={copyValue}
 					>
 						Copy

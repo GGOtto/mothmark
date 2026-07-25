@@ -19,7 +19,7 @@ import type {
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {generateConditionSummary} from "./utils/universalEditorUtils";
-import {idValue, isID, toID} from "../../utils/idUtils";
+import {idValue, isID, toID, type WorldIdEntityType} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./ConditionBuilderEditor.scss";
@@ -160,9 +160,9 @@ function normalizeCondition(condition: ConditionValue): ConditionValue {
 		return {
 			type: "condition-ref",
 			conditionId:
-				typeof condition.conditionId === "string" || isID(condition.conditionId)
-					? idValue(condition.conditionId)
-					: "",
+				isID(condition.conditionId) && condition.conditionId.type === "condition"
+					? condition.conditionId
+					: toID("condition", ""),
 		};
 	}
 
@@ -391,14 +391,18 @@ function setWorldConditions(context: EditorControlContext, conditions: Condition
 }
 
 function worldConditionById(context: EditorControlContext, id: unknown) {
-	if (typeof id !== "string" || !id.trim()) return undefined;
-	return worldConditions(context).find((condition) => storedConditionId(condition) === id.trim());
+	if (!isID(id) || id.type !== "condition") return undefined;
+	const conditionId = id.id.trim();
+	if (!conditionId) return undefined;
+	return worldConditions(context).find((condition) => storedConditionId(condition) === conditionId);
 }
 
 function worldConditionIndexById(context: EditorControlContext, id: unknown) {
-	if (typeof id !== "string" || !id.trim()) return -1;
+	if (!isID(id) || id.type !== "condition") return -1;
+	const conditionId = id.id.trim();
+	if (!conditionId) return -1;
 	return worldConditions(context).findIndex(
-		(condition) => storedConditionId(condition) === id.trim(),
+		(condition) => storedConditionId(condition) === conditionId,
 	);
 }
 
@@ -434,13 +438,13 @@ function conditionUsage(
 	seenConditionIds = new Set<string>(),
 ): ConditionValue {
 	if (isConditionReference(condition)) {
-		const conditionId =
-			typeof condition.conditionId === "string" || isID(condition.conditionId)
-				? idValue(condition.conditionId).trim()
-				: "";
+		if (!isID(condition.conditionId) || condition.conditionId.type !== "condition") {
+			return condition;
+		}
+		const conditionId = condition.conditionId.id.trim();
 		if (!conditionId || seenConditionIds.has(conditionId)) return condition;
 
-		const worldCondition = worldConditionById(context, conditionId);
+		const worldCondition = worldConditionById(context, condition.conditionId);
 		if (!worldCondition) return condition;
 
 		const nextSeenConditionIds = new Set(seenConditionIds);
@@ -492,7 +496,7 @@ function createWorldConditionDefinition(
 	};
 	const nextCondition = {
 		...condition,
-		id: uniqueWorldConditionId(condition, context),
+		id: toID("condition", uniqueWorldConditionId(condition, context)),
 		name: uniqueWorldConditionName(condition, metadata, context),
 	};
 	return nextCondition;
@@ -512,9 +516,11 @@ function createWorldCondition(
 }
 
 function conditionRefFor(condition: ConditionValue) {
+	const conditionId = storedConditionId(condition) ?? "";
+
 	return {
 		type: "condition-ref",
-		conditionId: storedConditionId(condition) ?? "",
+		conditionId: toID("condition", conditionId),
 	};
 }
 
@@ -731,7 +737,10 @@ export function ConditionBuilderEditor({
 						onAddCondition={() => addCondition("flag")}
 						onAddGroup={() => addCondition("group")}
 						onAddExistingCondition={(conditionId) =>
-							onChange([...conditions, {type: "condition-ref", conditionId}])
+							onChange([
+								...conditions,
+								{type: "condition-ref", conditionId: toID("condition", conditionId)},
+							])
 						}
 					/>
 				</div>
@@ -878,23 +887,12 @@ function ConditionLinkList({
 		const usage = conditionUsage(condition, context);
 		const name = conditionLinkName(usage, metadata, context, index);
 
-		if (
-			canEdit &&
-			!isConditionReference(condition) &&
-			(!hasStoredConditionName(condition) || !storedConditionId(condition))
-		) {
-			const siblingConditions = conditions.filter((_, conditionIndex) => conditionIndex !== index);
-			onUpdateCondition(
-				index,
-				ensureConditionIdentity(condition, index, metadata, context, siblingConditions),
-			);
-		}
-
 		if (canOpenChildEditor) {
-			const conditionId = isConditionReference(condition)
-				? String(condition.conditionId ?? "")
-				: storedConditionId(condition);
-			const opensWorldCondition = Boolean(conditionId && worldConditionById(context, conditionId));
+			const conditionIdentity = isConditionReference(condition) ? condition.conditionId : condition.id;
+			const conditionId = idValue(conditionIdentity);
+			const opensWorldCondition = Boolean(
+				conditionId && worldConditionById(context, conditionIdentity),
+			);
 			context.editorNavigation?.openEditorLink?.({
 				ref: {
 					type: "condition",
@@ -1293,7 +1291,10 @@ function ConditionNodeEditor({
 						onAddCondition={() => addChild("flag")}
 						onAddGroup={() => addChild("group")}
 						onAddExistingCondition={(conditionId) =>
-							updateField("conditions", [...childConditions, {type: "condition-ref", conditionId}])
+							updateField("conditions", [
+								...childConditions,
+								{type: "condition-ref", conditionId: toID("condition", conditionId)},
+							])
 						}
 					/>
 				</div>
@@ -1332,25 +1333,48 @@ function ConditionLeafFields({
 	const type = getConditionType(value);
 
 	if (type === "flag") {
-		const operation = String(value.operation ?? "equals");
+		const operation = String(value.operation ?? "true");
+		const flagType = String(value["flag-type"] ?? "normal") as "normal" | "room" | "feature";
 
 		return (
 			<div className="conditionBuilderEditor__fields">
+				{renderSelect({
+					childKey: "flag-type",
+					value: flagType,
+					onChange: (nextValue) => onChange("flag-type", nextValue),
+					title: "Flag type",
+					options: [
+						{label: "Normal", value: "normal"},
+						{label: "Room", value: "room"},
+						{label: "Feature", value: "feature"},
+					],
+					metadata,
+					path: [...path, "flag-type"],
+					disabled,
+					readonly,
+					context,
+				})}
 				{renderOperationSelect(type, operation, onChange, metadata, path, disabled, readonly, context)}
-				{renderFlagField(value, onChange, metadata, path, disabled, readonly, context)}
-				{operation === "equals"
-					? renderToggleField(
-							"value",
-							Boolean(value.value ?? true),
-							"Expected",
+				{flagType === "normal" ? (
+					renderFlagField(value, onChange, metadata, path, disabled, readonly, context)
+				) : (
+					<>
+						{renderRoomField(value, onChange, metadata, path, disabled, readonly, context)}
+						{flagType === "feature"
+							? renderScopedFeatureField(value, onChange, metadata, path, disabled, readonly, context)
+							: null}
+						{renderScopedFlagField(
+							flagType,
+							value,
 							onChange,
 							metadata,
 							path,
 							disabled,
 							readonly,
 							context,
-						)
-					: null}
+						)}
+					</>
+				)}
 			</div>
 		);
 	}
@@ -1457,8 +1481,6 @@ function ConditionLeafFields({
 		return renderInventoryFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "item-location")
 		return renderItemLocationFields(value, onChange, metadata, path, disabled, readonly, context);
-	if (type === "object-state")
-		return renderObjectStateFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "npc")
 		return renderNpcFields(value, onChange, metadata, path, disabled, readonly, context);
 	if (type === "command-history")
@@ -1504,7 +1526,7 @@ function renderInventoryFields(
 			{operation === "has-item" || operation === "missing-item"
 				? renderEntityField(
 						"itemId",
-						String(value.itemId ?? ""),
+						value.itemId,
 						"Item",
 						"item",
 						onChange,
@@ -1587,7 +1609,7 @@ function renderItemLocationFields(
 			)}
 			{renderEntityField(
 				"itemId",
-				String(value.itemId ?? ""),
+				value.itemId,
 				"Item",
 				"item",
 				onChange,
@@ -1600,7 +1622,7 @@ function renderItemLocationFields(
 			{operation === "in-room"
 				? renderEntityField(
 						"roomId",
-						String(value.roomId ?? ""),
+						value.roomId,
 						"Room",
 						"room",
 						onChange,
@@ -1614,7 +1636,7 @@ function renderItemLocationFields(
 			{operation === "on-surface"
 				? renderEntityField(
 						"surfaceId",
-						String(value.surfaceId ?? ""),
+						value.surfaceId,
 						"Surface",
 						"surface",
 						onChange,
@@ -1628,7 +1650,7 @@ function renderItemLocationFields(
 			{operation === "in-container"
 				? renderEntityField(
 						"containerId",
-						String(value.containerId ?? ""),
+						value.containerId,
 						"Container",
 						"container",
 						onChange,
@@ -1642,7 +1664,7 @@ function renderItemLocationFields(
 			{operation === "held-by-npc"
 				? renderEntityField(
 						"npcId",
-						String(value.npcId ?? ""),
+						value.npcId,
 						"NPC",
 						"npc",
 						onChange,
@@ -1653,101 +1675,6 @@ function renderItemLocationFields(
 						context,
 					)
 				: null}
-		</div>
-	);
-}
-
-function renderObjectStateFields(
-	value: ConditionValue,
-	onChange: (key: string, nextValue: unknown) => void,
-	metadata: ConditionBuilderControlMetadata,
-	path: Array<string | number>,
-	disabled: boolean | undefined,
-	readonly: boolean | undefined,
-	context: ConditionBuilderEditorProps["context"],
-) {
-	const operation = String(value.operation ?? "open");
-
-	return (
-		<div className="conditionBuilderEditor__fields">
-			{renderOperationSelect(
-				"object-state",
-				operation,
-				onChange,
-				metadata,
-				path,
-				disabled,
-				readonly,
-				context,
-			)}
-			{operation === "surface-has-item" || operation === "surface-missing-item"
-				? renderEntityField(
-						"surfaceId",
-						String(value.surfaceId ?? ""),
-						"Surface",
-						"surface",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)
-				: renderEntityField(
-						"objectId",
-						String(value.objectId ?? ""),
-						"Object",
-						"object",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-			{["contains-item", "missing-item", "surface-has-item", "surface-missing-item"].includes(
-				operation,
-			)
-				? renderEntityField(
-						"itemId",
-						String(value.itemId ?? ""),
-						"Item",
-						"item",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)
-				: null}
-			{operation === "custom" ? (
-				<>
-					{renderTextField(
-						"key",
-						String(value.key ?? ""),
-						"Key",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-					{renderStringComparisonSelect(value, onChange, metadata, path, disabled, readonly, context)}
-					{renderTextField(
-						"value",
-						String(value.value ?? ""),
-						"Value",
-						onChange,
-						metadata,
-						path,
-						disabled,
-						readonly,
-						context,
-					)}
-				</>
-			) : null}
 		</div>
 	);
 }
@@ -1768,7 +1695,7 @@ function renderNpcFields(
 			{renderOperationSelect("npc", operation, onChange, metadata, path, disabled, readonly, context)}
 			{renderEntityField(
 				"npcId",
-				String(value.npcId ?? ""),
+				value.npcId,
 				"NPC",
 				"npc",
 				onChange,
@@ -1781,7 +1708,7 @@ function renderNpcFields(
 			{operation === "in-room"
 				? renderEntityField(
 						"roomId",
-						String(value.roomId ?? ""),
+						value.roomId,
 						"Room",
 						"room",
 						onChange,
@@ -1795,7 +1722,7 @@ function renderNpcFields(
 			{operation === "has-item"
 				? renderEntityField(
 						"itemId",
-						String(value.itemId ?? ""),
+						value.itemId,
 						"Item",
 						"item",
 						onChange,
@@ -1901,7 +1828,7 @@ function renderCommandHistoryFields(
 			{operation === "previous-target-was"
 				? renderEntityField(
 						"targetId",
-						String(value.targetId ?? ""),
+						value.targetId,
 						"Target",
 						"object",
 						onChange,
@@ -2055,7 +1982,7 @@ function renderQuestFields(
 			)}
 			{renderEntityField(
 				"questId",
-				String(value.questId ?? ""),
+				value.questId,
 				"Quest",
 				"quest",
 				onChange,
@@ -2121,7 +2048,7 @@ function renderScheduledEventFields(
 			{operation === "event-scheduled" || operation === "event-not-scheduled"
 				? renderEntityField(
 						"eventId",
-						String(value.eventId ?? ""),
+						value.eventId,
 						"Event",
 						"event",
 						onChange,
@@ -2207,7 +2134,7 @@ function renderResolvedTargetFields(
 			{operation === "object-is"
 				? renderEntityField(
 						"objectId",
-						String(value.objectId ?? ""),
+						value.objectId,
 						"Object",
 						"object",
 						onChange,
@@ -2221,7 +2148,7 @@ function renderResolvedTargetFields(
 			{operation === "target-is"
 				? renderEntityField(
 						"targetId",
-						String(value.targetId ?? ""),
+						value.targetId,
 						"Target",
 						"object",
 						onChange,
@@ -2235,7 +2162,7 @@ function renderResolvedTargetFields(
 			{operation === "topic-is"
 				? renderEntityField(
 						"topicId",
-						String(value.topicId ?? ""),
+						value.topicId,
 						"Topic",
 						"topic",
 						onChange,
@@ -2467,6 +2394,71 @@ function renderFlagField(
 	});
 }
 
+function selectedRoom(value: ConditionValue, context: ConditionBuilderEditorProps["context"]) {
+	const roomId = isID(value.roomId) ? idValue(value.roomId) : String(value.roomId ?? "");
+	return context.world?.rooms.find((room) => idValue(room.id) === roomId);
+}
+
+function selectedFeature(value: ConditionValue, context: ConditionBuilderEditorProps["context"]) {
+	const featureId = isID(value.featureId) ? idValue(value.featureId) : String(value.featureId ?? "");
+	return selectedRoom(value, context)?.features.find((feature) => idValue(feature.id) === featureId);
+}
+
+function renderScopedFeatureField(
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const features = selectedRoom(value, context)?.features ?? [];
+	const featureId = isID(value.featureId) ? idValue(value.featureId) : String(value.featureId ?? "");
+
+	return renderSelect({
+		childKey: "featureId",
+		value: featureId,
+		onChange: (nextValue) => onChange("featureId", toID("feature", nextValue)),
+		title: "Feature",
+		options: features.map((feature) => ({label: feature.name, value: idValue(feature.id)})),
+		metadata,
+		path: [...path, "featureId"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
+function renderScopedFlagField(
+	flagType: "room" | "feature",
+	value: ConditionValue,
+	onChange: (key: string, nextValue: unknown) => void,
+	metadata: ConditionBuilderControlMetadata,
+	path: Array<string | number>,
+	disabled: boolean | undefined,
+	readonly: boolean | undefined,
+	context: ConditionBuilderEditorProps["context"],
+) {
+	const flags =
+		flagType === "room"
+			? selectedRoom(value, context)?.flags
+			: selectedFeature(value, context)?.flags;
+
+	return renderSelect({
+		childKey: "flag",
+		value: String(value.flag ?? ""),
+		onChange: (nextValue) => onChange("flag", nextValue),
+		title: "Flag",
+		options: Object.keys(flags ?? {}).map((flag) => ({label: flag, value: flag})),
+		metadata,
+		path: [...path, "flag"],
+		disabled,
+		readonly,
+		context,
+	});
+}
+
 function renderRoomField(
 	value: ConditionValue,
 	onChange: (key: string, nextValue: unknown) => void,
@@ -2478,7 +2470,7 @@ function renderRoomField(
 ) {
 	return renderEntityField(
 		"roomId",
-		String(value.roomId ?? ""),
+		value.roomId,
 		"Room",
 		"room",
 		onChange,
@@ -2492,9 +2484,9 @@ function renderRoomField(
 
 function renderEntityField(
 	key: string,
-	value: string,
+	value: unknown,
 	title: string,
-	entityType: string,
+	entityType: WorldIdEntityType,
 	onChange: (key: string, nextValue: unknown) => void,
 	metadata: ConditionBuilderControlMetadata,
 	path: Array<string | number>,

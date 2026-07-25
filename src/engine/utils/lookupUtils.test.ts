@@ -1,7 +1,7 @@
 import type {ConditionDefinition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {toID} from "@/utils/idUtils";
-import {getCondition} from "./worldLookupUtils";
+import {getCondition} from "./lookupUtils";
 
 const gateOpen = {
 	type: "flag",

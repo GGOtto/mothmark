@@ -2,6 +2,7 @@ import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 
 import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
+import {PopupProvider} from "@/components/popup/Popup";
 
 import EditorPage from "./page";
 
@@ -20,9 +21,11 @@ describe("EditorPage loading", () => {
 
 		const {container} = render(
 			<ThemeProvider>
-				<WorldAutosaveProvider>
-					<EditorPage />
-				</WorldAutosaveProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
 			</ThemeProvider>,
 		);
 
@@ -44,9 +47,11 @@ describe("EditorPage loading", () => {
 
 		const {container} = render(
 			<ThemeProvider>
-				<WorldAutosaveProvider>
-					<EditorPage />
-				</WorldAutosaveProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
 			</ThemeProvider>,
 		);
 		await waitFor(() =>

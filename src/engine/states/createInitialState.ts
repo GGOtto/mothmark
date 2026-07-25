@@ -1,30 +1,36 @@
 import type {World} from "@/schemas/world/worldSchema";
-import {idValue} from "@/utils/idUtils";
-import type {GameState} from "@/schemas/states/gameStateSchema";
+import {compareIds, type ID} from "@/utils/idUtils";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {createRoomMessage} from "../messages/createRoomMessage";
-import {getRoom} from "../utils/worldLookupUtils";
+import {getRoom} from "../utils/lookupUtils";
 
-export function createInitialGameState(world: World, startingRoomId: string): GameState {
+export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
 	const startingRoom = getRoom(world, startingRoomId);
 	const game: GameState = {
-		currentRoom: startingRoom.id,
-		turns: 0,
+		player: {
+			currentRoom: startingRoomId,
+			turns: 0,
+			freezeState: {},
+		},
 		variables: {
 			flags: world.initialState.flags.map(({flag, value}) => ({[String(flag)]: Boolean(value)})),
-			counter: world.initialState.counters.map(({counter, value}) => ({
+			counters: world.initialState.counters.map(({counter, value}) => ({
 				[String(counter)]: Number(value),
 			})),
 		},
 		roomStates: world.rooms.map((room) => ({
 			type: "room",
 			id: room.id,
-			visited: false,
+			tags: [...room.tags],
+			lockedExits: [],
+			flags: {...room.flags},
 			featureStates: room.features.map((feature) => ({
 				type: "feature",
 				id: feature.id,
-				examined: false,
+				flags: {...feature.flags},
 			})),
 		})),
+		events: [...(world.events ?? [])].sort((left, right) => right.priority - left.priority),
 		messages: [],
 	};
 
@@ -32,7 +38,10 @@ export function createInitialGameState(world: World, startingRoomId: string): Ga
 		...game,
 		roomStates: game.roomStates.map((roomState) => ({
 			...roomState,
-			visited: idValue(roomState.id) === idValue(startingRoom.id),
+			flags: {
+				...roomState.flags,
+				visited: compareIds(roomState.id, startingRoom.id) || roomState.flags.visited,
+			},
 		})),
 		messages: [createRoomMessage(world, startingRoom, game)],
 	};
