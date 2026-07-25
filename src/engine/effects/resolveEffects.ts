@@ -10,6 +10,9 @@ import {
 	getEntityFlagDefinition,
 } from "@/schemas/world/entityFlagDefinitions";
 import {getEffect} from "../utils/lookupUtils";
+import {teleport} from "../player/teleport";
+import {world} from "@/data/worlds/exampleWorld";
+import {kill} from "../player/kill";
 
 const ALL_DIRECTIONS: Direction[] = [
 	"n",
@@ -337,6 +340,29 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 	});
 }
 
+export function resolvePlayerEffect(world: World, game: GameState, effect: Effect): GameState {
+	if (effect.type !== "player") {
+		return game;
+	}
+
+	return produce(game, (draft) => {
+		switch (effect.operation) {
+			case "freeze":
+				draft.player.freezeState.frozen = true;
+				draft.player.freezeState.message = effect.freezeMessage;
+				draft.player.freezeState.turns = effect.turns;
+				return draft;
+			case "unfreeze":
+				draft.player.freezeState.frozen = false;
+				return draft;
+			case "kill":
+				return kill(world, game);
+			case "teleport":
+				return teleport(world, draft, effect.roomId);
+		}
+	});
+}
+
 export function resolveEffect(world: World, game: GameState, effect: Effect): GameState {
 	return produce(game, (draft) => {
 		switch (effect.type) {
@@ -356,7 +382,7 @@ export function resolveEffect(world: World, game: GameState, effect: Effect): Ga
 			case "room":
 				return resolveRoomEffect(draft, effect);
 			case "player":
-			//TODO: return resolvePlayerEffect(draft, effect);
+				return resolvePlayerEffect(world, draft, effect);
 			default:
 				return draft;
 		}

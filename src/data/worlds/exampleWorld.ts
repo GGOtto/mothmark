@@ -100,6 +100,7 @@ const rawWorld = {
 		],
 	},
 	startRoomId: toID("room", "dungeon-entrance"),
+	deathMessage: "You have died!",
 	rooms: [
 		room(
 			"dungeon-entrance",

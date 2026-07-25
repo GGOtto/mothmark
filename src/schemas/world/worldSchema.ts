@@ -84,6 +84,7 @@ export const WorldSchema = editor
 				title: "Start Room",
 				description: "The room where exploration starts.",
 			}),
+			deathMessage: editor.string(),
 			rooms: editor.array(RoomSchema, {
 				title: "Rooms",
 				description: "All rooms and their local features.",

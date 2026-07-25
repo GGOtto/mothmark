@@ -3,7 +3,7 @@ import {editor} from "../utils/editorSchemaHelpers";
 import {RoomStateSchema} from "./entityStateSchemas";
 import {PlayerStateSchemas} from "./playerStateSchemas";
 
-export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error"]);
+export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error", "death"]);
 
 export const GameMessageSchema = z.object({
 	id: z.string(),
