@@ -31,6 +31,7 @@ import {
 	idValue,
 	isID,
 	type ID,
+	type IdEntityType,
 	resolveWorldEntityId,
 } from "@/utils/idUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -304,8 +305,8 @@ function resolvePathTemplate(
 	return resolvedPath;
 }
 
-function idPrefixForTarget(target: EditorLinkTargetMetadata) {
-	return target.create?.idPrefix ?? target.entityType ?? "item";
+function idPrefixForTarget(target: EditorLinkTargetMetadata): IdEntityType {
+	return (target.create?.idPrefix ?? target.entityType ?? "item") as IdEntityType;
 }
 
 function labelFieldForValue(value: unknown) {
@@ -325,7 +326,7 @@ function labelFromValue(value: unknown) {
 	return normalizedLabel.length > 0 ? normalizedLabel : undefined;
 }
 
-function assignCreatedEntityDefaults(value: unknown, id: string, target: EditorLinkTargetMetadata) {
+function assignCreatedEntityDefaults(value: unknown, id: ID, target: EditorLinkTargetMetadata) {
 	if (!isRecord(value)) return value;
 
 	const nextValue: Record<string, unknown> = {
@@ -587,7 +588,7 @@ export function UniversalEditor<TValue>({
 			const childMetadata = metadataForTarget(itemSchema, target);
 			const ref: EditorLinkRef = {
 				type: target.entityType ?? "editor",
-				id,
+				id: idValue(id),
 				label: labelFromValue(defaultItem),
 			};
 

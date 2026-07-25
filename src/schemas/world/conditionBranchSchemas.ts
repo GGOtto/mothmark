@@ -29,3 +29,4 @@ export const ConditionBranchSchema = z.object({
 });
 
 export type ConditionBranch = z.infer<typeof ConditionBranchSchema>;
+export type ConditionWithEffect = z.infer<typeof ConditionWithEffectSchema>;

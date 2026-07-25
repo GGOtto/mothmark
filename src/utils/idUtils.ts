@@ -61,11 +61,16 @@ const ENTITY_COLLECTIONS = {
 	effect: "effects",
 } as const;
 
-export function generateUniqueId(prefix: string, existingItems: Identifiable[]) {
+export function generateUniqueId<TEntityType extends IdEntityType>(
+	entityType: TEntityType,
+	existingItems?: Identifiable[],
+): ID<TEntityType> {
+	if (!existingItems) return toID(entityType, crypto.randomUUID());
+
 	const usedIds = new Set(existingItems.map((item) => idValue(item.id)));
 	let nextNumber = 1;
-	while (usedIds.has(`${prefix}-${nextNumber}`)) nextNumber += 1;
-	return `${prefix}-${nextNumber}`;
+	while (usedIds.has(`${entityType}-${nextNumber}`)) nextNumber += 1;
+	return toID(entityType, `${entityType}-${nextNumber}`);
 }
 
 export function isID(value: unknown): value is ID {
