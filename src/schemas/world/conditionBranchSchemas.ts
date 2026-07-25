@@ -10,8 +10,10 @@ export const ConditionWithEffectSchema = z.object({
 
 export const ConditionBranchSchema = z.object({
 	id: editor.id("condition-branch"),
-	perform: EffectGroupSchema.optional(),
+	always: EffectGroupSchema.optional(),
 	if: ConditionWithEffectSchema.optional(),
 	elifs: editor.array(ConditionWithEffectSchema).optional(),
 	else: EffectGroupSchema.optional(),
 });
+
+export type ConditionBranch = z.infer<typeof ConditionBranchSchema>;
