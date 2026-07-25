@@ -8,7 +8,7 @@ import {
 	createPlayerTestEffectGroup,
 	createPlayerTestEvent,
 	createPlayerTestScenario,
-} from "../testUtils";
+} from "../utils/testUtils";
 
 function createConditionalEvent(id: string, condition: Condition, effects: Effect[]) {
 	return createPlayerTestEvent(id, [], (draft) => {

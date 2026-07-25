@@ -1,5 +1,5 @@
 import {idValue} from "@/utils/idUtils";
-import {resolveTurn} from "./player/resolveTurn";
+import {resolveTurn} from "../player/resolveTurn";
 import {createPlayerTestScenario} from "./testUtils";
 
 describe("maintained engine player-test scenarios", () => {

@@ -1,5 +1,5 @@
 import {resolveTurn} from "./resolveTurn";
-import {createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestScenario} from "../utils/testUtils";
 
 describe("turn resolution through the player path", () => {
 	it("does not spend a turn or add output for blank input", () => {

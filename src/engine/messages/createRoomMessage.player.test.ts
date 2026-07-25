@@ -1,5 +1,5 @@
 import {resolveTurn} from "../player/resolveTurn";
-import {createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestScenario} from "../utils/testUtils";
 
 describe("room messages through the player path", () => {
 	it("introduces the starting room with its full description and visible features", () => {

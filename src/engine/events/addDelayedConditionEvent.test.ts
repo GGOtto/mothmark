@@ -4,7 +4,7 @@ import {EventSchema} from "@/schemas/world/eventSchema";
 import type {ConditionWithEffect} from "@/schemas/world/conditionBranchSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID} from "@/utils/idUtils";
-import {createPlayerTestEffectGroup} from "../testUtils";
+import {createPlayerTestEffectGroup} from "../utils/testUtils";
 import {addDelayedConditionEvent} from "./addDelayedConditionEvent";
 
 function delayedCondition(cancelIfConditionFails: boolean): ConditionWithEffect {

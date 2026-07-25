@@ -1,6 +1,6 @@
 import {idValue} from "@/utils/idUtils";
 import {resolveTurn} from "../player/resolveTurn";
-import {createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestScenario} from "../utils/testUtils";
 
 describe("commands through the player path", () => {
 	it("shows the full room description when the player explicitly looks", () => {

@@ -1,7 +1,7 @@
 import {produce} from "immer";
 import {idValue, toID} from "@/utils/idUtils";
 import {resolveTurn} from "./resolveTurn";
-import {createPlayerTestEvent, createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestEvent, createPlayerTestScenario} from "../utils/testUtils";
 
 describe("teleportation through the player path", () => {
 	it("uses room move effects as a real arrival, including room output and visited state", () => {

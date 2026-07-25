@@ -1,7 +1,7 @@
 import {produce} from "immer";
 import {idValue} from "@/utils/idUtils";
 import {resolveTurn} from "./resolveTurn";
-import {createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestScenario} from "../utils/testUtils";
 
 describe("movement through the player path", () => {
 	it.each(["east", "e", "go east", "walk e"])("moves with the player command %s", (command) => {

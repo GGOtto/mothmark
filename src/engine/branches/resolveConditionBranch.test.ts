@@ -8,7 +8,7 @@ import {
 import type {ConditionGroup} from "@/schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID} from "@/utils/idUtils";
-import {createPlayerTestEffectGroup, createPlayerTestScenario} from "../testUtils";
+import {createPlayerTestEffectGroup, createPlayerTestScenario} from "../utils/testUtils";
 import {resolveConditionBranch, resolveConditionBranchWithResult} from "./resolveConditionBranch";
 
 const passingCondition: ConditionGroup = {type: "group", operation: "all", conditions: []};

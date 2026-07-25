@@ -6,7 +6,7 @@ import {
 	createPlayerTestEffectGroup,
 	createPlayerTestEvent,
 	createPlayerTestScenario,
-} from "../testUtils";
+} from "../utils/testUtils";
 
 function scenarioWithEffects(effects: Effect[]) {
 	const scenario = createPlayerTestScenario("navigation");
