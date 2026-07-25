@@ -3,11 +3,25 @@ import type {ConditionBranch} from "@/schemas/world/conditionBranchSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {resolveEffects} from "../effects/resolveEffects";
 import {evaluateCondition} from "../conditions/evaluateCondition";
+import {addDelayedConditionEvent} from "../events/addDelayedConditionEvent";
+import type {ConditionWithEffect} from "@/schemas/world/conditionBranchSchemas";
 
 export type ConditionBranchResult = {
 	game: GameState;
 	actionTaken: boolean;
 };
+
+function resolveConditionEffect(
+	world: World,
+	game: GameState,
+	conditionWithEffect: ConditionWithEffect,
+): GameState {
+	if (conditionWithEffect.delayTurns > 0) {
+		return addDelayedConditionEvent(game, conditionWithEffect);
+	}
+
+	return resolveEffects(world, game, conditionWithEffect.effect);
+}
 
 export function resolveConditionBranchWithResult(
 	world: World,
@@ -22,9 +36,9 @@ export function resolveConditionBranchWithResult(
 		actionTaken = true;
 	}
 
-	if (branch.if && evaluateCondition(world, game, branch.if.condition)) {
+	if (branch.if && evaluateCondition(world, newGameState, branch.if.condition)) {
 		return {
-			game: resolveEffects(world, newGameState, branch.if.effect),
+			game: resolveConditionEffect(world, newGameState, branch.if),
 			actionTaken: true,
 		};
 	}
@@ -33,7 +47,7 @@ export function resolveConditionBranchWithResult(
 		for (const condition of branch.elifs) {
 			if (evaluateCondition(world, newGameState, condition.condition)) {
 				return {
-					game: resolveEffects(world, newGameState, condition.effect),
+					game: resolveConditionEffect(world, newGameState, condition),
 					actionTaken: true,
 				};
 			}

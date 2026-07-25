@@ -116,6 +116,98 @@ describe("events and conditions through the player path", () => {
 		expect(arrivedGame.events).toEqual([]);
 	});
 
+	it("schedules a matching delayed condition and applies its effect after the delay", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const event = produce(
+			createConditionalEvent(
+				"delayed-reaction",
+				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				[{type: "message", operation: "show", message: "The delayed bell rings."}],
+			),
+			(draft) => {
+				draft.branch.if!.delayTurns = 2;
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.events = [event];
+		});
+		const game = {...scenario.game, events: [event]};
+
+		const scheduledGame = resolveTurn(world, game, "help");
+		const waitingGame = resolveTurn(world, scheduledGame, "help");
+		const resolvedGame = resolveTurn(world, waitingGame, "help");
+
+		expect(scheduledGame.events).toHaveLength(1);
+		expect(scheduledGame.events[0]).toMatchObject({
+			name: "Delayed Condition",
+			wait: 2,
+			branch: {if: {delayTurns: 0}},
+		});
+		expect(waitingGame.messages.some((message) => message.text.includes("delayed bell"))).toBe(false);
+		expect(resolvedGame.messages.at(-1)).toMatchObject({
+			type: "system",
+			text: "The delayed bell rings.",
+		});
+		expect(resolvedGame.events).toEqual([]);
+	});
+
+	it("applies a delayed effect even if its condition changes when cancellation is disabled", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const event = produce(
+			createConditionalEvent(
+				"non-cancellable-reaction",
+				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				[{type: "message", operation: "show", message: "The committed bell rings."}],
+			),
+			(draft) => {
+				draft.branch.if!.delayTurns = 2;
+				draft.branch.if!.cancelIfConditionFails = false;
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.events = [event];
+		});
+		const game = {...scenario.game, events: [event]};
+
+		const scheduledGame = resolveTurn(world, game, "help");
+		const movedGame = resolveTurn(world, scheduledGame, "east");
+		const resolvedGame = resolveTurn(world, movedGame, "help");
+
+		expect(resolvedGame.messages.at(-1)).toMatchObject({
+			type: "system",
+			text: "The committed bell rings.",
+		});
+		expect(resolvedGame.events).toEqual([]);
+	});
+
+	it("discards a due delayed event when its rechecked condition fails", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const event = produce(
+			createConditionalEvent(
+				"cancellable-reaction",
+				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				[{type: "message", operation: "show", message: "This should not ring."}],
+			),
+			(draft) => {
+				draft.branch.if!.delayTurns = 2;
+				draft.branch.if!.cancelIfConditionFails = true;
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.events = [event];
+		});
+		const game = {...scenario.game, events: [event]};
+
+		const scheduledGame = resolveTurn(world, game, "help");
+		const movedGame = resolveTurn(world, scheduledGame, "east");
+		const cancelledGame = resolveTurn(world, movedGame, "help");
+
+		expect(cancelledGame.messages.some((message) => message.text.includes("should not ring"))).toBe(
+			false,
+		);
+		expect(cancelledGame.events).toEqual([]);
+	});
+
 	it("passes flag and counter changes from one event into later conditions that turn", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const setup = createPlayerTestEvent(

@@ -1,57 +1,12 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {Event} from "@/schemas/world/eventSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, generateUniqueId} from "@/utils/idUtils";
+import {compareIds} from "@/utils/idUtils";
 import {produce} from "immer";
 import {resolveConditionBranchWithResult} from "../branches/resolveConditionBranch";
-import type {ConditionWithEffect, ConditionBranch} from "@/schemas/world/conditionBranchSchemas";
+import {addEvent} from "./eventQueue";
 
-export function addDelayedConditionEvent(
-	game: GameState,
-	conditionWithEffect: ConditionWithEffect,
-): GameState {
-	const branch: ConditionBranch = {
-		id: generateUniqueId("condition-branch"),
-	};
-
-	if (conditionWithEffect.cancelIfConditionFails) {
-		branch.if = conditionWithEffect;
-	} else {
-		branch.always = conditionWithEffect.effect;
-	}
-
-	const event: Event = {
-		id: generateUniqueId("event"),
-		name: "Delayed Condition",
-		enabled: true,
-		branch,
-		disposable: true,
-		wait: conditionWithEffect.delayTurns,
-		priority: 0,
-		lastSuccess: game.player.turns,
-	};
-
-	return addEvent(game, event);
-}
-
-export function addEvent(game: GameState, event: Event): GameState {
-	return produce(game, (draft) => {
-		const index = draft.events.findIndex((element) => element.priority < event.priority);
-		if (index === -1) {
-			draft.events.push(event);
-		} else {
-			draft.events.splice(index, 0, event);
-		}
-	});
-}
-
-export function addEvents(game: GameState, events: Event[]): GameState {
-	let newGameState = game;
-	for (const event of events) {
-		newGameState = addEvent(newGameState, event);
-	}
-	return newGameState;
-}
+export {addEvent, addEvents} from "./eventQueue";
 
 export function resolveEvents(world: World, game: GameState): GameState {
 	let newGameState = game;
