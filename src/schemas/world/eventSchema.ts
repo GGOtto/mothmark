@@ -32,6 +32,8 @@ export const EventSchema = z.object({
 		.nonnegative()
 		.default(0),
 
+	lastSuccess: z.number().int().default(0),
+
 	priority: editor
 		.number({
 			title: "Priority",

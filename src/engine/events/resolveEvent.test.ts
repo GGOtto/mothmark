@@ -2,6 +2,7 @@ import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas
 import {EventSchema, type Event} from "@/schemas/world/eventSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {idValue, toID} from "@/utils/idUtils";
 import {resolveConditionBranchWithResult} from "../branches/resolveConditionBranch";
 import {addEvent, addEvents, resolveEvents} from "./resolveEvent";
 
@@ -16,7 +17,18 @@ function createGame(events: Event[] = []): GameState {
 }
 
 function createEvent(overrides: Partial<Event> = {}): Event {
-	return {...createDefaultFieldObject(EventSchema), ...overrides};
+	const event = createDefaultFieldObject(EventSchema);
+	const name = overrides.name ?? "event";
+
+	return {
+		...event,
+		...overrides,
+		id: overrides.id ?? toID("event", name),
+		branch: overrides.branch ?? {
+			...event.branch,
+			id: toID("condition-branch", `${name}-branch`),
+		},
+	};
 }
 
 const world: World = createDefaultFieldObject(WorldSchema);
@@ -126,4 +138,38 @@ describe("resolveEvents", () => {
 
 		expect(mockedResolveConditionBranch).toHaveBeenNthCalledWith(2, world, afterFirst, second.branch);
 	});
+
+	it.each([
+		["start", 20],
+		["middle", 5],
+	])(
+		"continues resolving the original events once when a new event is inserted at the %s",
+		(_position, insertedPriority) => {
+			const first = createEvent({name: "first", priority: 10});
+			const second = createEvent({name: "second", priority: 0});
+			const inserted = createEvent({name: "inserted", priority: insertedPriority});
+			const game = createGame([first, second]);
+
+			mockedResolveConditionBranch
+				.mockImplementationOnce((_world, currentGame) => ({
+					game: addEvent(currentGame, inserted),
+					actionTaken: true,
+				}))
+				.mockImplementation((_world, currentGame) => ({
+					game: currentGame,
+					actionTaken: true,
+				}));
+
+			const result = resolveEvents(world, game);
+
+			expect(
+				mockedResolveConditionBranch.mock.calls.map(([, , branch]) => idValue(branch.id)),
+			).toEqual(["first-branch", "second-branch"]);
+			expect(result.events.map((event) => event.name)).toEqual(
+				insertedPriority > first.priority
+					? ["inserted", "first", "second"]
+					: ["first", "inserted", "second"],
+			);
+		},
+	);
 });

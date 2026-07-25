@@ -35,6 +35,7 @@ describe("LogicEditor", () => {
 					disposable: false,
 					wait: 0,
 					priority: 0,
+					lastSuccess: 0,
 					branch: {
 						id: toID("condition-branch", "test-event-branch"),
 						always: {
@@ -104,6 +105,7 @@ describe("LogicEditor", () => {
 					disposable: false,
 					wait: 0,
 					priority: 0,
+					lastSuccess: 0,
 					branch: {
 						id: toID("condition-branch", "test-event-branch"),
 						always: {

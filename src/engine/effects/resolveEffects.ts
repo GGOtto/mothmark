@@ -29,6 +29,7 @@ const ALL_DIRECTIONS: Direction[] = [
 	"out",
 ];
 
+// TODO: message effects are all screwed up when events fire them
 export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
 		return game;
@@ -351,6 +352,7 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 				draft.player.freezeState.frozen = true;
 				draft.player.freezeState.message = effect.freezeMessage;
 				draft.player.freezeState.turns = effect.turns;
+				draft.player.freezeState.startOfFreeze = game.player.turns;
 				return draft;
 			case "unfreeze":
 				draft.player.freezeState.frozen = false;

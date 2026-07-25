@@ -58,7 +58,7 @@ export type TextFieldControlMetadata = EditorControlMetadata & {
 	features?: TextFieldFeatures;
 };
 
-export type TextFieldProps = EditorControlProps<string, TextFieldControlMetadata>;
+export type TextFieldProps = EditorControlProps<string | undefined, TextFieldControlMetadata>;
 
 export function TextField({
 	value,
@@ -72,6 +72,7 @@ export function TextField({
 	context,
 }: TextFieldProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
+	const inputValue = value ?? "";
 
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -84,7 +85,7 @@ export function TextField({
 	function copyValue() {
 		if (!navigator?.clipboard) return;
 
-		void navigator.clipboard.writeText(value);
+		void navigator.clipboard.writeText(inputValue);
 	}
 
 	function clearValue() {
@@ -111,7 +112,7 @@ export function TextField({
 				<input
 					className="textField__input"
 					aria-label={metadata.title}
-					value={value}
+					value={inputValue}
 					placeholder={metadata.placeholder}
 					disabled={isDisabled}
 					readOnly={isReadonly}
@@ -140,7 +141,7 @@ export function TextField({
 					<button
 						className="textField__button"
 						type="button"
-						disabled={!canEdit || value === (metadata.features?.clearValue ?? "")}
+						disabled={!canEdit || inputValue === (metadata.features?.clearValue ?? "")}
 						onClick={clearValue}
 					>
 						Clear
@@ -151,7 +152,7 @@ export function TextField({
 					<button
 						className="textField__button"
 						type="button"
-						disabled={value.length === 0}
+						disabled={inputValue.length === 0}
 						onClick={copyValue}
 					>
 						Copy

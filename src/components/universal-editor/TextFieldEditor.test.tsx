@@ -42,6 +42,35 @@ describe("TextField", () => {
 		expect(screen.getByRole("textbox")).toHaveValue("Library");
 	});
 
+	it("keeps an optional text field controlled when its value is added", () => {
+		const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+		const {rerender} = render(
+			<TextField
+				value={undefined}
+				onChange={() => undefined}
+				metadata={metadata}
+				path={[]}
+				context={context}
+			/>,
+		);
+
+		expect(screen.getByRole("textbox")).toHaveValue("");
+
+		rerender(
+			<TextField
+				value="You are frozen."
+				onChange={() => undefined}
+				metadata={metadata}
+				path={[]}
+				context={context}
+			/>,
+		);
+
+		expect(screen.getByRole("textbox")).toHaveValue("You are frozen.");
+		expect(consoleError).not.toHaveBeenCalled();
+		consoleError.mockRestore();
+	});
+
 	it("can emit a metadata-defined value from the Clear button", () => {
 		const onChange = jest.fn();
 		render(

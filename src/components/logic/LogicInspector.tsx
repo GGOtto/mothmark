@@ -1,6 +1,5 @@
 "use client";
 
-import {produce} from "immer";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import {UniversalEditor} from "@/components/universal-editor/UniversalEditor";
 import {ConditionSchema} from "@/schemas/world/conditionSchema";
@@ -43,18 +42,16 @@ export function LogicInspector({world, updateWorld, selection}: LogicInspectorPr
 		if (!condition) return <p className="rightSideBarEmptyText">Condition not found</p>;
 
 		function changeCondition(nextCondition: BranchCondition) {
-			updateWorld(
-				produce(world, (draft) => {
-					const target = draft.events?.find((candidate) => idValue(candidate.id) === selection!.eventId);
-					if (!target || selection!.kind !== "condition") return;
-					if (selection!.branch === "if" && target.branch.if) {
-						target.branch.if.condition = nextCondition;
-					} else if (selection!.branch === "elif") {
-						const branch = target.branch.elifs?.[selection!.elifIndex ?? -1];
-						if (branch) branch.condition = nextCondition;
-					}
-				}),
-			);
+			updateWorld((draft) => {
+				const target = draft.events?.find((candidate) => idValue(candidate.id) === selection!.eventId);
+				if (!target || selection!.kind !== "condition") return;
+				if (selection!.branch === "if" && target.branch.if) {
+					target.branch.if.condition = nextCondition;
+				} else if (selection!.branch === "elif") {
+					const branch = target.branch.elifs?.[selection!.elifIndex ?? -1];
+					if (branch) branch.condition = nextCondition;
+				}
+			});
 		}
 
 		return (

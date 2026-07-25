@@ -61,6 +61,7 @@ function defaultEvent(world: World): Event {
 		disposable: false,
 		wait: 0,
 		priority: 0,
+		lastSuccess: 0,
 		branch: {
 			id: toID("condition-branch", `${id}-branch`),
 			always: emptyEffectGroup(`${id}-always`, "Always"),

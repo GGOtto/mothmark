@@ -120,7 +120,7 @@ export function ObjectFlagEditor({
 					</div>
 				) : null}
 
-				{flags.map(([name, defaultValue]) => {
+				{flags.map(([name, defaultValue], index) => {
 					const definition = definitions[name];
 					const permanent = Boolean(definition?.permanent);
 					const defaultReadonly = Boolean(definition?.defaultReadonly);
@@ -129,7 +129,7 @@ export function ObjectFlagEditor({
 							className={["objectFlagEditor__row", permanent ? "objectFlagEditor__row--permanent" : ""]
 								.filter(Boolean)
 								.join(" ")}
-							key={name}
+							key={permanent ? `permanent-${name}` : `editable-${index}`}
 						>
 							<div className="objectFlagEditor__name">
 								{permanent ? (

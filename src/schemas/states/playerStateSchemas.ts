@@ -10,6 +10,7 @@ export const PlayerStateSchemas = z.object({
 		frozen: z.boolean().optional(),
 		message: z.string().optional(),
 		turns: z.number().int().optional(),
+		startOfFreeze: z.number().int().optional(),
 	}),
 });
 

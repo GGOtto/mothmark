@@ -1,10 +1,16 @@
 import type {Room, World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
-import type {GameState} from "@/schemas/states/gameStateSchemas";
+import type {GameMessageType, GameState} from "@/schemas/states/gameStateSchemas";
 import {createGameMessage} from "./createMessage";
 import {GameMessage} from "@/schemas/states/gameStateSchemas";
 import {getRoom} from "../utils/lookupUtils";
 import {produce} from "immer";
+
+export function addMessage(game: GameState, message: string, type: GameMessageType): GameState {
+	return produce(game, (draft) => {
+		draft.messages.push(createGameMessage(message, type));
+	});
+}
 
 export function lookAtRoom(world: World, game: GameState): GameState {
 	const room = getRoom(world, game.player.currentRoom);

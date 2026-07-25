@@ -44,9 +44,12 @@ describe("ObjectFlagEditor", () => {
 	it("adds, names, defaults, and deletes author flags", () => {
 		render(<StatefulEditor />);
 
-		fireEvent.change(screen.getByLabelText("Flag name"), {
+		const nameInput = screen.getByLabelText("Flag name");
+		nameInput.focus();
+		fireEvent.change(nameInput, {
 			target: {value: "doorOpen"},
 		});
+		expect(screen.getByLabelText("Flag name")).toHaveFocus();
 		fireEvent.click(screen.getByRole("switch", {name: "Default value for doorOpen"}));
 
 		expect(screen.getByTestId("value")).toHaveTextContent(

@@ -887,18 +887,6 @@ function ConditionLinkList({
 		const usage = conditionUsage(condition, context);
 		const name = conditionLinkName(usage, metadata, context, index);
 
-		if (
-			canEdit &&
-			!isConditionReference(condition) &&
-			(!hasStoredConditionName(condition) || !storedConditionId(condition))
-		) {
-			const siblingConditions = conditions.filter((_, conditionIndex) => conditionIndex !== index);
-			onUpdateCondition(
-				index,
-				ensureConditionIdentity(condition, index, metadata, context, siblingConditions),
-			);
-		}
-
 		if (canOpenChildEditor) {
 			const conditionIdentity = isConditionReference(condition) ? condition.conditionId : condition.id;
 			const conditionId = idValue(conditionIdentity);

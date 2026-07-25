@@ -1,6 +1,7 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {Event} from "@/schemas/world/eventSchema";
 import type {World} from "@/schemas/world/worldSchema";
+import {compareIds} from "@/utils/idUtils";
 import {produce} from "immer";
 import {resolveConditionBranchWithResult} from "../branches/resolveConditionBranch";
 
@@ -25,37 +26,37 @@ export function addEvents(game: GameState, events: Event[]): GameState {
 
 export function resolveEvents(world: World, game: GameState): GameState {
 	let newGameState = game;
-	let eventIndex = 0;
 
 	// Only events present at the start of this pass are eligible to run. Event
-	// effects do not currently add events, but this also keeps that future
-	// behavior from unexpectedly resolving a newly scheduled event immediately.
-	for (let checkedEvents = 0; checkedEvents < game.events.length; checkedEvents += 1) {
+	// IDs let us find those same events if resolving an earlier event inserts or
+	// reorders entries in the live queue.
+	const eventIds = game.events.map((event) => event.id);
+	for (const eventId of eventIds) {
+		const eventIndex = newGameState.events.findIndex((event) => compareIds(event.id, eventId));
+		if (eventIndex === -1) continue;
+
 		const event = newGameState.events[eventIndex];
-		if (!event) break;
 
-		if (!event.enabled) {
-			eventIndex += 1;
-			continue;
-		}
-
-		if (event.wait > 0) {
-			newGameState = produce(newGameState, (draft) => {
-				draft.events[eventIndex].wait -= 1;
-			});
-			eventIndex += 1;
+		if (!event.enabled || game.player.turns - event.lastSuccess < event.wait) {
 			continue;
 		}
 
 		const branchResult = resolveConditionBranchWithResult(world, newGameState, event.branch);
 		newGameState = branchResult.game;
 
-		if (event.disposable && branchResult.actionTaken) {
+		if (branchResult.actionTaken) {
+			const resolvedEventIndex = newGameState.events.findIndex((candidate) =>
+				compareIds(candidate.id, eventId),
+			);
+			if (resolvedEventIndex === -1) continue;
+
 			newGameState = produce(newGameState, (draft) => {
-				draft.events.splice(eventIndex, 1);
+				if (event.disposable) {
+					draft.events.splice(resolvedEventIndex, 1);
+				} else {
+					draft.events[resolvedEventIndex].lastSuccess = draft.player.turns;
+				}
 			});
-		} else {
-			eventIndex += 1;
 		}
 	}
 
