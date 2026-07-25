@@ -85,13 +85,13 @@ describe("resolveEvents", () => {
 		expect(mockedResolveConditionBranch).toHaveBeenNthCalledWith(2, world, game, second.branch);
 	});
 
-	it("decrements waiting events without resolving them or mutating the input", () => {
+	it("keeps authored wait durations unchanged until the turn threshold is reached", () => {
 		const waiting = createEvent({wait: 2});
 		const game = createGame([waiting]);
 
 		const result = resolveEvents(world, game);
 
-		expect(result.events[0].wait).toBe(1);
+		expect(result.events[0].wait).toBe(2);
 		expect(game.events[0].wait).toBe(2);
 		expect(mockedResolveConditionBranch).not.toHaveBeenCalled();
 	});

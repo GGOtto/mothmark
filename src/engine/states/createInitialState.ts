@@ -8,7 +8,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 	const startingRoom = getRoom(world, startingRoomId);
 	const game: GameState = {
 		player: {
-			currentRoom: world.startRoomId,
+			currentRoom: startingRoomId,
 			turns: 0,
 			freezeState: {},
 		},
@@ -30,7 +30,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 				flags: {...feature.flags},
 			})),
 		})),
-		events: world.events ?? [],
+		events: [...(world.events ?? [])].sort((left, right) => right.priority - left.priority),
 		messages: [],
 	};
 

@@ -32,7 +32,7 @@ describe("resolveTurn", () => {
 		expect(nextGame.messages.at(-1)).toMatchObject({type: "room"});
 	});
 
-	it("resolves events before the player's command", () => {
+	it("resolves events after the player's command and its immediate output", () => {
 		const eventEffect = produce(createDefaultFieldObject(EffectGroupSchema), (draft) => {
 			draft.effects = [
 				{
@@ -60,9 +60,9 @@ describe("resolveTurn", () => {
 		const nextGame = resolveTurn(worldWithEvent, game, "help");
 
 		expect(nextGame.messages.slice(1)).toEqual([
-			expect.objectContaining({type: "system", text: "The event resolves."}),
 			expect.objectContaining({type: "command", text: "help"}),
 			expect.objectContaining({type: "system"}),
+			expect.objectContaining({type: "system", text: "The event resolves."}),
 		]);
 		expect(nextGame.events).toEqual([]);
 		expect(nextGame.player.turns).toBe(1);

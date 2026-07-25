@@ -1,7 +1,8 @@
 import {produce} from "immer";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
-import {EventSchema} from "@/schemas/world/eventSchema";
+import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
+import {EventSchema, type Event} from "@/schemas/world/eventSchema";
 import {
 	ConnectionSchema,
 	RoomFeatureSchema,
@@ -43,7 +44,7 @@ function createRoom(
 	});
 }
 
-function createFeature(
+export function createPlayerTestFeature(
 	id: string,
 	name: string,
 	description: string,
@@ -55,6 +56,28 @@ function createFeature(
 		draft.description = description;
 		draft.aliases = aliases;
 		draft.listedInRoom = true;
+	});
+}
+
+export function createPlayerTestEffectGroup(id: string, effects: Effect[]): EffectGroup {
+	return produce(createDefaultFieldObject(EffectGroupSchema), (draft) => {
+		draft.id = toID("effect", id);
+		draft.name = id;
+		draft.effects = effects;
+	});
+}
+
+export function createPlayerTestEvent(
+	id: string,
+	effects: Effect[],
+	recipe?: (draft: import("immer").Draft<Event>) => void,
+): Event {
+	return produce(createDefaultFieldObject(EventSchema), (draft) => {
+		draft.id = toID("event", id);
+		draft.name = id;
+		draft.branch.id = toID("condition-branch", `${id}-branch`);
+		draft.branch.always = createPlayerTestEffectGroup(`${id}-effects`, effects);
+		recipe?.(draft);
 	});
 }
 
@@ -91,7 +114,7 @@ function createWorld(
 }
 
 function createNavigationWorld(): World {
-	const bell = createFeature(
+	const bell = createPlayerTestFeature(
 		"brass-bell",
 		"Brass Bell",
 		"A small brass bell hangs beside the doorway.",
@@ -150,24 +173,19 @@ function createTurnEventWorld(): World {
 		"Test Observatory",
 		"A clockwork instrument waits for the next turn.",
 	);
-	const chimeEffect = produce(createDefaultFieldObject(EffectGroupSchema), (draft) => {
-		draft.id = toID("effect", "clock-chime-effect");
-		draft.name = "Clock chime";
-		draft.effects = [
+	const chimeEvent = createPlayerTestEvent(
+		"clock-chime",
+		[
 			{
 				type: "message",
 				operation: "show",
 				message: "The clockwork instrument chimes.",
 			},
-		];
-	});
-	const chimeEvent = produce(createDefaultFieldObject(EventSchema), (draft) => {
-		draft.id = toID("event", "clock-chime");
-		draft.name = "Clock chime";
-		draft.disposable = true;
-		draft.branch.id = toID("condition-branch", "clock-chime-branch");
-		draft.branch.always = chimeEffect;
-	});
+		],
+		(draft) => {
+			draft.disposable = true;
+		},
+	);
 
 	return produce(createWorld("Turn event player tests", "observatory", [observatory]), (draft) => {
 		draft.events = [chimeEvent];

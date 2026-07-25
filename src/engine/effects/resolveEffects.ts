@@ -11,7 +11,6 @@ import {
 } from "@/schemas/world/entityFlagDefinitions";
 import {getEffect} from "../utils/lookupUtils";
 import {teleport} from "../player/teleport";
-import {world} from "@/data/worlds/exampleWorld";
 import {kill} from "../player/kill";
 
 const ALL_DIRECTIONS: Direction[] = [
@@ -346,23 +345,23 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 		return game;
 	}
 
-	return produce(game, (draft) => {
-		switch (effect.operation) {
-			case "freeze":
+	switch (effect.operation) {
+		case "freeze":
+			return produce(game, (draft) => {
 				draft.player.freezeState.frozen = true;
 				draft.player.freezeState.message = effect.freezeMessage;
 				draft.player.freezeState.turns = effect.turns;
 				draft.player.freezeState.startOfFreeze = game.player.turns;
-				return draft;
-			case "unfreeze":
+			});
+		case "unfreeze":
+			return produce(game, (draft) => {
 				draft.player.freezeState.frozen = false;
-				return draft;
-			case "kill":
-				return kill(world, game);
-			case "teleport":
-				return teleport(world, draft, effect.roomId);
-		}
-	});
+			});
+		case "kill":
+			return kill(world, game, effect.customDeathMessage);
+		case "teleport":
+			return teleport(world, game, effect.roomId);
+	}
 }
 
 export function resolveEffect(world: World, game: GameState, effect: Effect): GameState {
@@ -380,9 +379,11 @@ export function resolveEffect(world: World, game: GameState, effect: Effect): Ga
 			case "counter":
 				return resolveCounterEffect(draft, effect);
 			case "feature":
-				return resolveCounterEffect(draft, effect);
+				return resolveFeatureEffect(draft, effect);
 			case "room":
-				return resolveRoomEffect(draft, effect);
+				return effect.operation === "move-player-to"
+					? teleport(world, draft, effect.roomId)
+					: resolveRoomEffect(draft, effect);
 			case "player":
 				return resolvePlayerEffect(world, draft, effect);
 			default:

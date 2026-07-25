@@ -63,11 +63,13 @@ export function teleport(
 		roomState.flags = {...destinationRoom.flags, ...roomState.flags, visited: true};
 		roomState.tags ??= [...destinationRoom.tags];
 		roomState.lockedExits ??= [];
-		roomState.featureStates = destinationRoom.features.map((feature) => {
-			const existingState = roomState.featureStates.find((state) => compareIds(state.id, feature.id));
-			return existingState
-				? {...existingState, flags: {...feature.flags, ...existingState.flags}}
-				: {type: "feature", id: feature.id, flags: {...feature.flags}};
+		roomState.featureStates = roomState.featureStates.map((existingState) => {
+			const authoredFeature = world.rooms
+				.flatMap((room) => room.features)
+				.find((feature) => compareIds(feature.id, existingState.id));
+			return authoredFeature
+				? {...existingState, flags: {...authoredFeature.flags, ...existingState.flags}}
+				: existingState;
 		});
 	});
 }

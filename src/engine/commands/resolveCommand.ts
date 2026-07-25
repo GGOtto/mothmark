@@ -5,12 +5,13 @@ import {createGameMessage} from "../messages/createMessage";
 import {move} from "../player/move";
 import {lookAtRoom} from "../messages/createRoomMessage";
 import {
-	formatTargetWithArticle,
 	normalizeInput,
+	namedThingMatchesText,
 	parseCommandConnectors,
 	parseInputWithAlias,
 	type ParsedCommand,
 } from "./parse";
+import {compareIds} from "@/utils/idUtils";
 
 const DIRECTION_ALIASES: Record<string, Direction> = {
 	n: "n",
@@ -87,13 +88,47 @@ export const commands: CommandDefinition[] = [
 		connectors: ["in front of"],
 		run: ({world, gameState, parsed}) => {
 			if (!parsed.targetText) return addSystemMessage(gameState, "Examine what?");
-			if (parsed.connector) {
-				return addSystemMessage(
-					gameState,
-					`You examine ${formatTargetWithArticle(parsed.connector.left)} ${parsed.connector.connector} ${formatTargetWithArticle(parsed.connector.right)}.`,
+			const roomState = gameState.roomStates.find((state) =>
+				compareIds(state.id, gameState.player.currentRoom),
+			);
+			const targetText = parsed.connector?.left ?? parsed.targetText;
+			const match = roomState?.featureStates
+				.map((featureState) => ({
+					featureState,
+					feature: world.rooms
+						.flatMap((room) => room.features)
+						.find((feature) => compareIds(feature.id, featureState.id)),
+				}))
+				.find(
+					({feature, featureState}) =>
+						feature &&
+						!(featureState.flags.hidden ?? feature.flags.hidden ?? false) &&
+						namedThingMatchesText(
+							{
+								name: featureState.name ?? feature.name,
+								aliases: feature.aliases,
+							},
+							targetText,
+						),
 				);
+
+			const matchedFeature = match?.feature;
+			if (!match || !matchedFeature) {
+				return addSystemMessage(gameState, "You don't see that here.");
 			}
-			return addSystemMessage(gameState, `You examine ${formatTargetWithArticle(parsed.targetText)}.`);
+
+			return produce(gameState, (draft) => {
+				const draftRoom = draft.roomStates.find((state) =>
+					compareIds(state.id, draft.player.currentRoom),
+				);
+				const draftFeature = draftRoom?.featureStates.find((state) =>
+					compareIds(state.id, match.featureState.id),
+				);
+				if (draftFeature) draftFeature.flags.examined = true;
+				draft.messages.push(
+					createGameMessage(match.featureState.description ?? matchedFeature.description, "system"),
+				);
+			});
 		},
 	},
 	// TODO: Restore item and NPC commands when those runtime domains return.

@@ -19,22 +19,23 @@ export function resolveTurn(world: World, game: GameState, response: string): Ga
 		draft.player.turns += 1;
 	});
 
-	// add the message that the player put first, so nothing shows up after it
+	// Echo the player's input before command output and end-of-turn events.
 	newGameState = addMessage(newGameState, response, "command");
 
 	if (newGameState.player.freezeState.frozen) {
-		const message = newGameState.player.freezeState.message
-			? newGameState.player.freezeState.message
-			: "You are currently frozen.";
-		newGameState = addMessage(newGameState, message, "error");
-
-		// stop the freeze if the wait is over
 		const turns = newGameState.player.freezeState.turns;
 		const start = newGameState.player.freezeState.startOfFreeze;
-		if (turns && start && newGameState.player.turns - start > turns) {
+		const freezeHasExpired =
+			turns !== undefined && start !== undefined && newGameState.player.turns - start > turns;
+
+		if (freezeHasExpired) {
 			newGameState = produce(newGameState, (draft) => {
 				draft.player.freezeState = {};
 			});
+			newGameState = runCommand(world, newGameState, response);
+		} else {
+			const message = newGameState.player.freezeState.message || "You are currently unable to act.";
+			newGameState = addMessage(newGameState, message, "error");
 		}
 	} else {
 		newGameState = runCommand(world, newGameState, response);
