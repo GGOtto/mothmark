@@ -2,6 +2,7 @@ import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
 import {RoomStateSchema} from "./entityStateSchemas";
 import {PlayerStateSchemas} from "./playerStateSchemas";
+import {EventSchema} from "../world/eventSchema";
 
 export const GameMessageTypeSchema = z.enum(["room", "command", "system", "error", "death"]);
 
@@ -25,6 +26,7 @@ export const GameStateSchema = z.object({
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
 	messages: z.array(GameMessageSchema),
+	events: z.array(EventSchema),
 });
 
 export type GameMessageType = z.infer<typeof GameMessageTypeSchema>;

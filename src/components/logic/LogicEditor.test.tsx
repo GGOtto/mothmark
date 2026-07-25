@@ -1,10 +1,16 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {produce} from "immer";
+import {produce, type Draft} from "immer";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {World} from "@/schemas/world/worldSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {WorldUpdate} from "@/types/worldUpdaterTypes";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID} from "@/utils/idUtils";
 import {LogicEditor, LogicHome} from "./LogicEditor";
+
+function createWorld(recipe: (draft: Draft<World>) => void): World {
+	const configuredWorld = produce(exampleWorld, recipe);
+	return {...createDefaultFieldObject(WorldSchema), ...configuredWorld};
+}
 
 describe("LogicHome", () => {
 	it("offers the four logic tools", () => {
@@ -19,10 +25,9 @@ describe("LogicHome", () => {
 
 describe("LogicEditor", () => {
 	it("adds a saved one-effect group and stores its reference in the branch group", () => {
-		let world: World = {
-			...exampleWorld,
-			effects: [],
-			events: [
+		let world = createWorld((draft) => {
+			draft.effects = [];
+			draft.events = [
 				{
 					id: toID("event", "test-event"),
 					name: "Test event",
@@ -41,8 +46,8 @@ describe("LogicEditor", () => {
 						},
 					},
 				},
-			],
-		};
+			];
+		});
 		const updateWorld = jest.fn((update: WorldUpdate) => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		});
@@ -74,9 +79,8 @@ describe("LogicEditor", () => {
 	});
 
 	it("reorders branch effect-group references while dragging over another effect", () => {
-		let world: World = {
-			...exampleWorld,
-			effects: [
+		let world = createWorld((draft) => {
+			draft.effects = [
 				{
 					id: toID("effect", "first"),
 					name: "First",
@@ -91,8 +95,8 @@ describe("LogicEditor", () => {
 					effects: [{type: "message", operation: "show", message: "Second"}],
 					allowMultipleUsesInWorld: true,
 				},
-			],
-			events: [
+			];
+			draft.events = [
 				{
 					id: toID("event", "test-event"),
 					name: "Test event",
@@ -114,8 +118,8 @@ describe("LogicEditor", () => {
 						},
 					},
 				},
-			],
-		};
+			];
+		});
 		const updateWorld = jest.fn((update: WorldUpdate) => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		});

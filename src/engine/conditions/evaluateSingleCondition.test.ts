@@ -1,44 +1,51 @@
-import type {GameState} from "@/schemas/states/gameStateSchemas";
-import type {SingleCondition} from "@/schemas/world/conditionSchema";
-import type {World} from "@/schemas/world/worldSchema";
+import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas";
+import {FeatureStateSchema, RoomStateSchema} from "@/schemas/states/entityStateSchemas";
+import {SingleConditionSchema, type SingleCondition} from "@/schemas/world/conditionSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+import {RoomSchema} from "@/schemas/world/roomSchema";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import {produce} from "immer";
 import {evaluateSingleCondition} from "./evaluateSingleCondition";
 
 const currentRoom = toID("room", "atrium");
 
-const game: GameState = {
-	player: {
-		currentRoom: {type: "room", id: "123"},
-		turns: 0,
-		freezeState: {},
-	},
-	variables: {
-		flags: [{"gate.open": true}, {"lamp.lit": false}],
-		counters: [{steps: 3}, {score: 10}],
-	},
-	roomStates: [
+const game: GameState = produce(createDefaultFieldObject(GameStateSchema), (draft) => {
+	draft.player.currentRoom = currentRoom;
+	draft.variables.flags = [{"gate.open": true}, {"lamp.lit": false}];
+	draft.variables.counters = [{steps: 3}, {score: 10}];
+	draft.roomStates = [
 		{
-			type: "room",
+			...createDefaultFieldObject(RoomStateSchema),
 			id: currentRoom,
 			flags: {visited: true, active: true},
 			featureStates: [
 				{
-					type: "feature",
+					...createDefaultFieldObject(FeatureStateSchema),
 					id: toID("feature", "statue"),
 					flags: {examined: false, glowing: true},
 				},
 			],
 		},
-	],
-	messages: [],
-};
+	];
+});
 
-const world = {
-	rooms: [{id: currentRoom, name: "Atrium", tags: ["indoors", "safe"]}],
-} as unknown as World;
+const world: World = produce(createDefaultFieldObject(WorldSchema), (draft) => {
+	draft.rooms = [
+		{
+			...createDefaultFieldObject(RoomSchema),
+			id: currentRoom,
+			name: "Atrium",
+			tags: ["indoors", "safe"],
+		},
+	];
+});
 
-function condition(value: unknown): SingleCondition {
-	return value as SingleCondition;
+function condition(overrides: Record<string, unknown>): SingleCondition {
+	return SingleConditionSchema.parse({
+		...createDefaultFieldObject(SingleConditionSchema),
+		...overrides,
+	});
 }
 
 describe("evaluateSingleCondition", () => {

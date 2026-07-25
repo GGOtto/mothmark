@@ -1,46 +1,57 @@
-import type {GameState} from "@/schemas/states/gameStateSchemas";
-import type {Condition, ConditionGroup, SingleCondition} from "@/schemas/world/conditionSchema";
-import type {World} from "@/schemas/world/worldSchema";
+import {GameStateSchema} from "@/schemas/states/gameStateSchemas";
+import {
+	SingleConditionSchema,
+	type Condition,
+	type ConditionGroup,
+	type SingleCondition,
+} from "@/schemas/world/conditionSchema";
+import {WorldSchema} from "@/schemas/world/worldSchema";
+import {RoomSchema} from "@/schemas/world/roomSchema";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import {produce} from "immer";
 import {evaluateCondition} from "./evaluateCondition";
 
 const currentRoom = toID("room", "atrium");
 
-const game = {
-	player: {
-		turns: 0,
-		currentRoom: {type: "room", id: "123"},
-		freezeState: {},
-	},
-	variables: {
-		flags: [{passing: true, failing: false}],
-		counters: [],
-	},
-	roomStates: [],
-	messages: [],
-} satisfies GameState;
+const game = produce(createDefaultFieldObject(GameStateSchema), (draft) => {
+	draft.variables.flags = [{passing: true, failing: false}];
+});
 
-const passingCondition = {
+function singleCondition(overrides: Record<string, unknown>): SingleCondition {
+	return SingleConditionSchema.parse({
+		...createDefaultFieldObject(SingleConditionSchema),
+		...overrides,
+	});
+}
+
+const passingCondition = singleCondition({
 	type: "flag",
 	"flag-type": "normal",
 	operation: "true",
 	flag: "passing",
-} satisfies SingleCondition;
+});
 
-const failingCondition = {
+const failingCondition = singleCondition({
 	type: "flag",
 	"flag-type": "normal",
 	operation: "true",
 	flag: "failing",
-} satisfies SingleCondition;
+});
 
 const passingConditionId = toID("condition", "passing-condition");
 const failingConditionId = toID("condition", "failing-condition");
 const nestedConditionId = toID("condition", "nested-condition");
 
-const world = {
-	rooms: [{id: currentRoom, name: "Atrium", tags: []}],
-	conditions: [
+const world = produce(createDefaultFieldObject(WorldSchema), (draft) => {
+	draft.rooms = [
+		{
+			...createDefaultFieldObject(RoomSchema),
+			id: currentRoom,
+			name: "Atrium",
+		},
+	];
+	draft.conditions = [
 		{identity: passingConditionId, condition: passingCondition},
 		{identity: failingConditionId, condition: failingCondition},
 		{
@@ -58,8 +69,8 @@ const world = {
 				],
 			},
 		},
-	],
-} as unknown as World;
+	];
+});
 
 function group(operation: ConditionGroup["operation"], conditions: Condition[]): ConditionGroup {
 	return {type: "group", operation, conditions};

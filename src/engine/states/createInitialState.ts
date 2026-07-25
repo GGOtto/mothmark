@@ -30,6 +30,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 				flags: {...feature.flags},
 			})),
 		})),
+		events: world.events ?? [],
 		messages: [],
 	};
 

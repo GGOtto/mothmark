@@ -94,7 +94,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"features",
-			"activeWhen",
+			"flags",
 			"metadata",
 			"id",
 		]);
@@ -125,7 +125,6 @@ describe("resolveEditorMetadata object fields", () => {
 			tags: "identify",
 			features: "features",
 			flags: "features",
-			activeWhen: "availability",
 		});
 	});
 
@@ -181,9 +180,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"listedInRoom",
-			"activeWhen",
-			"visibleWhen",
-			"usableWhen",
 			"flags",
 		]);
 		expect(fields[0].metadata).toMatchObject({

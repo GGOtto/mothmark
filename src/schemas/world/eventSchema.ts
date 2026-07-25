@@ -36,7 +36,7 @@ export const EventSchema = z.object({
 		.number({
 			title: "Priority",
 			description:
-				"Determines which eligible events are checked first. Higher-priority events (represented with smaller numbers) run first.",
+				"Determines which eligible events are checked first. Higher-priority events, represented with a higher number, run first.",
 		})
 		.int()
 		.default(0),

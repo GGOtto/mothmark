@@ -1,13 +1,19 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useCallback, useState} from "react";
-import {produce} from "immer";
+import {produce, type Draft} from "immer";
 import {world as exampleWorld} from "@/data/worlds/exampleWorld";
-import type {World} from "@/schemas/world/worldSchema";
+import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
 import {PopupProvider} from "../popup/Popup";
+
+function createExampleWorld(recipe: (draft: Draft<World>) => void): World {
+	const configuredWorld = produce(exampleWorld, recipe);
+	return {...createDefaultFieldObject(WorldSchema), ...configuredWorld};
+}
 
 function MapHarness({
 	initialWorld,
@@ -71,21 +77,17 @@ describe("Map layer viewports", () => {
 	it("restores each layer's viewport after switching layers", () => {
 		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
 		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;
-		const initialWorld: World = {
-			...exampleWorld,
-			metadata: {
-				...exampleWorld.metadata,
-				layers: exampleWorld.metadata.layers.map((layer) => {
-					if (layer.layer === groundLayer.layer) {
-						return {...layer, viewport: {x: 10, y: 20, zoom: 1}};
-					}
-					if (layer.layer === upperLayer.layer) {
-						return {...layer, viewport: {x: 30, y: 40, zoom: 1.5}};
-					}
-					return layer;
-				}),
-			},
-		};
+		const initialWorld = createExampleWorld((draft) => {
+			draft.metadata.layers = exampleWorld.metadata.layers.map((layer) => {
+				if (layer.layer === groundLayer.layer) {
+					return {...layer, viewport: {x: 10, y: 20, zoom: 1}};
+				}
+				if (layer.layer === upperLayer.layer) {
+					return {...layer, viewport: {x: 30, y: 40, zoom: 1.5}};
+				}
+				return layer;
+			});
+		});
 		const onZoomChange = jest.fn();
 		const {container} = render(
 			<MapHarness initialWorld={initialWorld} onZoomChange={onZoomChange} />,
@@ -113,21 +115,17 @@ describe("Map layer viewports", () => {
 describe("Map visual layers", () => {
 	it("creates typed room references when connecting two rooms from map nodes", () => {
 		const rooms = exampleWorld.rooms.slice(0, 2);
-		const initialWorld: World = {
-			...exampleWorld,
-			rooms,
-			connections: [],
-			metadata: {
-				...exampleWorld.metadata,
-				layers: [
-					{
-						...exampleWorld.metadata.layers[0],
-						layer: 0,
-						rooms: rooms.map((room) => room.id),
-					},
-				],
-			},
-		};
+		const initialWorld = createExampleWorld((draft) => {
+			draft.rooms = rooms;
+			draft.connections = [];
+			draft.metadata.layers = [
+				{
+					...exampleWorld.metadata.layers[0],
+					layer: 0,
+					rooms: rooms.map((room) => room.id),
+				},
+			];
+		});
 		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const fromRoom = screen.getByRole("button", {name: rooms[0].name});
 		const toRoom = screen.getByRole("button", {name: rooms[1].name});
@@ -148,21 +146,17 @@ describe("Map visual layers", () => {
 
 	it("makes the first room added after an empty clear the start room", async () => {
 		const onlyRoom = exampleWorld.rooms[0];
-		const initialWorld: World = {
-			...exampleWorld,
-			startRoomId: onlyRoom.id,
-			rooms: [onlyRoom],
-			connections: [],
-			metadata: {
-				...exampleWorld.metadata,
-				layers: [
-					{
-						...exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!,
-						rooms: [onlyRoom.id],
-					},
-				],
-			},
-		};
+		const initialWorld = createExampleWorld((draft) => {
+			draft.startRoomId = onlyRoom.id;
+			draft.rooms = [onlyRoom];
+			draft.connections = [];
+			draft.metadata.layers = [
+				{
+					...exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!,
+					rooms: [onlyRoom.id],
+				},
+			];
+		});
 		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.click(screen.getByRole("button", {name: "Clear Ground Level layer"}));
@@ -460,12 +454,11 @@ describe("Map visual layers", () => {
 	});
 
 	it("initializes stubs again when the loaded world replaces a world with the same IDs", () => {
-		const worldWithPersistedStubs: World = {
-			...exampleWorld,
-			connections: exampleWorld.connections.map((connection) =>
+		const worldWithPersistedStubs = createExampleWorld((draft) => {
+			draft.connections = exampleWorld.connections.map((connection) =>
 				initializeConnectionStubPoints(exampleWorld, connection),
-			),
-		};
+			);
+		});
 		const {container} = render(
 			<MapHarness
 				initialWorld={worldWithPersistedStubs}
