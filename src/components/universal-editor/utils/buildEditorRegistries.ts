@@ -86,7 +86,6 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	const connections = world.connections.map((connection, index) => ({
 		id: idValue(connection.id),
 		label: `${idValue(connection.fromRoomId)} ${connection.direction} ${idValue(connection.toRoomId)}`,
-		description: descriptionText(connection.description),
 		path: ["connections", index],
 	}));
 	const conditions = world.conditions.map((storedCondition, index) => {

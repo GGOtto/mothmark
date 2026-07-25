@@ -4,7 +4,6 @@ import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {teleport} from "./teleport";
-import {evaluateCondition} from "../conditions/evaluateCondition";
 
 function canTravelForward(connection: Connection) {
 	return connection.pathway === "two-way" || connection.pathway === "forwards";
@@ -30,10 +29,6 @@ function getConnectionsForDirection(world: World, currentRoomId: ID<"room">, dir
 	});
 }
 
-function conditionHasCriteria(condition: Connection["lockedWhen"]): boolean {
-	return condition.type !== "group" || condition.conditions.length > 0;
-}
-
 function getDestinationRoomId(connection: Connection, currentRoomId: ID<"room">) {
 	if (compareIds(connection.fromRoomId, currentRoomId)) {
 		return connection.toRoomId;
@@ -48,9 +43,7 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 		compareIds(state.id, game.player.currentRoom),
 	);
 	const exitIsLocked = currentRoomState?.lockedExits?.includes(direction) ?? false;
-	const connection = getConnectionsForDirection(world, game.player.currentRoom, direction).find(
-		(candidate) => evaluateCondition(world, game, candidate.visibleWhen),
-	);
+	const connection = getConnectionsForDirection(world, game.player.currentRoom, direction)[0];
 
 	if (!connection) {
 		return produce(game, (draft) => {
@@ -58,23 +51,15 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 		});
 	}
 
-	const blockedMessage = createGameMessage(
-		connection.blockedMessage || "You can't go that way.",
-		"system",
-	);
-	const conditionLocksConnection =
-		conditionHasCriteria(connection.lockedWhen) &&
-		evaluateCondition(world, game, connection.lockedWhen);
-	const travelIsAllowed = evaluateCondition(world, game, connection.travelAllowedWhen);
-	if (exitIsLocked || conditionLocksConnection || !travelIsAllowed) {
+	if (exitIsLocked) {
 		return produce(game, (draft) => {
-			draft.messages.push(blockedMessage);
+			draft.messages.push(genericBlockedMessage);
 		});
 	}
 
 	const destinationRoomId = getDestinationRoomId(connection, game.player.currentRoom);
 	return teleport(world, game, destinationRoomId, {
 		respectActiveFlag: true,
-		blockedMessage,
+		blockedMessage: genericBlockedMessage,
 	});
 }
