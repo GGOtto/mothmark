@@ -9,10 +9,16 @@
 
 ## Working on the engine
 
+- The engine is under rapid construction. Expect schemas, command syntax, state shapes, and runtime behavior to change frequently; verify assumptions against the current code before implementing or testing engine work.
+- The player experience is the highest authority. Judge engine behavior by what the player sees, can understand, and can successfully do—not merely by what the current implementation happens to produce.
+- Intentional player-facing expectations and `*.player.test.ts` tests outrank conflicting implementation behavior. If the current code produces confusing, incorrect, or poor player output, fix the code to satisfy the player-path expectation; do not weaken or rewrite an authoritative test just to match broken behavior.
+- Treat current code as evidence of implementation, not automatic proof of intended behavior. When intent is unclear, inspect the player view and surrounding player-path tests before deciding what should change.
+- When intended engine behavior changes, update implementation, maintained fixtures, focused tests, and player-path tests together rather than preserving stale expectations or adding compatibility workarounds unless backward compatibility is explicitly required.
+- Keep engine changes cohesive and easy to revise. Prefer small, direct abstractions over speculative frameworks, and remove obsolete helpers, fixture fields, and assertions as soon as the behavior they supported is replaced.
 - Every engine behavior must be covered by a player-path test that plays the game through `resolveTurn`, issuing commands in the same way a player would.
 - Put player-path coverage in a separate companion test file named `*.player.test.ts`. For example, behavior tested in `resolveEffects.test.ts` should have its player-path coverage in `resolveEffects.player.test.ts`.
 - Player-path tests are required in addition to normal focused tests; they do not replace them. Keep unit and lower-level integration tests for precise inputs, outputs, edge cases, and failure diagnosis, then cover the same behavior through `resolveTurn` to verify that parsing, command dispatch, state updates, effects, and turn resolution work together.
-- Use the shared engine test utility file for a small set of maintained test worlds and corresponding game states. Prefer extending one of these canonical scenarios when the behavior fits instead of creating a new full world fixture in each test.
+- Use `src/engine/testUtils.ts` for the small set of maintained test worlds and corresponding game states. Prefer extending one of these canonical scenarios when the behavior fits instead of creating a new full world fixture in each test.
 - Keep shared test worlds intentionally small, coherent, schema-valid, and broadly reusable. Construct them with the repository's schema-backed test-data helpers and typed ID utilities so they remain maintainable as schemas evolve.
 - A specialized test may define its own world or game state when the shared scenarios would make the setup less clear or cannot represent an important edge case. Keep that fixture narrowly scoped and follow the same schema-backed object and typed-ID conventions.
 - Assert player-observable results and the resulting game state in `resolveTurn` tests. Avoid bypassing the command path by calling an internal engine function when the purpose of the test is to demonstrate behavior available during normal play.
