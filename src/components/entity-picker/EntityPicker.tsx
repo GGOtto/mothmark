@@ -179,6 +179,103 @@ function groupMatches(
 	}));
 }
 
+function EntityPreview({entry}: {entry: EntityPickerEntry}) {
+	const context = entryBreadcrumb(entry) || entityLabel(entry.entityType);
+	const facts = [
+		...(entry.kind && !entry.facts?.some((fact) => fact.label === "Kind")
+			? [{label: "Kind", value: entry.kind}]
+			: []),
+		...(entry.facts ?? []),
+		...(entry.deprecated ? [{label: "Status", value: "Deprecated"}] : []),
+		...(entry.disabled ? [{label: "Availability", value: "Unavailable"}] : []),
+	];
+
+	return (
+		<div className="entityPickerPreview__content" style={entityStyle(entry.entityType)}>
+			<div className="entityPickerPreview__heading">
+				<span className="entityPickerPreview__icon">
+					<EntityIcon type={entry.entityType} size={18} />
+				</span>
+				<div>
+					<h3>{entry.label}</h3>
+					<p>{context}</p>
+				</div>
+			</div>
+
+			{entry.summary || entry.description ? (
+				<section className="entityPickerPreview__section">
+					<h4>Description</h4>
+					<p>{entry.description ?? entry.summary}</p>
+				</section>
+			) : null}
+
+			{entry.aliases.length > 0 ? (
+				<section className="entityPickerPreview__section">
+					<h4>Aliases</h4>
+					<div className="entityPickerPreview__values">
+						{entry.aliases.map((alias) => (
+							<span key={alias}>{alias}</span>
+						))}
+					</div>
+				</section>
+			) : null}
+
+			{entry.tags.length > 0 ? (
+				<section className="entityPickerPreview__section">
+					<h4>Tags</h4>
+					<div className="entityPickerPreview__values">
+						{entry.tags.map((tag) => (
+							<span key={tag}>{tag}</span>
+						))}
+					</div>
+				</section>
+			) : null}
+
+			{facts.length > 0 ? (
+				<dl className="entityPickerPreview__facts">
+					{facts.map((fact) => (
+						<div key={`${fact.label}:${fact.value}`}>
+							<dt>{fact.label}</dt>
+							<dd>{fact.value}</dd>
+						</div>
+					))}
+				</dl>
+			) : null}
+
+			{entry.relations?.map((relation) => (
+				<section key={relation.label} className="entityPickerPreview__relation">
+					<header>
+						<h4>{relation.label}</h4>
+						<span>{relation.items.length}</span>
+					</header>
+					<ul>
+						{relation.items.map((item) => (
+							<li key={`${item.entityType ?? "entity"}:${item.id}`}>
+								<span
+									className="entityPickerPreview__relationIcon"
+									style={item.entityType ? entityStyle(item.entityType) : undefined}
+								>
+									<EntityIcon type={item.entityType ?? "object"} size={14} />
+								</span>
+								<span className="entityPickerPreview__relationText">
+									<strong>{item.label}</strong>
+									{item.detail ? <small>{item.detail}</small> : null}
+								</span>
+								<code>{item.id}</code>
+							</li>
+						))}
+					</ul>
+				</section>
+			))}
+
+			<div className="entityPickerPreview__identity">
+				<span>ID</span>
+				<code>{entry.ref.id}</code>
+			</div>
+		</div>
+	);
+}
+
 function EntityPickerPanel({
 	entries,
 	entityTypes,
@@ -451,17 +548,7 @@ function EntityPickerPopupContent({
 
 				<aside className="entityPickerPreview">
 					{candidate ? (
-						<div style={entityStyle(candidate.entityType)}>
-							<span className="entityPickerPreview__icon">
-								<EntityIcon type={candidate.entityType} size={18} />
-							</span>
-							<h3>{candidate.label}</h3>
-							<p>{entryBreadcrumb(candidate) || entityLabel(candidate.entityType)}</p>
-							{candidate.summary || candidate.description ? (
-								<div>{candidate.summary ?? candidate.description}</div>
-							) : null}
-							<code>{candidate.ref.id}</code>
-						</div>
+						<EntityPreview entry={candidate} />
 					) : (
 						<div className="entityPickerState">
 							<strong>Select an entity</strong>

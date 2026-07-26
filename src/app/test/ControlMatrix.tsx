@@ -174,7 +174,30 @@ const SAMPLE_ENTITIES: EntityPickerOption[] = [
 		id: "foyer",
 		label: "Foyer",
 		description: "The first room in the sample world.",
+		aliases: ["entrance hall", "lobby"],
+		tags: ["entry", "ground floor"],
 		entityType: "room",
+		facts: [
+			{label: "Layer", value: "Ground"},
+			{label: "Map position", value: "120, 80"},
+		],
+		relations: [
+			{
+				label: "Connections",
+				items: [
+					{
+						id: "foyer-library",
+						label: "Library",
+						entityType: "connection",
+						detail: "North · Two way",
+					},
+				],
+			},
+			{
+				label: "Features",
+				items: [{id: "glass-case", label: "Glass Case", entityType: "feature", detail: "Container"}],
+			},
+		],
 	},
 	{
 		id: "library",

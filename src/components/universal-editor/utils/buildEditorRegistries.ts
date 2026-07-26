@@ -20,7 +20,29 @@ type WorldEntity = {
 	aliases?: string[];
 	tags?: string[];
 	kind?: string;
+	listedInRoom?: boolean;
 };
+
+const DIRECTION_LABELS: Record<string, string> = {
+	n: "North",
+	ne: "Northeast",
+	e: "East",
+	se: "Southeast",
+	s: "South",
+	sw: "Southwest",
+	w: "West",
+	nw: "Northwest",
+	up: "Up",
+	down: "Down",
+	in: "In",
+	out: "Out",
+};
+
+function readableValue(value: string) {
+	return (DIRECTION_LABELS[value] ?? value.replace(/[-_]+/g, " ")).replace(/^./, (character) =>
+		character.toLocaleUpperCase(),
+	);
+}
 
 function descriptionText(description: unknown): string | undefined {
 	if (typeof description === "string") return description;
@@ -98,19 +120,44 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			hierarchy: [{kind: "layer" as const, key: String(layer.layer), label: layer.name}],
 		};
 	});
-	const connections = world.connections.map((connection, index) => ({
-		id: idValue(connection.id),
-		label: `${idValue(connection.fromRoomId)} ${connection.direction} ${idValue(connection.toRoomId)}`,
-		entityType: "connection" as const,
-		hierarchy: (() => {
-			const sourceRoom = rooms.find((room) => room.id === idValue(connection.fromRoomId));
-			return [
-				...(sourceRoom?.hierarchy ?? []),
-				...(sourceRoom ? [{kind: "room" as const, key: sourceRoom.id, label: sourceRoom.label}] : []),
-			];
-		})(),
-		path: ["connections", index],
-	}));
+	const connections = world.connections.map((connection, index) => {
+		const fromRoom = rooms.find((room) => room.id === idValue(connection.fromRoomId));
+		const toRoom = rooms.find((room) => room.id === idValue(connection.toRoomId));
+		return {
+			id: idValue(connection.id),
+			label: `${fromRoom?.label ?? idValue(connection.fromRoomId)} to ${toRoom?.label ?? idValue(connection.toRoomId)}`,
+			entityType: "connection" as const,
+			hierarchy: [
+				...(fromRoom?.hierarchy ?? []),
+				...(fromRoom ? [{kind: "room" as const, key: fromRoom.id, label: fromRoom.label}] : []),
+			],
+			facts: [
+				{label: "Direction", value: readableValue(connection.direction)},
+				{label: "Return direction", value: readableValue(connection.returnDirection)},
+				{label: "Pathway", value: readableValue(connection.pathway)},
+			],
+			relations: [
+				{
+					label: "Rooms",
+					items: [
+						{
+							id: idValue(connection.fromRoomId),
+							label: fromRoom?.label ?? idValue(connection.fromRoomId),
+							entityType: "room" as const,
+							detail: `From · ${readableValue(connection.direction)}`,
+						},
+						{
+							id: idValue(connection.toRoomId),
+							label: toRoom?.label ?? idValue(connection.toRoomId),
+							entityType: "room" as const,
+							detail: `To · ${readableValue(connection.returnDirection)}`,
+						},
+					],
+				},
+			],
+			path: ["connections", index],
+		};
+	});
 	const conditions = world.conditions.map((storedCondition, index) => {
 		const legacyCondition = storedCondition as unknown as WorldEntity;
 		const isWrapped =
@@ -124,6 +171,7 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			id: conditionId,
 			label: legacyCondition.name ?? legacyCondition.title ?? conditionId,
 			description: conditionType ? `Stored ${conditionType} condition` : "Stored condition",
+			facts: conditionType ? [{label: "Type", value: readableValue(conditionType)}] : [],
 			entityType: "condition" as const,
 			hierarchy: [
 				{
@@ -174,9 +222,76 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 					...(roomOption?.hierarchy ?? []),
 					{kind: "room" as const, key: idValue(room.id), label: room.name},
 				],
+				facts: [
+					...(feature.kind ? [{label: "Kind", value: readableValue(feature.kind)}] : []),
+					{
+						label: "Listed in room",
+						value: feature.listedInRoom ? "Yes" : "No",
+					},
+				],
+				relations: roomOption
+					? [
+							{
+								label: "Room",
+								items: [{id: roomOption.id, label: roomOption.label, entityType: "room" as const}],
+							},
+						]
+					: [],
 			};
 		}),
 	);
+	const roomsWithRelations = rooms.map((room) => {
+		const worldRoom = world.rooms.find((candidate) => idValue(candidate.id) === room.id);
+		const layer = room.hierarchy?.[0];
+		const roomFeatures = features.filter((feature) => feature.parentId === room.id);
+		const roomConnections = world.connections.flatMap((connection) => {
+			const isFrom = idValue(connection.fromRoomId) === room.id;
+			const isTo = idValue(connection.toRoomId) === room.id;
+			if (!isFrom && !isTo) return [];
+			const otherRoomId = idValue(isFrom ? connection.toRoomId : connection.fromRoomId);
+			const otherRoom = rooms.find((candidate) => candidate.id === otherRoomId);
+			const direction = isFrom ? connection.direction : connection.returnDirection;
+			return [
+				{
+					id: idValue(connection.id),
+					label: otherRoom?.label ?? otherRoomId,
+					entityType: "connection" as const,
+					detail: `${readableValue(direction)} · ${readableValue(connection.pathway)}`,
+				},
+			];
+		});
+
+		return {
+			...room,
+			facts: [
+				...(layer ? [{label: "Layer", value: layer.label}] : []),
+				...(worldRoom
+					? [
+							{
+								label: "Map position",
+								value: `${worldRoom.metadata.position.x}, ${worldRoom.metadata.position.y}`,
+							},
+						]
+					: []),
+			],
+			relations: [
+				...(roomConnections.length ? [{label: "Connections", items: roomConnections}] : []),
+				...(roomFeatures.length
+					? [
+							{
+								label: "Features",
+								items: roomFeatures.map((feature) => ({
+									id: feature.id,
+									label: feature.label,
+									entityType: "feature" as const,
+									detail: feature.kind ? readableValue(feature.kind) : undefined,
+								})),
+							},
+						]
+					: []),
+			],
+		};
+	});
 	const containers = features.filter((feature) => feature.kind === "container");
 	const surfaces = features.filter((feature) => feature.kind === "surface");
 	const objects = uniqueById([...items, ...features]);
@@ -204,7 +319,7 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	].sort();
 
 	return {
-		rooms,
+		rooms: roomsWithRelations,
 		connections,
 		conditions,
 		items,

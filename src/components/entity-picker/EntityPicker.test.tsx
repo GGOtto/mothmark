@@ -22,6 +22,20 @@ const ENTRIES: EntityPickerEntry[] = [
 		aliases: ["star room"],
 		tags: ["tower"],
 		hierarchy: [{kind: "layer", key: "1", label: "Upper floor"}],
+		facts: [{label: "Layer", value: "Upper floor"}],
+		relations: [
+			{
+				label: "Connections",
+				items: [
+					{
+						id: "observatory-library",
+						label: "Library",
+						entityType: "connection",
+						detail: "Down · Two way",
+					},
+				],
+			},
+		],
 	},
 	{
 		ref: toID("effect", "open-gate"),
@@ -154,6 +168,12 @@ describe("EntityPicker", () => {
 
 		expect(kitchen).toHaveAttribute("aria-selected", "true");
 		expect(observatory).toHaveAttribute("aria-selected", "false");
-		expect(screen.getByRole("complementary")).toHaveTextContent("Observatory");
+		const preview = screen.getByRole("complementary");
+		expect(preview).toHaveTextContent("Observatory");
+		expect(preview).toHaveTextContent("star room");
+		expect(preview).toHaveTextContent("tower");
+		expect(preview).toHaveTextContent("Upper floor");
+		expect(preview).toHaveTextContent("Connections");
+		expect(preview).toHaveTextContent("Library");
 	});
 });

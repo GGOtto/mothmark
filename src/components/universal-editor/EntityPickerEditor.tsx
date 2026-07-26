@@ -65,6 +65,8 @@ function pickerEntry(
 		tags: option.tags ?? [],
 		kind: option.kind,
 		hierarchy: option.hierarchy ?? [],
+		facts: option.facts,
+		relations: option.relations,
 		path: option.path,
 		parentId: option.parentId,
 		disabled: option.disabled,

@@ -1,5 +1,9 @@
 import type {EditorPath} from "@/types/editor/editorPathTypes";
-import type {EntityType} from "@/types/editor/editorRegistryTypes";
+import type {
+	EditorEntityFact,
+	EditorEntityRelation,
+	EntityType,
+} from "@/types/editor/editorRegistryTypes";
 import type {ID, WorldIdEntityType} from "@/utils/idUtils";
 
 export type EntityPickerPresentation = "auto" | "popover" | "popup";
@@ -20,6 +24,8 @@ export type EntityPickerEntry = {
 	tags: string[];
 	kind?: string;
 	hierarchy: EntityHierarchySegment[];
+	facts?: EditorEntityFact[];
+	relations?: EditorEntityRelation[];
 	path?: EditorPath;
 	parentId?: string;
 	disabled?: boolean;
