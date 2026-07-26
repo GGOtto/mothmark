@@ -8,6 +8,11 @@ export type EditorEntityOption = {
 	tags?: string[];
 	kind?: string;
 	parentId?: string;
+	hierarchy?: Array<{
+		kind: "type" | "layer" | "room" | "category";
+		key: string;
+		label: string;
+	}>;
 	path?: EditorPath;
 	deprecated?: boolean;
 	disabled?: boolean;
@@ -21,6 +26,7 @@ export type EntityType =
 	| "character"
 	| "topic"
 	| "quest"
+	| "quest-objective"
 	| "command"
 	| "event"
 	| "effect"

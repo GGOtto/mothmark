@@ -38,6 +38,12 @@
 - Follow this especially in engine code, where game and world state objects are large and nested.
 - Keep simple direct construction or shallow copies when they are clearer for small objects; do not introduce Immer when no meaningful nested update is involved.
 
+## UI visual language
+
+- Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
+- Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
+- Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
+
 ## IDs
 
 - Represent every entity ID as a typed `ID` object such as `{type: "room", id: "atrium"}`. Do not use bare strings for IDs.

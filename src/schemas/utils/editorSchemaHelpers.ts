@@ -299,9 +299,11 @@ export function editorReference<TEntityType extends WorldIdEntityType>(
 		.transform((reference) => reference as ID<TEntityType>);
 	const isRequired = metadata.required ?? true;
 
-	return editorSelect(
+	return withEditorMetadata(
 		isRequired ? referenceObjectSchema : referenceObjectSchema.optional(),
 		{
+			...metadata,
+			control: "entity-picker",
 			entityType,
 			required: isRequired,
 			picker: {
@@ -312,7 +314,6 @@ export function editorReference<TEntityType extends WorldIdEntityType>(
 				showBadges: true,
 				...metadata.picker,
 			},
-			...metadata,
 		},
 		defaultFieldValue ?? (isRequired ? {type: entityType, id: ""} : undefined),
 	) as z.ZodType<ID<TEntityType>> | z.ZodOptional<z.ZodType<ID<TEntityType>>>;

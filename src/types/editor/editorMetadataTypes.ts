@@ -103,13 +103,19 @@ export type EditorDuplicateFeatures = {
 
 export type EditorPickerFeatures = {
 	searchable?: boolean;
+	searchPlaceholder?: string;
+	presentation?: "auto" | "popover" | "popup";
+	entityTypes?: EditorEntityType[];
+	scope?: "world" | "sibling-room";
 	groupBy?: string;
 	showDescriptions?: boolean;
+	showTags?: boolean;
 	showBadges?: boolean;
 	allowCreate?: boolean;
 	clearButton?: boolean;
 	clearable?: boolean;
 	grouped?: boolean;
+	resultLimit?: number;
 };
 
 export type EditorFieldLayoutMetadata = {

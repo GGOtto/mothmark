@@ -44,6 +44,13 @@ function entityOption(entity: WorldEntity, path: Array<string | number>): Editor
 	};
 }
 
+function roomLayer(world: World, roomId: string) {
+	const layer = world.metadata.layers.find((candidate) =>
+		candidate.rooms.some((candidateRoomId) => idValue(candidateRoomId) === roomId),
+	);
+	return layer ?? {name: "Ground", layer: 0};
+}
+
 function keyOption(key: string, source?: string): EditorKeyOption {
 	return {
 		key,
@@ -82,10 +89,26 @@ function emptyTags(): EditorTagRegistry {
 
 export function buildEditorRegistries(world: World): EditorRegistries {
 	const worldRecord = world as unknown as Record<string, WorldEntity[] | unknown>;
-	const rooms = world.rooms.map((room, index) => entityOption(room, ["rooms", index]));
+	const rooms = world.rooms.map((room, index) => {
+		const option = entityOption(room, ["rooms", index]);
+		const layer = roomLayer(world, option.id);
+		return {
+			...option,
+			entityType: "room" as const,
+			hierarchy: [{kind: "layer" as const, key: String(layer.layer), label: layer.name}],
+		};
+	});
 	const connections = world.connections.map((connection, index) => ({
 		id: idValue(connection.id),
 		label: `${idValue(connection.fromRoomId)} ${connection.direction} ${idValue(connection.toRoomId)}`,
+		entityType: "connection" as const,
+		hierarchy: (() => {
+			const sourceRoom = rooms.find((room) => room.id === idValue(connection.fromRoomId));
+			return [
+				...(sourceRoom?.hierarchy ?? []),
+				...(sourceRoom ? [{kind: "room" as const, key: sourceRoom.id, label: sourceRoom.label}] : []),
+			];
+		})(),
 		path: ["connections", index],
 	}));
 	const conditions = world.conditions.map((storedCondition, index) => {
@@ -101,6 +124,16 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			id: conditionId,
 			label: legacyCondition.name ?? legacyCondition.title ?? conditionId,
 			description: conditionType ? `Stored ${conditionType} condition` : "Stored condition",
+			entityType: "condition" as const,
+			hierarchy: [
+				{
+					kind: "category" as const,
+					key: String(conditionType ?? "condition"),
+					label: String(conditionType ?? "condition")
+						.replace(/[-_]+/g, " ")
+						.replace(/^./, (character) => character.toLocaleUpperCase()),
+				},
+			],
 			path: isWrapped ? ["conditions", index, "condition"] : ["conditions", index],
 		};
 	});
@@ -122,15 +155,27 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 	const events = ((worldRecord.events as WorldEntity[] | undefined) ?? []).map((event, index) =>
 		entityOption(event, ["events", index]),
 	);
-	const effects = ((worldRecord.effects as WorldEntity[] | undefined) ?? []).map((effect, index) =>
-		entityOption(effect, ["effects", index]),
+	const effects = ((worldRecord.effects as WorldEntity[] | undefined) ?? []).map(
+		(effect, index) => ({
+			...entityOption(effect, ["effects", index]),
+			entityType: "effect" as const,
+			hierarchy: [{kind: "category" as const, key: "saved", label: "Saved effects"}],
+		}),
 	);
 	const features = world.rooms.flatMap((room, roomIndex) =>
-		(room.features ?? []).map((feature, featureIndex) => ({
-			...entityOption(feature, ["rooms", roomIndex, "features", featureIndex]),
-			id: `${idValue(room.id)}.${idValue(feature.id)}`,
-			parentId: idValue(room.id),
-		})),
+		(room.features ?? []).map((feature, featureIndex) => {
+			const option = entityOption(feature, ["rooms", roomIndex, "features", featureIndex]);
+			const roomOption = rooms.find((candidate) => candidate.id === idValue(room.id));
+			return {
+				...option,
+				entityType: "feature" as const,
+				parentId: idValue(room.id),
+				hierarchy: [
+					...(roomOption?.hierarchy ?? []),
+					{kind: "room" as const, key: idValue(room.id), label: room.name},
+				],
+			};
+		}),
 	);
 	const containers = features.filter((feature) => feature.kind === "container");
 	const surfaces = features.filter((feature) => feature.kind === "surface");

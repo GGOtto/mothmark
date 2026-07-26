@@ -76,6 +76,30 @@ describe("editor schema defaultFieldValue", () => {
 		});
 	});
 
+	it("configures references through the metadata-driven entity picker", () => {
+		const schema = editor.reference("room", {
+			title: "Destination",
+			picker: {
+				presentation: "popup",
+				searchPlaceholder: "Find a destination…",
+				showTags: true,
+				resultLimit: 40,
+			},
+		});
+
+		expect(getEditorMetadata(schema)).toMatchObject({
+			control: "entity-picker",
+			entityType: "room",
+			picker: {
+				presentation: "popup",
+				searchable: true,
+				searchPlaceholder: "Find a destination…",
+				showTags: true,
+				resultLimit: 40,
+			},
+		});
+	});
+
 	it("configures a single effect control through schema metadata", () => {
 		const schema = editor.effectControl(FlagEffectSchema, {
 			title: "Outcome",
