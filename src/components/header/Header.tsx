@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {usePathname} from "next/navigation";
 import {MapPinned, Moon, Sun} from "lucide-react";
 import {useTheme} from "../theme/ThemeProvider";
 import {WorldAutosaveIndicator} from "../world-autosave/WorldAutosave";
@@ -9,6 +10,7 @@ import "./Header.scss";
 export function Header() {
 	const {theme, toggleTheme} = useTheme();
 	const isDark = theme === "dark";
+	const pathname = usePathname();
 
 	return (
 		<header className="header">
@@ -23,11 +25,19 @@ export function Header() {
 			<nav className="headerNav" aria-label="Primary navigation">
 				<WorldAutosaveIndicator />
 
-				<Link href="/" className="headerLink">
+				<Link
+					href="/"
+					className={`headerLink ${pathname === "/" ? "headerLinkActive" : ""}`}
+					aria-current={pathname === "/" ? "page" : undefined}
+				>
 					Home
 				</Link>
 
-				<Link href="/editor" className="headerLink">
+				<Link
+					href="/editor"
+					className={`headerLink ${pathname.startsWith("/editor") ? "headerLinkActive" : ""}`}
+					aria-current={pathname.startsWith("/editor") ? "page" : undefined}
+				>
 					Editor
 				</Link>
 

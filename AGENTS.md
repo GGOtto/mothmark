@@ -40,9 +40,26 @@
 
 ## UI visual language
 
+- Treat `docs/design-system.md` and the semantic tokens in `src/app/globals.css` as the production
+  color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
 - Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
+- Use action blue for interaction, brass for focus and rare identity emphasis, and semantic colors only
+  for their named statuses. Do not introduce another primary-action color.
+- Keep the header and activity rail in one compact, neutral, theme-aware shell family. Use subtle
+  borders, surface hover states, and a single action-blue selected indicator instead of a saturated
+  frame around the workspace.
+- Preserve the established left activity-rail button geometry, spacing, compact typography, and
+  label-reveal behavior when changing site styling. Color migrations may retheme it but must not
+  redesign its controls.
+- Give the authored map deliberate light and dark palettes. Preserve its geometry and semantic color
+  roles across themes; floating map controls follow the application surface tokens.
+- Keep the embedded player terminal monospace and theme-aware. Preserve its command prompt and
+  uninterrupted output flow; do not style it as a form, chat, or card list.
+- Use 4px control, 6px panel/popover, and 8px dialog radii. Use shadows only for floating layers.
+- Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
+  deliberately bounded theme previews. All other production colors must use semantic tokens.
 
 ## IDs
 

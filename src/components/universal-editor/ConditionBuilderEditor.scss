@@ -22,7 +22,7 @@
 }
 
 .conditionBuilderEditor__summary span {
-	text-transform: uppercase;
+	text-transform: none;
 	letter-spacing: 0;
 	font-size: 10px;
 	font-weight: 700;
@@ -126,7 +126,7 @@
 	color: var(--field-muted);
 	font-size: 10px;
 	font-weight: 700;
-	text-transform: uppercase;
+	text-transform: none;
 }
 
 .conditionBuilderEditor__linkItem--active .conditionBuilderEditor__linkHint {

@@ -46,9 +46,9 @@
 
 .node.node--armed,
 .node.node--armed:hover {
-	--node-pulse-border: #8f2929;
-	--node-pulse-fill: #ffd6d2;
-	--node-pulse-ring: #d84b45;
+	--node-pulse-border: var(--map-danger);
+	--node-pulse-fill: var(--map-danger-soft);
+	--node-pulse-ring: var(--map-danger);
 
 	animation: nodePulse 1s ease-out infinite;
 }

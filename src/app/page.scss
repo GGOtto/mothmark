@@ -6,27 +6,27 @@
 	min-height: 0;
 	box-sizing: border-box;
 	padding: 0 24px;
-	background: #161616;
-	color: #ffffff;
+	background: var(--color-workspace);
+	color: var(--color-text);
 
 	.homeCard {
 		width: 100%;
 		max-width: 576px;
 		box-sizing: border-box;
 		padding: 32px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 16px;
-		background: rgba(255, 255, 255, 0.03);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-panel);
+		background: var(--color-surface);
 		text-align: center;
-		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
+		box-shadow: none;
 
 		.homeEyebrow {
 			margin: 0;
-			color: rgba(255, 255, 255, 0.45);
+			color: var(--color-text-muted);
 			font-size: 14px;
 			font-weight: 600;
-			letter-spacing: 0.24em;
-			text-transform: uppercase;
+			letter-spacing: 0;
+			text-transform: none;
 		}
 
 		h1 {
@@ -38,7 +38,7 @@
 
 		.homeDescription {
 			margin: 16px 0 0;
-			color: rgba(255, 255, 255, 0.55);
+			color: var(--color-text-muted);
 			font-size: 14px;
 			line-height: 1.5;
 		}
@@ -50,17 +50,18 @@
 			height: 44px;
 			margin-top: 32px;
 			padding: 0 20px;
-			border: 1px solid rgba(255, 255, 255, 0.15);
-			border-radius: 12px;
-			background: #ffffff;
-			color: #000000;
+			border: 1px solid var(--color-action);
+			border-radius: var(--radius-control);
+			background: var(--color-action);
+			color: var(--color-action-contrast);
 			font-size: 14px;
 			font-weight: 600;
 			text-decoration: none;
 			transition: background 160ms ease;
 
 			&:hover {
-				background: rgba(255, 255, 255, 0.9);
+				border-color: var(--color-action-hover);
+				background: var(--color-action-hover);
 			}
 
 			&:focus {
@@ -68,7 +69,7 @@
 			}
 
 			&:focus-visible {
-				box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+				box-shadow: 0 0 0 2px var(--color-focus);
 			}
 		}
 	}

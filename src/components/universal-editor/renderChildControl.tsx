@@ -36,7 +36,9 @@ export function renderChildControl<TValue>({
 	const override = parentMetadata?.childControls?.[childKey];
 	// Renderer-owned child metadata provides behavior only. User-facing copy must
 	// come from the schema's explicit child-control metadata.
-	const {title: _defaultTitle, description: _defaultDescription, ...behaviorMetadata} = metadata;
+	const behaviorMetadata = {...metadata};
+	delete behaviorMetadata.title;
+	delete behaviorMetadata.description;
 	const baseMetadata = {
 		...behaviorMetadata,
 		type,

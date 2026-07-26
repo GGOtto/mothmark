@@ -5,12 +5,14 @@
 
 	padding: 12px;
 
-	background: var(--command-bg);
-	color: var(--panel-text);
+	border-top: 1px solid color-mix(in srgb, var(--color-terminal-border) 66%, transparent);
+	background: var(--color-terminal);
+	color: var(--color-terminal-text);
 }
 
 .command-input__prompt {
 	margin-right: 8px;
+	color: var(--color-terminal-prompt);
 	user-select: none;
 }
 
@@ -23,7 +25,7 @@
 	border: none;
 	outline: none;
 	background: transparent;
-	color: var(--panel-text);
+	color: var(--color-terminal-text);
 
 	font: inherit;
 }

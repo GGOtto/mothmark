@@ -533,7 +533,6 @@ function MapWorkspace({
 			onToolChange={setMapTool}
 			onTemporaryToolChange={onTemporaryToolChange}
 			onZoomChange={onZoomChange}
-			theme="light"
 			updateWorld={updateWorld}
 			selectedId={selection.selectedId}
 			setSelectedId={(selectedId) =>

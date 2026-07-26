@@ -42,17 +42,15 @@
 	height: 34px;
 	box-sizing: border-box;
 	padding: 0 14px;
-	border: 1px solid #ffe76a;
-	border-radius: 8px;
-	background: #ffe45c;
-	color: #211b00;
+	border: 1px solid var(--color-action);
+	border-radius: var(--radius-control);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
 	font: inherit;
 	font-size: 13px;
-	font-weight: 800;
+	font-weight: 700;
 	letter-spacing: 0.01em;
-	box-shadow:
-		0 0 0 1px rgb(255 229 92 / 18%),
-		0 4px 16px rgb(255 214 32 / 22%);
+	box-shadow: none;
 	cursor: pointer;
 	transition:
 		background-color 120ms ease,
@@ -61,15 +59,12 @@
 		opacity 120ms ease;
 
 	&:hover:not(:disabled) {
-		background: #fff17f;
-		box-shadow:
-			0 0 0 2px rgb(255 229 92 / 22%),
-			0 6px 20px rgb(255 214 32 / 30%);
-		transform: translateY(-1px);
+		border-color: var(--color-action-hover);
+		background: var(--color-action-hover);
 	}
 
 	&:focus-visible {
-		outline: 3px solid rgb(255 228 92 / 38%);
+		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
 
