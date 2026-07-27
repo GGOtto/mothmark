@@ -57,6 +57,19 @@ function connection(
 	};
 }
 
+function commandBehavior(id: string, message: string) {
+	return {
+		id: toID("condition-branch", `${id}-behavior`),
+		always: {
+			name: `${id} result`,
+			id: toID("effect", `${id}-result`),
+			type: "group" as const,
+			effects: [{type: "message" as const, operation: "show" as const, message}],
+			allowMultipleUsesInWorld: true as const,
+		},
+	};
+}
+
 const rawWorld = {
 	metadata: {
 		title: "The Barrow Below",
@@ -361,6 +374,165 @@ const rawWorld = {
 		connection("prison-vault", "prison-block", "sunken-vault", "down", "up", "forwards"),
 		connection("ossuary-vault", "ossuary", "sunken-vault", "e", "w"),
 	],
+	commands: [
+		{
+			id: toID("command", "shout"),
+			name: "Shout",
+			enabled: true,
+			patterns: [{blocks: [{type: "phrase", matches: ["shout", "yell", "scream"]}]}],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior(
+				"shout",
+				"Your voice rolls through the barrow and returns as a thin, distant echo.",
+			),
+		},
+		{
+			id: toID("command", "say"),
+			name: "Say something",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["say", "speak"]},
+						{type: "text", role: "message", mode: "rest" as const},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior("say", "You say, “{message}”"),
+		},
+		{
+			id: toID("command", "wait-turns"),
+			name: "Wait several turns",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["wait", "pause"]},
+						{type: "number", role: "turns", numberType: "integer" as const, min: 1},
+						{type: "phrase", matches: ["turn", "turns"]},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior("wait-turns", "You wait for {turns} turns."),
+		},
+		{
+			id: toID("command", "point-direction"),
+			name: "Point in a direction",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["point", "gesture"]},
+						{type: "direction", role: "direction"},
+					],
+				},
+			],
+			scope: {scope: "layers" as const, layers: [-1, 0, 1]},
+			behavior: commandBehavior("point-direction", "You point {direction}."),
+		},
+		{
+			id: toID("command", "turn-sluice-wheel"),
+			name: "Turn the sluice wheel",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["turn", "rotate"]},
+						{
+							type: "target",
+							role: "wheel",
+							entityTypes: ["feature" as const],
+							entityIds: [toID("feature", "iron-wheel")],
+							source: "visible" as const,
+						},
+						{
+							type: "choice",
+							role: "rotation",
+							choices: [
+								{
+									value: "clockwise",
+									label: "Clockwise",
+									matches: ["clockwise", "right"],
+								},
+								{
+									value: "counterclockwise",
+									label: "Counterclockwise",
+									matches: ["counterclockwise", "anticlockwise", "left"],
+								},
+							],
+						},
+					],
+				},
+			],
+			scope: {scope: "rooms" as const, roomIds: [toID("room", "flooded-cistern")]},
+			behavior: commandBehavior(
+				"turn-sluice-wheel",
+				"You strain against {wheel.name}, turning it {rotation}.",
+			),
+		},
+		{
+			id: toID("command", "place-idol-in-bowl"),
+			name: "Place the idol in the offering bowl",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["put", "place", "set"]},
+						{
+							type: "target",
+							role: "object",
+							entityTypes: ["feature" as const],
+							entityIds: [toID("feature", "serpent-idol")],
+							source: "visible" as const,
+						},
+						{type: "relation", relation: "in" as const},
+						{
+							type: "target",
+							role: "destination",
+							entityTypes: ["feature" as const],
+							entityIds: [toID("feature", "offering-bowl")],
+							source: "visible" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "rooms" as const, roomIds: [toID("room", "forgotten-shrine")]},
+			behavior: commandBehavior(
+				"place-idol-in-bowl",
+				"As {object.name} settles into {destination.name}, the pale flames bend toward it.",
+			),
+		},
+		{
+			id: toID("command", "ring-mortuary-bell"),
+			name: "Ring the mortuary bell",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{type: "phrase", matches: ["ring", "sound"]},
+						{
+							type: "target",
+							role: "bell",
+							entityTypes: ["feature" as const],
+							entityIds: [toID("feature", "mortuary-bell")],
+							source: "visible" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "layers" as const, layers: [-1]},
+			behavior: commandBehavior(
+				"ring-mortuary-bell",
+				"{bell.name} answers with one low note. Something beneath the floor answers twice.",
+			),
+		},
+	],
 };
 
-export const world = WorldSchema.parse(rawWorld);
+export function createExampleWorld() {
+	return WorldSchema.parse(rawWorld);
+}
+
+export const world = createExampleWorld();

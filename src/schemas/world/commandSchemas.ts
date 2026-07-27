@@ -1,7 +1,6 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
 import {ConditionBranchSchema} from "./conditionBranchSchemas";
-import {ConditionSchema} from "./conditionSchema";
 import {DirectionSchema} from "./roomSchema";
 
 const RoleSchema = editor
@@ -332,6 +331,55 @@ export const PatternSchema = editor
 		});
 	});
 
+const ScopeValueSchema = z
+	.discriminatedUnion("scope", [
+		z.object({
+			scope: z.literal("global"),
+		}),
+		z.object({
+			scope: z.literal("layers"),
+			layers: editor
+				.array(editor.integer({title: "Layer"}), {
+					title: "Layers",
+					description: "The numbered map layers where this command can be used.",
+				})
+				.refine((layers) => layers.length > 0, "Select at least one layer."),
+		}),
+		z.object({
+			scope: z.literal("rooms"),
+			roomIds: editor
+				.array(editor.reference("room", {title: "Room"}), {
+					title: "Rooms",
+					description: "The rooms where this command can be used.",
+				})
+				.refine((roomIds) => roomIds.length > 0, "Select at least one room."),
+		}),
+	])
+	.superRefine((scope, ctx) => {
+		if (scope.scope !== "layers") return;
+
+		const seenLayers = new Set<number>();
+		scope.layers.forEach((layer, index) => {
+			if (seenLayers.has(layer)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Each layer can only be selected once.",
+					path: ["layers", index],
+				});
+			}
+			seenLayers.add(layer);
+		});
+	});
+
+export const ScopeSchema = editor.discriminatedUnion(
+	ScopeValueSchema,
+	{
+		title: "Scope",
+		description: "The parts of the map where this command can be used.",
+	},
+	{scope: "global"},
+);
+
 export const CommandSchema = editor.object(
 	{
 		id: editor.id("command", {title: "Command ID"}),
@@ -345,10 +393,7 @@ export const CommandSchema = editor.object(
 				description: "Alternative command arrangements that run the same behavior.",
 			})
 			.refine((patterns) => patterns.length > 0, "Add at least one command pattern."),
-		availableWhen: editor.conditionControl(ConditionSchema, {
-			title: "Available when",
-			description: "The command participates in matching only when these conditions pass.",
-		}),
+		scope: ScopeSchema,
 		priority: editor.priority({
 			title: "Priority",
 			description: "An advanced tie-breaker between otherwise equally specific commands.",

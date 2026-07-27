@@ -23,7 +23,7 @@ import {
 } from "@/components/logic/LogicEditor";
 import {LogicInspector} from "@/components/logic/LogicInspector";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
-import {world as initialWorld} from "@/data/worlds/exampleWorld";
+import {createExampleWorld, world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
@@ -112,9 +112,19 @@ export default function EditorPage() {
 				setWorldIsLoaded(true);
 			})
 			.catch((error: unknown) => {
-				if ((error as {name?: string}).name !== "AbortError") {
-					console.error("Could not load the main world", error);
-				}
+				if ((error as {name?: string}).name === "AbortError") return;
+
+				console.warn("Could not load the main world; using the example world instead.", error);
+				const fallbackWorld = createExampleWorld();
+				updateWorld(fallbackWorld);
+				setPersistedWorldId(null);
+				setPersistedWorldRevision(null);
+				setSelection({
+					selectedId: idValue(fallbackWorld.startRoomId),
+					isConnectionSelected: false,
+				});
+				setConnectionDraft({state: "idle"});
+				setWorldIsLoaded(true);
 			});
 
 		return () => abortController.abort();
@@ -125,12 +135,24 @@ export default function EditorPage() {
 		setPersistedWorldRevision(revision);
 	}, []);
 
+	const handleResetWorld = useCallback(() => {
+		const nextWorld = createExampleWorld();
+		updateWorld(nextWorld);
+		setSelection({selectedId: idValue(nextWorld.startRoomId), isConnectionSelected: false});
+		setConnectionDraft({state: "idle"});
+		setSelectedEventId(null);
+		setLogicSelection(null);
+		setMapZoom(1);
+		setMapRecenterRequest((request) => request + 1);
+	}, [updateWorld]);
+
 	useWorldAutosaveRegistration({
 		ready: worldIsLoaded,
 		world: editorWorld,
 		worldId: persistedWorldId,
 		revision: persistedWorldRevision,
 		onPersisted: handleWorldPersisted,
+		onReset: handleResetWorld,
 	});
 
 	const rooms = editorWorld.rooms;

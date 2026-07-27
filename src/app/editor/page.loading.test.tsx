@@ -78,4 +78,34 @@ describe("EditorPage loading", () => {
 		fireEvent.keyUp(panButton, {key: " ", code: "Space"});
 		expect(panButton).toHaveAttribute("aria-pressed", "true");
 	});
+
+	it("recovers with the example world when the world API fails", async () => {
+		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async () => ({status: 500, ok: false}) as Response),
+		});
+
+		const {container} = render(
+			<ThemeProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
+			</ThemeProvider>,
+		);
+
+		await waitFor(() =>
+			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
+		);
+
+		expect(screen.getByRole("button", {name: "Dungeon Entrance"})).toBeInTheDocument();
+		expect(warning).toHaveBeenCalledWith(
+			"Could not load the main world; using the example world instead.",
+			expect.any(Error),
+		);
+	});
 });

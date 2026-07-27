@@ -61,6 +61,11 @@
 - Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
   deliberately bounded theme previews. All other production colors must use semantic tokens.
 
+## Local browser testing
+
+- Assume the development app is usually already running at `http://localhost:3000`. When using the
+  browser skill for local UI testing, try that URL before starting another development server.
+
 ## IDs
 
 - Represent every entity ID as a typed `ID` object such as `{type: "room", id: "atrium"}`. Do not use bare strings for IDs.

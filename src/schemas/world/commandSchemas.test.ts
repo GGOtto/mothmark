@@ -1,6 +1,5 @@
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
-import {DefaultConditionGroup, CurrentRoomConditionSchema} from "./conditionSchema";
 import {ConditionBranchSchema} from "./conditionBranchSchemas";
 import {
 	BlockSchema,
@@ -11,6 +10,7 @@ import {
 	PatternSchema,
 	PhraseBlockSchema,
 	RelationBlockSchema,
+	ScopeSchema,
 	TargetBlockSchema,
 	TextBlockSchema,
 	type CommandBlock,
@@ -42,25 +42,17 @@ function commandWithBlocks(blocks: CommandBlock[]) {
 }
 
 describe("CommandSchema", () => {
-	it("parses ordered blocks and condition-based availability", () => {
-		const roomCondition = {
-			...createDefaultFieldObject(CurrentRoomConditionSchema),
-			roomId: toID("room", "gallery"),
-		};
+	it("parses ordered blocks with condition-branch behavior", () => {
 		const command = commandWithBlocks([
 			phrase(["put", "place"]),
 			target("object"),
 			relation("on"),
 			target("destination"),
 		]);
-		command.availableWhen = {
-			...DefaultConditionGroup,
-			conditions: [roomCondition],
-		};
 
 		const result = CommandSchema.parse(command);
 
-		expect(result.availableWhen.conditions).toEqual([roomCondition]);
+		expect(result.behavior.id).toEqual(toID("condition-branch", "place-object-behavior"));
 		expect(result.patterns[0].blocks.map((block) => block.type)).toEqual([
 			"phrase",
 			"target",
@@ -93,6 +85,19 @@ describe("CommandSchema", () => {
 			role: "answer",
 			choices: [{value: "accept"}, {value: "decline"}],
 		});
+	});
+
+	it("supports global, layer, and room scopes", () => {
+		expect(ScopeSchema.parse({scope: "global"})).toEqual({scope: "global"});
+		expect(ScopeSchema.parse({scope: "layers", layers: [-1, 0, 1]})).toEqual({
+			scope: "layers",
+			layers: [-1, 0, 1],
+		});
+		expect(ScopeSchema.parse({scope: "rooms", roomIds: [toID("room", "gallery")]})).toEqual({
+			scope: "rooms",
+			roomIds: [toID("room", "gallery")],
+		});
+		expect(createDefaultFieldObject(CommandSchema).scope).toEqual({scope: "global"});
 	});
 
 	it("rejects duplicate roles within one pattern", () => {

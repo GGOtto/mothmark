@@ -94,6 +94,32 @@
 		}
 	}
 
+	.headerResetButton {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		margin: 0 6px;
+		padding: 0 9px;
+		border: 1px solid var(--color-control-border);
+		border-radius: 4px;
+		background: var(--color-frame-raised);
+		color: var(--color-frame-muted);
+		font: inherit;
+		font-size: 12px;
+		cursor: pointer;
+
+		&:hover {
+			border-color: var(--color-action);
+			color: var(--color-frame-text);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-focus);
+			outline-offset: 2px;
+		}
+	}
+
 	.headerLinkActive {
 		color: var(--color-frame-text);
 
