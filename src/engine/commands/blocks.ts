@@ -186,12 +186,42 @@ export function matchNumber(text: string, block: CommandBlock): boolean {
 	);
 }
 
+export function matchChoice(text: string, block: CommandBlock): boolean {
+	return false;
+}
+
+export function matchDirection(text: string, block: CommandBlock): boolean {
+	return false;
+}
+
+export function matchRelation(text: string, block: CommandBlock): boolean {
+	return false;
+}
+
+export function matchTarget(text: string, block: CommandBlock): boolean {
+	return false;
+}
+
+export function matchText(text: string, block: CommandBlock): boolean {
+	return false;
+}
+
 export function matchBlock(text: string, block: CommandBlock): boolean {
 	switch (block.type) {
 		case "phrase":
 			return matchPhrase(text, block);
 		case "number":
 			return matchNumber(text, block);
+		case "choice":
+			return matchChoice(text, block);
+		case "direction":
+			return matchDirection(text, block);
+		case "relation":
+			return matchRelation(text, block);
+		case "target":
+			return matchTarget(text, block);
+		case "text":
+			return matchText(text, block);
 		default:
 			return false;
 	}
