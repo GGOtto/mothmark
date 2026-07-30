@@ -1,5 +1,6 @@
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import {FeatureStateSchema, RoomStateSchema} from "./entityStateSchemas";
 import {
 	CommandVariableRepositorySchema,
 	CommandVariableSchema,
@@ -41,5 +42,28 @@ describe("command variables", () => {
 		]);
 
 		expect(result.success).toBe(false);
+	});
+});
+
+describe("entity state snapshots", () => {
+	it("requires all player-facing room fields", () => {
+		expect(
+			RoomStateSchema.safeParse({
+				type: "room",
+				id: toID("room", "foyer"),
+				flags: {},
+				featureStates: [],
+			}).success,
+		).toBe(false);
+	});
+
+	it("requires all player-facing feature fields", () => {
+		expect(
+			FeatureStateSchema.safeParse({
+				type: "feature",
+				id: toID("feature", "bell"),
+				flags: {},
+			}).success,
+		).toBe(false);
 	});
 });

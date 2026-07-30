@@ -2,7 +2,7 @@
 
 Command variables let authored command behavior use values captured from player input without changing the normal condition and effect models. A command stores stable block IDs in its behavior. At runtime, the command runner attaches resolved values to those block IDs, the command logic resolver materializes ordinary conditions and effects, and the temporary values are cleared after the branch finishes.
 
-Command parsing is not part of this implementation. The parsing or dispatch layer is responsible for producing the runtime command variables described below.
+Full command-pattern parsing and dispatch are not part of this implementation. Block matching does produce the runtime command variables described below, so a future pattern matcher only needs to collect successful `matchBlock` results and place them in game state.
 
 ## Data flow
 
@@ -65,6 +65,83 @@ The repository supports the same value categories as command blocks:
 | `text`      | string                  |
 
 Only one runtime value may exist for a block ID. These values belong to one command execution and are cleared after its branch is resolved.
+
+## Resolving blocks into variables
+
+`matchBlock` in `src/engine/commands/blocks.ts` returns `CommandVariable | undefined`:
+
+```ts
+const variable = matchBlock(inputForBlock, block, context);
+
+if (!variable) {
+  // This block did not match.
+}
+```
+
+Every successful result contains the matched block's stable ID, its block type, and its resolved semantic value. A result is validated by the same discriminated shape as `CommandVariableSchema`.
+
+| Block     | Resolved value                                                 |
+| --------- | -------------------------------------------------------------- |
+| Phrase    | canonical authored phrase that matched                         |
+| Number    | parsed number after integer/decimal and range checks           |
+| Boolean   | `true` or `false`                                              |
+| Choice    | stable authored choice value, not its displayed label or alias |
+| Direction | canonical direction such as `n` or `out`                       |
+| Relation  | canonical authored relation, even when an alias matched        |
+| Target    | typed room or feature ID                                       |
+| Text      | captured text with player casing preserved                     |
+
+Text blocks enforce their `word`, `phrase`, `rest`, or `quoted` mode and length restrictions. Quoted text has its surrounding quote characters removed.
+
+Target resolution requires candidates because a target block and raw text cannot identify a world entity by themselves. Build them from the current world and game state:
+
+```ts
+const targetContext = resolveTargetMatchContext(world, game);
+const variable = matchBlock("door", targetBlock, targetContext);
+```
+
+`resolveTargetMatchContext` uses complete runtime room and feature state as the authority for names, aliases, tags, flags, descriptions, feature locations, and visibility. It uses authored world connections only to determine which neighboring rooms are currently reachable. Runtime changes therefore affect the next target match without mutating authored world data.
+
+Candidate sources mean:
+
+- `current-room`: the current room and features currently located inside it, including hidden features when location alone is intentionally requested.
+- `visible`: the current room and non-hidden features in it.
+- `reachable`: the current room, non-hidden current-room features, and active neighboring rooms connected through an unlocked usable exit.
+- `known`: the current room, visited rooms, examined features, and visible listed features in visited rooms.
+- `any`: bypasses source filtering while retaining entity ID, entity type, and tag restrictions.
+
+The target matcher applies the block's entity type, explicit entity ID, tag, tag mode, and source filters. Ambiguous target names do not resolve.
+
+The future pattern matcher should treat any `undefined` result as a failed pattern. If every block succeeds, it can attach the collected values immutably:
+
+```ts
+const nextGame = produce(game, (draft) => {
+  draft.variables.command = matchedVariables;
+});
+```
+
+Do not attach a partial set from a failed pattern.
+
+## Complete runtime entity state
+
+Room and feature state are complete snapshots rather than sparse overrides. `createInitialGameState` copies the authored values into independent runtime collections when a game loads.
+
+Every room state contains:
+
+- ID, name, description, and short description
+- aliases and tags
+- locked exits
+- runtime flags
+- complete feature states
+
+Every feature state contains:
+
+- ID, name, and description
+- aliases and tags
+- feature kind and room-listing status
+- runtime flags
+
+`createRoomState` and `createFeatureState` in `src/engine/states/createEntityState.ts` are the shared constructors. Use them whenever a room or feature must be recreated from authored data. Runtime consumers should read the state directly instead of treating missing properties as a signal to fall back to the world.
 
 ## Bindings
 
@@ -239,4 +316,4 @@ The only exception is a genuinely command-only construct such as the two-sided n
 
 ## Current scope
 
-This work provides world and game-state schemas, binding validation, condition/effect materialization, branch resolution, and focused unit tests. It does not implement command parsing or dispatch, and it does not yet add player-path tests.
+This work provides world and game-state schemas, block-to-variable resolution, binding validation, condition/effect materialization, branch resolution, and focused unit tests. It does not yet implement full command-pattern segmentation or dispatch, and it does not add player-path tests.

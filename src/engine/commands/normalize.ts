@@ -1,3 +1,3 @@
 export function normalize(text: string): string {
-	return text;
+	return text.trim().toLowerCase().replace(/\s+/g, " ");
 }

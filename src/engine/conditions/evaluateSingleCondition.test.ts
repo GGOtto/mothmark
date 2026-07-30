@@ -18,6 +18,7 @@ const game: GameState = produce(createDefaultFieldObject(GameStateSchema), (draf
 		{
 			...createDefaultFieldObject(RoomStateSchema),
 			id: currentRoom,
+			tags: ["indoors", "safe"],
 			flags: {visited: true, active: true},
 			featureStates: [
 				{

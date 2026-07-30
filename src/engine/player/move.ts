@@ -42,7 +42,7 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 	const currentRoomState = game.roomStates.find((state) =>
 		compareIds(state.id, game.player.currentRoom),
 	);
-	const exitIsLocked = currentRoomState?.lockedExits?.includes(direction) ?? false;
+	const exitIsLocked = currentRoomState?.lockedExits.includes(direction) ?? false;
 	const connection = getConnectionsForDirection(world, game.player.currentRoom, direction)[0];
 
 	if (!connection) {

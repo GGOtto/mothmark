@@ -246,11 +246,11 @@ export function resolveFeatureEffect(game: GameState, effect: Effect): GameState
 				break;
 
 			case "show-in-room-description":
-				featureState.flags.listedInRoom = true;
+				featureState.listedInRoom = true;
 				break;
 
 			case "hide-in-room-description":
-				featureState.flags.listedInRoom = false;
+				featureState.listedInRoom = false;
 				break;
 
 			case "destroy":
@@ -296,7 +296,6 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 
 			case "lock-exit": {
 				const direction = effect.direction as Direction;
-				roomState.lockedExits ??= [];
 				if (!roomState.lockedExits.includes(direction)) {
 					roomState.lockedExits.push(direction);
 				}
@@ -305,8 +304,7 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 
 			case "unlock-exit": {
 				const direction = effect.direction as Direction;
-				roomState.lockedExits =
-					roomState.lockedExits?.filter((candidate) => candidate !== direction) ?? [];
+				roomState.lockedExits = roomState.lockedExits.filter((candidate) => candidate !== direction);
 				break;
 			}
 
@@ -319,14 +317,13 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 				break;
 
 			case "add-tag":
-				roomState.tags ??= [];
 				if (!roomState.tags.includes(effect.tag)) {
 					roomState.tags.push(effect.tag);
 				}
 				break;
 
 			case "remove-tag":
-				roomState.tags = roomState.tags?.filter((tag) => tag !== effect.tag) ?? [];
+				roomState.tags = roomState.tags.filter((tag) => tag !== effect.tag);
 				break;
 
 			case "set-active":

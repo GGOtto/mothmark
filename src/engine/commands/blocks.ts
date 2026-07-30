@@ -1,5 +1,28 @@
-import {CommandBlock} from "@/schemas/world/commandSchemas";
+import type {CommandVariable} from "@/schemas/states/gameStateSchemas";
+import type {CommandBlock} from "@/schemas/world/commandSchemas";
+import type {ID} from "@/utils/idUtils";
+import {compareIds} from "@/utils/idUtils";
 import {normalize} from "./normalize";
+
+type CommandVariableOf<TType extends CommandVariable["type"]> = Extract<
+	CommandVariable,
+	{type: TType}
+>;
+
+type TargetBlock = Extract<CommandBlock, {type: "target"}>;
+type TargetSource = Exclude<TargetBlock["source"], "any">;
+
+export type TargetMatchCandidate = {
+	reference: ID<"room"> | ID<"feature">;
+	name: string;
+	aliases?: string[];
+	tags?: string[];
+	sources: TargetSource[];
+};
+
+export type MatchBlockContext = {
+	targets?: TargetMatchCandidate[];
+};
 
 const SMALL_NUMBER_WORDS: Record<string, number> = {
 	zero: 0,
@@ -42,12 +65,18 @@ const NUMBER_SCALES: Record<string, number> = {
 	trillion: 1_000_000_000_000,
 };
 
-export function matchPhrase(text: string, block: CommandBlock): boolean {
+export function matchPhrase(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"phrase"> | undefined {
 	if (block.type !== "phrase") {
-		return false;
+		return undefined;
 	}
 	const normalizedText = normalize(text);
-	return block.matches.some((match) => normalize(match) === normalizedText);
+	const matchedPhrase = block.matches.find((match) => normalize(match) === normalizedText);
+	return matchedPhrase === undefined
+		? undefined
+		: {blockId: block.id, type: "phrase", value: matchedPhrase};
 }
 
 function parseUnderOneHundred(tokens: string[]): number | undefined {
@@ -164,9 +193,12 @@ function parseWrittenNumber(text: string): number | undefined {
 	return sign * (integer + decimal);
 }
 
-export function matchNumber(text: string, block: CommandBlock): boolean {
+export function matchNumber(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"number"> | undefined {
 	if (block.type !== "number") {
-		return false;
+		return undefined;
 	}
 
 	const normalizedText = normalize(text).trim();
@@ -177,41 +209,184 @@ export function matchNumber(text: string, block: CommandBlock): boolean {
 			? parseWrittenNumber(normalizedText)
 			: undefined;
 
-	return (
-		numericValue !== undefined &&
-		Number.isFinite(numericValue) &&
-		(block.numberType === "decimal" || Number.isInteger(numericValue)) &&
-		(block.min === undefined || numericValue >= block.min) &&
-		(block.max === undefined || numericValue <= block.max)
+	if (
+		numericValue === undefined ||
+		!Number.isFinite(numericValue) ||
+		(block.numberType !== "decimal" && !Number.isInteger(numericValue)) ||
+		(block.min !== undefined && numericValue < block.min) ||
+		(block.max !== undefined && numericValue > block.max)
+	) {
+		return undefined;
+	}
+
+	return {blockId: block.id, type: "number", value: numericValue};
+}
+
+export function matchBoolean(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"boolean"> | undefined {
+	if (block.type !== "boolean") return undefined;
+
+	const normalizedText = normalize(text);
+	if (block.trueMatches.some((match) => normalize(match) === normalizedText)) {
+		return {blockId: block.id, type: "boolean", value: true};
+	}
+	if (block.falseMatches.some((match) => normalize(match) === normalizedText)) {
+		return {blockId: block.id, type: "boolean", value: false};
+	}
+	return undefined;
+}
+
+export function matchChoice(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"choice"> | undefined {
+	if (block.type !== "choice") return undefined;
+
+	const normalizedText = normalize(text);
+	const choice = block.choices.find((option) =>
+		option.matches.some((match) => normalize(match) === normalizedText),
 	);
+	return choice ? {blockId: block.id, type: "choice", value: choice.value} : undefined;
 }
 
-export function matchChoice(text: string, block: CommandBlock): boolean {
-	return false;
+const DIRECTION_ALIASES: Record<string, CommandVariableOf<"direction">["value"]> = {
+	n: "n",
+	north: "n",
+	ne: "ne",
+	northeast: "ne",
+	e: "e",
+	east: "e",
+	se: "se",
+	southeast: "se",
+	s: "s",
+	south: "s",
+	sw: "sw",
+	southwest: "sw",
+	w: "w",
+	west: "w",
+	nw: "nw",
+	northwest: "nw",
+	up: "up",
+	u: "up",
+	down: "down",
+	d: "down",
+	in: "in",
+	enter: "in",
+	out: "out",
+	exit: "out",
+};
+
+export function matchDirection(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"direction"> | undefined {
+	if (block.type !== "direction") return undefined;
+
+	const direction = DIRECTION_ALIASES[normalize(text)];
+	if (!direction || (block.allowed.length > 0 && !block.allowed.includes(direction))) {
+		return undefined;
+	}
+	return {blockId: block.id, type: "direction", value: direction};
 }
 
-export function matchDirection(text: string, block: CommandBlock): boolean {
-	return false;
+export function matchRelation(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"relation"> | undefined {
+	if (block.type !== "relation") return undefined;
+
+	const defaultMatches = block.aliasMode === "replace" ? [] : [block.relation];
+	const customMatches = block.aliasMode === "defaults" ? [] : block.aliases;
+	const matches = [...defaultMatches, ...customMatches];
+	if (!matches.some((match) => normalize(match) === normalize(text))) return undefined;
+
+	return {blockId: block.id, type: "relation", value: block.relation};
 }
 
-export function matchRelation(text: string, block: CommandBlock): boolean {
-	return false;
+function targetMatchesFilters(candidate: TargetMatchCandidate, block: TargetBlock): boolean {
+	if (block.entityTypes.length > 0 && !block.entityTypes.includes(candidate.reference.type)) {
+		return false;
+	}
+	if (
+		block.entityIds.length > 0 &&
+		!block.entityIds.some((entityId) => compareIds(entityId, candidate.reference))
+	) {
+		return false;
+	}
+	if (block.source !== "any" && !candidate.sources.includes(block.source)) return false;
+
+	const candidateTags = new Set(candidate.tags ?? []);
+	return block.tagMode === "all"
+		? block.tags.every((tag) => candidateTags.has(tag))
+		: block.tags.length === 0 || block.tags.some((tag) => candidateTags.has(tag));
 }
 
-export function matchTarget(text: string, block: CommandBlock): boolean {
-	return false;
+export function matchTarget(
+	text: string,
+	block: CommandBlock,
+	context: MatchBlockContext = {},
+): CommandVariableOf<"target"> | undefined {
+	if (block.type !== "target") return undefined;
+
+	const eligible = (context.targets ?? []).filter((candidate) =>
+		targetMatchesFilters(candidate, block),
+	);
+	const normalizedText = normalize(text);
+	const directMatches = eligible.filter((candidate) =>
+		[candidate.name, ...(candidate.aliases ?? [])].some((name) => normalize(name) === normalizedText),
+	);
+	const matches =
+		directMatches.length > 0
+			? directMatches
+			: eligible.length === 1 &&
+				  block.extraAliases.some((alias) => normalize(alias) === normalizedText)
+				? eligible
+				: [];
+
+	return matches.length === 1
+		? {blockId: block.id, type: "target", value: matches[0].reference}
+		: undefined;
 }
 
-export function matchText(text: string, block: CommandBlock): boolean {
-	return false;
+function resolvedText(text: string, mode: Extract<CommandBlock, {type: "text"}>["mode"]): string {
+	const trimmed = text.trim();
+	if (mode !== "quoted") return trimmed;
+	if (trimmed.length < 2) return "";
+
+	const quote = trimmed[0];
+	return (quote === '"' || quote === "'") && trimmed.at(-1) === quote
+		? trimmed.slice(1, -1).trim()
+		: "";
 }
 
-export function matchBlock(text: string, block: CommandBlock): boolean {
+export function matchText(
+	text: string,
+	block: CommandBlock,
+): CommandVariableOf<"text"> | undefined {
+	if (block.type !== "text") return undefined;
+
+	const value = resolvedText(text, block.mode);
+	if (!value || (block.mode === "word" && /\s/.test(value))) return undefined;
+	if (block.minLength !== undefined && value.length < block.minLength) return undefined;
+	if (block.maxLength !== undefined && value.length > block.maxLength) return undefined;
+
+	return {blockId: block.id, type: "text", value};
+}
+
+export function matchBlock(
+	text: string,
+	block: CommandBlock,
+	context: MatchBlockContext = {},
+): CommandVariable | undefined {
 	switch (block.type) {
 		case "phrase":
 			return matchPhrase(text, block);
 		case "number":
 			return matchNumber(text, block);
+		case "boolean":
+			return matchBoolean(text, block);
 		case "choice":
 			return matchChoice(text, block);
 		case "direction":
@@ -219,10 +394,10 @@ export function matchBlock(text: string, block: CommandBlock): boolean {
 		case "relation":
 			return matchRelation(text, block);
 		case "target":
-			return matchTarget(text, block);
+			return matchTarget(text, block, context);
 		case "text":
 			return matchText(text, block);
 		default:
-			return false;
+			return undefined;
 	}
 }
