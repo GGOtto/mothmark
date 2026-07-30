@@ -379,7 +379,17 @@ const rawWorld = {
 			id: toID("command", "shout"),
 			name: "Shout",
 			enabled: true,
-			patterns: [{blocks: [{type: "phrase", matches: ["shout", "yell", "scream"]}]}],
+			patterns: [
+				{
+					blocks: [
+						{
+							id: toID("command-block", "shout-verb"),
+							type: "phrase",
+							matches: ["shout", "yell", "scream"],
+						},
+					],
+				},
+			],
 			scope: {scope: "global" as const},
 			behavior: commandBehavior(
 				"shout",
@@ -393,8 +403,17 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["say", "speak"]},
-						{type: "text", role: "message", mode: "rest" as const},
+						{
+							id: toID("command-block", "say-verb"),
+							type: "phrase",
+							matches: ["say", "speak"],
+						},
+						{
+							id: toID("command-block", "say-message"),
+							type: "text",
+							role: "message",
+							mode: "rest" as const,
+						},
 					],
 				},
 			],
@@ -408,9 +427,23 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["wait", "pause"]},
-						{type: "number", role: "turns", numberType: "integer" as const, min: 1},
-						{type: "phrase", matches: ["turn", "turns"]},
+						{
+							id: toID("command-block", "wait-verb"),
+							type: "phrase",
+							matches: ["wait", "pause"],
+						},
+						{
+							id: toID("command-block", "wait-turn-count"),
+							type: "number",
+							role: "turns",
+							numberType: "integer" as const,
+							min: 1,
+						},
+						{
+							id: toID("command-block", "wait-turn-unit"),
+							type: "phrase",
+							matches: ["turn", "turns"],
+						},
 					],
 				},
 			],
@@ -424,8 +457,16 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["point", "gesture"]},
-						{type: "direction", role: "direction"},
+						{
+							id: toID("command-block", "point-verb"),
+							type: "phrase",
+							matches: ["point", "gesture"],
+						},
+						{
+							id: toID("command-block", "point-direction"),
+							type: "direction",
+							role: "direction",
+						},
 					],
 				},
 			],
@@ -439,8 +480,13 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["turn", "rotate"]},
 						{
+							id: toID("command-block", "turn-wheel-verb"),
+							type: "phrase",
+							matches: ["turn", "rotate"],
+						},
+						{
+							id: toID("command-block", "turn-wheel-target"),
 							type: "target",
 							role: "wheel",
 							entityTypes: ["feature" as const],
@@ -448,6 +494,7 @@ const rawWorld = {
 							source: "visible" as const,
 						},
 						{
+							id: toID("command-block", "turn-wheel-rotation"),
 							type: "choice",
 							role: "rotation",
 							choices: [
@@ -479,16 +526,26 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["put", "place", "set"]},
 						{
+							id: toID("command-block", "place-idol-verb"),
+							type: "phrase",
+							matches: ["put", "place", "set"],
+						},
+						{
+							id: toID("command-block", "place-idol-object"),
 							type: "target",
 							role: "object",
 							entityTypes: ["feature" as const],
 							entityIds: [toID("feature", "serpent-idol")],
 							source: "visible" as const,
 						},
-						{type: "relation", relation: "in" as const},
 						{
+							id: toID("command-block", "place-idol-relation"),
+							type: "relation",
+							relation: "in" as const,
+						},
+						{
+							id: toID("command-block", "place-idol-destination"),
 							type: "target",
 							role: "destination",
 							entityTypes: ["feature" as const],
@@ -511,8 +568,13 @@ const rawWorld = {
 			patterns: [
 				{
 					blocks: [
-						{type: "phrase", matches: ["ring", "sound"]},
 						{
+							id: toID("command-block", "ring-bell-verb"),
+							type: "phrase",
+							matches: ["ring", "sound"],
+						},
+						{
+							id: toID("command-block", "ring-bell-target"),
 							type: "target",
 							role: "bell",
 							entityTypes: ["feature" as const],

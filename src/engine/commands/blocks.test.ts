@@ -1,5 +1,6 @@
 import {NumberBlockSchema, type CommandBlock} from "@/schemas/world/commandSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {toID} from "@/utils/idUtils";
 import {matchBlock, matchNumber} from "./blocks";
 
 type NumberBlock = Extract<CommandBlock, {type: "number"}>;
@@ -14,7 +15,11 @@ function numberBlock(overrides: Partial<NumberBlock> = {}): NumberBlock {
 
 describe("matchNumber", () => {
 	it("only matches number blocks", () => {
-		const phraseBlock: CommandBlock = {type: "phrase", matches: ["three"]};
+		const phraseBlock: CommandBlock = {
+			id: toID("command-block", "three-phrase"),
+			type: "phrase",
+			matches: ["three"],
+		};
 
 		expect(matchNumber("3", phraseBlock)).toBe(false);
 	});

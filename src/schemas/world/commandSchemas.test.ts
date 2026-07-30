@@ -1,6 +1,7 @@
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {ConditionBranchSchema} from "./conditionBranchSchemas";
+import {CommandConditionBranchSchema, CommandEffectSchema} from "./commandLogicSchemas";
 import {
 	BlockSchema,
 	BooleanBlockSchema,
@@ -18,15 +19,27 @@ import {
 } from "./commandSchemas";
 
 function phrase(matches: string[]): CommandBlock {
-	return {...createDefaultFieldObject(PhraseBlockSchema), matches};
+	return {
+		...createDefaultFieldObject(PhraseBlockSchema),
+		id: toID("command-block", `${matches[0]}-phrase`),
+		matches,
+	};
 }
 
 function target(role: string): CommandBlock {
-	return {...createDefaultFieldObject(TargetBlockSchema), role};
+	return {
+		...createDefaultFieldObject(TargetBlockSchema),
+		id: toID("command-block", `${role.toLowerCase()}-target`),
+		role,
+	};
 }
 
 function relation(relationType: "on" | "with"): CommandBlock {
-	return {...createDefaultFieldObject(RelationBlockSchema), relation: relationType};
+	return {
+		...createDefaultFieldObject(RelationBlockSchema),
+		id: toID("command-block", `${relationType}-relation`),
+		relation: relationType,
+	};
 }
 
 function commandWithBlocks(blocks: CommandBlock[]) {
@@ -77,6 +90,7 @@ describe("CommandSchema", () => {
 		};
 		const choice = {
 			...createDefaultFieldObject(ChoiceBlockSchema),
+			id: toID("command-block", "answer-choice"),
 			role: "answer",
 			choices: [accept, decline],
 		};
@@ -91,10 +105,12 @@ describe("CommandSchema", () => {
 	it("supports boolean inputs with default affirmative and negative wording", () => {
 		const boolean = {
 			...createDefaultFieldObject(BooleanBlockSchema),
+			id: toID("command-block", "locked-boolean"),
 			role: "locked",
 		};
 
 		expect(BlockSchema.parse(boolean)).toEqual({
+			id: toID("command-block", "locked-boolean"),
 			type: "boolean",
 			role: "locked",
 			trueMatches: ["yes", "yep", "yeah", "okay", "ok"],
@@ -105,6 +121,7 @@ describe("CommandSchema", () => {
 	it("rejects overlapping boolean wording after normalization", () => {
 		const boolean = {
 			...createDefaultFieldObject(BooleanBlockSchema),
+			id: toID("command-block", "locked-boolean"),
 			role: "locked",
 			trueMatches: ["Turn  On"],
 			falseMatches: ["turn on"],
@@ -135,9 +152,46 @@ describe("CommandSchema", () => {
 		expect(PatternSchema.safeParse(pattern).success).toBe(false);
 	});
 
+	it("rejects duplicate block IDs across alternative patterns", () => {
+		const first = phrase(["put"]);
+		const second = {...phrase(["place"]), id: first.id};
+		const command = {
+			...commandWithBlocks([first]),
+			patterns: [
+				{...createDefaultFieldObject(PatternSchema), blocks: [first]},
+				{...createDefaultFieldObject(PatternSchema), blocks: [second]},
+			],
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+	});
+
+	it("rejects command-variable bindings to blocks outside the command", () => {
+		const command = {
+			...commandWithBlocks([phrase(["say"])]),
+			behavior: createDefaultFieldObject(CommandConditionBranchSchema),
+		};
+		command.behavior.always = {
+			name: "Say result",
+			id: toID("effect", "say-result"),
+			type: "group",
+			effects: [
+				CommandEffectSchema.parse({
+					type: "message",
+					operation: "show",
+					commandVariables: [{blockId: toID("command-block", "missing-block"), field: "message"}],
+				}),
+			],
+			allowMultipleUsesInWorld: true,
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+	});
+
 	it("requires a rest-of-input text block to be last", () => {
 		const text = {
 			...createDefaultFieldObject(TextBlockSchema),
+			id: toID("command-block", "message-text"),
 			role: "message",
 			mode: "rest" as const,
 		};
@@ -152,12 +206,14 @@ describe("CommandSchema", () => {
 	it("validates block-specific ranges and replacement wording", () => {
 		const number = {
 			...createDefaultFieldObject(NumberBlockSchema),
+			id: toID("command-block", "count-number"),
 			role: "count",
 			min: 10,
 			max: 2,
 		};
 		const replacementRelation = {
 			...createDefaultFieldObject(RelationBlockSchema),
+			id: toID("command-block", "replacement-relation"),
 			aliasMode: "replace" as const,
 			aliases: [],
 		};
@@ -181,6 +237,7 @@ describe("CommandSchema", () => {
 		};
 		const choice = {
 			...createDefaultFieldObject(ChoiceBlockSchema),
+			id: toID("command-block", "selection-choice"),
 			role: "selection",
 			choices: [first, second],
 		};

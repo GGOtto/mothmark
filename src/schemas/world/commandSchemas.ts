@@ -1,6 +1,7 @@
 import {z} from "zod";
+import {idValue} from "@/utils/idUtils";
 import {editor} from "../utils/editorSchemaHelpers";
-import {ConditionBranchSchema} from "./conditionBranchSchemas";
+import {CommandConditionBranchSchema} from "./commandLogicSchemas";
 import {DirectionSchema} from "./roomSchema";
 
 const RoleSchema = editor
@@ -75,6 +76,7 @@ export const ChoiceOptionSchema = editor.object(
 
 export const PhraseBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("phrase"),
 		matches: editor.stringList(
 			{
@@ -89,6 +91,7 @@ export const PhraseBlockSchema = editor.object(
 
 export const RelationBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("relation"),
 		relation: editor.select(RelationTypeSchema, {
 			title: "Relationship",
@@ -111,6 +114,7 @@ export const RelationBlockSchema = editor.object(
 
 export const TargetBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("target"),
 		role: RoleSchema,
 		entityTypes: editor.multiSelect(
@@ -154,6 +158,7 @@ export const TargetBlockSchema = editor.object(
 
 export const NumberBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("number"),
 		role: RoleSchema,
 		numberType: editor
@@ -175,6 +180,7 @@ export const NumberBlockSchema = editor.object(
 
 export const BooleanBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("boolean"),
 		role: RoleSchema,
 		trueMatches: editor.stringList(
@@ -197,6 +203,7 @@ export const BooleanBlockSchema = editor.object(
 
 export const DirectionBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("direction"),
 		role: RoleSchema,
 		allowed: editor.array(DirectionSchema, {
@@ -209,6 +216,7 @@ export const DirectionBlockSchema = editor.object(
 
 export const ChoiceBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("choice"),
 		role: RoleSchema,
 		choices: editor
@@ -223,6 +231,7 @@ export const ChoiceBlockSchema = editor.object(
 
 export const TextBlockSchema = editor.object(
 	{
+		id: editor.id("command-block"),
 		type: z.literal("text"),
 		role: RoleSchema,
 		mode: editor
@@ -349,8 +358,19 @@ export const PatternSchema = editor
 	)
 	.superRefine((pattern, ctx) => {
 		const roles = new Set<string>();
+		const blockIds = new Set<string>();
 
 		pattern.blocks.forEach((block, index) => {
+			const blockId = idValue(block.id);
+			if (blockIds.has(blockId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Each command block needs a unique ID.",
+					path: ["blocks", index, "id"],
+				});
+			}
+			blockIds.add(blockId);
+
 			const role = blockRole(block);
 			if (role) {
 				const normalizedRole = role.trim().toLowerCase();
@@ -423,31 +443,77 @@ export const ScopeSchema = editor.discriminatedUnion(
 	{scope: "global"},
 );
 
-export const CommandSchema = editor.object(
-	{
-		id: editor.id("command", {title: "Command ID"}),
-		name: editor
-			.input({title: "Name", description: "The author-facing name of this command."})
-			.min(1),
-		enabled: editor.boolean({title: "Enabled"}).default(true),
-		patterns: editor
-			.array(PatternSchema, {
-				title: "Patterns",
-				description: "Alternative command arrangements that run the same behavior.",
-			})
-			.refine((patterns) => patterns.length > 0, "Add at least one command pattern."),
-		scope: ScopeSchema,
-		priority: editor.priority({
-			title: "Priority",
-			description: "An advanced tie-breaker between otherwise equally specific commands.",
-		}),
-		behavior: ConditionBranchSchema,
-	},
-	{
-		title: "Command",
-		description: "Matches player input, checks availability, and runs authored behavior.",
-	},
-);
+export const CommandSchema = editor
+	.object(
+		{
+			id: editor.id("command", {title: "Command ID"}),
+			name: editor
+				.input({title: "Name", description: "The author-facing name of this command."})
+				.min(1),
+			enabled: editor.boolean({title: "Enabled"}).default(true),
+			patterns: editor
+				.array(PatternSchema, {
+					title: "Patterns",
+					description: "Alternative command arrangements that run the same behavior.",
+				})
+				.refine((patterns) => patterns.length > 0, "Add at least one command pattern."),
+			scope: ScopeSchema,
+			priority: editor.priority({
+				title: "Priority",
+				description: "An advanced tie-breaker between otherwise equally specific commands.",
+			}),
+			behavior: CommandConditionBranchSchema,
+		},
+		{
+			title: "Command",
+			description: "Matches player input, checks availability, and runs authored behavior.",
+		},
+	)
+	.superRefine((command, ctx) => {
+		const blockIds = new Set<string>();
+		command.patterns.forEach((pattern, patternIndex) => {
+			pattern.blocks.forEach((block, blockIndex) => {
+				const blockId = idValue(block.id);
+				if (blockIds.has(blockId)) {
+					ctx.addIssue({
+						code: "custom",
+						message: "Command block IDs must be unique across every pattern.",
+						path: ["patterns", patternIndex, "blocks", blockIndex, "id"],
+					});
+				}
+				blockIds.add(blockId);
+			});
+		});
+
+		function validateCommandVariableReferences(value: unknown, path: Array<string | number>) {
+			if (!value || typeof value !== "object") return;
+			if (Array.isArray(value)) {
+				value.forEach((child, index) => validateCommandVariableReferences(child, [...path, index]));
+				return;
+			}
+
+			const record = value as Record<string, unknown>;
+			if (Array.isArray(record.commandVariables)) {
+				record.commandVariables.forEach((binding, index) => {
+					if (!binding || typeof binding !== "object") return;
+					const blockId = idValue((binding as {blockId?: unknown}).blockId);
+					if (!blockIds.has(blockId)) {
+						ctx.addIssue({
+							code: "custom",
+							message: "Command variable references must target a block in this command.",
+							path: [...path, "commandVariables", index, "blockId"],
+						});
+					}
+				});
+			}
+
+			Object.entries(record).forEach(([key, child]) => {
+				if (key !== "commandVariables") validateCommandVariableReferences(child, [...path, key]);
+			});
+		}
+
+		validateCommandVariableReferences(command.behavior, ["behavior"]);
+	});
 
 export type CommandBlock = z.infer<typeof BlockSchema>;
 export type CommandPattern = z.infer<typeof PatternSchema>;
