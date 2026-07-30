@@ -17,6 +17,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 			counters: world.initialState.counters.map(({counter, value}) => ({
 				[String(counter)]: Number(value),
 			})),
+			command: [],
 		},
 		roomStates: world.rooms.map((room) => ({
 			type: "room",

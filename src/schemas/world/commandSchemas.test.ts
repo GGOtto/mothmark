@@ -3,6 +3,7 @@ import {toID} from "@/utils/idUtils";
 import {ConditionBranchSchema} from "./conditionBranchSchemas";
 import {
 	BlockSchema,
+	BooleanBlockSchema,
 	ChoiceBlockSchema,
 	ChoiceOptionSchema,
 	CommandSchema,
@@ -85,6 +86,31 @@ describe("CommandSchema", () => {
 			role: "answer",
 			choices: [{value: "accept"}, {value: "decline"}],
 		});
+	});
+
+	it("supports boolean inputs with default affirmative and negative wording", () => {
+		const boolean = {
+			...createDefaultFieldObject(BooleanBlockSchema),
+			role: "locked",
+		};
+
+		expect(BlockSchema.parse(boolean)).toEqual({
+			type: "boolean",
+			role: "locked",
+			trueMatches: ["yes", "yep", "yeah", "okay", "ok"],
+			falseMatches: ["no", "nope", "nah"],
+		});
+	});
+
+	it("rejects overlapping boolean wording after normalization", () => {
+		const boolean = {
+			...createDefaultFieldObject(BooleanBlockSchema),
+			role: "locked",
+			trueMatches: ["Turn  On"],
+			falseMatches: ["turn on"],
+		};
+
+		expect(BlockSchema.safeParse(boolean).success).toBe(false);
 	});
 
 	it("supports global, layer, and room scopes", () => {

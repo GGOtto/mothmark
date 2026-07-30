@@ -13,6 +13,13 @@ const RoleSchema = editor
 
 const PhraseListSchema = z.array(z.string().trim().min(1)).min(1);
 
+const DEFAULT_TRUE_MATCHES = ["yes", "yep", "yeah", "okay", "ok"];
+const DEFAULT_FALSE_MATCHES = ["no", "nope", "nah"];
+
+function normalizeBlockMatch(match: string): string {
+	return match.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 export const RelationTypeSchema = z.enum([
 	"on",
 	"in",
@@ -166,6 +173,28 @@ export const NumberBlockSchema = editor.object(
 	{title: "Number", description: "Parses a numeric value from the player's command."},
 );
 
+export const BooleanBlockSchema = editor.object(
+	{
+		type: z.literal("boolean"),
+		role: RoleSchema,
+		trueMatches: editor.stringList(
+			{
+				title: "True wording",
+				description: "Words or phrases that resolve to true.",
+			},
+			PhraseListSchema.default(DEFAULT_TRUE_MATCHES),
+		),
+		falseMatches: editor.stringList(
+			{
+				title: "False wording",
+				description: "Words or phrases that resolve to false.",
+			},
+			PhraseListSchema.default(DEFAULT_FALSE_MATCHES),
+		),
+	},
+	{title: "Boolean", description: "Parses player wording into true or false."},
+);
+
 export const DirectionBlockSchema = editor.object(
 	{
 		type: z.literal("direction"),
@@ -214,6 +243,7 @@ const BlockValueSchema = z
 		RelationBlockSchema,
 		TargetBlockSchema,
 		NumberBlockSchema,
+		BooleanBlockSchema,
 		DirectionBlockSchema,
 		ChoiceBlockSchema,
 		TextBlockSchema,
@@ -237,6 +267,19 @@ const BlockValueSchema = z
 			}
 		}
 
+		if (block.type === "boolean") {
+			const trueMatches = new Set(block.trueMatches.map(normalizeBlockMatch));
+			block.falseMatches.forEach((match, index) => {
+				if (trueMatches.has(normalizeBlockMatch(match))) {
+					ctx.addIssue({
+						code: "custom",
+						message: "True and false wording cannot overlap.",
+						path: ["falseMatches", index],
+					});
+				}
+			});
+		}
+
 		if (
 			block.type === "text" &&
 			block.minLength !== undefined &&
@@ -255,7 +298,7 @@ const BlockValueSchema = z
 			const matches = new Set<string>();
 
 			block.choices.forEach((choice, choiceIndex) => {
-				const normalizedValue = choice.value.trim().toLowerCase();
+				const normalizedValue = normalizeBlockMatch(choice.value);
 				if (values.has(normalizedValue)) {
 					ctx.addIssue({
 						code: "custom",
@@ -266,7 +309,7 @@ const BlockValueSchema = z
 				values.add(normalizedValue);
 
 				choice.matches.forEach((match, matchIndex) => {
-					const normalizedMatch = match.trim().toLowerCase().replace(/\s+/g, " ");
+					const normalizedMatch = normalizeBlockMatch(match);
 					if (matches.has(normalizedMatch)) {
 						ctx.addIssue({
 							code: "custom",

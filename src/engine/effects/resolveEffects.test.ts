@@ -24,7 +24,11 @@ const mockedChoose = jest.mocked(choose);
 const mockedCreateGameMessage = jest.mocked(createGameMessage);
 const mockedAppendLastMessage = jest.mocked(appendLastMessage);
 
-function createGameState(overrides: Partial<GameState> = {}): GameState {
+type GameStateOverrides = Omit<Partial<GameState>, "variables"> & {
+	variables?: Partial<GameState["variables"]>;
+};
+
+function createGameState(overrides: GameStateOverrides = {}): GameState {
 	const baseGame = createDefaultFieldObject(GameStateSchema);
 
 	return {
