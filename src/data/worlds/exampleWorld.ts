@@ -590,6 +590,111 @@ const rawWorld = {
 				"{bell.name} answers with one low note. Something beneath the floor answers twice.",
 			),
 		},
+		{
+			id: toID("command", "write-text"),
+			name: "Write text",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{
+							id: toID("command-block", "write-text-verb"),
+							type: "phrase",
+							matches: ["write", "inscribe"],
+						},
+						{
+							id: toID("command-block", "write-text-content"),
+							type: "text",
+							role: "text",
+							mode: "rest" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior("write-text", "You write “{text}”."),
+		},
+		{
+			id: toID("command", "write-on-target"),
+			name: "Write on a target",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{
+							id: toID("command-block", "write-target-verb"),
+							type: "phrase",
+							matches: ["write", "inscribe"],
+						},
+						{
+							id: toID("command-block", "write-target-relation"),
+							type: "relation",
+							relation: "on" as const,
+						},
+						{
+							id: toID("command-block", "write-target-target"),
+							type: "target",
+							role: "target",
+							source: "visible" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior("write-on-target", "You make a careful mark on {target.name}."),
+		},
+		{
+			id: toID("command", "touch-target"),
+			name: "Touch a target",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{
+							id: toID("command-block", "touch-target-verb"),
+							type: "phrase",
+							matches: ["touch"],
+						},
+						{
+							id: toID("command-block", "touch-target-target"),
+							type: "target",
+							role: "target",
+							source: "visible" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior("touch-target", "You touch {target.name}."),
+		},
+		{
+			id: toID("command", "touch-abandoned-torch"),
+			name: "Touch the abandoned torch",
+			enabled: true,
+			patterns: [
+				{
+					blocks: [
+						{
+							id: toID("command-block", "touch-torch-verb"),
+							type: "phrase",
+							matches: ["touch"],
+						},
+						{
+							id: toID("command-block", "touch-torch-target"),
+							type: "target",
+							role: "torch",
+							entityIds: [toID("feature", "abandoned-torch")],
+							source: "visible" as const,
+						},
+					],
+				},
+			],
+			scope: {scope: "global" as const},
+			behavior: commandBehavior(
+				"touch-abandoned-torch",
+				"The abandoned torch crumbles at your touch, leaving pitch-black dust on your fingers.",
+			),
+		},
 	],
 };
 
