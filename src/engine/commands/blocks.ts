@@ -2,7 +2,7 @@ import type {CommandVariable} from "@/schemas/states/gameStateSchemas";
 import type {CommandBlock} from "@/schemas/world/commandSchemas";
 import type {ID} from "@/utils/idUtils";
 import {compareIds} from "@/utils/idUtils";
-import {normalize} from "./normalize";
+import {normalize} from "./parse";
 
 type CommandVariableOf<TType extends CommandVariable["type"]> = Extract<
 	CommandVariable,
