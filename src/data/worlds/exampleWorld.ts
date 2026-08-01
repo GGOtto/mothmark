@@ -699,7 +699,21 @@ const rawWorld = {
 };
 
 export function createExampleWorld() {
-	return WorldSchema.parse(rawWorld);
+	return WorldSchema.parse({
+		...rawWorld,
+		commands: rawWorld.commands.map((command) => ({
+			...command,
+			fallbacks: command.patterns.flatMap((pattern) =>
+				pattern.blocks.map((block) => ({
+					blockId: block.id,
+					behavior: commandBehavior(
+						`${command.id.id}-${block.id.id}-fallback`,
+						"That command is understood, but part of it does not resolve.",
+					),
+				})),
+			),
+		})),
+	});
 }
 
 export const world = createExampleWorld();

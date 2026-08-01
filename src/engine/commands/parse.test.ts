@@ -87,6 +87,13 @@ function command(id: string, patterns: CommandBlock[][]): Command {
 			...createDefaultFieldObject(PatternSchema),
 			blocks,
 		})),
+		fallbacks: patterns.flat().map((block) => ({
+			blockId: block.id,
+			behavior: {
+				...createDefaultFieldObject(CommandConditionBranchSchema),
+				id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
+			},
+		})),
 		behavior: {
 			...createDefaultFieldObject(CommandConditionBranchSchema),
 			id: toID("condition-branch", `${id}-behavior`),
@@ -100,7 +107,9 @@ function commandIds(text: string, commands: Command[]) {
 		draft.commands = commands;
 	});
 
-	return findMatchingCommands(text, worldWithCommands, game).map((match) => idValue(match.id));
+	return findMatchingCommands(text, worldWithCommands, game).map((match) =>
+		idValue(match.command.id),
+	);
 }
 
 const ringBellCommand = command("ring-bell", [
@@ -195,5 +204,57 @@ describe("findMatchingCommands", () => {
 
 	it("does not match a rest-text command just because its final block accepts input", () => {
 		expect(commandIds("ring bell", [sayCommand, simpleRingCommand])).toEqual(["simple-ring"]);
+	});
+
+	it("returns a partial match pinned to the first partial block when no block fails", () => {
+		const {world, game} = createPlayerTestScenario("navigation");
+		const worldWithCommands = produce(world, (draft) => {
+			draft.commands = [ringBellCommand];
+		});
+
+		const [result] = findMatchingCommands("ring skull six times recklessly", worldWithCommands, game);
+
+		expect(result).toMatchObject({
+			match: "partial match",
+			partialBlockId: toID("command-block", "ring-target"),
+		});
+		expect(result.variables.map((variable) => idValue(variable.blockId))).toEqual([
+			"ring-verb",
+			"ring-unit",
+		]);
+	});
+
+	it("eliminates a pattern as soon as any block fails", () => {
+		expect(commandIds("sing skull three times carefully", [ringBellCommand])).toEqual([]);
+	});
+
+	it("returns full matches instead of partial matches when either exists", () => {
+		const {world, game} = createPlayerTestScenario("navigation");
+		const worldWithCommands = produce(world, (draft) => {
+			draft.commands = [simpleRingCommand, ringBellCommand];
+		});
+
+		const results = findMatchingCommands("ring bell", worldWithCommands, game);
+
+		expect(results).toHaveLength(1);
+		expect(results[0]).toMatchObject({
+			match: "match",
+			command: {id: toID("command", "simple-ring")},
+		});
+	});
+
+	it("does not accept an entirely partial pattern as a command attempt", () => {
+		const directionOnlyCommand = command("direction-only", [
+			[
+				{
+					...createDefaultFieldObject(DirectionBlockSchema),
+					id: toID("command-block", "direction-only-value"),
+					role: "direction",
+				},
+			],
+		]);
+
+		expect(commandIds("hello", [directionOnlyCommand])).toEqual([]);
+		expect(commandIds("north", [directionOnlyCommand])).toEqual(["direction-only"]);
 	});
 });

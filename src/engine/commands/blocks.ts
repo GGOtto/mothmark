@@ -18,7 +18,9 @@ export type BlockMatch = "match" | "partial match" | "fail";
  * specialized matcher received the wrong block type.
  */
 export type BlockMatchResponse<TCommand extends CommandVariable = CommandVariable> =
-	{command: TCommand; match: "match"} | {command: null; match: Exclude<BlockMatch, "match">};
+	| {command: TCommand; match: "match"}
+	| {command: null; match: "partial match"}
+	| {command: null; match: "fail"};
 
 function matched<TCommand extends CommandVariable>(
 	command: TCommand,

@@ -1,5 +1,5 @@
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
-import {toID} from "@/utils/idUtils";
+import {idValue, toID} from "@/utils/idUtils";
 import {
 	BooleanBlockSchema,
 	ChoiceBlockSchema,
@@ -120,6 +120,13 @@ function command(blocks: CommandBlock[], overrides: CommandOverrides = {}): Comm
 				blocks,
 			},
 		],
+		fallbacks: blocks.map((block) => ({
+			blockId: block.id,
+			behavior: {
+				...createDefaultFieldObject(CommandConditionBranchSchema),
+				id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
+			},
+		})),
 		behavior: {
 			...createDefaultFieldObject(CommandConditionBranchSchema),
 			id: toID("condition-branch", `${id}-behavior`),

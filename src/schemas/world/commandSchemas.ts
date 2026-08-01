@@ -443,6 +443,17 @@ export const ScopeSchema = editor.discriminatedUnion(
 	{scope: "global"},
 );
 
+export const CommandFallbackSchema = editor.object(
+	{
+		blockId: editor.id("command-block"),
+		behavior: CommandConditionBranchSchema,
+	},
+	{
+		title: "Block fallback",
+		description: "Behavior to run when this command block only partially matches.",
+	},
+);
+
 export const CommandSchema = editor
 	.object(
 		{
@@ -462,6 +473,10 @@ export const CommandSchema = editor
 				title: "Priority",
 				description: "An advanced tie-breaker between otherwise equally specific commands.",
 			}),
+			fallbacks: editor.array(CommandFallbackSchema, {
+				title: "Fallbacks",
+				description: "One fallback behavior for every block in every command pattern.",
+			}),
 			behavior: CommandConditionBranchSchema,
 		},
 		{
@@ -471,7 +486,21 @@ export const CommandSchema = editor
 	)
 	.superRefine((command, ctx) => {
 		const blockIds = new Set<string>();
+		const expectedNonStructuralBlockCount = command.patterns[0]?.blocks.filter(
+			(block) => block.type !== "phrase" && block.type !== "relation",
+		).length;
 		command.patterns.forEach((pattern, patternIndex) => {
+			const nonStructuralBlockCount = pattern.blocks.filter(
+				(block) => block.type !== "phrase" && block.type !== "relation",
+			).length;
+			if (nonStructuralBlockCount !== expectedNonStructuralBlockCount) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Alternative command patterns must have the same number of non-structural blocks.",
+					path: ["patterns", patternIndex, "blocks"],
+				});
+			}
+
 			pattern.blocks.forEach((block, blockIndex) => {
 				const blockId = idValue(block.id);
 				if (blockIds.has(blockId)) {
@@ -484,6 +513,36 @@ export const CommandSchema = editor
 				blockIds.add(blockId);
 			});
 		});
+
+		const fallbackBlockIds = new Set<string>();
+		command.fallbacks.forEach((fallback, fallbackIndex) => {
+			const blockId = idValue(fallback.blockId);
+			if (!blockIds.has(blockId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Fallbacks must target a block in this command.",
+					path: ["fallbacks", fallbackIndex, "blockId"],
+				});
+			}
+			if (fallbackBlockIds.has(blockId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Each command block can only have one fallback.",
+					path: ["fallbacks", fallbackIndex, "blockId"],
+				});
+			}
+			fallbackBlockIds.add(blockId);
+		});
+
+		for (const blockId of blockIds) {
+			if (!fallbackBlockIds.has(blockId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Every command block needs a fallback.",
+					path: ["fallbacks"],
+				});
+			}
+		}
 
 		function validateCommandVariableReferences(value: unknown, path: Array<string | number>) {
 			if (!value || typeof value !== "object") return;
@@ -513,8 +572,12 @@ export const CommandSchema = editor
 		}
 
 		validateCommandVariableReferences(command.behavior, ["behavior"]);
+		command.fallbacks.forEach((fallback, index) =>
+			validateCommandVariableReferences(fallback.behavior, ["fallbacks", index, "behavior"]),
+		);
 	});
 
 export type CommandBlock = z.infer<typeof BlockSchema>;
 export type CommandPattern = z.infer<typeof PatternSchema>;
+export type CommandFallback = z.infer<typeof CommandFallbackSchema>;
 export type Command = z.infer<typeof CommandSchema>;

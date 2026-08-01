@@ -6,13 +6,15 @@ import {createExampleWorld, world} from "./exampleWorld";
 
 function matchingCommandIds(text: string) {
 	const game = createInitialGameState(world, world.startRoomId);
-	return findMatchingCommands(text, world, game).map((command) => idValue(command.id));
+	return findMatchingCommands(text, world, game).map((match) => idValue(match.command.id));
 }
 
 function winningCommandId(text: string) {
 	const game = createInitialGameState(world, world.startRoomId);
 	const matches = findMatchingCommands(text, world, game);
-	return matches.length ? idValue(matches.reduce(getHigherPriorityCommand).id) : undefined;
+	return matches.length
+		? idValue(matches.map((match) => match.command).reduce(getHigherPriorityCommand).id)
+		: undefined;
 }
 
 describe("exampleWorld", () => {
