@@ -52,6 +52,7 @@ type UniversalEditorProps<TValue> = {
 	disabled?: boolean;
 	className?: string;
 	allowDelete?: boolean;
+	scrollOnExternalValueChange?: boolean;
 };
 
 type UniversalEditorView = {
@@ -368,6 +369,7 @@ export function UniversalEditor<TValue>({
 	disabled,
 	className,
 	allowDelete,
+	scrollOnExternalValueChange = true,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
@@ -473,8 +475,10 @@ export function UniversalEditor<TValue>({
 		pendingBackScrollPositionRef.current = undefined;
 		setViewStack([]);
 		setSectionDisclosure({});
-		requestAnimationFrame(() => scrollEditorTop(rootRef.current));
-	}, [value]);
+		if (scrollOnExternalValueChange) {
+			requestAnimationFrame(() => scrollEditorTop(rootRef.current));
+		}
+	}, [scrollOnExternalValueChange, value]);
 
 	const resolveEditorNavigationEntry = useCallback(
 		(request: EditorLinkOpenRequest): UniversalEditorView | undefined => {

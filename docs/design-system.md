@@ -76,6 +76,19 @@ opacity in production components.
 Blue means interactive. Brass means focus or rare identity emphasis. Status colors communicate
 status only. Do not introduce a second primary-action color.
 
+### Command block colors
+
+Command summaries and compact builder blocks use a small, consistent type palette. Apply these
+colors to text, icons, and subtle borders rather than filling the complete control.
+
+| Block type           | Token                       | Dark              | Light             |
+| -------------------- | --------------------------- | ----------------- | ----------------- |
+| Phrase and relation  | `--color-command-structure` | `--color-warning` | `--color-warning` |
+| Target               | `--color-command-target`    | `--color-danger`  | `--color-danger`  |
+| Number and direction | `--color-command-number`    | `--color-action`  | `--color-action`  |
+| Choice and boolean   | `--color-command-choice`    | `--color-success` | `--color-success` |
+| Text                 | `--color-command-text`      | `#a99ac4`         | `#665782`         |
+
 ## Surface hierarchy
 
 Use the smallest surface change that communicates hierarchy:

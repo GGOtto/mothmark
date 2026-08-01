@@ -174,7 +174,7 @@ export function EffectEditor({
 						childKey: "name",
 						value: value.name,
 						onChange: updateName,
-						metadata: {appearance: {chrome: "inline", size: "sm"}},
+						metadata: {},
 						parentMetadata: nameParentMetadata,
 						path: [...path, "name"],
 						disabled: disabled || !canEdit,
@@ -189,7 +189,6 @@ export function EffectEditor({
 					value: value.effects,
 					onChange: updateEffects,
 					metadata: {
-						appearance: {chrome: "bare", size: "sm"},
 						features: listFeatures,
 						childControls: metadata.childControls,
 					},

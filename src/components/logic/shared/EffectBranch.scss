@@ -54,7 +54,7 @@
 	width: 3px;
 	height: 18px;
 	border-radius: 999px;
-	background: var(--logic-event-color);
+	background: var(--logic-branch-color, var(--logic-event-color));
 }
 
 .logicBranch__condition {
@@ -263,6 +263,7 @@
 	text-align: left;
 }
 
-.logicEffectGroup--legacy {
-	padding: 9px 10px;
+.logicEffectGroup--legacy .logicEffectGroup__select:disabled {
+	cursor: default;
+	opacity: 1;
 }

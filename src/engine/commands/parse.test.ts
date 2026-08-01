@@ -92,13 +92,16 @@ function command(
 			...createDefaultFieldObject(PatternSchema),
 			blocks,
 		})),
-		fallbacks: patterns.flat().map((block) => ({
-			blockId: block.id,
-			behavior: {
-				...createDefaultFieldObject(CommandConditionBranchSchema),
-				id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
-			},
-		})),
+		fallbacks: patterns
+			.flat()
+			.filter((block) => block.type !== "phrase" && block.type !== "relation")
+			.map((block) => ({
+				blockId: block.id,
+				behavior: {
+					...createDefaultFieldObject(CommandConditionBranchSchema),
+					id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
+				},
+			})),
 		behavior: {
 			...createDefaultFieldObject(CommandConditionBranchSchema),
 			id: toID("condition-branch", `${id}-behavior`),

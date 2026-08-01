@@ -108,4 +108,37 @@ describe("EditorPage loading", () => {
 			expect.any(Error),
 		);
 	});
+
+	it("opens the command library before the selected command editor", async () => {
+		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+		jest.spyOn(console, "warn").mockImplementation(() => {});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async () => ({status: 500, ok: false}) as Response),
+		});
+
+		const {container} = render(
+			<ThemeProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
+			</ThemeProvider>,
+		);
+		await waitFor(() =>
+			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+		fireEvent.click(screen.getByRole("button", {name: /Commands Define the commands/}));
+
+		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
+		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", {name: /Say something say <text>/}));
+
+		expect(screen.getByRole("button", {name: "Back to Commands"})).toBeInTheDocument();
+		expect(screen.getByLabelText("say <text>")).toBeInTheDocument();
+	});
 });

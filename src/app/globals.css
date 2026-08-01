@@ -37,6 +37,11 @@
 	--color-success: #75b894;
 	--color-warning: #d7ad62;
 	--color-danger: #e07b6c;
+	--color-command-structure: var(--color-warning);
+	--color-command-target: var(--color-danger);
+	--color-command-number: var(--color-action);
+	--color-command-choice: var(--color-success);
+	--color-command-text: #a99ac4;
 	--color-backdrop: rgb(5 7 8 / 72%);
 
 	--shadow-float: 0 16px 38px rgb(0 0 0 / 38%);
@@ -101,6 +106,11 @@
 	--color-success: #2f7250;
 	--color-warning: #7d5b17;
 	--color-danger: #a33b30;
+	--color-command-structure: var(--color-warning);
+	--color-command-target: var(--color-danger);
+	--color-command-number: var(--color-action);
+	--color-command-choice: var(--color-success);
+	--color-command-text: #665782;
 	--color-backdrop: rgb(20 24 26 / 54%);
 
 	--shadow-float: 0 16px 38px rgb(48 40 28 / 20%);

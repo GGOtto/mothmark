@@ -8,6 +8,7 @@ import {
 } from "@/components/universal-editor/utils/universalEditorUtils";
 import type {Condition} from "@/schemas/world/conditionSchema";
 import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
+import type {CommandEffectGroup} from "@/schemas/world/commandLogicSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {idValue} from "@/utils/idUtils";
 import "./EffectBranch.scss";
@@ -15,15 +16,15 @@ import "./EffectBranch.scss";
 type EffectReference = Extract<Effect, {type: "effect-ref"}>;
 type BranchEffectEntry =
 	| {reference: EffectReference; group: EffectGroup | null; effect: null}
-	| {reference: null; group: null; effect: Effect};
+	| {reference: null; group: null; effect: unknown};
 
-function referencedEffectGroups(group: EffectGroup | undefined, world: World) {
+function referencedEffectGroups(group: EffectGroup | CommandEffectGroup | undefined, world: World) {
 	if (!group) return [];
 	return group.effects.map<BranchEffectEntry>((effect) => {
 		if (effect.type !== "effect-ref") return {reference: null, group: null, effect};
 		const id = idValue(effect.effectId);
 		const found = world.effects.find((candidate) => idValue(candidate.id) === id) ?? null;
-		return {reference: effect, group: found, effect: null};
+		return {reference: effect as EffectReference, group: found, effect: null};
 	});
 }
 
@@ -31,8 +32,8 @@ type EffectBranchProps = {
 	scrollKey: string;
 	label: string;
 	world: World;
-	group: EffectGroup | undefined;
-	condition?: Condition;
+	group: EffectGroup | CommandEffectGroup | undefined;
+	condition?: Condition | unknown;
 	delayTurns?: number;
 	cancelIfConditionFails?: boolean;
 	onSelectCondition?: () => void;
@@ -40,6 +41,7 @@ type EffectBranchProps = {
 	onDelayTurnsChange?: (turns: number) => void;
 	onCancelIfConditionFailsChange?: (cancel: boolean) => void;
 	onSelectGroup: (effectId: string) => void;
+	onSelectInlineGroup?: () => void;
 	onAddEffect: () => void;
 	onRemoveEffect: (index: number) => void;
 	onMoveEffect: (fromIndex: number, toIndex: number) => void;
@@ -59,6 +61,7 @@ export function EffectBranch({
 	onDelayTurnsChange,
 	onCancelIfConditionFailsChange,
 	onSelectGroup,
+	onSelectInlineGroup,
 	onAddEffect,
 	onRemoveEffect,
 	onMoveEffect,
@@ -178,7 +181,27 @@ export function EffectBranch({
 									onDrop={stopDragging}
 									onDragEnd={stopDragging}
 								>
-									{generateEffectSummary(entry.effect)}
+									<div className="logicEffectGroup__row">
+										<span className="logicEffectGroup__drag" aria-hidden="true">
+											<GripVertical size={14} />
+										</span>
+										<button
+											type="button"
+											className="logicEffectGroup__select"
+											onClick={onSelectInlineGroup}
+											disabled={!onSelectInlineGroup}
+										>
+											<span>{generateEffectSummary(entry.effect)}</span>
+										</button>
+										<button
+											type="button"
+											className="logicEffectGroup__remove"
+											onClick={() => onRemoveEffect(index)}
+											aria-label={`Remove ${generateEffectSummary(entry.effect)}`}
+										>
+											<Trash2 size={14} aria-hidden="true" />
+										</button>
+									</div>
 								</div>
 							);
 						}

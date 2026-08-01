@@ -58,6 +58,14 @@
   roles across themes; floating map controls follow the application surface tokens.
 - Keep the embedded player terminal monospace and theme-aware. Preserve its command prompt and
   uninterrupted output flow; do not style it as a form, chat, or card list.
+- Preserve a property inspector's scroll position when editing the current selection. Scroll to the
+  top only when the user navigates to a different entity or editor view.
+- Keep command selection in the command library rather than adding a second command scroller inside
+  the editor. Pin command behavior and pattern creation controls above the pattern workspace.
+- Treat repeated command block IDs as shared block identities across patterns. Block edits propagate
+  to every occurrence, while ordering remains pattern-specific. Single-pattern block changes are
+  immediate; with alternatives, structural changes prompt for scope and value-block changes confirm
+  their shared all-pattern impact.
 - Use 4px control, 6px panel/popover, and 8px dialog radii. Use shadows only for floating layers.
 - Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
   deliberately bounded theme previews. All other production colors must use semantic tokens.
@@ -73,6 +81,7 @@
 - Use the ID utilities in `src/utils/idUtils.ts` instead of manually constructing, reading, comparing, or generating IDs.
 - Use `toID` to create or normalize an ID, `idValue` when the underlying string value is needed, `compareIds` for equality, and `generateUniqueId` when generating a new unique value.
 - Preserve the entity type when passing IDs between schemas, engine state, editor state, and tests.
+- Keep command block IDs internal; do not display them in author-facing command controls or summaries.
 - Test fixtures must also use the ID utilities; do not hide invalid string IDs behind type assertions.
 
 ## Be proactive when fixing typescript errors

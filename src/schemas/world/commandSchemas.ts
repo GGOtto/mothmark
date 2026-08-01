@@ -486,6 +486,8 @@ export const CommandSchema = editor
 	)
 	.superRefine((command, ctx) => {
 		const blockIds = new Set<string>();
+		const blockDefinitions = new Map<string, string>();
+		const fallbackBlockIdsRequired = new Set<string>();
 		const expectedNonStructuralBlockCount = command.patterns[0]?.blocks.filter(
 			(block) => block.type !== "phrase" && block.type !== "relation",
 		).length;
@@ -503,14 +505,20 @@ export const CommandSchema = editor
 
 			pattern.blocks.forEach((block, blockIndex) => {
 				const blockId = idValue(block.id);
-				if (blockIds.has(blockId)) {
+				const definition = JSON.stringify(block);
+				const existingDefinition = blockDefinitions.get(blockId);
+				if (existingDefinition !== undefined && existingDefinition !== definition) {
 					ctx.addIssue({
 						code: "custom",
-						message: "Command block IDs must be unique across every pattern.",
+						message: "Blocks sharing an ID must have the same definition in every pattern.",
 						path: ["patterns", patternIndex, "blocks", blockIndex, "id"],
 					});
 				}
+				blockDefinitions.set(blockId, definition);
 				blockIds.add(blockId);
+				if (block.type !== "phrase" && block.type !== "relation") {
+					fallbackBlockIdsRequired.add(blockId);
+				}
 			});
 		});
 
@@ -524,6 +532,13 @@ export const CommandSchema = editor
 					path: ["fallbacks", fallbackIndex, "blockId"],
 				});
 			}
+			if (blockIds.has(blockId) && !fallbackBlockIdsRequired.has(blockId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Fallbacks can only target non-structural command blocks.",
+					path: ["fallbacks", fallbackIndex, "blockId"],
+				});
+			}
 			if (fallbackBlockIds.has(blockId)) {
 				ctx.addIssue({
 					code: "custom",
@@ -533,16 +548,6 @@ export const CommandSchema = editor
 			}
 			fallbackBlockIds.add(blockId);
 		});
-
-		for (const blockId of blockIds) {
-			if (!fallbackBlockIds.has(blockId)) {
-				ctx.addIssue({
-					code: "custom",
-					message: "Every command block needs a fallback.",
-					path: ["fallbacks"],
-				});
-			}
-		}
 
 		function validateCommandVariableReferences(value: unknown, path: Array<string | number>) {
 			if (!value || typeof value !== "object") return;

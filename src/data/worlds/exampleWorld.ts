@@ -57,11 +57,11 @@ function connection(
 	};
 }
 
-function commandBehavior(id: string, message: string) {
+function commandBehavior(id: string, message: string, name = "Command result") {
 	return {
 		id: toID("condition-branch", `${id}-behavior`),
 		always: {
-			name: `${id} result`,
+			name,
 			id: toID("effect", `${id}-result`),
 			type: "group" as const,
 			effects: [{type: "message" as const, operation: "show" as const, message}],
@@ -704,13 +704,16 @@ export function createExampleWorld() {
 		commands: rawWorld.commands.map((command) => ({
 			...command,
 			fallbacks: command.patterns.flatMap((pattern) =>
-				pattern.blocks.map((block) => ({
-					blockId: block.id,
-					behavior: commandBehavior(
-						`${command.id.id}-${block.id.id}-fallback`,
-						"That command is understood, but part of it does not resolve.",
-					),
-				})),
+				pattern.blocks
+					.filter((block) => block.type !== "phrase" && block.type !== "relation")
+					.map((block) => ({
+						blockId: block.id,
+						behavior: commandBehavior(
+							`${command.id.id}-${block.id.id}-fallback`,
+							"That command is understood, but part of it does not resolve.",
+							"Fallback response",
+						),
+					})),
 			),
 		})),
 	});

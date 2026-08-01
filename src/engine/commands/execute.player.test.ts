@@ -148,16 +148,19 @@ function authoredCommand({
 			...createDefaultFieldObject(PatternSchema),
 			blocks,
 		})),
-		fallbacks: patterns.flat().map((block) => {
-			const blockId = idValue(block.id);
-			return {
-				blockId: block.id,
-				behavior: messageBehavior(
-					`${id}-${blockId}-fallback`,
-					fallbacks[blockId] ?? `${blockId} fallback`,
-				),
-			};
-		}),
+		fallbacks: patterns
+			.flat()
+			.filter((block) => block.type !== "phrase" && block.type !== "relation")
+			.map((block) => {
+				const blockId = idValue(block.id);
+				return {
+					blockId: block.id,
+					behavior: messageBehavior(
+						`${id}-${blockId}-fallback`,
+						fallbacks[blockId] ?? `${blockId} fallback`,
+					),
+				};
+			}),
 		behavior: messageBehavior(`${id}-success`, success),
 		priority,
 		scope,

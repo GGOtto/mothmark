@@ -48,13 +48,15 @@ function commandWithBlocks(blocks: CommandBlock[]) {
 		id: toID("command", "place-object"),
 		name: "Place object",
 		patterns: [{...createDefaultFieldObject(PatternSchema), blocks}],
-		fallbacks: blocks.map((block) => ({
-			blockId: block.id,
-			behavior: {
-				...createDefaultFieldObject(CommandConditionBranchSchema),
-				id: toID("condition-branch", `${block.id.id}-fallback`),
-			},
-		})),
+		fallbacks: blocks
+			.filter((block) => block.type !== "phrase" && block.type !== "relation")
+			.map((block) => ({
+				blockId: block.id,
+				behavior: {
+					...createDefaultFieldObject(CommandConditionBranchSchema),
+					id: toID("condition-branch", `${block.id.id}-fallback`),
+				},
+			})),
 		behavior: {
 			...createDefaultFieldObject(ConditionBranchSchema),
 			id: toID("condition-branch", "place-object-behavior"),
@@ -81,13 +83,15 @@ describe("CommandSchema", () => {
 			"target",
 		]);
 		expect(result.fallbacks.map((fallback) => fallback.blockId)).toEqual(
-			result.patterns[0].blocks.map((block) => block.id),
+			result.patterns[0].blocks
+				.filter((block) => block.type !== "phrase" && block.type !== "relation")
+				.map((block) => block.id),
 		);
 	});
 
-	it("requires exactly one fallback for every command block", () => {
+	it("allows at most one fallback for each non-structural command block", () => {
 		const command = commandWithBlocks([phrase(["take"]), target("object")]);
-		const missingFallback = {...command, fallbacks: command.fallbacks.slice(0, 1)};
+		const missingFallback = {...command, fallbacks: []};
 		const duplicateFallback = {
 			...command,
 			fallbacks: [...command.fallbacks, command.fallbacks[0]],
@@ -99,9 +103,18 @@ describe("CommandSchema", () => {
 			),
 		};
 
-		expect(CommandSchema.safeParse(missingFallback).success).toBe(false);
+		expect(CommandSchema.safeParse(missingFallback).success).toBe(true);
 		expect(CommandSchema.safeParse(duplicateFallback).success).toBe(false);
 		expect(CommandSchema.safeParse(foreignFallback).success).toBe(false);
+		expect(
+			CommandSchema.safeParse({
+				...command,
+				fallbacks: [
+					...command.fallbacks,
+					{...command.fallbacks[0], blockId: command.patterns[0].blocks[0].id},
+				],
+			}).success,
+		).toBe(false);
 	});
 
 	it("supports arbitrary semantic choices instead of fixed positive and negative fields", () => {
@@ -181,7 +194,20 @@ describe("CommandSchema", () => {
 		expect(PatternSchema.safeParse(pattern).success).toBe(false);
 	});
 
-	it("rejects duplicate block IDs across alternative patterns", () => {
+	it("allows one block identity to be shared across alternative patterns", () => {
+		const shared = phrase(["put"]);
+		const command = {
+			...commandWithBlocks([shared]),
+			patterns: [
+				{...createDefaultFieldObject(PatternSchema), blocks: [shared]},
+				{...createDefaultFieldObject(PatternSchema), blocks: [{...shared}]},
+			],
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(true);
+	});
+
+	it("rejects conflicting definitions that share a block ID", () => {
 		const first = phrase(["put"]);
 		const second = {...phrase(["place"]), id: first.id};
 		const command = {
@@ -209,13 +235,15 @@ describe("CommandSchema", () => {
 				{...createDefaultFieldObject(PatternSchema), blocks: firstBlocks},
 				{...createDefaultFieldObject(PatternSchema), blocks: secondBlocks},
 			],
-			fallbacks: [...firstBlocks, ...secondBlocks].map((block) => ({
-				blockId: block.id,
-				behavior: {
-					...createDefaultFieldObject(CommandConditionBranchSchema),
-					id: toID("condition-branch", `${block.id.id}-fallback`),
-				},
-			})),
+			fallbacks: [...firstBlocks, ...secondBlocks]
+				.filter((block) => block.type !== "phrase" && block.type !== "relation")
+				.map((block) => ({
+					blockId: block.id,
+					behavior: {
+						...createDefaultFieldObject(CommandConditionBranchSchema),
+						id: toID("condition-branch", `${block.id.id}-fallback`),
+					},
+				})),
 		};
 
 		expect(CommandSchema.safeParse(command).success).toBe(true);
@@ -230,13 +258,15 @@ describe("CommandSchema", () => {
 				{...createDefaultFieldObject(PatternSchema), blocks: firstBlocks},
 				{...createDefaultFieldObject(PatternSchema), blocks: secondBlocks},
 			],
-			fallbacks: [...firstBlocks, ...secondBlocks].map((block) => ({
-				blockId: block.id,
-				behavior: {
-					...createDefaultFieldObject(CommandConditionBranchSchema),
-					id: toID("condition-branch", `${block.id.id}-fallback`),
-				},
-			})),
+			fallbacks: [...firstBlocks, ...secondBlocks]
+				.filter((block) => block.type !== "phrase" && block.type !== "relation")
+				.map((block) => ({
+					blockId: block.id,
+					behavior: {
+						...createDefaultFieldObject(CommandConditionBranchSchema),
+						id: toID("condition-branch", `${block.id.id}-fallback`),
+					},
+				})),
 		};
 
 		const result = CommandSchema.safeParse(command);

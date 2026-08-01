@@ -120,13 +120,15 @@ function command(blocks: CommandBlock[], overrides: CommandOverrides = {}): Comm
 				blocks,
 			},
 		],
-		fallbacks: blocks.map((block) => ({
-			blockId: block.id,
-			behavior: {
-				...createDefaultFieldObject(CommandConditionBranchSchema),
-				id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
-			},
-		})),
+		fallbacks: blocks
+			.filter((block) => block.type !== "phrase" && block.type !== "relation")
+			.map((block) => ({
+				blockId: block.id,
+				behavior: {
+					...createDefaultFieldObject(CommandConditionBranchSchema),
+					id: toID("condition-branch", `${id}-${idValue(block.id)}-fallback`),
+				},
+			})),
 		behavior: {
 			...createDefaultFieldObject(CommandConditionBranchSchema),
 			id: toID("condition-branch", `${id}-behavior`),

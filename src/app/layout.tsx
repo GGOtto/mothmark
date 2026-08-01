@@ -4,6 +4,7 @@ import {Header} from "../components/header/Header";
 import {ThemeProvider} from "../components/theme/ThemeProvider";
 import {WorldAutosaveProvider} from "../components/world-autosave/WorldAutosave";
 import {PopupProvider} from "../components/popup/Popup";
+import {CommandCopyProvider} from "../components/header/CommandCopyAction";
 
 export const metadata: Metadata = {
 	title: "Mothmark",
@@ -21,9 +22,11 @@ export default function RootLayout({
 				<ThemeProvider>
 					<PopupProvider>
 						<WorldAutosaveProvider>
-							<Header />
+							<CommandCopyProvider>
+								<Header />
 
-							<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+								<div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+							</CommandCopyProvider>
 						</WorldAutosaveProvider>
 					</PopupProvider>
 				</ThemeProvider>
