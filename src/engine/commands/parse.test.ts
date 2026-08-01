@@ -14,6 +14,7 @@ import {
 	type CommandBlock,
 } from "@/schemas/world/commandSchemas";
 import {CommandConditionBranchSchema} from "@/schemas/world/commandLogicSchemas";
+import {LayerSchema} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID} from "@/utils/idUtils";
 import {createPlayerTestScenario} from "../utils/testUtils";
@@ -78,7 +79,11 @@ function number(id: string, role: string): CommandBlock {
 	};
 }
 
-function command(id: string, patterns: CommandBlock[][]): Command {
+function command(
+	id: string,
+	patterns: CommandBlock[][],
+	scope: Command["scope"] = {scope: "global"},
+): Command {
 	return CommandSchema.parse({
 		...createDefaultFieldObject(CommandSchema),
 		id: toID("command", id),
@@ -98,6 +103,7 @@ function command(id: string, patterns: CommandBlock[][]): Command {
 			...createDefaultFieldObject(CommandConditionBranchSchema),
 			id: toID("condition-branch", `${id}-behavior`),
 		},
+		scope,
 	});
 }
 
@@ -256,5 +262,55 @@ describe("findMatchingCommands", () => {
 
 		expect(commandIds("hello", [directionOnlyCommand])).toEqual([]);
 		expect(commandIds("north", [directionOnlyCommand])).toEqual(["direction-only"]);
+	});
+
+	it("only considers room-scoped commands in one of their authored rooms", () => {
+		const roomCommand = command("foyer-only", [[phrase("foyer-only-verb", ["whisper"])]], {
+			scope: "rooms",
+			roomIds: [toID("room", "foyer")],
+		});
+		const {world, game} = createPlayerTestScenario("navigation");
+		const worldWithCommand = produce(world, (draft) => {
+			draft.commands = [roomCommand];
+		});
+		const galleryGame = produce(game, (draft) => {
+			draft.player.currentRoom = toID("room", "gallery");
+		});
+
+		expect(findMatchingCommands("whisper", worldWithCommand, game)).toHaveLength(1);
+		expect(findMatchingCommands("whisper", worldWithCommand, galleryGame)).toEqual([]);
+	});
+
+	it("only considers layer-scoped commands while the current room is on an authored layer", () => {
+		const layerCommand = command("lower-layer-only", [[phrase("lower-layer-verb", ["chant"])]], {
+			scope: "layers",
+			layers: [-1],
+		});
+		const {world, game} = createPlayerTestScenario("navigation");
+		const worldWithCommand = produce(world, (draft) => {
+			draft.commands = [layerCommand];
+			draft.metadata.layers = [
+				{
+					...createDefaultFieldObject(LayerSchema),
+					name: "Upper",
+					layer: 1,
+					rooms: [toID("room", "foyer")],
+					viewport: {x: 0, y: 0, zoom: 1},
+				},
+				{
+					...createDefaultFieldObject(LayerSchema),
+					name: "Lower",
+					layer: -1,
+					rooms: [toID("room", "gallery")],
+					viewport: {x: 0, y: 0, zoom: 1},
+				},
+			];
+		});
+		const galleryGame = produce(game, (draft) => {
+			draft.player.currentRoom = toID("room", "gallery");
+		});
+
+		expect(findMatchingCommands("chant", worldWithCommand, game)).toEqual([]);
+		expect(findMatchingCommands("chant", worldWithCommand, galleryGame)).toHaveLength(1);
 	});
 });

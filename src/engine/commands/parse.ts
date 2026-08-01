@@ -1,7 +1,7 @@
 import type {CommandVariable, GameState} from "@/schemas/states/gameStateSchemas";
 import type {Command} from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
-import {idValue, type ID} from "@/utils/idUtils";
+import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import {getPartitions} from "../utils/getPartitions";
 import {matchBlock, type MatchBlockContext} from "./blocks";
 import {resolveTargetMatchContext} from "./targetContext";
@@ -29,6 +29,23 @@ export type CommandMatch =
 	  };
 
 export type RunnableCommandMatch = Exclude<CommandMatch, {match: "fail"}>;
+
+export function commandIsInScope(command: Command, world: World, game: GameState): boolean {
+	switch (command.scope.scope) {
+		case "global":
+			return true;
+		case "rooms":
+			return command.scope.roomIds.some((roomId) => compareIds(roomId, game.player.currentRoom));
+		case "layers": {
+			const scopedLayers = command.scope.layers;
+			return world.metadata.layers.some(
+				(layer) =>
+					scopedLayers.includes(layer.layer) &&
+					layer.rooms.some((roomId) => compareIds(roomId, game.player.currentRoom)),
+			);
+		}
+	}
+}
 
 export function matchCommandToPartition(
 	partition: string[],
@@ -94,6 +111,8 @@ export function findMatchingCommands(
 
 	for (const partition of partitions) {
 		for (const command of world.commands) {
+			if (!commandIsInScope(command, world, game)) continue;
+
 			const result = matchCommandToPartition(partition, command, context);
 			const commandId = idValue(command.id);
 

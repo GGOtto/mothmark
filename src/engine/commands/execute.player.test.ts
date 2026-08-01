@@ -14,9 +14,11 @@ import {
 	type CommandBlock,
 } from "@/schemas/world/commandSchemas";
 import {CommandConditionBranchSchema} from "@/schemas/world/commandLogicSchemas";
+import {LayerSchema} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID, type ID} from "@/utils/idUtils";
 import {resolveTurn} from "../player/resolveTurn";
+import {createInitialGameState} from "../states/createInitialState";
 import {createPlayerTestScenario} from "../utils/testUtils";
 
 function messageBehavior(id: string, message: string) {
@@ -127,6 +129,7 @@ type AuthoredCommandOptions = {
 	success?: string;
 	fallbacks?: Record<string, string>;
 	priority?: number;
+	scope?: Command["scope"];
 };
 
 function authoredCommand({
@@ -135,6 +138,7 @@ function authoredCommand({
 	success = `${id} success`,
 	fallbacks = {},
 	priority = 0,
+	scope = {scope: "global"},
 }: AuthoredCommandOptions): Command {
 	return CommandSchema.parse({
 		...createDefaultFieldObject(CommandSchema),
@@ -156,15 +160,30 @@ function authoredCommand({
 		}),
 		behavior: messageBehavior(`${id}-success`, success),
 		priority,
+		scope,
 	});
 }
 
-function play(commands: Command[], input: string) {
+type PlayOptions = {
+	currentRoomId?: "foyer" | "gallery";
+	layers?: Array<{layer: number; roomIds: Array<"foyer" | "gallery">}>;
+};
+
+function play(commands: Command[], input: string, options: PlayOptions = {}) {
 	const scenario = createPlayerTestScenario("navigation");
 	const world = produce(scenario.world, (draft) => {
 		draft.commands = commands;
+		if (options.layers) {
+			draft.metadata.layers = options.layers.map(({layer, roomIds}) => ({
+				...createDefaultFieldObject(LayerSchema),
+				name: `Layer ${layer}`,
+				layer,
+				rooms: roomIds.map((roomId) => toID("room", roomId)),
+			}));
+		}
 	});
-	return resolveTurn(world, scenario.game, input);
+	const game = createInitialGameState(world, toID("room", options.currentRoomId ?? "foyer"));
+	return resolveTurn(world, game, input);
 }
 
 function expectLastMessage(
@@ -172,8 +191,9 @@ function expectLastMessage(
 	input: string,
 	type: "system" | "error",
 	text: string,
+	options: PlayOptions = {},
 ) {
-	const nextGame = play(commands, input);
+	const nextGame = play(commands, input, options);
 	expect(nextGame.messages.at(-1)).toMatchObject({type, text});
 	expect(nextGame.variables.command).toEqual([]);
 	return nextGame;
@@ -377,5 +397,149 @@ describe("command matching and fallbacks through the player path", () => {
 		});
 
 		expectLastMessage([command], "hello wildly", "error", "I don't know what that means.");
+	});
+});
+
+describe("command scope through the player path", () => {
+	it("runs a global command from any current room", () => {
+		const command = authoredCommand({
+			id: "global-whisper",
+			patterns: [[phrase("global-whisper-verb", ["whisper"])]],
+			success: "The whisper carries.",
+		});
+
+		expectLastMessage([command], "whisper", "system", "The whisper carries.", {
+			currentRoomId: "foyer",
+		});
+		expectLastMessage([command], "whisper", "system", "The whisper carries.", {
+			currentRoomId: "gallery",
+		});
+	});
+
+	it("runs a room-scoped command from an included room", () => {
+		const command = authoredCommand({
+			id: "foyer-whisper",
+			patterns: [[phrase("foyer-whisper-verb", ["whisper"])]],
+			success: "The foyer answers.",
+			scope: {scope: "rooms", roomIds: [toID("room", "foyer")]},
+		});
+
+		expectLastMessage([command], "whisper", "system", "The foyer answers.", {
+			currentRoomId: "foyer",
+		});
+	});
+
+	it("treats an exact room-scoped command as nonexistent outside its rooms", () => {
+		const command = authoredCommand({
+			id: "foyer-whisper",
+			patterns: [[phrase("foyer-whisper-verb", ["whisper"])]],
+			success: "The foyer answers.",
+			scope: {scope: "rooms", roomIds: [toID("room", "foyer")]},
+		});
+
+		expectLastMessage([command], "whisper", "error", "I don't know what that means.", {
+			currentRoomId: "gallery",
+		});
+	});
+
+	it("does not run a partial fallback for an out-of-scope room command", () => {
+		const command = authoredCommand({
+			id: "foyer-take",
+			patterns: [[phrase("foyer-take-verb", ["take"]), target("foyer-take-target", "target")]],
+			fallbacks: {"foyer-take-target": "You can't see that."},
+			scope: {scope: "rooms", roomIds: [toID("room", "foyer")]},
+		});
+
+		expectLastMessage([command], "take skull", "error", "I don't know what that means.", {
+			currentRoomId: "gallery",
+		});
+	});
+
+	it("supports room scopes containing several rooms", () => {
+		const command = authoredCommand({
+			id: "shared-whisper",
+			patterns: [[phrase("shared-whisper-verb", ["whisper"])]],
+			success: "Both rooms answer.",
+			scope: {
+				scope: "rooms",
+				roomIds: [toID("room", "foyer"), toID("room", "gallery")],
+			},
+		});
+
+		expectLastMessage([command], "whisper", "system", "Both rooms answer.", {
+			currentRoomId: "foyer",
+		});
+		expectLastMessage([command], "whisper", "system", "Both rooms answer.", {
+			currentRoomId: "gallery",
+		});
+	});
+
+	it("removes an out-of-scope room command before command priority is considered", () => {
+		const roomCommand = authoredCommand({
+			id: "foyer-listen",
+			patterns: [[phrase("foyer-listen-verb", ["listen"])]],
+			success: "The room-scoped command ran.",
+			priority: 100,
+			scope: {scope: "rooms", roomIds: [toID("room", "foyer")]},
+		});
+		const globalCommand = authoredCommand({
+			id: "global-listen",
+			patterns: [[phrase("global-listen-verb", ["listen"])]],
+			success: "The global command ran.",
+			priority: 0,
+		});
+
+		expectLastMessage([roomCommand, globalCommand], "listen", "system", "The global command ran.", {
+			currentRoomId: "gallery",
+		});
+	});
+
+	it("runs a layer-scoped command from a room assigned to an included layer", () => {
+		const command = authoredCommand({
+			id: "lower-chant",
+			patterns: [[phrase("lower-chant-verb", ["chant"])]],
+			success: "The lower layer resonates.",
+			scope: {scope: "layers", layers: [-1]},
+		});
+		const layers = [
+			{layer: 1, roomIds: ["foyer" as const]},
+			{layer: -1, roomIds: ["gallery" as const]},
+		];
+
+		expectLastMessage([command], "chant", "system", "The lower layer resonates.", {
+			currentRoomId: "gallery",
+			layers,
+		});
+	});
+
+	it("treats a layer-scoped command as nonexistent on another layer", () => {
+		const command = authoredCommand({
+			id: "lower-chant",
+			patterns: [[phrase("lower-chant-verb", ["chant"])]],
+			success: "The lower layer resonates.",
+			scope: {scope: "layers", layers: [-1]},
+		});
+		const layers = [
+			{layer: 1, roomIds: ["foyer" as const]},
+			{layer: -1, roomIds: ["gallery" as const]},
+		];
+
+		expectLastMessage([command], "chant", "error", "I don't know what that means.", {
+			currentRoomId: "foyer",
+			layers,
+		});
+	});
+
+	it("treats a layer-scoped command as nonexistent when the room has no layer", () => {
+		const command = authoredCommand({
+			id: "lower-chant",
+			patterns: [[phrase("lower-chant-verb", ["chant"])]],
+			success: "The lower layer resonates.",
+			scope: {scope: "layers", layers: [-1]},
+		});
+
+		expectLastMessage([command], "chant", "error", "I don't know what that means.", {
+			currentRoomId: "gallery",
+		});
 	});
 });
