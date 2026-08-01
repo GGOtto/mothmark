@@ -20,7 +20,7 @@ export function matchCommandToPartition(
 		}
 		for (let i = 0; i < partition.length; i++) {
 			const match = matchBlock(partition[i], pattern.blocks[i], commandContext);
-			if (match === undefined) {
+			if (match.match !== "match") {
 				break;
 			}
 			if (i === partition.length - 1) {

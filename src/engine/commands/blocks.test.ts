@@ -13,7 +13,12 @@ import {
 } from "@/schemas/world/commandSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
-import {matchBlock, matchNumber, type TargetMatchCandidate} from "./blocks";
+import {
+	matchBlock,
+	matchNumber,
+	type BlockMatchResponse,
+	type TargetMatchCandidate,
+} from "./blocks";
 
 type NumberBlock = Extract<CommandBlock, {type: "number"}>;
 
@@ -26,9 +31,13 @@ function numberBlock(overrides: Partial<NumberBlock> = {}): NumberBlock {
 	};
 }
 
-function expectVariable(actual: CommandVariable | undefined, expected: CommandVariable) {
-	expect(CommandVariableSchema.parse(actual)).toEqual(expected);
+function expectVariable(actual: BlockMatchResponse, expected: CommandVariable) {
+	expect(actual.match).toBe("match");
+	expect(CommandVariableSchema.parse(actual.command)).toEqual(expected);
 }
+
+const partialMatch = {command: null, match: "partial match"};
+const failedMatch = {command: null, match: "fail"};
 
 describe("matchNumber", () => {
 	it("only matches number blocks", () => {
@@ -38,55 +47,55 @@ describe("matchNumber", () => {
 			matches: ["three"],
 		};
 
-		expect(matchNumber("3", phraseBlock)).toBeUndefined();
+		expect(matchNumber("3", phraseBlock)).toEqual(failedMatch);
 	});
 
 	it("resolves integers without accepting other JavaScript number syntax", () => {
 		const block = numberBlock();
 
-		expect(matchNumber("42", block)?.value).toBe(42);
-		expect(matchNumber("-7", block)?.value).toBe(-7);
-		expect(matchNumber("  +12  ", block)?.value).toBe(12);
-		expect(matchNumber("7.0", block)?.value).toBe(7);
-		expect(matchNumber("1.5", block)).toBeUndefined();
-		expect(matchNumber("1e3", block)).toBeUndefined();
-		expect(matchNumber("0xff", block)).toBeUndefined();
-		expect(matchNumber("", block)).toBeUndefined();
+		expect(matchNumber("42", block).command?.value).toBe(42);
+		expect(matchNumber("-7", block).command?.value).toBe(-7);
+		expect(matchNumber("  +12  ", block).command?.value).toBe(12);
+		expect(matchNumber("7.0", block).command?.value).toBe(7);
+		expect(matchNumber("1.5", block)).toEqual(partialMatch);
+		expect(matchNumber("1e3", block)).toEqual(partialMatch);
+		expect(matchNumber("0xff", block)).toEqual(partialMatch);
+		expect(matchNumber("", block)).toEqual(partialMatch);
 	});
 
 	it("resolves digit and written decimals", () => {
 		const block = numberBlock({numberType: "decimal"});
 
-		expect(matchNumber("4", block)?.value).toBe(4);
-		expect(matchNumber(".75", block)?.value).toBe(0.75);
-		expect(matchNumber("-2.5", block)?.value).toBe(-2.5);
-		expect(matchNumber("three point five", block)?.value).toBe(3.5);
+		expect(matchNumber("4", block).command?.value).toBe(4);
+		expect(matchNumber(".75", block).command?.value).toBe(0.75);
+		expect(matchNumber("-2.5", block).command?.value).toBe(-2.5);
+		expect(matchNumber("three point five", block).command?.value).toBe(3.5);
 	});
 
 	it("resolves written integers when allowed", () => {
 		const block = numberBlock();
 
-		expect(matchNumber("Three", block)?.value).toBe(3);
-		expect(matchNumber("twenty-one", block)?.value).toBe(21);
-		expect(matchNumber("one hundred and five", block)?.value).toBe(105);
-		expect(matchNumber("two thousand", block)?.value).toBe(2_000);
-		expect(matchNumber("twenty ten", block)).toBeUndefined();
+		expect(matchNumber("Three", block).command?.value).toBe(3);
+		expect(matchNumber("twenty-one", block).command?.value).toBe(21);
+		expect(matchNumber("one hundred and five", block).command?.value).toBe(105);
+		expect(matchNumber("two thousand", block).command?.value).toBe(2_000);
+		expect(matchNumber("twenty ten", block)).toEqual(partialMatch);
 	});
 
 	it("rejects written numbers when they are disabled", () => {
 		const block = numberBlock({allowWords: false});
 
-		expect(matchNumber("three", block)).toBeUndefined();
-		expect(matchNumber("3", block)?.value).toBe(3);
+		expect(matchNumber("three", block)).toEqual(partialMatch);
+		expect(matchNumber("3", block).command?.value).toBe(3);
 	});
 
 	it("applies inclusive minimum and maximum bounds", () => {
 		const block = numberBlock({min: 2, max: 4});
 
-		expect(matchNumber("1", block)).toBeUndefined();
-		expect(matchNumber("2", block)?.value).toBe(2);
-		expect(matchNumber("four", block)?.value).toBe(4);
-		expect(matchNumber("5", block)).toBeUndefined();
+		expect(matchNumber("1", block)).toEqual(partialMatch);
+		expect(matchNumber("2", block).command?.value).toBe(2);
+		expect(matchNumber("four", block).command?.value).toBe(4);
+		expect(matchNumber("5", block)).toEqual(partialMatch);
 	});
 });
 
@@ -134,6 +143,7 @@ describe("matchBlock", () => {
 			type: "boolean",
 			value: false,
 		});
+		expect(matchBlock("maybe", block)).toEqual(partialMatch);
 	});
 
 	it("resolves a choice to its stable value", () => {
@@ -155,6 +165,7 @@ describe("matchBlock", () => {
 			type: "choice",
 			value: "carefully",
 		});
+		expect(matchBlock("recklessly", block)).toEqual(partialMatch);
 	});
 
 	it("resolves and restricts canonical directions", () => {
@@ -170,7 +181,7 @@ describe("matchBlock", () => {
 			type: "direction",
 			value: "n",
 		});
-		expect(matchBlock("east", block)).toBeUndefined();
+		expect(matchBlock("east", block)).toEqual(partialMatch);
 	});
 
 	it("resolves relation aliases to the authored relation", () => {
@@ -188,6 +199,7 @@ describe("matchBlock", () => {
 			type: "relation",
 			value: "with",
 		});
+		expect(matchBlock("near", block)).toEqual(failedMatch);
 	});
 
 	it("resolves target candidates to typed entity references", () => {
@@ -244,7 +256,7 @@ describe("matchBlock", () => {
 			},
 		];
 
-		expect(matchBlock("door", block, {targets})).toBeUndefined();
+		expect(matchBlock("door", block, {targets})).toEqual(partialMatch);
 	});
 
 	it("resolves text while preserving player casing", () => {
@@ -261,16 +273,16 @@ describe("matchBlock", () => {
 			type: "text",
 			value: "Hello There",
 		});
-		expect(matchBlock("Hello There", block)).toBeUndefined();
+		expect(matchBlock("Hello There", block)).toEqual(partialMatch);
 	});
 
-	it("returns undefined for a non-match", () => {
+	it("returns a typed failure for a fixed-syntax non-match", () => {
 		const block = {
 			...createDefaultFieldObject(PhraseBlockSchema),
 			id: toID("command-block", "verb"),
 			matches: ["take"],
 		};
 
-		expect(matchBlock("drop", block)).toBeUndefined();
+		expect(matchBlock("drop", block)).toEqual(failedMatch);
 	});
 });

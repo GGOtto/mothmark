@@ -9,6 +9,31 @@ type CommandVariableOf<TType extends CommandVariable["type"]> = Extract<
 	{type: TType}
 >;
 
+export type BlockMatch = "match" | "partial match" | "fail";
+
+/**
+ * A match carries the resolved command variable. A partial match means a
+ * value-bearing block occupied the expected command position but could not
+ * resolve its value. A fail means fixed command syntax did not match, or a
+ * specialized matcher received the wrong block type.
+ */
+export type BlockMatchResponse<TCommand extends CommandVariable = CommandVariable> =
+	{command: TCommand; match: "match"} | {command: null; match: Exclude<BlockMatch, "match">};
+
+function matched<TCommand extends CommandVariable>(
+	command: TCommand,
+): BlockMatchResponse<TCommand> {
+	return {command, match: "match"};
+}
+
+function partialMatch<TCommand extends CommandVariable>(): BlockMatchResponse<TCommand> {
+	return {command: null, match: "partial match"};
+}
+
+function failedMatch<TCommand extends CommandVariable>(): BlockMatchResponse<TCommand> {
+	return {command: null, match: "fail"};
+}
+
 type TargetBlock = Extract<CommandBlock, {type: "target"}>;
 type TargetSource = Exclude<TargetBlock["source"], "any">;
 
@@ -68,15 +93,15 @@ const NUMBER_SCALES: Record<string, number> = {
 export function matchPhrase(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"phrase"> | undefined {
+): BlockMatchResponse<CommandVariableOf<"phrase">> {
 	if (block.type !== "phrase") {
-		return undefined;
+		return failedMatch();
 	}
 	const normalizedText = normalize(text);
 	const matchedPhrase = block.matches.find((match) => normalize(match) === normalizedText);
 	return matchedPhrase === undefined
-		? undefined
-		: {blockId: block.id, type: "phrase", value: matchedPhrase};
+		? failedMatch()
+		: matched({blockId: block.id, type: "phrase", value: matchedPhrase});
 }
 
 function parseUnderOneHundred(tokens: string[]): number | undefined {
@@ -196,9 +221,9 @@ function parseWrittenNumber(text: string): number | undefined {
 export function matchNumber(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"number"> | undefined {
+): BlockMatchResponse<CommandVariableOf<"number">> {
 	if (block.type !== "number") {
-		return undefined;
+		return failedMatch();
 	}
 
 	const normalizedText = normalize(text).trim();
@@ -216,39 +241,39 @@ export function matchNumber(
 		(block.min !== undefined && numericValue < block.min) ||
 		(block.max !== undefined && numericValue > block.max)
 	) {
-		return undefined;
+		return partialMatch();
 	}
 
-	return {blockId: block.id, type: "number", value: numericValue};
+	return matched({blockId: block.id, type: "number", value: numericValue});
 }
 
 export function matchBoolean(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"boolean"> | undefined {
-	if (block.type !== "boolean") return undefined;
+): BlockMatchResponse<CommandVariableOf<"boolean">> {
+	if (block.type !== "boolean") return failedMatch();
 
 	const normalizedText = normalize(text);
 	if (block.trueMatches.some((match) => normalize(match) === normalizedText)) {
-		return {blockId: block.id, type: "boolean", value: true};
+		return matched({blockId: block.id, type: "boolean", value: true});
 	}
 	if (block.falseMatches.some((match) => normalize(match) === normalizedText)) {
-		return {blockId: block.id, type: "boolean", value: false};
+		return matched({blockId: block.id, type: "boolean", value: false});
 	}
-	return undefined;
+	return partialMatch();
 }
 
 export function matchChoice(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"choice"> | undefined {
-	if (block.type !== "choice") return undefined;
+): BlockMatchResponse<CommandVariableOf<"choice">> {
+	if (block.type !== "choice") return failedMatch();
 
 	const normalizedText = normalize(text);
 	const choice = block.choices.find((option) =>
 		option.matches.some((match) => normalize(match) === normalizedText),
 	);
-	return choice ? {blockId: block.id, type: "choice", value: choice.value} : undefined;
+	return choice ? matched({blockId: block.id, type: "choice", value: choice.value}) : partialMatch();
 }
 
 const DIRECTION_ALIASES: Record<string, CommandVariableOf<"direction">["value"]> = {
@@ -281,28 +306,28 @@ const DIRECTION_ALIASES: Record<string, CommandVariableOf<"direction">["value"]>
 export function matchDirection(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"direction"> | undefined {
-	if (block.type !== "direction") return undefined;
+): BlockMatchResponse<CommandVariableOf<"direction">> {
+	if (block.type !== "direction") return failedMatch();
 
 	const direction = DIRECTION_ALIASES[normalize(text)];
 	if (!direction || (block.allowed.length > 0 && !block.allowed.includes(direction))) {
-		return undefined;
+		return partialMatch();
 	}
-	return {blockId: block.id, type: "direction", value: direction};
+	return matched({blockId: block.id, type: "direction", value: direction});
 }
 
 export function matchRelation(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"relation"> | undefined {
-	if (block.type !== "relation") return undefined;
+): BlockMatchResponse<CommandVariableOf<"relation">> {
+	if (block.type !== "relation") return failedMatch();
 
 	const defaultMatches = block.aliasMode === "replace" ? [] : [block.relation];
 	const customMatches = block.aliasMode === "defaults" ? [] : block.aliases;
 	const matches = [...defaultMatches, ...customMatches];
-	if (!matches.some((match) => normalize(match) === normalize(text))) return undefined;
+	if (!matches.some((match) => normalize(match) === normalize(text))) return failedMatch();
 
-	return {blockId: block.id, type: "relation", value: block.relation};
+	return matched({blockId: block.id, type: "relation", value: block.relation});
 }
 
 function targetMatchesFilters(candidate: TargetMatchCandidate, block: TargetBlock): boolean {
@@ -327,8 +352,8 @@ export function matchTarget(
 	text: string,
 	block: CommandBlock,
 	context: MatchBlockContext = {},
-): CommandVariableOf<"target"> | undefined {
-	if (block.type !== "target") return undefined;
+): BlockMatchResponse<CommandVariableOf<"target">> {
+	if (block.type !== "target") return failedMatch();
 
 	const eligible = (context.targets ?? []).filter((candidate) =>
 		targetMatchesFilters(candidate, block),
@@ -346,8 +371,8 @@ export function matchTarget(
 				: [];
 
 	return matches.length === 1
-		? {blockId: block.id, type: "target", value: matches[0].reference}
-		: undefined;
+		? matched({blockId: block.id, type: "target", value: matches[0].reference})
+		: partialMatch();
 }
 
 function resolvedText(text: string, mode: Extract<CommandBlock, {type: "text"}>["mode"]): string {
@@ -364,22 +389,22 @@ function resolvedText(text: string, mode: Extract<CommandBlock, {type: "text"}>[
 export function matchText(
 	text: string,
 	block: CommandBlock,
-): CommandVariableOf<"text"> | undefined {
-	if (block.type !== "text") return undefined;
+): BlockMatchResponse<CommandVariableOf<"text">> {
+	if (block.type !== "text") return failedMatch();
 
 	const value = resolvedText(text, block.mode);
-	if (!value || (block.mode === "word" && /\s/.test(value))) return undefined;
-	if (block.minLength !== undefined && value.length < block.minLength) return undefined;
-	if (block.maxLength !== undefined && value.length > block.maxLength) return undefined;
+	if (!value || (block.mode === "word" && /\s/.test(value))) return partialMatch();
+	if (block.minLength !== undefined && value.length < block.minLength) return partialMatch();
+	if (block.maxLength !== undefined && value.length > block.maxLength) return partialMatch();
 
-	return {blockId: block.id, type: "text", value};
+	return matched({blockId: block.id, type: "text", value});
 }
 
 export function matchBlock(
 	text: string,
 	block: CommandBlock,
 	context: MatchBlockContext = {},
-): CommandVariable | undefined {
+): BlockMatchResponse {
 	switch (block.type) {
 		case "phrase":
 			return matchPhrase(text, block);
@@ -398,6 +423,6 @@ export function matchBlock(
 		case "text":
 			return matchText(text, block);
 		default:
-			return undefined;
+			return failedMatch();
 	}
 }

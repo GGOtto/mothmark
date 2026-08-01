@@ -50,9 +50,12 @@ describe("resolveTargetMatchContext", () => {
 		const result = matchBlock("chime", block, resolveTargetMatchContext(world, changedGame));
 
 		expect(result).toEqual({
-			blockId: block.id,
-			type: "target",
-			value: toID("feature", "brass-bell"),
+			match: "match",
+			command: {
+				blockId: block.id,
+				type: "target",
+				value: toID("feature", "brass-bell"),
+			},
 		});
 		expect(world.rooms[0].features[0].aliases).toEqual(["bell"]);
 	});
