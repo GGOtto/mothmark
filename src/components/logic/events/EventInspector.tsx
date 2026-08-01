@@ -8,9 +8,9 @@ import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
-import type {LogicSelection} from "./LogicEditor";
+import type {LogicSelection} from "../shared/logicTypes";
 
-type LogicInspectorProps = {
+type EventInspectorProps = {
 	world: World;
 	updateWorld: UpdateWorld;
 	selection: LogicSelection | null;
@@ -18,7 +18,7 @@ type LogicInspectorProps = {
 
 const BranchConditionEditorSchema = editor.conditionControl(ConditionSchema, {title: "Condition"});
 
-export function LogicInspector({world, updateWorld, selection}: LogicInspectorProps) {
+export function EventInspector({world, updateWorld, selection}: EventInspectorProps) {
 	const {theme} = useTheme();
 	const appearance = {theme: "auto" as const, scheme: theme};
 

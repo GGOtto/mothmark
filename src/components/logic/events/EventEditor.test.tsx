@@ -10,7 +10,8 @@ import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {WorldUpdate} from "@/types/worldUpdaterTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue, toID} from "@/utils/idUtils";
-import {LogicEditor, LogicHome, LogicToolbar} from "./LogicEditor";
+import {LogicHome} from "../shared/LogicWorkspace";
+import {EventEditor, EventToolbar} from "./EventEditor";
 
 function createWorld(recipe: (draft: Draft<World>) => void): World {
 	const configuredWorld = produce(exampleWorld, recipe);
@@ -49,7 +50,7 @@ describe("LogicHome", () => {
 	});
 });
 
-describe("LogicEditor", () => {
+describe("EventEditor", () => {
 	it("deletes the entire conditional chain when deleting If", async () => {
 		const user = userEvent.setup();
 		let world = createWorld((draft) => {
@@ -66,7 +67,7 @@ describe("LogicEditor", () => {
 
 		render(
 			<PopupProvider>
-				<LogicEditor
+				<EventEditor
 					world={world}
 					updateWorld={updateWorld}
 					selectedEventId="test-event"
@@ -106,7 +107,7 @@ describe("LogicEditor", () => {
 
 		render(
 			<PopupProvider>
-				<LogicEditor
+				<EventEditor
 					world={world}
 					updateWorld={updateWorld}
 					selectedEventId="test-event"
@@ -136,7 +137,7 @@ describe("LogicEditor", () => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		});
 		const view = render(
-			<LogicEditor
+			<EventEditor
 				world={world}
 				updateWorld={updateWorld}
 				selectedEventId="test-event"
@@ -151,7 +152,7 @@ describe("LogicEditor", () => {
 
 		fireEvent.click(screen.getByRole("button", {name: "If When a condition passes"}));
 		view.rerender(
-			<LogicEditor
+			<EventEditor
 				world={world}
 				updateWorld={updateWorld}
 				selectedEventId="test-event"
@@ -195,7 +196,7 @@ describe("LogicEditor", () => {
 		const onSelectionChange = jest.fn();
 
 		render(
-			<LogicEditor
+			<EventEditor
 				world={world}
 				updateWorld={updateWorld}
 				selectedEventId="test-event"
@@ -266,7 +267,7 @@ describe("LogicEditor", () => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		});
 		const {container} = render(
-			<LogicEditor
+			<EventEditor
 				world={world}
 				updateWorld={updateWorld}
 				selectedEventId="test-event"
@@ -293,7 +294,7 @@ describe("LogicEditor", () => {
 	});
 });
 
-describe("LogicToolbar", () => {
+describe("EventToolbar", () => {
 	it("hides the event ID and confirms before deleting", async () => {
 		const user = userEvent.setup();
 		const event = createTestEvent();
@@ -301,7 +302,7 @@ describe("LogicToolbar", () => {
 
 		render(
 			<PopupProvider>
-				<LogicToolbar event={event} updateWorld={jest.fn()} onBack={jest.fn()} onDelete={onDelete} />
+				<EventToolbar event={event} updateWorld={jest.fn()} onBack={jest.fn()} onDelete={onDelete} />
 			</PopupProvider>,
 		);
 

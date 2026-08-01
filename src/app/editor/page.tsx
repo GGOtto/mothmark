@@ -13,15 +13,13 @@ import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
+import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
-	LogicEditor,
 	LogicHome,
 	LogicSectionPlaceholder,
-	LogicToolbar,
 	type LogicSection,
 	type LogicSelection,
-} from "@/components/logic/LogicEditor";
-import {LogicInspector} from "@/components/logic/LogicInspector";
+} from "@/components/logic/shared";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
 import {createExampleWorld, world as initialWorld} from "@/data/worlds/exampleWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
@@ -391,7 +389,7 @@ function EditorToolbar({
 			(world.events ?? [])[0] ??
 			null;
 		return (
-			<LogicToolbar
+			<EventToolbar
 				event={event}
 				updateWorld={updateWorld}
 				onBack={onLogicBack}
@@ -494,7 +492,7 @@ function EditorWorkspace({
 		}
 		if (logicSection === "events") {
 			return (
-				<LogicEditor
+				<EventEditor
 					world={world}
 					updateWorld={updateWorld}
 					selectedEventId={selectedEventId}
@@ -645,7 +643,7 @@ function EditorInspector({
 				selectedConnection={null}
 				onSelectedIdChange={onSelectedIdChange}
 			>
-				<LogicInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
+				<EventInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
 			</RightSideBar>
 		);
 	}
