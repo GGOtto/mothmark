@@ -10,7 +10,6 @@
 	--logic-command-color: var(--logic-command-color-light, var(--color-action));
 }
 
-.commandPatterns__intro button,
 .commandPattern button,
 .commandActions button,
 .commandBlockBar button {
@@ -19,16 +18,17 @@
 }
 
 .commandBuilder {
+	display: grid;
 	height: 100%;
+	min-height: 0;
 	min-width: 0;
-	overflow: auto;
+	grid-template-rows: auto minmax(0, 1fr);
+	overflow: hidden;
 	background: var(--color-workspace);
 }
 
 .commandBuilderDock {
-	position: sticky;
 	z-index: 4;
-	top: 0;
 	border-bottom: 1px solid var(--color-border);
 	background: var(--color-surface);
 }
@@ -130,51 +130,39 @@
 }
 
 .commandBlockBar {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 7px 16px;
+	display: grid;
+	grid-template-columns: 76px minmax(0, 1fr);
+	align-items: start;
+	gap: 10px;
+	padding: 10px 16px;
 }
 
 .commandBlockBar__heading {
-	display: grid;
-	flex: 0 0 auto;
-	gap: 1px;
+	padding-top: 7px;
 
 	strong {
-		font-size: 11px;
-	}
-
-	span {
-		color: var(--color-text-faint);
-		font-size: 10px;
+		font-size: 12px;
 	}
 }
 
 .commandBlockBar__groups {
-	display: flex;
+	display: grid;
 	min-width: 0;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 8px 12px;
+	gap: 6px;
 }
 
 .commandBlockBar__group {
-	display: flex;
+	display: grid;
 	min-width: 0;
+	grid-template-columns: 58px minmax(0, 1fr);
 	align-items: center;
-	gap: 7px;
-}
-
-.commandBlockBar__group + .commandBlockBar__group {
-	padding-left: 12px;
-	border-left: 1px solid var(--color-border);
+	gap: 8px;
 }
 
 .commandBlockBar__groupLabel {
 	color: var(--color-text-muted);
 	font-size: 10px;
-	font-weight: 700;
+	font-weight: 600;
 }
 
 .commandBlockBar__blocks {
@@ -217,97 +205,120 @@
 }
 
 .commandPatterns {
-	width: min(920px, 100%);
+	display: flex;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
 	box-sizing: border-box;
+	flex-direction: column;
 	margin: 0 auto;
-	padding: 20px 16px 32px;
+	overflow: hidden;
+	padding: 0;
 }
 
-.commandPatterns__intro {
+.commandPattern__overlay {
+	position: absolute;
+	z-index: 2;
+	top: 12px;
+	right: 16px;
 	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-	margin-bottom: 12px;
+	align-items: center;
+	gap: 6px;
+}
 
-	h2,
-	p {
-		margin: 0;
+.commandPattern__caption {
+	position: absolute;
+	z-index: 1;
+	top: 14px;
+	right: 188px;
+	left: 16px;
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+
+	strong {
+		font-size: 11px;
 	}
 
-	h2 {
-		font-size: 15px;
-	}
-
-	p {
-		margin-top: 3px;
+	span {
+		overflow: hidden;
 		color: var(--color-text-muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 		font-size: 12px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+.commandPatternNavigation {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+
+	span {
+		min-width: 48px;
+		color: var(--color-text-muted);
+		font-size: 11px;
+		text-align: center;
 	}
 
 	button {
-		display: inline-flex;
-		height: 32px;
-		align-items: center;
-		gap: 6px;
-		padding: 0 9px;
+		display: grid;
+		width: 30px;
+		height: 30px;
+		place-items: center;
+		padding: 0;
 		border: 1px solid var(--color-control-border);
 		border-radius: var(--radius-control);
 		background: var(--color-surface-raised);
-		color: var(--color-text);
-		font-size: 12px;
+		color: var(--color-text-muted);
+	}
+
+	button:disabled {
+		color: var(--color-text-faint);
+		cursor: not-allowed;
+		opacity: 0.55;
+	}
+}
+
+.commandPattern__removePattern {
+	display: grid;
+	width: 30px;
+	height: 30px;
+	place-items: center;
+	padding: 0;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text-faint);
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--color-danger) 50%, var(--color-border));
+		color: var(--color-danger);
 	}
 }
 
 .commandPattern {
-	margin-bottom: 10px;
+	position: relative;
+	display: grid;
+	flex: 1;
+	min-height: 0;
+	grid-template-rows: minmax(0, 1fr);
+	margin-bottom: 0;
 	overflow: hidden;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-panel);
+	border: 0;
+	border-radius: 0;
 	background: var(--color-surface);
-}
-
-.commandPattern--active {
-	border-color: color-mix(in srgb, var(--color-action) 62%, var(--color-border));
-}
-
-.commandPattern__header {
-	display: flex;
-	min-height: 34px;
-	align-items: center;
-	justify-content: space-between;
-	padding: 0 7px 0 11px;
-	border-bottom: 1px solid var(--color-border);
-	background: var(--color-surface-raised);
-	color: var(--color-text-muted);
-	font-size: 11px;
-	font-weight: 700;
-
-	button {
-		display: grid;
-		width: 26px;
-		height: 26px;
-		place-items: center;
-		padding: 0;
-		border: 0;
-		border-radius: var(--radius-control);
-		background: transparent;
-		color: var(--color-text-faint);
-	}
-
-	button:hover {
-		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-		color: var(--color-danger);
-	}
 }
 
 .commandPattern__blocks {
 	display: flex;
 	min-height: 66px;
-	align-items: center;
+	align-content: flex-start;
+	align-items: flex-start;
 	flex-wrap: wrap;
 	gap: 7px;
-	padding: 10px;
+	padding: 64px 16px 16px;
 }
 
 .commandPattern__empty {
@@ -818,9 +829,12 @@
 
 @container logic-workspace (max-width: 680px) {
 	.commandBlockBar {
-		align-items: flex-start;
-		flex-direction: column;
-		gap: 6px;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+	}
+
+	.commandBlockBar__heading {
+		padding-top: 0;
 	}
 
 	.commandActions__behavior {

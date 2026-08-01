@@ -3,6 +3,7 @@
 import {
 	ArrowLeft,
 	CheckSquare,
+	ChevronLeft,
 	ChevronRight,
 	Compass,
 	Crosshair,
@@ -18,7 +19,7 @@ import {
 	Workflow,
 	type LucideIcon,
 } from "lucide-react";
-import {type CSSProperties, useRef, useState} from "react";
+import {type CSSProperties, useEffect, useRef, useState} from "react";
 import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import {PopupTemplate} from "@/components/popup/template/PopupTemplate";
@@ -41,7 +42,7 @@ import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import type {CommandSelection} from "../shared";
 import {CommandBehaviorEditor} from "./CommandBehaviorEditor";
-import {commandBlockWord} from "./CommandSummary";
+import {commandBlockWord, commandPatternText} from "./CommandSummary";
 import "./CommandEditor.scss";
 
 type BlockType = CommandBlock["type"];
@@ -232,10 +233,67 @@ export function CommandEditor({
 	const commands = world.commands;
 	const selectedCommand =
 		commands.find((command) => idValue(command.id) === selectedCommandId) ?? commands[0] ?? null;
-	const [activePatternIndex, setActivePatternIndex] = useState(0);
+	const [patternNavigation, setPatternNavigation] = useState({
+		commandId: selectedCommandId,
+		index: 0,
+	});
 	const dragIndex = useRef<number | null>(null);
 	const dragPatternIndex = useRef<number | null>(null);
 	const popup = useOptionalPopup();
+	const patternCount = selectedCommand?.patterns.length ?? 0;
+	const storedPatternIndex =
+		patternNavigation.commandId === selectedCommandId ? patternNavigation.index : 0;
+	const activePatternIndex = Math.min(storedPatternIndex, Math.max(0, patternCount - 1));
+	function setActivePatternIndex(next: number | ((current: number) => number)) {
+		setPatternNavigation((current) => {
+			const currentIndex = current.commandId === selectedCommandId ? current.index : 0;
+			return {
+				commandId: selectedCommandId,
+				index: typeof next === "function" ? next(currentIndex) : next,
+			};
+		});
+	}
+	const behaviorIsOpen =
+		selection?.kind === "behavior" ||
+		selection?.kind === "fallback" ||
+		selection?.kind === "behavior-condition" ||
+		selection?.kind === "behavior-effect";
+
+	useEffect(() => {
+		if (!selectedCommand || behaviorIsOpen || patternCount <= 1) return;
+
+		function handlePatternKeyDown(event: KeyboardEvent) {
+			if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+			const target = event.target;
+			if (
+				target instanceof HTMLElement &&
+				(target.isContentEditable ||
+					target.matches("input, textarea, select") ||
+					target.closest('[role="dialog"]'))
+			) {
+				return;
+			}
+
+			const offset = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+			if (offset === 0) return;
+			const nextIndex = Math.max(0, Math.min(patternCount - 1, activePatternIndex + offset));
+			if (nextIndex === activePatternIndex) return;
+
+			event.preventDefault();
+			setPatternNavigation({commandId: selectedCommandId, index: nextIndex});
+			onSelectionChange({kind: "command", commandId: idValue(selectedCommand.id)});
+		}
+
+		window.addEventListener("keydown", handlePatternKeyDown);
+		return () => window.removeEventListener("keydown", handlePatternKeyDown);
+	}, [
+		activePatternIndex,
+		behaviorIsOpen,
+		onSelectionChange,
+		patternCount,
+		selectedCommand,
+		selectedCommandId,
+	]);
 
 	function addCommand() {
 		const command = createCommand(world);
@@ -455,12 +513,6 @@ export function CommandEditor({
 		"--logic-command-color-dark": commandColor.dark,
 		"--logic-command-color-light": commandColor.light,
 	} as CSSProperties;
-	const behaviorIsOpen =
-		selection?.kind === "behavior" ||
-		selection?.kind === "fallback" ||
-		selection?.kind === "behavior-condition" ||
-		selection?.kind === "behavior-effect";
-
 	return (
 		<div className="commandEditor" style={commandStyle}>
 			{behaviorIsOpen && selection ? (
@@ -497,7 +549,6 @@ export function CommandEditor({
 						<div className="commandBlockBar" role="toolbar" aria-label="Add a command block">
 							<div className="commandBlockBar__heading">
 								<strong>Add block</strong>
-								<span>Pattern {activePatternIndex + 1}</span>
 							</div>
 							<div className="commandBlockBar__groups">
 								{[
@@ -536,110 +587,132 @@ export function CommandEditor({
 					</div>
 
 					<div className="commandPatterns">
-						<div className="commandPatterns__intro">
-							<div>
-								<h2>Player wording</h2>
-								<p>Arrange blocks in the order a player types them.</p>
-							</div>
-						</div>
-
-						{selectedCommand.patterns.map((pattern, patternIndex) => (
-							<section
-								className={`commandPattern ${activePatternIndex === patternIndex ? "commandPattern--active" : ""}`}
-								key={patternIndex}
-								onClick={() => setActivePatternIndex(patternIndex)}
-							>
-								<header className="commandPattern__header">
-									<span>Pattern {patternIndex + 1}</span>
-									{patternIndex > 0 ? (
-										<button
-											type="button"
-											aria-label={`Remove pattern ${patternIndex + 1}`}
-											onClick={(event) => {
-												event.stopPropagation();
-												removePattern(patternIndex);
-											}}
-										>
-											<Trash2 size={14} aria-hidden="true" />
-										</button>
-									) : null}
-								</header>
-								<div className="commandPattern__blocks">
-									{pattern.blocks.length === 0 ? (
-										<p className="commandPattern__empty">Add a phrase or value block above.</p>
-									) : (
-										pattern.blocks.map((block, blockIndex) => {
-											const definition = blockDefinition(block.type);
-											const blockId = idValue(block.id);
-											const selected =
-												selection?.kind === "block" &&
-												selection.patternIndex === patternIndex &&
-												selection.blockId === blockId;
-											const hasFallback = selectedCommand.fallbacks.some(
-												(fallback) => idValue(fallback.blockId) === blockId,
-											);
-											return (
-												<div
-													className={`commandBlock commandColor--${block.type} ${selected ? "commandBlock--selected" : ""}`}
-													key={blockId}
-													draggable={true}
-													onDragStart={(event) => {
-														event.dataTransfer.effectAllowed = "move";
-														event.dataTransfer.setData("text/plain", String(blockIndex));
-														dragIndex.current = blockIndex;
-														dragPatternIndex.current = patternIndex;
-													}}
-													onDragOver={(event) => {
-														event.preventDefault();
-														if (dragPatternIndex.current !== patternIndex || dragIndex.current == null) return;
-														moveBlock(patternIndex, dragIndex.current, blockIndex);
-														dragIndex.current = blockIndex;
-													}}
-													onDragEnd={() => {
-														dragIndex.current = null;
-														dragPatternIndex.current = null;
+						{selectedCommand.patterns
+							.slice(activePatternIndex, activePatternIndex + 1)
+							.map((pattern, visiblePatternIndex) => {
+								const patternIndex = activePatternIndex + visiblePatternIndex;
+								return (
+									<section className="commandPattern" key={patternIndex}>
+										<div className="commandPattern__caption">
+											<strong>Pattern</strong>
+											<span>{commandPatternText(pattern)}</span>
+										</div>
+										<div className="commandPattern__overlay">
+											{patternCount > 1 ? (
+												<button
+													type="button"
+													className="commandPattern__removePattern"
+													aria-label={`Remove pattern ${patternIndex + 1}`}
+													onClick={() => removePattern(patternIndex)}
+												>
+													<Trash2 size={14} aria-hidden="true" />
+												</button>
+											) : null}
+											<nav className="commandPatternNavigation" aria-label="Pattern navigation">
+												<button
+													type="button"
+													aria-label="Previous pattern"
+													disabled={activePatternIndex === 0}
+													onClick={() => {
+														setActivePatternIndex((current) => Math.max(0, current - 1));
+														onSelectionChange({kind: "command", commandId});
 													}}
 												>
-													<span className="commandBlock__grip" aria-hidden="true">
-														<GripVertical size={13} />
-													</span>
-													<button
-														type="button"
-														className="commandBlock__select"
-														onClick={(event) => {
-															event.stopPropagation();
-															setActivePatternIndex(patternIndex);
-															onSelectionChange({kind: "block", commandId, patternIndex, blockId});
-														}}
-													>
-														<span>
-															<small>{definition.label}</small>
-															<strong>{commandBlockWord(block)}</strong>
-														</span>
-														{hasFallback ? (
-															<span className="commandBlock__fallback" title="Fallback configured">
-																Fallback
+													<ChevronLeft size={15} aria-hidden="true" />
+												</button>
+												<span>
+													{activePatternIndex + 1} of {patternCount}
+												</span>
+												<button
+													type="button"
+													aria-label="Next pattern"
+													disabled={activePatternIndex >= patternCount - 1}
+													onClick={() => {
+														setActivePatternIndex((current) => Math.min(patternCount - 1, current + 1));
+														onSelectionChange({kind: "command", commandId});
+													}}
+												>
+													<ChevronRight size={15} aria-hidden="true" />
+												</button>
+											</nav>
+										</div>
+										<div className="commandPattern__blocks">
+											{pattern.blocks.length === 0 ? (
+												<p className="commandPattern__empty">Add a phrase or value block above.</p>
+											) : (
+												pattern.blocks.map((block, blockIndex) => {
+													const definition = blockDefinition(block.type);
+													const blockId = idValue(block.id);
+													const selected =
+														selection?.kind === "block" &&
+														selection.patternIndex === patternIndex &&
+														selection.blockId === blockId;
+													const hasFallback = selectedCommand.fallbacks.some(
+														(fallback) => idValue(fallback.blockId) === blockId,
+													);
+													return (
+														<div
+															className={`commandBlock commandColor--${block.type} ${selected ? "commandBlock--selected" : ""}`}
+															key={blockId}
+															draggable={true}
+															onDragStart={(event) => {
+																event.dataTransfer.effectAllowed = "move";
+																event.dataTransfer.setData("text/plain", String(blockIndex));
+																dragIndex.current = blockIndex;
+																dragPatternIndex.current = patternIndex;
+															}}
+															onDragOver={(event) => {
+																event.preventDefault();
+																if (dragPatternIndex.current !== patternIndex || dragIndex.current == null) return;
+																moveBlock(patternIndex, dragIndex.current, blockIndex);
+																dragIndex.current = blockIndex;
+															}}
+															onDragEnd={() => {
+																dragIndex.current = null;
+																dragPatternIndex.current = null;
+															}}
+														>
+															<span className="commandBlock__grip" aria-hidden="true">
+																<GripVertical size={13} />
 															</span>
-														) : null}
-													</button>
-													<button
-														type="button"
-														className="commandBlock__remove"
-														aria-label={`Remove ${definition.label} block`}
-														onClick={(event) => {
-															event.stopPropagation();
-															void removeBlock(patternIndex, blockIndex);
-														}}
-													>
-														<Trash2 size={13} aria-hidden="true" />
-													</button>
-												</div>
-											);
-										})
-									)}
-								</div>
-							</section>
-						))}
+															<button
+																type="button"
+																className="commandBlock__select"
+																onClick={(event) => {
+																	event.stopPropagation();
+																	setActivePatternIndex(patternIndex);
+																	onSelectionChange({kind: "block", commandId, patternIndex, blockId});
+																}}
+															>
+																<span>
+																	<small>{definition.label}</small>
+																	<strong>{commandBlockWord(block)}</strong>
+																</span>
+																{hasFallback ? (
+																	<span className="commandBlock__fallback" title="Fallback configured">
+																		Fallback
+																	</span>
+																) : null}
+															</button>
+															<button
+																type="button"
+																className="commandBlock__remove"
+																aria-label={`Remove ${definition.label} block`}
+																onClick={(event) => {
+																	event.stopPropagation();
+																	void removeBlock(patternIndex, blockIndex);
+																}}
+															>
+																<Trash2 size={13} aria-hidden="true" />
+															</button>
+														</div>
+													);
+												})
+											)}
+										</div>
+									</section>
+								);
+							})}
 					</div>
 				</div>
 			)}

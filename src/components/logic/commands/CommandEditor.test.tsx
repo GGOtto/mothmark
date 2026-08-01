@@ -20,7 +20,7 @@ import type {CommandSelection} from "../shared";
 import {CommandEditor, CommandToolbar} from "./CommandEditor";
 import {CommandBehaviorEditor} from "./CommandBehaviorEditor";
 import {CommandInspector} from "./CommandInspector";
-import {CommandLibrary} from "./CommandLibrary";
+import {CommandLibrary, CommandLibraryPreview} from "./CommandLibrary";
 import {commandPatternText} from "./CommandSummary";
 
 function CommandHarness({onWorldChange}: {onWorldChange?: (world: World) => void}) {
@@ -56,9 +56,19 @@ describe("CommandEditor", () => {
 
 		await user.click(screen.getByRole("button", {name: "Add pattern"}));
 
+		expect(screen.getByText("2 of 2")).toBeInTheDocument();
+		expect(document.querySelectorAll(".commandPattern")).toHaveLength(1);
+		expect(screen.getByText("Pattern")).toBeInTheDocument();
 		expect(
-			screen.getByText("Pattern 2", {selector: ".commandPattern__header span"}),
+			screen.getByText("say <text>", {selector: ".commandPattern__caption span"}),
 		).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Previous pattern"})).toBeEnabled();
+		expect(screen.getByRole("button", {name: "Next pattern"})).toBeDisabled();
+
+		fireEvent.keyDown(window, {key: "ArrowLeft"});
+		expect(screen.getByText("1 of 2")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", {name: "Next pattern"}));
+		expect(screen.getByText("2 of 2")).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Target"})).toBeEnabled();
 		expect(screen.getByRole("button", {name: "Phrase"})).toBeEnabled();
 		expect(
@@ -98,6 +108,22 @@ describe("CommandEditor", () => {
 		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
 		expect(say.patterns[0].blocks.some((block) => block.type === "target")).toBe(true);
 		expect(say.patterns[0].blocks.some((block) => block.type === "phrase")).toBe(false);
+	});
+
+	it("allows any pattern to be deleted while more than one remains", async () => {
+		const user = userEvent.setup();
+		let latestWorld = exampleWorld;
+		render(<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />);
+
+		await user.click(screen.getByRole("button", {name: "Add pattern"}));
+		fireEvent.keyDown(window, {key: "ArrowLeft"});
+
+		expect(screen.getByRole("button", {name: "Remove pattern 1"})).toBeInTheDocument();
+		await user.click(screen.getByRole("button", {name: "Remove pattern 1"}));
+
+		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
+		expect(say.patterns).toHaveLength(1);
+		expect(screen.queryByRole("button", {name: /Remove pattern/})).not.toBeInTheDocument();
 	});
 
 	it("asks whether a structural block should be added to one pattern or all patterns", async () => {
@@ -171,8 +197,8 @@ describe("CommandEditor", () => {
 		await user.click(screen.getByRole("button", {name: "Delete from this pattern"}));
 
 		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
-		expect(say.patterns[0].blocks.some((block) => block.type === "phrase")).toBe(false);
-		expect(say.patterns[1].blocks.some((block) => block.type === "phrase")).toBe(true);
+		expect(say.patterns[0].blocks.some((block) => block.type === "phrase")).toBe(true);
+		expect(say.patterns[1].blocks.some((block) => block.type === "phrase")).toBe(false);
 	});
 
 	it("only allows a value block to be removed from all patterns", async () => {
@@ -256,15 +282,42 @@ describe("command presentation", () => {
 	it("shows the command library before editing a command", async () => {
 		const user = userEvent.setup();
 		const onOpenCommand = jest.fn();
+		const onPreviewCommand = jest.fn();
 		render(
-			<CommandLibrary world={exampleWorld} updateWorld={jest.fn()} onOpenCommand={onOpenCommand} />,
+			<CommandLibrary
+				world={exampleWorld}
+				updateWorld={jest.fn()}
+				onOpenCommand={onOpenCommand}
+				onPreviewCommand={onPreviewCommand}
+			/>,
 		);
 
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
 		expect(screen.getAllByLabelText("say <text>").length).toBeGreaterThan(0);
 		expect(screen.getByRole("button", {name: /Say something/})).toBeInTheDocument();
+		fireEvent.mouseEnter(screen.getByRole("button", {name: /Say something/}));
+		expect(onPreviewCommand).toHaveBeenCalledWith("say");
 		await user.click(screen.getByRole("button", {name: /Say something/}));
 		expect(onOpenCommand).toHaveBeenCalledWith("say");
+	});
+
+	it("shows unique pattern summaries in a bounded sidebar list", () => {
+		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const shout = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
+		const commandWithRepeatedPattern = {
+			...command,
+			patterns: [command.patterns[0], command.patterns[0], shout.patterns[0]],
+		};
+
+		render(<CommandLibraryPreview command={commandWithRepeatedPattern} onOpenCommand={jest.fn()} />);
+
+		const summaries = screen.getByRole("list", {name: "Pattern summaries"});
+		expect(summaries).toHaveClass("commandLibraryPreview__patterns");
+		expect(screen.getByText("Pattern 1")).toBeInTheDocument();
+		expect(screen.queryByText("Pattern 2")).not.toBeInTheDocument();
+		expect(screen.getByText("Pattern 3")).toBeInTheDocument();
+		expect(screen.getAllByLabelText("say <text>")).toHaveLength(1);
+		expect(screen.getByLabelText("shout")).toBeInTheDocument();
 	});
 
 	it("opens command scope settings from the toolbar gear", async () => {

@@ -136,9 +136,17 @@ describe("EditorPage loading", () => {
 
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
 		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
+		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Edit command"})).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", {name: /Say something say <text>/}));
 
 		expect(screen.getByRole("button", {name: "Back to Commands"})).toBeInTheDocument();
-		expect(screen.getByLabelText("say <text>")).toBeInTheDocument();
+		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+
+		expect(screen.getByRole("heading", {name: "Logic"})).toBeInTheDocument();
+		expect(screen.getByText("Choose what you want to build.")).toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Back to Commands"})).not.toBeInTheDocument();
 	});
 });

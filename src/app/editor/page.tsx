@@ -18,6 +18,7 @@ import {
 	CommandEditor,
 	CommandInspector,
 	CommandLibrary,
+	CommandLibraryPreview,
 	CommandToolbar,
 } from "@/components/logic/commands";
 import {
@@ -156,6 +157,17 @@ export default function EditorPage() {
 		setMapRecenterRequest((request) => request + 1);
 	}, [updateWorld]);
 
+	const handleTabChange = useCallback((tab: EditorTab) => {
+		setActiveTab(tab);
+		if (tab !== "logic") return;
+
+		setLogicSection("home");
+		setSelectedEventId(null);
+		setLogicSelection(null);
+		setSelectedCommandId(null);
+		setCommandSelection(null);
+	}, []);
+
 	useWorldAutosaveRegistration({
 		ready: worldIsLoaded,
 		world: editorWorld,
@@ -189,7 +201,7 @@ export default function EditorPage() {
 
 	return (
 		<main className="editorPage">
-			<LeftSideBar activeTab={activeTab} onTabChange={setActiveTab} />
+			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<EditorMainPanel
 				isLoading={!worldIsLoaded}
@@ -232,6 +244,8 @@ export default function EditorPage() {
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
 				logicSection={logicSection}
 				logicSelection={logicSelection}
+				selectedCommandId={selectedCommandId}
+				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
 			/>
@@ -611,6 +625,7 @@ function EditorWorkspace({
 					<CommandLibrary
 						world={world}
 						updateWorld={updateWorld}
+						onPreviewCommand={(commandId) => setCommandSelection({kind: "command", commandId})}
 						onOpenCommand={(commandId) => {
 							setSelectedCommandId(commandId);
 							setCommandSelection({kind: "command", commandId});
@@ -736,6 +751,8 @@ type EditorInspectorProps = {
 	onSelectedIdChange: (selectedId: string) => void;
 	logicSection: LogicSection;
 	logicSelection: LogicSelection | null;
+	selectedCommandId: string | null;
+	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
 };
@@ -749,6 +766,8 @@ function EditorInspector({
 	onSelectedIdChange,
 	logicSection,
 	logicSelection,
+	selectedCommandId,
+	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
 }: EditorInspectorProps) {
@@ -778,6 +797,31 @@ function EditorInspector({
 		);
 	}
 	if (activeTab === "logic" && logicSection === "commands") {
+		if (!selectedCommandId) {
+			const previewedCommandId =
+				commandSelection?.kind === "command" ? commandSelection.commandId : null;
+			const previewedCommand =
+				world.commands.find((command) => idValue(command.id) === previewedCommandId) ??
+				world.commands[0] ??
+				null;
+			return (
+				<RightSideBar
+					world={world}
+					updateWorld={updateWorld}
+					selectedRoom={null}
+					selectedConnection={null}
+					onSelectedIdChange={onSelectedIdChange}
+				>
+					<CommandLibraryPreview
+						command={previewedCommand}
+						onOpenCommand={(commandId) => {
+							setSelectedCommandId(commandId);
+							setCommandSelection({kind: "command", commandId});
+						}}
+					/>
+				</RightSideBar>
+			);
+		}
 		if (!commandSelection) {
 			return (
 				<RightSideBar

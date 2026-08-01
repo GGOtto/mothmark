@@ -6,18 +6,5 @@ export function createBlockFallbackBehavior(block: CommandBlock): CommandConditi
 	const blockId = idValue(block.id);
 	return {
 		id: toID("condition-branch", `${blockId}-fallback`),
-		always: {
-			id: toID("effect", `${blockId}-fallback-effect`),
-			name: "Fallback response",
-			type: "group",
-			effects: [
-				{
-					type: "message",
-					operation: "show",
-					message: "That part of the command does not resolve.",
-				},
-			],
-			allowMultipleUsesInWorld: true,
-		},
 	};
 }
