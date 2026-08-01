@@ -1,62 +1,234 @@
 .logicEditor {
+	--logic-event-color: var(--logic-event-color-dark, var(--color-action));
 	display: grid;
-	grid-template-columns: 180px minmax(0, 1fr);
+	grid-template-columns: 175px minmax(0, 1fr);
 	height: 100%;
 	min-height: 0;
-	color: var(--panel-text);
+	background: var(--color-workspace);
+	color: var(--color-text);
+}
+
+:root[data-theme="light"] .logicEditor {
+	--logic-event-color: var(--logic-event-color-light, var(--color-action));
 }
 
 .logicEventRail {
 	display: grid;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	min-height: 0;
+	box-sizing: border-box;
 	padding: 12px;
-	border-right: 1px solid var(--panel-border);
-	background: var(--panel-bg);
+	border-right: 1px solid var(--color-border);
+	background: var(--color-surface);
 }
 
 .logicEventRail__title {
-	padding-bottom: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 0 2px 10px;
 	font-size: 12px;
 	font-weight: 700;
+
+	> span:first-child {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	svg {
+		color: var(--logic-event-color);
+	}
+}
+
+.logicEventRail__count {
+	min-width: 18px;
+	color: var(--color-text-faint);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 500;
+	text-align: right;
 }
 
 .logicEventSelector {
-	color: var(--panel-text);
+	color: var(--color-text);
 
 	.centeredScrollSelector__item {
-		color: var(--panel-muted);
-		text-align: center;
+		position: relative;
+		z-index: 1;
+		padding: 10px;
+		border-radius: var(--radius-control);
+		color: var(--color-text-muted);
+		font-size: 13px;
+		text-align: left;
+		transition:
+			background-color 110ms ease-out,
+			color 110ms ease-out;
+	}
+
+	.centeredScrollSelector__item:hover {
+		background: var(--color-surface-strong);
+		color: var(--color-text);
+	}
+
+	.centeredScrollSelector__item:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: -2px;
 	}
 
 	.centeredScrollSelector__item[aria-pressed="true"] {
-		color: var(--panel-text);
-		font-weight: 700;
+		background: color-mix(in srgb, var(--logic-event-color) 10%, var(--color-surface));
+		color: var(--color-text);
+		font-weight: 650;
 	}
+
+	.centeredScrollSelector__indicator {
+		border-color: color-mix(in srgb, var(--logic-event-color) 58%, var(--color-border));
+		opacity: 1;
+	}
+}
+
+.logicEventSelector__label {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: 6px minmax(0, 1fr);
+	align-items: center;
+	gap: 8px;
+
+	> span:last-child {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+.logicEventSelector__marker {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--logic-event-color);
 }
 
 .logicEventRail__add,
 .logicTree button,
 .logicEmpty button,
 .logicToolbar button {
+	font: inherit;
 	cursor: pointer;
 }
 
 .logicEventRail__add {
-	min-height: 32px;
-	border: 1px solid var(--panel-border);
-	background: transparent;
-	color: var(--panel-text);
+	display: inline-flex;
+	min-height: 36px;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	margin-top: 10px;
+	border: 1px solid color-mix(in srgb, var(--logic-event-color) 58%, var(--color-border));
+	border-radius: var(--radius-control);
+	background: color-mix(in srgb, var(--logic-event-color) 8%, var(--color-surface));
+	color: var(--color-text);
+	font-size: 12px;
+	font-weight: 650;
+}
+
+.logicEventRail__add:hover {
+	background: color-mix(in srgb, var(--logic-event-color) 14%, var(--color-surface));
+}
+
+.logicEventRail__add:focus-visible,
+.logicTree button:focus-visible,
+.logicToolbar button:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 2px;
 }
 
 .logicTree {
+	min-width: 0;
 	padding: 16px;
 	overflow: auto;
+	background: var(--color-workspace);
+	scrollbar-color: color-mix(in srgb, var(--color-text-muted) 34%, transparent) transparent;
+}
+
+.logicTree__branchToolbar {
+	position: sticky;
+	z-index: 4;
+	top: -16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: -16px -16px 16px;
+	padding: 6px 16px;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-surface);
+}
+
+.logicTree__branchToolbarLabel {
+	flex: 0 0 auto;
+	color: var(--color-text-muted);
+	font-size: 11px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.logicTree__branchToolbarActions {
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	gap: 5px;
+
+	button {
+		display: inline-flex;
+		min-height: 32px;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 8px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+		color: var(--color-text);
+		font-size: 12px;
+		text-align: left;
+	}
+
+	button:hover {
+		background: var(--color-surface-strong);
+	}
+
+	button > span {
+		display: flex;
+		align-items: baseline;
+		gap: 5px;
+	}
+
+	strong {
+		font-size: 12px;
+		line-height: 1.15;
+	}
+
+	small {
+		padding-left: 5px;
+		border-left: 1px solid var(--color-border);
+		color: var(--color-text-muted);
+		font-size: 10px;
+		line-height: 1.15;
+		white-space: nowrap;
+	}
+
+	svg {
+		flex: 0 0 auto;
+		color: var(--logic-event-color);
+	}
 }
 
 .logicBranch {
-	margin-bottom: 12px;
-	border: 1px solid var(--panel-border);
+	margin: 0 auto 12px;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-panel);
+	background: var(--color-surface);
 }
 
 .logicBranch__header,
@@ -69,54 +241,114 @@
 }
 
 .logicBranch__header {
-	min-height: 40px;
-	padding: 6px 8px 6px 12px;
-	border-bottom: 1px solid var(--panel-border);
+	min-height: 44px;
+	padding: 7px 8px 7px 12px;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-surface-raised);
+}
+
+.logicBranch__summary {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px 10px;
 }
 
 .logicBranch__label {
-	font-size: 11px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text);
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: none;
+	white-space: nowrap;
+}
+
+.logicBranch__marker {
+	display: block;
+	width: 3px;
+	height: 18px;
+	border-radius: 999px;
+	background: var(--logic-event-color);
 }
 
 .logicBranch__condition {
-	margin-left: 8px;
-	border: 0;
-	background: transparent;
-	color: var(--panel-text);
-	font: inherit;
+	max-width: min(420px, 100%);
+	padding: 5px 7px;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-size: 12px;
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.logicBranch__condition:hover {
+	border-color: var(--color-control-border);
+	background: var(--color-surface-strong);
 }
 
 .logicBranch__delay {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	margin-left: 12px;
-	color: var(--panel-muted);
+	flex-wrap: wrap;
+	gap: 6px 10px;
+	color: var(--color-text-muted);
 	font-size: 12px;
 
 	label {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: 5px;
 		white-space: nowrap;
+	}
+
+	input[type="checkbox"] {
+		accent-color: var(--color-action);
 	}
 
 	input[type="number"] {
 		width: 52px;
+		height: 27px;
+		box-sizing: border-box;
+		padding: 0 5px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		font-variant-numeric: tabular-nums;
 	}
 }
 
 .logicBranch__actions {
 	display: flex;
+	flex: 0 0 auto;
 	gap: 4px;
 
 	button {
-		min-height: 28px;
-		border: 1px solid var(--panel-border);
+		display: inline-flex;
+		min-width: 30px;
+		height: 30px;
+		align-items: center;
+		justify-content: center;
+		gap: 5px;
+		padding: 0 8px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-control);
 		background: transparent;
-		color: var(--panel-text);
+		color: var(--color-text-muted);
+		font-size: 12px;
+	}
+
+	button:hover {
+		border-color: var(--color-control-border);
+		background: var(--color-surface-strong);
+		color: var(--color-text);
 	}
 }
 
@@ -126,10 +358,25 @@
 
 .logicBranch__empty {
 	width: 100%;
-	min-height: 36px;
-	border: 1px dashed var(--panel-border);
+	min-height: 42px;
+	border: 1px dashed var(--color-border-strong);
+	border-radius: var(--radius-control);
 	background: transparent;
-	color: var(--panel-muted);
+	color: var(--color-text-muted);
+	font-size: 12px;
+}
+
+.logicBranch__empty:hover {
+	border-color: var(--logic-event-color);
+	background: color-mix(in srgb, var(--logic-event-color) 6%, var(--color-surface));
+	color: var(--color-text);
+}
+
+.logicEffectGroup {
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
 }
 
 .logicEffectGroup + .logicEffectGroup {
@@ -140,107 +387,272 @@
 	cursor: grab;
 }
 
+.logicEffectGroup[draggable="true"]:active {
+	cursor: grabbing;
+}
+
+.logicEffectGroup__row {
+	min-height: 36px;
+}
+
+.logicEffectGroup__drag {
+	display: grid;
+	width: 24px;
+	flex: 0 0 24px;
+	place-items: center;
+	align-self: stretch;
+	color: var(--color-text-faint);
+}
+
 .logicEffectGroup__select {
 	display: flex;
+	min-width: 0;
 	flex: 1;
+	align-self: stretch;
+	align-items: center;
 	justify-content: space-between;
-	padding: 8px;
+	gap: 8px;
+	padding: 7px 8px 7px 0;
 	border: 0;
-	background: var(--panel-bg);
-	color: var(--panel-text);
-	font: inherit;
+	background: transparent;
+	color: var(--color-text);
+	font-size: 13px;
 	text-align: left;
+
+	> span:first-child {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+.logicEffectGroup__select:hover,
+.logicSubEffect:hover {
+	background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }
 
 .logicEffectGroup__count,
 .logicSubEffect,
 .logicEffectGroup--legacy {
-	color: var(--panel-muted);
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 
+.logicEffectGroup__count {
+	display: inline-grid;
+	min-width: 20px;
+	height: 20px;
+	place-items: center;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	font-variant-numeric: tabular-nums;
+}
+
 .logicEffectGroup__remove {
-	padding: 6px;
+	display: grid;
+	width: 30px;
+	height: 30px;
+	flex: 0 0 30px;
+	place-items: center;
+	margin-right: 3px;
+	padding: 0;
 	border: 0;
+	border-radius: var(--radius-control);
 	background: transparent;
-	color: var(--panel-muted);
+	color: var(--color-text-faint);
+}
+
+.logicEffectGroup__remove:hover {
+	background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+	color: var(--color-danger);
 }
 
 .logicSubEffect {
 	display: block;
-	width: calc(100% - 18px);
-	margin-left: 18px;
-	padding: 6px 8px;
+	width: calc(100% - 32px);
+	margin-left: 24px;
+	padding: 7px 8px;
 	border: 0;
-	border-left: 1px solid var(--panel-border);
+	border-top: 1px solid var(--color-border);
+	border-left: 1px solid var(--color-border);
 	background: transparent;
 	text-align: left;
 }
 
 .logicEffectGroup--legacy {
-	padding: 8px;
-}
-
-.logicTree__addSection,
-.logicTree__branchActions button {
-	min-height: 32px;
-	margin: 0 8px 12px 0;
-	border: 1px solid var(--panel-border);
-	background: transparent;
-	color: var(--panel-text);
-}
-
-.logicTree__branchActions {
-	justify-content: flex-start;
+	padding: 9px 10px;
 }
 
 .logicToolbar {
-	height: 76px !important;
-	gap: 12px;
-	padding-block: 8px !important;
-	color: var(--panel-muted);
+	display: grid !important;
+	height: 64px !important;
+	grid-template-columns: 34px minmax(150px, 1fr) auto auto;
+	align-items: center !important;
+	gap: 10px !important;
+	padding: 8px 12px !important;
+	color: var(--color-text-muted);
 	font-size: 12px;
 
 	label {
-		display: flex;
-		align-items: center;
-		gap: 5px;
+		min-width: 0;
+	}
+
+	input[type="checkbox"] {
+		accent-color: var(--color-action);
 	}
 
 	input[type="text"],
 	input[type="number"] {
-		height: 28px;
+		height: 32px;
 		box-sizing: border-box;
-		border: 1px solid var(--panel-border);
-		background: var(--workspace-bg);
-		color: var(--panel-text);
+		padding: 0 8px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+		color: var(--color-text);
+		font: inherit;
 	}
 
-	input[type="number"] {
-		width: 60px;
+	input:focus-visible {
+		border-color: var(--color-focus);
+		outline: 1px solid var(--color-focus);
+	}
+}
+
+.logicToolbar__field,
+.logicToolbar__toggle {
+	display: flex;
+	min-width: 0;
+	height: 32px;
+	align-items: center;
+	box-sizing: border-box;
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-control);
+	background: transparent;
+	cursor: pointer;
+	transition:
+		border-color 110ms ease-out,
+		background-color 110ms ease-out;
+
+	> span {
+		display: inline-flex;
+		height: 100%;
+		flex: 0 0 auto;
+		align-items: center;
+		padding: 0 9px;
+		border-right: 1px solid var(--color-border);
+		background: transparent;
+		color: var(--color-text-muted);
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	&:hover {
+		border-color: var(--color-control-border);
+		background: var(--color-surface-strong);
+
+		> span {
+			border-color: var(--color-control-border);
+			color: var(--color-text);
+		}
+	}
+}
+
+.logicToolbar__field {
+	cursor: text;
+
+	input {
+		min-width: 0;
+		height: 30px !important;
+		flex: 1;
+		padding-inline: 9px !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		outline: 0 !important;
+		background: transparent !important;
+		font-size: 13px !important;
+		font-weight: 650 !important;
+	}
+}
+
+.logicToolbar__field:focus-within,
+.logicToolbar__toggle:focus-within {
+	border-color: var(--color-focus);
+	background: var(--color-surface-raised);
+	box-shadow: 0 0 0 1px var(--color-focus);
+
+	> span {
+		border-color: var(--color-focus);
+		color: var(--color-text);
 	}
 }
 
 .logicToolbar__name {
-	display: grid !important;
-	align-items: start !important;
-	margin-right: auto;
+	> span {
+		min-width: 50px;
+		box-sizing: border-box;
+	}
+}
+
+.logicToolbar__settings {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.logicToolbar__toggle {
+	flex: 0 0 auto;
+	white-space: nowrap;
+
+	> span {
+		padding-inline: 8px;
+	}
 
 	input {
-		width: 180px;
+		margin: 0 8px;
+		cursor: pointer;
 	}
+}
+
+.logicToolbar__number input[type="number"] {
+	width: 54px;
+	font-variant-numeric: tabular-nums;
 }
 
 .logicToolbar__back,
 .logicToolbar__delete {
-	min-height: 30px;
-	border: 1px solid var(--panel-border);
+	display: inline-flex;
+	height: 32px;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	box-sizing: border-box;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-control);
 	background: transparent;
-	color: var(--panel-text);
+	color: var(--color-text-muted);
 }
 
-.logicToolbar__id {
-	font-family: monospace;
+.logicToolbar__back {
+	width: 34px;
+	padding: 0;
+}
+
+.logicToolbar__back:hover {
+	border-color: var(--color-control-border);
+	background: var(--color-surface-strong);
+	color: var(--color-text);
+}
+
+.logicToolbar__delete {
+	padding: 0 9px;
+}
+
+.logicToolbar__delete:hover {
+	border-color: var(--color-danger);
+	background: color-mix(in srgb, var(--color-danger) 9%, var(--color-surface));
+	color: var(--color-danger);
 }
 
 .logicHome,
@@ -249,9 +661,10 @@
 	height: 100%;
 	align-items: center;
 	justify-content: center;
-	padding: 20px;
 	box-sizing: border-box;
-	color: var(--panel-text);
+	padding: 20px;
+	background: var(--color-workspace);
+	color: var(--color-text);
 }
 
 .logicHome__content {
@@ -264,7 +677,7 @@
 
 	p {
 		margin-top: 4px;
-		color: var(--panel-muted);
+		color: var(--color-text-muted);
 	}
 }
 
@@ -276,15 +689,21 @@
 
 	button {
 		display: flex;
-		gap: 10px;
 		min-height: 80px;
+		gap: 10px;
 		padding: 14px;
-		border: 1px solid var(--panel-border);
-		background: transparent;
-		color: var(--panel-text);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-panel);
+		background: var(--color-surface);
+		color: var(--color-text);
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
+	}
+
+	button:hover {
+		border-color: var(--color-control-border);
+		background: var(--color-surface-strong);
 	}
 
 	span {
@@ -293,23 +712,148 @@
 	}
 
 	small {
-		color: var(--panel-muted);
+		color: var(--color-text-muted);
 	}
 }
 
 .logicEmpty {
 	flex-direction: column;
 	gap: 8px;
-	color: var(--panel-muted);
+	color: var(--color-text-muted);
+
+	p {
+		margin: 0;
+	}
+
+	button {
+		display: inline-flex;
+		min-height: 34px;
+		align-items: center;
+		gap: 6px;
+		padding: 0 10px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+	}
 }
 
-@media (max-width: 700px) {
-	.logicEditor,
-	.logicHome__grid {
+@container logic-workspace (max-width: 560px) {
+	.logicEditor {
 		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 60px minmax(0, 1fr);
 	}
 
 	.logicEventRail {
+		grid-template-rows: minmax(0, 1fr);
+		grid-template-columns: auto minmax(110px, 1fr) auto;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		border-right: 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.logicEventRail__title {
+		padding: 0;
+	}
+
+	.logicEventRail__count {
 		display: none;
+	}
+
+	.logicEventSelector {
+		height: 44px;
+	}
+
+	.logicEventRail__add {
+		margin: 0;
+		padding: 0 10px;
+	}
+
+	.logicTree {
+		padding: 12px;
+	}
+
+	.logicTree__branchToolbar {
+		top: -12px;
+		align-items: center;
+		gap: 8px;
+		margin: -12px -12px 12px;
+		padding: 6px 12px;
+	}
+
+	.logicTree__branchToolbarActions {
+		width: auto;
+	}
+}
+
+@container logic-workspace (max-width: 390px) {
+	.logicEventRail__title > span:first-child {
+		font-size: 0;
+
+		svg {
+			width: 16px;
+			height: 16px;
+		}
+	}
+
+	.logicBranch__header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.logicBranch__actions {
+		align-self: flex-end;
+	}
+}
+
+@container editor-main (max-width: 720px) {
+	.logicToolbar {
+		height: 96px !important;
+		grid-template-areas:
+			"back name delete"
+			"settings settings settings";
+		grid-template-columns: 34px minmax(0, 1fr) auto;
+		grid-template-rows: auto auto;
+		gap: 7px 10px !important;
+		padding: 7px 12px !important;
+	}
+
+	.logicToolbar__back {
+		grid-area: back;
+	}
+
+	.logicToolbar__name {
+		grid-area: name;
+	}
+
+	.logicToolbar__settings {
+		grid-area: settings;
+		justify-content: flex-start;
+	}
+
+	.logicToolbar__delete {
+		grid-area: delete;
+	}
+}
+
+@container editor-main (max-width: 430px) {
+	.logicToolbar {
+		height: 126px !important;
+		grid-template-areas:
+			"back name delete"
+			"settings settings settings";
+	}
+
+	.logicToolbar__settings {
+		flex-wrap: wrap;
+		gap: 6px 10px;
+	}
+}
+
+@media (max-width: 700px) {
+	.logicHome__grid {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }

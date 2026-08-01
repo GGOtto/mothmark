@@ -21,12 +21,16 @@
 		flex-direction: column;
 		min-height: 0;
 		overflow: hidden;
+		container-name: editor-main;
+		container-type: inline-size;
 	}
 
 	.editorWorkspaceShell {
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+		container-name: logic-workspace;
+		container-type: inline-size;
 	}
 
 	.editorToolbar {

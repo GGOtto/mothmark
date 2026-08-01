@@ -1,7 +1,19 @@
 "use client";
 
-import {ArrowLeft, Braces, Command, GitBranch, Plus, Sparkles, Trash2} from "lucide-react";
-import {useRef} from "react";
+import {
+	ArrowLeft,
+	Braces,
+	CalendarClock,
+	Command,
+	GitBranch,
+	GripVertical,
+	Plus,
+	Sparkles,
+	Trash2,
+} from "lucide-react";
+import {type CSSProperties, useLayoutEffect, useRef} from "react";
+import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
+import {useOptionalPopup} from "@/components/popup/Popup";
 import type {Event} from "@/schemas/world/eventSchema";
 import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
@@ -101,6 +113,7 @@ function referencedEffectGroups(group: EffectGroup | undefined, world: World) {
 }
 
 type EventBranchProps = {
+	scrollKey: string;
 	label: string;
 	world: World;
 	group: EffectGroup | undefined;
@@ -119,6 +132,7 @@ type EventBranchProps = {
 };
 
 function EventBranch({
+	scrollKey,
 	label,
 	world,
 	group,
@@ -170,10 +184,13 @@ function EventBranch({
 	}
 
 	return (
-		<section className="logicBranch">
+		<section className="logicBranch" data-branch-scroll-key={scrollKey}>
 			<header className="logicBranch__header">
-				<div>
-					<span className="logicBranch__label">{label}</span>
+				<div className="logicBranch__summary">
+					<span className="logicBranch__label">
+						<span className="logicBranch__marker" aria-hidden="true" />
+						{label}
+					</span>
 					{condition ? (
 						<button type="button" className="logicBranch__condition" onClick={onSelectCondition}>
 							{generateConditionSummary(condition)}
@@ -264,6 +281,9 @@ function EventBranch({
 								onDragEnd={stopDragging}
 							>
 								<div className="logicEffectGroup__row">
+									<span className="logicEffectGroup__drag" aria-hidden="true">
+										<GripVertical size={14} />
+									</span>
 									<button
 										type="button"
 										className="logicEffectGroup__select"
@@ -308,9 +328,35 @@ export function LogicEditor({
 	selection,
 	onSelectionChange,
 }: LogicEditorProps) {
+	const popup = useOptionalPopup();
 	const events = world.events ?? [];
 	const selectedEvent =
 		events.find((event) => idValue(event.id) === selectedEventId) ?? events[0] ?? null;
+	const logicTreeRef = useRef<HTMLDivElement>(null);
+	const pendingBranchScrollRef = useRef<string | null>(null);
+
+	useLayoutEffect(() => {
+		const scrollKey = pendingBranchScrollRef.current;
+		const tree = logicTreeRef.current;
+		if (!scrollKey || !tree) return;
+
+		const branch = tree.querySelector<HTMLElement>(`[data-branch-scroll-key="${scrollKey}"]`);
+		const toolbar = tree.querySelector<HTMLElement>(".logicTree__branchToolbar");
+		if (!branch) return;
+
+		const treeRect = tree.getBoundingClientRect();
+		const branchRect = branch.getBoundingClientRect();
+		const toolbarHeight = toolbar?.getBoundingClientRect().height ?? 0;
+		const top = tree.scrollTop + branchRect.top - treeRect.top - toolbarHeight - 12;
+
+		pendingBranchScrollRef.current = null;
+		tree.scrollTo({top: Math.max(0, top), behavior: "smooth"});
+	}, [
+		selectedEvent?.branch.always,
+		selectedEvent?.branch.if,
+		selectedEvent?.branch.elifs?.length,
+		selectedEvent?.branch.else,
+	]);
 
 	function selectEvent(event: Event) {
 		const eventId = idValue(event.id);
@@ -379,8 +425,16 @@ export function LogicEditor({
 		});
 	}
 
+	function addAlways() {
+		pendingBranchScrollRef.current = "always";
+		updateEvent((event) => {
+			event.branch.always = conditionEffectGroup(eventId, "always");
+		});
+	}
+
 	function addIf() {
 		if (!selectedEvent) return;
+		pendingBranchScrollRef.current = "if";
 		updateEvent((event) => {
 			event.branch.if = {
 				condition: defaultCondition(),
@@ -395,6 +449,7 @@ export function LogicEditor({
 	function addElseIf() {
 		if (!selectedEvent) return;
 		const index = selectedEvent.branch.elifs?.length ?? 0;
+		pendingBranchScrollRef.current = `elif-${index}`;
 		updateEvent((event) => {
 			(event.branch.elifs ??= []).push({
 				condition: defaultCondition(),
@@ -412,9 +467,29 @@ export function LogicEditor({
 	}
 
 	function addElse() {
+		pendingBranchScrollRef.current = "else";
 		updateEvent((event) => {
 			event.branch.else = conditionEffectGroup(idValue(event.id), "else");
 		});
+	}
+
+	async function requestBranchDelete(
+		label: string,
+		deleteBranch: () => void,
+		options: {title?: string; message?: string; confirmLabel?: string} = {},
+	) {
+		const confirmed = popup
+			? await popup.confirm({
+					title: options.title ?? `Delete ${label.toLocaleLowerCase()} branch?`,
+					message:
+						options.message ??
+						`Remove this branch from “${selectedEvent?.name || "this event"}”? Referenced effect groups will remain available.`,
+					confirmLabel: options.confirmLabel ?? "Delete branch",
+					danger: true,
+				})
+			: true;
+
+		if (confirmed) deleteBranch();
 	}
 
 	if (!selectedEvent) {
@@ -430,17 +505,33 @@ export function LogicEditor({
 	}
 
 	const eventId = idValue(selectedEvent.id);
+	const eventColor = entityColorFor("event");
+	const eventStyle = {
+		"--logic-event-color-dark": eventColor.dark,
+		"--logic-event-color-light": eventColor.light,
+	} as CSSProperties;
 
 	return (
-		<div className="logicEditor">
+		<div className="logicEditor" style={eventStyle}>
 			<aside className="logicEventRail">
-				<div className="logicEventRail__title">Events</div>
+				<div className="logicEventRail__title">
+					<span>
+						<CalendarClock size={15} aria-hidden="true" />
+						Events
+					</span>
+					<span className="logicEventRail__count">{events.length}</span>
+				</div>
 				<CenteredScrollSelector
 					items={events}
 					activeId={eventId}
 					onActiveChange={selectEvent}
 					getId={(event) => idValue(event.id)}
-					renderLabel={(event) => event.name || "Unnamed event"}
+					renderLabel={(event) => (
+						<span className="logicEventSelector__label">
+							<span className="logicEventSelector__marker" aria-hidden="true" />
+							<span>{event.name || "Unnamed event"}</span>
+						</span>
+					)}
 					ariaLabel="Events"
 					className="logicEventSelector"
 				/>
@@ -450,9 +541,51 @@ export function LogicEditor({
 				</button>
 			</aside>
 
-			<div className="logicTree">
+			<div className="logicTree" ref={logicTreeRef}>
+				<div className="logicTree__branchToolbar" role="toolbar" aria-label="Add a branch">
+					<span className="logicTree__branchToolbarLabel">Add branch</span>
+					<div className="logicTree__branchToolbarActions">
+						{!selectedEvent.branch.always ? (
+							<button type="button" onClick={addAlways}>
+								<Plus size={15} aria-hidden="true" />
+								<span>
+									<strong>Always</strong>
+									<small>Runs every time</small>
+								</span>
+							</button>
+						) : null}
+						{!selectedEvent.branch.if ? (
+							<button type="button" onClick={addIf}>
+								<Plus size={15} aria-hidden="true" />
+								<span>
+									<strong>If</strong>
+									<small>When a condition passes</small>
+								</span>
+							</button>
+						) : (
+							<button type="button" onClick={addElseIf}>
+								<Plus size={15} aria-hidden="true" />
+								<span>
+									<strong>Else if</strong>
+									<small>Try another condition</small>
+								</span>
+							</button>
+						)}
+						{selectedEvent.branch.if && !selectedEvent.branch.else ? (
+							<button type="button" onClick={addElse}>
+								<Plus size={15} aria-hidden="true" />
+								<span>
+									<strong>Else</strong>
+									<small>When no conditions pass</small>
+								</span>
+							</button>
+						) : null}
+					</div>
+				</div>
+
 				{selectedEvent.branch.always ? (
 					<EventBranch
+						scrollKey="always"
 						label="Always"
 						world={world}
 						group={selectedEvent.branch.always}
@@ -460,25 +593,15 @@ export function LogicEditor({
 						onAddEffect={() => addEffect("always")}
 						onRemoveEffect={(index) => removeEffect("always", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("always", fromIndex, toIndex)}
-						onDeleteBranch={() => updateEvent((event) => delete event.branch.always)}
-					/>
-				) : (
-					<button
-						type="button"
-						className="logicTree__addSection"
-						onClick={() =>
-							updateEvent((event) => {
-								event.branch.always = conditionEffectGroup(eventId, "always");
-							})
+						onDeleteBranch={() =>
+							void requestBranchDelete("Always", () => updateEvent((event) => delete event.branch.always))
 						}
-					>
-						<Plus size={15} aria-hidden="true" />
-						Always
-					</button>
-				)}
+					/>
+				) : null}
 
 				{selectedEvent.branch.if ? (
 					<EventBranch
+						scrollKey="if"
 						label="If"
 						world={world}
 						group={selectedEvent.branch.if.effect}
@@ -507,18 +630,29 @@ export function LogicEditor({
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("if", fromIndex, toIndex)}
-						onDeleteBranch={() => updateEvent((event) => delete event.branch.if)}
+						onDeleteBranch={() =>
+							void requestBranchDelete(
+								"If",
+								() =>
+									updateEvent((event) => {
+										delete event.branch.if;
+										delete event.branch.elifs;
+										delete event.branch.else;
+									}),
+								{
+									title: "Delete If and all dependent branches?",
+									message: `Deleting If also deletes every Else if and Else branch from “${selectedEvent.name}”. Always will be kept, and referenced effect groups will remain available.`,
+									confirmLabel: "Delete branches",
+								},
+							)
+						}
 					/>
-				) : (
-					<button type="button" className="logicTree__addSection" onClick={addIf}>
-						<Plus size={15} aria-hidden="true" />
-						If
-					</button>
-				)}
+				) : null}
 
 				{selectedEvent.branch.elifs?.map((branch, index) => (
 					<EventBranch
 						key={index}
+						scrollKey={`elif-${index}`}
 						label="Else if"
 						world={world}
 						group={branch.effect}
@@ -558,15 +692,18 @@ export function LogicEditor({
 						onRemoveEffect={(effectIndex) => removeEffect("elif", effectIndex, index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("elif", fromIndex, toIndex, index)}
 						onDeleteBranch={() =>
-							updateEvent((event) => {
-								event.branch.elifs?.splice(index, 1);
-							})
+							void requestBranchDelete("Else if", () =>
+								updateEvent((event) => {
+									event.branch.elifs?.splice(index, 1);
+								}),
+							)
 						}
 					/>
 				))}
 
 				{selectedEvent.branch.else ? (
 					<EventBranch
+						scrollKey="else"
 						label="Else"
 						world={world}
 						group={selectedEvent.branch.else}
@@ -574,24 +711,11 @@ export function LogicEditor({
 						onAddEffect={() => addEffect("else")}
 						onRemoveEffect={(index) => removeEffect("else", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("else", fromIndex, toIndex)}
-						onDeleteBranch={() => updateEvent((event) => delete event.branch.else)}
+						onDeleteBranch={() =>
+							void requestBranchDelete("Else", () => updateEvent((event) => delete event.branch.else))
+						}
 					/>
 				) : null}
-
-				<div className="logicTree__branchActions">
-					{selectedEvent.branch.if ? (
-						<button type="button" onClick={addElseIf}>
-							<Plus size={15} aria-hidden="true" />
-							Else if
-						</button>
-					) : null}
-					{selectedEvent.branch.if && !selectedEvent.branch.else ? (
-						<button type="button" onClick={addElse}>
-							<Plus size={15} aria-hidden="true" />
-							Else
-						</button>
-					) : null}
-				</div>
 			</div>
 		</div>
 	);
@@ -608,6 +732,8 @@ export function LogicToolbar({
 	onBack: () => void;
 	onDelete: () => void;
 }) {
+	const popup = useOptionalPopup();
+
 	if (!event) {
 		return (
 			<div className="editorToolbar logicToolbar">
@@ -634,12 +760,25 @@ export function LogicToolbar({
 		});
 	}
 
+	async function requestDelete() {
+		const confirmed = popup
+			? await popup.confirm({
+					title: "Delete event?",
+					message: `Delete “${event!.name || idValue(event!.id)}” and all of its branches? This cannot be undone.`,
+					confirmLabel: "Delete event",
+					danger: true,
+				})
+			: true;
+
+		if (confirmed) onDelete();
+	}
+
 	return (
 		<div className="editorToolbar logicToolbar">
 			<button type="button" className="logicToolbar__back" onClick={onBack} aria-label="Back to Logic">
 				<ArrowLeft size={16} aria-hidden="true" />
 			</button>
-			<label className="logicToolbar__name">
+			<label className="logicToolbar__field logicToolbar__name">
 				<span>Name</span>
 				<input
 					type="text"
@@ -647,41 +786,42 @@ export function LogicToolbar({
 					onChange={(change) => updateField("name", change.target.value)}
 				/>
 			</label>
-			<label>
-				<input
-					type="checkbox"
-					checked={event.enabled}
-					onChange={(change) => updateField("enabled", change.target.checked)}
-				/>
-				Enabled
-			</label>
-			<label>
-				<input
-					type="checkbox"
-					checked={event.disposable}
-					onChange={(change) => updateField("disposable", change.target.checked)}
-				/>
-				Run once
-			</label>
-			<label>
-				<span>Wait</span>
-				<input
-					type="number"
-					min={0}
-					value={event.wait}
-					onChange={(change) => updateField("wait", Math.max(0, Number(change.target.value)))}
-				/>
-			</label>
-			<label>
-				<span>Priority</span>
-				<input
-					type="number"
-					value={event.priority}
-					onChange={(change) => updateField("priority", Number(change.target.value))}
-				/>
-			</label>
-			<span className="logicToolbar__id">{idValue(event.id)}</span>
-			<button type="button" className="logicToolbar__delete" onClick={onDelete}>
+			<div className="logicToolbar__settings">
+				<label className="logicToolbar__toggle">
+					<span>Enabled</span>
+					<input
+						type="checkbox"
+						checked={event.enabled}
+						onChange={(change) => updateField("enabled", change.target.checked)}
+					/>
+				</label>
+				<label className="logicToolbar__toggle">
+					<span>Run once</span>
+					<input
+						type="checkbox"
+						checked={event.disposable}
+						onChange={(change) => updateField("disposable", change.target.checked)}
+					/>
+				</label>
+				<label className="logicToolbar__field logicToolbar__number">
+					<span>Wait</span>
+					<input
+						type="number"
+						min={0}
+						value={event.wait}
+						onChange={(change) => updateField("wait", Math.max(0, Number(change.target.value)))}
+					/>
+				</label>
+				<label className="logicToolbar__field logicToolbar__number">
+					<span>Priority</span>
+					<input
+						type="number"
+						value={event.priority}
+						onChange={(change) => updateField("priority", Number(change.target.value))}
+					/>
+				</label>
+			</div>
+			<button type="button" className="logicToolbar__delete" onClick={() => void requestDelete()}>
 				<Trash2 size={15} aria-hidden="true" />
 				Delete
 			</button>
