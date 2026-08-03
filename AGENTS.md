@@ -1,5 +1,9 @@
 # Repository agent guidance
 
+## Collaboration
+
+- Treat exploratory product and interface ideas as design discussion until the user explicitly asks to build them. Do not turn an open design conversation into implementation prematurely.
+
 ## Test data
 
 - Build schema-backed objects in tests with `createDefaultFieldObject(schema)`, then override only the fields relevant to the behavior under test.
@@ -60,6 +64,9 @@
   uninterrupted output flow; do not style it as a form, chat, or card list.
 - Preserve a property inspector's scroll position when editing the current selection. Scroll to the
   top only when the user navigates to a different entity or editor view.
+- Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
+  bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
+  viewport.
 - Keep command selection in the command library rather than adding a second command scroller inside
   the editor. Pin command behavior and pattern creation controls above the pattern workspace.
 - Treat repeated command block IDs as shared block identities across patterns. Block edits propagate

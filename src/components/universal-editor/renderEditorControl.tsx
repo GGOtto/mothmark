@@ -51,13 +51,42 @@ import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../types/universalEditorTypes";
 import {FieldShellDisclosureProvider} from "./FieldShell";
+import {
+	acceptedVariableType,
+	VariableFieldEditor,
+	VariableTextEditor,
+} from "@/features/command-variables";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
+	const control = renderControl(props);
+	const variableContext = props.context.commandVariables;
+	const supportsVariables = variableContext?.supportsPath(props.path) ?? false;
+	const isVariableText =
+		props.metadata.type === "text" ||
+		props.metadata.type === "input" ||
+		props.metadata.type === "textarea" ||
+		props.metadata.type === "rich-text";
+	const renderedControl =
+		variableContext && supportsVariables && isVariableText ? (
+			<VariableTextEditor
+				{...(props as EditorControlProps<string | undefined, never>)}
+				context={{...props.context, commandVariables: variableContext}}
+			/>
+		) : variableContext && supportsVariables && acceptedVariableType(props.metadata) ? (
+			<VariableFieldEditor
+				props={{...props, context: {...props.context, commandVariables: variableContext}}}
+			>
+				{control}
+			</VariableFieldEditor>
+		) : (
+			control
+		);
+
 	return (
 		<FieldShellDisclosureProvider
 			value={{metadata: props.metadata, path: props.path, context: props.context}}
 		>
-			{renderControl(props)}
+			{renderedControl}
 		</FieldShellDisclosureProvider>
 	);
 }

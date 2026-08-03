@@ -1,5 +1,10 @@
 import {z} from "zod";
-import {idValue} from "@/utils/idUtils";
+import {idValue, isID} from "@/utils/idUtils";
+import {variableReferencesInText} from "@/features/command-variables/syntax";
+import type {
+	CommandVariableProjection,
+	CommandVariableValueType,
+} from "@/features/command-variables/model";
 import {editor} from "../utils/editorSchemaHelpers";
 import {CommandConditionBranchSchema} from "./commandLogicSchemas";
 import {DirectionSchema} from "./roomSchema";
@@ -486,6 +491,7 @@ export const CommandSchema = editor
 	)
 	.superRefine((command, ctx) => {
 		const blockIds = new Set<string>();
+		const blocksById = new Map<string, CommandBlock>();
 		const blockDefinitions = new Map<string, string>();
 		const fallbackBlockIdsRequired = new Set<string>();
 		const expectedNonStructuralBlockCount = command.patterns[0]?.blocks.filter(
@@ -516,6 +522,7 @@ export const CommandSchema = editor
 				}
 				blockDefinitions.set(blockId, definition);
 				blockIds.add(blockId);
+				blocksById.set(blockId, block);
 				if (block.type !== "phrase" && block.type !== "relation") {
 					fallbackBlockIdsRequired.add(blockId);
 				}
@@ -549,10 +556,101 @@ export const CommandSchema = editor
 			fallbackBlockIds.add(blockId);
 		});
 
-		function validateCommandVariableReferences(value: unknown, path: Array<string | number>) {
+		function variableOutputType(
+			block: CommandBlock,
+			projection?: CommandVariableProjection,
+		): CommandVariableValueType | undefined {
+			if (projection === "text") return "string";
+			if (projection === "name" || projection === "description") {
+				return block.type === "target" ? "string" : undefined;
+			}
+			if (block.type === "target") return "entity";
+			if (block.type === "number") return "number";
+			if (block.type === "boolean") return "boolean";
+			if (block.type === "direction") return "direction";
+			return "string";
+		}
+
+		function acceptedFieldType(record: Record<string, unknown>, field: string) {
+			const fallback = record[field];
+			if (field === "direction") return "direction" as const;
+			if (typeof fallback === "number") return "number" as const;
+			if (typeof fallback === "boolean") return "boolean" as const;
+			if (isID(fallback)) return "entity" as const;
+			if (typeof fallback === "string") return "string" as const;
+			return undefined;
+		}
+
+		function validateReference(
+			blockId: unknown,
+			projection: unknown,
+			path: Array<string | number>,
+			failedBlockId?: string,
+			acceptedType?: CommandVariableValueType,
+			acceptedEntityType?: string,
+		) {
+			const id = idValue(blockId);
+			const block = blocksById.get(id);
+			if (!block) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Command variable references must target a block in this command.",
+					path,
+				});
+				return;
+			}
+			const normalizedProjection =
+				projection === "name" || projection === "description" || projection === "text"
+					? projection
+					: undefined;
+			const outputType = variableOutputType(block, normalizedProjection);
+			if (!outputType) {
+				ctx.addIssue({
+					code: "custom",
+					message: "This command block does not provide that variable value.",
+					path,
+				});
+				return;
+			}
+			if (failedBlockId === id && normalizedProjection !== "text") {
+				ctx.addIssue({
+					code: "custom",
+					message: "A failed block only provides the text the player entered.",
+					path,
+				});
+			}
+			if (acceptedType && acceptedType !== outputType) {
+				ctx.addIssue({
+					code: "custom",
+					message: `A ${outputType} command variable cannot replace a ${acceptedType} field.`,
+					path,
+				});
+			}
+			if (
+				acceptedType === "entity" &&
+				acceptedEntityType &&
+				block.type === "target" &&
+				block.entityTypes.length > 0 &&
+				!block.entityTypes.includes(acceptedEntityType as "room" | "feature")
+			) {
+				ctx.addIssue({
+					code: "custom",
+					message: `This target cannot replace a ${acceptedEntityType} field.`,
+					path,
+				});
+			}
+		}
+
+		function validateCommandVariableReferences(
+			value: unknown,
+			path: Array<string | number>,
+			failedBlockId?: string,
+		) {
 			if (!value || typeof value !== "object") return;
 			if (Array.isArray(value)) {
-				value.forEach((child, index) => validateCommandVariableReferences(child, [...path, index]));
+				value.forEach((child, index) =>
+					validateCommandVariableReferences(child, [...path, index], failedBlockId),
+				);
 				return;
 			}
 
@@ -560,25 +658,49 @@ export const CommandSchema = editor
 			if (Array.isArray(record.commandVariables)) {
 				record.commandVariables.forEach((binding, index) => {
 					if (!binding || typeof binding !== "object") return;
-					const blockId = idValue((binding as {blockId?: unknown}).blockId);
-					if (!blockIds.has(blockId)) {
-						ctx.addIssue({
-							code: "custom",
-							message: "Command variable references must target a block in this command.",
-							path: [...path, "commandVariables", index, "blockId"],
-						});
-					}
+					const candidate = binding as {
+						blockId?: unknown;
+						field?: unknown;
+						projection?: unknown;
+					};
+					const field = typeof candidate.field === "string" ? candidate.field : "";
+					validateReference(
+						candidate.blockId,
+						candidate.projection,
+						[...path, "commandVariables", index, "blockId"],
+						failedBlockId,
+						acceptedFieldType(record, field),
+						isID(record[field]) ? record[field].type : undefined,
+					);
 				});
 			}
 
 			Object.entries(record).forEach(([key, child]) => {
-				if (key !== "commandVariables") validateCommandVariableReferences(child, [...path, key]);
+				if (key === "commandVariables") return;
+				if (typeof child === "string") {
+					variableReferencesInText(child).forEach((reference) =>
+						validateReference(
+							reference.blockId,
+							reference.projection,
+							[...path, key],
+							failedBlockId,
+							reference.projection || blocksById.get(idValue(reference.blockId))?.type !== "target"
+								? undefined
+								: "string",
+						),
+					);
+				}
+				validateCommandVariableReferences(child, [...path, key], failedBlockId);
 			});
 		}
 
 		validateCommandVariableReferences(command.behavior, ["behavior"]);
 		command.fallbacks.forEach((fallback, index) =>
-			validateCommandVariableReferences(fallback.behavior, ["fallbacks", index, "behavior"]),
+			validateCommandVariableReferences(
+				fallback.behavior,
+				["fallbacks", index, "behavior"],
+				idValue(fallback.blockId),
+			),
 		);
 	});
 

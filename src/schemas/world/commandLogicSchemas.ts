@@ -16,6 +16,7 @@ const PROTECTED_BINDING_FIELDS = new Set([
 
 export const CommandVariableBindingSchema = z.object({
 	blockId: editor.id("command-block"),
+	projection: z.enum(["name", "description", "text"]).optional(),
 	field: z
 		.string()
 		.trim()

@@ -39,6 +39,12 @@ import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
 import {getArrayElement, getSchemaAtPath} from "./utils/schemaIntrospection";
 import {renderEditorControl} from "./renderEditorControl";
 import "./UniversalEditor.scss";
+import type {
+	CommandVariableCatalog,
+	CommandVariableEditorContext,
+	CommandVariableReference,
+} from "@/features/command-variables/model";
+import type {CommandVariableBinding} from "@/schemas/world/commandLogicSchemas";
 
 type UniversalEditorProps<TValue> = {
 	schema: z.ZodTypeAny;
@@ -53,6 +59,7 @@ type UniversalEditorProps<TValue> = {
 	className?: string;
 	allowDelete?: boolean;
 	scrollOnExternalValueChange?: boolean;
+	commandVariableCatalog?: CommandVariableCatalog;
 };
 
 type UniversalEditorView = {
@@ -370,6 +377,7 @@ export function UniversalEditor<TValue>({
 	className,
 	allowDelete,
 	scrollOnExternalValueChange = true,
+	commandVariableCatalog,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
@@ -436,6 +444,69 @@ export function UniversalEditor<TValue>({
 		},
 		[onChange],
 	);
+
+	const commandVariables = useMemo<CommandVariableEditorContext | undefined>(() => {
+		if (!commandVariableCatalog) return undefined;
+
+		function bindingAtPath(editorPath: EditorPath): CommandVariableReference | undefined {
+			const field = editorPath.at(-1);
+			if (typeof field !== "string") return undefined;
+			const parent = getValueAtPath(value, editorPath.slice(0, -1));
+			if (!isRecord(parent) || !Array.isArray(parent.commandVariables)) return undefined;
+			const binding = (parent.commandVariables as CommandVariableBinding[]).find(
+				(candidate) => candidate.field === field,
+			);
+			return binding ? {blockId: binding.blockId, projection: binding.projection} : undefined;
+		}
+
+		function setBindingAtPath(
+			editorPath: EditorPath,
+			reference: CommandVariableReference | undefined,
+			fallbackValue: unknown,
+		) {
+			const field = editorPath.at(-1);
+			if (typeof field !== "string") return;
+			const parentPath = editorPath.slice(0, -1);
+			const parent = getValueAtPath(value, parentPath);
+			if (!isRecord(parent)) return;
+			const bindings = Array.isArray(parent.commandVariables)
+				? (parent.commandVariables as CommandVariableBinding[]).filter(
+						(candidate) => candidate.field !== field,
+					)
+				: [];
+			if (reference) {
+				bindings.push({
+					blockId: reference.blockId,
+					projection: reference.projection,
+					field,
+				});
+			}
+			const nextParent = {
+				...parent,
+				...(field in parent ? {} : {[field]: fallbackValue}),
+			};
+			if (bindings.length > 0) nextParent.commandVariables = bindings;
+			else delete nextParent.commandVariables;
+			emitChange(setValueAtPath(value, parentPath, nextParent) as TValue);
+		}
+
+		return {
+			...commandVariableCatalog,
+			supportsPath: (editorPath) => {
+				const field = editorPath.at(-1);
+				const parent = getValueAtPath(value, editorPath.slice(0, -1));
+				return (
+					typeof field === "string" &&
+					isRecord(parent) &&
+					typeof parent.type === "string" &&
+					parent.type !== "group" &&
+					parent.type !== "conditional"
+				);
+			},
+			getBinding: bindingAtPath,
+			setBinding: setBindingAtPath,
+		};
+	}, [commandVariableCatalog, emitChange, value]);
 
 	useEffect(() => {
 		if (pendingBackScrollPositionRef.current) {
@@ -755,6 +826,7 @@ export function UniversalEditor<TValue>({
 				getSectionDisclosure: getEditorSectionDisclosure,
 				setSectionDisclosure: setEditorSectionDisclosure,
 			},
+			commandVariables,
 		}),
 		[
 			activeSection,
@@ -762,6 +834,7 @@ export function UniversalEditor<TValue>({
 			currentEditorRootPath,
 			disabled,
 			createEditorLink,
+			commandVariables,
 			emitChange,
 			getEditorSectionDisclosure,
 			openChildEditor,

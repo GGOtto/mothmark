@@ -418,7 +418,7 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "global" as const},
-			behavior: commandBehavior("say", "You say, “{message}”"),
+			behavior: commandBehavior("say", "You say, “{variable say-message}”"),
 		},
 		{
 			id: toID("command", "wait-turns"),
@@ -448,7 +448,7 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "global" as const},
-			behavior: commandBehavior("wait-turns", "You wait for {turns} turns."),
+			behavior: commandBehavior("wait-turns", "You wait for {variable wait-turn-count} turns."),
 		},
 		{
 			id: toID("command", "point-direction"),
@@ -471,7 +471,7 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "layers" as const, layers: [-1, 0, 1]},
-			behavior: commandBehavior("point-direction", "You point {direction}."),
+			behavior: commandBehavior("point-direction", "You point {variable point-direction}."),
 		},
 		{
 			id: toID("command", "turn-sluice-wheel"),
@@ -516,7 +516,7 @@ const rawWorld = {
 			scope: {scope: "rooms" as const, roomIds: [toID("room", "flooded-cistern")]},
 			behavior: commandBehavior(
 				"turn-sluice-wheel",
-				"You strain against {wheel.name}, turning it {rotation}.",
+				"You strain against {variable turn-wheel-target name}, turning it {variable turn-wheel-rotation}.",
 			),
 		},
 		{
@@ -558,7 +558,7 @@ const rawWorld = {
 			scope: {scope: "rooms" as const, roomIds: [toID("room", "forgotten-shrine")]},
 			behavior: commandBehavior(
 				"place-idol-in-bowl",
-				"As {object.name} settles into {destination.name}, the pale flames bend toward it.",
+				"As {variable place-idol-object name} settles into {variable place-idol-destination name}, the pale flames bend toward it.",
 			),
 		},
 		{
@@ -587,7 +587,7 @@ const rawWorld = {
 			scope: {scope: "layers" as const, layers: [-1]},
 			behavior: commandBehavior(
 				"ring-mortuary-bell",
-				"{bell.name} answers with one low note. Something beneath the floor answers twice.",
+				"{variable ring-bell-target name} answers with one low note. Something beneath the floor answers twice.",
 			),
 		},
 		{
@@ -612,7 +612,7 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "global" as const},
-			behavior: commandBehavior("write-text", "You write “{text}”."),
+			behavior: commandBehavior("write-text", "You write “{variable write-text-content}”."),
 		},
 		{
 			id: toID("command", "write-on-target"),
@@ -641,7 +641,10 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "global" as const},
-			behavior: commandBehavior("write-on-target", "You make a careful mark on {target.name}."),
+			behavior: commandBehavior(
+				"write-on-target",
+				"You make a careful mark on {variable write-target-target name}.",
+			),
 		},
 		{
 			id: toID("command", "touch-target"),
@@ -665,7 +668,7 @@ const rawWorld = {
 				},
 			],
 			scope: {scope: "global" as const},
-			behavior: commandBehavior("touch-target", "You touch {target.name}."),
+			behavior: commandBehavior("touch-target", "You touch {variable touch-target-target name}."),
 		},
 		{
 			id: toID("command", "touch-abandoned-torch"),
@@ -710,7 +713,7 @@ export function createExampleWorld() {
 						blockId: block.id,
 						behavior: commandBehavior(
 							`${command.id.id}-${block.id.id}-fallback`,
-							"That command is understood, but part of it does not resolve.",
+							`I couldn't resolve “{variable ${block.id.id} text}” for that command.`,
 							"Fallback response",
 						),
 					})),

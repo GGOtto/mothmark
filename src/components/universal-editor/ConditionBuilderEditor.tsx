@@ -50,6 +50,8 @@ export type ConditionBuilderFeatures = {
 	addConditionLabel?: string;
 	addGroupLabel?: string;
 	rootGroup?: boolean;
+	reuseWorldConditions?: boolean;
+	navigateChildEditors?: boolean;
 };
 
 export type ConditionBuilderControlMetadata = EditorControlMetadata & {
@@ -574,6 +576,13 @@ function hasWorldConditionLibrary(context: EditorControlContext) {
 	return Array.isArray(context.getWorldValue?.(["conditions"]) ?? context.getValue(["conditions"]));
 }
 
+function canReuseWorldConditions(
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+) {
+	return metadata.features?.reuseWorldConditions !== false && hasWorldConditionLibrary(context);
+}
+
 export function ConditionBuilderEditor({
 	value,
 	onChange,
@@ -605,7 +614,7 @@ export function ConditionBuilderEditor({
 			: undefined;
 
 	useEffect(() => {
-		if (!isConditionList || !canEdit || !hasWorldConditionLibrary(context)) return;
+		if (!isConditionList || !canEdit || !canReuseWorldConditions(metadata, context)) return;
 
 		const conditions = value.map((condition) => normalizeCondition(condition as ConditionValue));
 		if (conditions.every(isConditionReference)) return;
@@ -677,7 +686,7 @@ export function ConditionBuilderEditor({
 		function addCondition(type: "flag" | "group") {
 			if (!canEdit) return;
 			if (type === "group" && !canAddGroup) return;
-			if (hasWorldConditionLibrary(context)) {
+			if (canReuseWorldConditions(metadata, context)) {
 				const nextCondition = createWorldCondition(
 					type,
 					metadata,
@@ -849,7 +858,9 @@ function ConditionLinkList({
 	groupTitle?: string;
 }) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
-	const canOpenChildEditor = typeof context.editorNavigation?.openEditorLink === "function";
+	const canOpenChildEditor =
+		metadata.features?.navigateChildEditors !== false &&
+		typeof context.editorNavigation?.openEditorLink === "function";
 	const safeSelectedIndex =
 		conditions.length > 0 ? Math.min(selectedIndex, conditions.length - 1) : 0;
 	const selectedConditionReference = canOpenChildEditor ? undefined : conditions[safeSelectedIndex];
@@ -863,7 +874,7 @@ function ConditionLinkList({
 			: -1;
 	const selectedCondition = selectedWorldCondition ?? selectedConditionReference;
 	const reusableConditions =
-		canEdit && onAddExistingCondition && hasWorldConditionLibrary(context)
+		canEdit && onAddExistingCondition && canReuseWorldConditions(metadata, context)
 			? reusableWorldConditions(context)
 			: [];
 
@@ -1158,7 +1169,7 @@ function ConditionNodeEditor({
 
 	function addChild(type: "flag" | "group") {
 		if (type === "group" && !canAddGroup) return;
-		if (hasWorldConditionLibrary(context)) {
+		if (canReuseWorldConditions(metadata, context)) {
 			const nextCondition = createWorldConditionDefinition(
 				type,
 				metadata,
@@ -2360,6 +2371,7 @@ function renderSelect({
 			},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path,
 		disabled,
 		readonly,
@@ -2387,6 +2399,7 @@ function renderFlagField(
 			features: {allowCreate: false, clearButton: false, showPreview: false},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, "flag"],
 		disabled,
 		readonly,
@@ -2509,6 +2522,7 @@ function renderEntityField(
 			},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, key],
 		disabled,
 		readonly,
@@ -2540,6 +2554,7 @@ function renderTextField(
 			features: {clearButton: true},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, key],
 		disabled,
 		readonly,
@@ -2568,6 +2583,7 @@ function renderNumberField(
 			appearance: {chrome: "inline", size: "sm"},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, key],
 		disabled,
 		readonly,
@@ -2597,6 +2613,7 @@ function renderToggleField(
 			features: {labels: {on: "True", off: "False"}},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, key],
 		disabled,
 		readonly,
@@ -2630,6 +2647,7 @@ function renderStringListField(
 			},
 		},
 		parentMetadata: metadata,
+		useMetadataCopy: true,
 		path: [...path, key],
 		disabled,
 		readonly,

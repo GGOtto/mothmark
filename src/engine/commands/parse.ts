@@ -2,7 +2,7 @@ import type {CommandVariable, GameState} from "@/schemas/states/gameStateSchemas
 import type {Command} from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
-import {getPartitions} from "../utils/getPartitions";
+import {getPartitionSegments, type PartitionSegment} from "../utils/getPartitions";
 import {matchBlock, type MatchBlockContext} from "./blocks";
 import {resolveTargetMatchContext} from "./targetContext";
 
@@ -21,6 +21,7 @@ export type CommandMatch =
 			match: "partial match";
 			partialBlockId: ID<"command-block">;
 			variables: CommandVariable[];
+			failedVariables: Extract<CommandVariable, {type: "failed"}>[];
 	  }
 	| {
 			command: Command;
@@ -48,7 +49,7 @@ export function commandIsInScope(command: Command, world: World, game: GameState
 }
 
 export function matchCommandToPartition(
-	partition: string[],
+	partition: Array<PartitionSegment | string>,
 	command: Command,
 	commandContext: MatchBlockContext,
 ): CommandMatch {
@@ -59,12 +60,16 @@ export function matchCommandToPartition(
 
 		const variables: CommandVariable[] = [];
 		const partialBlockIds: ID<"command-block">[] = [];
+		const failedVariables: Extract<CommandVariable, {type: "failed"}>[] = [];
 		let patternFailed = false;
 		let matchedBlockCount = 0;
 
 		for (let index = 0; index < partition.length; index += 1) {
 			const block = pattern.blocks[index];
-			const blockMatch = matchBlock(partition[index], block, commandContext);
+			const segment = partition[index];
+			const segmentText = typeof segment === "string" ? segment : segment.text;
+			const rawText = typeof segment === "string" ? segment : segment.rawText;
+			const blockMatch = matchBlock(segmentText, block, commandContext);
 
 			if (blockMatch.match === "fail") {
 				patternFailed = true;
@@ -73,10 +78,11 @@ export function matchCommandToPartition(
 
 			if (blockMatch.match === "partial match") {
 				partialBlockIds.push(block.id);
+				failedVariables.push({blockId: block.id, type: "failed", rawText});
 				continue;
 			}
 
-			variables.push(blockMatch.command);
+			variables.push({...blockMatch.command, rawText});
 			matchedBlockCount += 1;
 		}
 
@@ -93,6 +99,7 @@ export function matchCommandToPartition(
 			match: "partial match",
 			partialBlockId: partialBlockIds[0],
 			variables,
+			failedVariables,
 		};
 	}
 
@@ -104,7 +111,7 @@ export function findMatchingCommands(
 	world: World,
 	game: GameState,
 ): RunnableCommandMatch[] {
-	const partitions = getPartitions(text);
+	const partitions = getPartitionSegments(text);
 	const fullMatches = new Map<string, Extract<CommandMatch, {match: "match"}>>();
 	const partialMatches = new Map<string, Extract<CommandMatch, {match: "partial match"}>>();
 	const context = resolveTargetMatchContext(world, game);

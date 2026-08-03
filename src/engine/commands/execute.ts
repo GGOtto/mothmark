@@ -33,7 +33,10 @@ export function runCommand(text: string, world: World, game: GameState): GameSta
 	}
 
 	const gameWithCommandVariables = produce(game, (draft) => {
-		draft.variables.command = chosenMatch.variables;
+		draft.variables.command = [
+			...chosenMatch.variables,
+			...(chosenMatch.match === "partial match" ? chosenMatch.failedVariables : []),
+		];
 	});
 
 	return resolveCommandConditionBranch(world, gameWithCommandVariables, behavior);

@@ -24,13 +24,15 @@ import {
 } from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
-import {idValue} from "@/utils/idUtils";
+import {idValue, toID} from "@/utils/idUtils";
 import type {CommandSelection} from "../shared";
 import {blockDefinition, isStructuralBlock} from "./CommandEditor";
 import {createBlockFallbackBehavior} from "./commandFallback";
+import {buildCommandVariableCatalog} from "@/features/command-variables";
 
 const CommandConditionEditorSchema = editor.conditionControl(CommandConditionSchema, {
 	title: "Condition",
+	features: {navigateChildEditors: false, reuseWorldConditions: false},
 });
 
 const TargetTagsSchema = editor.object(
@@ -118,6 +120,13 @@ export function CommandInspector({
 
 	const command = findCommand(world, selection.commandId);
 	if (!command) return <p className="rightSideBarEmptyText">Select a command</p>;
+	const failedBlockId =
+		(selection.kind === "behavior-condition" || selection.kind === "behavior-effect") &&
+		selection.behavior === "fallback" &&
+		selection.blockId
+			? toID("command-block", selection.blockId)
+			: undefined;
+	const commandVariableCatalog = buildCommandVariableCatalog(command, failedBlockId);
 
 	function updateCommand(recipe: (command: Command) => void) {
 		updateWorld((draft) => {
@@ -253,6 +262,7 @@ export function CommandInspector({
 					updateWorld={updateWorld}
 					appearance={appearance}
 					scrollOnExternalValueChange={false}
+					commandVariableCatalog={commandVariableCatalog}
 				/>
 			</div>
 		);
@@ -284,6 +294,7 @@ export function CommandInspector({
 					updateWorld={updateWorld}
 					appearance={appearance}
 					scrollOnExternalValueChange={false}
+					commandVariableCatalog={commandVariableCatalog}
 				/>
 			</div>
 		);

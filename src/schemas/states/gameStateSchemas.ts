@@ -25,41 +25,54 @@ export const CommandVariableSchema = z.discriminatedUnion("type", [
 		blockId: CommandBlockIdSchema,
 		type: z.literal("phrase"),
 		value: z.string(),
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("relation"),
 		value: RelationTypeSchema,
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("target"),
 		value: TargetReferenceSchema,
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("number"),
 		value: z.number().finite(),
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("boolean"),
 		value: z.boolean(),
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("direction"),
 		value: DirectionSchema,
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("choice"),
 		value: z.string(),
+		rawText: z.string().optional(),
 	}),
 	z.object({
 		blockId: CommandBlockIdSchema,
 		type: z.literal("text"),
 		value: z.string(),
+		rawText: z.string().optional(),
+	}),
+	z.object({
+		blockId: CommandBlockIdSchema,
+		type: z.literal("failed"),
+		rawText: z.string(),
 	}),
 ]);
 

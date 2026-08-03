@@ -43,6 +43,16 @@ describe("command variables", () => {
 
 		expect(result.success).toBe(false);
 	});
+
+	it("stores the entered text for a block that triggered fallback behavior", () => {
+		const failed = {
+			blockId: toID("command-block", "missing-target"),
+			type: "failed" as const,
+			rawText: "silver skull",
+		};
+
+		expect(CommandVariableSchema.parse(failed)).toEqual(failed);
+	});
 });
 
 describe("entity state snapshots", () => {

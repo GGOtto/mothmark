@@ -364,7 +364,7 @@
 
 .universalField--chrome-inline {
 	display: grid;
-	grid-template-columns: minmax(96px, 32%) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
 	align-items: start;
 	column-gap: 10px;
 	row-gap: 4px;

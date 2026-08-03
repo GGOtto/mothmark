@@ -1,4 +1,4 @@
-import {getPartitions} from "./getPartitions";
+import {getPartitionSegments, getPartitions} from "./getPartitions";
 
 describe("getPartitions", () => {
 	it("returns an empty array for an empty string", () => {
@@ -49,6 +49,13 @@ describe("getPartitions", () => {
 			["pick", "up sword"],
 			["pick up", "sword"],
 			["pick up sword"],
+		]);
+	});
+
+	it("retains the exact source span for values echoed by command fallbacks", () => {
+		expect(getPartitionSegments("  touch silver   skull  ")).toContainEqual([
+			{text: "touch", rawText: "touch"},
+			{text: "silver skull", rawText: "silver   skull"},
 		]);
 	});
 

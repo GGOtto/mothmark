@@ -16,18 +16,23 @@ import {
 import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import {EffectGroupSchema, EffectSchema} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds} from "@/utils/idUtils";
 import {evaluateCondition} from "../conditions/evaluateCondition";
 import {resolveEffects} from "../effects/resolveEffects";
 import {addDelayedConditionEvent} from "../events/addDelayedConditionEvent";
 import {findVariable} from "../utils/lookupUtils";
+import {
+	interpolateCommandTemplate,
+	resolveCommandVariableReference,
+} from "@/features/command-variables/runtime";
 
 const passingCondition: Condition = {type: "group", operation: "all", conditions: []};
 const failingCondition: Condition = {type: "group", operation: "any", conditions: []};
 
 function resolvedVariableValue(game: GameState, binding: CommandVariableBinding): unknown {
-	return game.variables.command.find((variable) => compareIds(variable.blockId, binding.blockId))
-		?.value;
+	return resolveCommandVariableReference(game, {
+		blockId: binding.blockId,
+		projection: binding.projection,
+	});
 }
 
 function applyCommandVariables(
@@ -45,7 +50,7 @@ function applyCommandVariables(
 		if (value !== undefined) resolved[binding.field] = value;
 	}
 
-	return resolved;
+	return interpolateCommandTemplate(game, resolved) as Record<string, unknown>;
 }
 
 /**

@@ -301,6 +301,76 @@ describe("CommandSchema", () => {
 		expect(CommandSchema.safeParse(command).success).toBe(false);
 	});
 
+	it("rejects an entity variable bound to a boolean field", () => {
+		const object = target("object");
+		const command = CommandSchema.parse(commandWithBlocks([phrase(["mark"]), object]));
+		command.behavior.always = {
+			name: "Mark result",
+			id: toID("effect", "mark-result"),
+			type: "group",
+			effects: [
+				{
+					type: "flag",
+					"flag-type": "normal",
+					operation: "set",
+					flag: "marked",
+					value: true,
+					commandVariables: [{blockId: object.id, field: "value"}],
+				},
+			],
+			allowMultipleUsesInWorld: true,
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+	});
+
+	it("requires a failed block to use its entered-text projection", () => {
+		const object = target("object");
+		const command = CommandSchema.parse(commandWithBlocks([phrase(["touch"]), object]));
+		command.fallbacks[0].behavior.always = {
+			name: "Missing object",
+			id: toID("effect", "missing-object"),
+			type: "group",
+			effects: [
+				{
+					type: "message",
+					operation: "show",
+					message: "Missing target",
+					commandVariables: [{blockId: object.id, field: "message"}],
+				},
+			],
+			allowMultipleUsesInWorld: true,
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+		command.fallbacks[0].behavior.always.effects[0].commandVariables = [
+			{blockId: object.id, field: "message", projection: "text"},
+		];
+		expect(CommandSchema.safeParse(command).success).toBe(true);
+	});
+
+	it("rejects raw entity tokens in text and accepts explicit entity projections", () => {
+		const object = target("object");
+		const command = CommandSchema.parse(commandWithBlocks([phrase(["inspect"]), object]));
+		command.behavior.always = {
+			name: "Inspect object",
+			id: toID("effect", "inspect-object"),
+			type: "group",
+			effects: [
+				{
+					type: "message",
+					operation: "show",
+					message: `{variable ${object.id.id}}`,
+				},
+			],
+			allowMultipleUsesInWorld: true,
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+		command.behavior.always.effects[0].message = `{variable ${object.id.id} name}`;
+		expect(CommandSchema.safeParse(command).success).toBe(true);
+	});
+
 	it("requires a rest-of-input text block to be last", () => {
 		const text = {
 			...createDefaultFieldObject(TextBlockSchema),

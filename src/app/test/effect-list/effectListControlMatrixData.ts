@@ -106,6 +106,52 @@ const SETUPS = {
 			...BASE_METADATA,
 		},
 	},
+	allFields: {
+		value: [
+			{
+				type: "message",
+				operation: "random",
+				messages: [
+					"A deliberately long message checks that authored text wraps inside the effect editor.",
+					"A shorter alternative.",
+				],
+			},
+			{
+				type: "flag",
+				"flag-type": "feature",
+				operation: "set",
+				roomId: toID("room", "foyer"),
+				featureId: toID("feature", "brass-bell"),
+				flag: "canRing",
+				value: true,
+			},
+			{type: "counter", operation: "set", counter: "turnsSinceBell", value: 12},
+			{
+				type: "feature",
+				operation: "move-to-room",
+				roomId: toID("room", "foyer"),
+				newRoomId: toID("room", "gallery"),
+				featureId: toID("feature", "brass-bell"),
+			},
+			{
+				type: "room",
+				operation: "lock-exit",
+				roomId: toID("room", "foyer"),
+				direction: "n",
+			},
+			{
+				type: "player",
+				operation: "freeze",
+				freezeMessage: "You cannot move while the mechanism turns.",
+				turns: 3,
+			},
+		],
+		metadata: {
+			title: "All effect field layouts",
+			description: "Representative dense fields for every concrete effect family.",
+			...BASE_METADATA,
+		},
+	},
 	reference: {
 		value: [{type: "effect-ref", effectId: toID("effect", "ring-bell")}],
 		worldEffects: [
@@ -196,6 +242,12 @@ export const effectListControlMatrixVariants = [
 		"Freeze action with unset optional message and turns.",
 		{tone: "panel", chrome: "field", size: "md"},
 		SETUPS.freeze,
+	),
+	makeVariant(
+		"default-field-md-all-fields",
+		"Every concrete effect family with its densest representative field layout.",
+		{tone: "default", chrome: "field", size: "md"},
+		SETUPS.allFields,
 	),
 	makeVariant(
 		"default-field-md-reference",
