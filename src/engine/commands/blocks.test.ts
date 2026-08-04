@@ -6,7 +6,9 @@ import {
 	DirectionBlockSchema,
 	NumberBlockSchema,
 	PhraseBlockSchema,
+	RELATION_PREPOSITIONS,
 	RelationBlockSchema,
+	RelationTypeSchema,
 	TargetBlockSchema,
 	TextBlockSchema,
 	type CommandBlock,
@@ -100,6 +102,29 @@ describe("matchNumber", () => {
 });
 
 describe("matchBlock", () => {
+	it("supplies a complete preposition list for every relation", () => {
+		for (const relation of RelationTypeSchema.options) {
+			const prepositions = RELATION_PREPOSITIONS[relation];
+			expect(prepositions.length).toBeGreaterThan(0);
+			expect(prepositions).toContain(relation);
+			expect(new Set(prepositions).size).toBe(prepositions.length);
+
+			const block = {
+				...createDefaultFieldObject(RelationBlockSchema),
+				id: toID("command-block", `${relation}-relation`),
+				relation,
+				role: "relation",
+			};
+			for (const preposition of prepositions) {
+				expectVariable(matchBlock(preposition, block), {
+					blockId: block.id,
+					type: "relation",
+					value: relation,
+				});
+			}
+		}
+	});
+
 	it("resolves a phrase to its canonical authored match", () => {
 		const block = {
 			...createDefaultFieldObject(PhraseBlockSchema),
@@ -200,6 +225,42 @@ describe("matchBlock", () => {
 			value: "with",
 		});
 		expect(matchBlock("near", block)).toEqual(failedMatch);
+	});
+
+	it("supplies prepositions for the authored relation", () => {
+		const block = {
+			...createDefaultFieldObject(RelationBlockSchema),
+			id: toID("command-block", "relation"),
+			relation: "in" as const,
+			role: "relation",
+		};
+
+		for (const preposition of ["in", "into", "inside"]) {
+			expectVariable(matchBlock(preposition, block), {
+				blockId: block.id,
+				type: "relation",
+				value: "in",
+			});
+		}
+		expect(matchBlock("onto", block)).toEqual(failedMatch);
+	});
+
+	it("does not supply prepositions when custom wording replaces the defaults", () => {
+		const block = {
+			...createDefaultFieldObject(RelationBlockSchema),
+			id: toID("command-block", "relation"),
+			relation: "in" as const,
+			aliasMode: "replace" as const,
+			aliases: ["within"],
+			role: "relation",
+		};
+
+		expect(matchBlock("into", block)).toEqual(failedMatch);
+		expectVariable(matchBlock("within", block), {
+			blockId: block.id,
+			type: "relation",
+			value: "in",
+		});
 	});
 
 	it("resolves target candidates to typed entity references", () => {

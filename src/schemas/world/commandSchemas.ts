@@ -48,6 +48,38 @@ export const RelationTypeSchema = z.enum([
 	"as",
 ]);
 
+export type RelationType = z.infer<typeof RelationTypeSchema>;
+
+/** Player wording supplied automatically for each normalized relation. */
+export const RELATION_PREPOSITIONS: Record<RelationType, readonly string[]> = {
+	on: ["on", "onto", "upon", "atop", "on top of"],
+	in: ["in", "into", "inside", "inside of", "within"],
+	from: ["from", "out of", "away from"],
+	off: ["off", "off of", "away from"],
+	with: ["with", "using", "via", "by means of"],
+	to: ["to", "toward", "towards", "up to"],
+	at: ["at"],
+	under: ["under", "underneath", "beneath", "below"],
+	over: ["over", "above", "on top of"],
+	behind: ["behind", "in back of", "at the back of"],
+	before: ["before", "in front of", "ahead of"],
+	beside: ["beside", "next to", "alongside", "by the side of"],
+	against: ["against", "up against"],
+	through: ["through", "thru", "by way of"],
+	across: ["across", "from one side of", "to the other side of"],
+	between: ["between", "in between", "in the middle of", "amid", "among"],
+	about: [
+		"about",
+		"regarding",
+		"concerning",
+		"with regard to",
+		"with respect to",
+		"on the subject of",
+	],
+	for: ["for", "intended for", "meant for", "on behalf of"],
+	as: ["as", "like", "in the role of", "in the capacity of"],
+};
+
 export const TargetEntityTypeSchema = z.enum(["room", "feature"]);
 
 export const TargetReferenceSchema = z.union([

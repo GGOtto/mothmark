@@ -64,7 +64,7 @@ function phrase(id: string, matches: string[]): CommandBlock {
 	};
 }
 
-function relation(id: string, value: "on" | "with"): CommandBlock {
+function relation(id: string, value: "on" | "in" | "with"): CommandBlock {
 	return {
 		...createDefaultFieldObject(RelationBlockSchema),
 		id: toID("command-block", id),
@@ -279,6 +279,23 @@ describe("command matching and fallbacks through the player path", () => {
 		});
 
 		expectLastMessage([command], "put bell with skull", "error", "I don't know what that means.");
+	});
+
+	it("accepts a supplied preposition for the chosen relation", () => {
+		const command = authoredCommand({
+			id: "put-in",
+			patterns: [
+				[
+					phrase("put-verb", ["put"]),
+					target("put-object", "object"),
+					relation("put-relation", "in"),
+					target("put-destination", "destination"),
+				],
+			],
+			success: "You put it away.",
+		});
+
+		expectLastMessage([command], "put bell inside bell", "system", "You put it away.");
 	});
 
 	it("pins the first partial block when several blocks are partial", () => {

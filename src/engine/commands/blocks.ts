@@ -1,5 +1,5 @@
 import type {CommandVariable} from "@/schemas/states/gameStateSchemas";
-import type {CommandBlock} from "@/schemas/world/commandSchemas";
+import {RELATION_PREPOSITIONS, type CommandBlock} from "@/schemas/world/commandSchemas";
 import type {ID} from "@/utils/idUtils";
 import {compareIds} from "@/utils/idUtils";
 import {normalize} from "./parse";
@@ -324,7 +324,7 @@ export function matchRelation(
 ): BlockMatchResponse<CommandVariableOf<"relation">> {
 	if (block.type !== "relation") return failedMatch();
 
-	const defaultMatches = block.aliasMode === "replace" ? [] : [block.relation];
+	const defaultMatches = block.aliasMode === "replace" ? [] : RELATION_PREPOSITIONS[block.relation];
 	const customMatches = block.aliasMode === "defaults" ? [] : block.aliases;
 	const matches = [...defaultMatches, ...customMatches];
 	if (!matches.some((match) => normalize(match) === normalize(text))) return failedMatch();
