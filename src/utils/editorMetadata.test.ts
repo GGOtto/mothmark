@@ -103,7 +103,6 @@ describe("editor schema defaultFieldValue", () => {
 	it("configures a single effect control through schema metadata", () => {
 		const schema = editor.effectControl(FlagEffectSchema, {
 			title: "Outcome",
-			features: {allowedEffectTypes: ["flag"]},
 			childControls: {
 				flag: {control: "flag-picker", title: "World flag"},
 			},
@@ -113,12 +112,10 @@ describe("editor schema defaultFieldValue", () => {
 			control: "effect",
 			title: "Outcome",
 			features: {
-				allowedEffectTypes: ["flag"],
-				effectTypeOptionSource: "schema.effect.types",
+				effectSchema: FlagEffectSchema,
 				showGeneratedSummary: true,
 			},
 			childControls: {
-				effectType: {control: "select", title: "Effect type"},
 				flag: {control: "flag-picker", title: "World flag"},
 			},
 		});

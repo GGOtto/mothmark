@@ -1,6 +1,6 @@
 import {act, fireEvent, render, screen} from "@testing-library/react";
 
-import {world as exampleWorld} from "@/data/worlds/exampleWorld";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 import type {World} from "@/schemas/world/worldSchema";
 
 import {
@@ -65,8 +65,8 @@ describe("world autosave", () => {
 
 	it("saves the latest world after editing settles", async () => {
 		const updatedWorld = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Updated title"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Updated title"},
 		};
 		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
 		Object.defineProperty(globalThis, "fetch", {
@@ -74,7 +74,7 @@ describe("world autosave", () => {
 			writable: true,
 			value: fetchMock,
 		});
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -106,7 +106,7 @@ describe("world autosave", () => {
 
 	it("resets a registered world after confirmation even when it has no edits", () => {
 		jest.spyOn(window, "confirm").mockReturnValue(true);
-		renderAutosaveHarness(exampleWorld);
+		renderAutosaveHarness(initialWorld);
 
 		fireEvent.click(screen.getByRole("button", {name: "Reset example"}));
 
@@ -128,14 +128,14 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const firstEdit = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "First edit"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "First edit"},
 		};
 		const latestEdit = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Latest edit"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Latest edit"},
 		};
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -180,10 +180,10 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const updatedWorld = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Indicator test"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Indicator test"},
 		};
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 		expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
 
 		view.rerender(
@@ -218,8 +218,8 @@ describe("world autosave", () => {
 
 	it("warns before unloading until the queued save succeeds", async () => {
 		const updatedWorld = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Unsaved title"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Unsaved title"},
 		};
 		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
 		Object.defineProperty(globalThis, "fetch", {
@@ -227,7 +227,7 @@ describe("world autosave", () => {
 			writable: true,
 			value: fetchMock,
 		});
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 		const cleanUnload = new Event("beforeunload", {cancelable: true});
 		window.dispatchEvent(cleanUnload);
 		expect(cleanUnload.defaultPrevented).toBe(false);
@@ -269,10 +269,10 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const updatedWorld = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Invalid save response test"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Invalid save response test"},
 		};
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -305,10 +305,10 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const updatedWorld = {
-			...exampleWorld,
-			metadata: {...exampleWorld.metadata, title: "Retryable failure test"},
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Retryable failure test"},
 		};
-		const view = renderAutosaveHarness(exampleWorld);
+		const view = renderAutosaveHarness(initialWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>

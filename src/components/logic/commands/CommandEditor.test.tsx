@@ -4,7 +4,7 @@ import {produce} from "immer";
 import {useState} from "react";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
-import {world as exampleWorld} from "@/data/worlds/exampleWorld";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
 	NumberBlockSchema,
 	PatternSchema,
@@ -24,8 +24,8 @@ import {CommandLibrary, CommandLibraryPreview} from "./CommandLibrary";
 import {commandPatternText} from "./CommandSummary";
 
 function CommandHarness({onWorldChange}: {onWorldChange?: (world: World) => void}) {
-	const initialCommand = exampleWorld.commands.find((command) => idValue(command.id) === "say")!;
-	const [world, setWorld] = useState(exampleWorld);
+	const initialCommand = initialWorld.commands.find((command) => idValue(command.id) === "say")!;
+	const [world, setWorld] = useState(initialWorld);
 	const [commandId, setCommandId] = useState(idValue(initialCommand.id));
 	const [selection, setSelection] = useState<CommandSelection | null>({kind: "command", commandId});
 	const updateWorld = (update: WorldUpdate) => {
@@ -51,7 +51,7 @@ function CommandHarness({onWorldChange}: {onWorldChange?: (world: World) => void
 describe("CommandEditor", () => {
 	it("clones the preceding pattern with shared block identities and keeps block additions available", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />);
 
 		await user.click(screen.getByRole("button", {name: "Add pattern"}));
@@ -93,7 +93,7 @@ describe("CommandEditor", () => {
 
 	it("adds and deletes blocks immediately when there is only one pattern", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(
 			<PopupProvider>
 				<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />
@@ -112,7 +112,7 @@ describe("CommandEditor", () => {
 
 	it("allows any pattern to be deleted while more than one remains", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />);
 
 		await user.click(screen.getByRole("button", {name: "Add pattern"}));
@@ -128,7 +128,7 @@ describe("CommandEditor", () => {
 
 	it("asks whether a structural block should be added to one pattern or all patterns", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(
 			<PopupProvider>
 				<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />
@@ -149,7 +149,7 @@ describe("CommandEditor", () => {
 
 	it("confirms and adds a value block to every pattern", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(
 			<PopupProvider>
 				<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />
@@ -182,7 +182,7 @@ describe("CommandEditor", () => {
 
 	it("asks whether a structural block should be removed from one pattern or all patterns", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(
 			<PopupProvider>
 				<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />
@@ -203,7 +203,7 @@ describe("CommandEditor", () => {
 
 	it("only allows a value block to be removed from all patterns", async () => {
 		const user = userEvent.setup();
-		let latestWorld = exampleWorld;
+		let latestWorld = initialWorld;
 		render(
 			<PopupProvider>
 				<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />
@@ -232,7 +232,7 @@ describe("CommandEditor", () => {
 
 describe("command presentation", () => {
 	it("summarizes a pattern as one player-facing word per block", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 
 		expect(commandPatternText(command.patterns[0])).toBe("say <text>");
 	});
@@ -285,7 +285,7 @@ describe("command presentation", () => {
 		const onPreviewCommand = jest.fn();
 		render(
 			<CommandLibrary
-				world={exampleWorld}
+				world={initialWorld}
 				updateWorld={jest.fn()}
 				onOpenCommand={onOpenCommand}
 				onPreviewCommand={onPreviewCommand}
@@ -302,8 +302,8 @@ describe("command presentation", () => {
 	});
 
 	it("shows unique pattern summaries in a bounded sidebar list", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
-		const shout = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const shout = initialWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
 		const commandWithRepeatedPattern = {
 			...command,
 			patterns: [command.patterns[0], command.patterns[0], shout.patterns[0]],
@@ -322,7 +322,7 @@ describe("command presentation", () => {
 
 	it("opens command scope settings from the toolbar gear", async () => {
 		const user = userEvent.setup();
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const onOpenSettings = jest.fn();
 
 		render(
@@ -342,7 +342,7 @@ describe("command presentation", () => {
 
 describe("CommandInspector", () => {
 	it("updates every pattern occurrence of a shared block", () => {
-		let latestWorld = produce(exampleWorld, (draft) => {
+		let latestWorld = produce(initialWorld, (draft) => {
 			const command = draft.commands.find((candidate) => idValue(candidate.id) === "wait-turns")!;
 			command.patterns.push({blocks: command.patterns[0].blocks.map((block) => ({...block}))});
 		});
@@ -382,7 +382,7 @@ describe("CommandInspector", () => {
 	});
 
 	it("gives target tags a dedicated inspector section", () => {
-		const command = exampleWorld.commands.find(
+		const command = initialWorld.commands.find(
 			(candidate) => idValue(candidate.id) === "touch-target",
 		)!;
 		const target = command.patterns[0].blocks.find((block) => block.type === "target")!;
@@ -390,7 +390,7 @@ describe("CommandInspector", () => {
 		render(
 			<ThemeProvider>
 				<CommandInspector
-					world={exampleWorld}
+					world={initialWorld}
 					updateWorld={jest.fn()}
 					selection={{
 						kind: "block",
@@ -409,7 +409,7 @@ describe("CommandInspector", () => {
 
 	it("preserves the inspector scroll position when the selected block updates", () => {
 		const scrollTo = jest.spyOn(window, "scrollTo").mockImplementation(() => undefined);
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const text = command.patterns[0].blocks[1];
 		const selection = {
 			kind: "block" as const,
@@ -420,7 +420,7 @@ describe("CommandInspector", () => {
 		const view = render(
 			<ThemeProvider>
 				<CommandInspector
-					world={exampleWorld}
+					world={initialWorld}
 					updateWorld={jest.fn()}
 					selection={selection}
 					onSelectionChange={jest.fn()}
@@ -428,7 +428,7 @@ describe("CommandInspector", () => {
 			</ThemeProvider>,
 		);
 		scrollTo.mockClear();
-		const updatedWorld = produce(exampleWorld, (draft) => {
+		const updatedWorld = produce(initialWorld, (draft) => {
 			const block = draft.commands.find((candidate) => idValue(candidate.id) === "say")?.patterns[0]
 				.blocks[1];
 			if (block?.type === "text") block.mode = "phrase";
@@ -450,14 +450,14 @@ describe("CommandInspector", () => {
 	});
 
 	it("only offers fallback behavior for non-structural blocks", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const phrase = command.patterns[0].blocks[0];
 		const text = command.patterns[0].blocks[1];
 		const updateWorld = jest.fn();
 		const view = render(
 			<ThemeProvider>
 				<CommandInspector
-					world={exampleWorld}
+					world={initialWorld}
 					updateWorld={updateWorld}
 					selection={{
 						kind: "block",
@@ -475,7 +475,7 @@ describe("CommandInspector", () => {
 		view.rerender(
 			<ThemeProvider>
 				<CommandInspector
-					world={exampleWorld}
+					world={initialWorld}
 					updateWorld={updateWorld}
 					selection={{
 						kind: "block",
@@ -496,13 +496,13 @@ describe("CommandInspector", () => {
 	});
 
 	it("keeps existing fallback branches out of the sidebar", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const text = command.patterns[0].blocks[1];
 
 		render(
 			<ThemeProvider>
 				<CommandInspector
-					world={exampleWorld}
+					world={initialWorld}
 					updateWorld={jest.fn()}
 					selection={{
 						kind: "fallback",
@@ -523,11 +523,11 @@ describe("CommandInspector", () => {
 
 describe("CommandBehaviorEditor", () => {
 	it("hides behavior navigation when the command has no fallback-eligible blocks", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
 
 		render(
 			<CommandBehaviorEditor
-				world={exampleWorld}
+				world={initialWorld}
 				updateWorld={jest.fn()}
 				command={command}
 				selection={{kind: "behavior", commandId: "shout"}}
@@ -540,11 +540,11 @@ describe("CommandBehaviorEditor", () => {
 	});
 
 	it("lists command behavior and every eligible block fallback in the behavior workspace", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 
 		const view = render(
 			<CommandBehaviorEditor
-				world={exampleWorld}
+				world={initialWorld}
 				updateWorld={jest.fn()}
 				command={command}
 				selection={{kind: "behavior", commandId: "say"}}
@@ -565,7 +565,7 @@ describe("CommandBehaviorEditor", () => {
 
 	it("creates an unconfigured fallback when it is opened from the behavior workspace", async () => {
 		const user = userEvent.setup();
-		let latestWorld = produce(exampleWorld, (draft) => {
+		let latestWorld = produce(initialWorld, (draft) => {
 			const command = draft.commands.find((candidate) => idValue(candidate.id) === "say")!;
 			command.fallbacks = [];
 		});
@@ -598,12 +598,12 @@ describe("CommandBehaviorEditor", () => {
 	});
 
 	it("renders a fallback with the shared event branch component", () => {
-		const command = exampleWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const text = command.patterns[0].blocks[1];
 
 		const view = render(
 			<CommandBehaviorEditor
-				world={exampleWorld}
+				world={initialWorld}
 				updateWorld={jest.fn()}
 				command={command}
 				selection={{kind: "fallback", commandId: "say", blockId: idValue(text.id)}}

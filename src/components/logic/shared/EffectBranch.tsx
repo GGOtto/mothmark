@@ -6,8 +6,8 @@ import {
 	generateConditionSummary,
 	generateEffectSummary,
 } from "@/components/universal-editor/utils/universalEditorUtils";
-import type {Condition} from "@/schemas/world/conditionSchema";
-import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
+import {ConditionSchema, type Condition} from "@/schemas/world/conditionSchema";
+import {EffectSchema, type Effect, type EffectGroup} from "@/schemas/world/effectSchema";
 import type {CommandEffectGroup} from "@/schemas/world/commandLogicSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import {idValue} from "@/utils/idUtils";
@@ -111,7 +111,7 @@ export function EffectBranch({
 					</span>
 					{condition ? (
 						<button type="button" className="logicBranch__condition" onClick={onSelectCondition}>
-							{generateConditionSummary(condition)}
+							{generateConditionSummary(condition, ConditionSchema)}
 						</button>
 					) : null}
 					{condition && onDelayEnabledChange ? (
@@ -191,13 +191,13 @@ export function EffectBranch({
 											onClick={onSelectInlineGroup}
 											disabled={!onSelectInlineGroup}
 										>
-											<span>{generateEffectSummary(entry.effect)}</span>
+											<span>{generateEffectSummary(entry.effect, EffectSchema)}</span>
 										</button>
 										<button
 											type="button"
 											className="logicEffectGroup__remove"
 											onClick={() => onRemoveEffect(index)}
-											aria-label={`Remove ${generateEffectSummary(entry.effect)}`}
+											aria-label={`Remove ${generateEffectSummary(entry.effect, EffectSchema)}`}
 										>
 											<Trash2 size={14} aria-hidden="true" />
 										</button>
@@ -246,7 +246,7 @@ export function EffectBranch({
 										onClick={() => onSelectGroup(effectId)}
 										key={effectIndex}
 									>
-										{generateEffectSummary(effect)}
+										{generateEffectSummary(effect, EffectSchema)}
 									</button>
 								))}
 							</div>

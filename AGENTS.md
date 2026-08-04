@@ -37,6 +37,10 @@
 - Remove or revise shared fixture details that no longer exercise supported behavior. Each maintained room, feature, item, flag, event, and command should have a clear purpose in player-path coverage.
 - Before finishing engine work, run both the focused test files and the relevant `*.player.test.ts` files, then run `pnpm ts-check`.
 
+## Schema-driven editors
+
+- Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
+
 ## Immutable object updates
 
 - Use Immer for immutable updates to large or deeply nested objects instead of manually spreading every level.

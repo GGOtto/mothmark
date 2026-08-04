@@ -30,7 +30,7 @@ import {
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
-import {createExampleWorld, world as initialWorld} from "@/data/worlds/exampleWorld";
+import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
@@ -123,8 +123,8 @@ export default function EditorPage() {
 			.catch((error: unknown) => {
 				if ((error as {name?: string}).name === "AbortError") return;
 
-				console.warn("Could not load the main world; using the example world instead.", error);
-				const fallbackWorld = createExampleWorld();
+				console.warn("Could not load the main world; using the initial world instead.", error);
+				const fallbackWorld = createInitialWorld();
 				updateWorld(fallbackWorld);
 				setPersistedWorldId(null);
 				setPersistedWorldRevision(null);
@@ -145,7 +145,7 @@ export default function EditorPage() {
 	}, []);
 
 	const handleResetWorld = useCallback(() => {
-		const nextWorld = createExampleWorld();
+		const nextWorld = createInitialWorld();
 		updateWorld(nextWorld);
 		setSelection({selectedId: idValue(nextWorld.startRoomId), isConnectionSelected: false});
 		setConnectionDraft({state: "idle"});

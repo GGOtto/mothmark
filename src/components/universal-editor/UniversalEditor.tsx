@@ -2,7 +2,6 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import type {z} from "zod";
-import {editorOptionCatalogs} from "@/schemas/utils/editorCatalogs";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {
 	EditorEntityOption,
@@ -745,9 +744,6 @@ export function UniversalEditor<TValue>({
 						}
 					: undefined,
 			getOptionList: (source) => {
-				const catalogOptions = editorOptionCatalogs[source];
-				if (catalogOptions) return catalogOptions;
-
 				if (source === "rooms") {
 					return registries.rooms.map((room: EditorEntityOption) => ({
 						label: room.label,

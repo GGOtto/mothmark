@@ -2,7 +2,7 @@ import {fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {produce, type Draft} from "immer";
 import {PopupProvider} from "@/components/popup/Popup";
-import {world as exampleWorld} from "@/data/worlds/exampleWorld";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {ConditionWithEffectSchema} from "@/schemas/world/conditionBranchSchemas";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {EventSchema, type Event} from "@/schemas/world/eventSchema";
@@ -14,7 +14,7 @@ import {LogicHome} from "../shared/LogicWorkspace";
 import {EventEditor, EventToolbar} from "./EventEditor";
 
 function createWorld(recipe: (draft: Draft<World>) => void): World {
-	const configuredWorld = produce(exampleWorld, recipe);
+	const configuredWorld = produce(initialWorld, recipe);
 	return {...createDefaultFieldObject(WorldSchema), ...configuredWorld};
 }
 

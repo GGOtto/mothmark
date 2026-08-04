@@ -12,7 +12,7 @@ describe("EditorPage loading", () => {
 		Reflect.deleteProperty(globalThis, "fetch");
 	});
 
-	it("does not render the example world while the main-world request is pending", () => {
+	it("does not render the initial world while the main-world request is pending", () => {
 		Object.defineProperty(globalThis, "fetch", {
 			configurable: true,
 			writable: true,
@@ -79,7 +79,7 @@ describe("EditorPage loading", () => {
 		expect(panButton).toHaveAttribute("aria-pressed", "true");
 	});
 
-	it("recovers with the example world when the world API fails", async () => {
+	it("recovers with the initial world when the world API fails", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
 		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
 		Object.defineProperty(globalThis, "fetch", {
@@ -104,12 +104,12 @@ describe("EditorPage loading", () => {
 
 		expect(screen.getByRole("button", {name: "Dungeon Entrance"})).toBeInTheDocument();
 		expect(warning).toHaveBeenCalledWith(
-			"Could not load the main world; using the example world instead.",
+			"Could not load the main world; using the initial world instead.",
 			expect.any(Error),
 		);
 	});
 
-	it("opens the command library before the selected command editor", async () => {
+	it("opens the empty command library for the initial world", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
 		jest.spyOn(console, "warn").mockImplementation(() => {});
 		Object.defineProperty(globalThis, "fetch", {
@@ -137,11 +137,9 @@ describe("EditorPage loading", () => {
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
 		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
 		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
-		expect(screen.getByRole("button", {name: "Edit command"})).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", {name: /Say something say <text>/}));
-
-		expect(screen.getByRole("button", {name: "Back to Commands"})).toBeInTheDocument();
-		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
+		expect(screen.getByText("Create a command to begin.")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "New command"})).toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Edit command"})).not.toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
 

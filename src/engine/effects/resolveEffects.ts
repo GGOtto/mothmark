@@ -12,6 +12,7 @@ import {
 import {getEffect} from "../utils/lookupUtils";
 import {teleport} from "../player/teleport";
 import {kill} from "../player/kill";
+import {move} from "../player/move";
 
 const ALL_DIRECTIONS: Direction[] = [
 	"n",
@@ -358,6 +359,8 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 			return kill(world, game, effect.customDeathMessage);
 		case "teleport":
 			return teleport(world, game, effect.roomId);
+		case "move-in-direction":
+			return move(world, game, effect.direction);
 	}
 }
 

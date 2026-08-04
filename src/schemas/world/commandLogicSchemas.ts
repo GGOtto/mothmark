@@ -1,6 +1,8 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {ComparisonOperatorSchema} from "./conditionSchema";
+import {withEditorVariants} from "@/utils/editorMetadata";
+import {ComparisonOperatorSchema, ConditionSchema} from "./conditionSchema";
+import {EffectSchema} from "./effectSchema";
 
 const PROTECTED_BINDING_FIELDS = new Set([
 	"__proto__",
@@ -62,9 +64,12 @@ export const CommandLogicTemplateSchema = z
 
 export type CommandLogicTemplate = z.infer<typeof CommandLogicTemplateSchema>;
 
-const CommandConditionLeafSchema = CommandLogicTemplateSchema.refine(
-	(condition) => condition.type !== "group" && condition.type !== "comparison",
-	{message: "Condition groups and comparisons use their dedicated schemas.", path: ["type"]},
+const CommandConditionLeafSchema = withEditorVariants(
+	CommandLogicTemplateSchema.refine(
+		(condition) => condition.type !== "group" && condition.type !== "comparison",
+		{message: "Condition groups and comparisons use their dedicated schemas.", path: ["type"]},
+	),
+	ConditionSchema,
 );
 
 const CommandNumberOperandSchema = z.union([
@@ -105,9 +110,12 @@ export const CommandConditionSchema: z.ZodType<CommandCondition> = z.lazy(() =>
 	]),
 );
 
-export const CommandEffectSchema = CommandLogicTemplateSchema.refine(
-	(effect) => effect.type !== "group" && effect.type !== "conditional",
-	{message: "Command effects must be individual effects or effect references.", path: ["type"]},
+export const CommandEffectSchema = withEditorVariants(
+	CommandLogicTemplateSchema.refine(
+		(effect) => effect.type !== "group" && effect.type !== "conditional",
+		{message: "Command effects must be individual effects or effect references.", path: ["type"]},
+	),
+	EffectSchema,
 );
 
 export type CommandEffect = z.infer<typeof CommandEffectSchema>;
