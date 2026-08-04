@@ -114,11 +114,10 @@ describe("editor schema defaultFieldValue", () => {
 			title: "Outcome",
 			features: {
 				allowedEffectTypes: ["flag"],
-				effectTypeOptionSource: "schema.effect.types",
+				effectSchema: FlagEffectSchema,
 				showGeneratedSummary: true,
 			},
 			childControls: {
-				effectType: {control: "select", title: "Effect type"},
 				flag: {control: "flag-picker", title: "World flag"},
 			},
 		});

@@ -2,52 +2,14 @@ import {render, screen} from "@testing-library/react";
 import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
+import {EffectSchema} from "../../schemas/world/effectSchema";
 import {EffectListEditor, type EffectListControlMetadata} from "./EffectListEditor";
 
 const metadata: EffectListControlMetadata = {
 	type: "effect-list",
 	title: "Effects",
 	features: {
-		effectTypeOptions: [
-			{label: "Message", value: "message"},
-			{label: "Player", value: "player"},
-			{label: "Group", value: "group"},
-			{label: "Use saved effect", value: "effect-ref"},
-		],
-		operationOptionsByType: {
-			message: [{label: "Show", value: "show"}],
-			player: [
-				{label: "Kill", value: "kill"},
-				{label: "Teleport", value: "teleport"},
-				{label: "Freeze", value: "freeze"},
-				{label: "Unfreeze", value: "unfreeze"},
-			],
-		},
-	},
-	childControls: {
-		effectType: {control: "select", title: "Effect type"},
-		operator: {control: "select", title: "Action"},
-		roomId: {control: "entity-picker", title: "Room"},
-		message: {control: "textarea", title: "Message"},
-		freezeMessage: {
-			control: "input",
-			title: "Freeze message",
-			placeholder: "Optional message while frozen",
-		},
-		turns: {control: "number", title: "Turns", placeholder: "No turn limit"},
-		mode: {
-			control: "select",
-			title: "Run",
-			features: {
-				options: [
-					{label: "All effects", value: "all"},
-					{label: "First effect", value: "first"},
-					{label: "Last effect", value: "last"},
-				],
-			},
-		},
-		effects: {control: "effect-list", title: "Effects in group"},
-		effectId: {control: "entity-picker", title: "Saved effect"},
+		effectSchema: EffectSchema,
 	},
 };
 

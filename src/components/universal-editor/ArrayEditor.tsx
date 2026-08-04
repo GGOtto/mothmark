@@ -1,6 +1,7 @@
 "use client";
 
 import {Trash2} from "lucide-react";
+import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {
@@ -67,14 +68,17 @@ function templateValue(item: unknown, template?: string) {
 			if (key === "when") {
 				if (Array.isArray(fieldValue)) {
 					if (fieldValue.length === 0) return "Always";
-					return generateConditionSummary({
-						type: "group",
-						operator: "all",
-						conditions: fieldValue,
-					});
+					return generateConditionSummary(
+						{
+							type: "group",
+							operator: "all",
+							conditions: fieldValue,
+						},
+						ConditionSchema,
+					);
 				}
 				if (typeof fieldValue === "object" && fieldValue !== null) {
-					return generateConditionSummary(fieldValue);
+					return generateConditionSummary(fieldValue, ConditionSchema);
 				}
 			}
 			return fieldValue == null ? "" : String(fieldValue);

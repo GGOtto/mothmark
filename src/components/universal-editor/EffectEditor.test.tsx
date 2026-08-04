@@ -3,45 +3,40 @@ import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
 import {toID} from "../../utils/idUtils";
+import {EffectGroupSchema, EffectSchema} from "../../schemas/world/effectSchema";
 import {EffectEditor, type EffectControlMetadata, type EffectGroupValue} from "./EffectEditor";
+import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
 
-const metadata: EffectControlMetadata = {
+const defaultMetadata: EffectControlMetadata = {
 	type: "effect",
 	title: "Outcome",
 	features: {
-		effectTypeOptions: [
-			{label: "Show message", value: "message"},
-			{label: "Group", value: "group"},
-			{label: "Use saved effect", value: "effect-ref"},
-		],
-		operationOptionsByType: {
-			message: [{label: "Show", value: "show"}],
-		},
+		effectSchema: EffectSchema,
 		showGeneratedSummary: true,
 	},
 	childControls: {
 		name: {control: "input", title: "Group name"},
 		id: {control: "hidden", title: "Group ID", hidden: true},
 		effects: {control: "effect-list", title: "Effects"},
-		effectType: {control: "select", title: "Effect type"},
-		operator: {control: "select", title: "Action"},
-		message: {control: "input", title: "Message"},
-		effectId: {control: "entity-picker", title: "Saved effect"},
 	},
 };
 
 function StatefulEffectEditor({
 	withoutId = false,
 	withoutName = false,
+	emptyEffects = false,
+	metadata = defaultMetadata,
 }: {
 	withoutId?: boolean;
 	withoutName?: boolean;
+	emptyEffects?: boolean;
+	metadata?: EffectControlMetadata;
 }) {
 	const [value, setValue] = useState<EffectGroupValue>(() => ({
 		type: "group",
 		name: withoutName ? "" : "Open the gate",
 		id: withoutId ? "" : toID("effect", "open-the-gate"),
-		effects: [{type: "message", operation: "show", message: "The gate opens."}],
+		effects: emptyEffects ? [] : [{type: "message", operation: "show", message: "The gate opens."}],
 		allowMultipleUsesInWorld: true,
 	}));
 	const [worldEffects, setWorldEffects] = useState<EffectGroupValue[]>([]);
@@ -82,6 +77,15 @@ describe("EffectEditor", () => {
 		expect(screen.queryByText("Group ID")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Add effect"})).toBeInTheDocument();
 		expect(screen.queryByRole("option", {name: "Group"})).not.toBeInTheDocument();
+	});
+
+	it("derives add options from the effects field in the real group schema", () => {
+		const schemaMetadata = resolveEditorMetadata(EffectGroupSchema) as EffectControlMetadata;
+		render(<StatefulEffectEditor metadata={schemaMetadata} emptyEffects />);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
+
+		expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"');
 	});
 
 	it("always saves the whole group to world.effects", () => {

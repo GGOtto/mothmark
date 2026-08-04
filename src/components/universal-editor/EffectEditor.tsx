@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useId, useRef, useState} from "react";
+import {EffectSchema} from "@/schemas/world/effectSchema";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {idValue, isID, toID} from "../../utils/idUtils";
@@ -45,7 +46,7 @@ function setWorldEffectGroups(context: EffectEditorProps["context"], groups: Eff
 export function generateEffectGroupName(effects: EffectValue[]) {
 	if (effects.length === 0) return "New effect group";
 
-	const summary = generateEffectSummary(effects[0]).replace(/\s+/g, " ").trim();
+	const summary = generateEffectSummary(effects[0], EffectSchema).replace(/\s+/g, " ").trim();
 	const firstEffect = summary
 		? `${summary.charAt(0).toUpperCase()}${summary.slice(1)}`
 		: "New effect group";
@@ -124,22 +125,24 @@ export function EffectEditor({
 		commit({...value, effects: nextEffects, name: nextName});
 	}
 
-	const childTypes = (metadata.features?.effectTypeOptions ?? []).filter(
-		(option) => option.value !== "group" && option.value !== "conditional",
-	);
-	const listFeatures: EffectListFeatures = {
+	const childListFeatures = metadata.childControls?.effects?.features as
+		EffectListFeatures | undefined;
+	const inheritedListFeatures: EffectListFeatures = {
 		...metadata.features,
-		allowedEffectTypes: metadata.features?.allowedEffectTypes?.filter(
+		...childListFeatures,
+	};
+	const listFeatures: EffectListFeatures = {
+		...inheritedListFeatures,
+		allowedEffectTypes: inheritedListFeatures.allowedEffectTypes?.filter(
 			(type) => type !== "group" && type !== "conditional",
 		),
-		effectTypeOptions: childTypes.length ? childTypes : metadata.features?.effectTypeOptions,
-		reorderable: metadata.features?.reorderable ?? true,
-		duplicateable: metadata.features?.duplicateable ?? true,
-		removable: metadata.features?.removable ?? true,
-		collapsibleItems: metadata.features?.collapsibleItems ?? true,
+		reorderable: inheritedListFeatures.reorderable ?? true,
+		duplicateable: inheritedListFeatures.duplicateable ?? true,
+		removable: inheritedListFeatures.removable ?? true,
+		collapsibleItems: inheritedListFeatures.collapsibleItems ?? true,
 		showCountSummary: false,
 		showGeneratedSummary: false,
-		excludedEffectIds: [...(metadata.features?.excludedEffectIds ?? []), currentId],
+		excludedEffectIds: [...(inheritedListFeatures.excludedEffectIds ?? []), currentId],
 	};
 	const nameControl = metadata.childControls?.name;
 	const nameParentMetadata: EffectControlMetadata = {

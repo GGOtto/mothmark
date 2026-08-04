@@ -11,6 +11,14 @@ describe("editor.condition", () => {
 		expect(getEditorMetadata(schema)?.control).toBe("condition-builder");
 	});
 
+	it("retains its source schema when condition features are customized", () => {
+		const customized = editor.conditionControl(ConditionSchema, {
+			features: {allowGroups: false},
+		});
+
+		expect(getEditorMetadata(customized)?.features?.conditionSchema).toBe(ConditionSchema);
+	});
+
 	it.each([
 		{
 			name: "a single condition",

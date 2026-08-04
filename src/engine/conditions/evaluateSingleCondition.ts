@@ -117,6 +117,8 @@ function evaluateCurrentRoom(
 			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
 			return roomState ? !roomState.tags.includes(condition.tag) : false;
 		}
+		default:
+			return false;
 	}
 }
 

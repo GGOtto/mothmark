@@ -7,7 +7,8 @@ import type {
 	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
-import {ConditionalTextSchema} from "../../schemas/world/conditionSchema";
+import {ConditionSchema, ConditionalTextSchema} from "../../schemas/world/conditionSchema";
+import {EffectSchema} from "../../schemas/world/effectSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {
 	applyTextTransform,
@@ -1113,9 +1114,9 @@ function buildAliases(sourceText?: string, includePluralization?: boolean) {
 }
 
 export function formatConditionForArrayTitle(value: unknown) {
-	return generateConditionSummary(value);
+	return generateConditionSummary(value, ConditionSchema);
 }
 
 export function formatEffectForArrayTitle(value: unknown) {
-	return generateEffectSummary(value);
+	return generateEffectSummary(value, EffectSchema);
 }

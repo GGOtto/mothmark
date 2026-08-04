@@ -86,6 +86,7 @@ export function TextareaEditor({
 			>
 				<textarea
 					className="textareaEditor__input"
+					aria-label={metadata.title}
 					value={value}
 					placeholder={metadata.placeholder}
 					disabled={isDisabled}

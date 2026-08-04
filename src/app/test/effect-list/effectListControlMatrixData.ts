@@ -19,52 +19,7 @@ const FEATURES = {
 	reorderable: true,
 	duplicateable: true,
 	removable: true,
-	effectTypeOptionSource: "schema.effect.types",
-	operationOptionSourcesByType: {
-		message: "schema.effect.message.operations",
-		flag: "schema.effect.flagOperations",
-		counter: "schema.effect.counterOperations",
-		player: "schema.effect.player.operations",
-	},
 	showGeneratedSummary: true,
-};
-
-const CHILD_CONTROLS: EffectListControlMetadata["childControls"] = {
-	effectType: {control: "select", title: "Effect type"},
-	operator: {control: "select", title: "Action"},
-	flag: {title: "Flag"},
-	value: {title: "Value"},
-	counter: {control: "input", title: "Counter", placeholder: "Counter name"},
-	amount: {control: "number", title: "Amount", placeholder: "Enter an amount"},
-	message: {
-		control: "textarea",
-		title: "Message",
-		placeholder: "Enter the message shown to the player",
-	},
-	messages: {control: "string-list", title: "Messages"},
-	freezeMessage: {
-		control: "input",
-		title: "Freeze message",
-		placeholder: "Optional message while frozen",
-	},
-	turns: {
-		control: "number",
-		title: "Turns",
-		description: "Optional. Leave blank to freeze until another effect unfreezes the player.",
-		placeholder: "No turn limit",
-	},
-	customDeathMessage: {
-		control: "input",
-		title: "Death message",
-		placeholder: "Use the default death message",
-	},
-	roomId: {control: "entity-picker", title: "Room"},
-	newRoomId: {control: "entity-picker", title: "New room"},
-	featureId: {control: "entity-picker", title: "Feature"},
-	variantId: {control: "input", title: "Variant ID", placeholder: "Variant ID"},
-	direction: {control: "direction-picker", title: "Direction"},
-	tag: {control: "input", title: "Tag", placeholder: "Tag name"},
-	effectId: {control: "entity-picker", title: "Saved effect"},
 };
 
 type EffectSetup = {
@@ -77,7 +32,6 @@ type EffectSetup = {
 
 const BASE_METADATA = {
 	features: FEATURES,
-	childControls: CHILD_CONTROLS,
 };
 
 const SETUPS = {
@@ -174,7 +128,6 @@ const SETUPS = {
 		metadata: {
 			title: "Collapsible effects",
 			features: {...FEATURES, collapsibleItems: true},
-			childControls: CHILD_CONTROLS,
 		},
 	},
 	restricted: {
@@ -182,7 +135,6 @@ const SETUPS = {
 		metadata: {
 			title: "Restricted effects",
 			features: {...FEATURES, allowedEffectTypes: ["player"]},
-			childControls: CHILD_CONTROLS,
 		},
 	},
 	error: {

@@ -1,11 +1,8 @@
 "use client";
 
 import {Fragment} from "react";
-import {
-	createDefaultEffectValue,
-	effectOperationOptionsByType,
-	effectTypeOptions as defaultEffectTypeOptions,
-} from "@/schemas/utils/editorCatalogs";
+import type {z} from "zod";
+import {EffectSchema} from "@/schemas/world/effectSchema";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -14,9 +11,16 @@ import type {
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {generateEffectSummary} from "./utils/universalEditorUtils";
-import {idValue, isID, toID, type WorldIdEntityType} from "../../utils/idUtils";
+import {idValue, isID, toID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
+import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
+import {
+	createSchemaVariantDefault,
+	findEditorSchemaVariant,
+	schemaFieldOptions,
+	schemaTypeOptions,
+} from "./utils/editorSchemaVariants";
 import "./EffectListEditor.scss";
 
 export type EffectValue = Record<string, unknown>;
@@ -26,15 +30,12 @@ export type EffectListFeatures = {
 	duplicateable?: boolean;
 	removable?: boolean;
 	allowedEffectTypes?: string[];
-	effectTypeOptions?: EditorSelectOption[];
-	operationOptionsByType?: Record<string, EditorSelectOption[]>;
-	effectTypeOptionSource?: string;
-	operationOptionSourcesByType?: Record<string, string>;
 	collapsibleItems?: boolean;
 	showGeneratedSummary?: boolean;
 	showCountSummary?: boolean;
 	searchableEffectTypes?: boolean;
 	excludedEffectIds?: string[];
+	effectSchema?: z.ZodTypeAny;
 };
 
 export type EffectListControlMetadata = EditorControlMetadata & {
@@ -44,27 +45,15 @@ export type EffectListControlMetadata = EditorControlMetadata & {
 
 export type EffectListEditorProps = EditorControlProps<EffectValue[], EffectListControlMetadata>;
 
-function optionList(
-	context: EditorControlContext,
-	source?: string,
-	metadataOptions?: EditorSelectOption[],
-	fallbackOptions: EditorSelectOption[] = [],
-) {
-	if (metadataOptions?.length) return metadataOptions;
-	if (source) return context.getOptionList?.(source) ?? fallbackOptions;
-	return fallbackOptions;
+function editorEffectSchema(metadata: EffectListControlMetadata) {
+	return metadata.features?.effectSchema ?? EffectSchema;
 }
 
-function effectTypeOptions(metadata: EffectListControlMetadata, context: EditorControlContext) {
+function effectTypeOptions(metadata: EffectListControlMetadata) {
 	const allowedTypes = metadata.features?.allowedEffectTypes?.length
 		? metadata.features.allowedEffectTypes
 		: undefined;
-	const options = optionList(
-		context,
-		metadata.features?.effectTypeOptionSource,
-		metadata.features?.effectTypeOptions,
-		defaultEffectTypeOptions,
-	);
+	const options = schemaTypeOptions(editorEffectSchema(metadata));
 
 	return options.filter(
 		(option) =>
@@ -74,26 +63,25 @@ function effectTypeOptions(metadata: EffectListControlMetadata, context: EditorC
 	);
 }
 
-function operationOptionsForType(
-	type: string,
-	metadata: EffectListControlMetadata,
-	context: EditorControlContext,
-) {
-	return optionList(
-		context,
-		metadata.features?.operationOptionSourcesByType?.[type],
-		metadata.features?.operationOptionsByType?.[type],
-		effectOperationOptionsByType[type] ?? [],
-	);
+function operationOptionsForType(type: string, metadata: EffectListControlMetadata) {
+	return schemaFieldOptions(editorEffectSchema(metadata), "operation", {type});
 }
 
 function defaultEffect(
+	schema: z.ZodTypeAny | undefined,
 	type: string,
 	operationOptions: EditorSelectOption[] = [],
 	operation?: string,
 	flagType: "normal" | "room" | "feature" = "normal",
 ): EffectValue {
-	return createDefaultEffectValue(type, operationOptions, operation, flagType);
+	const selectedOperation = operation ?? operationOptions[0]?.value;
+	return schema
+		? createSchemaVariantDefault(schema, {
+				type,
+				"flag-type": type === "flag" ? flagType : undefined,
+				operation: selectedOperation,
+			})
+		: {type, ...(selectedOperation ? {operation: selectedOperation} : {})};
 }
 
 function normalizeEffect(effect: EffectValue): EffectValue {
@@ -158,36 +146,12 @@ function effectUsage(
 	return effectUsage(worldEffect, context, nextSeenEffectIds);
 }
 
-const EFFECT_REFERENCE_TYPES_BY_FIELD: Partial<Record<string, WorldIdEntityType>> = {
-	effectId: "effect",
-	roomId: "room",
-	featureId: "feature",
-	itemId: "item",
-	npcId: "npc",
-	surfaceId: "surface",
-	containerId: "container",
-	questId: "quest",
-	objectiveId: "quest-objective",
-	eventId: "event",
-	topicId: "topic",
-	targetId: "object",
-};
-
-function effectReferenceType(effectType: string, key: string): WorldIdEntityType | undefined {
-	if (key === "objectId") return "object";
-	return EFFECT_REFERENCE_TYPES_BY_FIELD[key];
-}
-
 function effectOperation(effect: EffectValue) {
 	const operation = effect.operation ?? effect.messageType;
 	return typeof operation === "string" ? operation : undefined;
 }
 
-function effectWithVisibleDefaults(
-	effect: EffectValue,
-	metadata: EffectListControlMetadata,
-	context: EditorControlContext,
-) {
+function effectWithVisibleDefaults(effect: EffectValue, metadata: EffectListControlMetadata) {
 	const type = String(effect.type ?? "message");
 	if (type === "effect-ref") return effect;
 	const flagType =
@@ -196,8 +160,9 @@ function effectWithVisibleDefaults(
 			: "normal";
 	return {
 		...defaultEffect(
+			editorEffectSchema(metadata),
 			type,
-			operationOptionsForType(type, metadata, context),
+			operationOptionsForType(type, metadata),
 			effectOperation(effect),
 			flagType,
 		),
@@ -225,7 +190,7 @@ export function EffectListEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
-	const availableEffectTypeOptions = effectTypeOptions(metadata, context);
+	const availableEffectTypeOptions = effectTypeOptions(metadata);
 	const allowedTypes = availableEffectTypeOptions.map((option) => option.value);
 	const removable = metadata.features?.removable ?? true;
 	const normalizedEffects = value.map(normalizeEffect);
@@ -251,19 +216,35 @@ export function EffectListEditor({
 
 	function updateFlagType(index: number, nextFlagType: string) {
 		const currentEffect = effectUsage(normalizedEffects[index] ?? {}, context);
-		const nextEffect: EffectValue = {...currentEffect, "flag-type": nextFlagType};
-		if (nextFlagType !== "normal" && nextEffect.operation === "create") nextEffect.operation = "set";
+		const schema = editorEffectSchema(metadata);
+		const currentOperation = effectOperation(currentEffect);
+		const operation = findEditorSchemaVariant(schema, {
+			type: "flag",
+			"flag-type": nextFlagType,
+			operation: currentOperation,
+		})
+			? currentOperation
+			: schemaFieldOptions(schema, "operation", {
+					type: "flag",
+					"flag-type": nextFlagType,
+				})[0]?.value;
+		const variant = findEditorSchemaVariant(schema, {
+			type: "flag",
+			"flag-type": nextFlagType,
+			operation,
+		});
+		const defaults = createSchemaVariantDefault(schema, {
+			type: "flag",
+			"flag-type": nextFlagType,
+			operation,
+		});
+		const preservedFields = Object.fromEntries(
+			Object.keys(variant?.shape ?? {}).flatMap((key) =>
+				currentEffect[key] === undefined ? [] : [[key, currentEffect[key]]],
+			),
+		);
 
-		if (nextFlagType === "normal") {
-			delete nextEffect.roomId;
-			delete nextEffect.featureId;
-		} else {
-			nextEffect.roomId ??= toID("room", "");
-			if (nextFlagType === "feature") nextEffect.featureId ??= toID("feature", "");
-			else delete nextEffect.featureId;
-		}
-
-		updateEffect(index, nextEffect);
+		updateEffect(index, {...defaults, ...preservedFields, "flag-type": nextFlagType, operation});
 	}
 
 	function removeEffect(index: number) {
@@ -312,7 +293,9 @@ export function EffectListEditor({
 					<div className="effectListEditor__generatedSummary">
 						{normalizedEffects.length > 0
 							? normalizedEffects
-									.map((effect) => generateEffectSummary(effectUsage(effect, context)))
+									.map((effect) =>
+										generateEffectSummary(effectUsage(effect, context), editorEffectSchema(metadata)),
+									)
 									.join("; ")
 							: "No effects"}
 					</div>
@@ -330,15 +313,24 @@ export function EffectListEditor({
 					const resolvedEffect = effectUsage(rawEffect, context);
 					const effect = isEffectReference(rawEffect)
 						? rawEffect
-						: effectWithVisibleDefaults(resolvedEffect, metadata, context);
+						: effectWithVisibleDefaults(resolvedEffect, metadata);
 					const effectType = String(effect.type ?? allowedTypes[0]);
-					const operationOptions = operationOptionsForType(effectType, metadata, context).filter(
+					const flagType = String(effect["flag-type"] ?? "normal");
+					const operationOptions = operationOptionsForType(effectType, metadata).filter(
 						(option) =>
 							effectType !== "flag" ||
 							String(effect["flag-type"] ?? "normal") === "normal" ||
 							option.value !== "create",
 					);
-					const title = `${index + 1}. ${generateEffectSummary(resolvedEffect)}`;
+					const effectVariant = findEditorSchemaVariant(editorEffectSchema(metadata), {
+						type: effectType,
+						"flag-type": effectType === "flag" ? flagType : undefined,
+						operation: effectOperation(effect),
+					});
+					const title = `${index + 1}. ${generateEffectSummary(
+						resolvedEffect,
+						editorEffectSchema(metadata),
+					)}`;
 					const missingReference =
 						isEffectReference(rawEffect) && !worldEffectById(context, rawEffect.effectId);
 					const body = (
@@ -350,7 +342,11 @@ export function EffectListEditor({
 								onChange: (nextType) =>
 									updateEffect(
 										index,
-										defaultEffect(nextType, operationOptionsForType(nextType, metadata, context)),
+										defaultEffect(
+											editorEffectSchema(metadata),
+											nextType,
+											operationOptionsForType(nextType, metadata),
+										),
 									),
 								metadata: {
 									title: "Type",
@@ -361,6 +357,7 @@ export function EffectListEditor({
 									},
 								},
 								parentMetadata: metadata,
+								useMetadataCopy: true,
 								path: [...path, index, "type"],
 								disabled,
 								readonly,
@@ -379,7 +376,13 @@ export function EffectListEditor({
 													: "normal";
 											updateEffect(
 												index,
-												defaultEffect(effectType, operationOptions, nextOperation, flagType),
+												defaultEffect(
+													editorEffectSchema(metadata),
+													effectType,
+													operationOptions,
+													nextOperation,
+													flagType as "normal" | "room" | "feature",
+												),
 											);
 										},
 										metadata: {
@@ -388,6 +391,7 @@ export function EffectListEditor({
 											features: {options: operationOptions},
 										},
 										parentMetadata: metadata,
+										useMetadataCopy: true,
 										path: [...path, index, "operation"],
 										disabled,
 										readonly,
@@ -396,7 +400,10 @@ export function EffectListEditor({
 								: null}
 
 							<div className="effectListEditor__fields">
-								{Object.entries(effect)
+								{(effectVariant
+									? Object.keys(effectVariant.shape).map((key) => [key, effect[key]] as const)
+									: Object.entries(effect)
+								)
 									.filter(([key]) => key !== "type" && key !== "operation" && key !== "messageType")
 									.map(([key, fieldValue]) => {
 										if (key === "flag-type") {
@@ -410,11 +417,9 @@ export function EffectListEditor({
 														metadata: {
 															title: "Flag type",
 															features: {
-																options: [
-																	{label: "Normal", value: "normal"},
-																	{label: "Room", value: "room"},
-																	{label: "Feature", value: "feature"},
-																],
+																options: schemaFieldOptions(editorEffectSchema(metadata), "flag-type", {
+																	type: "flag",
+																}),
 															},
 														},
 														parentMetadata: metadata,
@@ -427,7 +432,10 @@ export function EffectListEditor({
 											);
 										}
 
-										const referenceType = effectReferenceType(effectType, key);
+										const schemaMetadata = effectVariant?.shape[key]
+											? resolveEditorMetadata(effectVariant.shape[key])
+											: undefined;
+										const referenceType = schemaMetadata?.features?.entityType;
 										if (referenceType) {
 											const savedEffectOptions =
 												referenceType === "effect"
@@ -442,7 +450,7 @@ export function EffectListEditor({
 																return {
 																	id,
 																	label: storedEffectName(worldEffect) ?? id,
-																	description: generateEffectSummary(worldEffect),
+																	description: generateEffectSummary(worldEffect, editorEffectSchema(metadata)),
 																	entityType: "effect" as const,
 																};
 															})
@@ -475,9 +483,10 @@ export function EffectListEditor({
 										}
 
 										const childOverride = metadata.childControls?.[key];
-										if (childOverride) {
+										if (childOverride || schemaMetadata) {
 											const childType =
-												childOverride.control ??
+												childOverride?.control ??
+												schemaMetadata?.type ??
 												(typeof fieldValue === "boolean"
 													? "toggle"
 													: typeof fieldValue === "number"
@@ -492,10 +501,12 @@ export function EffectListEditor({
 														value: fieldValue,
 														onChange: (nextValue) => updateEffectField(index, key, nextValue),
 														metadata: {
+															...schemaMetadata,
 															appearance: {chrome: "inline", size: "sm"},
 															features:
 																childType === "toggle" ? {display: "switch", labels: {on: "On", off: "Off"}} : {},
 														},
+														useMetadataCopy: true,
 														parentMetadata: metadata,
 														path: [...path, index, key],
 														disabled,
@@ -565,7 +576,7 @@ export function EffectListEditor({
 						const type = allowedTypes[0];
 						onChange([
 							...normalizedEffects,
-							defaultEffect(type, operationOptionsForType(type, metadata, context)),
+							defaultEffect(editorEffectSchema(metadata), type, operationOptionsForType(type, metadata)),
 						]);
 					}}
 				>
