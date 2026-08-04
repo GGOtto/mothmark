@@ -41,6 +41,10 @@
 
 - Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
 
+## Initial commands
+
+- Build every new command in `src/data/commands/initialCommands.ts` from reusable conditions and effects. Do not put command-specific gameplay behavior in the command definition; when the available schemas cannot express the command, add the missing condition or effect and implement its focused and player-path coverage first.
+
 ## Immutable object updates
 
 - Use Immer for immutable updates to large or deeply nested objects instead of manually spreading every level.

@@ -12,7 +12,8 @@ import {
 import {getEffect} from "../utils/lookupUtils";
 import {teleport} from "../player/teleport";
 import {kill} from "../player/kill";
-import {move} from "../player/move";
+import {silentlyMove} from "../player/move";
+import {lookAtRoom} from "../messages/createRoomMessage";
 
 const ALL_DIRECTIONS: Direction[] = [
 	"n",
@@ -30,7 +31,7 @@ const ALL_DIRECTIONS: Direction[] = [
 ];
 
 // TODO: message effects are all screwed up when events fire them
-export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
+export function resolveMessageEffect(world: World, game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
 		return game;
 	}
@@ -45,6 +46,8 @@ export function resolveMessageEffect(game: GameState, effect: Effect): GameState
 			break;
 		case "append-last-message":
 			return appendLastMessage(game, effect.message, effect.format);
+		case "current-room-description":
+			return lookAtRoom(world, game);
 		default:
 			return game;
 	}
@@ -360,7 +363,7 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 		case "teleport":
 			return teleport(world, game, effect.roomId);
 		case "move-in-direction":
-			return move(world, game, effect.direction);
+			return silentlyMove(world, game, effect.direction);
 	}
 }
 
@@ -375,7 +378,7 @@ export function resolveEffect(world: World, game: GameState, effect: Effect): Ga
 			case "flag":
 				return resolveFlagEffect(draft, effect);
 			case "message":
-				return resolveMessageEffect(draft, effect);
+				return resolveMessageEffect(world, draft, effect);
 			case "counter":
 				return resolveCounterEffect(draft, effect);
 			case "feature":

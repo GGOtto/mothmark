@@ -1,27 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {entityFlagMutationError} from "./entityFlagDefinitions";
-
-const EffectDirectionSchema = editor.select(
-	z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw", "up", "down", "in", "out"]),
-	{
-		title: "Direction",
-		options: [
-			{label: "North", value: "n"},
-			{label: "Northeast", value: "ne"},
-			{label: "East", value: "e"},
-			{label: "Southeast", value: "se"},
-			{label: "South", value: "s"},
-			{label: "Southwest", value: "sw"},
-			{label: "West", value: "w"},
-			{label: "Northwest", value: "nw"},
-			{label: "Up", value: "up"},
-			{label: "Down", value: "down"},
-			{label: "In", value: "in"},
-			{label: "Out", value: "out"},
-		],
-	},
-);
+import {DirectionSchema} from "./directionSchema";
 
 export const EffectReferenceSchema = editor.object(
 	{
@@ -55,6 +35,10 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("message"),
 			operation: z.literal("show-room-description"),
+		}),
+		z.object({
+			type: z.literal("message"),
+			operation: z.literal("current-room-description"),
 		}),
 	]),
 	{title: "Message Effect", description: "Shows text or augments the current room description."},
@@ -281,13 +265,13 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 			type: z.literal("room"),
 			operation: z.literal("lock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
-			direction: EffectDirectionSchema,
+			direction: DirectionSchema,
 		}),
 		z.object({
 			type: z.literal("room"),
 			operation: z.literal("unlock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
-			direction: EffectDirectionSchema,
+			direction: DirectionSchema,
 		}),
 		z.object({
 			type: z.literal("room"),
@@ -365,7 +349,7 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("player"),
 			operation: z.literal("move-in-direction"),
-			direction: EffectDirectionSchema,
+			direction: DirectionSchema,
 		}),
 	]),
 	{title: "Player Effect", description: "Perform any effect directly on the player."},

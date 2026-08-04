@@ -37,27 +37,51 @@ function getDestinationRoomId(connection: Connection, currentRoomId: ID<"room">)
 	return connection.fromRoomId;
 }
 
-export function move(world: World, game: GameState, direction: Direction): GameState {
-	const genericBlockedMessage = createGameMessage("You can't go that way.", "system");
+function openExitDestination(
+	world: World,
+	game: GameState,
+	direction: Direction,
+): ID<"room"> | undefined {
 	const currentRoomState = game.roomStates.find((state) =>
 		compareIds(state.id, game.player.currentRoom),
 	);
-	const exitIsLocked = currentRoomState?.lockedExits.includes(direction) ?? false;
+	if (currentRoomState?.lockedExits.includes(direction)) return undefined;
+
 	const connection = getConnectionsForDirection(world, game.player.currentRoom, direction)[0];
-
-	if (!connection) {
-		return produce(game, (draft) => {
-			draft.messages.push(genericBlockedMessage);
-		});
-	}
-
-	if (exitIsLocked) {
-		return produce(game, (draft) => {
-			draft.messages.push(genericBlockedMessage);
-		});
-	}
+	if (!connection) return undefined;
 
 	const destinationRoomId = getDestinationRoomId(connection, game.player.currentRoom);
+	const destinationRoom = world.rooms.find((room) => compareIds(room.id, destinationRoomId));
+	if (!destinationRoom) return undefined;
+	const destinationRoomState = game.roomStates.find((state) =>
+		compareIds(state.id, destinationRoomId),
+	);
+	const destinationIsActive =
+		destinationRoomState?.flags.active ?? destinationRoom.flags.active ?? true;
+
+	return destinationIsActive ? destinationRoomId : undefined;
+}
+
+export function isExitOpen(world: World, game: GameState, direction: Direction): boolean {
+	return openExitDestination(world, game, direction) !== undefined;
+}
+
+export function silentlyMove(world: World, game: GameState, direction: Direction): GameState {
+	const destinationRoomId = openExitDestination(world, game, direction);
+	if (!destinationRoomId) return game;
+
+	return teleport(world, game, destinationRoomId, {respectActiveFlag: true, silent: true});
+}
+
+export function move(world: World, game: GameState, direction: Direction): GameState {
+	const genericBlockedMessage = createGameMessage("You can't go that way.", "system");
+	const destinationRoomId = openExitDestination(world, game, direction);
+	if (!destinationRoomId) {
+		return produce(game, (draft) => {
+			draft.messages.push(genericBlockedMessage);
+		});
+	}
+
 	return teleport(world, game, destinationRoomId, {
 		respectActiveFlag: true,
 		blockedMessage: genericBlockedMessage,

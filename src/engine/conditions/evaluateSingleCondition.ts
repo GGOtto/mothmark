@@ -4,6 +4,7 @@ import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, ID} from "@/utils/idUtils";
 import {EntityState} from "@/schemas/states/entityStateSchemas";
 import {findVariable} from "../utils/lookupUtils";
+import {isExitOpen} from "../player/move";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
 	for (const state of states) {
@@ -117,6 +118,8 @@ function evaluateCurrentRoom(
 			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
 			return roomState ? !roomState.tags.includes(condition.tag) : false;
 		}
+		case "is-exit-open":
+			return isExitOpen(world, game, condition.direction);
 		default:
 			return false;
 	}

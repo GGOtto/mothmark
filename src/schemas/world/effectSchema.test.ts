@@ -19,6 +19,19 @@ describe("effect storage schemas", () => {
 		});
 	});
 
+	it("accepts current-room descriptions and directional movement effects", () => {
+		expect(
+			EffectSchema.safeParse({type: "message", operation: "current-room-description"}).success,
+		).toBe(true);
+		expect(
+			EffectSchema.safeParse({
+				type: "player",
+				operation: "move-in-direction",
+				direction: "e",
+			}).success,
+		).toBe(true);
+	});
+
 	it("uses a complete EffectGroup for effect controls and world storage", () => {
 		const group = {
 			id: "open-gate-sequence",

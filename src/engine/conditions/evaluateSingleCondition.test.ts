@@ -2,7 +2,7 @@ import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas
 import {FeatureStateSchema, RoomStateSchema} from "@/schemas/states/entityStateSchemas";
 import {SingleConditionSchema, type SingleCondition} from "@/schemas/world/conditionSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
-import {RoomSchema} from "@/schemas/world/roomSchema";
+import {ConnectionSchema, RoomSchema} from "@/schemas/world/roomSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {produce} from "immer";
@@ -38,6 +38,22 @@ const world: World = produce(createDefaultFieldObject(WorldSchema), (draft) => {
 			id: currentRoom,
 			name: "Atrium",
 			tags: ["indoors", "safe"],
+		},
+		{
+			...createDefaultFieldObject(RoomSchema),
+			id: toID("room", "gallery"),
+			name: "Gallery",
+		},
+	];
+	draft.connections = [
+		{
+			...createDefaultFieldObject(ConnectionSchema),
+			id: toID("connection", "atrium-gallery"),
+			fromRoomId: currentRoom,
+			toRoomId: toID("room", "gallery"),
+			direction: "e",
+			returnDirection: "w",
+			pathway: "two-way",
 		},
 	];
 });
@@ -171,6 +187,20 @@ describe("evaluateSingleCondition", () => {
 				condition({type: "current-room", operation: "missing-tag", tag: "outdoors"}),
 			),
 		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "is-exit-open", direction: "e"}),
+			),
+		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "current-room", operation: "is-exit-open", direction: "w"}),
+			),
+		).toBe(false);
 	});
 
 	it("evaluates room flags, including permanent flags", () => {

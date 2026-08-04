@@ -81,6 +81,16 @@ describe("editor.condition", () => {
 		).toBe(true);
 	});
 
+	it("accepts current-room exit availability conditions", () => {
+		expect(
+			ConditionSchema.safeParse({
+				type: "current-room",
+				operation: "is-exit-open",
+				direction: "e",
+			}).success,
+		).toBe(true);
+	});
+
 	it("defaults legacy flag conditions to normal flags", () => {
 		expect(schema.parse({type: "flag", operation: "true", flag: "gate.open"})).toEqual({
 			type: "flag",

@@ -51,7 +51,7 @@ describe("editor schema variants", () => {
 			schemaFieldOptions(ConditionSchema, "operation", {type: "current-room"}).map(
 				(option) => option.value,
 			),
-		).toEqual(["is", "is-not", "has-tag", "missing-tag"]);
+		).toEqual(["is", "is-not", "has-tag", "missing-tag", "is-exit-open"]);
 		expect(
 			createSchemaVariantDefault(ConditionSchema, {type: "counter", operation: "between"}),
 		).toMatchObject({type: "counter", operation: "between", min: 0, max: 0, inclusive: true});

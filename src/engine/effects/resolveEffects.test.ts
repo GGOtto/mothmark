@@ -6,6 +6,7 @@ import {
 	type RoomState,
 } from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
+import {WorldSchema} from "@/schemas/world/worldSchema";
 import {choose} from "@/utils/choose";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
@@ -30,6 +31,7 @@ jest.mock("../messages/createMessage", () => ({
 const mockedChoose = jest.mocked(choose);
 const mockedCreateGameMessage = jest.mocked(createGameMessage);
 const mockedAppendLastMessage = jest.mocked(appendLastMessage);
+const world = createDefaultFieldObject(WorldSchema);
 
 type GameStateOverrides = Omit<Partial<GameState>, "variables"> & {
 	variables?: Partial<GameState["variables"]>;
@@ -73,7 +75,7 @@ describe("resolveMessageEffect", () => {
 			value: true,
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(result).toBe(game);
 		expect(mockedCreateGameMessage).not.toHaveBeenCalled();
@@ -97,7 +99,7 @@ describe("resolveMessageEffect", () => {
 			message: "The door opens.",
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("The door opens.", "system");
 		expect(result.messages).toEqual([createdMessage]);
@@ -124,7 +126,7 @@ describe("resolveMessageEffect", () => {
 			messages,
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(mockedChoose).toHaveBeenCalledWith(messages);
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("You hear footsteps.", "system");
@@ -150,7 +152,7 @@ describe("resolveMessageEffect", () => {
 			messages: ["Fallback"],
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("", "system");
 		expect(result.messages).toEqual([createdMessage]);
@@ -186,7 +188,7 @@ describe("resolveMessageEffect", () => {
 			format: "inline",
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(mockedAppendLastMessage).toHaveBeenCalledWith(game, " updated", "inline");
 		expect(result).toBe(appendedGame);
@@ -218,7 +220,7 @@ describe("resolveMessageEffect", () => {
 			message: "New",
 		} as Effect;
 
-		const result = resolveMessageEffect(game, effect);
+		const result = resolveMessageEffect(world, game, effect);
 
 		expect(result).not.toBe(game);
 		expect(result.messages).not.toBe(game.messages);

@@ -3,9 +3,27 @@ import type {Effect} from "@/schemas/world/effectSchema";
 import {idValue} from "@/utils/idUtils";
 import {resolveRoomEffect} from "../effects/resolveEffects";
 import {createInitialGameState} from "../states/createInitialState";
-import {move} from "./move";
+import {isExitOpen, move, silentlyMove} from "./move";
 
 describe("move", () => {
+	it("reports whether a directional exit can currently be used", () => {
+		const game = createInitialGameState(world, world.startRoomId);
+
+		expect(isExitOpen(world, game, "e")).toBe(true);
+		expect(isExitOpen(world, game, "w")).toBe(false);
+	});
+
+	it("moves silently and leaves blocked movement completely unchanged", () => {
+		const game = createInitialGameState(world, world.startRoomId);
+
+		const moved = silentlyMove(world, game, "e");
+		const blocked = silentlyMove(world, game, "w");
+
+		expect(idValue(moved.player.currentRoom)).toBe("guardroom");
+		expect(moved.messages).toEqual(game.messages);
+		expect(blocked).toBe(game);
+	});
+
 	it("blocks a locked exit and leaves the player in the current room", () => {
 		const game = createInitialGameState(world, world.startRoomId);
 		const lockedGame = resolveRoomEffect(game, {

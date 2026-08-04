@@ -10,6 +10,7 @@ import {getRoom} from "../utils/lookupUtils";
 export type TeleportOptions = {
 	respectActiveFlag?: boolean;
 	blockedMessage?: GameMessage;
+	silent?: boolean;
 };
 
 /**
@@ -37,11 +38,11 @@ export function teleport(
 		});
 	}
 
-	const roomMessage = createRoomMessage(world, destinationRoom, game);
+	const roomMessage = options.silent ? undefined : createRoomMessage(world, destinationRoom, game);
 
 	return produce(game, (draft) => {
 		draft.player.currentRoom = destinationRoom.id;
-		draft.messages.push(roomMessage);
+		if (roomMessage) draft.messages.push(roomMessage);
 
 		const roomState = draft.roomStates.find((state) => compareIds(state.id, destinationRoom.id));
 

@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
+import {DirectionSchema} from "./directionSchema";
 
 export const ComparisonOperatorSchema = editor.select(
 	z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]),
@@ -111,8 +112,16 @@ export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 			operation: z.literal("missing-tag"),
 			tag: editor.input({title: "Room Tag"}).min(1),
 		}),
+		z.object({
+			type: z.literal("current-room"),
+			operation: z.literal("is-exit-open"),
+			direction: DirectionSchema,
+		}),
 	]),
-	{title: "Current Room Condition", description: "Checks the player's current room or its tags."},
+	{
+		title: "Current Room Condition",
+		description: "Checks the player's current room, its tags, or an available exit.",
+	},
 );
 
 export const SingleConditionSchema = editor.discriminatedUnion(
