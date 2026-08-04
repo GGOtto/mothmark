@@ -1,4 +1,4 @@
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import {EventSchema} from "@/schemas/world/eventSchema";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";

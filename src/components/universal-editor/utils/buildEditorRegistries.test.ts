@@ -1,4 +1,4 @@
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import {buildEditorRegistries} from "./buildEditorRegistries";
 
 describe("buildEditorRegistries", () => {

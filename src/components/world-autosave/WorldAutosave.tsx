@@ -459,7 +459,7 @@ export function WorldResetButton() {
 
 	const confirmReset = () => {
 		const confirmed = window.confirm(
-			"Replace the current world with the bundled example world? The replacement will be autosaved.",
+			"Replace the current world with the bundled initial world? The replacement will be autosaved.",
 		);
 		if (confirmed) resetWorld();
 	};
