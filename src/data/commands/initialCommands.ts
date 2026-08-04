@@ -1,1 +1,3 @@
-export const rawInitialCommands = [];
+import {moveCommand} from "./move";
+
+export const rawInitialCommands = [moveCommand];

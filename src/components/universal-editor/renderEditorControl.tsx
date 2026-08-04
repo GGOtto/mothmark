@@ -58,21 +58,33 @@ import {
 } from "@/features/command-variables";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
-	const control = renderControl(props);
 	const variableContext = props.context.commandVariables;
 	const supportsVariables = variableContext?.supportsPath(props.path) ?? false;
+	const variableType = acceptedVariableType(props.metadata);
 	const isVariableText =
 		props.metadata.type === "text" ||
 		props.metadata.type === "input" ||
 		props.metadata.type === "textarea" ||
 		props.metadata.type === "rich-text";
+	const fieldBinding =
+		variableContext && supportsVariables && variableType && !isVariableText
+			? variableContext.getBinding(props.path)
+			: undefined;
+	const controlProps = fieldBinding
+		? {
+				...props,
+				value: undefined,
+				onChange: (nextValue: unknown) => variableContext?.setBinding(props.path, undefined, nextValue),
+			}
+		: props;
+	const control = renderControl(controlProps);
 	const renderedControl =
 		variableContext && supportsVariables && isVariableText ? (
 			<VariableTextEditor
 				{...(props as EditorControlProps<string | undefined, never>)}
 				context={{...props.context, commandVariables: variableContext}}
 			/>
-		) : variableContext && supportsVariables && acceptedVariableType(props.metadata) ? (
+		) : variableContext && supportsVariables && variableType ? (
 			<VariableFieldEditor
 				props={{...props, context: {...props.context, commandVariables: variableContext}}}
 			>

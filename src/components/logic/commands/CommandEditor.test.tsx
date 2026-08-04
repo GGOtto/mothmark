@@ -6,11 +6,13 @@ import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
+	CommandSchema,
 	NumberBlockSchema,
 	PatternSchema,
 	PhraseBlockSchema,
 	RelationBlockSchema,
 	TargetBlockSchema,
+	TextBlockSchema,
 } from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {WorldUpdate} from "@/types/worldUpdaterTypes";
@@ -23,9 +25,41 @@ import {CommandInspector} from "./CommandInspector";
 import {CommandLibrary, CommandLibraryPreview} from "./CommandLibrary";
 import {commandPatternText} from "./CommandSummary";
 
-function CommandHarness({onWorldChange}: {onWorldChange?: (world: World) => void}) {
-	const initialCommand = initialWorld.commands.find((command) => idValue(command.id) === "say")!;
-	const [world, setWorld] = useState(initialWorld);
+const commandEditorWorld = produce(initialWorld, (draft) => {
+	draft.commands = [
+		{
+			...createDefaultFieldObject(CommandSchema),
+			id: toID("command", "say"),
+			name: "Say something",
+			patterns: [
+				{
+					...createDefaultFieldObject(PatternSchema),
+					blocks: [
+						{
+							...createDefaultFieldObject(PhraseBlockSchema),
+							id: toID("command-block", "say-phrase"),
+							matches: ["say"],
+						},
+						{
+							...createDefaultFieldObject(TextBlockSchema),
+							id: toID("command-block", "say-text"),
+						},
+					],
+				},
+			],
+		},
+	];
+});
+
+function CommandHarness({
+	onWorldChange,
+	startingWorld = initialWorld,
+}: {
+	onWorldChange?: (world: World) => void;
+	startingWorld?: World;
+}) {
+	const initialCommand = startingWorld.commands.find((command) => idValue(command.id) === "say")!;
+	const [world, setWorld] = useState(startingWorld);
 	const [commandId, setCommandId] = useState(idValue(initialCommand.id));
 	const [selection, setSelection] = useState<CommandSelection | null>({kind: "command", commandId});
 	const updateWorld = (update: WorldUpdate) => {
@@ -49,26 +83,47 @@ function CommandHarness({onWorldChange}: {onWorldChange?: (world: World) => void
 }
 
 describe("CommandEditor", () => {
-	it("clones the preceding pattern with shared block identities and keeps block additions available", async () => {
+	it("clones the currently viewed pattern with shared block identities and keeps block additions available", async () => {
 		const user = userEvent.setup();
-		let latestWorld = initialWorld;
-		render(<CommandHarness onWorldChange={(world) => void (latestWorld = world)} />);
+		let latestWorld = commandEditorWorld;
+		render(
+			<PopupProvider>
+				<CommandHarness
+					startingWorld={commandEditorWorld}
+					onWorldChange={(world) => void (latestWorld = world)}
+				/>
+			</PopupProvider>,
+		);
 
 		await user.click(screen.getByRole("button", {name: "Add pattern"}));
+		await user.click(screen.getByRole("button", {name: "Phrase"}));
+		await user.click(screen.getByRole("button", {name: "Add to this pattern"}));
 
 		expect(screen.getByText("2 of 2")).toBeInTheDocument();
 		expect(document.querySelectorAll(".commandPattern")).toHaveLength(1);
 		expect(screen.getByText("Pattern")).toBeInTheDocument();
-		expect(
-			screen.getByText("say <text>", {selector: ".commandPattern__caption span"}),
-		).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Previous pattern"})).toBeEnabled();
 		expect(screen.getByRole("button", {name: "Next pattern"})).toBeDisabled();
 
 		fireEvent.keyDown(window, {key: "ArrowLeft"});
 		expect(screen.getByText("1 of 2")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", {name: "Add pattern"}));
+		expect(screen.getByText("3 of 3")).toBeInTheDocument();
+
+		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
+		expect(say.patterns).toHaveLength(3);
+		expect(say.patterns[1].blocks.filter((block) => block.type === "phrase")).toHaveLength(2);
+		expect(say.patterns[2].blocks.map((block) => block.type)).toEqual(
+			say.patterns[0].blocks.map((block) => block.type),
+		);
+		expect(say.patterns[2].blocks.map((block) => idValue(block.id))).toEqual(
+			say.patterns[0].blocks.map((block) => idValue(block.id)),
+		);
+
+		await user.click(screen.getByRole("button", {name: "Previous pattern"}));
+		expect(screen.getByText("2 of 3")).toBeInTheDocument();
 		await user.click(screen.getByRole("button", {name: "Next pattern"}));
-		expect(screen.getByText("2 of 2")).toBeInTheDocument();
+		expect(screen.getByText("3 of 3")).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Target"})).toBeEnabled();
 		expect(screen.getByRole("button", {name: "Phrase"})).toBeEnabled();
 		expect(
@@ -80,15 +135,6 @@ describe("CommandEditor", () => {
 		expect(
 			screen.getByRole("button", {name: "Add pattern"}).closest(".commandActions"),
 		).not.toBeNull();
-
-		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
-		expect(say.patterns).toHaveLength(2);
-		expect(say.patterns[1].blocks.map((block) => block.type)).toEqual(
-			say.patterns[0].blocks.map((block) => block.type),
-		);
-		expect(say.patterns[1].blocks.map((block) => idValue(block.id))).toEqual(
-			say.patterns[0].blocks.map((block) => idValue(block.id)),
-		);
 	});
 
 	it("adds and deletes blocks immediately when there is only one pattern", async () => {

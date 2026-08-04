@@ -12,9 +12,9 @@ export function addMessage(game: GameState, message: string, type: GameMessageTy
 	});
 }
 
-export function lookAtRoom(world: World, game: GameState): GameState {
+export function lookAtRoom(world: World, game: GameState, forceFullDescription = true): GameState {
 	const room = getRoom(world, game.player.currentRoom);
-	const roomMessage = createRoomMessage(world, room, game, {forceFullDescription: true});
+	const roomMessage = createRoomMessage(world, room, game, {forceFullDescription});
 
 	return produce(game, (draft) => {
 		draft.messages.push(roomMessage);

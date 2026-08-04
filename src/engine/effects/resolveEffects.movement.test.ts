@@ -10,6 +10,7 @@ describe("movement-related effects", () => {
 		const effect = MessageEffectSchema.parse({
 			...createDefaultFieldObject(MessageEffectSchema),
 			operation: "current-room-description",
+			allowShorten: false,
 		});
 
 		const result = resolveMessageEffect(world, game, effect);

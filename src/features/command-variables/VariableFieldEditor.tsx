@@ -63,7 +63,7 @@ export function VariableFieldEditor({
 				{children}
 				{binding ? (
 					<span className="variableFieldEditor__fallbackLabel">
-						Used when the command has no value for this variable.
+						Set a value to replace this variable.
 					</span>
 				) : null}
 			</div>

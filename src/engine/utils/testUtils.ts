@@ -15,6 +15,7 @@ import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {createInitialGameState} from "../states/createInitialState";
+import {moveCommand} from "@/data/commands/move";
 
 export type PlayerTestScenarioName = "navigation" | "conditional-travel" | "turn-event";
 
@@ -140,11 +141,16 @@ function createNavigationWorld(): World {
 		},
 	);
 
-	return createWorld(
-		"Navigation player tests",
-		"foyer",
-		[foyer, gallery],
-		[createConnection("foyer-gallery", "foyer", "gallery", "e", "w")],
+	return produce(
+		createWorld(
+			"Navigation player tests",
+			"foyer",
+			[foyer, gallery],
+			[createConnection("foyer-gallery", "foyer", "gallery", "e", "w")],
+		),
+		(draft) => {
+			draft.commands = [moveCommand];
+		},
 	);
 }
 

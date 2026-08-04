@@ -482,7 +482,7 @@ export function UniversalEditor<TValue>({
 			}
 			const nextParent = {
 				...parent,
-				...(field in parent ? {} : {[field]: fallbackValue}),
+				...(!reference || !(field in parent) ? {[field]: fallbackValue} : {}),
 			};
 			if (bindings.length > 0) nextParent.commandVariables = bindings;
 			else delete nextParent.commandVariables;

@@ -2,7 +2,10 @@ import {fireEvent, render, screen, within} from "@testing-library/react";
 import {useState} from "react";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {CounterConditionSchema} from "@/schemas/world/conditionSchema";
-import {CommandConditionSchema} from "@/schemas/world/commandLogicSchemas";
+import {
+	CommandConditionSchema,
+	CommandEffectGroupSchema,
+} from "@/schemas/world/commandLogicSchemas";
 import type {CommandVariableCatalog} from "./model";
 import {UniversalEditor} from "@/components/universal-editor/UniversalEditor";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -42,6 +45,12 @@ const catalog: CommandVariableCatalog = {
 			blockType: "number",
 			label: "amount",
 			valueType: "number",
+		},
+		{
+			blockId: toID("command-block", "direction-block"),
+			blockType: "direction",
+			label: "route",
+			valueType: "direction",
 		},
 	],
 };
@@ -141,6 +150,55 @@ function ConditionHarness() {
 				commandVariableCatalog={catalog}
 			/>
 			<output data-testid="condition-value">{JSON.stringify(value)}</output>
+		</>
+	);
+}
+
+function DirectionConditionHarness() {
+	const schema = editor.conditionControl(CommandConditionSchema, {
+		title: "Condition",
+		features: {navigateChildEditors: false, reuseWorldConditions: false},
+	});
+	const [value, setValue] = useState({
+		type: "group" as const,
+		operation: "all" as const,
+		conditions: [
+			{
+				type: "current-room",
+				operation: "is-exit-open",
+				direction: "n",
+			},
+		],
+	});
+	return (
+		<>
+			<UniversalEditor
+				schema={schema}
+				value={value}
+				onChange={setValue}
+				commandVariableCatalog={catalog}
+			/>
+			<output data-testid="direction-condition-value">{JSON.stringify(value)}</output>
+		</>
+	);
+}
+
+function DirectionEffectHarness() {
+	const [value, setValue] = useState(() => ({
+		...createDefaultFieldObject(CommandEffectGroupSchema),
+		id: toID("effect", "direction-effect"),
+		name: "Move player",
+		effects: [{type: "player", operation: "move-in-direction", direction: "n"}],
+	}));
+	return (
+		<>
+			<UniversalEditor
+				schema={CommandEffectGroupSchema}
+				value={value}
+				onChange={setValue}
+				commandVariableCatalog={catalog}
+			/>
+			<output data-testid="direction-effect-value">{JSON.stringify(value)}</output>
 		</>
 	);
 }
@@ -250,7 +308,7 @@ describe("variable-aware editors", () => {
 		expect(screen.getByText("Unavailable variable")).toBeInTheDocument();
 	});
 
-	it("filters whole-field menus by type and keeps the authored fallback visible", () => {
+	it("filters whole-field menus by type and lets an authored value replace the binding", () => {
 		render(<TypedHarness />);
 		const enabledField = screen.getByText("Enabled").closest(".objectEditor__field");
 		expect(enabledField).not.toBeNull();
@@ -261,12 +319,16 @@ describe("variable-aware editors", () => {
 		expect(screen.queryByRole("menuitem", {name: /object/})).toBeNull();
 
 		fireEvent.click(screen.getByRole("menuitem", {name: "enabled"}));
-		expect(screen.getByText("Used when the command has no value for this variable.")).toBeVisible();
+		expect(screen.getByText("Set a value to replace this variable.")).toBeVisible();
 		expect(screen.getByRole("button", {name: "Remove variable"})).toBeVisible();
 		expect(screen.queryByRole("button", {name: "Use fallback"})).toBeNull();
 		expect(screen.getByTestId("value")).toHaveTextContent(
 			'"commandVariables":[{"blockId":{"type":"command-block","id":"boolean-block"},"field":"enabled"}]',
 		);
+
+		fireEvent.click(screen.getByRole("switch", {name: "Choose value"}));
+		expect(screen.getByTestId("value")).toHaveTextContent('"enabled":true');
+		expect(screen.getByTestId("value")).not.toHaveTextContent("commandVariables");
 	});
 
 	it("keeps a bound entity picker in the normal field flow", () => {
@@ -315,5 +377,34 @@ describe("variable-aware editors", () => {
 		expect(
 			within(valueField as HTMLElement).getByRole("button", {name: "Remove variable"}),
 		).toBeVisible();
+	});
+
+	it.each([
+		["condition", DirectionConditionHarness, "direction-condition-value"],
+		["effect", DirectionEffectHarness, "direction-effect-value"],
+	])("binds available direction variables inside a %s", (_, Harness, outputTestId) => {
+		render(<Harness />);
+		const directionField = screen
+			.getByRole("combobox", {name: "Direction"})
+			.closest(".variableFieldEditor");
+		expect(directionField).not.toBeNull();
+
+		fireEvent.click(
+			within(directionField as HTMLElement).getByRole("button", {name: "Use variable"}),
+		);
+		expect(screen.getByRole("menuitem", {name: "route"})).toBeVisible();
+		expect(screen.queryByRole("menuitem", {name: "amount"})).toBeNull();
+
+		fireEvent.click(screen.getByRole("menuitem", {name: "route"}));
+		expect(screen.getByTestId(outputTestId)).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"direction-block"},"field":"direction"}]',
+		);
+		expect(screen.getByRole("combobox", {name: "Direction"})).toHaveValue("");
+
+		fireEvent.change(screen.getByRole("combobox", {name: "Direction"}), {
+			target: {value: "e"},
+		});
+		expect(screen.getByTestId(outputTestId)).toHaveTextContent('"direction":"e"');
+		expect(screen.getByTestId(outputTestId)).not.toHaveTextContent("commandVariables");
 	});
 });

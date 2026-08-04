@@ -138,9 +138,9 @@ export function SelectEditor({
 							commitValue(event.target.value);
 						}}
 					>
-						{features.placeholder ? (
+						{features.placeholder || selectedValue === "" ? (
 							<option value="" disabled={metadata.required}>
-								{features.placeholder}
+								{features.placeholder ?? "Choose a value"}
 							</option>
 						) : null}
 

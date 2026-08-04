@@ -6,7 +6,8 @@ import {
 	type Point,
 	type Room,
 } from "@/schemas/world/roomSchema";
-import {DIRECTION_VECTORS, REVERSE_DIRECTION, ROOM_DIRECTIONS} from "./mapUtils";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {DIRECTION_VECTORS, REVERSE_DIRECTION} from "./mapUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {compareIds, generateUniqueId, idValue} from "@/utils/idUtils";
 import {subtractPoints} from "./pointUtils";
@@ -193,7 +194,7 @@ export function getNearestNodeInRadius({
 		if (idValue(room.id) === ignoredRoomId) continue;
 		if (idValue(room.id) === lockedRoomId) continue;
 
-		for (const direction of ROOM_DIRECTIONS) {
+		for (const direction of DIRECTIONS) {
 			const point = getRoomConnectionPoint(room, direction);
 			const distance = Math.hypot(pointer.x - point.x, pointer.y - point.y);
 

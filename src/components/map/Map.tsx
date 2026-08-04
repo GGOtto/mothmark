@@ -27,7 +27,8 @@ import {
 	updateRoomDraft,
 	upsertLayerDraft,
 } from "@/app/editor/utils/worldDraftUtils";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {getRoomNodePosition} from "./utils/mapUtils";
 import {getLayer, isRoomInLayer} from "./utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "./utils/pointUtils";
 import {getLayerNavigationDirection} from "./utils/layerNavigation";
@@ -471,7 +472,7 @@ export function Map({
 		if (!fromRoom) return false;
 
 		const sourcePoint = getRoomConnectionPoint(fromRoom, connectionDraft.fromDirection);
-		const returnDirection = ROOM_DIRECTIONS.reduce((closestDirection, direction) => {
+		const returnDirection = DIRECTIONS.reduce((closestDirection, direction) => {
 			const closestPoint = getRoomConnectionPoint(toRoom, closestDirection);
 			const candidatePoint = getRoomConnectionPoint(toRoom, direction);
 			return getDistance(sourcePoint, candidatePoint) < getDistance(sourcePoint, closestPoint)

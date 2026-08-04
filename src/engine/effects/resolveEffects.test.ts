@@ -6,6 +6,7 @@ import {
 	type RoomState,
 } from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {choose} from "@/utils/choose";
 import {produce} from "immer";
@@ -1061,20 +1062,7 @@ describe("resolveRoomEffect", () => {
 		const locked = resolveRoomEffect(game, roomEffect("lock-all-exits"));
 		const unlocked = resolveRoomEffect(locked, roomEffect("unlock-all-exits"));
 
-		expect(locked.roomStates[0].lockedExits).toEqual([
-			"n",
-			"ne",
-			"e",
-			"se",
-			"s",
-			"sw",
-			"w",
-			"nw",
-			"up",
-			"down",
-			"in",
-			"out",
-		]);
+		expect(locked.roomStates[0].lockedExits).toEqual(DIRECTIONS);
 		expect(unlocked.roomStates[0].lockedExits).toEqual([]);
 		expect(game.roomStates[0].lockedExits).toEqual(["n"]);
 	});

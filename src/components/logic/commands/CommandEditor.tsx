@@ -460,7 +460,7 @@ export function CommandEditor({
 
 	function addPattern() {
 		if (!selectedCommand) return;
-		const source = selectedCommand.patterns[selectedCommand.patterns.length - 1];
+		const source = selectedCommand.patterns[activePatternIndex];
 		if (!source) return;
 		const clonedBlocks = source.blocks.map((block) => cloneValue(block));
 		const nextIndex = selectedCommand.patterns.length;

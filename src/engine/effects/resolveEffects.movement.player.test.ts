@@ -20,6 +20,7 @@ function currentRoomDescriptionEffect(): Effect {
 	return MessageEffectSchema.parse({
 		...createDefaultFieldObject(MessageEffectSchema),
 		operation: "current-room-description",
+		allowShorten: false,
 	});
 }
 

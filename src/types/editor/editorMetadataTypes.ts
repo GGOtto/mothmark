@@ -167,6 +167,8 @@ export type EditorFieldGroupMetadata = EditorFieldSubgroupMetadata & {
 
 export type EditorDensity = "comfortable" | "compact";
 
+export type EditorCommandVariableType = "string" | "number" | "boolean" | "direction" | "entity";
+
 export type UniversalEditorShellMetadata = {
 	title?: string;
 	description?: string;
@@ -267,6 +269,7 @@ export type EditorFieldMetadata = {
 
 	entityType?: EditorEntityType;
 	tagSource?: EditorTagSource;
+	commandVariableType?: EditorCommandVariableType;
 
 	childControls?: EditorChildControlOverrides;
 

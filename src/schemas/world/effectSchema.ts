@@ -34,11 +34,13 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("message"),
-			operation: z.literal("show-room-description"),
-		}),
-		z.object({
-			type: z.literal("message"),
 			operation: z.literal("current-room-description"),
+			allowShorten: editor
+				.boolean({
+					title: "Allow shortened",
+					description: "Allow the description to be shortened if the room is already visited.",
+				})
+				.default(true),
 		}),
 	]),
 	{title: "Message Effect", description: "Shows text or augments the current room description."},

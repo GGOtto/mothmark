@@ -1,10 +1,14 @@
 import type {CommandBlock, Command} from "@/schemas/world/commandSchemas";
-import type {EditorControlMetadata, EditorPath} from "@/types/universalEditorTypes";
+import type {
+	EditorCommandVariableType,
+	EditorControlMetadata,
+	EditorPath,
+} from "@/types/universalEditorTypes";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
 
 export type CommandVariableProjection = "name" | "description" | "text";
 
-export type CommandVariableValueType = "string" | "number" | "boolean" | "direction" | "entity";
+export type CommandVariableValueType = EditorCommandVariableType;
 
 export type CommandVariableReference = {
 	blockId: ID<"command-block">;
@@ -114,6 +118,7 @@ export function buildCommandVariableCatalog(
 export function acceptedVariableType(
 	metadata: EditorControlMetadata,
 ): CommandVariableValueType | undefined {
+	if (metadata.commandVariableType) return metadata.commandVariableType;
 	if (metadata.type === "number") return "number";
 	if (metadata.type === "toggle") return "boolean";
 	if (metadata.type === "direction-picker") return "direction";
