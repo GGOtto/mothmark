@@ -4,7 +4,6 @@ import {Fragment, useEffect, useState} from "react";
 import {Pencil, Plus, Trash2} from "lucide-react";
 import type {CSSProperties, ReactNode} from "react";
 import type {z} from "zod";
-import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -33,7 +32,6 @@ export type ConditionBuilderFeatures = {
 	allowEmptyGroups?: boolean;
 	maxDepth?: number;
 	defaultGroupOperator?: "all" | "any" | "none";
-	allowedConditionTypes?: string[];
 	showGeneratedSummary?: boolean;
 	showSummary?: boolean;
 	showNaturalLanguagePreview?: boolean;
@@ -44,6 +42,7 @@ export type ConditionBuilderFeatures = {
 	reuseWorldConditions?: boolean;
 	navigateChildEditors?: boolean;
 	conditionSchema?: z.ZodTypeAny;
+	sourceSchema?: z.ZodTypeAny;
 };
 
 export type ConditionBuilderControlMetadata = EditorControlMetadata & {
@@ -57,18 +56,17 @@ export type ConditionBuilderEditorProps = EditorControlProps<
 >;
 
 function editorConditionSchema(metadata: ConditionBuilderControlMetadata) {
-	return metadata.features?.conditionSchema ?? ConditionSchema;
+	const schema = metadata.features?.conditionSchema ?? metadata.features?.sourceSchema;
+	if (!schema) throw new Error("Condition editor metadata is missing its source schema.");
+	return schema;
 }
 
 function conditionTypeOptions(metadata: ConditionBuilderControlMetadata) {
-	const allowedTypes = metadata.features?.allowedConditionTypes?.length
-		? metadata.features.allowedConditionTypes
-		: undefined;
 	const options = schemaTypeOptions(editorConditionSchema(metadata));
 
 	return options.filter((option) => {
 		if (option.value === "group" && metadata.features?.allowGroups === false) return false;
-		return allowedTypes ? allowedTypes.includes(option.value) : true;
+		return true;
 	});
 }
 
@@ -85,11 +83,8 @@ function shouldShowSummary(metadata: ConditionBuilderControlMetadata) {
 	);
 }
 
-export function createDefaultCondition(
-	type = "flag",
-	schema: z.ZodTypeAny = ConditionSchema,
-): ConditionValue {
-	return createSchemaVariantDefault(schema, {type});
+export function createDefaultCondition(type = "flag", schema?: z.ZodTypeAny): ConditionValue {
+	return schema ? createSchemaVariantDefault(schema, {type}) : {type};
 }
 
 function getConditionType(condition: ConditionValue) {

@@ -434,9 +434,6 @@ export const EffectGroupSchema = editor.effectControl(
 			effects: editor.effects(EffectSchema, {
 				title: "Effects",
 				description: "Run concrete effects or reference another saved effect group.",
-				features: {
-					allowedEffectTypes: ["message", "flag", "counter", "feature", "room", "player", "effect-ref"],
-				},
 			}),
 			allowMultipleUsesInWorld: editor.hidden(z.literal(true).default(true), {
 				title: "Stored in world effects",

@@ -5,7 +5,12 @@ import type {
 } from "../../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 import {toID} from "../../../utils/idUtils";
-import {CounterConditionSchema, FlagConditionSchema} from "../../../schemas/world/conditionSchema";
+import {
+	ConditionSchema,
+	CounterConditionSchema,
+	CurrentRoomConditionSchema,
+	FlagConditionSchema,
+} from "../../../schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "../../../utils/createDefaultFieldObject";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
@@ -72,7 +77,7 @@ const SETUPS = {
 		metadata: {
 			title: "Restricted Types",
 			features: {
-				allowedConditionTypes: ["current-room"],
+				conditionSchema: CurrentRoomConditionSchema,
 				compact: true,
 			},
 		},
@@ -115,7 +120,11 @@ function makeVariant(
 		error: setup.error,
 		appearance,
 		themes,
-		metadata: {...setup.metadata, type: "condition-builder"},
+		metadata: {
+			...setup.metadata,
+			type: "condition-builder",
+			features: {conditionSchema: ConditionSchema, ...setup.metadata.features},
+		},
 	};
 }
 

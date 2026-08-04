@@ -4,6 +4,7 @@ import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
 import {toID} from "../../utils/idUtils";
 import {EffectGroupSchema, EffectSchema} from "../../schemas/world/effectSchema";
+import {CommandEffectGroupSchema} from "../../schemas/world/commandLogicSchemas";
 import {EffectEditor, type EffectControlMetadata, type EffectGroupValue} from "./EffectEditor";
 import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
 
@@ -85,6 +86,17 @@ describe("EffectEditor", () => {
 
 		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
 
+		expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"');
+	});
+
+	it("derives command effect options from the command effect schema", () => {
+		const schemaMetadata = resolveEditorMetadata(CommandEffectGroupSchema) as EffectControlMetadata;
+		render(<StatefulEffectEditor metadata={schemaMetadata} emptyEffects />);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
+
+		expect(screen.getByRole("option", {name: "Message"})).toBeInTheDocument();
+		expect(screen.getByRole("option", {name: "Player"})).toBeInTheDocument();
 		expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"');
 	});
 

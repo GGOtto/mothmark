@@ -1,7 +1,7 @@
 import type {z} from "zod";
 import type {EditorSelectOption} from "@/types/universalEditorTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
-import {getEditorMetadata} from "@/utils/editorMetadata";
+import {getEditorMetadata, getEditorVariants} from "@/utils/editorMetadata";
 
 type ZodDef = {
 	type?: string;
@@ -54,6 +54,10 @@ export function getEditorSchemaVariants(
 	if (seen.has(schema)) return [];
 	seen.add(schema);
 	const metadataSchema = getEditorMetadata(schema) ? schema : inheritedMetadataSchema;
+	const declaredVariants = getEditorVariants(schema);
+	if (declaredVariants && declaredVariants !== schema) {
+		return getEditorSchemaVariants(declaredVariants, seen, metadataSchema);
+	}
 
 	const def = getDef(schema);
 	if (["default", "optional", "nullable", "catch", "readonly"].includes(def.type ?? "")) {

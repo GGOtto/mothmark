@@ -1,7 +1,7 @@
 "use client";
 
 import {Trash2} from "lucide-react";
-import {ConditionSchema} from "@/schemas/world/conditionSchema";
+import type {z} from "zod";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {
@@ -11,6 +11,8 @@ import {
 } from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderEditorControl} from "./renderEditorControl";
+import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
+import {getSchemaAtPath} from "./utils/schemaIntrospection";
 import "./ArrayEditor.scss";
 
 export type ArrayFeatures = {
@@ -55,17 +57,22 @@ function cloneValue(value: unknown) {
 	return JSON.parse(JSON.stringify(value));
 }
 
-function getItemTitle(item: unknown, index: number, template?: string) {
+function getItemTitle(item: unknown, index: number, template?: string, itemSchema?: z.ZodTypeAny) {
 	if (!template) return `Item ${index + 1}`;
-	return templateValue(item, template.replaceAll("{index}", String(index + 1)));
+	return templateValue(item, template.replaceAll("{index}", String(index + 1)), itemSchema);
 }
 
-function templateValue(item: unknown, template?: string) {
+function templateValue(item: unknown, template?: string, itemSchema?: z.ZodTypeAny) {
 	if (!template) return "";
 	if (typeof item === "object" && item !== null) {
 		return template.replace(/\{([^}]+)\}/g, (_, key: string) => {
 			const fieldValue = (item as Record<string, unknown>)[key];
 			if (key === "when") {
+				const fieldSchema = itemSchema ? getSchemaAtPath(itemSchema, [key]) : undefined;
+				const fieldFeatures = fieldSchema ? resolveEditorMetadata(fieldSchema).features : undefined;
+				const conditionSchema = (fieldFeatures?.conditionSchema ?? fieldFeatures?.sourceSchema) as
+					z.ZodTypeAny | undefined;
+				if (!conditionSchema) return "";
 				if (Array.isArray(fieldValue)) {
 					if (fieldValue.length === 0) return "Always";
 					return generateConditionSummary(
@@ -74,11 +81,11 @@ function templateValue(item: unknown, template?: string) {
 							operator: "all",
 							conditions: fieldValue,
 						},
-						ConditionSchema,
+						conditionSchema,
 					);
 				}
 				if (typeof fieldValue === "object" && fieldValue !== null) {
-					return generateConditionSummary(fieldValue, ConditionSchema);
+					return generateConditionSummary(fieldValue, conditionSchema);
 				}
 			}
 			return fieldValue == null ? "" : String(fieldValue);
@@ -155,10 +162,12 @@ export function ArrayEditor({
 	}
 
 	function renderItem(item: unknown, index: number) {
-		const title = getItemTitle(item, index, metadata.features?.getItemTitle);
+		const itemSchema = metadata.features?.itemMetadata?.features?.sourceSchema as
+			z.ZodTypeAny | undefined;
+		const title = getItemTitle(item, index, metadata.features?.getItemTitle, itemSchema);
 		const subtitle =
-			templateValue(item, metadata.features?.getItemSummary) ||
-			templateValue(item, metadata.features?.getItemSubtitle) ||
+			templateValue(item, metadata.features?.getItemSummary, itemSchema) ||
+			templateValue(item, metadata.features?.getItemSubtitle, itemSchema) ||
 			generateEditorSummary(item, metadata.features?.itemMetadata?.summary);
 		const badge = templateValue(item, metadata.features?.getItemBadge);
 		const status = metadata.features?.getItemStatus;

@@ -3,7 +3,9 @@ import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
 import {EffectSchema} from "../../schemas/world/effectSchema";
+import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {EffectListEditor, type EffectListControlMetadata} from "./EffectListEditor";
+import {findEditorSchemaVariant} from "./utils/editorSchemaVariants";
 
 const metadata: EffectListControlMetadata = {
 	type: "effect-list",
@@ -58,6 +60,31 @@ describe("EffectListEditor", () => {
 			"placeholder",
 			"No turn limit",
 		);
+	});
+
+	it("preserves schema-derived options for variant select fields", () => {
+		const appendMessageSchema = findEditorSchemaVariant(EffectSchema, {
+			type: "message",
+			operation: "append-last-message",
+		})?.schema;
+		expect(appendMessageSchema).toBeDefined();
+		const appendMessage = createDefaultFieldObject(appendMessageSchema!);
+		if (!appendMessage || typeof appendMessage !== "object" || Array.isArray(appendMessage)) {
+			throw new Error("Expected an object default for the append-message effect schema.");
+		}
+		render(
+			<EffectListHarness
+				initialValue={[
+					{
+						...appendMessage,
+						message: "The passage continues east.",
+					},
+				]}
+			/>,
+		);
+
+		expect(screen.getByRole("option", {name: "Inline"})).toBeInTheDocument();
+		expect(screen.getByRole("option", {name: "Newline"})).toBeInTheDocument();
 	});
 
 	it("does not offer inline groups as child effects", () => {

@@ -4,6 +4,7 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import {toID} from "../../../utils/idUtils";
+import {EffectSchema, PlayerEffectSchema} from "../../../schemas/world/effectSchema";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
@@ -134,7 +135,7 @@ const SETUPS = {
 		value: [{type: "player", operation: "unfreeze"}],
 		metadata: {
 			title: "Restricted effects",
-			features: {...FEATURES, allowedEffectTypes: ["player"]},
+			features: {...FEATURES, effectSchema: PlayerEffectSchema},
 		},
 	},
 	error: {
@@ -171,7 +172,11 @@ function makeVariant(
 		readonly: setup.readonly,
 		appearance,
 		themes,
-		metadata: {...setup.metadata, type: "effect-list"},
+		metadata: {
+			...setup.metadata,
+			type: "effect-list",
+			features: {effectSchema: EffectSchema, ...setup.metadata.features},
+		},
 	};
 }
 

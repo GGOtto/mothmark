@@ -1,3 +1,5 @@
+"use client";
+
 import {ControlMatrix} from "../ControlMatrix";
 import {conditionBuilderControlMatrixVariants} from "./conditionBuilderControlMatrixData";
 

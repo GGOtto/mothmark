@@ -4,6 +4,12 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import {toID} from "../../../utils/idUtils";
+import {z} from "zod";
+import {
+	EffectReferenceSchema,
+	EffectSchema,
+	PlayerEffectSchema,
+} from "../../../schemas/world/effectSchema";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
@@ -117,8 +123,11 @@ const SETUPS = {
 		]),
 		metadata: {
 			title: "Restricted group",
-			description: "Metadata can narrow the available concrete effect types.",
-			features: {...FEATURES, allowedEffectTypes: ["player", "effect-ref"]},
+			description: "Its child schema narrows the available concrete effect types.",
+			features: {
+				...FEATURES,
+				effectSchema: z.union([PlayerEffectSchema, EffectReferenceSchema]),
+			},
 		},
 	},
 	readonly: {
@@ -160,7 +169,11 @@ function makeVariant(
 		readonly: setup.readonly,
 		appearance,
 		themes,
-		metadata: {...setup.metadata, type: "effect"},
+		metadata: {
+			...setup.metadata,
+			type: "effect",
+			features: {effectSchema: EffectSchema, ...setup.metadata.features},
+		},
 	};
 }
 

@@ -1,5 +1,6 @@
 import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import {EffectSchema} from "@/schemas/world/effectSchema";
+import {CommandConditionSchema, CommandEffectSchema} from "@/schemas/world/commandLogicSchemas";
 import {
 	createSchemaVariantDefault,
 	findEditorSchemaVariant,
@@ -54,5 +55,19 @@ describe("editor schema variants", () => {
 		expect(
 			createSchemaVariantDefault(ConditionSchema, {type: "counter", operation: "between"}),
 		).toMatchObject({type: "counter", operation: "between", min: 0, max: 0, inclusive: true});
+	});
+
+	it("derives command editor choices from the canonical schemas declared by command schemas", () => {
+		expect(schemaTypeOptions(CommandEffectSchema).map((option) => option.value)).toEqual(
+			schemaTypeOptions(EffectSchema).map((option) => option.value),
+		);
+		expect(schemaTypeOptions(CommandConditionSchema).map((option) => option.value)).toEqual([
+			"comparison",
+			"group",
+			"flag",
+			"counter",
+			"current-room",
+			"condition-ref",
+		]);
 	});
 });

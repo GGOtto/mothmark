@@ -65,10 +65,11 @@ export function SelectEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
-	const searchable = metadata.features.searchable || metadata.features.allowCreate;
-	const clearable = metadata.features.clearButton || metadata.features.clearable;
-	const showDescriptions = metadata.features.showDescriptions ?? true;
-	const entityType = registryEntityType(metadata.features.entityType);
+	const features = metadata.features ?? {options: []};
+	const searchable = features.searchable || features.allowCreate;
+	const clearable = features.clearButton || features.clearable;
+	const showDescriptions = features.showDescriptions ?? true;
+	const entityType = registryEntityType(features.entityType);
 	const selectedValue = selectValue(value);
 	const registryOptions =
 		entityType && context.registerEntityPicker
@@ -82,7 +83,7 @@ export function SelectEditor({
 				}))
 			: [];
 	const options: SelectOption[] =
-		metadata.features.options.length > 0 ? metadata.features.options : registryOptions;
+		(features.options?.length ?? 0) > 0 ? features.options : registryOptions;
 	const filteredOptions = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
 		if (!normalizedQuery) return options;
@@ -93,12 +94,12 @@ export function SelectEditor({
 				.some((part) => String(part).toLowerCase().includes(normalizedQuery)),
 		);
 	}, [options, query]);
-	const hasBadges = metadata.features.showBadges ?? options.some((option) => option.badge);
+	const hasBadges = features.showBadges ?? options.some((option) => option.badge);
 	const selectedOption = options.find((option) => option.value === selectedValue);
 
 	function commitValue(nextId: string) {
-		if (metadata.features.entityType) {
-			onChange(nextId ? {type: metadata.features.entityType, id: nextId} : undefined);
+		if (features.entityType) {
+			onChange(nextId ? {type: features.entityType, id: nextId} : undefined);
 			return;
 		}
 
@@ -107,7 +108,7 @@ export function SelectEditor({
 
 	function createValue() {
 		const nextValue = query.trim();
-		if (!canEdit || !metadata.features.allowCreate || !nextValue) return;
+		if (!canEdit || !features.allowCreate || !nextValue) return;
 
 		commitValue(nextValue);
 	}
@@ -137,15 +138,15 @@ export function SelectEditor({
 							commitValue(event.target.value);
 						}}
 					>
-						{metadata.features.placeholder ? (
+						{features.placeholder ? (
 							<option value="" disabled={metadata.required}>
-								{metadata.features.placeholder}
+								{features.placeholder}
 							</option>
 						) : null}
 
 						{filteredOptions.map((option) => (
 							<option key={option.value} value={option.value} disabled={option.disabled}>
-								{option.group && metadata.features.grouped ? `${option.group} - ` : ""}
+								{option.group && features.grouped ? `${option.group} - ` : ""}
 								{option.label}
 								{option.badge && hasBadges ? ` (${option.badge})` : ""}
 							</option>
@@ -175,7 +176,7 @@ export function SelectEditor({
 							disabled={!canEdit}
 							onChange={(event) => setQuery(event.target.value)}
 						/>
-						{metadata.features.allowCreate ? (
+						{features.allowCreate ? (
 							<button
 								className="selectEditor__button"
 								type="button"

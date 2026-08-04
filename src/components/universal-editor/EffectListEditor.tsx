@@ -2,7 +2,6 @@
 
 import {Fragment} from "react";
 import type {z} from "zod";
-import {EffectSchema} from "@/schemas/world/effectSchema";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -29,13 +28,13 @@ export type EffectListFeatures = {
 	reorderable?: boolean;
 	duplicateable?: boolean;
 	removable?: boolean;
-	allowedEffectTypes?: string[];
 	collapsibleItems?: boolean;
 	showGeneratedSummary?: boolean;
 	showCountSummary?: boolean;
 	searchableEffectTypes?: boolean;
 	excludedEffectIds?: string[];
 	effectSchema?: z.ZodTypeAny;
+	sourceSchema?: z.ZodTypeAny;
 };
 
 export type EffectListControlMetadata = EditorControlMetadata & {
@@ -46,21 +45,15 @@ export type EffectListControlMetadata = EditorControlMetadata & {
 export type EffectListEditorProps = EditorControlProps<EffectValue[], EffectListControlMetadata>;
 
 function editorEffectSchema(metadata: EffectListControlMetadata) {
-	return metadata.features?.effectSchema ?? EffectSchema;
+	const schema = metadata.features?.effectSchema ?? metadata.features?.sourceSchema;
+	if (!schema) throw new Error("Effect editor metadata is missing its source schema.");
+	return schema;
 }
 
 function effectTypeOptions(metadata: EffectListControlMetadata) {
-	const allowedTypes = metadata.features?.allowedEffectTypes?.length
-		? metadata.features.allowedEffectTypes
-		: undefined;
 	const options = schemaTypeOptions(editorEffectSchema(metadata));
 
-	return options.filter(
-		(option) =>
-			option.value !== "group" &&
-			option.value !== "conditional" &&
-			(!allowedTypes || allowedTypes.includes(option.value)),
-	);
+	return options;
 }
 
 function operationOptionsForType(type: string, metadata: EffectListControlMetadata) {
@@ -503,8 +496,9 @@ export function EffectListEditor({
 														metadata: {
 															...schemaMetadata,
 															appearance: {chrome: "inline", size: "sm"},
-															features:
-																childType === "toggle" ? {display: "switch", labels: {on: "On", off: "Off"}} : {},
+															...(childType === "toggle"
+																? {features: {display: "switch", labels: {on: "On", off: "Off"}}}
+																: {}),
 														},
 														useMetadataCopy: true,
 														parentMetadata: metadata,
