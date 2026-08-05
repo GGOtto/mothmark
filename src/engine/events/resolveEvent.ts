@@ -1,8 +1,10 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
+import type {Event} from "@/schemas/world/eventSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
 import {produce} from "immer";
 import {resolveConditionBranchWithResult} from "../branches/resolveConditionBranch";
+import {addEvent} from "./eventQueue";
 
 export {addEvent, addEvents} from "./eventQueue";
 

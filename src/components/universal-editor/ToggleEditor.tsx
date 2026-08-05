@@ -20,7 +20,7 @@ export type ToggleControlMetadata = EditorControlMetadata & {
 	features?: ToggleFeatures;
 };
 
-export type ToggleEditorProps = EditorControlProps<boolean | undefined, ToggleControlMetadata>;
+export type ToggleEditorProps = EditorControlProps<boolean, ToggleControlMetadata>;
 
 export function ToggleEditor({
 	value,
@@ -42,12 +42,12 @@ export function ToggleEditor({
 		on: "On",
 		off: "Off",
 	};
-	const currentLabel = value === undefined ? "Choose value" : value ? labels.on : labels.off;
+	const currentLabel = value ? labels.on : labels.off;
 
 	function toggleValue() {
 		if (!canEdit) return;
 
-		onChange(value === undefined ? true : !value);
+		onChange(!value);
 	}
 
 	return (

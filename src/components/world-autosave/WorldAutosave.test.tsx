@@ -1,18 +1,16 @@
-import {act, fireEvent, render, screen} from "@testing-library/react";
+import {act, render, screen} from "@testing-library/react";
 
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {World} from "@/schemas/world/worldSchema";
 
 import {
 	WorldAutosaveIndicator,
 	WorldAutosaveProvider,
-	WorldResetButton,
 	useWorldAutosaveRegistration,
 } from "./WorldAutosave";
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
 const handlePersisted = jest.fn();
-const handleReset = jest.fn();
 
 function AutosaveHarness({world, revision = 1}: {world: World; revision?: number}) {
 	useWorldAutosaveRegistration({
@@ -21,15 +19,9 @@ function AutosaveHarness({world, revision = 1}: {world: World; revision?: number
 		worldId,
 		revision,
 		onPersisted: handlePersisted,
-		onReset: handleReset,
 	});
 
-	return (
-		<>
-			<WorldAutosaveIndicator />
-			<WorldResetButton />
-		</>
-	);
+	return <WorldAutosaveIndicator />;
 }
 
 const renderAutosaveHarness = (world: World) =>
@@ -53,7 +45,6 @@ describe("world autosave", () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		handlePersisted.mockReset();
-		handleReset.mockReset();
 	});
 
 	afterEach(() => {
@@ -65,8 +56,8 @@ describe("world autosave", () => {
 
 	it("saves the latest world after editing settles", async () => {
 		const updatedWorld = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Updated title"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Updated title"},
 		};
 		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
 		Object.defineProperty(globalThis, "fetch", {
@@ -74,7 +65,7 @@ describe("world autosave", () => {
 			writable: true,
 			value: fetchMock,
 		});
-		const view = renderAutosaveHarness(initialWorld);
+		const view = renderAutosaveHarness(exampleWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -104,15 +95,6 @@ describe("world autosave", () => {
 		expect(handlePersisted).toHaveBeenCalledWith(worldId, 2);
 	});
 
-	it("resets a registered world after confirmation even when it has no edits", () => {
-		jest.spyOn(window, "confirm").mockReturnValue(true);
-		renderAutosaveHarness(initialWorld);
-
-		fireEvent.click(screen.getByRole("button", {name: "Reset example"}));
-
-		expect(handleReset).toHaveBeenCalledTimes(1);
-	});
-
 	it("coalesces edits made during a save into one follow-up request", async () => {
 		let finishFirstSave: ((value: ReturnType<typeof successfulSave>) => void) | undefined;
 		const firstSave = new Promise<ReturnType<typeof successfulSave>>((resolve) => {
@@ -128,14 +110,14 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const firstEdit = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "First edit"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "First edit"},
 		};
 		const latestEdit = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Latest edit"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Latest edit"},
 		};
-		const view = renderAutosaveHarness(initialWorld);
+		const view = renderAutosaveHarness(exampleWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -180,10 +162,10 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const updatedWorld = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Indicator test"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Indicator test"},
 		};
-		const view = renderAutosaveHarness(initialWorld);
+		const view = renderAutosaveHarness(exampleWorld);
 		expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
 
 		view.rerender(
@@ -218,8 +200,8 @@ describe("world autosave", () => {
 
 	it("warns before unloading until the queued save succeeds", async () => {
 		const updatedWorld = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Unsaved title"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Unsaved title"},
 		};
 		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
 		Object.defineProperty(globalThis, "fetch", {
@@ -227,7 +209,7 @@ describe("world autosave", () => {
 			writable: true,
 			value: fetchMock,
 		});
-		const view = renderAutosaveHarness(initialWorld);
+		const view = renderAutosaveHarness(exampleWorld);
 		const cleanUnload = new Event("beforeunload", {cancelable: true});
 		window.dispatchEvent(cleanUnload);
 		expect(cleanUnload.defaultPrevented).toBe(false);
@@ -269,10 +251,10 @@ describe("world autosave", () => {
 			value: fetchMock,
 		});
 		const updatedWorld = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Invalid save response test"},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, title: "Invalid save response test"},
 		};
-		const view = renderAutosaveHarness(initialWorld);
+		const view = renderAutosaveHarness(exampleWorld);
 
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -288,39 +270,6 @@ describe("world autosave", () => {
 			"Could not autosave the world",
 			"The request data is invalid. world.rooms.16.id: Duplicate room id.",
 		);
-		expect(error).not.toHaveBeenCalled();
-	});
-
-	it("reports retryable server failures without triggering a blocking console error", async () => {
-		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
-		const error = jest.spyOn(console, "error").mockImplementation(() => {});
-		const fetchMock = jest.fn().mockResolvedValue({
-			ok: false,
-			status: 500,
-			json: jest.fn().mockResolvedValue({error: {message: "The world request failed."}}),
-		});
-		Object.defineProperty(globalThis, "fetch", {
-			configurable: true,
-			writable: true,
-			value: fetchMock,
-		});
-		const updatedWorld = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, title: "Retryable failure test"},
-		};
-		const view = renderAutosaveHarness(initialWorld);
-
-		view.rerender(
-			<WorldAutosaveProvider>
-				<AutosaveHarness world={updatedWorld} />
-			</WorldAutosaveProvider>,
-		);
-		await act(async () => {
-			jest.advanceTimersByTime(2_000);
-			await flushPromises();
-		});
-
-		expect(warning).toHaveBeenCalledWith("Could not autosave the world", "The world request failed.");
 		expect(error).not.toHaveBeenCalled();
 	});
 });

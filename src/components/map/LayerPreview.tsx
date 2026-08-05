@@ -10,6 +10,7 @@ import type {Layer, Viewport, World} from "@/schemas/world/worldSchema";
 import {isRoomInLayer} from "./utils/layerUtils";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 import {getConnectionVisualBounds} from "./Connection";
+import type {MapTheme} from "./Map";
 import "./Map.scss";
 import "./LayerPreview.scss";
 
@@ -21,6 +22,7 @@ export type LayerPreviewProps = {
 	onClick?: React.MouseEventHandler<HTMLDivElement>;
 	selectedId?: string | null;
 	isConnectionSelected?: boolean;
+	theme?: MapTheme;
 	className?: string;
 	style?: React.CSSProperties;
 };
@@ -76,6 +78,7 @@ export function LayerPreview({
 	onClick,
 	selectedId = null,
 	isConnectionSelected = false,
+	theme = "dark",
 	className = "",
 	style,
 }: LayerPreviewProps) {
@@ -177,6 +180,7 @@ export function LayerPreview({
 	const classes = [
 		"map",
 		"layerPreview",
+		`map--theme-${theme}`,
 		onClick ? "layerPreview--clickable" : "",
 		canPan ? "layerPreview--pannable" : "",
 		isPanning ? "layerPreview--panning" : "",

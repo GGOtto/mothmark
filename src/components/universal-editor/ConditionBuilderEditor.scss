@@ -1,10 +1,8 @@
 .conditionBuilderEditor {
 	display: flex;
 	min-width: 0;
-	max-width: 100%;
 	flex-direction: column;
 	gap: 8px;
-	container-type: inline-size;
 	color: var(--field-text);
 	font-family: var(--field-font-family);
 }
@@ -24,7 +22,7 @@
 }
 
 .conditionBuilderEditor__summary span {
-	text-transform: none;
+	text-transform: uppercase;
 	letter-spacing: 0;
 	font-size: 10px;
 	font-weight: 700;
@@ -128,7 +126,7 @@
 	color: var(--field-muted);
 	font-size: 10px;
 	font-weight: 700;
-	text-transform: none;
+	text-transform: uppercase;
 }
 
 .conditionBuilderEditor__linkItem--active .conditionBuilderEditor__linkHint {
@@ -236,7 +234,7 @@
 .conditionBuilderEditor__fields {
 	display: grid;
 	min-width: 0;
-	grid-template-columns: repeat(auto-fit, minmax(min(156px, 100%), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
 	gap: 7px;
 }
 
@@ -329,7 +327,7 @@
 
 .conditionBuilderEditor--compact .conditionBuilderEditor__row,
 .conditionBuilderEditor--compact .conditionBuilderEditor__fields {
-	grid-template-columns: repeat(auto-fit, minmax(min(132px, 100%), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
 	gap: 6px;
 }
 
@@ -372,7 +370,7 @@
 	background: var(--field-bg-raised);
 }
 
-@container (max-width: 520px) {
+@media (max-width: 520px) {
 	.conditionBuilderEditor__summary,
 	.conditionBuilderEditor__itemHeader,
 	.conditionBuilderEditor__groupHeader {

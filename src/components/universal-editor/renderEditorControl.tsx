@@ -51,54 +51,13 @@ import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../types/universalEditorTypes";
 import {FieldShellDisclosureProvider} from "./FieldShell";
-import {
-	acceptedVariableType,
-	VariableFieldEditor,
-	VariableTextEditor,
-} from "@/features/command-variables";
 
 export function renderEditorControl(props: EditorControlProps<unknown, EditorControlMetadata>) {
-	const variableContext = props.context.commandVariables;
-	const supportsVariables = variableContext?.supportsPath(props.path) ?? false;
-	const variableType = acceptedVariableType(props.metadata);
-	const isVariableText =
-		props.metadata.type === "text" ||
-		props.metadata.type === "input" ||
-		props.metadata.type === "textarea" ||
-		props.metadata.type === "rich-text";
-	const fieldBinding =
-		variableContext && supportsVariables && variableType && !isVariableText
-			? variableContext.getBinding(props.path)
-			: undefined;
-	const controlProps = fieldBinding
-		? {
-				...props,
-				value: undefined,
-				onChange: (nextValue: unknown) => variableContext?.setBinding(props.path, undefined, nextValue),
-			}
-		: props;
-	const control = renderControl(controlProps);
-	const renderedControl =
-		variableContext && supportsVariables && isVariableText ? (
-			<VariableTextEditor
-				{...(props as EditorControlProps<string | undefined, never>)}
-				context={{...props.context, commandVariables: variableContext}}
-			/>
-		) : variableContext && supportsVariables && variableType ? (
-			<VariableFieldEditor
-				props={{...props, context: {...props.context, commandVariables: variableContext}}}
-			>
-				{control}
-			</VariableFieldEditor>
-		) : (
-			control
-		);
-
 	return (
 		<FieldShellDisclosureProvider
 			value={{metadata: props.metadata, path: props.path, context: props.context}}
 		>
-			{renderedControl}
+			{renderControl(props)}
 		</FieldShellDisclosureProvider>
 	);
 }

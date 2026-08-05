@@ -3,9 +3,6 @@
 	min-height: 0;
 	flex-direction: column;
 	overflow: hidden;
-	border-top: 1px solid var(--color-terminal-border);
-	background: var(--color-terminal);
-	color: var(--color-terminal-text);
 }
 
 .command-line__toolbar {
@@ -13,17 +10,17 @@
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-terminal-border);
-	background: var(--color-terminal-raised);
+	border-bottom: 1px solid var(--panel-border);
+	background: var(--panel-bg);
 }
 
 .command-line__sync-button {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	border: 1px solid var(--color-terminal-border);
-	background: transparent;
-	color: var(--color-terminal-text);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.88);
 	font: inherit;
 	font-size: 12px;
 	padding: 4px 8px;
@@ -31,13 +28,7 @@
 }
 
 .command-line__sync-button:hover:not(:disabled) {
-	border-color: var(--color-terminal-muted);
-	background: color-mix(in srgb, var(--color-terminal-text) 8%, transparent);
-}
-
-.command-line__sync-button:focus-visible {
-	outline: 2px solid var(--color-terminal-prompt);
-	outline-offset: 2px;
+	background: rgba(255, 255, 255, 0.14);
 }
 
 .command-line__sync-button:disabled {

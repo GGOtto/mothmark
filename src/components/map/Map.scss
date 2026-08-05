@@ -1,23 +1,20 @@
 .map {
-	/* Dark map: charcoal drafting board with warm, readable room cards. */
-	--map-surface: #25272c;
-	--map-grid: rgb(205 194 178 / 10%);
-	--map-border: #535864;
-	--map-line: #8a8392;
-	--map-room-surface: #3b3b40;
-	--map-room-hover: #47484f;
-	--map-room-selected: #274b43;
-	--map-room-border: #8d8795;
-	--map-room-text: #f2eadb;
-	--map-node-surface: #eee3cc;
-	--map-accent: #69c2a6;
-	--map-accent-strong: #9bdcc7;
-	--map-accent-soft: rgb(105 194 166 / 22%);
-	--map-selection-contrast: #effff8;
-	--map-shadow: rgb(4 6 8 / 42%);
-	--map-highlight: rgb(255 249 231 / 10%);
-	--map-danger: #ef8377;
-	--map-danger-soft: #5e2d2a;
+	--map-surface: #aaa08a;
+	--map-grid: rgba(48, 38, 53, 0.14);
+	--map-border: #443a4b;
+	--map-line: #4c4154;
+	--map-room-surface: #d9ceb4;
+	--map-room-hover: #e7dcc2;
+	--map-room-selected: #cfe4da;
+	--map-room-border: #665a70;
+	--map-room-text: #2d2532;
+	--map-node-surface: #fff8e8;
+	--map-accent: #45c5a0;
+	--map-accent-strong: #245c4f;
+	--map-accent-soft: rgba(69, 197, 160, 0.2);
+	--map-selection-contrast: #d9fff3;
+	--map-shadow: rgba(48, 37, 55, 0.25);
+	--map-highlight: rgba(255, 251, 235, 0.48);
 
 	position: relative;
 	width: 100%;
@@ -37,7 +34,7 @@
 	overflow: hidden;
 	overscroll-behavior-x: none;
 	touch-action: none;
-	color-scheme: dark;
+	color-scheme: light;
 	cursor: default;
 
 	&.map--tool-edit {
@@ -94,6 +91,32 @@
 		will-change: transform;
 	}
 
+	&.map--theme-dark {
+		--map-surface: #756b56;
+		--map-grid: rgba(246, 231, 198, 0.1);
+		--map-border: #a99a7b;
+		--map-line: #d5c39d;
+		--map-room-surface: #554d3f;
+		--map-room-hover: #625847;
+		--map-room-selected: #48675c;
+		--map-room-border: #c4b28d;
+		--map-room-text: #fff6dc;
+		--map-node-surface: #f0dfba;
+		--map-accent: #73e2c0;
+		--map-accent-strong: #255d50;
+		--map-accent-soft: rgba(115, 226, 192, 0.2);
+		--map-selection-contrast: #dcfff4;
+		--map-shadow: rgba(24, 20, 14, 0.38);
+		--map-highlight: rgba(255, 241, 207, 0.12);
+
+		color-scheme: dark;
+		background-image:
+			radial-gradient(circle at 22% 28%, rgba(171, 140, 91, 0.12), transparent 34%),
+			radial-gradient(circle at 78% 68%, rgba(93, 132, 133, 0.08), transparent 38%),
+			linear-gradient(var(--map-grid) 1px, transparent 1px),
+			linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+	}
+
 	.mapSvg {
 		position: absolute;
 		inset: 0;
@@ -130,11 +153,11 @@
 	.mapSnapTarget {
 		stroke: var(--map-accent);
 		stroke-width: 2;
-		filter: drop-shadow(0 0 2px var(--map-node-surface));
+		filter: drop-shadow(0 0 2px #ffffff);
 	}
 
 	.layerClearButton {
-		--layer-control-hover: var(--color-action);
+		--layer-control-hover: var(--map-accent-strong);
 		position: absolute;
 		bottom: 20px;
 		right: 20px;
@@ -142,56 +165,35 @@
 		width: 42px;
 		height: 42px;
 		display: block;
-		background: var(--color-surface-raised);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-panel);
-		box-shadow: var(--shadow-float);
+		background: var(--map-room-surface);
+		border: 1px solid var(--map-room-border);
+		border-radius: 14px;
+		box-shadow:
+			0 8px 18px var(--map-shadow),
+			inset 0 1px 0 var(--map-highlight);
 		cursor: default;
 		touch-action: manipulation;
 		user-select: none;
-		color: var(--color-text);
+		color: var(--map-room-text);
 		display: grid;
 		place-items: center;
 
 		&:hover {
-			background: var(--color-surface-strong);
+			background: var(--map-room-hover);
 			color: var(--layer-control-hover);
 		}
 
 		&:active {
 			transform: translateY(1px);
-			background: color-mix(in srgb, var(--color-action) 14%, transparent);
+			background: #bfcdb0;
 		}
 
 		&:focus-visible {
 			z-index: 1;
-			outline: 2px solid var(--color-focus);
+			outline: 2px solid var(--map-accent);
 			outline-offset: -3px;
 		}
 	}
-}
-
-:root[data-theme="light"] .map {
-	/* Light map: warm drafting paper with inked connections and mint selection. */
-	--map-surface: #a79c86;
-	--map-grid: rgb(61 49 67 / 16%);
-	--map-border: #4f4855;
-	--map-line: #514959;
-	--map-room-surface: #eee3ca;
-	--map-room-hover: #faf0d8;
-	--map-room-selected: #c9e4d8;
-	--map-room-border: #5d5564;
-	--map-room-text: #28222d;
-	--map-node-surface: #fff8e8;
-	--map-accent: #287f6a;
-	--map-accent-strong: #185847;
-	--map-accent-soft: rgb(40 127 106 / 20%);
-	--map-selection-contrast: #eafff7;
-	--map-shadow: rgb(45 35 50 / 28%);
-	--map-highlight: rgb(255 252 237 / 58%);
-	--map-danger: #9f3934;
-	--map-danger-soft: #f3cbc5;
-	color-scheme: light;
 }
 
 @keyframes map-loading-pulse {

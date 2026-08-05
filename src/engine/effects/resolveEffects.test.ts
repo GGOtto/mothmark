@@ -1,15 +1,6 @@
 import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/states/gameStateSchemas";
-import {
-	FeatureStateSchema,
-	RoomStateSchema,
-	type FeatureState,
-	type RoomState,
-} from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
-import {DIRECTIONS} from "@/schemas/world/directionSchema";
-import {WorldSchema} from "@/schemas/world/worldSchema";
 import {choose} from "@/utils/choose";
-import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {
 	resolveCounterEffect,
@@ -32,13 +23,8 @@ jest.mock("../messages/createMessage", () => ({
 const mockedChoose = jest.mocked(choose);
 const mockedCreateGameMessage = jest.mocked(createGameMessage);
 const mockedAppendLastMessage = jest.mocked(appendLastMessage);
-const world = createDefaultFieldObject(WorldSchema);
 
-type GameStateOverrides = Omit<Partial<GameState>, "variables"> & {
-	variables?: Partial<GameState["variables"]>;
-};
-
-function createGameState(overrides: GameStateOverrides = {}): GameState {
+function createGameState(overrides: Partial<GameState> = {}): GameState {
 	const baseGame = createDefaultFieldObject(GameStateSchema);
 
 	return {
@@ -49,16 +35,6 @@ function createGameState(overrides: GameStateOverrides = {}): GameState {
 			...overrides.variables,
 		},
 	};
-}
-
-function createFeatureState(overrides: Partial<FeatureState> = {}): FeatureState {
-	return {...createDefaultFieldObject(FeatureStateSchema), ...overrides};
-}
-
-function createRoomState(
-	overrides: Omit<Partial<RoomState>, "featureStates"> & {featureStates?: FeatureState[]} = {},
-): RoomState {
-	return {...createDefaultFieldObject(RoomStateSchema), ...overrides};
 }
 
 describe("resolveMessageEffect", () => {
@@ -76,7 +52,7 @@ describe("resolveMessageEffect", () => {
 			value: true,
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(result).toBe(game);
 		expect(mockedCreateGameMessage).not.toHaveBeenCalled();
@@ -100,7 +76,7 @@ describe("resolveMessageEffect", () => {
 			message: "The door opens.",
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("The door opens.", "system");
 		expect(result.messages).toEqual([createdMessage]);
@@ -127,7 +103,7 @@ describe("resolveMessageEffect", () => {
 			messages,
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(mockedChoose).toHaveBeenCalledWith(messages);
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("You hear footsteps.", "system");
@@ -153,7 +129,7 @@ describe("resolveMessageEffect", () => {
 			messages: ["Fallback"],
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("", "system");
 		expect(result.messages).toEqual([createdMessage]);
@@ -189,7 +165,7 @@ describe("resolveMessageEffect", () => {
 			format: "inline",
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(mockedAppendLastMessage).toHaveBeenCalledWith(game, " updated", "inline");
 		expect(result).toBe(appendedGame);
@@ -221,7 +197,7 @@ describe("resolveMessageEffect", () => {
 			message: "New",
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(game, effect);
 
 		expect(result).not.toBe(game);
 		expect(result.messages).not.toBe(game.messages);
@@ -486,16 +462,18 @@ describe("resolveFlagEffect", () => {
 	it("edits room and feature flags through scoped flag effects", () => {
 		const game = createGameState({
 			roomStates: [
-				createRoomState({
+				{
+					type: "room",
 					id: {type: "room", id: "hall"},
 					flags: {active: true, dark: false},
 					featureStates: [
-						createFeatureState({
+						{
+							type: "feature",
 							id: {type: "feature", id: "statue"},
 							flags: {examined: false, glowing: false},
-						}),
+						},
 					],
-				}),
+				},
 			],
 		});
 		const roomSet = resolveFlagEffect(game, {
@@ -524,16 +502,18 @@ describe("resolveFlagEffect", () => {
 	it("does not edit readonly flags or delete permanent flags", () => {
 		const game = createGameState({
 			roomStates: [
-				createRoomState({
+				{
+					type: "room",
 					id: {type: "room", id: "hall"},
 					flags: {visited: true, active: true},
 					featureStates: [
-						createFeatureState({
+						{
+							type: "feature",
 							id: {type: "feature", id: "statue"},
 							flags: {examined: false},
-						}),
+						},
 					],
-				}),
+				},
 			],
 		});
 		const visited = resolveFlagEffect(game, {
@@ -862,21 +842,24 @@ describe("resolveFeatureEffect", () => {
 	function createGameWithFeatures(): GameState {
 		return createGameState({
 			roomStates: [
-				createRoomState({
+				{
+					type: "room",
 					id: {type: "room", id: "hall"},
 					flags: {},
 					featureStates: [
-						createFeatureState({
+						{
+							type: "feature",
 							id: {type: "feature", id: "statue"},
 							flags: {examined: false},
-						}),
+						},
 					],
-				}),
-				createRoomState({
+				},
+				{
+					type: "room",
 					id: {type: "room", id: "vault"},
 					flags: {},
 					featureStates: [],
-				}),
+				},
 			],
 		});
 	}
@@ -915,12 +898,14 @@ describe("resolveFeatureEffect", () => {
 			[property]: value,
 		});
 		expect(result).not.toBe(game);
-		expect(game.roomStates[0].featureStates[0][property]).not.toBe(value);
+		expect(game.roomStates[0].featureStates[0]).not.toHaveProperty(property);
 	});
 
 	it.each([
 		["hide-from-player", "hidden", true],
 		["show-to-player", "hidden", false],
+		["show-in-room-description", "listedInRoom", true],
+		["hide-in-room-description", "listedInRoom", false],
 	] as const)("resolves %s by updating the feature flags", (operation, flag, value) => {
 		const game = createGameWithFeatures();
 		const result = resolveFeatureEffect(game, featureEffect(operation));
@@ -930,19 +915,6 @@ describe("resolveFeatureEffect", () => {
 			[flag]: value,
 		});
 		expect(game.roomStates[0].featureStates[0].flags).toEqual({examined: false});
-	});
-
-	it.each([
-		["show-in-room-description", true],
-		["hide-in-room-description", false],
-	] as const)("resolves %s by updating the complete feature state", (operation, value) => {
-		const game = produce(createGameWithFeatures(), (draft) => {
-			draft.roomStates[0].featureStates[0].listedInRoom = !value;
-		});
-		const result = resolveFeatureEffect(game, featureEffect(operation));
-
-		expect(result.roomStates[0].featureStates[0].listedInRoom).toBe(value);
-		expect(game.roomStates[0].featureStates[0].listedInRoom).not.toBe(value);
 	});
 
 	it("moves a feature state to another room", () => {
@@ -987,13 +959,14 @@ describe("resolveRoomEffect", () => {
 				freezeState: {},
 			},
 			roomStates: [
-				createRoomState({
+				{
+					type: "room",
 					id: {type: "room", id: "hall"},
 					tags: ["indoors", "safe"],
 					lockedExits: ["n"],
 					flags: {visited: true, active: true},
 					featureStates: [],
-				}),
+				},
 			],
 		});
 	}
@@ -1016,13 +989,12 @@ describe("resolveRoomEffect", () => {
 
 	it("moves the player to the selected room", () => {
 		const game = createGameWithRoom();
-		game.roomStates.push(
-			createRoomState({
-				id: {type: "room", id: "vault"},
-				flags: {visited: false, active: true},
-				featureStates: [],
-			}),
-		);
+		game.roomStates.push({
+			type: "room",
+			id: {type: "room", id: "vault"},
+			flags: {visited: false, active: true},
+			featureStates: [],
+		});
 		const result = resolveRoomEffect(
 			game,
 			roomEffect("move-player-to", {roomId: {type: "room", id: "vault"}}),
@@ -1043,7 +1015,7 @@ describe("resolveRoomEffect", () => {
 		const result = resolveRoomEffect(game, roomEffect(operation, {variantId}));
 
 		expect(result.roomStates[0]).toMatchObject({[property]: variantId});
-		expect(game.roomStates[0][property]).not.toBe(variantId);
+		expect(game.roomStates[0]).not.toHaveProperty(property);
 	});
 
 	it("locks an exit once and unlocks it", () => {
@@ -1062,7 +1034,20 @@ describe("resolveRoomEffect", () => {
 		const locked = resolveRoomEffect(game, roomEffect("lock-all-exits"));
 		const unlocked = resolveRoomEffect(locked, roomEffect("unlock-all-exits"));
 
-		expect(locked.roomStates[0].lockedExits).toEqual(DIRECTIONS);
+		expect(locked.roomStates[0].lockedExits).toEqual([
+			"n",
+			"ne",
+			"e",
+			"se",
+			"s",
+			"sw",
+			"w",
+			"nw",
+			"up",
+			"down",
+			"in",
+			"out",
+		]);
 		expect(unlocked.roomStates[0].lockedExits).toEqual([]);
 		expect(game.roomStates[0].lockedExits).toEqual(["n"]);
 	});

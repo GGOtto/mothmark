@@ -1,43 +1,39 @@
 import {produce} from "immer";
-import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds} from "@/utils/idUtils";
-import {addMessage} from "../messages/createRoomMessage";
-import {getHigherPriorityCommand} from "./getHigherPriorityCommand";
-import {findMatchingCommands, type RunnableCommandMatch} from "./parse";
-import {resolveCommandConditionBranch} from "./resolveCommandLogic";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
+import {createGameMessage} from "../messages/createMessage";
+import {normalizeInput} from "./parse";
+import {commands, findCommand, type CommandContext, type CommandDefinition} from "./resolveCommand";
 
-function higherPriorityMatch(
-	left: RunnableCommandMatch,
-	right: RunnableCommandMatch,
-): RunnableCommandMatch {
-	return getHigherPriorityCommand(left.command, right.command) === left.command ? left : right;
+function addMessage(gameState: GameState, text: string, type: "command" | "system"): GameState {
+	return produce(gameState, (draft) => {
+		draft.messages.push(createGameMessage(text, type));
+	});
 }
 
-export function runCommand(text: string, world: World, game: GameState): GameState {
-	const matches = findMatchingCommands(text, world, game);
-	if (matches.length === 0) {
-		return addMessage(game, "I don't know what that means.", "error");
-	}
+export function runCommand(
+	world: World,
+	game: GameState,
+	rawCommand: string,
+	commandList: CommandDefinition[] = commands,
+): GameState {
+	return produce(game, () => {
+		const input = normalizeInput(rawCommand);
+		if (!input) return game;
 
-	const chosenMatch = matches.reduce(higherPriorityMatch);
-	const behavior =
-		chosenMatch.match === "match"
-			? chosenMatch.command.behavior
-			: chosenMatch.command.fallbacks.find((fallback) =>
-					compareIds(fallback.blockId, chosenMatch.partialBlockId),
-				)?.behavior;
+		const match = findCommand(input, commandList);
 
-	if (!behavior) {
-		return addMessage(game, "I don't know what that means.", "error");
-	}
+		if (!match) return addMessage(game, "I don't understand that command.", "system");
 
-	const gameWithCommandVariables = produce(game, (draft) => {
-		draft.variables.command = [
-			...chosenMatch.variables,
-			...(chosenMatch.match === "partial match" ? chosenMatch.failedVariables : []),
-		];
+		const context: CommandContext = {
+			world,
+			gameState: game,
+			rawCommand,
+			input,
+			parsed: match.parsed,
+			commands: commandList,
+		};
+
+		return match.command.run(context);
 	});
-
-	return resolveCommandConditionBranch(world, gameWithCommandVariables, behavior);
 }

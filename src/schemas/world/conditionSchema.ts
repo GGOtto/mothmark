@@ -1,7 +1,6 @@
 import {z} from "zod";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {DirectionSchema} from "./directionSchema";
 
 export const ComparisonOperatorSchema = editor.select(
 	z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]),
@@ -9,11 +8,11 @@ export const ComparisonOperatorSchema = editor.select(
 		title: "Operator",
 		options: [
 			{label: "Equals", value: "eq"},
-			{label: "Does not equal", value: "neq"},
-			{label: "Greater than", value: "gt"},
-			{label: "Greater than or equal", value: "gte"},
-			{label: "Less than", value: "lt"},
-			{label: "Less than or equal", value: "lte"},
+			{label: "Does Not Equal", value: "neq"},
+			{label: "Greater Than", value: "gt"},
+			{label: "Greater Than or Equal", value: "gte"},
+			{label: "Less Than", value: "lt"},
+			{label: "Less Than or Equal", value: "lte"},
 		],
 	},
 );
@@ -21,9 +20,9 @@ export const ComparisonOperatorSchema = editor.select(
 export const ConditionReferenceSchema = editor.object(
 	{
 		type: z.literal("condition-ref"),
-		conditionId: editor.reference("condition", {title: "Saved condition"}),
+		conditionId: editor.reference("condition", {title: "Condition"}),
 	},
-	{title: "Use saved condition"},
+	{title: "Condition Reference"},
 );
 
 export const FlagConditionSchema = editor.discriminatedUnion(
@@ -64,14 +63,14 @@ export const CounterConditionSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("compare"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter"}),
 			operator: ComparisonOperatorSchema,
 			value: editor.number({title: "Value"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("between"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter"}),
 			min: editor.number({title: "Minimum"}),
 			max: editor.number({title: "Maximum"}),
 			inclusive: editor.boolean({title: "Inclusive"}).default(true),
@@ -79,12 +78,12 @@ export const CounterConditionSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("exists"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("missing"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter"}),
 		}),
 	]),
 	{title: "Counter Condition", description: "Checks a numeric world counter."},
@@ -112,16 +111,8 @@ export const CurrentRoomConditionSchema = editor.discriminatedUnion(
 			operation: z.literal("missing-tag"),
 			tag: editor.input({title: "Room Tag"}).min(1),
 		}),
-		z.object({
-			type: z.literal("current-room"),
-			operation: z.literal("is-exit-open"),
-			direction: DirectionSchema,
-		}),
 	]),
-	{
-		title: "Current Room Condition",
-		description: "Checks the player's current room, its tags, or an available exit.",
-	},
+	{title: "Current Room Condition", description: "Checks the player's current room or its tags."},
 );
 
 export const SingleConditionSchema = editor.discriminatedUnion(
@@ -150,21 +141,11 @@ export const DefaultConditionGroup: ConditionGroup = {
 };
 
 export const ConditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
-	editor.object(
-		{
-			type: z.literal("group"),
-			operation: editor.select(z.enum(["all", "any", "none"]), {
-				title: "Operation",
-				options: [
-					{label: "All conditions pass", value: "all"},
-					{label: "Any condition passes", value: "any"},
-					{label: "No conditions pass", value: "none"},
-				],
-			}),
-			conditions: z.array(ConditionSchema),
-		},
-		{title: "Group", description: "Combines multiple conditions."},
-	),
+	z.object({
+		type: z.literal("group"),
+		operation: z.enum(["all", "any", "none"]),
+		conditions: z.array(ConditionSchema),
+	}),
 );
 
 function normalizeFlagCondition(value: unknown): unknown {

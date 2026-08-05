@@ -1,7 +1,7 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useCallback, useState} from "react";
 import {produce, type Draft} from "immer";
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -10,8 +10,8 @@ import {initializeConnectionStubPoints} from "./Connection";
 import {Map, type ConnectionDraft} from "./Map";
 import {PopupProvider} from "../popup/Popup";
 
-function createInitialWorld(recipe: (draft: Draft<World>) => void): World {
-	const configuredWorld = produce(initialWorld, recipe);
+function createExampleWorld(recipe: (draft: Draft<World>) => void): World {
+	const configuredWorld = produce(exampleWorld, recipe);
 	return {...createDefaultFieldObject(WorldSchema), ...configuredWorld};
 }
 
@@ -75,10 +75,10 @@ function MapHarness({
 
 describe("Map layer viewports", () => {
 	it("restores each layer's viewport after switching layers", () => {
-		const groundLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 0)!;
-		const upperLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 1)!;
-		const configuredWorld = createInitialWorld((draft) => {
-			draft.metadata.layers = initialWorld.metadata.layers.map((layer) => {
+		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
+		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;
+		const initialWorld = createExampleWorld((draft) => {
+			draft.metadata.layers = exampleWorld.metadata.layers.map((layer) => {
 				if (layer.layer === groundLayer.layer) {
 					return {...layer, viewport: {x: 10, y: 20, zoom: 1}};
 				}
@@ -90,7 +90,7 @@ describe("Map layer viewports", () => {
 		});
 		const onZoomChange = jest.fn();
 		const {container} = render(
-			<MapHarness initialWorld={configuredWorld} onZoomChange={onZoomChange} />,
+			<MapHarness initialWorld={initialWorld} onZoomChange={onZoomChange} />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const mapViewport = container.querySelector<HTMLElement>(".mapViewport")!;
@@ -114,21 +114,19 @@ describe("Map layer viewports", () => {
 
 describe("Map visual layers", () => {
 	it("creates typed room references when connecting two rooms from map nodes", () => {
-		const rooms = initialWorld.rooms.slice(0, 2);
-		const configuredWorld = createInitialWorld((draft) => {
+		const rooms = exampleWorld.rooms.slice(0, 2);
+		const initialWorld = createExampleWorld((draft) => {
 			draft.rooms = rooms;
 			draft.connections = [];
 			draft.metadata.layers = [
 				{
-					...initialWorld.metadata.layers[0],
+					...exampleWorld.metadata.layers[0],
 					layer: 0,
 					rooms: rooms.map((room) => room.id),
 				},
 			];
 		});
-		const {container} = render(
-			<MapHarness initialWorld={configuredWorld} onZoomChange={jest.fn()} />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const fromRoom = screen.getByRole("button", {name: rooms[0].name});
 		const toRoom = screen.getByRole("button", {name: rooms[1].name});
 
@@ -147,21 +145,19 @@ describe("Map visual layers", () => {
 	});
 
 	it("makes the first room added after an empty clear the start room", async () => {
-		const onlyRoom = initialWorld.rooms[0];
-		const configuredWorld = createInitialWorld((draft) => {
+		const onlyRoom = exampleWorld.rooms[0];
+		const initialWorld = createExampleWorld((draft) => {
 			draft.startRoomId = onlyRoom.id;
 			draft.rooms = [onlyRoom];
 			draft.connections = [];
 			draft.metadata.layers = [
 				{
-					...initialWorld.metadata.layers.find((layer) => layer.layer === 0)!,
+					...exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!,
 					rooms: [onlyRoom.id],
 				},
 			];
 		});
-		const {container} = render(
-			<MapHarness initialWorld={configuredWorld} onZoomChange={jest.fn()} />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.click(screen.getByRole("button", {name: "Clear Ground Level layer"}));
 		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
@@ -178,16 +174,16 @@ describe("Map visual layers", () => {
 	});
 
 	it("clears every room from the active layer", async () => {
-		const groundLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 0)!;
-		const upperLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 1)!;
-		const groundRoomNames = initialWorld.rooms
+		const groundLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 0)!;
+		const upperLayer = exampleWorld.metadata.layers.find((layer) => layer.layer === 1)!;
+		const groundRoomNames = exampleWorld.rooms
 			.filter((room) => groundLayer.rooms.some((roomId) => roomId.id === room.id.id))
 			.map((room) => room.name);
-		const upperLayerRoom = initialWorld.rooms.find((room) =>
+		const upperLayerRoom = exampleWorld.rooms.find((room) =>
 			upperLayer.rooms.some((roomId) => roomId.id === room.id.id),
 		)!;
 
-		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.click(screen.getByRole("button", {name: `Clear ${groundLayer.name} layer`}));
 		expect(screen.getByRole("dialog")).toHaveTextContent(`Clear ${groundLayer.name}?`);
@@ -207,7 +203,7 @@ describe("Map visual layers", () => {
 		const {container} = render(
 			<>
 				<button type="button">Focused control</button>
-				<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />
+				<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="edit" />
 			</>,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
@@ -225,7 +221,7 @@ describe("Map visual layers", () => {
 
 	it("ignores horizontal touchpad wheel gestures", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
@@ -245,7 +241,7 @@ describe("Map visual layers", () => {
 
 	it("temporarily toggles tools while Space is held and restores the selected tool", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="edit" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 
@@ -259,7 +255,7 @@ describe("Map visual layers", () => {
 
 	it("temporarily edits from pan mode while Space is held", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 
@@ -273,7 +269,7 @@ describe("Map visual layers", () => {
 
 	it("ends an active temporary pan when Space is released", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="edit" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		map.setPointerCapture = jest.fn();
@@ -302,7 +298,7 @@ describe("Map visual layers", () => {
 
 	it("does not retain focus or select a stub when Space temporarily enables edit mode", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 		const stub = container.querySelector<SVGGElement>(
 			'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
@@ -319,7 +315,7 @@ describe("Map visual layers", () => {
 
 	it("prevents map controls from taking pointer focus while Space is held", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 
 		fireEvent.keyDown(window, {key: " ", code: "Space"});
@@ -345,7 +341,7 @@ describe("Map visual layers", () => {
 
 	it("pans from a stub without moving the stub in pan mode", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
@@ -376,7 +372,7 @@ describe("Map visual layers", () => {
 	});
 
 	it("steps the active map layer with arrow and page keys", () => {
-		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.keyDown(window, {key: "ArrowUp"});
 		expect(screen.getByRole("button", {name: "Layers · Lower Crypts"})).toBeInTheDocument();
@@ -394,7 +390,7 @@ describe("Map visual layers", () => {
 		const {container} = render(
 			<div className="editorMapArea">
 				<div data-testid="map-toolbar" />
-				<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />
+				<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />
 			</div>,
 		);
 
@@ -406,7 +402,7 @@ describe("Map visual layers", () => {
 	});
 
 	it("renders connection paths below stubs and rooms above both", () => {
-		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		const {container} = render(<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} />);
 		const connections = container.querySelector(".mapSvgConnections")!;
 		const stubPaths = container.querySelector(".mapSvgStubPaths")!;
 		const room = container.querySelector(".roomCard")!;
@@ -424,7 +420,7 @@ describe("Map visual layers", () => {
 
 	it("leaves cross-layer stubs fixed when their room is dragged", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
+			<MapHarness initialWorld={exampleWorld} onZoomChange={jest.fn()} tool="edit" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
@@ -458,15 +454,15 @@ describe("Map visual layers", () => {
 	});
 
 	it("initializes stubs again when the loaded world replaces a world with the same IDs", () => {
-		const worldWithPersistedStubs = createInitialWorld((draft) => {
-			draft.connections = initialWorld.connections.map((connection) =>
-				initializeConnectionStubPoints(initialWorld, connection),
+		const worldWithPersistedStubs = createExampleWorld((draft) => {
+			draft.connections = exampleWorld.connections.map((connection) =>
+				initializeConnectionStubPoints(exampleWorld, connection),
 			);
 		});
 		const {container} = render(
 			<MapHarness
 				initialWorld={worldWithPersistedStubs}
-				replacementWorld={initialWorld}
+				replacementWorld={exampleWorld}
 				onZoomChange={jest.fn()}
 				tool="edit"
 			/>,
@@ -505,7 +501,7 @@ describe("Map visual layers", () => {
 	it("moves a selected connection above rooms and returns it to its base layer when unselected", () => {
 		const {container} = render(
 			<MapHarness
-				initialWorld={initialWorld}
+				initialWorld={exampleWorld}
 				onZoomChange={jest.fn()}
 				tool="edit"
 				initialSelectedId="entrance-guardroom"
@@ -539,7 +535,7 @@ describe("Map visual layers", () => {
 	it("keeps a selected connection's stub above its selected path", () => {
 		const {container} = render(
 			<MapHarness
-				initialWorld={initialWorld}
+				initialWorld={exampleWorld}
 				onZoomChange={jest.fn()}
 				initialSelectedId="entrance-cistern"
 				initialIsConnectionSelected

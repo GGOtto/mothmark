@@ -2,7 +2,7 @@ import {fireEvent, render, screen} from "@testing-library/react";
 import {ConnectionSchema, RoomSchema} from "../../schemas/world/roomSchema";
 import {DefaultViewport} from "../../schemas/world/worldSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
-import {world as initialWorld} from "../../data/worlds/initialWorld";
+import {world as exampleWorld} from "../../data/worlds/exampleWorld";
 import {getLayer} from "./utils/layerUtils";
 import {idValue} from "../../utils/idUtils";
 import {
@@ -14,13 +14,13 @@ import {
 
 describe("connection visual bounds", () => {
 	it("include cross-layer stub tags beyond the room cards", () => {
-		const upperLayer = getLayer(initialWorld, 1);
-		const rooms = initialWorld.rooms.filter((room) =>
+		const upperLayer = getLayer(exampleWorld, 1);
+		const rooms = exampleWorld.rooms.filter((room) =>
 			upperLayer.rooms.some((roomId) => idValue(roomId) === idValue(room.id)),
 		);
 		const roomMinX = Math.min(...rooms.map((room) => room.metadata.position.x - 64));
 		const roomMaxX = Math.max(...rooms.map((room) => room.metadata.position.x + 64));
-		const bounds = getConnectionVisualBounds(initialWorld, upperLayer)!;
+		const bounds = getConnectionVisualBounds(exampleWorld, upperLayer)!;
 
 		expect(bounds.minX).toBeLessThan(roomMinX);
 		expect(bounds.maxX).toBeGreaterThan(roomMaxX);
@@ -29,16 +29,16 @@ describe("connection visual bounds", () => {
 
 describe("cross-layer stub positions", () => {
 	it("chooses automatic positions once and then preserves them", () => {
-		const connection = {...initialWorld.connections[0], metadata: {}};
-		const initialized = initializeConnectionStubPoints(initialWorld, connection);
+		const connection = {...exampleWorld.connections[0], metadata: {}};
+		const initialized = initializeConnectionStubPoints(exampleWorld, connection);
 
 		expect(initialized.metadata.fromLayerStubPoint).toBeDefined();
 		expect(initialized.metadata.toLayerStubPoint).toBeDefined();
 		expect(
 			initializeConnectionStubPoints(
 				{
-					...initialWorld,
-					connections: initialWorld.connections.map((candidate) =>
+					...exampleWorld,
+					connections: exampleWorld.connections.map((candidate) =>
 						idValue(candidate.id) === idValue(initialized.id) ? initialized : candidate,
 					),
 				},
@@ -86,8 +86,8 @@ describe("cross-layer stub positions", () => {
 			viewport: DefaultViewport,
 		};
 		const world = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, layers: [fromLayer, toLayer]},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, layers: [fromLayer, toLayer]},
 			rooms: [fromRoom, toRoom],
 			connections: [connection],
 		};
@@ -231,8 +231,8 @@ describe("Connection pathway glyph", () => {
 			viewport: DefaultViewport,
 		};
 		const world = {
-			...initialWorld,
-			metadata: {...initialWorld.metadata, layers: [currentLayer]},
+			...exampleWorld,
+			metadata: {...exampleWorld.metadata, layers: [currentLayer]},
 			rooms: [fromRoom, toRoom],
 			connections: [connection],
 		};

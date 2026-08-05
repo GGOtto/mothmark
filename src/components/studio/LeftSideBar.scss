@@ -3,9 +3,8 @@
 	height: 100%;
 	box-sizing: border-box;
 	padding: 14px 8px;
-	border-right: 1px solid var(--color-frame-border);
-	background: var(--color-frame);
-	color: var(--color-frame-text);
+	border-right: 1px solid var(--panel-border);
+	background: var(--panel-bg);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -38,7 +37,7 @@
 	padding: 0;
 	border: 0;
 	background: transparent;
-	color: var(--color-frame-text);
+	color: var(--panel-text);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -53,7 +52,7 @@
 		width: 3px;
 		height: 26px;
 		border-radius: 999px;
-		background: var(--color-action);
+		background: var(--panel-text);
 		opacity: 0;
 		transform: translateY(-50%);
 		transition: opacity 160ms ease;
@@ -65,7 +64,7 @@
 		outline: none;
 
 		.sideBarIcon {
-			color: var(--color-frame-text);
+			color: var(--panel-text);
 			opacity: 0.96;
 		}
 
@@ -80,7 +79,7 @@
 		position: absolute;
 		inset: 4px;
 		border-radius: 12px;
-		outline: 1px solid var(--color-focus);
+		outline: 1px solid rgba(255, 255, 255, 0.35);
 		outline-offset: 2px;
 		pointer-events: none;
 	}
@@ -91,7 +90,7 @@
 		}
 
 		.sideBarIcon {
-			color: var(--color-action);
+			color: var(--panel-text);
 			opacity: 1;
 		}
 	}
@@ -100,7 +99,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--color-frame-muted);
+		color: var(--panel-text);
 		transition:
 			color 160ms ease,
 			opacity 160ms ease;
@@ -117,7 +116,7 @@
 		gap: 1px;
 		pointer-events: none;
 
-		color: var(--color-frame-text);
+		color: var(--panel-text);
 		font-family:
 			Inter,
 			ui-sans-serif,

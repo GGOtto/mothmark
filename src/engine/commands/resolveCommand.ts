@@ -1,0 +1,177 @@
+import {produce} from "immer";
+import type {Direction, World} from "@/schemas/world/worldSchema";
+import type {GameState} from "@/schemas/states/gameStateSchemas";
+import {createGameMessage} from "../messages/createMessage";
+import {move} from "../player/move";
+import {lookAtRoom} from "../messages/createRoomMessage";
+import {
+	normalizeInput,
+	namedThingMatchesText,
+	parseCommandConnectors,
+	parseInputWithAlias,
+	type ParsedCommand,
+} from "./parse";
+import {compareIds} from "@/utils/idUtils";
+
+const DIRECTION_ALIASES: Record<string, Direction> = {
+	n: "n",
+	north: "n",
+	ne: "ne",
+	northeast: "ne",
+	e: "e",
+	east: "e",
+	se: "se",
+	southeast: "se",
+	s: "s",
+	south: "s",
+	sw: "sw",
+	southwest: "sw",
+	w: "w",
+	west: "w",
+	nw: "nw",
+	northwest: "nw",
+	up: "up",
+	u: "up",
+	down: "down",
+	d: "down",
+	in: "in",
+	enter: "in",
+	out: "out",
+	exit: "out",
+};
+
+export type CommandContext = {
+	world: World;
+	gameState: GameState;
+	rawCommand: string;
+	input: string;
+	parsed: ParsedCommand;
+	commands: CommandDefinition[];
+};
+
+export type CommandDefinition = {
+	name: string;
+	aliases: string[];
+	description?: string;
+	connectors?: string[];
+	customMatch?: (input: string) => ParsedCommand | null;
+	run: (context: CommandContext) => GameState;
+};
+
+function addSystemMessage(gameState: GameState, text: string): GameState {
+	return produce(gameState, (draft) => {
+		draft.messages.push(createGameMessage(text, "system"));
+	});
+}
+
+export function buildHelpText(commandList: CommandDefinition[]): string {
+	return commandList
+		.filter((command) => command.description)
+		.map((command) => {
+			const aliases = command.aliases.length ? ` (${command.aliases.join(", ")})` : "";
+			return `${command.name}${aliases}: ${command.description}`;
+		})
+		.join("\n");
+}
+
+export const commands: CommandDefinition[] = [
+	{
+		name: "look",
+		aliases: ["look", "l"],
+		description: "Look around the current room.",
+		run: ({world, gameState}) => lookAtRoom(world, gameState),
+	},
+	{
+		name: "examine",
+		aliases: ["examine", "inspect", "look at", "x"],
+		description: "Examine something more closely.",
+		connectors: ["in front of"],
+		run: ({world, gameState, parsed}) => {
+			if (!parsed.targetText) return addSystemMessage(gameState, "Examine what?");
+			const roomState = gameState.roomStates.find((state) =>
+				compareIds(state.id, gameState.player.currentRoom),
+			);
+			const targetText = parsed.connector?.left ?? parsed.targetText;
+			const match = roomState?.featureStates
+				.map((featureState) => ({
+					featureState,
+					feature: world.rooms
+						.flatMap((room) => room.features)
+						.find((feature) => compareIds(feature.id, featureState.id)),
+				}))
+				.find(
+					({feature, featureState}) =>
+						feature &&
+						!(featureState.flags.hidden ?? feature.flags.hidden ?? false) &&
+						namedThingMatchesText(
+							{
+								name: featureState.name ?? feature.name,
+								aliases: feature.aliases,
+							},
+							targetText,
+						),
+				);
+
+			const matchedFeature = match?.feature;
+			if (!match || !matchedFeature) {
+				return addSystemMessage(gameState, "You don't see that here.");
+			}
+
+			return produce(gameState, (draft) => {
+				const draftRoom = draft.roomStates.find((state) =>
+					compareIds(state.id, draft.player.currentRoom),
+				);
+				const draftFeature = draftRoom?.featureStates.find((state) =>
+					compareIds(state.id, match.featureState.id),
+				);
+				if (draftFeature) draftFeature.flags.examined = true;
+				draft.messages.push(
+					createGameMessage(match.featureState.description ?? matchedFeature.description, "system"),
+				);
+			});
+		},
+	},
+	// TODO: Restore item and NPC commands when those runtime domains return.
+	{
+		name: "go",
+		aliases: ["go", "walk", "move", "go to"],
+		description: "Move in a direction.",
+		customMatch: (input) =>
+			DIRECTION_ALIASES[input] ? {input, matchedAlias: input, targetText: input} : null,
+		run: ({world, gameState, parsed}) => {
+			const direction = DIRECTION_ALIASES[parsed.targetText];
+			return direction ? move(world, gameState, direction) : addSystemMessage(gameState, "Go where?");
+		},
+	},
+	{
+		name: "help",
+		aliases: ["help", "h", "?"],
+		description: "Show available commands.",
+		run: ({gameState, commands: commandList}) =>
+			addSystemMessage(gameState, buildHelpText(commandList)),
+	},
+];
+
+export function findCommand(
+	input: string,
+	commandList: CommandDefinition[] = commands,
+): {command: CommandDefinition; parsed: ParsedCommand} | null {
+	const normalizedInput = normalizeInput(input);
+
+	for (const command of commandList) {
+		const customParsed = command.customMatch?.(normalizedInput);
+		if (customParsed)
+			return {command, parsed: parseCommandConnectors(customParsed, command.connectors)};
+	}
+
+	const aliasMatches = commandList
+		.flatMap((command) => command.aliases.map((alias) => ({command, alias})))
+		.sort((a, b) => normalizeInput(b.alias).length - normalizeInput(a.alias).length);
+
+	for (const {command, alias} of aliasMatches) {
+		const parsed = parseInputWithAlias(normalizedInput, alias);
+		if (parsed) return {command, parsed: parseCommandConnectors(parsed, command.connectors)};
+	}
+
+	return null;
+}

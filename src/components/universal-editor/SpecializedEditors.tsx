@@ -9,7 +9,11 @@ import type {
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {ConditionalTextSchema} from "../../schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
-import {applyTextTransform} from "./utils/universalEditorUtils";
+import {
+	applyTextTransform,
+	generateConditionSummary,
+	generateEffectSummary,
+} from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
 import {renderChildControl} from "./renderChildControl";
 import "./SpecializedEditors.scss";
@@ -1106,4 +1110,12 @@ function buildAliases(sourceText?: string, includePluralization?: boolean) {
 		}
 	}
 	return [...values].filter(Boolean);
+}
+
+export function formatConditionForArrayTitle(value: unknown) {
+	return generateConditionSummary(value);
+}
+
+export function formatEffectForArrayTitle(value: unknown) {
+	return generateEffectSummary(value);
 }

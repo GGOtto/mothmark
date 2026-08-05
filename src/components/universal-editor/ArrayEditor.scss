@@ -76,11 +76,11 @@ summary.arrayEditor__itemTitle {
 }
 
 .arrayEditor__item--warning {
-	box-shadow: inset 2px 0 0 var(--field-warning, var(--color-warning));
+	box-shadow: inset 2px 0 0 var(--field-warning, #b88718);
 }
 
 .arrayEditor__item--error {
-	box-shadow: inset 2px 0 0 var(--field-danger, var(--color-danger));
+	box-shadow: inset 2px 0 0 var(--field-danger, #b94444);
 }
 
 .arrayEditor__preview {
@@ -121,7 +121,7 @@ summary.arrayEditor__itemTitle {
 	justify-content: center;
 	border: 0;
 	background: transparent;
-	color: var(--field-danger, var(--color-danger));
+	color: var(--field-danger, #b94444);
 	cursor: pointer;
 	padding: 3px;
 }

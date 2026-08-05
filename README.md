@@ -22,31 +22,31 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Database
 
-Development uses the database configured in Phase's `Development` environment. The checked-in
-`.phase.json` selects the Mothmark app and that environment; `pnpm dev` runs Next.js through the
-Phase CLI so its database variables are injected into the server process.
+Development uses PostgreSQL 17 installed through Homebrew, plus Knex for database access and
+migrations. The checked-in `.env` contains local-only defaults; Phase can populate the same
+variables in hosted environments.
 
-Authenticate with Phase once, then start the development server:
-
-```bash
-phase auth
-pnpm dev
-```
-
-Apply pending migrations to the Phase Development database with its direct migration URL:
+Start PostgreSQL and apply all pending migrations:
 
 ```bash
-pnpm db:migrate
+pnpm db:up
+pnpm migrate
 ```
 
-To create a migration, run:
+There are no application migrations yet. To create one when the first table is ready, run:
 
 ```bash
 pnpm db:make initial_schema
 ```
 
-The `db:up`, `db:down`, and `db:create` scripts remain available for explicitly requested local
-PostgreSQL work, but they are not part of the normal development path.
+The local `mothmark` database only needs to be created once:
+
+```bash
+pnpm db:create
+```
+
+Use `pnpm db:down` to stop PostgreSQL. `pnpm db:migrate` is also available when keeping all database
+commands under the same prefix is more convenient.
 
 Migration files live in `db/migrations`. Application database access should go through the DBAL in
 `src/db/dbal`; call `getDb()` to get the shared Knex client.

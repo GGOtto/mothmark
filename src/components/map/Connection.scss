@@ -58,12 +58,12 @@
 }
 
 .connectionMidpointGlyphBody {
-	fill: var(--map-node-surface);
+	fill: white;
 	stroke: none;
 }
 
 .connectionMidpointGlyphFace {
-	fill: var(--map-node-surface);
+	fill: white;
 	stroke: none;
 }
 
@@ -90,7 +90,7 @@
 }
 
 .connection:has(.connectionMidpointGlyphControl:active) .connectionMidpointGlyphFace {
-	fill: var(--map-room-hover);
+	fill: #d8d8d8;
 }
 
 .connectionSelected .connectionMidpointGlyphOutline {

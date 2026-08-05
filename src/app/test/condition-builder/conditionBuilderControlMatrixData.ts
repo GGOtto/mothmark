@@ -5,13 +5,6 @@ import type {
 } from "../../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 import {toID} from "../../../utils/idUtils";
-import {
-	ConditionSchema,
-	CounterConditionSchema,
-	CurrentRoomConditionSchema,
-	FlagConditionSchema,
-} from "../../../schemas/world/conditionSchema";
-import {createDefaultFieldObject} from "../../../utils/createDefaultFieldObject";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"auto",
@@ -32,15 +25,20 @@ type ConditionSetup = {
 const SETUPS = {
 	basic: {
 		id: "basic",
-		value: {
-			...createDefaultFieldObject(FlagConditionSchema),
-			flag: "foyer.doorUnlocked",
-		},
+		value: {type: "flag", operation: "equals", flag: "foyer.doorUnlocked", value: true},
 		metadata: {
 			title: "Flag Condition",
 			description: "Simple scalar condition editing.",
 			features: {
 				allowNestedGroups: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					flag: "schema.condition.flagOperations",
+					counter: "schema.condition.counterOperations",
+					"current-room": "schema.condition.currentRoomOperations",
+				},
 			},
 		},
 	},
@@ -50,16 +48,8 @@ const SETUPS = {
 			type: "group",
 			operator: "and",
 			conditions: [
-				{
-					...createDefaultFieldObject(FlagConditionSchema),
-					flag: "library.lampLit",
-				},
-				{
-					...createDefaultFieldObject(CounterConditionSchema),
-					counter: "turns",
-					operator: "gt",
-					value: 3,
-				},
+				{type: "flag", operation: "equals", flag: "library.lampLit", value: true},
+				{type: "counter", operation: "compare", counter: "turns", operator: "gt", value: 3},
 			],
 		},
 		metadata: {
@@ -68,6 +58,14 @@ const SETUPS = {
 			features: {
 				allowNestedGroups: true,
 				compact: false,
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					flag: "schema.condition.flagOperations",
+					counter: "schema.condition.counterOperations",
+					"current-room": "schema.condition.currentRoomOperations",
+				},
 			},
 		},
 	},
@@ -77,8 +75,12 @@ const SETUPS = {
 		metadata: {
 			title: "Restricted Types",
 			features: {
-				conditionSchema: CurrentRoomConditionSchema,
+				allowedConditionTypes: ["current-room", "inventory"],
 				compact: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				operatorOptionSourcesByType: {
+					"current-room": "schema.condition.currentRoomOperations",
+				},
 			},
 		},
 	},
@@ -87,20 +89,28 @@ const SETUPS = {
 		value: {type: "counter", operation: "compare", counter: "turns", operator: "gte", value: 2},
 		metadata: {
 			title: "World Data Lists",
-			description: "Condition and operator choices are supplied by the schema.",
+			description: "Condition and operator choices are supplied by named option lists.",
 			features: {
+				conditionTypeOptionSource: "schema.condition.types",
+				groupOperatorOptionSource: "schema.condition.groupOperators",
+				comparisonOperatorOptionSource: "schema.condition.comparisonOperators",
+				operatorOptionSourcesByType: {
+					counter: "schema.condition.counterOperations",
+				},
 				showGeneratedSummary: true,
 			},
 		},
 	},
 	error: {
 		id: "error",
-		value: createDefaultFieldObject(FlagConditionSchema),
+		value: {type: "flag", operation: "equals", flag: "", value: true},
 		error: "Flag id is required.",
 		metadata: {
 			title: "Errored Condition",
 			features: {
 				allowNestedGroups: true,
+				conditionTypeOptionSource: "schema.condition.types",
+				operatorOptionSourcesByType: {flag: "schema.condition.flagOperations"},
 			},
 		},
 	},
@@ -120,11 +130,7 @@ function makeVariant(
 		error: setup.error,
 		appearance,
 		themes,
-		metadata: {
-			...setup.metadata,
-			type: "condition-builder",
-			features: {conditionSchema: ConditionSchema, ...setup.metadata.features},
-		},
+		metadata: {...setup.metadata, type: "condition-builder"},
 	};
 }
 

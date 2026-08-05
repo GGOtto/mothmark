@@ -4,7 +4,6 @@ import {docify} from "@/schemas/utils/docify";
 import {WorldConditionSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
 import {EventSchema} from "./eventSchema";
-import {CommandSchema} from "./commandSchemas";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
 import {idValue} from "../../utils/idUtils";
 
@@ -106,16 +105,6 @@ export const WorldSchema = editor
 				},
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "connection"},
 			}),
-			commands: editor.array(CommandSchema, {
-				title: "Commands",
-				description: "Author-defined player commands and their conditional behavior.",
-				emptyState: {
-					emptyTitle: "No authored commands",
-					emptyDescription: "Add a command to match player input and run authored behavior.",
-					emptyActionLabel: "Add command",
-				},
-				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "command"},
-			}),
 			conditions: editor.array(WorldConditionSchema, {
 				title: "Conditions",
 				description: "Reusable conditions for rooms and features.",
@@ -141,12 +130,12 @@ export const WorldSchema = editor
 		},
 		{
 			title: "World",
-			description: "A room map with authored commands and supporting world logic.",
+			description: "A room map made of rooms, connections, and room-local features.",
 		},
 	)
 	.describe(
 		docify(`
-			The authored world currently contains rooms, connections, room features, and commands.
+			The authored world currently contains rooms, connections, and room features.
 			Conditions, effects, flags, and counters remain as supporting logic.
 
 			TODO: Restore additional entity collections only when their runtime models are rebuilt.
@@ -155,7 +144,6 @@ export const WorldSchema = editor
 	.superRefine((world, ctx) => {
 		const roomIds = new Set<string>();
 		const connectionIds = new Set<string>();
-		const commandIds = new Set<string>();
 		const conditionIds = new Set<string>();
 
 		for (const [roomIndex, room] of world.rooms.entries()) {
@@ -206,20 +194,6 @@ export const WorldSchema = editor
 					});
 				}
 			}
-		}
-
-		for (const [commandIndex, command] of world.commands.entries()) {
-			const commandId = idValue(command.id);
-			if (!commandId || commandIds.has(commandId)) {
-				ctx.addIssue({
-					code: "custom",
-					message: commandId
-						? `Duplicate command id: ${commandId}`
-						: "Authored commands need a command id.",
-					path: ["commands", commandIndex, "id"],
-				});
-			}
-			commandIds.add(commandId);
 		}
 
 		for (const [conditionIndex, condition] of world.conditions.entries()) {

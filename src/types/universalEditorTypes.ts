@@ -1,6 +1,5 @@
 import type {
 	EditorControlAppearance,
-	EditorCommandVariableType,
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,
@@ -31,7 +30,6 @@ import type {EditorPath} from "./editor/editorPathTypes";
 
 export type {
 	EditorControlAppearance,
-	EditorCommandVariableType,
 	EditorControlScheme,
 	EditorControlTheme,
 	EditorControlType,

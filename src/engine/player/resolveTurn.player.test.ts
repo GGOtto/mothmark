@@ -15,11 +15,11 @@ describe("turn resolution through the player path", () => {
 	it("echoes the player's original command while matching it case-insensitively", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
 
-		const nextGame = resolveTurn(world, game, "  EAST  ");
+		const nextGame = resolveTurn(world, game, "  LoOk  ");
 
 		expect(nextGame.messages.at(-2)).toMatchObject({
 			type: "command",
-			text: "  EAST  ",
+			text: "  LoOk  ",
 		});
 		expect(nextGame.messages.at(-1)).toMatchObject({type: "room"});
 	});
@@ -27,8 +27,8 @@ describe("turn resolution through the player path", () => {
 	it("increments one turn per accepted command without mutating prior state", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
 
-		const firstTurn = resolveTurn(world, game, "east");
-		const secondTurn = resolveTurn(world, firstTurn, "west");
+		const firstTurn = resolveTurn(world, game, "help");
+		const secondTurn = resolveTurn(world, firstTurn, "look");
 
 		expect(game.player.turns).toBe(0);
 		expect(game.messages).toHaveLength(1);

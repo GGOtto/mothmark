@@ -1,0 +1,375 @@
+import type {EditorOption} from "@/types/editor/editorMetadataTypes";
+import {toID} from "@/utils/idUtils";
+
+// Dormant UI catalogs are intentionally retained while their item, NPC, quest,
+// event, and authored-command schemas/runtime models are out of scope.
+// TODO: Reconnect these options only as each domain is reintroduced.
+
+export const CONDITION_TYPE_OPTION_SOURCE = "schema.condition.types";
+export const CONDITION_GROUP_OPERATOR_OPTION_SOURCE = "schema.condition.group.operations";
+export const CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE = "schema.condition.comparison-operators";
+export const CONDITION_STRING_COMPARISON_OPERATOR_OPTION_SOURCE =
+	"schema.condition.string-comparison-operators";
+export const EFFECT_TYPE_OPTION_SOURCE = "schema.effect.types";
+
+export const conditionTypeOptions: EditorOption[] = [
+	{label: "Flag", value: "flag", description: "Checks a boolean world, room, or feature flag."},
+	{label: "Counter", value: "counter", description: "Compares a numeric counter."},
+	{label: "Current room", value: "current-room", description: "Checks where the player is."},
+	{label: "Inventory", value: "inventory", description: "Checks the player's inventory."},
+	{label: "Item location", value: "item-location", description: "Checks where an item exists."},
+	{label: "NPC", value: "npc", description: "Checks NPC state."},
+	{label: "Command history", value: "command-history", description: "Checks recent commands."},
+	{label: "Random chance", value: "random-chance", description: "Checks a probability."},
+	{label: "Quest", value: "quest", description: "Checks quest state."},
+	{label: "Scheduled event", value: "scheduled-event", description: "Checks scheduled event state."},
+	{label: "Turn", value: "turn", description: "Checks the global turn count."},
+	{
+		label: "Resolved target",
+		value: "resolved-target",
+		description: "Checks parsed command targets.",
+	},
+	{label: "Group", value: "group", description: "Nests multiple conditions."},
+];
+
+export const conditionGroupOperatorOptions: EditorOption[] = [
+	{label: "All conditions pass", value: "all", description: "Every child condition must pass."},
+	{
+		label: "Any condition passes",
+		value: "any",
+		description: "At least one child condition must pass.",
+	},
+	{label: "No conditions pass", value: "none", description: "No child condition may pass."},
+];
+
+export const comparisonOperatorOptions: EditorOption[] = [
+	{label: "Equals", value: "eq"},
+	{label: "Does not equal", value: "neq"},
+	{label: "Greater than", value: "gt"},
+	{label: "Greater than or equal to", value: "gte"},
+	{label: "Less than", value: "lt"},
+	{label: "Less than or equal to", value: "lte"},
+];
+
+export const stringComparisonOperatorOptions: EditorOption[] = [
+	{label: "Equals", value: "eq"},
+	{label: "Does not equal", value: "neq"},
+	{label: "Includes", value: "includes"},
+	{label: "Starts with", value: "starts-with"},
+	{label: "Ends with", value: "ends-with"},
+];
+
+export const conditionOperationOptionsByType: Record<string, EditorOption[]> = {
+	flag: [
+		{label: "True", value: "true"},
+		{label: "False", value: "false"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	counter: [
+		{label: "Compare", value: "compare"},
+		{label: "Between", value: "between"},
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+	],
+	"current-room": [
+		{label: "Is", value: "is"},
+		{label: "Is not", value: "is-not"},
+		{label: "Has tag", value: "has-tag"},
+		{label: "Missing tag", value: "missing-tag"},
+	],
+	inventory: [
+		{label: "Has item", value: "has-item"},
+		{label: "Missing item", value: "missing-item"},
+		{label: "Has all items", value: "has-all-items"},
+		{label: "Has any item", value: "has-any-item"},
+		{label: "Contains tag", value: "contains-tag"},
+		{label: "Missing tag", value: "missing-tag"},
+		{label: "Count", value: "count"},
+		{label: "Tag count", value: "tag-count"},
+	],
+	"item-location": [
+		{label: "In inventory", value: "in-inventory"},
+		{label: "In current room", value: "in-current-room"},
+		{label: "In room", value: "in-room"},
+		{label: "On surface", value: "on-surface"},
+		{label: "In container", value: "in-container"},
+		{label: "Held by NPC", value: "held-by-npc"},
+		{label: "Hidden", value: "hidden"},
+		{label: "Destroyed", value: "destroyed"},
+		{label: "Visible", value: "visible"},
+		{label: "Reachable", value: "reachable"},
+	],
+	npc: [
+		{label: "In current room", value: "in-current-room"},
+		{label: "In room", value: "in-room"},
+		{label: "Has item", value: "has-item"},
+		{label: "Mood is", value: "mood-is"},
+		{label: "Trust", value: "trust"},
+		{label: "Met player", value: "met-player"},
+		{label: "Not met player", value: "not-met-player"},
+		{label: "Hostile", value: "hostile"},
+		{label: "Friendly", value: "friendly"},
+		{label: "Asleep", value: "asleep"},
+		{label: "Awake", value: "awake"},
+		{label: "Can see player", value: "can-see-player"},
+		{label: "Cannot see player", value: "cannot-see-player"},
+	],
+	"command-history": [
+		{label: "Previous command was", value: "previous-command-was"},
+		{label: "Previous raw command was", value: "previous-raw-command-was"},
+		{label: "Previous target was", value: "previous-target-was"},
+		{label: "Used command before", value: "used-command-before"},
+		{label: "Never used command", value: "never-used-command"},
+		{label: "Used command within turns", value: "used-command-within-turns"},
+		{label: "Repeated command", value: "repeated-command"},
+		{label: "Sequence", value: "sequence"},
+	],
+	quest: [
+		{label: "Not started", value: "not-started"},
+		{label: "Active", value: "active"},
+		{label: "Completed", value: "completed"},
+		{label: "Failed", value: "failed"},
+		{label: "Objective complete", value: "objective-complete"},
+		{label: "Objective incomplete", value: "objective-incomplete"},
+	],
+	"scheduled-event": [
+		{label: "Exists", value: "exists"},
+		{label: "Missing", value: "missing"},
+		{label: "Event scheduled", value: "event-scheduled"},
+		{label: "Event not scheduled", value: "event-not-scheduled"},
+		{label: "Tag scheduled", value: "tag-scheduled"},
+		{label: "Tag not scheduled", value: "tag-not-scheduled"},
+	],
+	turn: [
+		{label: "Compare", value: "compare"},
+		{label: "Multiple of", value: "multiple-of"},
+	],
+	"resolved-target": [
+		{label: "Object is", value: "object-is"},
+		{label: "Target is", value: "target-is"},
+		{label: "Connector is", value: "connector-is"},
+		{label: "Topic is", value: "topic-is"},
+		{label: "Direction is", value: "direction-is"},
+	],
+};
+
+export const effectTypeOptions: EditorOption[] = [
+	{label: "Show message", value: "message"},
+	{label: "Set flag", value: "flag"},
+	{label: "Counter", value: "counter"},
+	{label: "Feature", value: "feature"},
+	{label: "Move room", value: "room"},
+	{label: "Player", value: "player"},
+	{label: "Use saved effect", value: "effect-ref"},
+];
+
+export const effectOperationOptionsByType: Record<string, EditorOption[]> = {
+	message: [
+		{label: "Show", value: "show"},
+		{label: "Random", value: "random"},
+		{label: "Append to last message", value: "append-last-message"},
+	],
+	flag: [
+		{label: "Create", value: "create"},
+		{label: "Set", value: "set"},
+		{label: "Toggle", value: "toggle"},
+		{label: "Delete", value: "delete"},
+	],
+	counter: [
+		{label: "Create", value: "create"},
+		{label: "Set", value: "set"},
+		{label: "Increase", value: "increase"},
+		{label: "Decrease", value: "decrease"},
+		{label: "Delete", value: "delete"},
+	],
+	inventory: [
+		{label: "Add item", value: "add"},
+		{label: "Remove item", value: "remove"},
+		{label: "Remove all with tag", value: "remove-all-with-tag"},
+		{label: "Replace item", value: "replace"},
+	],
+	"item-location": [
+		{label: "Move to room", value: "move-to-room"},
+		{label: "Move to current room", value: "move-to-current-room"},
+		{label: "Place on surface", value: "place-on-surface"},
+		{label: "Place in container", value: "place-in-container"},
+		{label: "Give to NPC", value: "give-to-npc"},
+		{label: "Hide", value: "hide"},
+		{label: "Reveal", value: "reveal"},
+		{label: "Destroy", value: "destroy"},
+		{label: "Create", value: "create"},
+	],
+	feature: [
+		{label: "Change name", value: "change-name"},
+		{label: "Change description", value: "change-description"},
+		{label: "Move to room", value: "move-to-room"},
+		{label: "Hide from player", value: "hide-from-player"},
+		{label: "Show to player", value: "show-to-player"},
+		{label: "Show in room description", value: "show-in-room-description"},
+		{label: "Hide in room description", value: "hide-in-room-description"},
+		{label: "Destroy", value: "destroy"},
+	],
+	room: [
+		{label: "Move player", value: "move-player-to"},
+		{label: "Set name", value: "set-name"},
+		{label: "Set description", value: "set-description"},
+		{label: "Set short description", value: "set-short-description"},
+		{label: "Lock exit", value: "lock-exit"},
+		{label: "Unlock exit", value: "unlock-exit"},
+		{label: "Lock all exits", value: "lock-all-exits"},
+		{label: "Unlock all exits", value: "unlock-all-exits"},
+		{label: "Add tag", value: "add-tag"},
+		{label: "Remove tag", value: "remove-tag"},
+		{label: "Set active", value: "set-active"},
+		{label: "Set inactive", value: "set-inactive"},
+	],
+	player: [
+		{label: "Kill player", value: "kill"},
+		{label: "Teleport", value: "teleport"},
+		{label: "Freeze", value: "freeze"},
+		{label: "Unfreeze", value: "unfreeze"},
+	],
+	npc: [
+		{label: "Move to room", value: "move-to-room"},
+		{label: "Move to current room", value: "move-to-current-room"},
+		{label: "Remove", value: "remove"},
+		{label: "Set mood", value: "set-mood"},
+		{label: "Increase trust", value: "increase-trust"},
+		{label: "Decrease trust", value: "decrease-trust"},
+		{label: "Make hostile", value: "make-hostile"},
+		{label: "Make friendly", value: "make-friendly"},
+		{label: "Start dialogue", value: "start-dialogue"},
+		{label: "End dialogue", value: "end-dialogue"},
+	],
+	event: [
+		{label: "Schedule", value: "schedule"},
+		{label: "Cancel instance", value: "cancel"},
+		{label: "Cancel by event", value: "cancel-by-event-id"},
+		{label: "Cancel with tag", value: "cancel-with-tag"},
+		{label: "Delay", value: "delay"},
+		{label: "Repeat", value: "repeat"},
+	],
+	flow: [
+		{label: "Stop processing", value: "stop-processing"},
+		{label: "Continue processing", value: "continue-processing"},
+		{label: "Run generic command afterward", value: "run-generic-command-afterward"},
+		{label: "Prevent turn consumption", value: "prevent-turn-consumption"},
+		{label: "Consume extra turn", value: "consume-extra-turn"},
+	],
+};
+
+export const editorOptionCatalogs: Record<string, EditorOption[]> = {
+	[CONDITION_TYPE_OPTION_SOURCE]: conditionTypeOptions,
+	[CONDITION_GROUP_OPERATOR_OPTION_SOURCE]: conditionGroupOperatorOptions,
+	[CONDITION_COMPARISON_OPERATOR_OPTION_SOURCE]: comparisonOperatorOptions,
+	[CONDITION_STRING_COMPARISON_OPERATOR_OPTION_SOURCE]: stringComparisonOperatorOptions,
+	[EFFECT_TYPE_OPTION_SOURCE]: effectTypeOptions,
+};
+
+for (const [type, options] of Object.entries(conditionOperationOptionsByType)) {
+	editorOptionCatalogs[`schema.condition.${type}.operations`] = options;
+}
+
+for (const [type, options] of Object.entries(effectOperationOptionsByType)) {
+	editorOptionCatalogs[`schema.effect.${type}.operations`] = options;
+}
+
+export function createDefaultConditionValue(type = "flag"): Record<string, unknown> {
+	if (type === "group") return {type: "group", operation: "all", conditions: []};
+	if (type === "counter") return {type, operation: "compare", counter: "", operator: "eq", value: 0};
+	if (type === "current-room") return {type, operation: "is", roomId: toID("room", "")};
+	if (type === "inventory") return {type, operation: "has-item", itemId: toID("item", "")};
+	if (type === "item-location") return {type, operation: "in-inventory", itemId: toID("item", "")};
+	if (type === "npc") return {type, operation: "in-current-room", npcId: toID("npc", "")};
+	if (type === "command-history") return {type, operation: "previous-command-was", commandName: ""};
+	if (type === "random-chance") return {type, chance: 0.5, seedKey: "", invert: false};
+	if (type === "quest") return {type, operation: "active", questId: toID("quest", "")};
+	if (type === "scheduled-event") return {type, operation: "exists", instanceId: ""};
+	if (type === "turn") return {type, operation: "compare", operator: "eq", value: 0};
+	if (type === "resolved-target")
+		return {type, operation: "object-is", objectId: toID("object", "")};
+	if (type === "has-item") return {type, itemId: toID("item", ""), negate: false};
+	if (type === "room-history")
+		return {type, roomId: toID("room", ""), history: "visited", value: true};
+	if (type === "feature-examined")
+		return {
+			type,
+			roomId: toID("room", ""),
+			featureId: toID("feature", ""),
+			value: true,
+		};
+	return {type, "flag-type": "normal", operation: "true", flag: ""};
+}
+
+export function createDefaultEffectValue(
+	type: string,
+	operationOptions: EditorOption[] = effectOperationOptionsByType[type] ?? [],
+	selectedOperation?: string,
+	flagType: "normal" | "room" | "feature" = "normal",
+): Record<string, unknown> {
+	const operation = selectedOperation ?? operationOptions[0]?.value;
+
+	if (type === "effect-ref") return {type, effectId: toID("effect", "")};
+	if (type === "message") {
+		if (operation === "random") return {type, operation, messages: []};
+		if (operation === "append-last-message") return {type, operation, message: "", format: "newline"};
+		return {type, operation: operation ?? "show", message: ""};
+	}
+	if (type === "flag") {
+		const base = {type, "flag-type": flagType, operation: operation ?? "set"};
+		const target =
+			flagType === "feature"
+				? {roomId: toID("room", ""), featureId: toID("feature", "")}
+				: flagType === "room"
+					? {roomId: toID("room", "")}
+					: {};
+		return {
+			...base,
+			...target,
+			flag: "",
+			...((operation ?? "set") === "set" || (flagType === "normal" && operation === "create")
+				? {value: true}
+				: {}),
+		};
+	}
+	if (type === "counter") {
+		const base = {type, operation: operation ?? "create", counter: ""};
+		if (operation === "increase" || operation === "decrease") return {...base, amount: 1};
+		if (operation === "delete") return base;
+		return {...base, value: 0};
+	}
+	if (type === "feature") {
+		const base = {
+			type,
+			operation: operation ?? "change-name",
+			roomId: toID("room", ""),
+			featureId: toID("feature", ""),
+		};
+		if (operation === "change-name" || operation === "change-description")
+			return {...base, value: ""};
+		if (operation === "move-to-room") return {...base, newRoomId: toID("room", "")};
+		return base;
+	}
+	if (type === "room") {
+		const base = {type, operation: operation ?? "move-player-to", roomId: toID("room", "")};
+		if (["set-name", "set-description", "set-short-description"].includes(operation ?? ""))
+			return {...base, variantId: ""};
+		if (operation === "lock-exit" || operation === "unlock-exit") return {...base, direction: ""};
+		if (operation === "add-tag" || operation === "remove-tag") return {...base, tag: ""};
+		return base;
+	}
+	if (type === "player") {
+		if (operation === "teleport") return {type, operation, roomId: toID("room", "")};
+		if (operation === "freeze")
+			return {
+				type,
+				operation,
+				freezeMessage: undefined,
+				turns: undefined,
+			};
+		if (operation === "unfreeze") return {type, operation};
+		return {type, operation: operation ?? "kill", customDeathMessage: undefined};
+	}
+	return {type, operation: operation ?? ""};
+}

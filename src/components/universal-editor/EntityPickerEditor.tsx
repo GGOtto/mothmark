@@ -1,31 +1,17 @@
 "use client";
 
-import {
-	EntityPicker,
-	type EntityPickerEntry,
-	type EntityPickerPresentation,
-} from "@/components/entity-picker";
-import type {EntityPickerOption, EntityType} from "@/types/editor/editorRegistryTypes";
-import type {EditorControlMetadata, EditorControlProps} from "@/types/universalEditorTypes";
-import {idValue, type ID, type WorldIdEntityType} from "@/utils/idUtils";
-import {resolveEditorControlAppearance} from "@/types/universalEditorTypes";
+import type {EntityPickerOption, EntityType} from "../../types/editor/editorRegistryTypes";
+import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
+import {idValue, toID, type ID, type WorldIdEntityType} from "../../utils/idUtils";
+import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {FieldShell} from "./FieldShell";
+import "./EntityPickerEditor.scss";
 
 export type EntityPickerFeatures = {
-	entityType?: WorldIdEntityType;
-	entityTypes?: WorldIdEntityType[];
-	presentation?: EntityPickerPresentation;
-	searchable?: boolean;
-	searchPlaceholder?: string;
+	entityType: WorldIdEntityType;
 	allowCreate?: boolean;
 	showPreview?: boolean;
-	showDescriptions?: boolean;
-	showTags?: boolean;
-	showBadges?: boolean;
 	clearButton?: boolean;
-	clearable?: boolean;
-	resultLimit?: number;
-	scope?: "world" | "sibling-room";
 	options?: EntityPickerOption[];
 };
 
@@ -39,46 +25,18 @@ export type EntityPickerEditorProps = EditorControlProps<
 	EntityPickerControlMetadata
 >;
 
-function registryEntityType(entityType: WorldIdEntityType): EntityType | undefined {
+function registryEntityType(
+	entityType: EntityPickerFeatures["entityType"],
+): EntityType | undefined {
 	if (entityType === "npc") return "character";
 	if (entityType === "command" || entityType === "quest-objective") return undefined;
 	return entityType;
-}
-
-function siblingRoomId(path: Array<string | number>, context: EntityPickerEditorProps["context"]) {
-	const siblingPath = [...path.slice(0, -1), "roomId"];
-	return idValue(context.getWorldValue?.(siblingPath) ?? context.getValue(siblingPath));
-}
-
-function pickerEntry(
-	option: EntityPickerOption,
-	requestedType: WorldIdEntityType,
-): EntityPickerEntry {
-	const entityType = option.entityType ?? registryEntityType(requestedType) ?? requestedType;
-	return {
-		ref: {type: requestedType, id: option.id},
-		entityType,
-		label: option.label,
-		description: option.description,
-		summary: option.description,
-		aliases: option.aliases ?? [],
-		tags: option.tags ?? [],
-		kind: option.kind,
-		hierarchy: option.hierarchy ?? [],
-		facts: option.facts,
-		relations: option.relations,
-		path: option.path,
-		parentId: option.parentId,
-		disabled: option.disabled,
-		deprecated: option.deprecated,
-	};
 }
 
 export function EntityPickerEditor({
 	value,
 	onChange,
 	metadata,
-	path,
 	error,
 	warnings,
 	disabled,
@@ -89,44 +47,29 @@ export function EntityPickerEditor({
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
-	const configuredTypes = metadata.features.entityTypes?.length
-		? metadata.features.entityTypes
-		: metadata.features.entityType
-			? [metadata.features.entityType]
-			: value?.type
-				? [value.type as WorldIdEntityType]
-				: [];
-	const requestedTypes = [...new Set(configuredTypes)];
-	const inferredSiblingRoomId = siblingRoomId(path, context);
-	const explicitOptions = metadata.features.options;
-	const nextEntries = requestedTypes.flatMap((requestedType) => {
-		const registryType = registryEntityType(requestedType);
-		const options = explicitOptions?.length
-			? explicitOptions.filter(
-					(option) =>
-						!option.entityType ||
-						option.entityType === registryType ||
-						option.entityType === requestedType,
-				)
-			: registryType
-				? (context.registerEntityPicker?.getEntities(registryType) ?? [])
-				: [];
-		return options.map((option) => pickerEntry(option, requestedType));
-	});
-	const shouldScopeToRoom =
-		metadata.features.scope === "sibling-room" ||
-		(metadata.features.scope !== "world" && requestedTypes.every((type) => type === "feature"));
-	const scopedEntries =
-		shouldScopeToRoom && inferredSiblingRoomId
-			? nextEntries.filter((entry) => !entry.parentId || entry.parentId === inferredSiblingRoomId)
-			: nextEntries;
-	const seenEntries = new Set<string>();
-	const entries = scopedEntries.filter((entry) => {
-		const key = `${entry.ref.type}:${entry.parentId ?? ""}:${entry.ref.id}`;
-		if (seenEntries.has(key)) return false;
-		seenEntries.add(key);
-		return true;
-	});
+	const canEdit = !isDisabled && !isReadonly;
+	const selectedId = idValue(value);
+	const entityType = registryEntityType(metadata.features.entityType);
+	const registryOptions =
+		entityType && context.registerEntityPicker
+			? context.registerEntityPicker.getEntities(entityType)
+			: [];
+	const options = metadata.features.options ?? registryOptions;
+	const selectedOption =
+		options.find((option) => option.id === selectedId) ??
+		(entityType ? context.registerEntityPicker?.getEntityById(entityType, selectedId) : undefined);
+	const isUnknownValue = selectedId.length > 0 && !selectedOption;
+
+	function commitValue(nextId: string) {
+		onChange(nextId ? toID(metadata.features.entityType, nextId) : undefined);
+	}
+
+	function createEntity() {
+		if (!canEdit || !metadata.features.allowCreate) return;
+
+		const nextId = selectedId.trim();
+		if (nextId) commitValue(nextId);
+	}
 
 	return (
 		<FieldShell
@@ -138,28 +81,69 @@ export function EntityPickerEditor({
 			className={metadata.className}
 			testId={metadata.testId}
 		>
-			<EntityPicker
-				value={value}
-				entries={entries}
-				entityTypes={requestedTypes.map((type) => registryEntityType(type) ?? type)}
-				onChange={(selection) => onChange(selection?.ref)}
-				title={metadata.title}
-				placeholder={metadata.placeholder}
-				searchPlaceholder={metadata.features.searchPlaceholder}
-				presentation={metadata.features.presentation}
-				searchable={metadata.features.searchable ?? true}
-				clearable={metadata.features.clearButton ?? metadata.features.clearable ?? !metadata.required}
-				allowCreate={metadata.features.allowCreate}
-				showPreview={metadata.features.showPreview}
-				showDescriptions={metadata.features.showDescriptions ?? true}
-				showTags={metadata.features.showTags ?? true}
-				showBadges={metadata.features.showBadges ?? true}
-				resultLimit={metadata.features.resultLimit}
-				disabled={isDisabled}
-				readonly={isReadonly}
-				autoFocus={autoFocus}
-				invalid={Boolean(error)}
-			/>
+			<div className="entityPickerEditor">
+				<div className="entityPickerEditor__row">
+					<select
+						className="entityPickerEditor__select"
+						aria-label={metadata.title}
+						value={selectedOption ? selectedId : ""}
+						disabled={isDisabled || isReadonly}
+						autoFocus={autoFocus}
+						onChange={(event) => commitValue(event.target.value)}
+					>
+						<option value="">{metadata.placeholder ?? "Choose entity"}</option>
+						{options.map((option) => (
+							<option key={option.id} value={option.id}>
+								{option.label}
+							</option>
+						))}
+					</select>
+
+					{metadata.features.clearButton ? (
+						<button
+							className="entityPickerEditor__button"
+							type="button"
+							disabled={!canEdit || selectedId.length === 0}
+							onClick={() => commitValue("")}
+						>
+							Clear
+						</button>
+					) : null}
+				</div>
+
+				{metadata.features.allowCreate ? (
+					<div className="entityPickerEditor__createRow">
+						<input
+							className="entityPickerEditor__createInput"
+							value={isUnknownValue ? selectedId : ""}
+							placeholder="new-entity-id"
+							disabled={!canEdit}
+							onChange={(event) => commitValue(event.target.value)}
+						/>
+						<button
+							className="entityPickerEditor__button"
+							type="button"
+							disabled={!canEdit || !isUnknownValue}
+							onClick={createEntity}
+						>
+							Use ID
+						</button>
+					</div>
+				) : null}
+
+				{metadata.features.showPreview ? (
+					<div className="entityPickerEditor__preview">
+						{selectedOption ? (
+							<>
+								<strong>{selectedOption.label}</strong>
+								<span>{selectedOption.description ?? selectedOption.id}</span>
+							</>
+						) : (
+							<span>{selectedId ? "Unknown entity" : "No entity selected"}</span>
+						)}
+					</div>
+				) : null}
+			</div>
 		</FieldShell>
 	);
 }

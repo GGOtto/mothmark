@@ -1,9 +1,8 @@
-import {DIRECTIONS} from "@/schemas/world/directionSchema";
-import {getRoomNodeAnchorVector, getRoomNodePosition} from "./mapUtils";
+import {ROOM_DIRECTIONS, getRoomNodeAnchorVector, getRoomNodePosition} from "./mapUtils";
 
 describe("map room nodes", () => {
 	it("includes the four special directions", () => {
-		expect(DIRECTIONS).toEqual(expect.arrayContaining(["up", "down", "in", "out"]));
+		expect(ROOM_DIRECTIONS).toEqual(expect.arrayContaining(["up", "down", "in", "out"]));
 	});
 
 	it("places out and up across the top edge", () => {

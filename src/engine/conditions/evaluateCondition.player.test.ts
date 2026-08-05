@@ -1,7 +1,6 @@
 import {produce} from "immer";
-import {CurrentRoomConditionSchema, type Condition} from "@/schemas/world/conditionSchema";
+import type {Condition} from "@/schemas/world/conditionSchema";
 import type {Effect} from "@/schemas/world/effectSchema";
-import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {resolveTurn} from "../player/resolveTurn";
 import {
@@ -27,35 +26,6 @@ function conditionalEvent(id: string, condition: Condition, effects: Effect[]) {
 }
 
 describe("conditions through the player path", () => {
-	it("checks whether an exit from the current room is open", () => {
-		const scenario = createPlayerTestScenario("navigation");
-		const event = conditionalEvent(
-			"open-exit",
-			CurrentRoomConditionSchema.parse({
-				...createDefaultFieldObject(CurrentRoomConditionSchema),
-				operation: "is-exit-open",
-				direction: "e",
-			}),
-			[{type: "message", operation: "show", message: "The eastern exit is open."}],
-		);
-		const world = produce(scenario.world, (draft) => {
-			draft.events = [event];
-		});
-		const openGame = {...scenario.game, events: [event]};
-		const lockedGame = produce(openGame, (draft) => {
-			draft.roomStates[0].lockedExits.push("e");
-		});
-
-		expect(resolveTurn(world, openGame, "help").messages.at(-1)).toMatchObject({
-			type: "system",
-			text: "The eastern exit is open.",
-		});
-		expect(resolveTurn(world, lockedGame, "help").messages.at(-1)).toMatchObject({
-			type: "system",
-			text: "The condition did not pass.",
-		});
-	});
-
 	it("uses nested groups and stored condition references to choose event output", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const storedConditionId = toID("condition", "ready-in-foyer");

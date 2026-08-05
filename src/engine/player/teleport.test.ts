@@ -1,4 +1,4 @@
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -8,13 +8,13 @@ import {createInitialGameState} from "../states/createInitialState";
 import {teleport} from "./teleport";
 
 function createGame(recipe: (draft: Draft<GameState>) => void): GameState {
-	const initialGame = createInitialGameState(initialWorld, initialWorld.startRoomId);
+	const initialGame = createInitialGameState(exampleWorld, exampleWorld.startRoomId);
 	const configuredGame = produce(initialGame, recipe);
 	return {...createDefaultFieldObject(GameStateSchema), ...configuredGame};
 }
 
 function createWorld(recipe: (draft: Draft<World>) => void): World {
-	const configuredWorld = produce(initialWorld, recipe);
+	const configuredWorld = produce(exampleWorld, recipe);
 	return {...createDefaultFieldObject(WorldSchema), ...configuredWorld};
 }
 
@@ -26,7 +26,7 @@ describe("teleport", () => {
 			draft.variables.flags = [{persisted: true}];
 		});
 
-		const nextGame = teleport(initialWorld, game, toID("room", "guardroom"));
+		const nextGame = teleport(exampleWorld, game, toID("room", "guardroom"));
 
 		expect(idValue(nextGame.player.currentRoom)).toBe("guardroom");
 		expect(nextGame.player.turns).toBe(7);
@@ -45,9 +45,9 @@ describe("teleport", () => {
 			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "guardroom");
 		});
 
-		const nextGame = teleport(initialWorld, game, toID("room", "guardroom"));
+		const nextGame = teleport(exampleWorld, game, toID("room", "guardroom"));
 		const roomState = nextGame.roomStates.find((state) => idValue(state.id) === "guardroom");
-		const authoredRoom = initialWorld.rooms.find((room) => idValue(room.id) === "guardroom");
+		const authoredRoom = exampleWorld.rooms.find((room) => idValue(room.id) === "guardroom");
 
 		expect(roomState).toMatchObject({type: "room", flags: {visited: true}});
 		expect(roomState?.featureStates.map((state) => idValue(state.id))).toEqual(
