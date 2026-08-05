@@ -255,6 +255,11 @@ export function usePopup(): PopupApi {
 	return popup;
 }
 
+/** Returns the popup API when a provider is present without requiring one. */
+export function useOptionalPopup(): PopupApi | undefined {
+	return useContext(PopupContext) ?? undefined;
+}
+
 type PopupHostProps = {
 	popup: ActivePopup;
 	onFinish: (result?: unknown) => void;

@@ -13,17 +13,24 @@ import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
+import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
-	LogicEditor,
+	CommandEditor,
+	CommandInspector,
+	CommandLibrary,
+	CommandLibraryPreview,
+	CommandToolbar,
+} from "@/components/logic/commands";
+import {
 	LogicHome,
 	LogicSectionPlaceholder,
-	LogicToolbar,
+	type CommandSelection,
 	type LogicSection,
 	type LogicSelection,
-} from "@/components/logic/LogicEditor";
-import {LogicInspector} from "@/components/logic/LogicInspector";
+} from "@/components/logic/shared";
+import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
-import {world as initialWorld} from "@/data/worlds/exampleWorld";
+import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
@@ -81,6 +88,8 @@ export default function EditorPage() {
 	const [logicSection, setLogicSection] = useState<LogicSection>("home");
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
+	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
+	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
@@ -112,9 +121,19 @@ export default function EditorPage() {
 				setWorldIsLoaded(true);
 			})
 			.catch((error: unknown) => {
-				if ((error as {name?: string}).name !== "AbortError") {
-					console.error("Could not load the main world", error);
-				}
+				if ((error as {name?: string}).name === "AbortError") return;
+
+				console.warn("Could not load the main world; using the initial world instead.", error);
+				const fallbackWorld = createInitialWorld();
+				updateWorld(fallbackWorld);
+				setPersistedWorldId(null);
+				setPersistedWorldRevision(null);
+				setSelection({
+					selectedId: idValue(fallbackWorld.startRoomId),
+					isConnectionSelected: false,
+				});
+				setConnectionDraft({state: "idle"});
+				setWorldIsLoaded(true);
 			});
 
 		return () => abortController.abort();
@@ -125,12 +144,37 @@ export default function EditorPage() {
 		setPersistedWorldRevision(revision);
 	}, []);
 
+	const handleResetWorld = useCallback(() => {
+		const nextWorld = createInitialWorld();
+		updateWorld(nextWorld);
+		setSelection({selectedId: idValue(nextWorld.startRoomId), isConnectionSelected: false});
+		setConnectionDraft({state: "idle"});
+		setSelectedEventId(null);
+		setLogicSelection(null);
+		setSelectedCommandId(null);
+		setCommandSelection(null);
+		setMapZoom(1);
+		setMapRecenterRequest((request) => request + 1);
+	}, [updateWorld]);
+
+	const handleTabChange = useCallback((tab: EditorTab) => {
+		setActiveTab(tab);
+		if (tab !== "logic") return;
+
+		setLogicSection("home");
+		setSelectedEventId(null);
+		setLogicSelection(null);
+		setSelectedCommandId(null);
+		setCommandSelection(null);
+	}, []);
+
 	useWorldAutosaveRegistration({
 		ready: worldIsLoaded,
 		world: editorWorld,
 		worldId: persistedWorldId,
 		revision: persistedWorldRevision,
 		onPersisted: handleWorldPersisted,
+		onReset: handleResetWorld,
 	});
 
 	const rooms = editorWorld.rooms;
@@ -147,10 +191,17 @@ export default function EditorPage() {
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
+	const selectedCommand = useMemo(
+		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
+		[editorWorld.commands, selectedCommandId],
+	);
+	useCommandCopyRegistration(
+		activeTab === "logic" && logicSection === "commands" ? selectedCommand : null,
+	);
 
 	return (
 		<main className="editorPage">
-			<LeftSideBar activeTab={activeTab} onTabChange={setActiveTab} />
+			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<EditorMainPanel
 				isLoading={!worldIsLoaded}
@@ -174,6 +225,10 @@ export default function EditorPage() {
 				setSelectedEventId={setSelectedEventId}
 				logicSelection={logicSelection}
 				setLogicSelection={setLogicSelection}
+				selectedCommandId={selectedCommandId}
+				setSelectedCommandId={setSelectedCommandId}
+				commandSelection={commandSelection}
+				setCommandSelection={setCommandSelection}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -189,6 +244,10 @@ export default function EditorPage() {
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
 				logicSection={logicSection}
 				logicSelection={logicSelection}
+				selectedCommandId={selectedCommandId}
+				setSelectedCommandId={setSelectedCommandId}
+				commandSelection={commandSelection}
+				setCommandSelection={setCommandSelection}
 			/>
 		</main>
 	);
@@ -217,6 +276,10 @@ type EditorMainPanelProps = {
 	setSelectedEventId: (eventId: string | null) => void;
 	logicSelection: LogicSelection | null;
 	setLogicSelection: (selection: LogicSelection | null) => void;
+	selectedCommandId: string | null;
+	setSelectedCommandId: (commandId: string | null) => void;
+	commandSelection: CommandSelection | null;
+	setCommandSelection: (selection: CommandSelection | null) => void;
 };
 
 function EditorMainPanel({
@@ -242,6 +305,10 @@ function EditorMainPanel({
 	setSelectedEventId,
 	logicSelection,
 	setLogicSelection,
+	selectedCommandId,
+	setSelectedCommandId,
+	commandSelection,
+	setCommandSelection,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -263,9 +330,24 @@ function EditorMainPanel({
 					updateWorld={updateWorld}
 					logicSection={logicSection}
 					selectedEventId={selectedEventId}
+					selectedCommandId={selectedCommandId}
 					onLogicBack={() => {
 						setLogicSection("home");
 						setLogicSelection(null);
+						setCommandSelection(null);
+					}}
+					onCommandBack={() => {
+						if (selectedCommandId) {
+							setSelectedCommandId(null);
+							setCommandSelection(null);
+						} else {
+							setLogicSection("home");
+						}
+					}}
+					onCommandSettings={() => {
+						if (selectedCommandId) {
+							setCommandSelection({kind: "command", commandId: selectedCommandId});
+						}
 					}}
 					onDeleteEvent={() => {
 						if (!selectedEventId) return;
@@ -278,6 +360,23 @@ function EditorMainPanel({
 						});
 						setSelectedEventId(nextEvent ? idValue(nextEvent.id) : null);
 						setLogicSelection(nextEvent ? {kind: "event", eventId: idValue(nextEvent.id)} : null);
+					}}
+					onDeleteCommand={() => {
+						if (!selectedCommandId) return;
+						const index = world.commands.findIndex(
+							(command) => idValue(command.id) === selectedCommandId,
+						);
+						const nextCommand = world.commands[index + 1] ?? world.commands[index - 1] ?? null;
+						updateWorld((draft) => {
+							const target = draft.commands.findIndex(
+								(command) => idValue(command.id) === selectedCommandId,
+							);
+							if (target >= 0) draft.commands.splice(target, 1);
+						});
+						setSelectedCommandId(nextCommand ? idValue(nextCommand.id) : null);
+						setCommandSelection(
+							nextCommand ? {kind: "command", commandId: idValue(nextCommand.id)} : null,
+						);
 					}}
 				/>
 
@@ -303,6 +402,10 @@ function EditorMainPanel({
 						setSelectedEventId={setSelectedEventId}
 						logicSelection={logicSelection}
 						setLogicSelection={setLogicSelection}
+						selectedCommandId={selectedCommandId}
+						setSelectedCommandId={setSelectedCommandId}
+						commandSelection={commandSelection}
+						setCommandSelection={setCommandSelection}
 					/>
 				</div>
 			</div>
@@ -330,8 +433,12 @@ type EditorToolbarProps = {
 	updateWorld: UpdateWorld;
 	logicSection: LogicSection;
 	selectedEventId: string | null;
+	selectedCommandId: string | null;
 	onLogicBack: () => void;
+	onCommandBack: () => void;
+	onCommandSettings: () => void;
 	onDeleteEvent: () => void;
+	onDeleteCommand: () => void;
 };
 
 function EditorToolbar({
@@ -348,8 +455,12 @@ function EditorToolbar({
 	updateWorld,
 	logicSection,
 	selectedEventId,
+	selectedCommandId,
 	onLogicBack,
+	onCommandBack,
+	onCommandSettings,
 	onDeleteEvent,
+	onDeleteCommand,
 }: EditorToolbarProps) {
 	if (activeTab === "map") {
 		return (
@@ -369,11 +480,24 @@ function EditorToolbar({
 			(world.events ?? [])[0] ??
 			null;
 		return (
-			<LogicToolbar
+			<EventToolbar
 				event={event}
 				updateWorld={updateWorld}
 				onBack={onLogicBack}
 				onDelete={onDeleteEvent}
+			/>
+		);
+	}
+	if (activeTab === "logic" && logicSection === "commands") {
+		const command =
+			world.commands.find((candidate) => idValue(candidate.id) === selectedCommandId) ?? null;
+		return (
+			<CommandToolbar
+				command={command}
+				updateWorld={updateWorld}
+				onBack={onCommandBack}
+				onDelete={onDeleteCommand}
+				onOpenSettings={onCommandSettings}
 			/>
 		);
 	}
@@ -411,6 +535,10 @@ type EditorWorkspaceProps = {
 	setSelectedEventId: (eventId: string | null) => void;
 	logicSelection: LogicSelection | null;
 	setLogicSelection: (selection: LogicSelection | null) => void;
+	selectedCommandId: string | null;
+	setSelectedCommandId: (commandId: string | null) => void;
+	commandSelection: CommandSelection | null;
+	setCommandSelection: (selection: CommandSelection | null) => void;
 };
 
 function EditorWorkspace({
@@ -434,6 +562,10 @@ function EditorWorkspace({
 	setSelectedEventId,
 	logicSelection,
 	setLogicSelection,
+	selectedCommandId,
+	setSelectedCommandId,
+	commandSelection,
+	setCommandSelection,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -461,18 +593,23 @@ function EditorWorkspace({
 				<LogicHome
 					onOpen={(section) => {
 						setLogicSection(section);
-						if (section !== "events") return;
-						const event = (world.events ?? [])[0];
-						const eventId = event ? idValue(event.id) : null;
-						setSelectedEventId(eventId);
-						setLogicSelection(eventId ? {kind: "event", eventId} : null);
+						if (section === "events") {
+							const event = (world.events ?? [])[0];
+							const eventId = event ? idValue(event.id) : null;
+							setSelectedEventId(eventId);
+							setLogicSelection(eventId ? {kind: "event", eventId} : null);
+						}
+						if (section === "commands") {
+							setSelectedCommandId(null);
+							setCommandSelection(null);
+						}
 					}}
 				/>
 			);
 		}
 		if (logicSection === "events") {
 			return (
-				<LogicEditor
+				<EventEditor
 					world={world}
 					updateWorld={updateWorld}
 					selectedEventId={selectedEventId}
@@ -482,8 +619,32 @@ function EditorWorkspace({
 				/>
 			);
 		}
+		if (logicSection === "commands") {
+			if (!selectedCommandId) {
+				return (
+					<CommandLibrary
+						world={world}
+						updateWorld={updateWorld}
+						onPreviewCommand={(commandId) => setCommandSelection({kind: "command", commandId})}
+						onOpenCommand={(commandId) => {
+							setSelectedCommandId(commandId);
+							setCommandSelection({kind: "command", commandId});
+						}}
+					/>
+				);
+			}
+			return (
+				<CommandEditor
+					world={world}
+					updateWorld={updateWorld}
+					selectedCommandId={selectedCommandId}
+					onSelectedCommandIdChange={setSelectedCommandId}
+					selection={commandSelection}
+					onSelectionChange={setCommandSelection}
+				/>
+			);
+		}
 		const title = {
-			commands: "Commands",
 			conditions: "Build Complex Conditions",
 			effects: "Build Complex Effects",
 		}[logicSection];
@@ -533,7 +694,6 @@ function MapWorkspace({
 			onToolChange={setMapTool}
 			onTemporaryToolChange={onTemporaryToolChange}
 			onZoomChange={onZoomChange}
-			theme="light"
 			updateWorld={updateWorld}
 			selectedId={selection.selectedId}
 			setSelectedId={(selectedId) =>
@@ -591,6 +751,10 @@ type EditorInspectorProps = {
 	onSelectedIdChange: (selectedId: string) => void;
 	logicSection: LogicSection;
 	logicSelection: LogicSelection | null;
+	selectedCommandId: string | null;
+	setSelectedCommandId: (commandId: string | null) => void;
+	commandSelection: CommandSelection | null;
+	setCommandSelection: (selection: CommandSelection | null) => void;
 };
 
 function EditorInspector({
@@ -602,6 +766,10 @@ function EditorInspector({
 	onSelectedIdChange,
 	logicSection,
 	logicSelection,
+	selectedCommandId,
+	setSelectedCommandId,
+	commandSelection,
+	setCommandSelection,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -624,7 +792,63 @@ function EditorInspector({
 				selectedConnection={null}
 				onSelectedIdChange={onSelectedIdChange}
 			>
-				<LogicInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
+				<EventInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
+			</RightSideBar>
+		);
+	}
+	if (activeTab === "logic" && logicSection === "commands") {
+		if (!selectedCommandId) {
+			const previewedCommandId =
+				commandSelection?.kind === "command" ? commandSelection.commandId : null;
+			const previewedCommand =
+				world.commands.find((command) => idValue(command.id) === previewedCommandId) ??
+				world.commands[0] ??
+				null;
+			return (
+				<RightSideBar
+					world={world}
+					updateWorld={updateWorld}
+					selectedRoom={null}
+					selectedConnection={null}
+					onSelectedIdChange={onSelectedIdChange}
+				>
+					<CommandLibraryPreview
+						command={previewedCommand}
+						onOpenCommand={(commandId) => {
+							setSelectedCommandId(commandId);
+							setCommandSelection({kind: "command", commandId});
+						}}
+					/>
+				</RightSideBar>
+			);
+		}
+		if (!commandSelection) {
+			return (
+				<RightSideBar
+					world={world}
+					updateWorld={updateWorld}
+					selectedRoom={null}
+					selectedConnection={null}
+					onSelectedIdChange={onSelectedIdChange}
+					title="Commands"
+					description="Choose a command to edit its patterns and behavior."
+				/>
+			);
+		}
+		return (
+			<RightSideBar
+				world={world}
+				updateWorld={updateWorld}
+				selectedRoom={null}
+				selectedConnection={null}
+				onSelectedIdChange={onSelectedIdChange}
+			>
+				<CommandInspector
+					world={world}
+					updateWorld={updateWorld}
+					selection={commandSelection}
+					onSelectionChange={setCommandSelection}
+				/>
 			</RightSideBar>
 		);
 	}

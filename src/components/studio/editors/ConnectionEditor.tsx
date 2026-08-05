@@ -62,7 +62,6 @@ export function ConnectionEditor({
 			connections.filter((connection) => compareIds(connection.id, selectedConnection.id)).length > 1
 		);
 	}, [connections, selectedConnection.id]);
-
 	const connectionTitle =
 		selectedConnection.name && selectedConnection.name !== "" ? selectedConnection.name : null;
 	const fromRoomLabel =

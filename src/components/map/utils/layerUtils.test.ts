@@ -1,4 +1,4 @@
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import {DefaultViewport, type Layer} from "@/schemas/world/worldSchema";
 import {findLayerForRoomId} from "./layerUtils";
 

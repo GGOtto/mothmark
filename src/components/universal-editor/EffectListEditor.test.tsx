@@ -2,52 +2,16 @@ import {render, screen} from "@testing-library/react";
 import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
+import {EffectSchema} from "../../schemas/world/effectSchema";
+import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
 import {EffectListEditor, type EffectListControlMetadata} from "./EffectListEditor";
+import {findEditorSchemaVariant} from "./utils/editorSchemaVariants";
 
 const metadata: EffectListControlMetadata = {
 	type: "effect-list",
 	title: "Effects",
 	features: {
-		effectTypeOptions: [
-			{label: "Message", value: "message"},
-			{label: "Player", value: "player"},
-			{label: "Group", value: "group"},
-			{label: "Use saved effect", value: "effect-ref"},
-		],
-		operationOptionsByType: {
-			message: [{label: "Show", value: "show"}],
-			player: [
-				{label: "Kill", value: "kill"},
-				{label: "Teleport", value: "teleport"},
-				{label: "Freeze", value: "freeze"},
-				{label: "Unfreeze", value: "unfreeze"},
-			],
-		},
-	},
-	childControls: {
-		effectType: {control: "select", title: "Effect type"},
-		operator: {control: "select", title: "Action"},
-		roomId: {control: "entity-picker", title: "Room"},
-		message: {control: "textarea", title: "Message"},
-		freezeMessage: {
-			control: "input",
-			title: "Freeze message",
-			placeholder: "Optional message while frozen",
-		},
-		turns: {control: "number", title: "Turns", placeholder: "No turn limit"},
-		mode: {
-			control: "select",
-			title: "Run",
-			features: {
-				options: [
-					{label: "All effects", value: "all"},
-					{label: "First effect", value: "first"},
-					{label: "Last effect", value: "last"},
-				],
-			},
-		},
-		effects: {control: "effect-list", title: "Effects in group"},
-		effectId: {control: "entity-picker", title: "Saved effect"},
+		effectSchema: EffectSchema,
 	},
 };
 
@@ -96,6 +60,31 @@ describe("EffectListEditor", () => {
 			"placeholder",
 			"No turn limit",
 		);
+	});
+
+	it("preserves schema-derived options for variant select fields", () => {
+		const appendMessageSchema = findEditorSchemaVariant(EffectSchema, {
+			type: "message",
+			operation: "append-last-message",
+		})?.schema;
+		expect(appendMessageSchema).toBeDefined();
+		const appendMessage = createDefaultFieldObject(appendMessageSchema!);
+		if (!appendMessage || typeof appendMessage !== "object" || Array.isArray(appendMessage)) {
+			throw new Error("Expected an object default for the append-message effect schema.");
+		}
+		render(
+			<EffectListHarness
+				initialValue={[
+					{
+						...appendMessage,
+						message: "The passage continues east.",
+					},
+				]}
+			/>,
+		);
+
+		expect(screen.getByRole("option", {name: "Inline"})).toBeInTheDocument();
+		expect(screen.getByRole("option", {name: "Newline"})).toBeInTheDocument();
 	});
 
 	it("does not offer inline groups as child effects", () => {

@@ -4,11 +4,13 @@ import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
 import {createRoomMessage} from "../messages/createRoomMessage";
+import {createRoomState} from "../states/createEntityState";
 import {getRoom} from "../utils/lookupUtils";
 
 export type TeleportOptions = {
 	respectActiveFlag?: boolean;
 	blockedMessage?: GameMessage;
+	silent?: boolean;
 };
 
 /**
@@ -36,40 +38,21 @@ export function teleport(
 		});
 	}
 
-	const roomMessage = createRoomMessage(world, destinationRoom, game);
+	const roomMessage = options.silent ? undefined : createRoomMessage(world, destinationRoom, game);
 
 	return produce(game, (draft) => {
 		draft.player.currentRoom = destinationRoom.id;
-		draft.messages.push(roomMessage);
+		if (roomMessage) draft.messages.push(roomMessage);
 
 		const roomState = draft.roomStates.find((state) => compareIds(state.id, destinationRoom.id));
 
 		if (!roomState) {
-			draft.roomStates.push({
-				type: "room",
-				id: destinationRoom.id,
-				tags: [...destinationRoom.tags],
-				lockedExits: [],
-				flags: {...destinationRoom.flags, visited: true},
-				featureStates: destinationRoom.features.map((feature) => ({
-					type: "feature",
-					id: feature.id,
-					flags: {...feature.flags},
-				})),
-			});
+			const createdRoomState = createRoomState(destinationRoom);
+			createdRoomState.flags.visited = true;
+			draft.roomStates.push(createdRoomState);
 			return;
 		}
 
-		roomState.flags = {...destinationRoom.flags, ...roomState.flags, visited: true};
-		roomState.tags ??= [...destinationRoom.tags];
-		roomState.lockedExits ??= [];
-		roomState.featureStates = roomState.featureStates.map((existingState) => {
-			const authoredFeature = world.rooms
-				.flatMap((room) => room.features)
-				.find((feature) => compareIds(feature.id, existingState.id));
-			return authoredFeature
-				? {...existingState, flags: {...authoredFeature.flags, ...existingState.flags}}
-				: existingState;
-		});
+		roomState.flags.visited = true;
 	});
 }

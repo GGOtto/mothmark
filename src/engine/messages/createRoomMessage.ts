@@ -12,9 +12,9 @@ export function addMessage(game: GameState, message: string, type: GameMessageTy
 	});
 }
 
-export function lookAtRoom(world: World, game: GameState): GameState {
+export function lookAtRoom(world: World, game: GameState, forceFullDescription = true): GameState {
 	const room = getRoom(world, game.player.currentRoom);
-	const roomMessage = createRoomMessage(world, room, game, {forceFullDescription: true});
+	const roomMessage = createRoomMessage(world, room, game, {forceFullDescription});
 
 	return produce(game, (draft) => {
 		draft.messages.push(roomMessage);
@@ -32,7 +32,10 @@ export function createRoomMessage(
 	const name = roomState?.name ?? room.name;
 	const description =
 		hasVisited && !options.forceFullDescription
-			? (roomState?.shortDescription ?? (room.shortDescription || room.description))
+			? roomState?.shortDescription ||
+				roomState?.description ||
+				room.shortDescription ||
+				room.description
 			: (roomState?.description ?? room.description);
 	let text = `${name}\n${description}\n`;
 
@@ -41,6 +44,12 @@ export function createRoomMessage(
 		room.features.map((feature) => ({
 			type: "feature" as const,
 			id: feature.id,
+			name: feature.name,
+			description: feature.description,
+			aliases: [...feature.aliases],
+			tags: [...feature.tags],
+			kind: feature.kind,
+			listedInRoom: feature.listedInRoom,
 			flags: {...feature.flags},
 		}));
 	for (const featureState of featureStates) {
@@ -50,12 +59,9 @@ export function createRoomMessage(
 		if (!feature) continue;
 
 		const hidden = featureState.flags.hidden ?? feature.flags.hidden ?? false;
-		const listedInRoom = Object.hasOwn(featureState.flags, "listedInRoom")
-			? featureState.flags.listedInRoom
-			: feature.listedInRoom;
+		const listedInRoom = featureState.listedInRoom;
 		if (!hidden && listedInRoom) {
-			const runtimeDescription = "description" in featureState ? featureState.description : undefined;
-			text += `${runtimeDescription ?? feature.description}\n`;
+			text += `${featureState.description}\n`;
 		}
 	}
 

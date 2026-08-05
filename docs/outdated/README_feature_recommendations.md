@@ -40,7 +40,7 @@ The biggest opportunity is to connect the good pieces already present: make room
 - Styling: `src/components/editor/right-side-bar/RightSideBar.scss`
 - ID helper: `src/utils/idUtils.ts`
 - Schema: `src/schemas/worldSchema.ts`
-- Example data: `src/data/worlds/exampleWorld.ts`
+- Example data: `src/data/worlds/initialWorld.ts`
 
 **Suggested behavior:**
 
@@ -486,7 +486,7 @@ type TargetResolution =
 
 ### 21. Add World Factory Helpers
 
-**Why it matters:** Defaults are currently duplicated in `src/utils/connectionUtils.ts`, `src/data/worlds/exampleWorld.ts`, and tests. A shared factory reduces drift.
+**Why it matters:** Defaults are currently duplicated in `src/utils/connectionUtils.ts`, `src/data/worlds/initialWorld.ts`, and tests. A shared factory reduces drift.
 
 **Where it would live:**
 

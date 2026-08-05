@@ -1,37 +1,120 @@
 @import "tailwindcss";
 
 :root {
-	--background: #11100e;
-	--foreground: #eee8dc;
-	--chrome-bg: #11130f;
-	--chrome-raised: #1b1a16;
-	--chrome-border: #3a352b;
-	--chrome-text: #f2e5c8;
-	--chrome-muted: #b8ad97;
-	--chrome-accent: #8db6cf;
-	--panel-bg: #111;
-	--workspace-bg: #161616;
-	--panel-border: rgba(255, 255, 255, 0.12);
-	--panel-text: #f4ecd8;
-	--panel-muted: rgba(244, 236, 216, 0.55);
-	--command-bg: #090908;
+	color-scheme: dark;
+
+	/* Mothmark dark: warm work surfaces inside a compact neutral workbench shell. */
+	--color-canvas: #11100e;
+	--color-workspace: #151411;
+	--color-surface: #1b1915;
+	--color-surface-raised: #24211c;
+	--color-surface-strong: #2e2a23;
+	--color-border: #3a352c;
+	--color-border-strong: #746a58;
+	--color-control-border: #746a58;
+	--color-text: #f0e9da;
+	--color-text-muted: #b6ac99;
+	--color-text-faint: #8c8272;
+
+	--color-frame: #171612;
+	--color-frame-raised: #211f1a;
+	--color-frame-strong: #2b2821;
+	--color-frame-border: #383329;
+	--color-frame-text: #f0e9da;
+	--color-frame-muted: #b6ac99;
+	--color-terminal: #0f0e0c;
+	--color-terminal-raised: #191713;
+	--color-terminal-border: #746a58;
+	--color-terminal-text: #ede5d7;
+	--color-terminal-muted: #a69c8b;
+	--color-terminal-prompt: #d2aa63;
+	--color-terminal-danger: #ef8377;
+
+	--color-action: #8fb8ce;
+	--color-action-hover: #a5cade;
+	--color-action-contrast: #10202a;
+	--color-focus: #c7a96a;
+	--color-success: #75b894;
+	--color-warning: #d7ad62;
+	--color-danger: #e07b6c;
+	--color-command-structure: var(--color-warning);
+	--color-command-target: var(--color-danger);
+	--color-command-number: var(--color-action);
+	--color-command-choice: var(--color-success);
+	--color-command-text: #a99ac4;
+	--color-backdrop: rgb(5 7 8 / 72%);
+
+	--shadow-float: 0 16px 38px rgb(0 0 0 / 38%);
+	--shadow-dialog: 0 24px 70px rgb(0 0 0 / 45%);
+
+	--radius-control: 4px;
+	--radius-panel: 6px;
+	--radius-dialog: 8px;
+
+	/* Compatibility aliases. New styles should use the semantic tokens above. */
+	--background: var(--color-canvas);
+	--foreground: var(--color-text);
+	--chrome-bg: var(--color-surface);
+	--chrome-raised: var(--color-surface-raised);
+	--chrome-border: var(--color-border);
+	--chrome-text: var(--color-text);
+	--chrome-muted: var(--color-text-muted);
+	--chrome-accent: var(--color-action);
+	--panel-bg: var(--color-surface);
+	--panel-raised: var(--color-surface-raised);
+	--workspace-bg: var(--color-workspace);
+	--panel-border: var(--color-border);
+	--panel-text: var(--color-text);
+	--panel-muted: var(--color-text-muted);
+	--command-bg: var(--color-terminal);
 }
 
 :root[data-theme="light"] {
-	--background: #e8e1d3;
-	--foreground: #29251f;
-	--chrome-bg: #f2ecdf;
-	--chrome-raised: #fffaf0;
-	--chrome-border: #a99b83;
-	--chrome-text: #29251f;
-	--chrome-muted: #675e50;
-	--chrome-accent: #496b83;
-	--panel-bg: #e6dece;
-	--workspace-bg: #cec4b1;
-	--panel-border: rgba(54, 46, 36, 0.24);
-	--panel-text: #302a22;
-	--panel-muted: rgba(48, 42, 34, 0.66);
-	--command-bg: #f6f0e4;
+	color-scheme: light;
+
+	--color-canvas: #e8dfd0;
+	--color-workspace: #d8cdbc;
+	--color-surface: #f6eee0;
+	--color-surface-raised: #fffaf0;
+	--color-surface-strong: #e1d4c1;
+	--color-border: #b7a992;
+	--color-border-strong: #766a58;
+	--color-control-border: #968671;
+	--color-text: #211e19;
+	--color-text-muted: #5c5347;
+	--color-text-faint: #756a5a;
+
+	--color-frame: #ede4d5;
+	--color-frame-raised: #f6eee0;
+	--color-frame-strong: #ddd0bd;
+	--color-frame-border: #b7a992;
+	--color-frame-text: #211e19;
+	--color-frame-muted: #62594d;
+
+	--color-terminal: #f3eee5;
+	--color-terminal-raised: #e5ddd1;
+	--color-terminal-border: #887968;
+	--color-terminal-text: #202622;
+	--color-terminal-muted: #5c675f;
+	--color-terminal-prompt: #765719;
+	--color-terminal-danger: #9f3934;
+
+	--color-action: #285a75;
+	--color-action-hover: #1f4961;
+	--color-action-contrast: #fff9ee;
+	--color-focus: #80601f;
+	--color-success: #2f7250;
+	--color-warning: #7d5b17;
+	--color-danger: #a33b30;
+	--color-command-structure: var(--color-warning);
+	--color-command-target: var(--color-danger);
+	--color-command-number: var(--color-action);
+	--color-command-choice: var(--color-success);
+	--color-command-text: #665782;
+	--color-backdrop: rgb(20 24 26 / 54%);
+
+	--shadow-float: 0 16px 38px rgb(48 40 28 / 20%);
+	--shadow-dialog: 0 24px 70px rgb(48 40 28 / 28%);
 }
 
 @theme inline {
@@ -47,19 +130,20 @@ body {
 }
 
 body {
+	margin: 0;
 	background: var(--background);
 	color: var(--foreground);
 	font-family: Arial, Helvetica, sans-serif;
 }
 
 ::selection {
-	background: #d2b46f;
-	color: #11100e;
+	background: var(--color-focus);
+	color: var(--color-canvas);
 }
 
 a,
 button,
 input,
 textarea {
-	outline-color: #d2b46f;
+	outline-color: var(--color-focus);
 }

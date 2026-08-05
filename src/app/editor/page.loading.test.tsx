@@ -12,7 +12,7 @@ describe("EditorPage loading", () => {
 		Reflect.deleteProperty(globalThis, "fetch");
 	});
 
-	it("does not render the example world while the main-world request is pending", () => {
+	it("does not render the initial world while the main-world request is pending", () => {
 		Object.defineProperty(globalThis, "fetch", {
 			configurable: true,
 			writable: true,
@@ -77,5 +77,74 @@ describe("EditorPage loading", () => {
 		expect(editButton).not.toHaveFocus();
 		fireEvent.keyUp(panButton, {key: " ", code: "Space"});
 		expect(panButton).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("recovers with the initial world when the world API fails", async () => {
+		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async () => ({status: 500, ok: false}) as Response),
+		});
+
+		const {container} = render(
+			<ThemeProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
+			</ThemeProvider>,
+		);
+
+		await waitFor(() =>
+			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
+		);
+
+		expect(screen.getByRole("button", {name: "Dungeon Entrance"})).toBeInTheDocument();
+		expect(warning).toHaveBeenCalledWith(
+			"Could not load the main world; using the initial world instead.",
+			expect.any(Error),
+		);
+	});
+
+	it("opens the empty command library for the initial world", async () => {
+		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+		jest.spyOn(console, "warn").mockImplementation(() => {});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async () => ({status: 500, ok: false}) as Response),
+		});
+
+		const {container} = render(
+			<ThemeProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
+			</ThemeProvider>,
+		);
+		await waitFor(() =>
+			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+		fireEvent.click(screen.getByRole("button", {name: /Commands Define the commands/}));
+
+		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
+		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
+		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: /Travel/})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "New command"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Edit command"})).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+
+		expect(screen.getByRole("heading", {name: "Logic"})).toBeInTheDocument();
+		expect(screen.getByText("Choose what you want to build.")).toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Back to Commands"})).not.toBeInTheDocument();
 	});
 });

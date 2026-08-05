@@ -8,7 +8,7 @@
 	justify-content: center;
 
 	padding: 20px;
-	background: rgb(0 0 0 / 68%);
+	background: var(--color-backdrop);
 }
 
 .popupSurface {
@@ -17,10 +17,10 @@
 	overflow: auto;
 
 	border: 1px solid var(--chrome-border);
-	border-radius: 8px;
+	border-radius: var(--radius-dialog);
 	background: var(--chrome-raised);
 	color: var(--chrome-text);
-	box-shadow: 0 24px 70px rgb(0 0 0 / 45%);
+	box-shadow: var(--shadow-dialog);
 }
 
 .popupTemplate {
@@ -80,25 +80,25 @@
 	}
 
 	&:focus-visible {
-		outline: 2px solid #d2b46f;
+		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
 }
 
 .popupButtonPrimary {
-	border-color: #ffe76a;
-	background: #ffe45c;
-	color: #211b00;
+	border-color: var(--color-action);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
 }
 
 .popupButtonSecondary {
-	border-color: var(--chrome-border);
+	border-color: var(--color-control-border);
 	background: transparent;
 }
 
 .popupButtonDanger {
-	background: #b75f4a;
-	color: white;
+	background: var(--color-danger);
+	color: var(--color-action-contrast);
 }
 
 .popupField {
@@ -111,7 +111,7 @@
 	font-size: 11px;
 	font-weight: 700;
 	letter-spacing: 0.09em;
-	text-transform: uppercase;
+	text-transform: none;
 }
 
 .popupInput {
@@ -119,19 +119,19 @@
 	min-height: 38px;
 	box-sizing: border-box;
 	padding: 8px 10px;
-	border: 1px solid var(--chrome-border);
+	border: 1px solid var(--color-control-border);
 	border-radius: 4px;
 	background: var(--background);
 	color: var(--foreground);
 	font: inherit;
 
 	&:focus {
-		border-color: #d2b46f;
-		outline: 1px solid #d2b46f;
+		border-color: var(--color-focus);
+		outline: 1px solid var(--color-focus);
 	}
 }
 
 .popupFieldError {
-	color: #d48770;
+	color: var(--color-danger);
 	font-size: 12px;
 }

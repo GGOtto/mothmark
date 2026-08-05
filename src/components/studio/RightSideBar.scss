@@ -26,9 +26,9 @@
 		margin-bottom: 8px;
 		font-size: 11px;
 		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.09em;
-		color: rgba(244, 236, 216, 0.86);
+		text-transform: none;
+		letter-spacing: 0;
+		color: var(--panel-text);
 	}
 
 	.rightSideBarInput,
@@ -36,10 +36,10 @@
 		width: 100%;
 		box-sizing: border-box;
 		padding: 9px 10px;
-		border: 1px solid #2f2920;
+		border: 1px solid var(--color-control-border);
 		border-radius: 4px;
-		background: #f4ecd8;
-		color: #2f2920;
+		background: var(--color-surface-raised);
+		color: var(--color-text);
 		font: inherit;
 		font-size: 13px;
 		line-height: 1.4;
@@ -47,7 +47,7 @@
 
 	.rightSideBarInput:focus,
 	.rightSideBarTextarea:focus {
-		outline: 2px solid rgba(184, 132, 63, 0.7);
+		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
 
@@ -57,13 +57,13 @@
 	}
 
 	.rightSideBarInputError {
-		border-color: #b75f4a;
+		border-color: var(--color-danger);
 	}
 
 	.rightSideBarInputMuted {
-		border-color: rgba(244, 236, 216, 0.12);
-		background: rgba(244, 236, 216, 0.08);
-		color: rgba(244, 236, 216, 0.42);
+		border-color: var(--color-border);
+		background: var(--color-surface);
+		color: var(--color-text-faint);
 	}
 
 	.rightSideBarHelpText,
@@ -74,11 +74,11 @@
 	}
 
 	.rightSideBarHelpText {
-		color: rgba(244, 236, 216, 0.45);
+		color: var(--color-text-muted);
 	}
 
 	.rightSideBarWarningText {
-		color: #d48770;
+		color: var(--color-danger);
 	}
 
 	.rightSideBarCheckboxRow {
@@ -86,31 +86,31 @@
 		align-items: center;
 		gap: 8px;
 		margin-top: 14px;
-		color: rgba(244, 236, 216, 0.78);
+		color: var(--color-text-muted);
 		font-size: 13px;
 		cursor: pointer;
 
 		input {
-			accent-color: #b8843f;
+			accent-color: var(--color-action);
 		}
 	}
 
 	.rightSideBarEmptyText {
 		margin: 0;
-		color: #777;
+		color: var(--color-text-faint);
 	}
 
 	.rightSideBarEmptyPanel {
 		.rightSideBarEmptyTitle {
 			margin: 0;
-			color: #fff;
+			color: var(--color-text);
 			font-size: 14px;
 			font-weight: 700;
 		}
 
 		.rightSideBarEmptyDescription {
 			margin: 8px 0 0;
-			color: rgba(255, 255, 255, 0.52);
+			color: var(--color-text-muted);
 			font-size: 13px;
 			line-height: 1.5;
 		}
@@ -118,13 +118,13 @@
 
 	.rightSideBarConnectionMeta {
 		margin-bottom: 16px;
-		color: #777;
+		color: var(--color-text-faint);
 		font-size: 13px;
 	}
 
 	.roomEditorHeader {
 		padding-bottom: 14px;
-		border-bottom: 1px solid rgba(244, 236, 216, 0.1);
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.roomEditorEyebrow {
@@ -132,8 +132,8 @@
 		color: var(--panel-muted);
 		font-size: 11px;
 		font-weight: 700;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
+		letter-spacing: 0;
+		text-transform: none;
 	}
 
 	.roomEditorTitle {
@@ -147,7 +147,7 @@
 	.roomEditorFeaturePanel {
 		margin-top: 18px;
 		padding-top: 14px;
-		border-top: 1px solid rgba(244, 236, 216, 0.1);
+		border-top: 1px solid var(--color-border);
 	}
 
 	.roomEditorFeaturePanelHeader {
@@ -172,9 +172,9 @@
 		align-items: center;
 		justify-content: center;
 		box-sizing: border-box;
-		border: 1px solid rgba(244, 236, 216, 0.14);
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
-		color: rgba(244, 236, 216, 0.58);
+		color: var(--color-text-muted);
 		font-size: 12px;
 	}
 
@@ -186,13 +186,13 @@
 
 	.roomEditorFeatureCard {
 		overflow: hidden;
-		border: 1px solid rgba(244, 236, 216, 0.12);
+		border: 1px solid var(--color-border);
 		border-radius: 6px;
-		background: rgba(244, 236, 216, 0.035);
+		background: var(--color-surface-raised);
 	}
 
 	.roomEditorFeatureCardExpanded {
-		border-color: rgba(184, 132, 63, 0.42);
+		border-color: var(--color-action);
 	}
 
 	.roomEditorFeatureButton {
@@ -205,7 +205,7 @@
 		padding: 10px;
 		border: 0;
 		background: transparent;
-		color: #f4ecd8;
+		color: var(--color-text);
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
@@ -222,37 +222,37 @@
 
 		small {
 			margin-top: 2px;
-			color: rgba(244, 236, 216, 0.42);
+			color: var(--color-text-muted);
 			font-size: 11px;
 		}
 	}
 
 	.roomEditorFeatureButton:hover {
-		background: rgba(244, 236, 216, 0.055);
+		background: var(--color-surface-strong);
 	}
 
 	.roomEditorFeatureButton:focus-visible {
-		outline: 2px solid rgba(184, 132, 63, 0.7);
+		outline: 2px solid var(--color-focus);
 		outline-offset: -2px;
 	}
 
 	.roomEditorFeatureToggle {
 		flex-shrink: 0;
-		color: rgba(244, 236, 216, 0.5);
+		color: var(--color-text-muted);
 		font-size: 12px;
 	}
 
 	.roomEditorFeatureBody {
 		padding: 0 10px 12px;
-		border-top: 1px solid rgba(244, 236, 216, 0.08);
+		border-top: 1px solid var(--color-border);
 	}
 
 	.roomEditorEmptyFeatures {
 		margin: 0;
 		padding: 12px;
-		border: 1px dashed rgba(244, 236, 216, 0.14);
+		border: 1px dashed var(--color-border);
 		border-radius: 6px;
-		color: rgba(244, 236, 216, 0.48);
+		color: var(--color-text-muted);
 		font-size: 13px;
 		line-height: 1.5;
 	}

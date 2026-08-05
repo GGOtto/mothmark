@@ -2,9 +2,9 @@ import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, ID} from "@/utils/idUtils";
-import {getRoom} from "../utils/lookupUtils";
 import {EntityState} from "@/schemas/states/entityStateSchemas";
 import {findVariable} from "../utils/lookupUtils";
+import {isExitOpen} from "../player/move";
 
 function findStateById(states: EntityState[], id: ID): EntityState | undefined {
 	for (const state of states) {
@@ -112,14 +112,16 @@ function evaluateCurrentRoom(
 			return !compareIds(game.player.currentRoom, condition.roomId);
 		case "has-tag": {
 			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
-			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
-			return tags.includes(condition.tag);
+			return roomState?.tags.includes(condition.tag) ?? false;
 		}
 		case "missing-tag": {
 			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
-			const tags = roomState?.tags ?? getRoom(world, game.player.currentRoom).tags;
-			return !tags.includes(condition.tag);
+			return roomState ? !roomState.tags.includes(condition.tag) : false;
 		}
+		case "is-exit-open":
+			return isExitOpen(world, game, condition.direction);
+		default:
+			return false;
 	}
 }
 

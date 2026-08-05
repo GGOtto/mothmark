@@ -31,21 +31,21 @@
 	cursor: pointer;
 
 	&:hover {
-		background: rgba(127, 127, 127, 0.1);
+		background: var(--color-surface-strong);
 		color: var(--panel-text);
 	}
 
 	&:focus-visible {
-		outline: 2px solid var(--panel-text);
+		outline: 2px solid var(--color-focus);
 		outline-offset: 1px;
 	}
 }
 
 .toolbarToolActive {
 	border-color: var(--panel-border);
-	background: var(--panel-raised, rgba(255, 255, 255, 0.08));
+	background: var(--panel-raised);
 	color: var(--panel-text);
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+	box-shadow: none;
 }
 
 .toolbarZoom {
