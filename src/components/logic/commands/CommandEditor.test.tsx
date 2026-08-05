@@ -4,7 +4,7 @@ import {produce} from "immer";
 import {useState} from "react";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as baseWorld} from "@/data/worlds/initialWorld";
 import {
 	CommandSchema,
 	NumberBlockSchema,
@@ -14,6 +14,7 @@ import {
 	TargetBlockSchema,
 	TextBlockSchema,
 } from "@/schemas/world/commandSchemas";
+import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {WorldUpdate} from "@/types/worldUpdaterTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -25,10 +26,15 @@ import {CommandInspector} from "./CommandInspector";
 import {CommandLibrary, CommandLibraryPreview} from "./CommandLibrary";
 import {commandPatternText} from "./CommandSummary";
 
-const commandEditorWorld = produce(initialWorld, (draft) => {
+const commandEditorWorld = produce(baseWorld, (draft) => {
+	const sayTextId = toID("command-block", "say-message");
+	const defaultCommand = createDefaultFieldObject(CommandSchema);
+	const configuredBehavior = produce(defaultCommand.behavior, (behavior) => {
+		behavior.always = createDefaultFieldObject(EffectGroupSchema);
+	});
 	draft.commands = [
 		{
-			...createDefaultFieldObject(CommandSchema),
+			...defaultCommand,
 			id: toID("command", "say"),
 			name: "Say something",
 			patterns: [
@@ -37,12 +43,75 @@ const commandEditorWorld = produce(initialWorld, (draft) => {
 					blocks: [
 						{
 							...createDefaultFieldObject(PhraseBlockSchema),
-							id: toID("command-block", "say-phrase"),
+							id: toID("command-block", "say-verb"),
 							matches: ["say"],
 						},
 						{
 							...createDefaultFieldObject(TextBlockSchema),
-							id: toID("command-block", "say-text"),
+							id: sayTextId,
+						},
+					],
+				},
+			],
+			behavior: configuredBehavior,
+			fallbacks: [{blockId: sayTextId, behavior: configuredBehavior}],
+		},
+		{
+			...createDefaultFieldObject(CommandSchema),
+			id: toID("command", "shout"),
+			name: "Shout",
+			patterns: [
+				{
+					...createDefaultFieldObject(PatternSchema),
+					blocks: [
+						{
+							...createDefaultFieldObject(PhraseBlockSchema),
+							id: toID("command-block", "shout-verb"),
+							matches: ["shout"],
+						},
+					],
+				},
+			],
+		},
+		{
+			...createDefaultFieldObject(CommandSchema),
+			id: toID("command", "wait-turns"),
+			name: "Wait turns",
+			patterns: [
+				{
+					...createDefaultFieldObject(PatternSchema),
+					blocks: [
+						{
+							...createDefaultFieldObject(PhraseBlockSchema),
+							id: toID("command-block", "wait-verb"),
+							matches: ["wait"],
+						},
+						{
+							...createDefaultFieldObject(NumberBlockSchema),
+							id: toID("command-block", "wait-amount"),
+							role: "turns",
+						},
+					],
+				},
+			],
+		},
+		{
+			...createDefaultFieldObject(CommandSchema),
+			id: toID("command", "touch-target"),
+			name: "Touch target",
+			patterns: [
+				{
+					...createDefaultFieldObject(PatternSchema),
+					blocks: [
+						{
+							...createDefaultFieldObject(PhraseBlockSchema),
+							id: toID("command-block", "touch-verb"),
+							matches: ["touch"],
+						},
+						{
+							...createDefaultFieldObject(TargetBlockSchema),
+							id: toID("command-block", "touch-target"),
+							role: "target",
 						},
 					],
 				},
@@ -50,6 +119,8 @@ const commandEditorWorld = produce(initialWorld, (draft) => {
 		},
 	];
 });
+
+const initialWorld = commandEditorWorld;
 
 function CommandHarness({
 	onWorldChange,

@@ -111,6 +111,7 @@ function createWorld(
 		draft.deathMessage = "You have died.";
 		draft.rooms = rooms;
 		draft.connections = connections;
+		draft.commands = [moveCommand];
 	});
 }
 
@@ -141,16 +142,11 @@ function createNavigationWorld(): World {
 		},
 	);
 
-	return produce(
-		createWorld(
-			"Navigation player tests",
-			"foyer",
-			[foyer, gallery],
-			[createConnection("foyer-gallery", "foyer", "gallery", "e", "w")],
-		),
-		(draft) => {
-			draft.commands = [moveCommand];
-		},
+	return createWorld(
+		"Navigation player tests",
+		"foyer",
+		[foyer, gallery],
+		[createConnection("foyer-gallery", "foyer", "gallery", "e", "w")],
 	);
 }
 

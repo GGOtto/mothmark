@@ -83,16 +83,6 @@ const CONTROL_TEST_PAGES = [
 		description: "Branching object controls.",
 	},
 	{
-		href: "/test/conditional-text",
-		title: "Conditional Text",
-		description: "Conditional prose controls.",
-	},
-	{
-		href: "/test/logic-branch-list",
-		title: "Logic Branch List",
-		description: "Branching command behavior controls.",
-	},
-	{
 		href: "/test/command-pattern",
 		title: "Command Pattern",
 		description: "Authored parser pattern controls.",
@@ -111,11 +101,6 @@ const CONTROL_TEST_PAGES = [
 		href: "/test/room-picker",
 		title: "Room Picker",
 		description: "Registry-backed room selectors.",
-	},
-	{
-		href: "/test/connection-picker",
-		title: "Connection Picker",
-		description: "Room connection authoring controls.",
 	},
 	{
 		href: "/test/flag-picker",

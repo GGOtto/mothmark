@@ -1,5 +1,4 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
 import {FEATURE_FLAG_DEFINITIONS, ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";

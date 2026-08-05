@@ -21,7 +21,7 @@ describe("editor schema variants", () => {
 		]);
 		expect(
 			schemaFieldOptions(EffectSchema, "operation", {type: "message"}).map((option) => option.value),
-		).toContain("show-room-description");
+		).toContain("current-room-description");
 		expect(
 			schemaFieldOptions(EffectSchema, "operation", {type: "player"}).map((option) => option.value),
 		).toContain("move-in-direction");
