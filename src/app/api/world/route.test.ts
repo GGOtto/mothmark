@@ -11,7 +11,7 @@ import {
 	updateWorldSchemaVersion,
 	type WorldRecord,
 } from "@/db/dbal/worldsRepository";
-import {world as exampleWorld} from "@/data/worlds/exampleWorld";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 
 import {DELETE, GET as getById, PUT} from "./[id]/route";
 import {PATCH as updateSchemaVersion} from "./[id]/schema-version/route";
@@ -36,7 +36,7 @@ const storedWorld: WorldRecord = {
 	id: worldId,
 	name: "Main World",
 	slug: "main",
-	world: exampleWorld,
+	world: initialWorld,
 	revision: 1,
 	schemaVersion: 1,
 	createdAt: new Date("2026-07-18T01:00:00.000Z"),
@@ -75,7 +75,7 @@ describe("world API", () => {
 			jsonRequest("http://localhost/api/world", "POST", {
 				name: storedWorld.name,
 				slug: storedWorld.slug,
-				world: exampleWorld,
+				world: initialWorld,
 				schemaVersion: 1,
 			}),
 		);
@@ -84,7 +84,7 @@ describe("world API", () => {
 		expect(createWorld).toHaveBeenCalledWith({
 			name: storedWorld.name,
 			slug: storedWorld.slug,
-			world: exampleWorld,
+			world: initialWorld,
 			schemaVersion: 1,
 		});
 	});
@@ -133,12 +133,12 @@ describe("world API", () => {
 		jest.mocked(updateWorld).mockResolvedValue(storedWorld);
 
 		const response = await PUT(
-			jsonRequest(`http://localhost/api/world/${worldId}`, "PUT", {world: exampleWorld}),
+			jsonRequest(`http://localhost/api/world/${worldId}`, "PUT", {world: initialWorld}),
 			{params: Promise.resolve({id: worldId})},
 		);
 
 		expect(response.status).toBe(200);
-		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: exampleWorld}, undefined);
+		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: initialWorld}, undefined);
 	});
 
 	it("rejects an update based on a stale revision", async () => {
@@ -146,7 +146,7 @@ describe("world API", () => {
 
 		const response = await PUT(
 			jsonRequest(`http://localhost/api/world/${worldId}`, "PUT", {
-				world: exampleWorld,
+				world: initialWorld,
 				expectedRevision: 3,
 			}),
 			{params: Promise.resolve({id: worldId})},
@@ -159,7 +159,7 @@ describe("world API", () => {
 				message: "This world was changed by another editor. Reload before saving again.",
 			},
 		});
-		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: exampleWorld}, 3);
+		expect(updateWorld).toHaveBeenCalledWith(worldId, {world: initialWorld}, 3);
 	});
 
 	it("deletes a world by ID", async () => {

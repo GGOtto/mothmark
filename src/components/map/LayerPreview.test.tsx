@@ -1,5 +1,5 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import {idValue} from "@/utils/idUtils";
 import {getLayer} from "./utils/layerUtils";
 import {LayerPreview} from "./LayerPreview";

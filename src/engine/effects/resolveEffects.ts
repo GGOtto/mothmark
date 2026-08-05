@@ -3,8 +3,9 @@ import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
-import {compareIds} from "@/utils/idUtils";
+import {compareIds, idValue} from "@/utils/idUtils";
 import type {Direction, World} from "@/schemas/world/worldSchema";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
 import {
 	entityFlagMutationError,
 	getEntityFlagDefinition,
@@ -12,24 +13,11 @@ import {
 import {getEffect} from "../utils/lookupUtils";
 import {teleport} from "../player/teleport";
 import {kill} from "../player/kill";
-
-const ALL_DIRECTIONS: Direction[] = [
-	"n",
-	"ne",
-	"e",
-	"se",
-	"s",
-	"sw",
-	"w",
-	"nw",
-	"up",
-	"down",
-	"in",
-	"out",
-];
+import {silentlyMove} from "../player/move";
+import {lookAtRoom} from "../messages/createRoomMessage";
 
 // TODO: message effects are all screwed up when events fire them
-export function resolveMessageEffect(game: GameState, effect: Effect): GameState {
+export function resolveMessageEffect(world: World, game: GameState, effect: Effect): GameState {
 	if (effect.type !== "message") {
 		return game;
 	}
@@ -44,6 +32,8 @@ export function resolveMessageEffect(game: GameState, effect: Effect): GameState
 			break;
 		case "append-last-message":
 			return appendLastMessage(game, effect.message, effect.format);
+		case "current-room-description":
+			return lookAtRoom(world, game, !effect.allowShorten);
 		default:
 			return game;
 	}
@@ -52,6 +42,10 @@ export function resolveMessageEffect(game: GameState, effect: Effect): GameState
 		draft.messages.push(message);
 	});
 }
+
+type EffectResolutionContext = {
+	visitedRoomIdsAtStart: ReadonlySet<string>;
+};
 
 export function resolveFlagEffect(game: GameState, effect: Effect): GameState {
 	if (effect.type !== "flag") {
@@ -246,11 +240,11 @@ export function resolveFeatureEffect(game: GameState, effect: Effect): GameState
 				break;
 
 			case "show-in-room-description":
-				featureState.flags.listedInRoom = true;
+				featureState.listedInRoom = true;
 				break;
 
 			case "hide-in-room-description":
-				featureState.flags.listedInRoom = false;
+				featureState.listedInRoom = false;
 				break;
 
 			case "destroy":
@@ -296,7 +290,6 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 
 			case "lock-exit": {
 				const direction = effect.direction as Direction;
-				roomState.lockedExits ??= [];
 				if (!roomState.lockedExits.includes(direction)) {
 					roomState.lockedExits.push(direction);
 				}
@@ -305,13 +298,12 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 
 			case "unlock-exit": {
 				const direction = effect.direction as Direction;
-				roomState.lockedExits =
-					roomState.lockedExits?.filter((candidate) => candidate !== direction) ?? [];
+				roomState.lockedExits = roomState.lockedExits.filter((candidate) => candidate !== direction);
 				break;
 			}
 
 			case "lock-all-exits":
-				roomState.lockedExits = [...ALL_DIRECTIONS];
+				roomState.lockedExits = [...DIRECTIONS];
 				break;
 
 			case "unlock-all-exits":
@@ -319,14 +311,13 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 				break;
 
 			case "add-tag":
-				roomState.tags ??= [];
 				if (!roomState.tags.includes(effect.tag)) {
 					roomState.tags.push(effect.tag);
 				}
 				break;
 
 			case "remove-tag":
-				roomState.tags = roomState.tags?.filter((tag) => tag !== effect.tag) ?? [];
+				roomState.tags = roomState.tags.filter((tag) => tag !== effect.tag);
 				break;
 
 			case "set-active":
@@ -361,21 +352,36 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 			return kill(world, game, effect.customDeathMessage);
 		case "teleport":
 			return teleport(world, game, effect.roomId);
+		case "move-in-direction":
+			return silentlyMove(world, game, effect.direction);
 	}
 }
 
-export function resolveEffect(world: World, game: GameState, effect: Effect): GameState {
+export function resolveEffect(
+	world: World,
+	game: GameState,
+	effect: Effect,
+	context?: EffectResolutionContext,
+): GameState {
 	return produce(game, (draft) => {
 		switch (effect.type) {
 			case "effect-ref":
 				const foundEffect = getEffect(world, effect.effectId);
 				return foundEffect.type === "group"
-					? resolveEffects(world, draft, foundEffect)
-					: resolveEffect(world, draft, foundEffect);
+					? resolveEffects(world, draft, foundEffect, context)
+					: resolveEffect(world, draft, foundEffect, context);
 			case "flag":
 				return resolveFlagEffect(draft, effect);
 			case "message":
-				return resolveMessageEffect(draft, effect);
+				if (
+					effect.operation === "current-room-description" &&
+					effect.allowShorten &&
+					context &&
+					!context.visitedRoomIdsAtStart.has(idValue(draft.player.currentRoom))
+				) {
+					return lookAtRoom(world, draft, true);
+				}
+				return resolveMessageEffect(world, draft, effect);
 			case "counter":
 				return resolveCounterEffect(draft, effect);
 			case "feature":
@@ -392,10 +398,24 @@ export function resolveEffect(world: World, game: GameState, effect: Effect): Ga
 	});
 }
 
-export function resolveEffects(world: World, game: GameState, group: EffectGroup): GameState {
+export function resolveEffects(
+	world: World,
+	game: GameState,
+	group: EffectGroup,
+	context?: EffectResolutionContext,
+): GameState {
+	const resolutionContext =
+		context ??
+		({
+			visitedRoomIdsAtStart: new Set(
+				game.roomStates
+					.filter((roomState) => roomState.flags.visited)
+					.map((roomState) => idValue(roomState.id)),
+			),
+		} satisfies EffectResolutionContext);
 	let newGameState = game;
 	for (const effect of group.effects) {
-		newGameState = resolveEffect(world, newGameState, effect);
+		newGameState = resolveEffect(world, newGameState, effect, resolutionContext);
 	}
 	return newGameState;
 }

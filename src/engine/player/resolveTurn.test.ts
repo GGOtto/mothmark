@@ -1,4 +1,4 @@
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import {EventSchema} from "@/schemas/world/eventSchema";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";
@@ -9,7 +9,7 @@ import {createInitialGameState} from "../states/createInitialState";
 import {resolveTurn} from "./resolveTurn";
 
 describe("resolveTurn", () => {
-	it("creates output for the initial room and resolves commands immutably", () => {
+	it("reports an unknown command without mutating the initial game", () => {
 		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "help");
 
@@ -18,7 +18,10 @@ describe("resolveTurn", () => {
 		expect(game.messages[0]).toMatchObject({type: "room"});
 		expect(nextGame.player.turns).toBe(1);
 		expect(nextGame.messages.at(-2)).toMatchObject({type: "command", text: "help"});
-		expect(nextGame.messages.at(-1)).toMatchObject({type: "system"});
+		expect(nextGame.messages.at(-1)).toMatchObject({
+			type: "error",
+			text: "I don't know what that means.",
+		});
 	});
 
 	it("moves the player and marks the destination as visited", () => {
@@ -61,7 +64,7 @@ describe("resolveTurn", () => {
 
 		expect(nextGame.messages.slice(1)).toEqual([
 			expect.objectContaining({type: "command", text: "help"}),
-			expect.objectContaining({type: "system"}),
+			expect.objectContaining({type: "error", text: "I don't know what that means."}),
 			expect.objectContaining({type: "system", text: "The event resolves."}),
 		]);
 		expect(nextGame.events).toEqual([]);

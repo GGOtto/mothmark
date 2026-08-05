@@ -11,7 +11,6 @@ import type {
 } from "../../components/universal-editor/SpecializedEditors";
 import type {EditorControlAppearance} from "../../types/universalEditorTypes";
 import type {ControlMatrixVariant} from "./ControlMatrix";
-import {toID} from "../../utils/idUtils";
 
 const FIELD_MD: Pick<EditorControlAppearance, "tone" | "chrome" | "size"> = {
 	tone: "default",
@@ -60,55 +59,6 @@ export const richTextControlMatrixVariants: Array<ControlMatrixVariant<string, R
 			},
 		},
 	];
-
-export const conditionalTextControlMatrixVariants: Array<
-	ControlMatrixVariant<unknown, SpecializedControlMetadata>
-> = [
-	{
-		id: "default-field-md-variants",
-		description: "Default prose with conditional variants and nested condition builder.",
-		value: {
-			default: "The hallway is quiet.",
-			variants: [
-				{
-					text: "The hallway glows under the lit lamp.",
-					when: {type: "flag", operation: "equals", flag: "library.lampLit", value: true},
-				},
-			],
-		},
-		appearance: FIELD_MD,
-		metadata: {type: "conditional-text", title: "Description"},
-	},
-];
-
-export const logicBranchListControlMatrixVariants: Array<
-	ControlMatrixVariant<unknown, SpecializedControlMetadata>
-> = [
-	{
-		id: "default-field-md-list",
-		description: "Branch list with branch type options supplied as metadata.",
-		value: [
-			{
-				branchType: "if",
-				when: {type: "flag", operation: "equals", flag: "foyer.doorUnlocked", value: true},
-				message: "The door gives way.",
-				effects: [{type: "room", operation: "move-player", roomId: toID("room", "library")}],
-			},
-		],
-		appearance: FIELD_MD,
-		metadata: {
-			type: "logic-branch-list",
-			title: "Command Branches",
-			features: {
-				branchTypeOptions: [
-					{label: "If", value: "if"},
-					{label: "Else if", value: "else-if"},
-					{label: "Otherwise", value: "else"},
-				],
-			},
-		},
-	},
-];
 
 export const commandPatternControlMatrixVariants: Array<
 	ControlMatrixVariant<unknown, SpecializedControlMetadata>
@@ -176,28 +126,6 @@ export const directionPickerControlMatrixVariants: Array<
 			type: "direction-picker",
 			title: "Direction",
 			features: {optionSource: "schema.world.directions", mode: "compact", showOpposite: true},
-		},
-	},
-];
-
-export const connectionPickerControlMatrixVariants: Array<
-	ControlMatrixVariant<unknown, SpecializedControlMetadata>
-> = [
-	{
-		id: "default-field-md-connection",
-		description: "Connection editor with room, direction, pathway, and condition controls.",
-		value: {
-			fromRoom: "foyer",
-			toRoom: "library",
-			direction: "e",
-			pathway: "two-way",
-			condition: {type: "flag", operation: "equals", flag: "foyer.doorUnlocked", value: true},
-		},
-		appearance: FIELD_MD,
-		metadata: {
-			type: "connection-picker",
-			title: "Connection",
-			features: {pathwayOptionSource: "schema.world.pathways"},
 		},
 	},
 ];

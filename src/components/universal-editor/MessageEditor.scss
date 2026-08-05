@@ -37,8 +37,8 @@
 }
 
 .messageEditor--success {
-	border-color: color-mix(in srgb, #3f8b57 40%, transparent);
-	background: color-mix(in srgb, #3f8b57 12%, transparent);
+	border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+	background: color-mix(in srgb, var(--color-success) 12%, transparent);
 }
 
 .messageEditor--empty {

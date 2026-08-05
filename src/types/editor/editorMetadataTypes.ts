@@ -103,13 +103,19 @@ export type EditorDuplicateFeatures = {
 
 export type EditorPickerFeatures = {
 	searchable?: boolean;
+	searchPlaceholder?: string;
+	presentation?: "auto" | "popover" | "popup";
+	entityTypes?: EditorEntityType[];
+	scope?: "world" | "sibling-room";
 	groupBy?: string;
 	showDescriptions?: boolean;
+	showTags?: boolean;
 	showBadges?: boolean;
 	allowCreate?: boolean;
 	clearButton?: boolean;
 	clearable?: boolean;
 	grouped?: boolean;
+	resultLimit?: number;
 };
 
 export type EditorFieldLayoutMetadata = {
@@ -160,6 +166,8 @@ export type EditorFieldGroupMetadata = EditorFieldSubgroupMetadata & {
 };
 
 export type EditorDensity = "comfortable" | "compact";
+
+export type EditorCommandVariableType = "string" | "number" | "boolean" | "direction" | "entity";
 
 export type UniversalEditorShellMetadata = {
 	title?: string;
@@ -261,6 +269,7 @@ export type EditorFieldMetadata = {
 
 	entityType?: EditorEntityType;
 	tagSource?: EditorTagSource;
+	commandVariableType?: EditorCommandVariableType;
 
 	childControls?: EditorChildControlOverrides;
 

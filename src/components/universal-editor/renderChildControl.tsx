@@ -17,6 +17,7 @@ type RenderChildControlArgs<TValue> = {
 	path: EditorPath;
 	childKey: string;
 	parentMetadata?: EditorControlMetadata;
+	useMetadataCopy?: boolean;
 	disabled?: boolean;
 	readonly?: boolean;
 };
@@ -30,13 +31,19 @@ export function renderChildControl<TValue>({
 	path,
 	childKey,
 	parentMetadata,
+	useMetadataCopy,
 	disabled,
 	readonly,
 }: RenderChildControlArgs<TValue>) {
 	const override = parentMetadata?.childControls?.[childKey];
-	// Renderer-owned child metadata provides behavior only. User-facing copy must
-	// come from the schema's explicit child-control metadata.
-	const {title: _defaultTitle, description: _defaultDescription, ...behaviorMetadata} = metadata;
+	// Renderer-owned child metadata normally provides behavior only. Some
+	// specialized controls own a fixed vocabulary that has no child schema to
+	// supply copy; those controls can opt into their explicit labels here.
+	const behaviorMetadata = {...metadata};
+	if (!useMetadataCopy) {
+		delete behaviorMetadata.title;
+		delete behaviorMetadata.description;
+	}
 	const baseMetadata = {
 		...behaviorMetadata,
 		type,

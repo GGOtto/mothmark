@@ -1,122 +1,136 @@
-const OPTIONAL_LEADING_ARTICLES = new Set(["a", "an", "the"]);
+import type {CommandVariable, GameState} from "@/schemas/states/gameStateSchemas";
+import type {Command} from "@/schemas/world/commandSchemas";
+import type {World} from "@/schemas/world/worldSchema";
+import {compareIds, idValue, type ID} from "@/utils/idUtils";
+import {getPartitionSegments, type PartitionSegment} from "../utils/getPartitions";
+import {matchBlock, type MatchBlockContext} from "./blocks";
+import {resolveTargetMatchContext} from "./targetContext";
 
-export type ParsedConnector = {
-	connector: string;
-	left: string;
-	right: string;
-};
-
-export type ParsedCommand = {
-	input: string;
-	matchedAlias: string;
-	targetText: string;
-	connector?: ParsedConnector;
-};
-
-export type NamedThing = {
-	name: string;
-	aliases?: string[];
-};
-
-export function normalizeInput(input: string): string {
-	return input.trim().toLowerCase().replace(/\s+/g, " ");
+export function normalize(text: string): string {
+	return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function stripLeadingArticle(input: string): string {
-	const words = normalizeInput(input).split(" ");
+export type CommandMatch =
+	| {
+			command: Command;
+			match: "match";
+			variables: CommandVariable[];
+	  }
+	| {
+			command: Command;
+			match: "partial match";
+			partialBlockId: ID<"command-block">;
+			variables: CommandVariable[];
+			failedVariables: Extract<CommandVariable, {type: "failed"}>[];
+	  }
+	| {
+			command: Command;
+			match: "fail";
+			variables: [];
+	  };
 
-	if (words.length <= 1) return words.join(" ");
+export type RunnableCommandMatch = Exclude<CommandMatch, {match: "fail"}>;
 
-	const [firstWord, ...remainingWords] = words;
-	return OPTIONAL_LEADING_ARTICLES.has(firstWord) ? remainingWords.join(" ") : words.join(" ");
+export function commandIsInScope(command: Command, world: World, game: GameState): boolean {
+	switch (command.scope.scope) {
+		case "global":
+			return true;
+		case "rooms":
+			return command.scope.roomIds.some((roomId) => compareIds(roomId, game.player.currentRoom));
+		case "layers": {
+			const scopedLayers = command.scope.layers;
+			return world.metadata.layers.some(
+				(layer) =>
+					scopedLayers.includes(layer.layer) &&
+					layer.rooms.some((roomId) => compareIds(roomId, game.player.currentRoom)),
+			);
+		}
+	}
 }
 
-export function getPhraseMatchKeys(input: string): string[] {
-	const normalizedInput = normalizeInput(input);
-	return Array.from(new Set([normalizedInput, stripLeadingArticle(normalizedInput)]));
-}
+export function matchCommandToPartition(
+	partition: Array<PartitionSegment | string>,
+	command: Command,
+	commandContext: MatchBlockContext,
+): CommandMatch {
+	let partialCommandMatch: Extract<CommandMatch, {match: "partial match"}> | undefined;
 
-export function phraseMatches(left: string, right: string): boolean {
-	const rightKeys = getPhraseMatchKeys(right);
-	return getPhraseMatchKeys(left).some((leftKey) => rightKeys.includes(leftKey));
-}
+	for (const pattern of command.patterns) {
+		if (partition.length !== pattern.blocks.length) continue;
 
-export function namedThingMatchesText(thing: NamedThing, targetText: string): boolean {
-	return [thing.name, ...(thing.aliases ?? [])].some((name) => phraseMatches(name, targetText));
-}
+		const variables: CommandVariable[] = [];
+		const partialBlockIds: ID<"command-block">[] = [];
+		const failedVariables: Extract<CommandVariable, {type: "failed"}>[] = [];
+		let patternFailed = false;
+		let matchedBlockCount = 0;
 
-function startsWithPhrase(input: string, phrase: string): boolean {
-	return input === phrase || input.startsWith(`${phrase} `);
-}
+		for (let index = 0; index < partition.length; index += 1) {
+			const block = pattern.blocks[index];
+			const segment = partition[index];
+			const segmentText = typeof segment === "string" ? segment : segment.text;
+			const rawText = typeof segment === "string" ? segment : segment.rawText;
+			const blockMatch = matchBlock(segmentText, block, commandContext);
 
-function unwrapQuotedPhrase(input: string): string {
-	const trimmedInput = input.trim();
-	const isDoubleQuoted = trimmedInput.startsWith('"') && trimmedInput.endsWith('"');
-	const isSingleQuoted = trimmedInput.startsWith("'") && trimmedInput.endsWith("'");
+			if (blockMatch.match === "fail") {
+				patternFailed = true;
+				break;
+			}
 
-	if (trimmedInput.length >= 2 && (isDoubleQuoted || isSingleQuoted)) {
-		return trimmedInput.slice(1, -1).trim();
+			if (blockMatch.match === "partial match") {
+				partialBlockIds.push(block.id);
+				failedVariables.push({blockId: block.id, type: "failed", rawText});
+				continue;
+			}
+
+			variables.push({...blockMatch.command, rawText});
+			matchedBlockCount += 1;
+		}
+
+		if (patternFailed) continue;
+
+		if (partialBlockIds.length === 0) {
+			return {command, match: "match", variables};
+		}
+
+		if (matchedBlockCount === 0) continue;
+
+		partialCommandMatch ??= {
+			command,
+			match: "partial match",
+			partialBlockId: partialBlockIds[0],
+			variables,
+			failedVariables,
+		};
 	}
 
-	return trimmedInput;
+	return partialCommandMatch ?? {command, match: "fail", variables: []};
 }
 
-function normalizeTargetText(input: string): string {
-	return unwrapQuotedPhrase(normalizeInput(input));
-}
+export function findMatchingCommands(
+	text: string,
+	world: World,
+	game: GameState,
+): RunnableCommandMatch[] {
+	const partitions = getPartitionSegments(text);
+	const fullMatches = new Map<string, Extract<CommandMatch, {match: "match"}>>();
+	const partialMatches = new Map<string, Extract<CommandMatch, {match: "partial match"}>>();
+	const context = resolveTargetMatchContext(world, game);
 
-export function formatTargetWithArticle(targetText: string): string {
-	const normalizedTargetText = normalizeTargetText(targetText);
-	const firstWord = normalizedTargetText.split(" ")[0];
+	for (const partition of partitions) {
+		for (const command of world.commands) {
+			if (!commandIsInScope(command, world, game)) continue;
 
-	return OPTIONAL_LEADING_ARTICLES.has(firstWord)
-		? normalizedTargetText
-		: `the ${normalizedTargetText}`;
-}
+			const result = matchCommandToPartition(partition, command, context);
+			const commandId = idValue(command.id);
 
-export function parseInputWithAlias(input: string, alias: string): ParsedCommand | null {
-	const normalizedInput = normalizeInput(input);
-	const normalizedAlias = normalizeInput(alias);
-
-	if (!startsWithPhrase(normalizedInput, normalizedAlias)) return null;
-
-	return {
-		input: normalizedInput,
-		matchedAlias: normalizedAlias,
-		targetText: normalizeTargetText(normalizedInput.slice(normalizedAlias.length)),
-	};
-}
-
-function splitTargetByConnector(targetText: string, connector: string): ParsedConnector | null {
-	const normalizedTargetText = normalizeTargetText(targetText);
-	const normalizedConnector = normalizeInput(connector);
-	const connectorWithSpaces = ` ${normalizedConnector} `;
-	const connectorIndex = normalizedTargetText.indexOf(connectorWithSpaces);
-
-	if (connectorIndex === -1) return null;
-
-	const left = normalizeTargetText(normalizedTargetText.slice(0, connectorIndex));
-	const right = normalizeTargetText(
-		normalizedTargetText.slice(connectorIndex + connectorWithSpaces.length),
-	);
-
-	return left && right ? {connector: normalizedConnector, left, right} : null;
-}
-
-export function parseCommandConnectors(
-	parsed: ParsedCommand,
-	connectors: string[] | undefined,
-): ParsedCommand {
-	if (!connectors?.length || !parsed.targetText) return parsed;
-
-	const sortedConnectors = [...connectors].sort(
-		(a, b) => normalizeInput(b).length - normalizeInput(a).length,
-	);
-
-	for (const connector of sortedConnectors) {
-		const parsedConnector = splitTargetByConnector(parsed.targetText, connector);
-		if (parsedConnector) return {...parsed, connector: parsedConnector};
+			if (result.match === "match") {
+				fullMatches.set(commandId, result);
+				partialMatches.delete(commandId);
+			} else if (result.match === "partial match" && !fullMatches.has(commandId)) {
+				partialMatches.set(commandId, partialMatches.get(commandId) ?? result);
+			}
+		}
 	}
 
-	return parsed;
+	return fullMatches.size > 0 ? [...fullMatches.values()] : [...partialMatches.values()];
 }

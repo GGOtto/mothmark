@@ -179,6 +179,9 @@ export function ObjectEditor({
 	context,
 }: ObjectEditorProps) {
 	const objectRef = useRef<HTMLDivElement | null>(null);
+	const isEditorRoot =
+		context.editorChrome !== undefined &&
+		JSON.stringify(path) === JSON.stringify(context.editorChrome.rootPath);
 	const [searchTerm, setSearchTerm] = useState("");
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const fields = useMemo(
@@ -547,8 +550,8 @@ export function ObjectEditor({
 
 	return (
 		<FieldShell
-			title={metadata.title}
-			description={metadata.description}
+			title={isEditorRoot ? undefined : metadata.title}
+			description={isEditorRoot ? undefined : metadata.description}
 			error={error}
 			warnings={warnings}
 			required={metadata.required}

@@ -131,12 +131,7 @@ describe("resolveEditorMetadata object fields", () => {
 	it("exposes the connection's independently ordered sections and field groups", () => {
 		const metadata = resolveEditorMetadata(ConnectionSchema);
 
-		expect(metadata.features?.groups).toEqual([
-			expect.objectContaining({id: "route", title: "Route", order: 10}),
-			expect.objectContaining({id: "details", title: "Details", order: 20}),
-			expect.objectContaining({id: "messages", title: "Messages", order: 30}),
-			expect.objectContaining({id: "availability", title: "Availability", order: 40}),
-		]);
+		expect(metadata.features?.layout).toBe("section");
 		expect(getFieldGroups(ConnectionSchema)).toMatchObject({
 			id: "details",
 			name: "details",
@@ -145,12 +140,6 @@ describe("resolveEditorMetadata object fields", () => {
 			direction: "route",
 			returnDirection: "route",
 			pathway: "route",
-			aliases: "details",
-			description: "messages",
-			blockedMessage: "messages",
-			visibleWhen: "availability",
-			travelAllowedWhen: "availability",
-			lockedWhen: "availability",
 		});
 	});
 
@@ -198,12 +187,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"direction",
 			"returnDirection",
 			"pathway",
-			"aliases",
-			"description",
-			"blockedMessage",
-			"visibleWhen",
-			"travelAllowedWhen",
-			"lockedWhen",
 			"metadata",
 		]);
 		expect(fields[0].metadata).toMatchObject({

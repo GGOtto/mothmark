@@ -20,7 +20,7 @@ function scenarioWithEffects(effects: Effect[]) {
 }
 
 describe("effects through the player path", () => {
-	it("changes feature presentation used by room output and examination", () => {
+	it("changes feature presentation used by room output", () => {
 		const {world, game} = scenarioWithEffects([
 			{
 				type: "feature",
@@ -39,19 +39,15 @@ describe("effects through the player path", () => {
 		]);
 
 		const changedGame = resolveTurn(world, game, "help");
-		const lookedGame = resolveTurn(world, changedGame, "look");
-		const examinedGame = resolveTurn(world, lookedGame, "examine silver bell");
+		const galleryGame = resolveTurn(world, changedGame, "east");
+		const returnedGame = resolveTurn(world, galleryGame, "west");
 
-		expect(lookedGame.messages.at(-1)?.text).toContain(
+		expect(returnedGame.messages.at(-1)?.text).toContain(
 			"The newly silver bell gleams beside the doorway.",
 		);
-		expect(examinedGame.messages.at(-1)).toMatchObject({
-			type: "system",
-			text: "The newly silver bell gleams beside the doorway.",
-		});
 	});
 
-	it("hides and destroys features so the player can no longer see or examine them", () => {
+	it("hides and destroys features so they no longer appear in room output", () => {
 		for (const operation of ["hide-from-player", "destroy"] as const) {
 			const {world, game} = scenarioWithEffects([
 				{
@@ -63,14 +59,10 @@ describe("effects through the player path", () => {
 			]);
 
 			const changedGame = resolveTurn(world, game, "help");
-			const lookedGame = resolveTurn(world, changedGame, "look");
-			const examinedGame = resolveTurn(world, lookedGame, "examine bell");
+			const galleryGame = resolveTurn(world, changedGame, "east");
+			const returnedGame = resolveTurn(world, galleryGame, "west");
 
-			expect(lookedGame.messages.at(-1)?.text).not.toContain("small brass bell");
-			expect(examinedGame.messages.at(-1)).toMatchObject({
-				type: "system",
-				text: "You don't see that here.",
-			});
+			expect(returnedGame.messages.at(-1)?.text).not.toContain("small brass bell");
 		}
 	});
 
@@ -91,10 +83,6 @@ describe("effects through the player path", () => {
 		expect(galleryGame.messages.at(-1)?.text).toContain(
 			"A small brass bell hangs beside the doorway.",
 		);
-		expect(resolveTurn(world, galleryGame, "examine bell").messages.at(-1)).toMatchObject({
-			type: "system",
-			text: "A small brass bell hangs beside the doorway.",
-		});
 	});
 
 	it("changes room text used for a deliberate look and later revisit", () => {
@@ -120,13 +108,13 @@ describe("effects through the player path", () => {
 		]);
 
 		const changedGame = resolveTurn(world, game, "help");
-		const lookedGame = resolveTurn(world, changedGame, "look");
-		const galleryGame = resolveTurn(world, lookedGame, "east");
+		const galleryGame = resolveTurn(world, changedGame, "east");
 		const returnedGame = resolveTurn(world, galleryGame, "west");
 
-		expect(lookedGame.messages.at(-1)?.text).toContain(
-			"Darkened Foyer\nEvery lamp in the foyer has gone out.",
-		);
+		expect(returnedGame.roomStates.find((room) => idValue(room.id) === "foyer")).toMatchObject({
+			name: "Darkened Foyer",
+			description: "Every lamp in the foyer has gone out.",
+		});
 		expect(returnedGame.messages.at(-1)?.text).toContain("Darkened Foyer\nThe foyer remains dark.");
 	});
 
@@ -194,9 +182,9 @@ describe("effects through the player path", () => {
 		]);
 
 		const frozenGame = resolveTurn(world, game, "help");
-		const firstBlocked = resolveTurn(world, frozenGame, "look");
-		const secondBlocked = resolveTurn(world, firstBlocked, "look");
-		const releasedGame = resolveTurn(world, secondBlocked, "look");
+		const firstBlocked = resolveTurn(world, frozenGame, "east");
+		const secondBlocked = resolveTurn(world, firstBlocked, "east");
+		const releasedGame = resolveTurn(world, secondBlocked, "east");
 
 		expect(firstBlocked.messages.at(-1)).toMatchObject({
 			type: "error",

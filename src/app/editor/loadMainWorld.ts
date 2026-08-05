@@ -1,6 +1,6 @@
 import {z} from "zod";
 
-import {world as exampleWorld} from "@/data/worlds/exampleWorld";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 
 const MAIN_WORLD_ENDPOINT = "/api/world/slug/main";
@@ -32,7 +32,7 @@ export async function loadMainWorld(
 	const response = await fetchWorld(MAIN_WORLD_ENDPOINT, {signal});
 
 	if (response.status === 404) {
-		return {world: exampleWorld, worldId: null, revision: null};
+		return {world: initialWorld, worldId: null, revision: null};
 	}
 
 	if (!response.ok) {
@@ -43,7 +43,7 @@ export async function loadMainWorld(
 	const worldResult = WorldSchema.safeParse(result.world);
 
 	if (!worldResult.success) {
-		return {world: exampleWorld, worldId: result.id, revision: result.revision};
+		return {world: initialWorld, worldId: result.id, revision: result.revision};
 	}
 
 	return {world: worldResult.data, worldId: result.id, revision: result.revision};
