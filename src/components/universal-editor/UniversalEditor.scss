@@ -1,15 +1,16 @@
 .universalEditor {
-	--field-text: var(--panel-text);
-	--field-muted: var(--panel-muted);
-	--field-border: var(--panel-border);
-	--universal-editor-sticky-bg: var(--color-surface-raised);
-	--universal-editor-sticky-bg-hover: var(--color-surface-strong);
-	--universal-editor-sticky-border: var(--color-border);
-	--universal-editor-sticky-shadow: none;
+	--field-text: var(--panel-text, #f4ecd8);
+	--field-muted: var(--panel-muted, rgba(244, 236, 216, 0.72));
+	--field-border: var(--panel-border, rgba(244, 236, 216, 0.22));
+	--universal-editor-sticky-bg: rgba(244, 236, 216, 0.075);
+	--universal-editor-sticky-bg-hover: rgba(244, 236, 216, 0.12);
+	--universal-editor-sticky-border: rgba(244, 236, 216, 0.22);
+	--universal-editor-sticky-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 8px 18px rgba(0, 0, 0, 0.22);
 	--universal-editor-section-sticky-top: 72px;
 
 	min-width: 0;
-	color: var(--panel-text);
+	color: var(--panel-text, #f4ecd8);
 }
 
 .universalEditor--density-compact {
@@ -44,11 +45,12 @@
 	box-sizing: border-box;
 	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
 	background: var(--field-bg-raised, var(--universal-editor-sticky-bg));
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	font-family: var(--field-font-family, inherit);
 	margin-bottom: 0;
 	padding: 10px;
 	box-shadow: var(--universal-editor-sticky-shadow);
+	backdrop-filter: blur(12px);
 }
 
 .universalEditor__shellMain {
@@ -66,17 +68,17 @@
 }
 
 .universalEditor__eyebrow {
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 10px;
 	font-weight: 700;
 	line-height: 1.2;
-	text-transform: none;
+	text-transform: uppercase;
 }
 
 .universalEditor__shellCopy h2 {
 	overflow: hidden;
 	margin: 0;
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	font-size: 16px;
 	font-weight: 800;
 	letter-spacing: 0;
@@ -89,7 +91,7 @@
 .universalEditor__shellCopy small {
 	overflow: hidden;
 	margin: 0;
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 12px;
 	line-height: 1.35;
 	text-overflow: ellipsis;
@@ -105,7 +107,7 @@
 	min-width: 0;
 	align-items: center;
 	gap: 6px;
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 12px;
 	line-height: 1.35;
 	white-space: nowrap;
@@ -113,7 +115,7 @@
 
 .universalEditor__activeSectionInline span {
 	overflow: hidden;
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	font-weight: 800;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -123,7 +125,7 @@
 	flex: 0 0 auto;
 	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
 	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 10px;
 	font-style: normal;
 	font-weight: 600;
@@ -135,7 +137,7 @@
 	overflow: hidden;
 	min-width: 0;
 	margin: 0;
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: inherit;
 	line-height: inherit;
 	text-overflow: ellipsis;
@@ -154,7 +156,7 @@
 	flex: 0 0 auto;
 	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
 	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	cursor: pointer;
 	font: inherit;
 	font-size: 12px;
@@ -177,7 +179,7 @@
 .universalEditor__previewToggle {
 	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
 	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 74%, transparent);
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	font: inherit;
 	font-size: 13px;
 	font-weight: 700;
@@ -199,7 +201,7 @@
 	flex-wrap: wrap;
 	gap: 5px;
 	align-items: center;
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 11px;
 	line-height: 1.25;
 }
@@ -212,7 +214,7 @@
 }
 
 .universalEditor__breadcrumbSeparator {
-	color: color-mix(in srgb, var(--field-muted) 62%, transparent);
+	color: color-mix(in srgb, var(--field-muted, rgba(244, 236, 216, 0.72)) 62%, transparent);
 	font-size: 10px;
 	font-weight: 700;
 }
@@ -224,7 +226,7 @@
 	align-items: center;
 	border: 1px solid var(--field-border, var(--universal-editor-sticky-border));
 	background: color-mix(in srgb, var(--universal-editor-sticky-bg) 64%, transparent);
-	color: var(--field-text);
+	color: var(--field-text, #f4ecd8);
 	font: inherit;
 	font-weight: 650;
 	line-height: 1;
@@ -258,9 +260,9 @@
 	box-sizing: border-box;
 	max-height: 260px;
 	margin: 0 0 10px;
-	border: 1px solid var(--field-border);
-	background: var(--field-bg-raised);
-	color: var(--field-text);
+	border: 1px solid var(--field-border, rgba(244, 236, 216, 0.22));
+	background: var(--field-bg-raised, rgba(244, 236, 216, 0.06));
+	color: var(--field-text, #f4ecd8);
 	font:
 		11px / 1.45 ui-monospace,
 		SFMono-Regular,
@@ -312,6 +314,6 @@
 }
 
 .universalEditor__childTitle small {
-	color: var(--field-muted);
+	color: var(--field-muted, rgba(244, 236, 216, 0.72));
 	font-size: 11px;
 }

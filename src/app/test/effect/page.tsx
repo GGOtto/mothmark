@@ -1,5 +1,3 @@
-"use client";
-
 import {ControlMatrix} from "../ControlMatrix";
 import {effectControlMatrixVariants} from "./effectControlMatrixData";
 

@@ -9,7 +9,7 @@ import type {Layer, World} from "../../schemas/world/worldSchema";
 import {isConnectionFromRoom} from "./utils/connectionUtils";
 import {idValue} from "../../utils/idUtils";
 import {isRoomInLayer} from "./utils/layerUtils";
-import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {ROOM_DIRECTIONS} from "./utils/mapUtils";
 import type {UpdateStatus} from "../studio/ToolBar";
 import {Connection} from "./Connection";
 import type {ConnectionStubPointField, StubRenderPart} from "./Connection";
@@ -134,7 +134,7 @@ export function MapLayerContent({
 						isDragging={isRoomDragging?.(room) ?? false}
 						armedDirection={getArmedDirection?.(room) ?? null}
 						pulseNodes={shouldPulseNodes?.(room) ?? false}
-						outgoingDirections={DIRECTIONS.filter((direction) =>
+						outgoingDirections={ROOM_DIRECTIONS.filter((direction) =>
 							isConnectionFromRoom(idValue(room.id), direction, world.connections),
 						)}
 						onPointerDown={onRoomPointerDown ?? (() => {})}

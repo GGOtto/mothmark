@@ -1,4 +1,4 @@
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {World} from "@/schemas/world/worldSchema";
 import {
 	deleteWorldEntity,
@@ -11,7 +11,7 @@ import {
 } from "./idUtils";
 
 function createTestWorld(): World {
-	return JSON.parse(JSON.stringify(initialWorld)) as World;
+	return JSON.parse(JSON.stringify(exampleWorld)) as World;
 }
 
 describe("generateUniqueId", () => {

@@ -32,13 +32,13 @@ export function resolveTurn(world: World, game: GameState, response: string): Ga
 			newGameState = produce(newGameState, (draft) => {
 				draft.player.freezeState = {};
 			});
-			newGameState = runCommand(response, world, newGameState);
+			newGameState = runCommand(world, newGameState, response);
 		} else {
 			const message = newGameState.player.freezeState.message || "You are currently unable to act.";
 			newGameState = addMessage(newGameState, message, "error");
 		}
 	} else {
-		newGameState = runCommand(response, world, newGameState);
+		newGameState = runCommand(world, newGameState, response);
 	}
 
 	newGameState = resolveEvents(world, newGameState);

@@ -1,5 +1,5 @@
 import {produce} from "immer";
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {world as exampleWorld} from "@/data/worlds/exampleWorld";
 import type {World} from "@/schemas/world/worldSchema";
 import {idValue, toID} from "@/utils/idUtils";
 import {
@@ -29,7 +29,7 @@ import {
 } from "./worldDraftUtils";
 
 function createWorld(): World {
-	return JSON.parse(JSON.stringify(initialWorld)) as World;
+	return JSON.parse(JSON.stringify(exampleWorld)) as World;
 }
 
 describe("world room draft helpers", () => {

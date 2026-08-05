@@ -156,6 +156,7 @@ export function LayerMenu({
 						mode="zoom-pan"
 						selectedId={selectedId}
 						isConnectionSelected={isConnectionSelected}
+						theme="light"
 						className="layerMenu--preview__card"
 					/>
 				</div>

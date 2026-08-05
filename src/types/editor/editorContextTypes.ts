@@ -9,7 +9,6 @@ import type {EntityType} from "./editorRegistryTypes";
 import type {EditorRegistries} from "./editorRegistryTypes";
 import type {EditorPath} from "./editorPathTypes";
 import type {z} from "zod";
-import type {CommandVariableEditorContext} from "@/features/command-variables/model";
 
 export type EditorMode = "create" | "edit" | "preview" | "debug";
 
@@ -153,7 +152,6 @@ export type EditorControlContext = {
 
 	editorNavigation?: EditorNavigationContext;
 	editorChrome?: EditorChromeContext;
-	commandVariables?: CommandVariableEditorContext;
 
 	readOnly?: boolean;
 	disabled?: boolean;

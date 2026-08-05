@@ -4,12 +4,6 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import {toID} from "../../../utils/idUtils";
-import {z} from "zod";
-import {
-	EffectReferenceSchema,
-	EffectSchema,
-	PlayerEffectSchema,
-} from "../../../schemas/world/effectSchema";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
@@ -21,7 +15,60 @@ const THEME_TEST_THEMES: EditorControlTheme[] = [
 	"mothmark",
 ];
 
+const CHILD_CONTROLS: EffectControlMetadata["childControls"] = {
+	name: {
+		control: "input",
+		title: "Group name",
+		placeholder: "What does this group accomplish?",
+	},
+	effects: {control: "effect-list", title: "Effects"},
+	effectType: {
+		control: "select",
+		title: "Effect type",
+		description: "Choose what should happen.",
+	},
+	operator: {control: "select", title: "Action"},
+	message: {
+		control: "textarea",
+		title: "Message",
+		placeholder: "Enter the message shown to the player",
+	},
+	flag: {control: "flag-picker", title: "Flag"},
+	value: {
+		control: "toggle",
+		title: "Value",
+		features: {labels: {on: "True", off: "False"}},
+	},
+	counter: {control: "input", title: "Counter", placeholder: "Counter name"},
+	amount: {control: "number", title: "Amount", placeholder: "Enter an amount"},
+	customDeathMessage: {
+		control: "input",
+		title: "Death message",
+		placeholder: "Use the default death message",
+	},
+	freezeMessage: {
+		control: "input",
+		title: "Freeze message",
+		placeholder: "Optional message while frozen",
+	},
+	turns: {
+		control: "number",
+		title: "Turns",
+		description: "Optional. Leave blank to freeze until another effect unfreezes the player.",
+		placeholder: "No turn limit",
+	},
+	roomId: {control: "entity-picker", title: "Destination"},
+	effectId: {control: "entity-picker", title: "Saved effect group"},
+};
+
 const FEATURES = {
+	effectTypeOptionSource: "schema.effect.types",
+	operationOptionSourcesByType: {
+		message: "schema.effect.message.operations",
+		flag: "schema.effect.flagOperations",
+		counter: "schema.effect.counterOperations",
+		player: "schema.effect.player.operations",
+	},
 	showGeneratedSummary: true,
 	reorderable: true,
 	duplicateable: true,
@@ -49,6 +96,7 @@ function group(id: string, name: string, effects: Record<string, unknown>[]) {
 
 const BASE_METADATA = {
 	features: FEATURES,
+	childControls: CHILD_CONTROLS,
 };
 
 const SETUPS = {
@@ -123,11 +171,9 @@ const SETUPS = {
 		]),
 		metadata: {
 			title: "Restricted group",
-			description: "Its child schema narrows the available concrete effect types.",
-			features: {
-				...FEATURES,
-				effectSchema: z.union([PlayerEffectSchema, EffectReferenceSchema]),
-			},
+			description: "Metadata can narrow the available concrete effect types.",
+			features: {...FEATURES, allowedEffectTypes: ["player", "effect-ref"]},
+			childControls: CHILD_CONTROLS,
 		},
 	},
 	readonly: {
@@ -169,11 +215,7 @@ function makeVariant(
 		readonly: setup.readonly,
 		appearance,
 		themes,
-		metadata: {
-			...setup.metadata,
-			type: "effect",
-			features: {effectSchema: EffectSchema, ...setup.metadata.features},
-		},
+		metadata: {...setup.metadata, type: "effect"},
 	};
 }
 

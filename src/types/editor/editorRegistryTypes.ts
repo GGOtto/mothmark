@@ -1,20 +1,5 @@
 import type {EditorPath} from "./editorPathTypes";
 
-export type EditorEntityFact = {
-	label: string;
-	value: string;
-};
-
-export type EditorEntityRelation = {
-	label: string;
-	items: Array<{
-		id: string;
-		label: string;
-		entityType?: EntityType;
-		detail?: string;
-	}>;
-};
-
 export type EditorEntityOption = {
 	id: string;
 	label: string;
@@ -23,13 +8,6 @@ export type EditorEntityOption = {
 	tags?: string[];
 	kind?: string;
 	parentId?: string;
-	hierarchy?: Array<{
-		kind: "type" | "layer" | "room" | "category";
-		key: string;
-		label: string;
-	}>;
-	facts?: EditorEntityFact[];
-	relations?: EditorEntityRelation[];
 	path?: EditorPath;
 	deprecated?: boolean;
 	disabled?: boolean;
@@ -43,7 +21,6 @@ export type EntityType =
 	| "character"
 	| "topic"
 	| "quest"
-	| "quest-objective"
 	| "command"
 	| "event"
 	| "effect"
