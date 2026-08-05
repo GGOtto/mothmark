@@ -174,7 +174,30 @@ const SAMPLE_ENTITIES: EntityPickerOption[] = [
 		id: "foyer",
 		label: "Foyer",
 		description: "The first room in the sample world.",
+		aliases: ["entrance hall", "lobby"],
+		tags: ["entry", "ground floor"],
 		entityType: "room",
+		facts: [
+			{label: "Layer", value: "Ground"},
+			{label: "Map position", value: "120, 80"},
+		],
+		relations: [
+			{
+				label: "Connections",
+				items: [
+					{
+						id: "foyer-library",
+						label: "Library",
+						entityType: "connection",
+						detail: "North · Two way",
+					},
+				],
+			},
+			{
+				label: "Features",
+				items: [{id: "glass-case", label: "Glass Case", entityType: "feature", detail: "Container"}],
+			},
+		],
 	},
 	{
 		id: "library",
@@ -244,75 +267,6 @@ const SAMPLE_FLAG_REGISTRY: FlagRegistry = {
 };
 
 const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
-	"schema.condition.types": [
-		{label: "Flag", value: "flag", description: "Checks a boolean world, room, or feature flag."},
-		{label: "Counter", value: "counter", description: "Checks a numeric counter."},
-		{label: "Current room", value: "current-room", description: "Checks the player's room."},
-		{label: "Inventory", value: "inventory", description: "Checks inventory state."},
-		{label: "Item location", value: "item-location", description: "Checks where an item exists."},
-		{label: "NPC", value: "npc", description: "Checks NPC state."},
-		{label: "Command history", value: "command-history", description: "Checks recent commands."},
-		{label: "Quest", value: "quest", description: "Checks quest state."},
-		{label: "Group", value: "group", description: "Nests multiple conditions."},
-	],
-	"schema.condition.groupOperators": [
-		{label: "All conditions pass", value: "all"},
-		{label: "Any condition passes", value: "any"},
-		{label: "No conditions pass", value: "none"},
-	],
-	"schema.condition.comparisonOperators": [
-		{label: "Equals", value: "eq"},
-		{label: "Does not equal", value: "neq"},
-		{label: "Greater than", value: "gt"},
-		{label: "Greater than or equal to", value: "gte"},
-		{label: "Less than", value: "lt"},
-		{label: "Less than or equal to", value: "lte"},
-	],
-	"schema.condition.flagOperations": [
-		{label: "Equals", value: "equals"},
-		{label: "Exists", value: "exists"},
-		{label: "Missing", value: "missing"},
-	],
-	"schema.condition.counterOperations": [
-		{label: "Compare", value: "compare"},
-		{label: "Between", value: "between"},
-		{label: "Exists", value: "exists"},
-		{label: "Missing", value: "missing"},
-	],
-	"schema.condition.currentRoomOperations": [
-		{label: "Is", value: "is"},
-		{label: "Is not", value: "is-not"},
-		{label: "Has tag", value: "has-tag"},
-		{label: "Missing tag", value: "missing-tag"},
-	],
-	"schema.effect.types": [
-		{label: "Message", value: "message"},
-		{label: "Flag", value: "flag"},
-		{label: "Counter", value: "counter"},
-		{label: "Feature", value: "feature"},
-		{label: "Room", value: "room"},
-		{label: "Player", value: "player"},
-		{label: "Use saved effect", value: "effect-ref"},
-	],
-	"schema.effect.flagOperations": [
-		{label: "Create", value: "create"},
-		{label: "Set", value: "set"},
-		{label: "Toggle", value: "toggle"},
-		{label: "Delete", value: "delete"},
-	],
-	"schema.effect.counterOperations": [
-		{label: "Create", value: "create"},
-		{label: "Set", value: "set"},
-		{label: "Increase", value: "increase"},
-		{label: "Decrease", value: "decrease"},
-		{label: "Delete", value: "delete"},
-	],
-	"schema.effect.player.operations": [
-		{label: "Kill player", value: "kill"},
-		{label: "Teleport", value: "teleport"},
-		{label: "Freeze", value: "freeze"},
-		{label: "Unfreeze", value: "unfreeze"},
-	],
 	"schema.world.directions": [
 		{label: "North", value: "n", description: "Compass north."},
 		{label: "East", value: "e", description: "Compass east."},

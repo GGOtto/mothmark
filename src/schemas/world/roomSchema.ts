@@ -1,35 +1,10 @@
 import {z} from "zod";
-import {ConditionSchema} from "./conditionSchema";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
 import {FEATURE_FLAG_DEFINITIONS, ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
+import {DirectionSchema} from "./directionSchema";
 
-export const DirectionSchema = editor.select(
-	z.enum(["n", "ne", "e", "se", "s", "sw", "w", "nw", "up", "down", "in", "out"]),
-	{
-		title: "Direction",
-		description: docify(`
-            A direction used for room exits and return exits.
-
-            Compass directions are useful for map-style worlds.
-            Vertical and contextual directions support movement like up, down, in, and out.
-        `),
-		options: [
-			{label: "North", value: "n"},
-			{label: "Northeast", value: "ne"},
-			{label: "East", value: "e"},
-			{label: "Southeast", value: "se"},
-			{label: "South", value: "s"},
-			{label: "Southwest", value: "sw"},
-			{label: "West", value: "w"},
-			{label: "Northwest", value: "nw"},
-			{label: "Up", value: "up"},
-			{label: "Down", value: "down"},
-			{label: "In", value: "in"},
-			{label: "Out", value: "out"},
-		],
-	},
-);
+export {DirectionSchema} from "./directionSchema";
 
 export const PathwaySchema = editor.select(
 	z.enum(["no-way", "two-way", "forwards", "backwards"]).default("two-way"),
@@ -450,7 +425,7 @@ export const ConnectionSchema = editor.object(
 		name: editor
 			.input({
 				title: "Name",
-				description: "The display name of the room.",
+				description: "The display name of the connection.",
 				placeholder: "Connection Name",
 				required: true,
 				layout: {
@@ -459,11 +434,10 @@ export const ConnectionSchema = editor.object(
 					order: 2,
 				},
 			})
-			.min(1)
 			.optional(),
 
 		fromRoomId: editor.reference("room", {
-			title: "From Room",
+			title: "Start Room",
 			description: "The id of the room where this connection starts.",
 			layout: {
 				group: "route",
@@ -473,7 +447,7 @@ export const ConnectionSchema = editor.object(
 		}),
 
 		toRoomId: editor.reference("room", {
-			title: "To Room",
+			title: "End Room",
 			description: "The id of the room where this connection leads.",
 			layout: {
 				group: "route",
@@ -495,72 +469,6 @@ export const ConnectionSchema = editor.object(
 		),
 
 		metadata: ConnectionMetadataSchema,
-
-		aliases: editor.aliasList({
-			title: "Aliases",
-			description: "Alternative words or phrases that can trigger travel through this connection.",
-			layout: {
-				group: "details",
-				width: "full",
-				order: 7,
-			},
-		}),
-
-		description: editor
-			.textarea({
-				title: "Description",
-				description: "Optional description of the exit or passage.",
-				placeholder: "A narrow stairway leads down into the cellar.",
-				layout: {
-					group: "messages",
-					width: "full",
-					order: 8,
-				},
-			})
-			.default(""),
-
-		blockedMessage: editor
-			.message({
-				title: "Blocked Message",
-				description: "Optional message shown when this connection exists but cannot be traveled.",
-				placeholder: "The way is blocked.",
-				layout: {
-					group: "messages",
-					width: "full",
-					order: 9,
-				},
-			})
-			.default(""),
-
-		visibleWhen: editor.conditionControl(ConditionSchema, {
-			title: "Visible When",
-			description: "The connection is visible only when all of these conditions pass.",
-			layout: {
-				group: "availability",
-				width: "full",
-				order: 10,
-			},
-		}),
-
-		travelAllowedWhen: editor.conditionControl(ConditionSchema, {
-			title: "Travel Allowed When",
-			description: "The connection can be traveled only when all of these conditions pass.",
-			layout: {
-				group: "availability",
-				width: "full",
-				order: 11,
-			},
-		}),
-
-		lockedWhen: editor.conditionControl(ConditionSchema, {
-			title: "Locked When",
-			description: "The connection is considered locked when any of these conditions pass.",
-			layout: {
-				group: "availability",
-				width: "full",
-				order: 12,
-			},
-		}),
 	},
 	{
 		title: "Connection",
@@ -577,7 +485,7 @@ export const ConnectionSchema = editor.object(
 		},
 		childControls: {
 			direction: {
-				title: "Direction",
+				title: "Start Direction",
 				description:
 					"The direction the player uses to travel from the starting room to the destination room.",
 				layout: {
@@ -609,33 +517,6 @@ export const ConnectionSchema = editor.object(
 		},
 		features: {
 			layout: "section",
-			groups: [
-				{
-					id: "route",
-					title: "Route",
-					description: "The connected rooms, travel directions, and permitted pathway.",
-					order: 10,
-				},
-				{
-					id: "details",
-					title: "Details",
-					description: "The connection's identifier, name, and travel aliases.",
-					order: 20,
-				},
-				{
-					id: "messages",
-					title: "Messages",
-					description: "Player-facing descriptions and blocked-travel feedback.",
-					order: 30,
-				},
-				{
-					id: "availability",
-					title: "Availability",
-					description: "Conditions controlling visibility, travel, and locking.",
-					order: 40,
-					defaultCollapsed: true,
-				},
-			],
 		},
 	},
 );

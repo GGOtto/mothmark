@@ -4,6 +4,7 @@ import type {
 	EditorControlTheme,
 } from "../../../types/universalEditorTypes";
 import {toID} from "../../../utils/idUtils";
+import {EffectSchema, PlayerEffectSchema} from "../../../schemas/world/effectSchema";
 import type {ControlMatrixVariant} from "../ControlMatrix";
 
 const THEME_TEST_THEMES: EditorControlTheme[] = [
@@ -19,52 +20,7 @@ const FEATURES = {
 	reorderable: true,
 	duplicateable: true,
 	removable: true,
-	effectTypeOptionSource: "schema.effect.types",
-	operationOptionSourcesByType: {
-		message: "schema.effect.message.operations",
-		flag: "schema.effect.flagOperations",
-		counter: "schema.effect.counterOperations",
-		player: "schema.effect.player.operations",
-	},
 	showGeneratedSummary: true,
-};
-
-const CHILD_CONTROLS: EffectListControlMetadata["childControls"] = {
-	effectType: {control: "select", title: "Effect type"},
-	operator: {control: "select", title: "Action"},
-	flag: {title: "Flag"},
-	value: {title: "Value"},
-	counter: {control: "input", title: "Counter", placeholder: "Counter name"},
-	amount: {control: "number", title: "Amount", placeholder: "Enter an amount"},
-	message: {
-		control: "textarea",
-		title: "Message",
-		placeholder: "Enter the message shown to the player",
-	},
-	messages: {control: "string-list", title: "Messages"},
-	freezeMessage: {
-		control: "input",
-		title: "Freeze message",
-		placeholder: "Optional message while frozen",
-	},
-	turns: {
-		control: "number",
-		title: "Turns",
-		description: "Optional. Leave blank to freeze until another effect unfreezes the player.",
-		placeholder: "No turn limit",
-	},
-	customDeathMessage: {
-		control: "input",
-		title: "Death message",
-		placeholder: "Use the default death message",
-	},
-	roomId: {control: "entity-picker", title: "Room"},
-	newRoomId: {control: "entity-picker", title: "New room"},
-	featureId: {control: "entity-picker", title: "Feature"},
-	variantId: {control: "input", title: "Variant ID", placeholder: "Variant ID"},
-	direction: {control: "direction-picker", title: "Direction"},
-	tag: {control: "input", title: "Tag", placeholder: "Tag name"},
-	effectId: {control: "entity-picker", title: "Saved effect"},
 };
 
 type EffectSetup = {
@@ -77,7 +33,6 @@ type EffectSetup = {
 
 const BASE_METADATA = {
 	features: FEATURES,
-	childControls: CHILD_CONTROLS,
 };
 
 const SETUPS = {
@@ -106,6 +61,52 @@ const SETUPS = {
 			...BASE_METADATA,
 		},
 	},
+	allFields: {
+		value: [
+			{
+				type: "message",
+				operation: "random",
+				messages: [
+					"A deliberately long message checks that authored text wraps inside the effect editor.",
+					"A shorter alternative.",
+				],
+			},
+			{
+				type: "flag",
+				"flag-type": "feature",
+				operation: "set",
+				roomId: toID("room", "foyer"),
+				featureId: toID("feature", "brass-bell"),
+				flag: "canRing",
+				value: true,
+			},
+			{type: "counter", operation: "set", counter: "turnsSinceBell", value: 12},
+			{
+				type: "feature",
+				operation: "move-to-room",
+				roomId: toID("room", "foyer"),
+				newRoomId: toID("room", "gallery"),
+				featureId: toID("feature", "brass-bell"),
+			},
+			{
+				type: "room",
+				operation: "lock-exit",
+				roomId: toID("room", "foyer"),
+				direction: "n",
+			},
+			{
+				type: "player",
+				operation: "freeze",
+				freezeMessage: "You cannot move while the mechanism turns.",
+				turns: 3,
+			},
+		],
+		metadata: {
+			title: "All effect field layouts",
+			description: "Representative dense fields for every concrete effect family.",
+			...BASE_METADATA,
+		},
+	},
 	reference: {
 		value: [{type: "effect-ref", effectId: toID("effect", "ring-bell")}],
 		worldEffects: [
@@ -128,15 +129,13 @@ const SETUPS = {
 		metadata: {
 			title: "Collapsible effects",
 			features: {...FEATURES, collapsibleItems: true},
-			childControls: CHILD_CONTROLS,
 		},
 	},
 	restricted: {
 		value: [{type: "player", operation: "unfreeze"}],
 		metadata: {
 			title: "Restricted effects",
-			features: {...FEATURES, allowedEffectTypes: ["player"]},
-			childControls: CHILD_CONTROLS,
+			features: {...FEATURES, effectSchema: PlayerEffectSchema},
 		},
 	},
 	error: {
@@ -173,7 +172,11 @@ function makeVariant(
 		readonly: setup.readonly,
 		appearance,
 		themes,
-		metadata: {...setup.metadata, type: "effect-list"},
+		metadata: {
+			...setup.metadata,
+			type: "effect-list",
+			features: {effectSchema: EffectSchema, ...setup.metadata.features},
+		},
 	};
 }
 
@@ -196,6 +199,12 @@ export const effectListControlMatrixVariants = [
 		"Freeze action with unset optional message and turns.",
 		{tone: "panel", chrome: "field", size: "md"},
 		SETUPS.freeze,
+	),
+	makeVariant(
+		"default-field-md-all-fields",
+		"Every concrete effect family with its densest representative field layout.",
+		{tone: "default", chrome: "field", size: "md"},
+		SETUPS.allFields,
 	),
 	makeVariant(
 		"default-field-md-reference",

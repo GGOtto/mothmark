@@ -1,6 +1,7 @@
 import type {RoomNode} from "./utils/mapUtils";
 import type {Room, Direction} from "../../schemas/world/roomSchema";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {getRoomNodePosition} from "./utils/mapUtils";
 import type {UpdateStatus} from "../studio/ToolBar";
 import {Node} from "./Node";
 import "./Room.scss";
@@ -43,7 +44,7 @@ export function RoomCard({
 		};
 	}
 
-	const nodes = ROOM_DIRECTIONS.map((direction) => buildNode(direction));
+	const nodes = DIRECTIONS.map((direction) => buildNode(direction));
 
 	const className = [
 		"roomCard",

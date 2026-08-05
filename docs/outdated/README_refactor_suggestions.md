@@ -557,7 +557,7 @@ Required files:
 Useful nearby files:
 
 - `src/engine/author-commands/action.ts`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 
 Expected new or changed files:
 
@@ -584,7 +584,7 @@ Required files:
 - `src/schemas/objectStateSchema.ts`
 - `src/utils/buildEditorRegistries.ts`
 - `src/utils/createDefaultWorld.ts`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 
 Useful docs:
 
@@ -614,7 +614,7 @@ Required files:
 - `src/schemas/worldSchema.ts`
 - `src/schemas/roomSchema.ts`
 - `src/schemas/objectStateSchema.ts`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 
 Also include if already created:
 
@@ -630,7 +630,7 @@ Expected changed files:
 - `src/engine/commands.ts`
 - `src/engine/commands.test.ts`
 - target resolver files
-- fixtures in `src/data/worlds/exampleWorld.ts` if test coverage needs richer world data
+- fixtures in `src/data/worlds/initialWorld.ts` if test coverage needs richer world data
 
 ### Condition Evaluation Expansion
 
@@ -646,7 +646,7 @@ Required files:
 - `src/schemas/roomSchema.ts`
 - `src/schemas/objectStateSchema.ts`
 - `src/schemas/effectSchema.ts`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 
 Useful follow-up files:
 
@@ -671,7 +671,7 @@ Required files:
 - `src/engine/gameState.ts`
 - `src/schemas/worldSchema.ts`
 - `src/schemas/roomSchema.ts`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 - `src/utils/createDefaultWorld.ts`
 - `src/utils/createDefaultWorld.test.ts`
 
@@ -794,7 +794,7 @@ Required files:
 - `src/schemas/roomSchema.ts`
 - `src/schemas/objectStateSchema.ts`
 - `src/app/starter/page.tsx`
-- `src/data/worlds/exampleWorld.ts`
+- `src/data/worlds/initialWorld.ts`
 
 Useful files:
 

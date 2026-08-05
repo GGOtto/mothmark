@@ -1,6 +1,6 @@
 "use client";
 
-import {Save} from "lucide-react";
+import {RotateCcw, Save} from "lucide-react";
 import {
 	createContext,
 	useCallback,
@@ -28,6 +28,7 @@ type SaveTarget = {
 	worldId: string | null;
 	revision: number | null;
 	onPersisted: (worldId: string, revision: number) => void;
+	onReset: () => void;
 };
 
 type SavedWorld = {
@@ -44,6 +45,7 @@ type WorldAutosaveContextValue = {
 	indicatorVisible: boolean;
 	status: SaveStatus;
 	saveNow: () => Promise<void>;
+	resetWorld: () => void;
 };
 
 const WorldAutosaveContext = createContext<WorldAutosaveContextValue | null>(null);
@@ -225,7 +227,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			} catch (error) {
 				if (generationRef.current !== generationAtSaveStart) return;
 
-				if (error instanceof WorldSaveError && !error.retryable) {
+				if (error instanceof WorldSaveError) {
 					console.warn("Could not autosave the world", error.message);
 				} else {
 					console.error("Could not autosave the world", error);
@@ -346,6 +348,10 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 		setIndicatorVisible(false);
 	}, [clearScheduledSaves]);
 
+	const resetWorld = useCallback(() => {
+		targetRef.current?.onReset();
+	}, []);
+
 	useEffect(() => clearScheduledSaves, [clearScheduledSaves]);
 
 	useEffect(() => {
@@ -370,8 +376,19 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			indicatorVisible,
 			status,
 			saveNow,
+			resetWorld,
 		}),
-		[clearTarget, indicatorVisible, isDirty, registerTarget, saveNow, status, target, updateTarget],
+		[
+			clearTarget,
+			indicatorVisible,
+			isDirty,
+			registerTarget,
+			resetWorld,
+			saveNow,
+			status,
+			target,
+			updateTarget,
+		],
 	);
 
 	return <WorldAutosaveContext.Provider value={value}>{children}</WorldAutosaveContext.Provider>;
@@ -393,6 +410,7 @@ export function useWorldAutosaveRegistration({
 	worldId,
 	revision,
 	onPersisted,
+	onReset,
 }: SaveTarget & {ready: boolean}) {
 	const {clearTarget, registerTarget, updateTarget} = useWorldAutosave();
 	const registered = useRef(false);
@@ -400,7 +418,7 @@ export function useWorldAutosaveRegistration({
 	useEffect(() => {
 		if (!ready) return;
 
-		const target = {world, worldId, revision, onPersisted};
+		const target = {world, worldId, revision, onPersisted, onReset};
 
 		if (!registered.current) {
 			registerTarget(target);
@@ -408,7 +426,7 @@ export function useWorldAutosaveRegistration({
 		} else {
 			updateTarget(target);
 		}
-	}, [onPersisted, ready, registerTarget, revision, updateTarget, world, worldId]);
+	}, [onPersisted, onReset, ready, registerTarget, revision, updateTarget, world, worldId]);
 
 	useEffect(
 		() => () => {
@@ -431,6 +449,31 @@ export function WorldAutosaveIndicator() {
 				</span>
 			) : null}
 		</span>
+	);
+}
+
+export function WorldResetButton() {
+	const {resetWorld, target} = useWorldAutosave();
+
+	if (!target) return null;
+
+	const confirmReset = () => {
+		const confirmed = window.confirm(
+			"Replace the current world with the bundled initial world? The replacement will be autosaved.",
+		);
+		if (confirmed) resetWorld();
+	};
+
+	return (
+		<button
+			type="button"
+			className="headerResetButton"
+			onClick={confirmReset}
+			title="Reset world to the bundled example"
+		>
+			<RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
+			Reset example
+		</button>
 	);
 }
 

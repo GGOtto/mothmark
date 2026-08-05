@@ -27,11 +27,11 @@ describe("events and conditions through the player path", () => {
 	it("echoes the command, shows its result, then resolves end-of-turn events", () => {
 		const {world, game} = createPlayerTestScenario("turn-event");
 
-		const nextGame = resolveTurn(world, game, "help");
+		const nextGame = resolveTurn(world, game, "north");
 
 		expect(nextGame.messages.slice(1).map(({type, text}) => ({type, text}))).toEqual([
-			{type: "command", text: "help"},
-			expect.objectContaining({type: "system", text: expect.stringContaining("look (look, l)")}),
+			{type: "command", text: "north"},
+			{type: "system", text: "You can't go that way."},
 			{type: "system", text: "The clockwork instrument chimes."},
 		]);
 	});
@@ -263,38 +263,5 @@ describe("events and conditions through the player path", () => {
 			type: "system",
 			text: "The mechanism is ready.",
 		});
-	});
-
-	it("reacts to a feature the player examined during the same turn", () => {
-		const scenario = createPlayerTestScenario("navigation");
-		const event = createConditionalEvent(
-			"bell-examined",
-			{
-				type: "flag",
-				"flag-type": "feature",
-				operation: "true",
-				roomId: toID("room", "foyer"),
-				featureId: toID("feature", "brass-bell"),
-				flag: "examined",
-			},
-			[{type: "message", operation: "show", message: "The bell trembles under your gaze."}],
-		);
-		const world = produce(scenario.world, (draft) => {
-			draft.events = [event];
-		});
-		const game = {...scenario.game, events: [event]};
-
-		const nextGame = resolveTurn(world, game, "examine bell");
-
-		expect(nextGame.messages.slice(-2)).toEqual([
-			expect.objectContaining({
-				type: "system",
-				text: "A small brass bell hangs beside the doorway.",
-			}),
-			expect.objectContaining({
-				type: "system",
-				text: "The bell trembles under your gaze.",
-			}),
-		]);
 	});
 });

@@ -11,6 +11,14 @@ describe("editor.condition", () => {
 		expect(getEditorMetadata(schema)?.control).toBe("condition-builder");
 	});
 
+	it("retains its source schema when condition features are customized", () => {
+		const customized = editor.conditionControl(ConditionSchema, {
+			features: {allowGroups: false},
+		});
+
+		expect(getEditorMetadata(customized)?.features?.conditionSchema).toBe(ConditionSchema);
+	});
+
 	it.each([
 		{
 			name: "a single condition",
@@ -69,6 +77,16 @@ describe("editor.condition", () => {
 				roomId: toID("room", "foyer"),
 				featureId: toID("feature", "door"),
 				flag: "examined",
+			}).success,
+		).toBe(true);
+	});
+
+	it("accepts current-room exit availability conditions", () => {
+		expect(
+			ConditionSchema.safeParse({
+				type: "current-room",
+				operation: "is-exit-open",
+				direction: "e",
 			}).success,
 		).toBe(true);
 	});

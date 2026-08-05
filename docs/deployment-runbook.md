@@ -214,7 +214,7 @@ Vercel environment changes affect only new deployments.
 Open the protected production URL and verify:
 
 1. `/editor` displays the loading grid before the world appears.
-2. If the database is empty, the example world loads.
+2. If the database is empty, the initial world loads.
 3. Make a small, recognizable edit.
 4. Wait for the `Saving...` indicator to disappear.
 5. Refresh the page.
@@ -223,7 +223,7 @@ Open the protected production URL and verify:
    `revision`.
 8. Open **Vercel → Project → Logs** and check for database or route errors.
 
-The example world is not inserted just by loading it. It becomes the stored `main` world after the
+The initial world is not inserted just by loading it. It becomes the stored `main` world after the
 first edit causes autosave.
 
 ### 10. Verify preview isolation
@@ -439,7 +439,7 @@ where slug = 'main';
 ```
 
 This is destructive. Neon restore history is the recovery mechanism if the wrong data is removed.
-After deletion, `/editor` loads the checked-in example world. The first subsequent edit saves a new
+After deletion, `/editor` loads the checked-in initial world. The first subsequent edit saves a new
 `main` record.
 
 ## Troubleshooting

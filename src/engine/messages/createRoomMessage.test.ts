@@ -1,4 +1,4 @@
-import {world} from "@/data/worlds/exampleWorld";
+import {world} from "@/data/worlds/initialWorld";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {resolveRoomEffect} from "../effects/resolveEffects";
 import {createInitialGameState} from "../states/createInitialState";

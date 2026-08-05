@@ -15,21 +15,6 @@ export const DIRECTION_VECTORS: Record<Direction, Point> = {
 	out: {x: -1, y: 0},
 };
 
-export const ROOM_DIRECTIONS: Direction[] = [
-	"n",
-	"ne",
-	"e",
-	"se",
-	"s",
-	"sw",
-	"w",
-	"nw",
-	"up",
-	"down",
-	"in",
-	"out",
-];
-
 export const DIRECTION_LABELS: Record<Direction, string> = {
 	n: "North",
 	ne: "Northeast",

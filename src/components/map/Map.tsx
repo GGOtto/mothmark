@@ -27,7 +27,8 @@ import {
 	updateRoomDraft,
 	upsertLayerDraft,
 } from "@/app/editor/utils/worldDraftUtils";
-import {getRoomNodePosition, ROOM_DIRECTIONS} from "./utils/mapUtils";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {getRoomNodePosition} from "./utils/mapUtils";
 import {getLayer, isRoomInLayer} from "./utils/layerUtils";
 import {addPoints, subtractPoints, getDistance} from "./utils/pointUtils";
 import {getLayerNavigationDirection} from "./utils/layerNavigation";
@@ -61,7 +62,6 @@ type MapProps = {
 	onToolChange: (tool: MapTool) => void;
 	onTemporaryToolChange?: (tool: MapTool | null) => void;
 	onZoomChange?: (zoom: number) => void;
-	theme?: MapTheme;
 	updateWorld: UpdateWorld;
 	selectedId: string | null;
 	setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -73,7 +73,6 @@ type MapProps = {
 	recenterRequest: number;
 };
 
-export type MapTheme = "light" | "dark";
 export type MapTool = "edit" | "pan";
 export type ConnectionDraft =
 	| {state: "idle"}
@@ -102,7 +101,6 @@ export function Map({
 	onToolChange,
 	onTemporaryToolChange,
 	onZoomChange,
-	theme = "dark",
 	updateWorld,
 	selectedId,
 	setSelectedId,
@@ -312,7 +310,7 @@ export function Map({
 
 	if (isLoading) {
 		return (
-			<div data-map className={`map map--theme-${theme} map--loading`} aria-busy="true">
+			<div data-map className="map map--loading" aria-busy="true">
 				<div className="mapLoadingState" role="status">
 					<span className="mapLoadingMark" aria-hidden="true" />
 					<span>Loading world…</span>
@@ -474,7 +472,7 @@ export function Map({
 		if (!fromRoom) return false;
 
 		const sourcePoint = getRoomConnectionPoint(fromRoom, connectionDraft.fromDirection);
-		const returnDirection = ROOM_DIRECTIONS.reduce((closestDirection, direction) => {
+		const returnDirection = DIRECTIONS.reduce((closestDirection, direction) => {
 			const closestPoint = getRoomConnectionPoint(toRoom, closestDirection);
 			const candidatePoint = getRoomConnectionPoint(toRoom, direction);
 			return getDistance(sourcePoint, candidatePoint) < getDistance(sourcePoint, closestPoint)
@@ -659,7 +657,7 @@ export function Map({
 		<div
 			ref={mapRef}
 			data-map
-			className={`map map--theme-${theme} map--tool-${effectiveTool} ${panState ? "map--panning" : ""}`}
+			className={`map map--tool-${effectiveTool} ${panState ? "map--panning" : ""}`}
 			style={{
 				backgroundPosition: `${viewport.x}px ${viewport.y}px`,
 				backgroundSize: `auto, auto, ${48 * viewport.zoom}px ${48 * viewport.zoom}px, ${48 * viewport.zoom}px ${48 * viewport.zoom}px`,

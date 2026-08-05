@@ -76,10 +76,33 @@ describe("editor schema defaultFieldValue", () => {
 		});
 	});
 
+	it("configures references through the metadata-driven entity picker", () => {
+		const schema = editor.reference("room", {
+			title: "Destination",
+			picker: {
+				presentation: "popup",
+				searchPlaceholder: "Find a destination…",
+				showTags: true,
+				resultLimit: 40,
+			},
+		});
+
+		expect(getEditorMetadata(schema)).toMatchObject({
+			control: "entity-picker",
+			entityType: "room",
+			picker: {
+				presentation: "popup",
+				searchable: true,
+				searchPlaceholder: "Find a destination…",
+				showTags: true,
+				resultLimit: 40,
+			},
+		});
+	});
+
 	it("configures a single effect control through schema metadata", () => {
 		const schema = editor.effectControl(FlagEffectSchema, {
 			title: "Outcome",
-			features: {allowedEffectTypes: ["flag"]},
 			childControls: {
 				flag: {control: "flag-picker", title: "World flag"},
 			},
@@ -89,12 +112,10 @@ describe("editor schema defaultFieldValue", () => {
 			control: "effect",
 			title: "Outcome",
 			features: {
-				allowedEffectTypes: ["flag"],
-				effectTypeOptionSource: "schema.effect.types",
+				effectSchema: FlagEffectSchema,
 				showGeneratedSummary: true,
 			},
 			childControls: {
-				effectType: {control: "select", title: "Effect type"},
 				flag: {control: "flag-picker", title: "World flag"},
 			},
 		});

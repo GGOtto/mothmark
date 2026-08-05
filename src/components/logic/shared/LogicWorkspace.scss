@@ -1,0 +1,90 @@
+.logicHome,
+.logicEmpty {
+	display: flex;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	padding: 20px;
+	background: var(--color-workspace);
+	color: var(--color-text);
+}
+
+.logicHome__content {
+	width: min(680px, 100%);
+
+	h1,
+	p {
+		margin: 0;
+	}
+
+	p {
+		margin-top: 4px;
+		color: var(--color-text-muted);
+	}
+}
+
+.logicHome__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-top: 20px;
+
+	button {
+		display: flex;
+		min-height: 80px;
+		gap: 10px;
+		padding: 14px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-panel);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	button:hover {
+		border-color: var(--color-control-border);
+		background: var(--color-surface-strong);
+	}
+
+	span {
+		display: grid;
+		gap: 4px;
+	}
+
+	small {
+		color: var(--color-text-muted);
+	}
+}
+
+.logicEmpty {
+	flex-direction: column;
+	gap: 8px;
+	color: var(--color-text-muted);
+
+	p {
+		margin: 0;
+	}
+
+	button {
+		display: inline-flex;
+		min-height: 34px;
+		align-items: center;
+		gap: 6px;
+		padding: 0 10px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		cursor: pointer;
+	}
+}
+
+@media (max-width: 700px) {
+	.logicHome__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

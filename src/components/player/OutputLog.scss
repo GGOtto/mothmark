@@ -15,13 +15,13 @@
 	margin: 0 0 0.5rem;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
-	color: var(--panel-text);
+	color: var(--color-terminal-text);
 }
 
 .output-log__message--error {
-	color: #ff7a7a;
+	color: var(--color-terminal-danger);
 }
 
 .output-log__message--system {
-	color: var(--panel-muted);
+	color: var(--color-terminal-muted);
 }

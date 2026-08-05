@@ -1,10 +1,14 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {entityFlagMutationError} from "./entityFlagDefinitions";
+import {DirectionSchema} from "./directionSchema";
 
 export const EffectReferenceSchema = editor.object(
-	{type: z.literal("effect-ref"), effectId: editor.reference("effect", {title: "Effect"})},
-	{title: "Effect Reference"},
+	{
+		type: z.literal("effect-ref"),
+		effectId: editor.reference("effect", {title: "Saved effect"}),
+	},
+	{title: "Use saved effect"},
 );
 
 export const MessageEffectSchema = editor.discriminatedUnion(
@@ -12,7 +16,10 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("message"),
 			operation: z.literal("show"),
-			message: editor.message({title: "Message"}),
+			message: editor.textarea({
+				title: "Message",
+				placeholder: "Enter the message shown to the player",
+			}),
 		}),
 		z.object({
 			type: z.literal("message"),
@@ -22,8 +29,18 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("message"),
 			operation: z.literal("append-last-message"),
-			message: editor.message({title: "Description Text"}),
+			message: editor.textarea({title: "Description text"}),
 			format: editor.select(z.enum(["inline", "newline"]), {title: "Format"}, "newline"),
+		}),
+		z.object({
+			type: z.literal("message"),
+			operation: z.literal("current-room-description"),
+			allowShorten: editor
+				.boolean({
+					title: "Allow shortened",
+					description: "Allow the description to be shortened if the room is already visited.",
+				})
+				.default(true),
 		}),
 	]),
 	{title: "Message Effect", description: "Shows text or augments the current room description."},
@@ -134,31 +151,31 @@ export const CounterEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("create"),
-			counter: editor.counterKey({title: "Counter"}),
+			counter: editor.input({title: "Counter"}),
 			value: editor.number({title: "Start Value"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("set"),
-			counter: editor.counterKey({title: "Counter"}),
+			counter: editor.input({title: "Counter"}),
 			value: editor.number({title: "Value"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("increase"),
-			counter: editor.counterKey({title: "Counter"}),
+			counter: editor.input({title: "Counter"}),
 			amount: editor.number({title: "Amount"}).default(1),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("decrease"),
-			counter: editor.counterKey({title: "Counter"}),
+			counter: editor.input({title: "Counter"}),
 			amount: editor.number({title: "Amount"}).default(1),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("delete"),
-			counter: editor.counterKey({title: "Counter"}),
+			counter: editor.input({title: "Counter"}),
 		}),
 	]),
 	{title: "Counter Effect", description: "Changes a numeric world counter."},
@@ -250,13 +267,13 @@ export const RoomEffectSchema = editor.discriminatedUnion(
 			type: z.literal("room"),
 			operation: z.literal("lock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
-			direction: editor.direction({title: "Direction"}),
+			direction: DirectionSchema,
 		}),
 		z.object({
 			type: z.literal("room"),
 			operation: z.literal("unlock-exit"),
 			roomId: editor.reference("room", {title: "Room"}),
-			direction: editor.direction({title: "Direction"}),
+			direction: DirectionSchema,
 		}),
 		z.object({
 			type: z.literal("room"),
@@ -299,7 +316,9 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("player"),
 			operation: z.literal("kill"),
-			customDeathMessage: editor.input().optional(),
+			customDeathMessage: editor
+				.input({title: "Death message", placeholder: "Use the default death message"})
+				.optional(),
 		}),
 		z.object({
 			type: z.literal("player"),
@@ -311,8 +330,9 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 			operation: z.literal("freeze"),
 			freezeMessage: editor
 				.input({
-					title: "Freeze Message",
+					title: "Freeze message",
 					description: "The message given to the player when they input anything",
+					placeholder: "Optional message while frozen",
 				})
 				.optional(),
 			turns: editor
@@ -320,12 +340,18 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 					title: "Turns",
 					description:
 						"The number of turns the player is frozen for. If unset, the player will be frozen until an effect unfreezes them.",
+					placeholder: "No turn limit",
 				})
 				.optional(),
 		}),
 		z.object({
 			type: z.literal("player"),
 			operation: z.literal("unfreeze"),
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("move-in-direction"),
+			direction: DirectionSchema,
 		}),
 	]),
 	{title: "Player Effect", description: "Perform any effect directly on the player."},
@@ -394,9 +420,6 @@ export const EffectGroupSchema = editor.effectControl(
 			effects: editor.effects(EffectSchema, {
 				title: "Effects",
 				description: "Run concrete effects or reference another saved effect group.",
-				features: {
-					allowedEffectTypes: ["message", "flag", "counter", "feature", "room", "player", "effect-ref"],
-				},
 			}),
 			allowMultipleUsesInWorld: editor.hidden(z.literal(true).default(true), {
 				title: "Stored in world effects",
