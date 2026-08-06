@@ -37,6 +37,31 @@ function getDestinationRoomId(connection: Connection, currentRoomId: ID<"room">)
 	return connection.fromRoomId;
 }
 
+export function isConnectionBlockedByDoor(
+	world: World,
+	game: GameState,
+	connection: Connection,
+	currentRoomId: ID<"room">,
+) {
+	const movingForward = compareIds(connection.fromRoomId, currentRoomId);
+	return world.items.some((item) => {
+		const door = item.behaviors.find((behavior) => behavior.type === "door");
+		if (!door || !compareIds(door.connectionId, connection.id)) return false;
+		if (
+			door.controls !== "both-directions" &&
+			!(
+				(door.controls === "forward" && movingForward) ||
+				(door.controls === "backward" && !movingForward)
+			)
+		) {
+			return false;
+		}
+		const state = game.itemStates.find((candidate) => compareIds(candidate.id, item.id));
+		if (state?.location.type === "destroyed") return false;
+		return !(state?.open ?? item.initialState.open);
+	});
+}
+
 function openExitDestination(
 	world: World,
 	game: GameState,
@@ -49,6 +74,7 @@ function openExitDestination(
 
 	const connection = getConnectionsForDirection(world, game.player.currentRoom, direction)[0];
 	if (!connection) return undefined;
+	if (isConnectionBlockedByDoor(world, game, connection, game.player.currentRoom)) return undefined;
 
 	const destinationRoomId = getDestinationRoomId(connection, game.player.currentRoom);
 	const destinationRoom = world.rooms.find((room) => compareIds(room.id, destinationRoomId));

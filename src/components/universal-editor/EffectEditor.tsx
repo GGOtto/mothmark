@@ -26,7 +26,14 @@ export type EffectGroupValue = {
 	allowMultipleUsesInWorld: boolean;
 };
 
-export type EffectEditorProps = EditorControlProps<EffectGroupValue, EffectControlMetadata>;
+export type EffectEditorProps = EditorControlProps<
+	EffectGroupValue | undefined,
+	EffectControlMetadata
+>;
+type DefinedEffectEditorProps = EffectEditorProps & {
+	value: EffectGroupValue;
+	onChange: (nextValue: EffectGroupValue) => void;
+};
 
 function worldEffectGroups(context: EffectEditorProps["context"]) {
 	const effects = context.getWorldValue?.(["effects"]) ?? context.getValue(["effects"]);
@@ -69,7 +76,7 @@ export function generateEffectGroupName(effects: EffectValue[], schema: z.ZodTyp
  * Edits one complete EffectGroup. Every group has an internal ID and is kept
  * synchronized in world.effects; child rows can reference those saved groups.
  */
-export function EffectEditor({
+function DefinedEffectEditor({
 	value,
 	onChange,
 	metadata,
@@ -79,7 +86,7 @@ export function EffectEditor({
 	disabled,
 	readonly,
 	context,
-}: EffectEditorProps) {
+}: DefinedEffectEditorProps) {
 	const generatedId = `effect-${useId()
 		.replace(/[^a-z0-9]+/gi, "-")
 		.replace(/^-+|-+$/g, "")}`;
@@ -207,6 +214,51 @@ export function EffectEditor({
 					context,
 				})}
 			</div>
+		</FieldShell>
+	);
+}
+
+export function EffectEditor(props: EffectEditorProps) {
+	if (props.value) {
+		return <DefinedEffectEditor {...props} value={props.value} onChange={props.onChange} />;
+	}
+
+	const appearance = resolveEditorControlAppearance(
+		props.context.appearance,
+		props.metadata.appearance,
+	);
+	const canEdit = !(
+		props.disabled ||
+		props.metadata.disabled ||
+		props.readonly ||
+		props.metadata.readonly
+	);
+	return (
+		<FieldShell
+			title={props.metadata.title}
+			description={props.metadata.description}
+			error={props.error}
+			warnings={props.warnings}
+			appearance={appearance}
+			className={props.metadata.className}
+			testId={props.metadata.testId}
+		>
+			<button
+				type="button"
+				className="effectEditor__addOutcome"
+				disabled={!canEdit}
+				onClick={() =>
+					props.onChange({
+						type: "group",
+						name: "",
+						id: "",
+						effects: [],
+						allowMultipleUsesInWorld: true,
+					})
+				}
+			>
+				Add outcome
+			</button>
 		</FieldShell>
 	);
 }

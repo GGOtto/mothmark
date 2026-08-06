@@ -33,8 +33,8 @@ function target(id: string, role: string): CommandBlock {
 		...createDefaultFieldObject(TargetBlockSchema),
 		id: toID("command-block", id),
 		role,
-		entityTypes: ["feature"],
-		entityIds: [toID("feature", "brass-bell")],
+		entityTypes: ["item"],
+		entityIds: [toID("item", "brass-bell")],
 		source: "visible",
 	};
 }

@@ -1,0 +1,75 @@
+{
+	"id": {
+		"type": "command",
+		"id": "unlock"
+	},
+	"name": "Unlock",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "unlock-verb"
+					},
+					"type": "phrase",
+					"matches": ["unlock"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "unlock-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["lockable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "unlock-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "unlock-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "unlock",
+					"itemId": {
+						"type": "item",
+						"id": "unlock-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "unlock-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

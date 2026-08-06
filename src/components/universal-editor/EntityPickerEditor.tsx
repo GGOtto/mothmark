@@ -115,7 +115,7 @@ export function EntityPickerEditor({
 	});
 	const shouldScopeToRoom =
 		metadata.features.scope === "sibling-room" ||
-		(metadata.features.scope !== "world" && requestedTypes.every((type) => type === "feature"));
+		(metadata.features.scope !== "world" && requestedTypes.every((type) => type === "item"));
 	const scopedEntries =
 		shouldScopeToRoom && inferredSiblingRoomId
 			? nextEntries.filter((entry) => !entry.parentId || entry.parentId === inferredSiblingRoomId)

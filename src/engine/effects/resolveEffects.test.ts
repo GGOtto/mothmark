@@ -1,8 +1,8 @@
 import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/states/gameStateSchemas";
 import {
-	FeatureStateSchema,
+	ItemStateSchema,
 	RoomStateSchema,
-	type FeatureState,
+	type ItemState,
 	type RoomState,
 } from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
@@ -13,7 +13,7 @@ import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {
 	resolveCounterEffect,
-	resolveFeatureEffect,
+	resolveItemEffect,
 	resolveFlagEffect,
 	resolveMessageEffect,
 	resolveRoomEffect,
@@ -51,13 +51,11 @@ function createGameState(overrides: GameStateOverrides = {}): GameState {
 	};
 }
 
-function createFeatureState(overrides: Partial<FeatureState> = {}): FeatureState {
-	return {...createDefaultFieldObject(FeatureStateSchema), ...overrides};
+function createItemState(overrides: Partial<ItemState> = {}): ItemState {
+	return {...createDefaultFieldObject(ItemStateSchema), ...overrides};
 }
 
-function createRoomState(
-	overrides: Omit<Partial<RoomState>, "featureStates"> & {featureStates?: FeatureState[]} = {},
-): RoomState {
+function createRoomState(overrides: Partial<RoomState> = {}): RoomState {
 	return {...createDefaultFieldObject(RoomStateSchema), ...overrides};
 }
 
@@ -483,18 +481,18 @@ describe("resolveFlagEffect", () => {
 		expect(game.variables.flags).toEqual([{"door-open": false}]);
 	});
 
-	it("edits room and feature flags through scoped flag effects", () => {
+	it("edits room and item flags through scoped flag effects", () => {
 		const game = createGameState({
 			roomStates: [
 				createRoomState({
 					id: {type: "room", id: "hall"},
 					flags: {active: true, dark: false},
-					featureStates: [
-						createFeatureState({
-							id: {type: "feature", id: "statue"},
-							flags: {examined: false, glowing: false},
-						}),
-					],
+				}),
+			],
+			itemStates: [
+				createItemState({
+					id: {type: "item", id: "statue"},
+					flags: {examined: false, glowing: false},
 				}),
 			],
 		});
@@ -506,19 +504,18 @@ describe("resolveFlagEffect", () => {
 			flag: "dark",
 			value: true,
 		} as Effect);
-		const featureToggle = resolveFlagEffect(roomSet, {
+		const itemToggle = resolveFlagEffect(roomSet, {
 			type: "flag",
-			"flag-type": "feature",
+			"flag-type": "item",
 			operation: "toggle",
-			roomId: {type: "room", id: "hall"},
-			featureId: {type: "feature", id: "statue"},
+			itemId: {type: "item", id: "statue"},
 			flag: "glowing",
 		} as Effect);
 
 		expect(roomSet.roomStates[0].flags.dark).toBe(true);
-		expect(featureToggle.roomStates[0].featureStates[0].flags.glowing).toBe(true);
+		expect(itemToggle.itemStates[0].flags.glowing).toBe(true);
 		expect(game.roomStates[0].flags.dark).toBe(false);
-		expect(game.roomStates[0].featureStates[0].flags.glowing).toBe(false);
+		expect(game.itemStates[0].flags.glowing).toBe(false);
 	});
 
 	it("does not edit readonly flags or delete permanent flags", () => {
@@ -527,12 +524,12 @@ describe("resolveFlagEffect", () => {
 				createRoomState({
 					id: {type: "room", id: "hall"},
 					flags: {visited: true, active: true},
-					featureStates: [
-						createFeatureState({
-							id: {type: "feature", id: "statue"},
-							flags: {examined: false},
-						}),
-					],
+				}),
+			],
+			itemStates: [
+				createItemState({
+					id: {type: "item", id: "statue"},
+					flags: {examined: false},
 				}),
 			],
 		});
@@ -545,10 +542,9 @@ describe("resolveFlagEffect", () => {
 		} as Effect);
 		const examined = resolveFlagEffect(game, {
 			type: "flag",
-			"flag-type": "feature",
+			"flag-type": "item",
 			operation: "set",
-			roomId: {type: "room", id: "hall"},
-			featureId: {type: "feature", id: "statue"},
+			itemId: {type: "item", id: "statue"},
 			flag: "examined",
 			value: true,
 		} as Effect);
@@ -561,7 +557,7 @@ describe("resolveFlagEffect", () => {
 		} as Effect);
 
 		expect(visited.roomStates[0].flags.visited).toBe(true);
-		expect(examined.roomStates[0].featureStates[0].flags.examined).toBe(false);
+		expect(examined.itemStates[0].flags.examined).toBe(false);
 		expect(active.roomStates[0].flags.active).toBe(true);
 	});
 });
@@ -858,44 +854,37 @@ describe("resolveCounterEffect", () => {
 	});
 });
 
-describe("resolveFeatureEffect", () => {
-	function createGameWithFeatures(): GameState {
+describe("resolveItemEffect", () => {
+	function createGameWithItems(): GameState {
 		return createGameState({
 			roomStates: [
-				createRoomState({
-					id: {type: "room", id: "hall"},
-					flags: {},
-					featureStates: [
-						createFeatureState({
-							id: {type: "feature", id: "statue"},
-							flags: {examined: false},
-						}),
-					],
-				}),
-				createRoomState({
-					id: {type: "room", id: "vault"},
-					flags: {},
-					featureStates: [],
+				createRoomState({id: {type: "room", id: "hall"}, flags: {}}),
+				createRoomState({id: {type: "room", id: "vault"}, flags: {}}),
+			],
+			itemStates: [
+				createItemState({
+					id: {type: "item", id: "statue"},
+					location: {type: "room", roomId: {type: "room", id: "hall"}},
+					flags: {examined: false},
 				}),
 			],
 		});
 	}
 
-	function featureEffect(operation: string, values: Record<string, unknown> = {}): Effect {
+	function itemEffect(operation: string, values: Record<string, unknown> = {}): Effect {
 		return {
-			type: "feature",
+			type: "item",
 			operation,
-			roomId: {type: "room", id: "hall"},
-			featureId: {type: "feature", id: "statue"},
+			itemId: {type: "item", id: "statue"},
 			...values,
-		} as Effect;
+		} as unknown as Effect;
 	}
 
-	it("returns the original game for a non-feature effect", () => {
-		const game = createGameWithFeatures();
+	it("returns the original game for a non-item effect", () => {
+		const game = createGameWithItems();
 
 		expect(
-			resolveFeatureEffect(game, {
+			resolveItemEffect(game, {
 				type: "flag",
 				operation: "toggle",
 				flag: "door-open",
@@ -905,76 +894,79 @@ describe("resolveFeatureEffect", () => {
 
 	it.each([
 		["change-name", "name", "Ancient statue"],
-		["change-description", "description", "Its eyes are glowing."],
-	] as const)("resolves %s without mutating the original feature", (operation, property, value) => {
-		const game = createGameWithFeatures();
-		const result = resolveFeatureEffect(game, featureEffect(operation, {value}));
+		["change-examine-text", "description", "Its eyes are glowing."],
+	] as const)("resolves %s without mutating the original item", (operation, property, value) => {
+		const game = createGameWithItems();
+		const result = resolveItemEffect(game, itemEffect(operation, {value}));
 
-		expect(result.roomStates[0].featureStates[0]).toEqual({
-			...game.roomStates[0].featureStates[0],
+		expect(result.itemStates[0]).toEqual({
+			...game.itemStates[0],
 			[property]: value,
 		});
 		expect(result).not.toBe(game);
-		expect(game.roomStates[0].featureStates[0][property]).not.toBe(value);
+		expect(game.itemStates[0][property]).not.toBe(value);
 	});
 
 	it.each([
-		["hide-from-player", "hidden", true],
-		["show-to-player", "hidden", false],
-	] as const)("resolves %s by updating the feature flags", (operation, flag, value) => {
-		const game = createGameWithFeatures();
-		const result = resolveFeatureEffect(game, featureEffect(operation));
+		["hide", "hidden", true],
+		["reveal", "hidden", false],
+	] as const)("resolves %s by updating the item flags", (operation, flag, value) => {
+		const game = createGameWithItems();
+		const result = resolveItemEffect(game, itemEffect(operation));
 
-		expect(result.roomStates[0].featureStates[0].flags).toEqual({
+		expect(result.itemStates[0].flags).toEqual({
 			examined: false,
 			[flag]: value,
 		});
-		expect(game.roomStates[0].featureStates[0].flags).toEqual({examined: false});
+		expect(game.itemStates[0].flags).toEqual({examined: false});
 	});
 
 	it.each([
-		["show-in-room-description", true],
-		["hide-in-room-description", false],
-	] as const)("resolves %s by updating the complete feature state", (operation, value) => {
-		const game = produce(createGameWithFeatures(), (draft) => {
-			draft.roomStates[0].featureStates[0].listedInRoom = !value;
+		["list-in-room", true],
+		["unlist-in-room", false],
+	] as const)("resolves %s by updating the complete item state", (operation, value) => {
+		const game = produce(createGameWithItems(), (draft) => {
+			draft.itemStates[0].listedInRoom = !value;
 		});
-		const result = resolveFeatureEffect(game, featureEffect(operation));
+		const result = resolveItemEffect(game, itemEffect(operation));
 
-		expect(result.roomStates[0].featureStates[0].listedInRoom).toBe(value);
-		expect(game.roomStates[0].featureStates[0].listedInRoom).not.toBe(value);
+		expect(result.itemStates[0].listedInRoom).toBe(value);
+		expect(game.itemStates[0].listedInRoom).not.toBe(value);
 	});
 
-	it("moves a feature state to another room", () => {
-		const game = createGameWithFeatures();
-		const result = resolveFeatureEffect(
+	it("moves an item state to another room", () => {
+		const game = createGameWithItems();
+		const result = resolveItemEffect(
 			game,
-			featureEffect("move-to-room", {newRoomId: {type: "room", id: "vault"}}),
+			itemEffect("move-to-room", {roomId: {type: "room", id: "vault"}}),
 		);
 
-		expect(result.roomStates[0].featureStates).toEqual([]);
-		expect(result.roomStates[1].featureStates).toEqual([game.roomStates[0].featureStates[0]]);
-		expect(game.roomStates[0].featureStates).toHaveLength(1);
-		expect(game.roomStates[1].featureStates).toEqual([]);
+		expect(result.itemStates[0].location).toEqual({
+			type: "room",
+			roomId: {type: "room", id: "vault"},
+		});
+		expect(game.itemStates[0].location).toEqual({
+			type: "room",
+			roomId: {type: "room", id: "hall"},
+		});
 	});
 
-	it("destroys a feature by removing its runtime state", () => {
-		const game = createGameWithFeatures();
-		const result = resolveFeatureEffect(game, featureEffect("destroy"));
+	it("destroys an item by marking its location", () => {
+		const game = createGameWithItems();
+		const result = resolveItemEffect(game, itemEffect("destroy"));
 
-		expect(result.roomStates[0].featureStates).toEqual([]);
-		expect(game.roomStates[0].featureStates).toHaveLength(1);
+		expect(result.itemStates[0].location).toEqual({type: "destroyed"});
+		expect(game.itemStates[0].location.type).toBe("room");
 	});
 
 	it.each([
-		["missing source room", {roomId: {type: "room", id: "missing"}}],
-		["missing feature", {featureId: {type: "feature", id: "missing"}}],
-		["missing destination room", {newRoomId: {type: "room", id: "missing"}}],
+		["missing item", {itemId: {type: "item", id: "missing"}}],
+		["missing destination room", {roomId: {type: "room", id: "missing"}}],
 	] as const)("is a no-op for a %s", (_scenario, values) => {
-		const game = createGameWithFeatures();
-		const operation = "newRoomId" in values ? "move-to-room" : "destroy";
+		const game = createGameWithItems();
+		const operation = "roomId" in values ? "move-to-room" : "destroy";
 
-		expect(resolveFeatureEffect(game, featureEffect(operation, values))).toBe(game);
+		expect(resolveItemEffect(game, itemEffect(operation, values))).toBe(game);
 	});
 });
 
@@ -992,7 +984,6 @@ describe("resolveRoomEffect", () => {
 					tags: ["indoors", "safe"],
 					lockedExits: ["n"],
 					flags: {visited: true, active: true},
-					featureStates: [],
 				}),
 			],
 		});
@@ -1020,7 +1011,6 @@ describe("resolveRoomEffect", () => {
 			createRoomState({
 				id: {type: "room", id: "vault"},
 				flags: {visited: false, active: true},
-				featureStates: [],
 			}),
 		);
 		const result = resolveRoomEffect(

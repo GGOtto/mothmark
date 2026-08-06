@@ -16,11 +16,7 @@ function targetText(
 		return game.roomStates.find((room) => compareIds(room.id, variable.value))?.[projection];
 	}
 
-	for (const room of game.roomStates) {
-		const feature = room.featureStates.find((candidate) => compareIds(candidate.id, variable.value));
-		if (feature) return feature[projection];
-	}
-	return undefined;
+	return game.itemStates.find((item) => compareIds(item.id, variable.value))?.[projection];
 }
 
 export function resolveCommandVariableReference(

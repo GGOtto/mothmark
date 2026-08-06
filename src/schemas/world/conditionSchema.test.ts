@@ -72,10 +72,10 @@ describe("editor.condition", () => {
 		expect(
 			schema.safeParse({
 				type: "flag",
-				"flag-type": "feature",
+				"flag-type": "item",
 				operation: "false",
 				roomId: toID("room", "foyer"),
-				featureId: toID("feature", "door"),
+				itemId: toID("item", "door"),
 				flag: "examined",
 			}).success,
 		).toBe(true);
@@ -89,6 +89,47 @@ describe("editor.condition", () => {
 				direction: "e",
 			}).success,
 		).toBe(true);
+	});
+
+	it.each([
+		{type: "state", state: "reachable", value: true},
+		{type: "location", location: "inside-item", parentItemId: toID("item", "box")},
+		{type: "important-tag", tag: "container", value: true},
+		{type: "tag", tag: "quest-item", value: false},
+		{type: "contents", test: "empty", placement: "either", value: true},
+		{
+			type: "capacity",
+			test: "can-fit",
+			itemId: toID("item", "coin"),
+			placement: "inside",
+		},
+		{
+			type: "can-unlock",
+			lockItemId: toID("item", "door"),
+			keyItemId: toID("item", "key"),
+		},
+		{
+			type: "door",
+			test: "connection-passable",
+			connectionId: toID("connection", "hall"),
+			value: true,
+		},
+	])("accepts item predicate %#", (test) => {
+		expect(
+			ConditionSchema.safeParse({type: "item", itemId: toID("item", "subject"), test}).success,
+		).toBe(true);
+	});
+
+	it("accepts ordinary typed item flag references", () => {
+		expect(
+			ConditionSchema.parse({
+				type: "flag",
+				"flag-type": "item",
+				operation: "true",
+				itemId: toID("item", "door"),
+				flag: "glowing",
+			}),
+		).toMatchObject({itemId: toID("item", "door")});
 	});
 
 	it("defaults legacy flag conditions to normal flags", () => {
@@ -112,7 +153,7 @@ describe("editor.condition", () => {
 				type: "feature-state",
 				state: "examined",
 				roomId: toID("room", "foyer"),
-				featureId: toID("feature", "door"),
+				itemId: toID("item", "door"),
 			}).success,
 		).toBe(false);
 	});

@@ -21,23 +21,19 @@ function gameWithVariables() {
 				tags: [],
 				lockedExits: [],
 				flags: {},
-				featureStates: [
-					{
-						type: "feature",
-						id: toID("feature", "bell"),
-						name: "Changed Bell",
-						description: "The current bell description.",
-						aliases: [],
-						tags: [],
-						kind: "feature",
-						listedInRoom: true,
-						flags: {},
-					},
-				],
+			},
+		];
+		draft.itemStates = [
+			{
+				...createDefaultFieldObject(GameStateSchema.shape.itemStates.element),
+				id: toID("item", "bell"),
+				name: "Changed Bell",
+				description: "The current bell description.",
+				location: {type: "room", roomId: toID("room", "foyer")},
 			},
 		];
 		draft.variables.command = [
-			{blockId: targetBlockId, type: "target", value: toID("feature", "bell"), rawText: "old bell"},
+			{blockId: targetBlockId, type: "target", value: toID("item", "bell"), rawText: "old bell"},
 			{blockId: amountBlockId, type: "number", value: 3, rawText: "three"},
 			{blockId: failedBlockId, type: "failed", rawText: "silver skull"},
 		];

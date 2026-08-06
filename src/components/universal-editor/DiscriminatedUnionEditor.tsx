@@ -26,7 +26,7 @@ export type DiscriminatedUnionControlMetadata = EditorControlMetadata & {
 };
 
 export type DiscriminatedUnionEditorProps = EditorControlProps<
-	Record<string, unknown>,
+	Record<string, unknown> | undefined,
 	DiscriminatedUnionControlMetadata
 >;
 
@@ -42,16 +42,42 @@ export function DiscriminatedUnionEditor({
 	context,
 }: DiscriminatedUnionEditorProps) {
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
-	const discriminator = metadata.features.discriminator;
-	const selectedValue = String(value[discriminator] ?? metadata.features.options[0]?.value ?? "");
-	const selectedOption = metadata.features.options.find((option) => option.value === selectedValue);
+	const discriminator = metadata.features?.discriminator ?? "type";
+	const options = metadata.features?.options ?? [];
+	if (!value) {
+		const isDisabled = disabled || metadata.disabled || readonly || metadata.readonly;
+		const firstOption = options[0];
+		return (
+			<FieldShell
+				title={metadata.title}
+				description={metadata.description}
+				error={error}
+				warnings={warnings}
+				appearance={appearance}
+				className={metadata.className}
+				testId={metadata.testId}
+			>
+				<button
+					type="button"
+					className="discriminatedUnionEditor__add"
+					disabled={isDisabled || !firstOption}
+					onClick={() =>
+						firstOption &&
+						onChange({...(firstOption.defaultValue ?? {}), [discriminator]: firstOption.value})
+					}
+				>
+					Add condition
+				</button>
+			</FieldShell>
+		);
+	}
+	const selectedValue = String(value[discriminator] ?? options[0]?.value ?? "");
+	const selectedOption = options.find((option) => option.value === selectedValue);
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 
 	function changeBranch(nextDiscriminatorValue: string) {
-		const nextOption = metadata.features.options.find(
-			(option) => option.value === nextDiscriminatorValue,
-		);
+		const nextOption = options.find((option) => option.value === nextDiscriminatorValue);
 
 		onChange({
 			...(nextOption?.defaultValue ?? {}),
@@ -76,7 +102,7 @@ export function DiscriminatedUnionEditor({
 					disabled={isDisabled || isReadonly}
 					onChange={(event) => changeBranch(event.target.value)}
 				>
-					{metadata.features.options.map((option) => (
+					{options.map((option) => (
 						<option key={option.value} value={option.value}>
 							{option.label}
 						</option>
@@ -89,7 +115,7 @@ export function DiscriminatedUnionEditor({
 
 				<ObjectEditor
 					value={value}
-					onChange={onChange}
+					onChange={(nextValue) => onChange(nextValue)}
 					metadata={{
 						type: "object",
 						features: {

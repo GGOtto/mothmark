@@ -20,7 +20,7 @@ export type CommandVariableOption = CommandVariableReference & {
 	label: string;
 	detail?: string;
 	valueType: CommandVariableValueType;
-	entityTypes?: Array<"room" | "feature">;
+	entityTypes?: Array<"room" | "item">;
 };
 
 export type CommandVariableCatalog = {
@@ -73,7 +73,7 @@ function option(
 			block.type === "target"
 				? block.entityTypes.length > 0
 					? block.entityTypes
-					: ["room", "feature"]
+					: ["room", "item"]
 				: undefined,
 	};
 }
@@ -148,7 +148,7 @@ export function compatibleVariableOptions(
 		if (candidate.valueType !== acceptedType) return false;
 		if (acceptedType !== "entity" || !entityType) return true;
 		if (!candidate.entityTypes?.length) return false;
-		return candidate.entityTypes.includes(entityType as "room" | "feature");
+		return candidate.entityTypes.includes(entityType as "room" | "item");
 	});
 }
 

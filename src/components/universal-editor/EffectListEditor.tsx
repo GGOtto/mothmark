@@ -65,7 +65,7 @@ function defaultEffect(
 	type: string,
 	operationOptions: EditorSelectOption[] = [],
 	operation?: string,
-	flagType: "normal" | "room" | "feature" = "normal",
+	flagType: "normal" | "room" | "item" = "normal",
 ): EffectValue {
 	const selectedOperation = operation ?? operationOptions[0]?.value;
 	return schema
@@ -148,9 +148,7 @@ function effectWithVisibleDefaults(effect: EffectValue, metadata: EffectListCont
 	const type = String(effect.type ?? "message");
 	if (type === "effect-ref") return effect;
 	const flagType =
-		effect["flag-type"] === "room" || effect["flag-type"] === "feature"
-			? effect["flag-type"]
-			: "normal";
+		effect["flag-type"] === "room" || effect["flag-type"] === "item" ? effect["flag-type"] : "normal";
 	return {
 		...defaultEffect(
 			editorEffectSchema(metadata),
@@ -364,7 +362,7 @@ export function EffectListEditor({
 										value: String(effect.operation ?? effect.messageType ?? ""),
 										onChange: (nextOperation) => {
 											const flagType =
-												effect["flag-type"] === "room" || effect["flag-type"] === "feature"
+												effect["flag-type"] === "room" || effect["flag-type"] === "item"
 													? effect["flag-type"]
 													: "normal";
 											updateEffect(
@@ -374,7 +372,7 @@ export function EffectListEditor({
 													effectType,
 													operationOptions,
 													nextOperation,
-													flagType as "normal" | "room" | "feature",
+													flagType as "normal" | "room" | "item",
 												),
 											);
 										},

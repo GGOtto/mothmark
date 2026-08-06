@@ -15,7 +15,7 @@ describe("resolveTargetMatchContext", () => {
 			compareIds(candidate.reference, toID("room", "gallery")),
 		);
 		const bell = targets.find((candidate) =>
-			compareIds(candidate.reference, toID("feature", "brass-bell")),
+			compareIds(candidate.reference, toID("item", "brass-bell")),
 		);
 
 		expect(foyer?.sources).toEqual(
@@ -31,8 +31,7 @@ describe("resolveTargetMatchContext", () => {
 	it("uses runtime names, aliases, tags, and flags instead of stale authored values", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
 		const changedGame = produce(game, (draft) => {
-			const foyer = draft.roomStates.find((room) => idValue(room.id) === "foyer")!;
-			const bell = foyer.featureStates.find((feature) => idValue(feature.id) === "brass-bell")!;
+			const bell = draft.itemStates.find((item) => idValue(item.id) === "brass-bell")!;
 			bell.name = "Silver Chime";
 			bell.aliases = ["chime"];
 			bell.tags = ["musical"];
@@ -42,7 +41,7 @@ describe("resolveTargetMatchContext", () => {
 			...createDefaultFieldObject(TargetBlockSchema),
 			id: toID("command-block", "instrument"),
 			role: "instrument",
-			entityTypes: ["feature" as const],
+			entityTypes: ["item" as const],
 			tags: ["musical"],
 			source: "visible" as const,
 		};
@@ -54,23 +53,22 @@ describe("resolveTargetMatchContext", () => {
 			command: {
 				blockId: block.id,
 				type: "target",
-				value: toID("feature", "brass-bell"),
+				value: toID("item", "brass-bell"),
 			},
 		});
-		expect(world.rooms[0].features[0].aliases).toEqual(["bell"]);
+		expect(world.items.find((item) => idValue(item.id) === "brass-bell")?.aliases).toEqual(["bell"]);
 	});
 
-	it("removes visibility and reachability from hidden features", () => {
+	it("removes visibility and reachability from hidden items", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
 		const hiddenGame = produce(game, (draft) => {
-			const foyer = draft.roomStates.find((room) => idValue(room.id) === "foyer")!;
-			foyer.featureStates[0].flags.hidden = true;
+			draft.itemStates[0].flags.hidden = true;
 		});
 		const bell = (resolveTargetMatchContext(world, hiddenGame).targets ?? []).find((candidate) =>
-			compareIds(candidate.reference, toID("feature", "brass-bell")),
+			compareIds(candidate.reference, toID("item", "brass-bell")),
 		);
 
-		expect(bell?.sources).toContain("current-room");
+		expect(bell?.sources).not.toContain("current-room");
 		expect(bell?.sources).not.toContain("visible");
 		expect(bell?.sources).not.toContain("reachable");
 	});

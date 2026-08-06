@@ -1,5 +1,5 @@
 import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas";
-import {FeatureStateSchema, RoomStateSchema} from "@/schemas/states/entityStateSchemas";
+import {ItemStateSchema, RoomStateSchema} from "@/schemas/states/entityStateSchemas";
 import {SingleConditionSchema, type SingleCondition} from "@/schemas/world/conditionSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {ConnectionSchema, RoomSchema} from "@/schemas/world/roomSchema";
@@ -20,13 +20,13 @@ const game: GameState = produce(createDefaultFieldObject(GameStateSchema), (draf
 			id: currentRoom,
 			tags: ["indoors", "safe"],
 			flags: {visited: true, active: true},
-			featureStates: [
-				{
-					...createDefaultFieldObject(FeatureStateSchema),
-					id: toID("feature", "statue"),
-					flags: {examined: false, glowing: true},
-				},
-			],
+		},
+	];
+	draft.itemStates = [
+		{
+			...createDefaultFieldObject(ItemStateSchema),
+			id: toID("item", "statue"),
+			flags: {examined: false, glowing: true},
 		},
 	];
 });
@@ -239,10 +239,9 @@ describe("evaluateSingleCondition", () => {
 				game,
 				condition({
 					type: "flag",
-					"flag-type": "feature",
+					"flag-type": "item",
 					operation: "false",
-					roomId: currentRoom,
-					featureId: toID("feature", "statue"),
+					itemId: toID("item", "statue"),
 					flag: "examined",
 				}),
 			),
@@ -253,10 +252,9 @@ describe("evaluateSingleCondition", () => {
 				game,
 				condition({
 					type: "flag",
-					"flag-type": "feature",
+					"flag-type": "item",
 					operation: "true",
-					roomId: currentRoom,
-					featureId: toID("feature", "statue"),
+					itemId: toID("item", "statue"),
 					flag: "glowing",
 				}),
 			),

@@ -11,7 +11,6 @@ export const ENTITY_TYPE_ORDER = [
 	"command",
 	"event",
 	"effect",
-	"feature",
 	"condition",
 	"container",
 	"surface",

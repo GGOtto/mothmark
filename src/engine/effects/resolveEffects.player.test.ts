@@ -20,20 +20,18 @@ function scenarioWithEffects(effects: Effect[]) {
 }
 
 describe("effects through the player path", () => {
-	it("changes feature presentation used by room output", () => {
+	it("changes item presentation used by room output", () => {
 		const {world, game} = scenarioWithEffects([
 			{
-				type: "feature",
+				type: "item",
 				operation: "change-name",
-				roomId: toID("room", "foyer"),
-				featureId: toID("feature", "brass-bell"),
+				itemId: toID("item", "brass-bell"),
 				value: "Silver Bell",
 			},
 			{
-				type: "feature",
-				operation: "change-description",
-				roomId: toID("room", "foyer"),
-				featureId: toID("feature", "brass-bell"),
+				type: "item",
+				operation: "change-examine-text",
+				itemId: toID("item", "brass-bell"),
 				value: "The newly silver bell gleams beside the doorway.",
 			},
 		]);
@@ -47,14 +45,13 @@ describe("effects through the player path", () => {
 		);
 	});
 
-	it("hides and destroys features so they no longer appear in room output", () => {
-		for (const operation of ["hide-from-player", "destroy"] as const) {
+	it("hides and destroys items so they no longer appear in room output", () => {
+		for (const operation of ["hide", "destroy"] as const) {
 			const {world, game} = scenarioWithEffects([
 				{
-					type: "feature",
+					type: "item",
 					operation,
-					roomId: toID("room", "foyer"),
-					featureId: toID("feature", "brass-bell"),
+					itemId: toID("item", "brass-bell"),
 				},
 			]);
 
@@ -66,14 +63,13 @@ describe("effects through the player path", () => {
 		}
 	});
 
-	it("moves a feature into another room, including its player-facing description", () => {
+	it("moves an item into another room, including its player-facing description", () => {
 		const {world, game} = scenarioWithEffects([
 			{
-				type: "feature",
+				type: "item",
 				operation: "move-to-room",
-				roomId: toID("room", "foyer"),
-				newRoomId: toID("room", "gallery"),
-				featureId: toID("feature", "brass-bell"),
+				roomId: toID("room", "gallery"),
+				itemId: toID("item", "brass-bell"),
 			},
 		]);
 

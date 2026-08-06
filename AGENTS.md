@@ -40,11 +40,18 @@
 ## Schema-driven editors
 
 - Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
+- Reuse the existing typed-field command-variable path for condition and effect inputs. Expose ordinary schema fields such as `itemId`, then bind command blocks through `commandVariables` so the shared variable UI and runtime resolver handle them; do not introduce parallel source selectors or command-target resolution systems.
 
 ## Initial commands
 
 - Load every new initial command through `src/data/commands/initialCommands.ts` and compose it from reusable conditions and effects. Do not put command-specific gameplay behavior in the command definition; when the available schemas cannot express the command, add the missing condition or effect and implement its focused and player-path coverage first.
+- Standard item commands such as take, examine, and use must remain saved command documents whose behavior is entirely composed from item conditions and effects. Do not add command-name checks or action-specific branches to command parsing or dispatch.
 - Store each saved initial command as a complete JSON document in `src/data/commands`, then import and validate it with `CommandSchema` at the shared loading boundary. Do not maintain saved command documents as TypeScript object builders.
+
+## Items
+
+- Model scenery and former room features as global items. A fixed item is simply an item without the `takeable` important tag; do not reintroduce a separate feature entity.
+- Use one `size` value for carrying, container, and surface capacity. Containers and surfaces limit their contents by size, but their own external size stays fixed when filled.
 
 ## Immutable object updates
 

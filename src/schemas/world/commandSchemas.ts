@@ -80,11 +80,11 @@ export const RELATION_PREPOSITIONS: Record<RelationType, readonly string[]> = {
 	as: ["as", "like", "in the role of", "in the capacity of"],
 };
 
-export const TargetEntityTypeSchema = z.enum(["room", "feature"]);
+export const TargetEntityTypeSchema = z.enum(["room", "item"]);
 
 export const TargetReferenceSchema = z.union([
 	editor.reference("room", {title: "Room"}),
-	editor.reference("feature", {title: "Feature"}),
+	editor.reference("item", {title: "Item"}),
 ]);
 
 export const ChoiceOptionSchema = editor.object(
@@ -160,7 +160,7 @@ export const TargetBlockSchema = editor.object(
 				description: "Leave empty to allow any supported entity type.",
 				options: [
 					{label: "Room", value: "room"},
-					{label: "Feature", value: "feature"},
+					{label: "Item", value: "item"},
 				],
 			},
 			z.array(TargetEntityTypeSchema).default([]),
@@ -663,7 +663,7 @@ export const CommandSchema = editor
 				acceptedEntityType &&
 				block.type === "target" &&
 				block.entityTypes.length > 0 &&
-				!block.entityTypes.includes(acceptedEntityType as "room" | "feature")
+				!block.entityTypes.includes(acceptedEntityType as "room" | "item")
 			) {
 				ctx.addIssue({
 					code: "custom",

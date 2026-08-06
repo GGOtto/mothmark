@@ -99,7 +99,6 @@ function emptyTags(): EditorTagRegistry {
 	return {
 		rooms: [],
 		items: [],
-		features: [],
 		npcs: [],
 		topics: [],
 		quests: [],
@@ -185,9 +184,47 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			path: isWrapped ? ["conditions", index, "condition"] : ["conditions", index],
 		};
 	});
-	const items = ((worldRecord.items as WorldEntity[] | undefined) ?? []).map((item, index) =>
-		entityOption(item, ["items", index]),
-	);
+	const items = world.items.map((item, index) => {
+		const option = entityOption(
+			{
+				...item,
+				description: item.examine.text,
+				kind: item.behaviors.map((behavior) => behavior.type).join(", "),
+			},
+			["items", index],
+		);
+		const location = item.initialState.location;
+		const roomId = location.type === "room" ? idValue(location.roomId) : undefined;
+		const roomOption = roomId ? rooms.find((room) => room.id === roomId) : undefined;
+		return {
+			...option,
+			entityType: "item" as const,
+			parentId: roomId,
+			hierarchy: roomOption
+				? [
+						...(roomOption.hierarchy ?? []),
+						{kind: "room" as const, key: roomOption.id, label: roomOption.label},
+					]
+				: [{kind: "category" as const, key: location.type, label: readableValue(location.type)}],
+			facts: [
+				{
+					label: "Important tags",
+					value: item.behaviors.length
+						? item.behaviors.map((behavior) => readableValue(behavior.type)).join(", ")
+						: "Fixed item",
+				},
+				{label: "Starting location", value: readableValue(location.type)},
+			],
+			relations: roomOption
+				? [
+						{
+							label: "Room",
+							items: [{id: roomOption.id, label: roomOption.label, entityType: "room" as const}],
+						},
+					]
+				: [],
+		};
+	});
 	const npcs = ((worldRecord.npcs as WorldEntity[] | undefined) ?? []).map((npc, index) =>
 		entityOption(npc, ["npcs", index]),
 	);
@@ -210,40 +247,10 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			hierarchy: [{kind: "category" as const, key: "saved", label: "Saved effects"}],
 		}),
 	);
-	const features = world.rooms.flatMap((room, roomIndex) =>
-		(room.features ?? []).map((feature, featureIndex) => {
-			const option = entityOption(feature, ["rooms", roomIndex, "features", featureIndex]);
-			const roomOption = rooms.find((candidate) => candidate.id === idValue(room.id));
-			return {
-				...option,
-				entityType: "feature" as const,
-				parentId: idValue(room.id),
-				hierarchy: [
-					...(roomOption?.hierarchy ?? []),
-					{kind: "room" as const, key: idValue(room.id), label: room.name},
-				],
-				facts: [
-					...(feature.kind ? [{label: "Kind", value: readableValue(feature.kind)}] : []),
-					{
-						label: "Listed in room",
-						value: feature.listedInRoom ? "Yes" : "No",
-					},
-				],
-				relations: roomOption
-					? [
-							{
-								label: "Room",
-								items: [{id: roomOption.id, label: roomOption.label, entityType: "room" as const}],
-							},
-						]
-					: [],
-			};
-		}),
-	);
 	const roomsWithRelations = rooms.map((room) => {
 		const worldRoom = world.rooms.find((candidate) => idValue(candidate.id) === room.id);
 		const layer = room.hierarchy?.[0];
-		const roomFeatures = features.filter((feature) => feature.parentId === room.id);
+		const roomItems = items.filter((item) => item.parentId === room.id);
 		const roomConnections = world.connections.flatMap((connection) => {
 			const isFrom = idValue(connection.fromRoomId) === room.id;
 			const isTo = idValue(connection.toRoomId) === room.id;
@@ -276,15 +283,15 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			],
 			relations: [
 				...(roomConnections.length ? [{label: "Connections", items: roomConnections}] : []),
-				...(roomFeatures.length
+				...(roomItems.length
 					? [
 							{
-								label: "Features",
-								items: roomFeatures.map((feature) => ({
-									id: feature.id,
-									label: feature.label,
-									entityType: "feature" as const,
-									detail: feature.kind ? readableValue(feature.kind) : undefined,
+								label: "Items",
+								items: roomItems.map((item) => ({
+									id: item.id,
+									label: item.label,
+									entityType: "item" as const,
+									detail: item.kind ? readableValue(item.kind) : undefined,
 								})),
 							},
 						]
@@ -292,14 +299,13 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 			],
 		};
 	});
-	const containers = features.filter((feature) => feature.kind === "container");
-	const surfaces = features.filter((feature) => feature.kind === "surface");
-	const objects = uniqueById([...items, ...features]);
+	const containers = items.filter((item) => item.kind?.split(", ").includes("container"));
+	const surfaces = items.filter((item) => item.kind?.split(", ").includes("surface"));
+	const objects = uniqueById(items);
 	const tags = emptyTags();
 
 	tags.rooms = collectTags(world.rooms);
 	tags.items = collectTags(items);
-	tags.features = collectTags(features);
 	tags.npcs = collectTags(npcs);
 	tags.topics = collectTags(topics);
 	tags.quests = collectTags(quests);
@@ -309,7 +315,6 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		...new Set([
 			...tags.rooms,
 			...tags.items,
-			...tags.features,
 			...tags.npcs,
 			...tags.topics,
 			...tags.quests,
@@ -329,7 +334,6 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		commands,
 		events,
 		effects,
-		features,
 		containers,
 		surfaces,
 		objects,

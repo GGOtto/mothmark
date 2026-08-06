@@ -268,12 +268,12 @@ describe("matchBlock", () => {
 			...createDefaultFieldObject(TargetBlockSchema),
 			id: toID("command-block", "target"),
 			role: "target",
-			entityTypes: ["feature" as const],
+			entityTypes: ["item" as const],
 			tags: ["openable"],
 			tagMode: "all" as const,
 			source: "visible" as const,
 		};
-		const door = toID("feature", "door");
+		const door = toID("item", "door");
 		const targets: TargetMatchCandidate[] = [
 			{
 				reference: door,
@@ -306,12 +306,12 @@ describe("matchBlock", () => {
 		};
 		const targets: TargetMatchCandidate[] = [
 			{
-				reference: toID("feature", "north-door"),
+				reference: toID("item", "north-door"),
 				name: "Door",
 				sources: ["visible"],
 			},
 			{
-				reference: toID("feature", "south-door"),
+				reference: toID("item", "south-door"),
 				name: "Door",
 				sources: ["visible"],
 			},

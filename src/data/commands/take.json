@@ -1,0 +1,122 @@
+{
+	"id": {
+		"type": "command",
+		"id": "take"
+	},
+	"name": "Take",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "take-verb"
+					},
+					"type": "phrase",
+					"matches": ["take", "get", "pick up"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "take-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["takeable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "take-branch"
+		},
+		"if": {
+			"condition": {
+				"type": "group",
+				"operation": "all",
+				"conditions": [
+					{
+						"type": "item",
+						"itemId": {
+							"type": "item",
+							"id": "take-item"
+						},
+						"test": {
+							"type": "state",
+							"state": "reachable",
+							"value": true
+						},
+						"commandVariables": [
+							{
+								"blockId": {
+									"type": "command-block",
+									"id": "take-target"
+								},
+								"field": "itemId"
+							}
+						]
+					}
+				]
+			},
+			"effect": {
+				"name": "Take item",
+				"id": {
+					"type": "effect",
+					"id": "take-effects"
+				},
+				"type": "group",
+				"effects": [
+					{
+						"type": "item-action",
+						"action": "take",
+						"itemId": {
+							"type": "item",
+							"id": "take-item"
+						},
+						"commandVariables": [
+							{
+								"blockId": {
+									"type": "command-block",
+									"id": "take-target"
+								},
+								"field": "itemId"
+							}
+						]
+					}
+				],
+				"allowMultipleUsesInWorld": true
+			},
+			"delayTurns": 0,
+			"cancelIfConditionFails": true
+		},
+		"else": {
+			"name": "Cannot take",
+			"id": {
+				"type": "effect",
+				"id": "take-failed"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "message",
+					"operation": "show",
+					"message": "You can't take that right now."
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

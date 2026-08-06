@@ -93,4 +93,197 @@
 			}
 		}
 	}
+
+	.itemCatalog {
+		height: 100%;
+		box-sizing: border-box;
+		padding: 28px 32px 40px;
+		overflow: auto;
+		background: var(--workspace-bg);
+		color: var(--color-text);
+	}
+
+	.itemCatalogIntro {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 24px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding-bottom: 22px;
+		border-bottom: 1px solid var(--color-border);
+
+		h1 {
+			margin: 0;
+			font-family: var(--font-sans);
+			font-size: 28px;
+			font-weight: 500;
+			letter-spacing: -0.02em;
+		}
+
+		p {
+			max-width: 620px;
+			margin: 7px 0 0;
+			color: var(--color-text-muted);
+			font-size: 13px;
+			line-height: 1.5;
+		}
+	}
+
+	.itemCatalogAdd {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex: 0 0 auto;
+		padding: 8px 11px;
+		border: 1px solid var(--color-action);
+		border-radius: 4px;
+		background: var(--color-action);
+		color: var(--color-action-contrast);
+		font: inherit;
+		font-size: 12px;
+		font-weight: 650;
+		cursor: pointer;
+	}
+
+	.itemCatalogSearch {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		max-width: 980px;
+		margin: 18px auto 12px;
+		padding: 8px 10px;
+		border: 1px solid var(--color-control-border);
+		border-radius: 4px;
+		background: var(--color-surface-raised);
+		color: var(--color-text-faint);
+
+		&:focus-within {
+			outline: 2px solid var(--color-focus);
+			outline-offset: 1px;
+		}
+
+		input {
+			width: 100%;
+			border: 0;
+			outline: 0;
+			background: transparent;
+			color: var(--color-text);
+			font: inherit;
+			font-size: 13px;
+		}
+	}
+
+	.itemCatalogTable {
+		max-width: 980px;
+		margin: 0 auto;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		background: var(--color-surface);
+		overflow: hidden;
+	}
+
+	.itemCatalogTableHeader,
+	.itemCatalogRow {
+		display: grid;
+		grid-template-columns: minmax(220px, 1.3fr) minmax(160px, 1fr) minmax(130px, 0.7fr);
+		gap: 18px;
+		align-items: center;
+	}
+
+	.itemCatalogTableHeader {
+		padding: 8px 13px;
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-strong);
+		color: var(--color-text-faint);
+		font-size: 11px;
+		font-weight: 650;
+	}
+
+	.itemCatalogRow {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 11px 13px;
+		border: 0;
+		border-bottom: 1px solid var(--color-border);
+		background: transparent;
+		color: var(--color-text);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+
+		&:last-of-type {
+			border-bottom: 0;
+		}
+		&:hover {
+			background: var(--color-surface-raised);
+		}
+		&:focus-visible {
+			outline: 2px solid var(--color-focus);
+			outline-offset: -2px;
+		}
+	}
+
+	.itemCatalogRowSelected {
+		background: var(--color-surface-raised);
+		box-shadow: inset 3px 0 0 var(--color-action);
+	}
+
+	.itemCatalogIdentity {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+
+		> svg {
+			color: var(--color-warning);
+		}
+		> span {
+			display: flex;
+			min-width: 0;
+			flex-direction: column;
+		}
+		strong {
+			overflow: hidden;
+			font-size: 13px;
+			font-weight: 650;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		small {
+			margin-top: 2px;
+			color: var(--color-text-faint);
+			font-family: var(--font-mono);
+			font-size: 10px;
+		}
+	}
+
+	.itemCatalogBehaviors,
+	.itemCatalogLocation {
+		overflow: hidden;
+		color: var(--color-text-muted);
+		font-size: 12px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.itemCatalogEmpty {
+		margin: 0;
+		padding: 32px 16px;
+		color: var(--color-text-muted);
+		font-size: 13px;
+		text-align: center;
+	}
+
+	@container editor-main (max-width: 680px) {
+		.itemCatalog {
+			padding: 20px 18px 32px;
+		}
+		.itemCatalogTableHeader {
+			display: none;
+		}
+		.itemCatalogRow {
+			grid-template-columns: 1fr;
+			gap: 4px;
+		}
+	}
 }

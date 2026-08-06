@@ -2,6 +2,7 @@ import {fireEvent, render, screen, within} from "@testing-library/react";
 import {useState} from "react";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {CounterConditionSchema} from "@/schemas/world/conditionSchema";
+import {ItemActionEffectSchema} from "@/schemas/world/effectSchema";
 import {
 	CommandConditionSchema,
 	CommandEffectGroupSchema,
@@ -24,7 +25,7 @@ const catalog: CommandVariableCatalog = {
 			label: "object",
 			detail: "entity",
 			valueType: "entity",
-			entityTypes: ["feature"],
+			entityTypes: ["item"],
 		},
 		{
 			blockId: toID("command-block", "target-block"),
@@ -104,14 +105,11 @@ function TypedHarness() {
 }
 
 function EntityHarness() {
-	const schema = editor.object({
-		type: z.literal("feature"),
-		operation: z.literal("rename"),
-		featureId: editor.reference("feature", {title: "Feature"}),
-	});
+	const schema = ItemActionEffectSchema;
 	const [value, setValue] = useState<Record<string, unknown>>({
-		...createDefaultFieldObject(schema),
-		featureId: toID("feature", "torch"),
+		type: "item-action",
+		action: "take",
+		itemId: toID("item", "torch"),
 	});
 	return (
 		<>
@@ -333,23 +331,23 @@ describe("variable-aware editors", () => {
 
 	it("keeps a bound entity picker in the normal field flow", () => {
 		render(<EntityHarness />);
-		const featureField = screen.getByText("Feature").closest(".objectEditor__field");
-		expect(featureField).not.toBeNull();
+		const itemField = screen.getByText("Item").closest(".objectEditor__field");
+		expect(itemField).not.toBeNull();
 
-		fireEvent.click(within(featureField as HTMLElement).getByRole("button", {name: "Use variable"}));
+		fireEvent.click(within(itemField as HTMLElement).getByRole("button", {name: "Use variable"}));
 		fireEvent.click(screen.getByRole("menuitem", {name: "object entity"}));
 
-		expect(featureField?.querySelector(".variableFieldEditor--bound")).toBeInTheDocument();
-		expect(within(featureField as HTMLElement).getByRole("button", {name: "Feature"})).toBeVisible();
-		expect(within(featureField as HTMLElement).getByRole("button", {name: "Change"})).toBeVisible();
+		expect(itemField?.querySelector(".variableFieldEditor--bound")).toBeInTheDocument();
+		expect(within(itemField as HTMLElement).getByRole("button", {name: "Item"})).toBeVisible();
+		expect(within(itemField as HTMLElement).getByRole("button", {name: "Change"})).toBeVisible();
 		expect(
-			within(featureField as HTMLElement).getByRole("button", {name: "Remove variable"}),
+			within(itemField as HTMLElement).getByRole("button", {name: "Remove variable"}),
 		).toBeVisible();
 		expect(
-			within(featureField as HTMLElement).getByRole("button", {name: "Remove variable"}),
+			within(itemField as HTMLElement).getByRole("button", {name: "Remove variable"}),
 		).not.toHaveTextContent("Remove variable");
 		expect(screen.getByTestId("entity-value")).toHaveTextContent(
-			'"commandVariables":[{"blockId":{"type":"command-block","id":"target-block"},"field":"featureId"}]',
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"target-block"},"field":"itemId"}]',
 		);
 	});
 

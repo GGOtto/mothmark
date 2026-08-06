@@ -37,7 +37,7 @@ describe("ID compatibility", () => {
 		expect(compareIds({type: "room", id: "room-3"}, {type: "room", id: "room-3"})).toBe(true);
 		expect(compareIds({type: "room", id: "room-3"}, "room-3")).toBe(false);
 		expect(compareIds("room-3", {type: "room", id: "room-3"})).toBe(false);
-		expect(compareIds({type: "room", id: "room-3"}, {type: "feature", id: "room-3"})).toBe(false);
+		expect(compareIds({type: "room", id: "room-3"}, {type: "item", id: "room-3"})).toBe(false);
 	});
 });
 
@@ -60,22 +60,15 @@ describe("active world entity IDs", () => {
 		).toBe(true);
 	});
 
-	it("renames and resolves room features", () => {
+	it("renames and resolves global items", () => {
 		const world = createTestWorld();
-		const roomId = idValue(world.rooms[0].id);
-		const feature = world.rooms[0].features[0];
-		const oldFeatureId = idValue(feature.id);
-		const updatedWorld = updateWorldEntityId(
-			world,
-			{type: "feature", id: `${roomId}.${oldFeatureId}`},
-			"renamed-feature",
-		);
+		const item = world.items[0];
+		const oldItemId = idValue(item.id);
+		const updatedWorld = updateWorldEntityId(world, {type: "item", id: oldItemId}, "renamed-item");
 
-		expect(idValue(feature.id)).toBe(oldFeatureId);
-		expect(idValue(updatedWorld.rooms[0].features[0].id)).toBe("renamed-feature");
-		expect(
-			resolveWorldEntityName(updatedWorld, {type: "feature", id: `${roomId}.renamed-feature`}),
-		).toBe(feature.name);
+		expect(idValue(item.id)).toBe(oldItemId);
+		expect(idValue(updatedWorld.items[0].id)).toBe("renamed-item");
+		expect(resolveWorldEntityName(updatedWorld, {type: "item", id: "renamed-item"})).toBe(item.name);
 	});
 
 	it("deletes a room and its connections and chooses a new start room", () => {

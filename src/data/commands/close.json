@@ -1,0 +1,75 @@
+{
+	"id": {
+		"type": "command",
+		"id": "close"
+	},
+	"name": "Close",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "close-verb"
+					},
+					"type": "phrase",
+					"matches": ["close", "shut"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "close-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["openable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "close-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "close-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "close",
+					"itemId": {
+						"type": "item",
+						"id": "close-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "close-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

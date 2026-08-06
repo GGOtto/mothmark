@@ -2,7 +2,7 @@ import {world} from "@/data/worlds/initialWorld";
 import {buildEditorRegistries} from "./buildEditorRegistries";
 
 describe("buildEditorRegistries", () => {
-	it("preserves the layer → room → feature hierarchy", () => {
+	it("preserves the layer → room → item hierarchy", () => {
 		const registries = buildEditorRegistries(world);
 
 		const entrance = registries.rooms.find((room) => room.id === "dungeon-entrance");
@@ -12,14 +12,14 @@ describe("buildEditorRegistries", () => {
 			relations: expect.arrayContaining([
 				expect.objectContaining({label: "Connections"}),
 				expect.objectContaining({
-					label: "Features",
+					label: "Items",
 					items: expect.arrayContaining([
 						expect.objectContaining({id: "stone-arch", label: "Stone Arch"}),
 					]),
 				}),
 			]),
 		});
-		expect(registries.features.find((feature) => feature.id === "stone-arch")).toMatchObject({
+		expect(registries.items.find((item) => item.id === "stone-arch")).toMatchObject({
 			id: "stone-arch",
 			parentId: "dungeon-entrance",
 			hierarchy: [

@@ -58,7 +58,9 @@ function StatefulEffectEditor({
 		<>
 			<EffectEditor
 				value={value}
-				onChange={setValue}
+				onChange={(nextValue) => {
+					if (nextValue) setValue(nextValue);
+				}}
 				metadata={metadata}
 				path={["effect"]}
 				context={context}
@@ -69,7 +71,26 @@ function StatefulEffectEditor({
 	);
 }
 
+function OptionalEffectEditor() {
+	const [value, setValue] = useState<EffectGroupValue | undefined>();
+	return (
+		<EffectEditor
+			value={value}
+			onChange={setValue}
+			metadata={defaultMetadata}
+			path={["optional-effect"]}
+			context={{mode: "edit", getValue: () => undefined, setValue: () => undefined}}
+		/>
+	);
+}
+
 describe("EffectEditor", () => {
+	it("offers to create an unset optional outcome instead of crashing", () => {
+		render(<OptionalEffectEditor />);
+		expect(screen.getByRole("button", {name: "Add outcome"})).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", {name: "Add outcome"}));
+		expect(screen.getByRole("button", {name: "Add effect"})).toBeInTheDocument();
+	});
 	it("edits a complete group and excludes inline group children", () => {
 		render(<StatefulEffectEditor />);
 

@@ -4,27 +4,27 @@ import type {World} from "@/schemas/world/worldSchema";
 import {idValue, toID} from "@/utils/idUtils";
 import {
 	addConnectionDraft,
+	addItemDraft,
 	addRoomDraft,
-	addRoomFeatureDraft,
 	addRoomToLayerDraft,
 	findConnectionDraft,
 	findLayerDraft,
+	findItemDraft,
 	findRoomDraft,
-	findRoomFeatureDraft,
 	moveRoomToLayerDraft,
 	removeConnectionDraft,
 	removeLayerDraft,
+	removeItemDraft,
 	removeRoomDraft,
-	removeRoomFeatureDraft,
 	removeRoomFromLayerDraft,
 	replaceConnectionDraft,
+	replaceItemDraft,
 	replaceRoomDraft,
-	replaceRoomFeatureDraft,
 	setLayerViewportDraft,
 	updateConnectionDraft,
 	updateLayerDraft,
+	updateItemDraft,
 	updateRoomDraft,
-	updateRoomFeatureDraft,
 	upsertLayerDraft,
 } from "./worldDraftUtils";
 
@@ -109,36 +109,35 @@ describe("world connection draft helpers", () => {
 	});
 });
 
-describe("world room-feature draft helpers", () => {
-	it("finds, adds, replaces, updates, and removes room features", () => {
+describe("world item draft helpers", () => {
+	it("finds, adds, replaces, updates, and removes global items", () => {
 		const world = createWorld();
-		const room = world.rooms[0];
-		const feature = room.features[0];
-		const addedFeature = {...feature, id: toID("feature", "added-feature"), name: "Added"};
+		const item = world.items[0];
+		const addedItem = {...item, id: toID("item", "added-item"), name: "Added"};
 
 		const updatedWorld = produce(world, (draft) => {
-			expect(findRoomFeatureDraft(draft, room.id, feature.id)?.feature).toBeDefined();
-			expect(addRoomFeatureDraft(draft, room.id, addedFeature)).toBe(true);
-			expect(addRoomFeatureDraft(draft, room.id, addedFeature)).toBe(false);
+			expect(findItemDraft(draft, item.id)).toBeDefined();
+			expect(addItemDraft(draft, addedItem)).toBe(true);
+			expect(addItemDraft(draft, addedItem)).toBe(false);
 			expect(
-				updateRoomFeatureDraft(draft, room.id, feature.id, (candidate) => {
-					candidate.name = "Updated feature";
+				updateItemDraft(draft, item.id, (candidate) => {
+					candidate.name = "Updated item";
 				}),
 			).toBe(true);
-			expect(updateRoomFeatureDraft(draft, room.id, "missing-feature", () => undefined)).toBe(false);
+			expect(updateItemDraft(draft, "missing-item", () => undefined)).toBe(false);
 			expect(
-				replaceRoomFeatureDraft(draft, room.id, addedFeature.id, {
-					...addedFeature,
-					name: "Replacement feature",
+				replaceItemDraft(draft, addedItem.id, {
+					...addedItem,
+					name: "Replacement item",
 				}),
 			).toBe(true);
-			expect(replaceRoomFeatureDraft(draft, room.id, "missing-feature", feature)).toBe(false);
-			expect(removeRoomFeatureDraft(draft, room.id, addedFeature.id)).toBe(true);
-			expect(removeRoomFeatureDraft(draft, room.id, addedFeature.id)).toBe(false);
+			expect(replaceItemDraft(draft, "missing-item", item)).toBe(false);
+			expect(removeItemDraft(draft, addedItem.id)).toBe(true);
+			expect(removeItemDraft(draft, addedItem.id)).toBe(false);
 		});
 
-		expect(world.rooms[0].features[0].name).not.toBe("Updated feature");
-		expect(updatedWorld.rooms[0].features[0].name).toBe("Updated feature");
+		expect(world.items[0].name).not.toBe("Updated item");
+		expect(updatedWorld.items[0].name).toBe("Updated item");
 	});
 });
 

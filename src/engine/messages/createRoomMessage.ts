@@ -39,30 +39,16 @@ export function createRoomMessage(
 			: (roomState?.description ?? room.description);
 	let text = `${name}\n${description}\n`;
 
-	const featureStates =
-		roomState?.featureStates ??
-		room.features.map((feature) => ({
-			type: "feature" as const,
-			id: feature.id,
-			name: feature.name,
-			description: feature.description,
-			aliases: [...feature.aliases],
-			tags: [...feature.tags],
-			kind: feature.kind,
-			listedInRoom: feature.listedInRoom,
-			flags: {...feature.flags},
-		}));
-	for (const featureState of featureStates) {
-		const feature = world.rooms
-			.flatMap((candidate) => candidate.features)
-			.find((candidate) => compareIds(candidate.id, featureState.id));
-		if (!feature) continue;
-
-		const hidden = featureState.flags.hidden ?? feature.flags.hidden ?? false;
-		const listedInRoom = featureState.listedInRoom;
-		if (!hidden && listedInRoom) {
-			text += `${featureState.description}\n`;
+	for (const itemState of gameState.itemStates) {
+		if (
+			itemState.location.type !== "room" ||
+			!compareIds(itemState.location.roomId, room.id) ||
+			(itemState.flags.hidden ?? false) ||
+			!itemState.listedInRoom
+		) {
+			continue;
 		}
+		text += `${itemState.listingText || itemState.description}\n`;
 	}
 
 	return createGameMessage(`${text}\n`, "room", {roomId: room.id});

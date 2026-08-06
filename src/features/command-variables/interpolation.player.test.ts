@@ -32,7 +32,7 @@ function target(id: string): CommandBlock {
 		...createDefaultFieldObject(TargetBlockSchema),
 		id: toID("command-block", id),
 		role: "object",
-		entityTypes: ["feature"],
+		entityTypes: ["item"],
 		source: "visible",
 	};
 }
@@ -151,7 +151,7 @@ describe("command variable interpolation through the player path", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const world = produce(scenario.world, (draft) => void (draft.commands = [command]));
 		const game = produce(scenario.game, (draft) => {
-			const bell = draft.roomStates[0].featureStates[0];
+			const bell = draft.itemStates[0];
 			bell.name = "Polished Bell";
 			bell.description = "Its newly polished surface catches the light.";
 		});

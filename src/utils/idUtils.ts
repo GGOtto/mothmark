@@ -1,6 +1,5 @@
 import {produce} from "immer";
 import type {World} from "@/schemas/world/worldSchema";
-import type {RoomFeature} from "@/schemas/world/roomSchema";
 
 export type Identifiable = {id: ID | string};
 
@@ -14,7 +13,6 @@ export type WorldIdEntityType =
 	| "connection"
 	| "condition"
 	| "effect"
-	| "feature"
 	| "container"
 	| "surface"
 	| "object"
@@ -40,26 +38,16 @@ type NamedEntity = Identifiable & {
 	name?: string;
 	title?: string;
 	label?: string;
-	features?: RoomFeature[];
 };
-type ActiveEntityType =
-	"room" | "connection" | "condition" | "effect" | "feature" | "container" | "surface" | "object";
+type ActiveEntityType = "room" | "connection" | "condition" | "effect" | "item";
 
-const ACTIVE_ENTITY_TYPES = [
-	"room",
-	"connection",
-	"condition",
-	"effect",
-	"feature",
-	"container",
-	"surface",
-	"object",
-] as const;
+const ACTIVE_ENTITY_TYPES = ["room", "connection", "condition", "effect", "item"] as const;
 const ENTITY_COLLECTIONS = {
 	room: "rooms",
 	connection: "connections",
 	condition: "conditions",
 	effect: "effects",
+	item: "items",
 } as const;
 
 export function generateUniqueId<TEntityType extends IdEntityType>(
@@ -130,14 +118,8 @@ function updateWorldEntityIdDraft(
 	if (hasDuplicateId(world, oldReference.type, entity, newId)) return;
 
 	const oldLocalId = idValue(entity.id);
-	const oldCompositeId = compositeFeatureId(world, oldReference.type, oldReference.id);
 	entity.id = toID(oldReference.type, newId);
 	updateTypedReferences(world, oldReference.type, oldLocalId, newId);
-
-	const newCompositeId = compositeFeatureId(world, oldReference.type, newId);
-	if (oldCompositeId && newCompositeId)
-		updateCompositeReferences(world, oldCompositeId, newCompositeId);
-	if (oldReference.type === "room") updateRoomFeatureReferences(world, oldReference.id, newId);
 }
 
 export function deleteWorldEntity(world: World, reference: ID<WorldIdEntityType>) {
@@ -151,15 +133,9 @@ function deleteWorldEntityDraft(world: World, reference: ID<WorldIdEntityType>) 
 	const entity = findWorldEntity(world, reference.type, reference.id);
 	if (!entity) return;
 
-	if (isFeatureType(reference.type)) {
-		const located = findWorldFeature(world, reference.id);
-		if (!located) return;
-		located.room.features.splice(located.room.features.indexOf(located.feature), 1);
-	} else {
-		const key = ENTITY_COLLECTIONS[reference.type];
-		const collection = world[key] as NamedEntity[];
-		collection.splice(collection.indexOf(entity), 1);
-	}
+	const key = ENTITY_COLLECTIONS[reference.type];
+	const collection = world[key] as NamedEntity[];
+	collection.splice(collection.indexOf(entity), 1);
 
 	pruneRequiredReferences(world, reference.type, idValue(entity.id));
 	if (reference.type === "room") {
@@ -199,58 +175,20 @@ function isActiveEntityType(value: string): value is ActiveEntityType {
 	return (ACTIVE_ENTITY_TYPES as readonly string[]).includes(value);
 }
 
-function isFeatureType(
-	type: ActiveEntityType,
-): type is "feature" | "container" | "surface" | "object" {
-	return type === "feature" || type === "container" || type === "surface" || type === "object";
-}
-
 function findWorldEntity(
 	world: World,
 	type: ActiveEntityType,
 	id: string,
 ): NamedEntity | undefined {
-	if (isFeatureType(type)) {
-		const feature = findWorldFeature(world, id)?.feature;
-		if (!feature) return;
-		if (type === "container" && feature.kind !== "container") return;
-		if (type === "surface" && feature.kind !== "surface") return;
-		return feature;
-	}
 	return (world[ENTITY_COLLECTIONS[type]] as NamedEntity[]).find(
 		(entity) => idValue(entity.id) === id,
 	);
 }
 
-function findWorldFeature(world: World, id: string) {
-	for (const room of world.rooms) {
-		const feature = room.features.find(
-			(candidate) =>
-				idValue(candidate.id) === id || `${idValue(room.id)}.${idValue(candidate.id)}` === id,
-		);
-		if (feature) return {room, feature};
-	}
-}
-
 function hasDuplicateId(world: World, type: ActiveEntityType, entity: NamedEntity, newId: string) {
-	if (isFeatureType(type)) {
-		const located = findWorldFeature(world, idValue(entity.id));
-		return (
-			!located ||
-			located.room.features.some(
-				(candidate) => candidate !== entity && idValue(candidate.id) === newId,
-			)
-		);
-	}
 	return (world[ENTITY_COLLECTIONS[type]] as NamedEntity[]).some(
 		(candidate) => candidate !== entity && idValue(candidate.id) === newId,
 	);
-}
-
-function compositeFeatureId(world: World, type: ActiveEntityType, id: string) {
-	if (!isFeatureType(type)) return id;
-	const located = findWorldFeature(world, id);
-	return located ? `${idValue(located.room.id)}.${idValue(located.feature.id)}` : undefined;
 }
 
 function updateTypedReferences(
@@ -269,31 +207,6 @@ function updateTypedReferences(
 		return;
 	}
 	for (const child of Object.values(value)) updateTypedReferences(child, type, oldId, newId);
-}
-
-function updateCompositeReferences(value: unknown, oldId: string, newId: string) {
-	if (Array.isArray(value)) {
-		for (const child of value) updateCompositeReferences(child, oldId, newId);
-		return;
-	}
-	if (!isRecord(value)) return;
-	if (isID(value) && value.id === oldId) value.id = newId;
-	for (const [key, child] of Object.entries(value)) {
-		if (typeof child === "string" && ["featureId", "objectId"].includes(key) && child === oldId)
-			(value as Record<string, unknown>)[key] = newId;
-		else updateCompositeReferences(child, oldId, newId);
-	}
-}
-
-function updateRoomFeatureReferences(world: World, oldRoomId: string, newRoomId: string) {
-	for (const room of world.rooms) {
-		for (const feature of room.features)
-			updateCompositeReferences(
-				world,
-				`${oldRoomId}.${idValue(feature.id)}`,
-				`${newRoomId}.${idValue(feature.id)}`,
-			);
-	}
 }
 
 function pruneRequiredReferences(value: unknown, type: ActiveEntityType, deletedId: string) {

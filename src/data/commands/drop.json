@@ -1,0 +1,75 @@
+{
+	"id": {
+		"type": "command",
+		"id": "drop"
+	},
+	"name": "Drop",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "drop-verb"
+					},
+					"type": "phrase",
+					"matches": ["drop"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "drop-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["takeable"],
+					"tagMode": "all",
+					"source": "known",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "drop-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "drop-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "drop",
+					"itemId": {
+						"type": "item",
+						"id": "drop-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "drop-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

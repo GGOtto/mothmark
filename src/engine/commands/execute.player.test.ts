@@ -77,7 +77,7 @@ function target(id: string, role: string): CommandBlock {
 		...createDefaultFieldObject(TargetBlockSchema),
 		id: toID("command-block", id),
 		role,
-		entityTypes: ["feature"],
+		entityTypes: ["item"],
 		source: "visible",
 	};
 }

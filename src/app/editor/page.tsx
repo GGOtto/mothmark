@@ -11,6 +11,8 @@ import {
 } from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
+import {ItemCatalog} from "@/components/studio/ItemCatalog";
+import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
@@ -54,8 +56,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Build rooms and connections visually.",
 	},
 	world: {
-		title: "World",
-		description: "Edit rooms, items, NPCs, and world structure.",
+		title: "Items",
+		description: "Edit scenery, portable objects, containers, surfaces, and doors.",
 	},
 	logic: {
 		title: "Logic",
@@ -90,6 +92,7 @@ export default function EditorPage() {
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
+	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
@@ -153,6 +156,7 @@ export default function EditorPage() {
 		setLogicSelection(null);
 		setSelectedCommandId(null);
 		setCommandSelection(null);
+		setSelectedItemId(idValue(nextWorld.items[0]?.id) || null);
 		setMapZoom(1);
 		setMapRecenterRequest((request) => request + 1);
 	}, [updateWorld]);
@@ -191,6 +195,10 @@ export default function EditorPage() {
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
+	const selectedItem = useMemo(
+		() => editorWorld.items.find((item) => idValue(item.id) === selectedItemId) ?? null,
+		[editorWorld.items, selectedItemId],
+	);
 	const selectedCommand = useMemo(
 		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
 		[editorWorld.commands, selectedCommandId],
@@ -229,6 +237,8 @@ export default function EditorPage() {
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItemId={selectedItemId}
+				setSelectedItemId={setSelectedItemId}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -248,6 +258,8 @@ export default function EditorPage() {
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItem={selectedItem}
+				setSelectedItemId={setSelectedItemId}
 			/>
 		</main>
 	);
@@ -280,6 +292,8 @@ type EditorMainPanelProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorMainPanel({
@@ -309,6 +323,8 @@ function EditorMainPanel({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -406,6 +422,8 @@ function EditorMainPanel({
 						setSelectedCommandId={setSelectedCommandId}
 						commandSelection={commandSelection}
 						setCommandSelection={setCommandSelection}
+						selectedItemId={selectedItemId}
+						setSelectedItemId={setSelectedItemId}
 					/>
 				</div>
 			</div>
@@ -539,6 +557,8 @@ type EditorWorkspaceProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorWorkspace({
@@ -566,6 +586,8 @@ function EditorWorkspace({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -649,6 +671,17 @@ function EditorWorkspace({
 			effects: "Build Complex Effects",
 		}[logicSection];
 		return <LogicSectionPlaceholder title={title} onBack={() => setLogicSection("home")} />;
+	}
+
+	if (activeTab === "world") {
+		return (
+			<ItemCatalog
+				world={world}
+				updateWorld={updateWorld}
+				selectedItemId={selectedItemId}
+				onSelectItem={setSelectedItemId}
+			/>
+		);
 	}
 
 	return <PlaceholderWorkspace activeTab={activeTab} />;
@@ -755,6 +788,8 @@ type EditorInspectorProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItem: World["items"][number] | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorInspector({
@@ -770,6 +805,8 @@ function EditorInspector({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItem,
+	setSelectedItemId,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -849,6 +886,33 @@ function EditorInspector({
 					selection={commandSelection}
 					onSelectionChange={setCommandSelection}
 				/>
+			</RightSideBar>
+		);
+	}
+
+	if (activeTab === "world") {
+		return (
+			<RightSideBar
+				world={world}
+				updateWorld={updateWorld}
+				selectedRoom={null}
+				selectedConnection={null}
+			>
+				{selectedItem ? (
+					<ItemEditor
+						selectedItem={selectedItem}
+						world={world}
+						updateWorld={updateWorld}
+						onSelectedIdChange={setSelectedItemId}
+					/>
+				) : (
+					<div className="rightSideBarEmptyPanel">
+						<p className="rightSideBarEmptyTitle">Items</p>
+						<p className="rightSideBarEmptyDescription">
+							Select an item to edit its identity, behavior, and start state.
+						</p>
+					</div>
+				)}
 			</RightSideBar>
 		);
 	}
