@@ -43,7 +43,8 @@
 
 ## Initial commands
 
-- Build every new command in `src/data/commands/initialCommands.ts` from reusable conditions and effects. Do not put command-specific gameplay behavior in the command definition; when the available schemas cannot express the command, add the missing condition or effect and implement its focused and player-path coverage first.
+- Load every new initial command through `src/data/commands/initialCommands.ts` and compose it from reusable conditions and effects. Do not put command-specific gameplay behavior in the command definition; when the available schemas cannot express the command, add the missing condition or effect and implement its focused and player-path coverage first.
+- Store each saved initial command as a complete JSON document in `src/data/commands`, then import and validate it with `CommandSchema` at the shared loading boundary. Do not maintain saved command documents as TypeScript object builders.
 
 ## Immutable object updates
 

@@ -15,7 +15,7 @@ import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {createInitialGameState} from "../states/createInitialState";
-import {moveCommand} from "@/data/commands/move";
+import {moveCommand} from "@/data/commands/initialCommands";
 
 export type PlayerTestScenarioName = "navigation" | "conditional-travel" | "turn-event";
 
