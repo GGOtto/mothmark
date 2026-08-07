@@ -10,7 +10,7 @@ import {
 } from "./itemSchema";
 
 describe("ItemSchema", () => {
-	it("keeps examine useful for fixed items and configures standard actions as important tags", () => {
+	it("keeps examine useful for fixed items and configures standard actions as behaviors", () => {
 		const item = produce(createDefaultFieldObject(ItemSchema), (draft) => {
 			draft.id = toID("item", "brass-key");
 			draft.name = "Brass key";

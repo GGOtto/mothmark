@@ -115,11 +115,11 @@ export const ItemImportantTagPredicateSchema = editor.object(
 		type: z.literal("important-tag"),
 		tag: editor.select(
 			z.enum(["takeable", "container", "surface", "openable", "lockable", "door", "usable"]),
-			{title: "Important tag"},
+			{title: "Behavior"},
 		),
 		value: editor.boolean({title: "Expected"}).default(true),
 	},
-	{title: "Important tag"},
+	{title: "Behavior"},
 );
 
 export const ItemTagPredicateSchema = editor.object(

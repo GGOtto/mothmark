@@ -265,8 +265,8 @@ export const ItemBehaviorSchema = editor.discriminatedUnion(
 		UsableBehaviorSchema,
 	]),
 	{
-		title: "Important tag",
-		description: "A recognized tag that adds player-facing behavior and its settings.",
+		title: "Behavior",
+		description: "A player-facing capability added to this item.",
 		picker: {showDescriptions: true},
 	},
 );
@@ -329,13 +329,31 @@ export const ItemExamineSchema = editor.object(
 export const ItemInitialStateSchema = editor.object(
 	{
 		location: ItemLocationSchema,
-		open: editor.boolean({title: "Open at start"}).default(false),
-		locked: editor.boolean({title: "Locked at start"}).default(false),
+		open: editor.hidden(z.boolean().default(false)),
+		locked: editor.hidden(z.boolean().default(false)),
 		flags: editor
 			.objectFlags({
 				title: "Flags",
 				description: "Boolean state attached to this item and its initial values.",
-				features: {flags: ITEM_FLAG_DEFINITIONS},
+				features: {
+					flags: ITEM_FLAG_DEFINITIONS,
+					linkedFlags: [
+						{
+							name: "open",
+							valueField: "open",
+							sourceArrayField: "behaviors",
+							sourceValue: "openable",
+							description: "Whether this openable item starts open.",
+						},
+						{
+							name: "locked",
+							valueField: "locked",
+							sourceArrayField: "behaviors",
+							sourceValue: "lockable",
+							description: "Whether this lockable item starts locked.",
+						},
+					],
+				},
 			})
 			.default({examined: false}),
 	},
@@ -395,12 +413,16 @@ export const ItemSchema = editor
 			),
 			examine: ItemExamineSchema,
 			behaviors: editor.array(ItemBehaviorSchema, {
-				title: "Important tags",
-				description: "Recognized tags that add and configure standard item behavior.",
+				title: "Behaviors",
+				description: "Standard capabilities available to the player for this item.",
+				features: {
+					selectionControl: "multi-select",
+					selectionTitle: "Available behaviors",
+				},
 				emptyState: {
 					emptyTitle: "Fixed item",
 					emptyDescription: "This item can be examined but has no additional standard behavior.",
-					emptyActionLabel: "Add important tag",
+					emptyActionLabel: "Add behavior",
 				},
 				layout: {group: "behavior", width: "full", order: 1},
 			}),
@@ -410,15 +432,15 @@ export const ItemSchema = editor
 			title: "Item",
 			description: docify(`
 				A player-targetable object. Fixed scenery, containers, surfaces, doors,
-				hazards, tools, and portable objects are all items. Important tags add
-				standard behavior without requiring custom commands.
+				hazards, tools, and portable objects are all items. Behaviors add
+				standard capabilities without requiring custom commands.
 			`),
 			features: {
 				layout: "section",
 				groups: [
 					{id: "identity", title: "Identity", order: 10},
 					{id: "presentation", title: "Presentation and examine", order: 20},
-					{id: "behavior", title: "Important tags and actions", order: 30},
+					{id: "behavior", title: "Behaviors and actions", order: 30},
 				],
 			},
 			duplicate: {
@@ -434,7 +456,7 @@ export const ItemSchema = editor
 			if (behaviorTypes.has(behavior.type)) {
 				ctx.addIssue({
 					code: "custom",
-					message: `The ${behavior.type} important tag can only be added once.`,
+					message: `The ${behavior.type} behavior can only be added once.`,
 					path: ["behaviors", index, "type"],
 				});
 			}
@@ -445,7 +467,7 @@ export const ItemSchema = editor
 			if (behaviorTypes.has(requiredBy) && !behaviorTypes.has("openable")) {
 				ctx.addIssue({
 					code: "custom",
-					message: `${requiredBy} items must also have the openable important tag.`,
+					message: `${requiredBy} items must also have the openable behavior.`,
 					path: ["behaviors"],
 				});
 			}

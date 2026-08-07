@@ -208,7 +208,7 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 				: [{kind: "category" as const, key: location.type, label: readableValue(location.type)}],
 			facts: [
 				{
-					label: "Important tags",
+					label: "Behaviors",
 					value: item.behaviors.length
 						? item.behaviors.map((behavior) => readableValue(behavior.type)).join(", ")
 						: "Fixed item",

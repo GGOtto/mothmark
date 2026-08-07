@@ -58,7 +58,7 @@ export function ItemCatalog({world, updateWorld, selectedItemId, onSelectItem}: 
 			<div className="itemCatalogIntro">
 				<div>
 					<h1>Items</h1>
-					<p>Scenery and portable objects share one system. Important tags add standard behavior.</p>
+					<p>Scenery and portable objects share one system. Behaviors add standard capabilities.</p>
 				</div>
 				<button type="button" className="itemCatalogAdd" onClick={addItem}>
 					<Plus size={16} /> Add item
@@ -78,7 +78,7 @@ export function ItemCatalog({world, updateWorld, selectedItemId, onSelectItem}: 
 			<div className="itemCatalogTable" role="list">
 				<div className="itemCatalogTableHeader" aria-hidden="true">
 					<span>Item</span>
-					<span>Important tags</span>
+					<span>Behaviors</span>
 					<span>Starts</span>
 				</div>
 				{visibleItems.map((item) => {

@@ -300,7 +300,7 @@ export const WorldSchema = editor
 				} else if (!receptacle) {
 					ctx.addIssue({
 						code: "custom",
-						message: `The target item needs the ${requiredBehavior} important tag.`,
+						message: `The target item needs the ${requiredBehavior} behavior.`,
 						path: ["items", itemIndex, "initialState", "location", "itemId"],
 					});
 				} else {

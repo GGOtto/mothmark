@@ -155,7 +155,7 @@ describe("item conditions", () => {
 		).toBe(true);
 	});
 
-	it("checks important tags and mutable author tags", () => {
+	it("checks behaviors and mutable author tags", () => {
 		expect(
 			evaluateSingleCondition(
 				world,
