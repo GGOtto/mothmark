@@ -72,6 +72,8 @@
   uninterrupted output flow; do not style it as a form, chat, or card list.
 - Preserve a property inspector's scroll position when editing the current selection. Scroll to the
   top only when the user navigates to a different entity or editor view.
+- Open condition and effect editors directly from their workspace buttons; do not require selecting
+  them in the right inspector before their popup can open.
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
   bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
   viewport.
