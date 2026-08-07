@@ -165,10 +165,13 @@ function parseWrittenInteger(tokens: string[]): number | undefined {
 			continue;
 		}
 
+		let groupTokens = tokens.slice(groupStart, index);
+		if (groupStart > 0 && groupTokens[0] === "and") {
+			groupTokens = groupTokens.slice(1);
+		}
+
 		const group =
-			index === tokens.length && groupStart === index
-				? 0
-				: parseUnderOneThousand(tokens.slice(groupStart, index));
+			index === tokens.length && groupStart === index ? 0 : parseUnderOneThousand(groupTokens);
 		if (group === undefined || (index < tokens.length && (group === 0 || scale >= previousScale))) {
 			return undefined;
 		}
@@ -185,15 +188,34 @@ function parseWrittenInteger(tokens: string[]): number | undefined {
 	return undefined;
 }
 
+function parseNumericLiteral(text: string): number | undefined {
+	const numericPattern = /^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$/;
+	return numericPattern.test(text) ? Number(text.replaceAll(",", "")) : undefined;
+}
+
 function parseWrittenNumber(text: string): number | undefined {
-	const tokens = text.toLowerCase().replaceAll("-", " ").trim().split(/\s+/);
+	const tokens = text
+		.toLowerCase()
+		.replace(/(?<=[a-z])-(?=[a-z])/g, " ")
+		.trim()
+		.split(/\s+/);
 	let sign = 1;
+	let hasWordSign = false;
 
 	if (tokens[0] === "negative" || tokens[0] === "minus") {
 		sign = -1;
+		hasWordSign = true;
 		tokens.shift();
 	} else if (tokens[0] === "positive" || tokens[0] === "plus") {
+		hasWordSign = true;
 		tokens.shift();
+	}
+	if (hasWordSign && /^[+-]/.test(tokens[0] ?? "")) {
+		return undefined;
+	}
+	const signedLiteral = parseNumericLiteral(tokens.join(" "));
+	if (signedLiteral !== undefined) {
+		return sign * signedLiteral;
 	}
 
 	const pointIndex = tokens.indexOf("point");
@@ -202,22 +224,36 @@ function parseWrittenNumber(text: string): number | undefined {
 		return integer === undefined ? undefined : sign * integer;
 	}
 
-	if (pointIndex === 0 || pointIndex !== tokens.lastIndexOf("point")) {
+	if (pointIndex !== tokens.lastIndexOf("point")) {
 		return undefined;
 	}
 
-	const integer = parseWrittenInteger(tokens.slice(0, pointIndex));
+	const integerTokens = tokens.slice(0, pointIndex);
+	const integer = integerTokens.length === 0 ? 0 : parseWrittenInteger(integerTokens);
 	const decimalTokens = tokens.slice(pointIndex + 1);
 	if (
 		integer === undefined ||
 		decimalTokens.length === 0 ||
-		decimalTokens.some((token) => !(token in SMALL_NUMBER_WORDS) || SMALL_NUMBER_WORDS[token] > 9)
+		decimalTokens.some(
+			(token) =>
+				!(/^\d$/.test(token) || (token in SMALL_NUMBER_WORDS && SMALL_NUMBER_WORDS[token] < 10)),
+		)
 	) {
 		return undefined;
 	}
 
-	const decimal = Number(`0.${decimalTokens.map((token) => SMALL_NUMBER_WORDS[token]).join("")}`);
+	const decimal = Number(
+		`0.${decimalTokens
+			.map((token) => (/^\d$/.test(token) ? token : SMALL_NUMBER_WORDS[token]))
+			.join("")}`,
+	);
 	return sign * (integer + decimal);
+}
+
+function unwrapNumberLabel(text: string): string {
+	if (text.startsWith("the number ")) return text.slice("the number ".length);
+	if (text.startsWith("number ")) return text.slice("number ".length);
+	return text;
 }
 
 export function matchNumber(
@@ -228,13 +264,14 @@ export function matchNumber(
 		return failedMatch();
 	}
 
-	const normalizedText = normalize(text).trim();
-	const numericPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
-	const numericValue = numericPattern.test(normalizedText)
-		? Number(normalizedText)
-		: block.allowWords
-			? parseWrittenNumber(normalizedText)
-			: undefined;
+	const normalizedText = unwrapNumberLabel(normalize(text));
+	const literalValue = parseNumericLiteral(normalizedText);
+	const numericValue =
+		literalValue !== undefined
+			? literalValue
+			: block.allowWords
+				? parseWrittenNumber(normalizedText)
+				: undefined;
 
 	if (
 		numericValue === undefined ||

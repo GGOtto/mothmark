@@ -208,7 +208,8 @@ export const NumberBlockSchema = editor.object(
 		allowWords: editor
 			.boolean({
 				title: "Allow written numbers",
-				description: "Accept wording such as three as well as the digit 3.",
+				description:
+					"Accept wording such as three as well as the digit 3. Players may optionally say number or the number before either form.",
 			})
 			.default(true),
 	},
