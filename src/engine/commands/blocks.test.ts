@@ -58,8 +58,10 @@ describe("matchNumber", () => {
 		expect(matchNumber("42", block).command?.value).toBe(42);
 		expect(matchNumber("-7", block).command?.value).toBe(-7);
 		expect(matchNumber("  +12  ", block).command?.value).toBe(12);
+		expect(matchNumber("1,234", block).command?.value).toBe(1_234);
 		expect(matchNumber("7.0", block).command?.value).toBe(7);
 		expect(matchNumber("1.5", block)).toEqual(partialMatch);
+		expect(matchNumber("12,34", block)).toEqual(partialMatch);
 		expect(matchNumber("1e3", block)).toEqual(partialMatch);
 		expect(matchNumber("0xff", block)).toEqual(partialMatch);
 		expect(matchNumber("", block)).toEqual(partialMatch);
@@ -72,6 +74,10 @@ describe("matchNumber", () => {
 		expect(matchNumber(".75", block).command?.value).toBe(0.75);
 		expect(matchNumber("-2.5", block).command?.value).toBe(-2.5);
 		expect(matchNumber("three point five", block).command?.value).toBe(3.5);
+		expect(matchNumber("the number 3.5", block).command?.value).toBe(3.5);
+		expect(matchNumber("number three point five", block).command?.value).toBe(3.5);
+		expect(matchNumber("point five", block).command?.value).toBe(0.5);
+		expect(matchNumber("three point 5", block).command?.value).toBe(3.5);
 	});
 
 	it("resolves written integers when allowed", () => {
@@ -81,14 +87,40 @@ describe("matchNumber", () => {
 		expect(matchNumber("twenty-one", block).command?.value).toBe(21);
 		expect(matchNumber("one hundred and five", block).command?.value).toBe(105);
 		expect(matchNumber("two thousand", block).command?.value).toBe(2_000);
+		expect(matchNumber("two thousand and five", block).command?.value).toBe(2_005);
+		expect(matchNumber("negative 3", block).command?.value).toBe(-3);
 		expect(matchNumber("twenty ten", block)).toEqual(partialMatch);
+	});
+
+	it.each([
+		["3", 3],
+		["three", 3],
+		["number 3", 3],
+		["number three", 3],
+		["the number 3", 3],
+		["the number three", 3],
+		["the number negative three", -3],
+	])("resolves the natural number form %j", (text, expected) => {
+		expect(matchNumber(text, numberBlock()).command?.value).toBe(expected);
+	});
+
+	it.each([
+		"number",
+		"the number",
+		"the number number three",
+		"the number negative -3",
+		"three things",
+	])("rejects malformed number wording %j", (text) => {
+		expect(matchNumber(text, numberBlock())).toEqual(partialMatch);
 	});
 
 	it("rejects written numbers when they are disabled", () => {
 		const block = numberBlock({allowWords: false});
 
 		expect(matchNumber("three", block)).toEqual(partialMatch);
+		expect(matchNumber("the number three", block)).toEqual(partialMatch);
 		expect(matchNumber("3", block).command?.value).toBe(3);
+		expect(matchNumber("the number 3", block).command?.value).toBe(3);
 	});
 
 	it("applies inclusive minimum and maximum bounds", () => {
