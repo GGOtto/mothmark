@@ -12,6 +12,7 @@ import {FlagPickerEditor, type FlagPickerEditorProps} from "./FlagPickerEditor";
 import {HiddenEditor, type HiddenEditorProps} from "./HiddenEditor";
 import {LinkListEditor, type LinkListEditorProps} from "./LinkListEditor";
 import {MessageEditor, type MessageEditorProps} from "./MessageEditor";
+import {LogicControlPopup} from "./LogicControlPopup";
 import {MultiSelectEditor, type MultiSelectEditorProps} from "./MultiSelectEditor";
 import {NumberFieldEditor, type NumberFieldProps} from "./NumberFieldEditor";
 import {ObjectEditor, type ObjectEditorProps} from "./ObjectEditor";
@@ -151,12 +152,21 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 			return <ConditionalTextEditor {...(props as SpecializedEditorProps)} />;
 
 		case "condition-builder":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as ConditionBuilderEditorProps)} />;
+			}
 			return <ConditionBuilderEditor {...(props as ConditionBuilderEditorProps)} />;
 
 		case "effect":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as EffectEditorProps)} />;
+			}
 			return <EffectEditor {...(props as EffectEditorProps)} />;
 
 		case "effect-list":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as EffectListEditorProps)} />;
+			}
 			return <EffectListEditor {...(props as EffectListEditorProps)} />;
 
 		case "logic-branch-list":

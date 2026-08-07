@@ -1,16 +1,24 @@
 "use client";
 
 import {ArrowLeft, CalendarClock, Plus, Trash2} from "lucide-react";
+import {produce} from "immer";
 import {type CSSProperties, useLayoutEffect, useRef} from "react";
 import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
 import {useOptionalPopup} from "@/components/popup/Popup";
+import {useLogicEditorPopup} from "@/components/universal-editor/useLogicEditorPopup";
+import {
+	generateConditionSummary,
+	generateEffectSummary,
+} from "@/components/universal-editor/utils/universalEditorUtils";
 import type {Event} from "@/schemas/world/eventSchema";
-import type {EffectGroup} from "@/schemas/world/effectSchema";
+import {ConditionSchema} from "@/schemas/world/conditionSchema";
+import {EffectGroupSchema, EffectSchema, type EffectGroup} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {idValue, toID} from "@/utils/idUtils";
 import {CenteredScrollSelector} from "@/components/ui/CenteredScrollSelector";
 import {EffectBranch} from "../shared/EffectBranch";
+import {EventConditionEditorSchema} from "../shared/logicEditorSchemas";
 import type {LogicSelection} from "../shared/logicTypes";
 import "./EventEditor.scss";
 
@@ -80,6 +88,18 @@ function branchGroup(event: Event, branch: EventBranchKey, elifIndex?: number) {
 	return event.branch.elifs?.[elifIndex ?? -1]?.effect;
 }
 
+function branchCondition(event: Event, branch: "if" | "elif", elifIndex?: number) {
+	return branch === "if"
+		? event.branch.if?.condition
+		: event.branch.elifs?.[elifIndex ?? -1]?.condition;
+}
+
+function effectGroupSummary(group: EffectGroup) {
+	if (group.effects.length === 0) return "No effects configured";
+	const first = generateEffectSummary(group.effects[0], EffectSchema);
+	return group.effects.length === 1 ? first : `${first} + ${group.effects.length - 1} more`;
+}
+
 export function EventEditor({
 	world,
 	updateWorld,
@@ -89,6 +109,7 @@ export function EventEditor({
 	onSelectionChange,
 }: EventEditorProps) {
 	const popup = useOptionalPopup();
+	const openLogicEditor = useLogicEditorPopup();
 	const events = world.events ?? [];
 	const selectedEvent =
 		events.find((event) => idValue(event.id) === selectedEventId) ?? events[0] ?? null;
@@ -142,6 +163,59 @@ export function EventEditor({
 		});
 	}
 
+	function worldWithEventUpdate(recipe: (event: Event) => void) {
+		return produce(world, (draft) => {
+			const event = draft.events?.find(
+				(candidate) => selectedEvent && idValue(candidate.id) === idValue(selectedEvent.id),
+			);
+			if (event) recipe(event as Event);
+		});
+	}
+
+	function editCondition(
+		branch: "if" | "elif",
+		elifIndex?: number,
+		value = selectedEvent ? branchCondition(selectedEvent, branch, elifIndex) : undefined,
+		editorWorld = world,
+	) {
+		if (!selectedEvent || !value) return;
+		void openLogicEditor<BranchCondition>({
+			kind: "condition",
+			schema: EventConditionEditorSchema,
+			value,
+			world: editorWorld,
+			updateWorld,
+			summary: (condition) => generateConditionSummary(condition, ConditionSchema),
+			onChange: (condition) => {
+				updateEvent((event) => {
+					if (branch === "if" && event.branch.if) event.branch.if.condition = condition;
+					else if (branch === "elif" && event.branch.elifs?.[elifIndex ?? -1]) {
+						event.branch.elifs[elifIndex ?? -1].condition = condition;
+					}
+				});
+			},
+		});
+	}
+
+	function editEffectGroup(effectId: string, value?: EffectGroup, editorWorld = world) {
+		const group = value ?? editorWorld.effects.find((effect) => idValue(effect.id) === effectId);
+		if (!group) return;
+		void openLogicEditor<EffectGroup>({
+			kind: "effect",
+			schema: EffectGroupSchema,
+			value: group,
+			world: editorWorld,
+			updateWorld,
+			summary: effectGroupSummary,
+			onChange: (nextGroup) => {
+				updateWorld((draft) => {
+					const index = draft.effects.findIndex((effect) => idValue(effect.id) === effectId);
+					if (index >= 0) draft.effects[index] = nextGroup;
+				});
+			},
+		});
+	}
+
 	function addEffect(branch: EventBranchKey, elifIndex?: number) {
 		if (!selectedEvent) return;
 		const effectId = uniqueId(
@@ -153,7 +227,7 @@ export function EventEditor({
 			effects: [{type: "message", operation: "show", message: ""}],
 		};
 
-		updateWorld((draft) => {
+		const nextWorld = produce(world, (draft) => {
 			draft.effects.push(group);
 			const event = draft.events?.find(
 				(candidate) => idValue(candidate.id) === idValue(selectedEvent.id),
@@ -161,7 +235,8 @@ export function EventEditor({
 			const target = event ? branchGroup(event as Event, branch, elifIndex) : undefined;
 			target?.effects.push({type: "effect-ref", effectId: toID("effect", effectId)});
 		});
-		onSelectionChange({kind: "effect-group", eventId: idValue(selectedEvent.id), effectId});
+		updateWorld(nextWorld);
+		editEffectGroup(effectId, group, nextWorld);
 	}
 
 	function removeEffect(branch: EventBranchKey, index: number, elifIndex?: number) {
@@ -194,36 +269,35 @@ export function EventEditor({
 
 	function addIf() {
 		if (!selectedEvent) return;
+		const condition = defaultCondition();
 		pendingBranchScrollRef.current = "if";
-		updateEvent((event) => {
+		const editorWorld = worldWithEventUpdate((event) => {
 			event.branch.if = {
-				condition: defaultCondition(),
+				condition,
 				effect: conditionEffectGroup(idValue(event.id), "if"),
 				delayTurns: 0,
 				cancelIfConditionFails: true,
 			};
 		});
-		onSelectionChange({kind: "condition", eventId: idValue(selectedEvent.id), branch: "if"});
+		updateWorld(editorWorld);
+		editCondition("if", undefined, condition, editorWorld);
 	}
 
 	function addElseIf() {
 		if (!selectedEvent) return;
 		const index = selectedEvent.branch.elifs?.length ?? 0;
+		const condition = defaultCondition();
 		pendingBranchScrollRef.current = `elif-${index}`;
-		updateEvent((event) => {
+		const editorWorld = worldWithEventUpdate((event) => {
 			(event.branch.elifs ??= []).push({
-				condition: defaultCondition(),
+				condition,
 				effect: conditionEffectGroup(idValue(event.id), `else-if-${index + 1}`),
 				delayTurns: 0,
 				cancelIfConditionFails: true,
 			});
 		});
-		onSelectionChange({
-			kind: "condition",
-			eventId: idValue(selectedEvent.id),
-			branch: "elif",
-			elifIndex: index,
-		});
+		updateWorld(editorWorld);
+		editCondition("elif", index, condition, editorWorld);
 	}
 
 	function addElse() {
@@ -349,7 +423,7 @@ export function EventEditor({
 						label="Always"
 						world={world}
 						group={selectedEvent.branch.always}
-						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
+						onSelectGroup={editEffectGroup}
 						onAddEffect={() => addEffect("always")}
 						onRemoveEffect={(index) => removeEffect("always", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("always", fromIndex, toIndex)}
@@ -368,7 +442,7 @@ export function EventEditor({
 						condition={selectedEvent.branch.if.condition}
 						delayTurns={selectedEvent.branch.if.delayTurns}
 						cancelIfConditionFails={selectedEvent.branch.if.cancelIfConditionFails}
-						onSelectCondition={() => onSelectionChange({kind: "condition", eventId, branch: "if"})}
+						onSelectCondition={() => editCondition("if")}
 						onDelayEnabledChange={(enabled) =>
 							updateEvent((event) => {
 								if (!event.branch.if) return;
@@ -386,7 +460,7 @@ export function EventEditor({
 								if (event.branch.if) event.branch.if.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
+						onSelectGroup={editEffectGroup}
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("if", fromIndex, toIndex)}
@@ -419,14 +493,7 @@ export function EventEditor({
 						condition={branch.condition}
 						delayTurns={branch.delayTurns}
 						cancelIfConditionFails={branch.cancelIfConditionFails}
-						onSelectCondition={() =>
-							onSelectionChange({
-								kind: "condition",
-								eventId,
-								branch: "elif",
-								elifIndex: index,
-							})
-						}
+						onSelectCondition={() => editCondition("elif", index)}
 						onDelayEnabledChange={(enabled) =>
 							updateEvent((event) => {
 								const target = event.branch.elifs?.[index];
@@ -447,7 +514,7 @@ export function EventEditor({
 								if (target) target.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
+						onSelectGroup={editEffectGroup}
 						onAddEffect={() => addEffect("elif", index)}
 						onRemoveEffect={(effectIndex) => removeEffect("elif", effectIndex, index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("elif", fromIndex, toIndex, index)}
@@ -467,7 +534,7 @@ export function EventEditor({
 						label="Else"
 						world={world}
 						group={selectedEvent.branch.else}
-						onSelectGroup={(effectId) => onSelectionChange({kind: "effect-group", eventId, effectId})}
+						onSelectGroup={editEffectGroup}
 						onAddEffect={() => addEffect("else")}
 						onRemoveEffect={(index) => removeEffect("else", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("else", fromIndex, toIndex)}

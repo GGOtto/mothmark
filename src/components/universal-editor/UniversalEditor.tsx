@@ -45,7 +45,7 @@ import type {
 } from "@/features/command-variables/model";
 import type {CommandVariableBinding} from "@/schemas/world/commandLogicSchemas";
 
-type UniversalEditorProps<TValue> = {
+export type UniversalEditorProps<TValue> = {
 	schema: z.ZodTypeAny;
 	value: TValue;
 	onChange: (value: TValue) => void;
@@ -59,6 +59,8 @@ type UniversalEditorProps<TValue> = {
 	allowDelete?: boolean;
 	scrollOnExternalValueChange?: boolean;
 	commandVariableCatalog?: CommandVariableCatalog;
+	logicEditorPresentation?: "popup" | "inline";
+	hideRootShellHeader?: boolean;
 };
 
 type UniversalEditorView = {
@@ -378,6 +380,8 @@ export function UniversalEditor<TValue>({
 	allowDelete,
 	scrollOnExternalValueChange = true,
 	commandVariableCatalog,
+	logicEditorPresentation,
+	hideRootShellHeader = false,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
@@ -729,6 +733,7 @@ export function UniversalEditor<TValue>({
 		() => ({
 			appearance,
 			mode: "edit",
+			logicEditorPresentation,
 			world,
 			registries,
 			readOnly: readonly,
@@ -828,6 +833,7 @@ export function UniversalEditor<TValue>({
 		[
 			activeSection,
 			appearance,
+			logicEditorPresentation,
 			currentEditorRootPath,
 			disabled,
 			createEditorLink,
@@ -905,79 +911,81 @@ export function UniversalEditor<TValue>({
 			ref={rootRef}
 			className={["universalEditor", densityClass, className ?? ""].filter(Boolean).join(" ")}
 		>
-			<div className="universalEditor__shellHeader">
-				<div className="universalEditor__shellMain">
-					{activeView?.showBackLink ? (
-						<button className="universalEditor__backButton" type="button" onClick={popEditorView}>
-							{activeView.backLabel ?? "Back"}
-						</button>
-					) : null}
-					<div className="universalEditor__shellCopy">
-						{shellMetadata?.eyebrow ? (
-							<div className="universalEditor__eyebrow">{shellMetadata.eyebrow}</div>
+			{!hideRootShellHeader || activeView ? (
+				<div className="universalEditor__shellHeader">
+					<div className="universalEditor__shellMain">
+						{activeView?.showBackLink ? (
+							<button className="universalEditor__backButton" type="button" onClick={popEditorView}>
+								{activeView.backLabel ?? "Back"}
+							</button>
 						) : null}
-						<h2>{shellTitle}</h2>
-						{visibleActiveSection ? (
-							<div className="universalEditor__activeSectionInline">
-								<span>{visibleActiveSection.title}</span>
-								{visibleActiveSection.countLabel ? <em>{visibleActiveSection.countLabel}</em> : null}
-								{visibleActiveSection.description ? (
-									<small>{visibleActiveSection.description}</small>
-								) : null}
-							</div>
-						) : shellDescription ? (
-							<p>{shellDescription}</p>
-						) : null}
-						{shellSummary ? <small>{shellSummary}</small> : null}
-					</div>
-				</div>
-				<div className="universalEditor__shellMeta">
-					{allowDelete && resolvedEntityId && updateWorld ? (
-						<button className="universalEditor__delete" type="button" onClick={handleDelete}>
-							Delete
-						</button>
-					) : null}
-					{shellMetadata?.showJsonPreview ? (
-						<button
-							className="universalEditor__previewToggle"
-							type="button"
-							onClick={() => setShowJsonPreview((isVisible) => !isVisible)}
-						>
-							{showJsonPreview ? "Hide JSON" : "JSON"}
-						</button>
-					) : null}
-				</div>
-				{breadcrumbs.length > 1 ? (
-					<nav className="universalEditor__breadcrumbs" aria-label="Editor breadcrumbs">
-						{breadcrumbs.map((crumb, index) => {
-							const isCurrent = index === breadcrumbs.length - 1;
-
-							return (
-								<span className="universalEditor__breadcrumbItem" key={`${crumb.label}-${index}`}>
-									{index > 0 ? (
-										<span className="universalEditor__breadcrumbSeparator" aria-hidden="true">
-											/
-										</span>
+						<div className="universalEditor__shellCopy">
+							{shellMetadata?.eyebrow ? (
+								<div className="universalEditor__eyebrow">{shellMetadata.eyebrow}</div>
+							) : null}
+							<h2>{shellTitle}</h2>
+							{visibleActiveSection ? (
+								<div className="universalEditor__activeSectionInline">
+									<span>{visibleActiveSection.title}</span>
+									{visibleActiveSection.countLabel ? <em>{visibleActiveSection.countLabel}</em> : null}
+									{visibleActiveSection.description ? (
+										<small>{visibleActiveSection.description}</small>
 									) : null}
-									{isCurrent ? (
-										<span className="universalEditor__breadcrumbCurrent" aria-current="page">
-											{crumb.label}
-										</span>
-									) : (
-										<button
-											className="universalEditor__breadcrumbButton"
-											type="button"
-											onClick={() => navigateToEditorBreadcrumb(index)}
-										>
-											{crumb.label}
-										</button>
-									)}
-								</span>
-							);
-						})}
-					</nav>
-				) : null}
-			</div>
+								</div>
+							) : shellDescription ? (
+								<p>{shellDescription}</p>
+							) : null}
+							{shellSummary ? <small>{shellSummary}</small> : null}
+						</div>
+					</div>
+					<div className="universalEditor__shellMeta">
+						{allowDelete && resolvedEntityId && updateWorld ? (
+							<button className="universalEditor__delete" type="button" onClick={handleDelete}>
+								Delete
+							</button>
+						) : null}
+						{shellMetadata?.showJsonPreview ? (
+							<button
+								className="universalEditor__previewToggle"
+								type="button"
+								onClick={() => setShowJsonPreview((isVisible) => !isVisible)}
+							>
+								{showJsonPreview ? "Hide JSON" : "JSON"}
+							</button>
+						) : null}
+					</div>
+					{breadcrumbs.length > 1 ? (
+						<nav className="universalEditor__breadcrumbs" aria-label="Editor breadcrumbs">
+							{breadcrumbs.map((crumb, index) => {
+								const isCurrent = index === breadcrumbs.length - 1;
+
+								return (
+									<span className="universalEditor__breadcrumbItem" key={`${crumb.label}-${index}`}>
+										{index > 0 ? (
+											<span className="universalEditor__breadcrumbSeparator" aria-hidden="true">
+												/
+											</span>
+										) : null}
+										{isCurrent ? (
+											<span className="universalEditor__breadcrumbCurrent" aria-current="page">
+												{crumb.label}
+											</span>
+										) : (
+											<button
+												className="universalEditor__breadcrumbButton"
+												type="button"
+												onClick={() => navigateToEditorBreadcrumb(index)}
+											>
+												{crumb.label}
+											</button>
+										)}
+									</span>
+								);
+							})}
+						</nav>
+					) : null}
+				</div>
+			) : null}
 			{showJsonPreview ? (
 				<pre className="universalEditor__jsonPreview">{JSON.stringify(renderedValue, null, 2)}</pre>
 			) : null}

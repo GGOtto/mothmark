@@ -4,7 +4,6 @@ import {ArrowLeft, ArrowRight, Plus, Trash2} from "lucide-react";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import {UniversalEditor} from "@/components/universal-editor/UniversalEditor";
 import {
-	CommandConditionSchema,
 	CommandEffectGroupSchema,
 	type CommandConditionBranch,
 	type CommandEffectGroup,
@@ -29,11 +28,7 @@ import type {CommandSelection} from "../shared";
 import {blockDefinition, isStructuralBlock} from "./CommandEditor";
 import {createBlockFallbackBehavior} from "./commandFallback";
 import {buildCommandVariableCatalog} from "@/features/command-variables";
-
-const CommandConditionEditorSchema = editor.conditionControl(CommandConditionSchema, {
-	title: "Condition",
-	features: {navigateChildEditors: false, reuseWorldConditions: false},
-});
+import {CommandConditionEditorSchema} from "../shared/logicEditorSchemas";
 
 const TargetTagsSchema = editor.object(
 	{

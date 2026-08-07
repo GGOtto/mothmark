@@ -639,6 +639,33 @@ describe("CommandInspector", () => {
 });
 
 describe("CommandBehaviorEditor", () => {
+	it("opens a branch effect directly without changing the inspector selection", () => {
+		let world = commandEditorWorld;
+		const command = world.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		const onSelectionChange = jest.fn();
+		const updateWorld = (update: WorldUpdate) => {
+			world = typeof update === "function" ? produce(world, update) : update;
+		};
+
+		render(
+			<PopupProvider>
+				<CommandBehaviorEditor
+					world={world}
+					updateWorld={updateWorld}
+					command={command}
+					selection={{kind: "behavior", commandId: "say"}}
+					onSelectionChange={onSelectionChange}
+				/>
+			</PopupProvider>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add an effect"}));
+
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeInTheDocument();
+		expect(onSelectionChange).not.toHaveBeenCalled();
+	});
+
 	it("hides behavior navigation when the command has no fallback-eligible blocks", () => {
 		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "shout")!;
 
