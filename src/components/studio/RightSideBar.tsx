@@ -13,6 +13,7 @@ type RightSideBarProps = {
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
 	onSelectedIdChange?: (selectedId: string) => void;
+	onOpenItem?: (itemId: string) => void;
 	title?: string;
 	description?: string;
 	children?: ReactNode;
@@ -24,6 +25,7 @@ export function RightSideBar({
 	selectedRoom,
 	selectedConnection,
 	onSelectedIdChange,
+	onOpenItem,
 	title,
 	description,
 	children,
@@ -44,6 +46,7 @@ export function RightSideBar({
 					world={world}
 					updateWorld={updateWorld}
 					onSelectedIdChange={onSelectedIdChange}
+					onOpenItem={onOpenItem}
 				/>
 			) : selectedConnection ? (
 				<ConnectionEditor

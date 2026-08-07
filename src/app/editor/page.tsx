@@ -252,6 +252,10 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				updateWorld={updateWorld}
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+				onOpenItem={(itemId) => {
+					setSelectedItemId(itemId);
+					setActiveTab("world");
+				}}
 				logicSection={logicSection}
 				logicSelection={logicSelection}
 				selectedCommandId={selectedCommandId}
@@ -782,6 +786,7 @@ type EditorInspectorProps = {
 	selectedConnection: World["connections"][number] | null;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
+	onOpenItem: (itemId: string) => void;
 	logicSection: LogicSection;
 	logicSelection: LogicSelection | null;
 	selectedCommandId: string | null;
@@ -799,6 +804,7 @@ function EditorInspector({
 	selectedConnection,
 	updateWorld,
 	onSelectedIdChange,
+	onOpenItem,
 	logicSection,
 	logicSelection,
 	selectedCommandId,
@@ -816,6 +822,7 @@ function EditorInspector({
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
+				onOpenItem={onOpenItem}
 			/>
 		);
 	}
