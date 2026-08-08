@@ -1,6 +1,8 @@
 import {NextResponse} from "next/server";
 
-import {deleteWorld, getWorld, updateWorld} from "@/db/dbal/worldsRepository";
+import {resolveCurrentActor} from "@/auth/currentActor";
+import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {deleteOwnedWorld, getOwnedWorld, updateOwnedWorld} from "@/db/dbal/worldsRepository";
 
 import {
 	WorldIdSchema,
@@ -24,7 +26,7 @@ const parseWorldId = async (context: WorldRouteContext) => {
 	return WorldIdSchema.safeParse(id);
 };
 
-export async function GET(_: Request, context: WorldRouteContext): Promise<NextResponse> {
+export async function GET(request: Request, context: WorldRouteContext): Promise<NextResponse> {
 	const idResult = await parseWorldId(context);
 
 	if (!idResult.success) {
@@ -32,7 +34,9 @@ export async function GET(_: Request, context: WorldRouteContext): Promise<NextR
 	}
 
 	try {
-		const world = await getWorld(idResult.data);
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		const world = await getOwnedWorld(actor.userId, idResult.data);
 		return world ? NextResponse.json({data: world}) : worldNotFoundResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
@@ -45,6 +49,8 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	if (!idResult.success) {
 		return validationErrorResponse(idResult.error.issues);
 	}
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
 
 	let body: unknown;
 
@@ -61,8 +67,10 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	}
 
 	try {
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
 		const {expectedRevision, ...update} = bodyResult.data;
-		const world = await updateWorld(idResult.data, update, expectedRevision);
+		const world = await updateOwnedWorld(actor.userId, idResult.data, update, expectedRevision);
 
 		if (world) return NextResponse.json({data: world});
 
@@ -74,15 +82,19 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 
 export const PATCH = PUT;
 
-export async function DELETE(_: Request, context: WorldRouteContext): Promise<Response> {
+export async function DELETE(request: Request, context: WorldRouteContext): Promise<Response> {
 	const idResult = await parseWorldId(context);
 
 	if (!idResult.success) {
 		return validationErrorResponse(idResult.error.issues);
 	}
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
 
 	try {
-		return (await deleteWorld(idResult.data))
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		return (await deleteOwnedWorld(actor.userId, idResult.data))
 			? new Response(null, {status: 204})
 			: worldNotFoundResponse();
 	} catch (error) {

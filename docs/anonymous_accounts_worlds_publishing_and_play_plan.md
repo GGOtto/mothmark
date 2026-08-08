@@ -458,7 +458,7 @@ All new application UI follows `docs/design-system.md` and the semantic tokens i
   global header.
 - Do not add empty Publishing or Playthrough navigation for users who cannot use it.
 
-## Slice 1: Private anonymous editing
+## [x] Slice 1: Private anonymous editing
 
 **Outcome:** A person can enter the editor, receive a private anonymous account and private world,
 edit it, refresh, and return to it without another browser being able to see or change it.

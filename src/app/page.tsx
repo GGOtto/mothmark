@@ -7,15 +7,15 @@ export default function HomePage() {
 			<section className="homeCard">
 				<p className="homeEyebrow">Mothmark</p>
 
-				<h1>Text adventure tools, eventually.</h1>
+				<h1>Build a world that answers back.</h1>
 
 				<p className="homeDescription">
-					This home page is just a placeholder for now. The editor is where the actual world-building
-					lives. The editor does not currently work well on a phone.
+					Map places, write commands, and test a text adventure in one quiet workspace. Your work is kept
+					in a temporary account tied to this browser.
 				</p>
 
 				<Link href="/editor" className="homeEditorLink">
-					Open Editor
+					Start building
 				</Link>
 			</section>
 		</main>

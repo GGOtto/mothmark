@@ -7,9 +7,10 @@ This runbook deploys Mothmark with:
 - Phase as the source of truth for environment variables
 - GitHub as the deployment source
 
-The production application currently has one shared world with the slug `main`. Everyone will
-eventually be allowed to edit that world. Until the public editor API described in [Public launch
-gate](#public-launch-gate) is implemented, keep every deployment behind Vercel Authentication.
+The production application gives each editor browser a private anonymous account and owned world.
+The `main` world is a read-only template and is never served through the public world API. Keep
+previews behind Vercel Authentication; production protection remains a launch decision described in
+[Public launch gate](#public-launch-gate).
 
 ## The short version for every release after setup
 
@@ -166,8 +167,8 @@ database migrations were already applied.
 
 ### 6. Protect the deployment
 
-The current generic world routes include create, update, list, delete, and schema-version
-operations. Do not expose them publicly yet.
+Use Vercel Authentication while the product is in private development, even though editor worlds
+are now protected by opaque sessions, owner scopes, same-origin checks, and CSRF validation.
 
 1. Open the Vercel project.
 2. Go to **Settings → Deployment Protection**.
@@ -214,17 +215,19 @@ Vercel environment changes affect only new deployments.
 Open the protected production URL and verify:
 
 1. `/editor` displays the loading grid before the world appears.
-2. If the database is empty, the initial world loads.
+2. On first entry, the URL changes to `/editor/[worldId]` and an initial world cloned from the
+   template loads.
 3. Make a small, recognizable edit.
 4. Wait for the `Saving...` indicator to disappear.
 5. Refresh the page.
 6. Confirm the edit remains.
-7. Open `/api/world/slug/main` and confirm it returns a record containing `id`, `world`, and
-   `revision`.
-8. Open **Vercel → Project → Logs** and check for database or route errors.
+7. Open the same editor URL in a private browser window and confirm the other browser cannot resolve
+   the world.
+8. Confirm `/api/world/slug/main` returns 404 and `/api/world` returns 401 without the editor session.
+9. Open **Vercel → Project → Logs** and check for database or route errors.
 
-The initial world is not inserted just by loading it. It becomes the stored `main` world after the
-first edit causes autosave.
+Entering the editor is intentional account creation. It atomically creates the anonymous user,
+editor-audience session, and first owned world. Browsing `/`, `/starter`, or `/account` does not.
 
 ### 10. Verify preview isolation
 
@@ -258,7 +261,8 @@ Configure the workflow:
 3. Open **GitHub → Actions → Refresh preview database**.
 4. Select **Run workflow** for the first manual refresh.
 5. Confirm the action succeeds.
-6. Open the preview editor and verify that it now contains the current production `main` world.
+6. Open the preview editor and verify that a new anonymous account can clone the production
+   template.
 
 Neon's reset operation makes a child branch match the latest state of its parent and discards the
 child's changes. The workflow uses Neon's official [Reset Branch
@@ -270,43 +274,21 @@ revision and should be refreshed.
 
 ## Public launch gate
 
-Vercel Authentication protects the entire app, so it is appropriate during private development.
-The intended public product does not need user accounts: visitors may all edit one shared world.
-Before disabling Vercel Authentication for Production, narrow and protect the API.
+Vercel Authentication protects the entire app, so it remains appropriate during private
+development. The application-level private-editing gate is now implemented: session secrets are
+opaque and hashed at rest, cookies are host-only and hardened, world operations are owner-scoped,
+mutations require origin and CSRF validation, and generic creation, slug lookup, and schema-version
+routes are closed.
 
-The public browser should receive only:
-
-- `GET /api/editor/world`, which always returns `main`
-- `PUT /api/editor/world`, which validates and updates only `main`
-
-The public write route should require:
-
-- a signed anonymous `HttpOnly`, `Secure`, `SameSite=Lax` session cookie;
-- a matching same-origin `Origin` header;
-- an application CSRF header;
-- the existing Zod world validation and revision check;
-- a request body-size limit;
-- Vercel WAF rate limiting.
-
-Keep these generic or destructive operations inaccessible to public sessions:
-
-- listing all worlds;
-- creating arbitrary worlds or slugs;
-- fetching or updating arbitrary IDs;
-- deleting worlds;
-- changing schema versions;
-- resetting `main` to the example.
-
-A browser cannot safely contain a private API key. Anonymous sessions, origin and CSRF checks, a
-narrow route surface, validation, and rate limiting reduce accidental and automated abuse; they do
-not make a determined public editor user unable to replay their own allowed request.
+Before disabling Production Vercel Authentication, verify the migration and private-world browser
+workflow against the production database, add the intended request body-size limit, and configure
+Vercel WAF rate limiting. Keep previews authenticated.
 
 Start with a Vercel WAF rule around 60 writes per minute per IP for the public editor endpoint, then
 adjust from observed traffic. Vercel's [WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
 is available on all plans.
 
-Only after this gate is implemented and tested should Production Vercel Authentication be disabled.
-Keep Vercel previews authenticated.
+Only after those operational checks should Production Vercel Authentication be disabled.
 
 ## Deploying a routine change
 
@@ -420,31 +402,15 @@ If a deployment is broken but the migration was backward-compatible:
 Do not immediately run `knex migrate:rollback` in production. Application rollback and database
 rollback are different operations, and a down migration can destroy data needed by the new release.
 
-### Reset the shared world manually
+### Reset a private editor world
 
-Until an admin-only reset route exists, reset through the Neon SQL Editor. Verify the target branch
-and inspect the row before deleting anything:
-
-```sql
-select id, name, slug, revision, updated_at
-from worlds
-where slug = 'main';
-```
-
-For the intended branch only, delete `main`:
-
-```sql
-delete from worlds
-where slug = 'main';
-```
-
-This is destructive. Neon restore history is the recovery mechanism if the wrong data is removed.
-After deletion, `/editor` loads the checked-in initial world. The first subsequent edit saves a new
-`main` record.
+Use the editor's **Reset example** action and allow autosave to finish. Do not delete the `main`
+template: it is the source for new anonymous worlds. Until the administrator world tools land,
+database-level recovery should be handled through Neon restore history rather than ad hoc deletes.
 
 ## Troubleshooting
 
-### The app builds but `/api/world/slug/main` returns 500
+### Entering `/editor` returns 500
 
 Check:
 

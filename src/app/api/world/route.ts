@@ -1,44 +1,27 @@
 import {NextResponse} from "next/server";
 
-import {createWorld, listWorlds} from "@/db/dbal/worldsRepository";
+import {resolveCurrentActor} from "@/auth/currentActor";
+import {authRequiredResponse} from "@/auth/requestSecurity";
+import {listOwnedWorlds} from "@/db/dbal/worldsRepository";
 
-import {
-	CreateWorldRequestSchema,
-	handleWorldRouteError,
-	invalidJsonResponse,
-	validationErrorResponse,
-} from "./_shared";
+import {handleWorldRouteError} from "./_shared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
 	try {
-		return NextResponse.json({data: await listWorlds()});
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		return NextResponse.json({data: await listOwnedWorlds(actor.userId)});
 	} catch (error) {
 		return handleWorldRouteError(error);
 	}
 }
 
-export async function POST(request: Request): Promise<NextResponse> {
-	let body: unknown;
-
-	try {
-		body = await request.json();
-	} catch {
-		return invalidJsonResponse();
-	}
-
-	const result = CreateWorldRequestSchema.safeParse(body);
-
-	if (!result.success) {
-		return validationErrorResponse(result.error.issues);
-	}
-
-	try {
-		const world = await createWorld(result.data);
-		return NextResponse.json({data: world}, {status: 201});
-	} catch (error) {
-		return handleWorldRouteError(error);
-	}
+export function POST(): NextResponse {
+	return NextResponse.json(
+		{error: {code: "WORLD_CREATION_UNAVAILABLE", message: "World creation is not available yet."}},
+		{status: 405, headers: {allow: "GET"}},
+	);
 }

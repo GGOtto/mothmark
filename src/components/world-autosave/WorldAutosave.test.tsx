@@ -67,6 +67,7 @@ const flushPromises = async () => {
 describe("world autosave", () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
+		document.cookie = "mothmark_editor_csrf=csrf-token; Path=/";
 		handlePersisted.mockReset();
 		handleReset.mockReset();
 		jest.mocked(deleteMainWorldDraft).mockClear();
@@ -78,6 +79,7 @@ describe("world autosave", () => {
 		jest.useRealTimers();
 		jest.restoreAllMocks();
 		Reflect.deleteProperty(globalThis, "fetch");
+		document.cookie = "mothmark_editor_csrf=; Max-Age=0; Path=/";
 	});
 
 	it("saves the latest world after editing settles", async () => {
@@ -115,6 +117,7 @@ describe("world autosave", () => {
 			`/api/world/${worldId}`,
 			expect.objectContaining({
 				method: "PUT",
+				headers: {"content-type": "application/json", "x-csrf-token": "csrf-token"},
 				body: JSON.stringify({world: updatedWorld, expectedRevision: 1}),
 			}),
 		);

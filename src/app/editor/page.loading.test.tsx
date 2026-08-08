@@ -8,6 +8,10 @@ import {world as initialWorld} from "@/data/worlds/initialWorld";
 
 import EditorPage from "./page";
 
+jest.mock("next/navigation", () => ({
+	usePathname: () => "/editor",
+}));
+
 jest.mock("@/components/world-autosave/worldDraftStorage", () => ({
 	...jest.requireActual("@/components/world-autosave/worldDraftStorage"),
 	readMainWorldDraft: jest.fn(),
@@ -17,6 +21,25 @@ describe("EditorPage loading", () => {
 	beforeEach(() => {
 		jest.mocked(readMainWorldDraft).mockResolvedValue(null);
 	});
+
+	const installSuccessfulEditorFetch = (world = initialWorld, revision = 1) => {
+		const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async (input: RequestInfo | URL) => {
+				if (String(input) === "/api/auth/csrf") {
+					return {status: 200, ok: true, json: async () => ({data: {csrfToken: "csrf"}})} as Response;
+				}
+				return {
+					status: 200,
+					ok: true,
+					json: async () => ({data: {id: worldId, name: "My private world", revision, world}}),
+				} as Response;
+			}),
+		});
+		return worldId;
+	};
 
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -50,11 +73,7 @@ describe("EditorPage loading", () => {
 
 	it("shows the temporary opposite tool while Space is held", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
-		Object.defineProperty(globalThis, "fetch", {
-			configurable: true,
-			writable: true,
-			value: jest.fn(async () => ({status: 404, ok: false}) as Response),
-		});
+		installSuccessfulEditorFetch();
 
 		const {container} = render(
 			<ThemeProvider>
@@ -90,7 +109,7 @@ describe("EditorPage loading", () => {
 		expect(panButton).toHaveAttribute("aria-pressed", "true");
 	});
 
-	it("recovers with the initial world when the world API fails", async () => {
+	it("does not expose fallback world data when private loading fails", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
 		const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
 		Object.defineProperty(globalThis, "fetch", {
@@ -109,13 +128,12 @@ describe("EditorPage loading", () => {
 			</ThemeProvider>,
 		);
 
-		await waitFor(() =>
-			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
-		);
+		await waitFor(() => expect(warning).toHaveBeenCalled());
 
-		expect(screen.getByRole("button", {name: "Dungeon Entrance"})).toBeInTheDocument();
+		expect(container.querySelector("[data-map].map--loading")).toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Dungeon Entrance"})).not.toBeInTheDocument();
 		expect(warning).toHaveBeenCalledWith(
-			"Could not load the main world; using the initial world instead.",
+			"Could not load the private editor world.",
 			expect.any(Error),
 		);
 	});
@@ -135,15 +153,7 @@ describe("EditorPage loading", () => {
 			baseServerRevision: 4,
 			updatedAt: Date.now(),
 		});
-		Object.defineProperty(globalThis, "fetch", {
-			configurable: true,
-			writable: true,
-			value: jest.fn(async () => ({
-				status: 200,
-				ok: true,
-				json: async () => ({data: {id: worldId, revision: 4, world: initialWorld}}),
-			})),
-		});
+		installSuccessfulEditorFetch(initialWorld, 4);
 
 		render(
 			<ThemeProvider>
@@ -162,12 +172,7 @@ describe("EditorPage loading", () => {
 
 	it("opens the empty command library for the initial world", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
-		jest.spyOn(console, "warn").mockImplementation(() => {});
-		Object.defineProperty(globalThis, "fetch", {
-			configurable: true,
-			writable: true,
-			value: jest.fn(async () => ({status: 500, ok: false}) as Response),
-		});
+		installSuccessfulEditorFetch();
 
 		const {container} = render(
 			<ThemeProvider>

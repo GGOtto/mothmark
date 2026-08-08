@@ -13,6 +13,7 @@ import {
 } from "react";
 
 import type {World} from "@/schemas/world/worldSchema";
+import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {deleteMainWorldDraft, writeMainWorldDraft} from "./worldDraftStorage";
 
 import "./WorldAutosave.scss";
@@ -98,20 +99,13 @@ const readSavedWorld = async (response: Response): Promise<SavedWorld> => {
 };
 
 const persistWorld = async (target: SaveTarget): Promise<SavedWorld> => {
-	const isExistingWorld = target.worldId !== null;
-	const response = await fetch(isExistingWorld ? `/api/world/${target.worldId}` : "/api/world", {
-		method: isExistingWorld ? "PUT" : "POST",
-		headers: {"content-type": "application/json"},
-		body: JSON.stringify(
-			isExistingWorld
-				? {world: target.world, expectedRevision: target.revision ?? undefined}
-				: {
-						name: target.world.metadata.title || "Main World",
-						slug: "main",
-						world: target.world,
-						schemaVersion: 1,
-					},
-		),
+	if (!target.worldId) throw new WorldSaveError("The private world is not ready to save.", false);
+	const csrfToken = readBrowserCsrfToken();
+	if (!csrfToken) throw new WorldSaveError("The editor security token is missing.", false);
+	const response = await fetch(`/api/world/${target.worldId}`, {
+		method: "PUT",
+		headers: {"content-type": "application/json", "x-csrf-token": csrfToken},
+		body: JSON.stringify({world: target.world, expectedRevision: target.revision ?? undefined}),
 	});
 
 	return readSavedWorld(response);
@@ -567,6 +561,12 @@ export function WorldAutosaveIndicator() {
 	);
 }
 
+export function CurrentWorldName() {
+	const {target} = useWorldAutosave();
+	if (!target) return null;
+	return <span className="headerWorldName">{target.world.metadata.title || "Untitled world"}</span>;
+}
+
 export function WorldResetButton() {
 	const {resetWorld, target} = useWorldAutosave();
 
@@ -582,7 +582,7 @@ export function WorldResetButton() {
 	return (
 		<button
 			type="button"
-			className="headerResetButton"
+			className="worldResetButton"
 			onClick={confirmReset}
 			title="Reset world to the bundled example"
 		>

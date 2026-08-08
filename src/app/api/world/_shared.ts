@@ -21,16 +21,12 @@ export const CreateDefaultWorldRequestSchema = z.object({
 export const UpdateWorldRequestSchema = z
 	.object({
 		name: z.string().trim().min(1).optional(),
-		slug: z.string().trim().min(1).nullable().optional(),
 		world: WorldSchema.optional(),
 		expectedRevision: z.number().int().positive().optional(),
 	})
-	.refine(
-		(input) => input.name !== undefined || input.slug !== undefined || input.world !== undefined,
-		{
-			message: "At least one world field must be provided.",
-		},
-	);
+	.refine((input) => input.name !== undefined || input.world !== undefined, {
+		message: "At least one world field must be provided.",
+	});
 
 export const UpdateSchemaVersionRequestSchema = z.object({
 	schemaVersion: z.number().int().positive(),

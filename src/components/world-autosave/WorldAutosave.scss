@@ -24,6 +24,33 @@
 	animation: world-autosave-pulse 900ms ease-in-out infinite alternate;
 }
 
+.worldResetButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	height: 34px;
+	margin-top: 16px;
+	padding: 0 12px;
+	border: 1px solid var(--color-danger);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-danger);
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+
+	&:hover {
+		background: var(--color-surface-strong);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+}
+
 @keyframes world-autosave-pulse {
 	from {
 		opacity: 0.35;

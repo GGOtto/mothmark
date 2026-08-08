@@ -1,13 +1,11 @@
 import {z} from "zod";
 
-import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
-
-const MAIN_WORLD_ENDPOINT = "/api/world/slug/main";
 
 const WorldResponseSchema = z.object({
 	data: z.object({
 		id: z.uuid(),
+		name: z.string(),
 		world: z.unknown(),
 		revision: z.number().int().positive(),
 	}),
@@ -118,36 +116,44 @@ export function migrateRoomFeaturesToItems(value: unknown): unknown {
 	return migrated;
 }
 
-export type LoadedMainWorld = {
+export type LoadedEditorWorld = {
 	world: World;
-	worldId: string | null;
-	revision: number | null;
+	worldId: string;
+	worldName: string;
+	revision: number;
 };
 
-/**
- * Loads the persisted main world, falling back when that record does not exist or
- * its world document no longer matches the current schema.
- */
-export async function loadMainWorld(
-	fetchWorld: FetchWorld = fetch,
-	signal?: AbortSignal,
-): Promise<LoadedMainWorld> {
-	const response = await fetchWorld(MAIN_WORLD_ENDPOINT, {signal});
-
-	if (response.status === 404) {
-		return {world: initialWorld, worldId: null, revision: null};
-	}
-
+const readWorldResponse = async (response: Response): Promise<LoadedEditorWorld> => {
 	if (!response.ok) {
-		throw new Error(`Failed to load the main world (${response.status}).`);
+		throw new Error(`Failed to load the editor world (${response.status}).`);
 	}
 
 	const result = WorldResponseSchema.parse(await response.json()).data;
-	const worldResult = WorldSchema.safeParse(migrateRoomFeaturesToItems(result.world));
+	const world = WorldSchema.parse(migrateRoomFeaturesToItems(result.world));
+	return {world, worldId: result.id, worldName: result.name, revision: result.revision};
+};
 
-	if (!worldResult.success) {
-		return {world: initialWorld, worldId: result.id, revision: result.revision};
+/** Establishes the private editor session and loads only a world authorized for that actor. */
+export async function loadEditorWorld(
+	fetchWorld: FetchWorld = fetch,
+	signal?: AbortSignal,
+	requestedWorldId?: string,
+): Promise<LoadedEditorWorld> {
+	const csrfResponse = await fetchWorld("/api/auth/csrf", {signal});
+	if (!csrfResponse.ok) throw new Error(`Failed to prepare the editor (${csrfResponse.status}).`);
+	const csrfBody = (await csrfResponse.json()) as {data?: {csrfToken?: unknown}};
+	if (typeof csrfBody.data?.csrfToken !== "string") {
+		throw new Error("The editor security response was invalid.");
 	}
 
-	return {world: worldResult.data, worldId: result.id, revision: result.revision};
+	const bootstrapResponse = await fetchWorld("/api/editor/bootstrap", {
+		method: "POST",
+		headers: {"x-csrf-token": csrfBody.data.csrfToken},
+		signal,
+	});
+	const bootstrapWorld = await readWorldResponse(bootstrapResponse);
+
+	if (!requestedWorldId || requestedWorldId === bootstrapWorld.worldId) return bootstrapWorld;
+
+	return readWorldResponse(await fetchWorld(`/api/world/${requestedWorldId}`, {signal}));
 }

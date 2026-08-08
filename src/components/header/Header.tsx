@@ -4,7 +4,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {MapPinned, Moon, Sun} from "lucide-react";
 import {useTheme} from "../theme/ThemeProvider";
-import {WorldAutosaveIndicator, WorldResetButton} from "../world-autosave/WorldAutosave";
+import {CurrentWorldName, WorldAutosaveIndicator} from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
 import "./Header.scss";
 
@@ -24,8 +24,8 @@ export function Header() {
 			</Link>
 
 			<nav className="headerNav" aria-label="Primary navigation">
+				<CurrentWorldName />
 				<WorldAutosaveIndicator />
-				<WorldResetButton />
 				<CommandCopyButton />
 
 				<Link
@@ -42,6 +42,14 @@ export function Header() {
 					aria-current={pathname.startsWith("/editor") ? "page" : undefined}
 				>
 					Editor
+				</Link>
+
+				<Link
+					href="/account"
+					className={`headerLink ${pathname === "/account" ? "headerLinkActive" : ""}`}
+					aria-current={pathname === "/account" ? "page" : undefined}
+				>
+					Account
 				</Link>
 
 				<button

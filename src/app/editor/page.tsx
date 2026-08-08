@@ -3,6 +3,7 @@
 import type React from "react";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {produce} from "immer";
+import {usePathname} from "next/navigation";
 import {
 	ToolBar,
 	type ToolBarStatus,
@@ -31,7 +32,10 @@ import {
 	type LogicSelection,
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
-import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
+import {
+	useWorldAutosaveRegistration,
+	WorldResetButton,
+} from "@/components/world-autosave/WorldAutosave";
 import {
 	draftMatchesServer,
 	readMainWorldDraft,
@@ -41,7 +45,7 @@ import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
 import {getConnectionDraftStatus} from "./utils/editorPageUtils";
-import {loadMainWorld} from "./loadMainWorld";
+import {loadEditorWorld as loadAuthorizedEditorWorld} from "./loadMainWorld";
 import "./page.scss";
 
 type EditorSelection = {
@@ -85,41 +89,23 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
-async function loadEditorWorld(signal: AbortSignal) {
-	const draftPromise = readMainWorldDraft().catch((error: unknown) => {
+async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
+	const serverWorld = await loadAuthorizedEditorWorld(fetch, signal, requestedWorldId);
+	const draft = await readMainWorldDraft().catch((error: unknown) => {
 		console.warn("Could not read the local world draft.", error);
 		return null;
 	});
 
-	try {
-		const serverWorld = await loadMainWorld(fetch, signal);
-		const draft = await draftPromise;
-
-		if (draft && draftMatchesServer(draft, serverWorld)) {
-			return {
-				world: draft.world,
-				worldId: draft.worldId,
-				revision: draft.baseServerRevision,
-				restoredFromLocalDraft: true,
-			};
-		}
-
-		return {...serverWorld, restoredFromLocalDraft: false};
-	} catch (error) {
-		const draft = await draftPromise;
-		if (draft) {
-			return {
-				world: draft.world,
-				worldId: draft.worldId,
-				revision: draft.baseServerRevision,
-				restoredFromLocalDraft: true,
-			};
-		}
-		throw error;
+	if (draft && draftMatchesServer(draft, serverWorld)) {
+		return {...serverWorld, world: draft.world, restoredFromLocalDraft: true};
 	}
+
+	return {...serverWorld, restoredFromLocalDraft: false};
 }
 
 export default function EditorPage() {
+	const pathname = usePathname();
+	const [requestedWorldId] = useState(() => pathname.match(/^\/editor\/([^/]+)$/)?.[1]);
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
 	const [mapZoom, setMapZoom] = useState(1);
@@ -150,7 +136,7 @@ export default function EditorPage() {
 	useEffect(() => {
 		const abortController = new AbortController();
 
-		loadEditorWorld(abortController.signal)
+		loadEditorWorld(abortController.signal, requestedWorldId)
 			.then(({world, worldId, revision, restoredFromLocalDraft: restored}) => {
 				updateWorld(world);
 				setPersistedWorldId(worldId);
@@ -162,26 +148,16 @@ export default function EditorPage() {
 				});
 				setConnectionDraft({state: "idle"});
 				setWorldIsLoaded(true);
+				if (!requestedWorldId) window.history.replaceState(null, "", `/editor/${worldId}`);
 			})
 			.catch((error: unknown) => {
 				if ((error as {name?: string}).name === "AbortError") return;
 
-				console.warn("Could not load the main world; using the initial world instead.", error);
-				const fallbackWorld = createInitialWorld();
-				updateWorld(fallbackWorld);
-				setPersistedWorldId(null);
-				setPersistedWorldRevision(null);
-				setRestoredFromLocalDraft(false);
-				setSelection({
-					selectedId: idValue(fallbackWorld.startRoomId),
-					isConnectionSelected: false,
-				});
-				setConnectionDraft({state: "idle"});
-				setWorldIsLoaded(true);
+				console.warn("Could not load the private editor world.", error);
 			});
 
 		return () => abortController.abort();
-	}, [updateWorld]);
+	}, [requestedWorldId, updateWorld]);
 
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
@@ -252,6 +228,9 @@ export default function EditorPage() {
 
 	return (
 		<main className="editorPage">
+			<p className="editorWorldName" aria-label="Current world">
+				{worldIsLoaded ? editorWorld.metadata.title || "Untitled world" : "Loading world…"}
+			</p>
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<EditorMainPanel
@@ -807,6 +786,7 @@ type PlaceholderWorkspaceProps = {
 
 function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 	const metadata = getEditorTabMetadata(activeTab);
+	const isWorldSettings = activeTab === "world-settings";
 
 	return (
 		<div className="placeholderWorkspace">
@@ -814,9 +794,12 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 				<p className="placeholderWorkspaceTitle">{metadata.title}</p>
 
 				<p className="placeholderWorkspaceDescription">
-					This area will become the {metadata.title.toLowerCase()} editor. The sidebars and command line
-					stay pinned while this workspace swaps out.
+					{isWorldSettings
+						? "World-level controls apply only to this private world."
+						: `This area will become the ${metadata.title.toLowerCase()} editor. The sidebars and command line stay pinned while this workspace swaps out.`}
 				</p>
+
+				{isWorldSettings ? <WorldResetButton /> : null}
 			</div>
 		</div>
 	);
