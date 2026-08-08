@@ -32,6 +32,10 @@ import {
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
+import {
+	draftMatchesServer,
+	readMainWorldDraft,
+} from "@/components/world-autosave/worldDraftStorage";
 import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
@@ -81,6 +85,40 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
+async function loadEditorWorld(signal: AbortSignal) {
+	const draftPromise = readMainWorldDraft().catch((error: unknown) => {
+		console.warn("Could not read the local world draft.", error);
+		return null;
+	});
+
+	try {
+		const serverWorld = await loadMainWorld(fetch, signal);
+		const draft = await draftPromise;
+
+		if (draft && draftMatchesServer(draft, serverWorld)) {
+			return {
+				world: draft.world,
+				worldId: draft.worldId,
+				revision: draft.baseServerRevision,
+				restoredFromLocalDraft: true,
+			};
+		}
+
+		return {...serverWorld, restoredFromLocalDraft: false};
+	} catch (error) {
+		const draft = await draftPromise;
+		if (draft) {
+			return {
+				world: draft.world,
+				worldId: draft.worldId,
+				revision: draft.baseServerRevision,
+				restoredFromLocalDraft: true,
+			};
+		}
+		throw error;
+	}
+}
+
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
@@ -97,6 +135,7 @@ export default function EditorPage() {
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
+	const [restoredFromLocalDraft, setRestoredFromLocalDraft] = useState(false);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
 
 	const [selection, setSelection] = useState<EditorSelection>({
@@ -111,11 +150,12 @@ export default function EditorPage() {
 	useEffect(() => {
 		const abortController = new AbortController();
 
-		loadMainWorld(fetch, abortController.signal)
-			.then(({world, worldId, revision}) => {
+		loadEditorWorld(abortController.signal)
+			.then(({world, worldId, revision, restoredFromLocalDraft: restored}) => {
 				updateWorld(world);
 				setPersistedWorldId(worldId);
 				setPersistedWorldRevision(revision);
+				setRestoredFromLocalDraft(restored);
 				setSelection({
 					selectedId: idValue(world.startRoomId),
 					isConnectionSelected: false,
@@ -131,6 +171,7 @@ export default function EditorPage() {
 				updateWorld(fallbackWorld);
 				setPersistedWorldId(null);
 				setPersistedWorldRevision(null);
+				setRestoredFromLocalDraft(false);
 				setSelection({
 					selectedId: idValue(fallbackWorld.startRoomId),
 					isConnectionSelected: false,
@@ -145,6 +186,7 @@ export default function EditorPage() {
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
 		setPersistedWorldRevision(revision);
+		setRestoredFromLocalDraft(false);
 	}, []);
 
 	const handleResetWorld = useCallback(() => {
@@ -177,6 +219,7 @@ export default function EditorPage() {
 		world: editorWorld,
 		worldId: persistedWorldId,
 		revision: persistedWorldRevision,
+		restoredFromLocalDraft,
 		onPersisted: handleWorldPersisted,
 		onReset: handleResetWorld,
 	});

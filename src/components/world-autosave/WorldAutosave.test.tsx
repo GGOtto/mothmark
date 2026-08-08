@@ -2,6 +2,7 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import type {World} from "@/schemas/world/worldSchema";
+import {deleteMainWorldDraft, writeMainWorldDraft} from "./worldDraftStorage";
 
 import {
 	WorldAutosaveIndicator,
@@ -10,16 +11,30 @@ import {
 	useWorldAutosaveRegistration,
 } from "./WorldAutosave";
 
+jest.mock("./worldDraftStorage", () => ({
+	deleteMainWorldDraft: jest.fn().mockResolvedValue(undefined),
+	writeMainWorldDraft: jest.fn().mockResolvedValue(true),
+}));
+
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
 const handlePersisted = jest.fn();
 const handleReset = jest.fn();
 
-function AutosaveHarness({world, revision = 1}: {world: World; revision?: number}) {
+function AutosaveHarness({
+	world,
+	revision = 1,
+	restoredFromLocalDraft = false,
+}: {
+	world: World;
+	revision?: number;
+	restoredFromLocalDraft?: boolean;
+}) {
 	useWorldAutosaveRegistration({
 		ready: true,
 		world,
 		worldId,
 		revision,
+		restoredFromLocalDraft,
 		onPersisted: handlePersisted,
 		onReset: handleReset,
 	});
@@ -54,6 +69,8 @@ describe("world autosave", () => {
 		jest.useFakeTimers();
 		handlePersisted.mockReset();
 		handleReset.mockReset();
+		jest.mocked(deleteMainWorldDraft).mockClear();
+		jest.mocked(writeMainWorldDraft).mockClear();
 	});
 
 	afterEach(() => {
@@ -83,7 +100,7 @@ describe("world autosave", () => {
 		);
 
 		await act(async () => {
-			jest.advanceTimersByTime(1_999);
+			jest.advanceTimersByTime(9_999);
 			await flushPromises();
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -102,6 +119,69 @@ describe("world autosave", () => {
 			}),
 		);
 		expect(handlePersisted).toHaveBeenCalledWith(worldId, 2);
+	});
+
+	it("checkpoints edits to IndexedDB before syncing them to the server", async () => {
+		const updatedWorld = {
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Local checkpoint"},
+		};
+		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		const view = renderAutosaveHarness(initialWorld);
+
+		view.rerender(
+			<WorldAutosaveProvider>
+				<AutosaveHarness world={updatedWorld} />
+			</WorldAutosaveProvider>,
+		);
+
+		await act(async () => {
+			jest.advanceTimersByTime(500);
+			await flushPromises();
+		});
+
+		expect(writeMainWorldDraft).toHaveBeenCalledWith({
+			world: updatedWorld,
+			worldId,
+			baseServerRevision: 1,
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("syncs a restored local draft back to the server", async () => {
+		const restoredWorld = {
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Recovered draft"},
+		};
+		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+
+		render(
+			<WorldAutosaveProvider>
+				<AutosaveHarness world={restoredWorld} restoredFromLocalDraft />
+			</WorldAutosaveProvider>,
+		);
+
+		await act(async () => {
+			jest.advanceTimersByTime(10_000);
+			await flushPromises();
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			`/api/world/${worldId}`,
+			expect.objectContaining({
+				body: JSON.stringify({world: restoredWorld, expectedRevision: 1}),
+			}),
+		);
 	});
 
 	it("resets a registered world after confirmation even when it has no edits", () => {
@@ -143,7 +223,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -192,7 +272,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		expect(screen.getByText("Saving...")).toBeInTheDocument();
@@ -242,7 +322,7 @@ describe("world autosave", () => {
 		expect(queuedUnload.defaultPrevented).toBe(true);
 
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		const savedUnload = new Event("beforeunload", {cancelable: true});
@@ -280,7 +360,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 
@@ -316,7 +396,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 
