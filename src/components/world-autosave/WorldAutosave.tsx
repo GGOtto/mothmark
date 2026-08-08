@@ -561,10 +561,14 @@ export function WorldAutosaveIndicator() {
 	);
 }
 
-export function CurrentWorldName() {
+export function CurrentWorldName({showLoading = false}: {showLoading?: boolean}) {
 	const {target} = useWorldAutosave();
-	if (!target) return null;
-	return <span className="headerWorldName">{target.world.metadata.title || "Untitled world"}</span>;
+	if (!target && !showLoading) return null;
+	return (
+		<span className="headerWorldName" aria-label="Current world">
+			{target ? target.world.metadata.title || "Untitled world" : "Loading world…"}
+		</span>
+	);
 }
 
 export function WorldResetButton() {

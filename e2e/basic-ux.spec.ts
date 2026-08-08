@@ -142,7 +142,9 @@ test("the home page opens the editor in one action", async ({page}) => {
 	await page.getByRole("link", {name: "Start building"}).click();
 
 	await expect(page).toHaveURL(/\/editor\/57c635aa-7792-4a13-9595-58cd1ef05fd6$/);
-	await expect(page.getByLabel("Current world")).toHaveText("The Barrow Below");
+	const currentWorldName = page.getByLabel("Current world");
+	await expect(currentWorldName).toHaveCount(1);
+	await expect(currentWorldName).toHaveText("The Barrow Below");
 	await expect(page.getByRole("button", {name: "Map"})).toHaveAttribute("aria-current", "page");
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 	expect(editor.bootstrapCount()).toBe(1);

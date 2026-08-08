@@ -24,7 +24,7 @@ export function Header() {
 			</Link>
 
 			<nav className="headerNav" aria-label="Primary navigation">
-				<CurrentWorldName />
+				<CurrentWorldName showLoading={pathname.startsWith("/editor")} />
 				<WorldAutosaveIndicator />
 				<CommandCopyButton />
 
