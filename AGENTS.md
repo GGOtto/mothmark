@@ -100,6 +100,27 @@
 - Assume the development app is usually already running at `http://localhost:3000`. When using the
   browser skill for local UI testing, try that URL before starting another development server.
 
+## Browser and UX testing
+
+- Treat Playwright tests in `e2e/` as the source of truth for intentional, user-visible browser
+  workflows. If current behavior conflicts with an intentional UX test, fix the experience instead
+  of weakening the test unless the product expectation has deliberately changed.
+- Add or update Playwright coverage when changing routes, navigation, dialogs, or multi-step author
+  workflows. Cover the shortest intended path and assert the useful visible result, focus or state
+  change—not merely that a control can be clicked.
+- Prefer accessible role, label, and visible-name locators. Improve production semantics when a
+  control cannot be located accessibly; use test IDs only when no meaningful semantic locator exists.
+- Keep browser tests deterministic. Start from maintained test data or intercept external persistence
+  boundaries, and do not depend on a developer's database, local draft, theme preference, or prior
+  browser state.
+- Fail browser workflows on uncaught page errors and unexpected console errors. Retain traces,
+  screenshots, and video on failure for diagnosis; use screenshot assertions only when visual layout
+  itself is the product contract.
+- For app-facing UI changes, run the relevant Playwright tests with `pnpm test:e2e`, along with focused
+  unit tests and `pnpm ts-check`, before finishing.
+- Use `pnpm test:all` to run the complete Jest and Playwright suites. The pre-commit hook runs this
+  command after staged-file formatting and must remain blocking when either suite fails.
+
 ## IDs
 
 - Represent every entity ID as a typed `ID` object such as `{type: "room", id: "atrium"}`. Do not use bare strings for IDs.
