@@ -1,7 +1,7 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 
 import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
-import {readMainWorldDraft} from "@/components/world-autosave/worldDraftStorage";
+import {readWorldDraft} from "@/components/world-autosave/worldDraftStorage";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
@@ -9,17 +9,17 @@ import {world as initialWorld} from "@/data/worlds/initialWorld";
 import EditorPage from "./page";
 
 jest.mock("next/navigation", () => ({
-	usePathname: () => "/editor",
+	usePathname: () => "/worlds/8ebc3f3f-b9ca-4f75-898f-e196bae50be4",
 }));
 
 jest.mock("@/components/world-autosave/worldDraftStorage", () => ({
 	...jest.requireActual("@/components/world-autosave/worldDraftStorage"),
-	readMainWorldDraft: jest.fn(),
+	readWorldDraft: jest.fn(),
 }));
 
 describe("EditorPage loading", () => {
 	beforeEach(() => {
-		jest.mocked(readMainWorldDraft).mockResolvedValue(null);
+		jest.mocked(readWorldDraft).mockResolvedValue(null);
 	});
 
 	const installSuccessfulEditorFetch = (world = initialWorld, revision = 1) => {
@@ -34,7 +34,15 @@ describe("EditorPage loading", () => {
 				return {
 					status: 200,
 					ok: true,
-					json: async () => ({data: {id: worldId, name: "My private world", revision, world}}),
+					json: async () => ({
+						data: {
+							id: worldId,
+							name: "My private world",
+							ownerUserId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+							revision,
+							world,
+						},
+					}),
 				} as Response;
 			}),
 		});
@@ -68,7 +76,7 @@ describe("EditorPage loading", () => {
 		expect(screen.getByRole("button", {name: "Map"})).toBeInTheDocument();
 		expect(container.querySelector(".command-line")).toBeInTheDocument();
 		expect(screen.getByRole("textbox", {name: "Game command"})).toBeDisabled();
-		expect(screen.queryByRole("button", {name: "Dungeon Entrance"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Shop Floor"})).not.toBeInTheDocument();
 	});
 
 	it("shows the temporary opposite tool while Space is held", async () => {
@@ -131,7 +139,7 @@ describe("EditorPage loading", () => {
 		await waitFor(() => expect(warning).toHaveBeenCalled());
 
 		expect(container.querySelector("[data-map].map--loading")).toBeInTheDocument();
-		expect(screen.queryByRole("button", {name: "Dungeon Entrance"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Shop Floor"})).not.toBeInTheDocument();
 		expect(warning).toHaveBeenCalledWith(
 			"Could not load the private editor world.",
 			expect.any(Error),
@@ -145,9 +153,10 @@ describe("EditorPage loading", () => {
 			...initialWorld,
 			rooms: [{...initialWorld.rooms[0], name: "Recovered entrance"}, ...initialWorld.rooms.slice(1)],
 		};
-		jest.mocked(readMainWorldDraft).mockResolvedValue({
-			key: "main-world",
-			schemaVersion: 1,
+		jest.mocked(readWorldDraft).mockResolvedValue({
+			key: `world-draft:3e816c4d-b957-45dc-8523-d53ec04c8d0f:${worldId}`,
+			schemaVersion: 2,
+			userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
 			world: localWorld,
 			worldId,
 			baseServerRevision: 4,

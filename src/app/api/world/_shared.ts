@@ -6,10 +6,8 @@ import {WorldSchema} from "@/schemas/world/worldSchema";
 export const WorldIdSchema = z.uuid();
 
 export const CreateWorldRequestSchema = z.object({
-	name: z.string().trim().min(1),
-	slug: z.string().trim().min(1).nullable().optional(),
-	world: WorldSchema,
-	schemaVersion: z.number().int().positive().optional(),
+	name: z.string().trim().min(1).max(80),
+	source: z.enum(["starter", "blank"]),
 });
 
 export const CreateDefaultWorldRequestSchema = z.object({
@@ -78,6 +76,17 @@ export const worldRevisionConflictResponse = (): NextResponse =>
 	);
 
 export const handleWorldRouteError = (error: unknown): NextResponse => {
+	if ((error as {code?: string}).code === "WORLD_LIMIT_REACHED") {
+		return NextResponse.json(
+			{
+				error: {
+					code: "WORLD_LIMIT_REACHED",
+					message: error instanceof Error ? error.message : "The world limit has been reached.",
+				},
+			},
+			{status: 409},
+		);
+	}
 	if ((error as {code?: string}).code === "23505") {
 		return NextResponse.json(
 			{

@@ -94,6 +94,12 @@
 - Use 4px control, 6px panel/popover, and 8px dialog radii. Use shadows only for floating layers.
 - Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
   deliberately bounded theme previews. All other production colors must use semantic tokens.
+- Keep private-world navigation under `/worlds`: the library is `/worlds` and an editor is
+  `/worlds/[worldId]`. Treat old `/editor` URLs as redirects, not the primary route family.
+- A blank-world choice must contain no authored rooms, items, connections, layers, conditions,
+  effects, or events. The first room a user adds becomes its starting room.
+- Keep the bundled starter world small, plainspoken, and clearly instructional. Avoid sprawling
+  lore, ornamental descriptions, or generated-sounding filler in maintained starter content.
 
 ## Local browser testing
 

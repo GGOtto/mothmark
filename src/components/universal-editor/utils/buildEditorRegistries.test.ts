@@ -5,26 +5,26 @@ describe("buildEditorRegistries", () => {
 	it("preserves the layer → room → item hierarchy", () => {
 		const registries = buildEditorRegistries(world);
 
-		const entrance = registries.rooms.find((room) => room.id === "dungeon-entrance");
+		const entrance = registries.rooms.find((room) => room.id === "shop-floor");
 		expect(entrance).toMatchObject({
-			hierarchy: [{kind: "layer", key: "0", label: "Ground Level"}],
-			facts: expect.arrayContaining([{label: "Layer", value: "Ground Level"}]),
+			hierarchy: [{kind: "layer", key: "0", label: "Main floor"}],
+			facts: expect.arrayContaining([{label: "Layer", value: "Main floor"}]),
 			relations: expect.arrayContaining([
 				expect.objectContaining({label: "Connections"}),
 				expect.objectContaining({
 					label: "Items",
 					items: expect.arrayContaining([
-						expect.objectContaining({id: "stone-arch", label: "Stone Arch"}),
+						expect.objectContaining({id: "shop-counter", label: "Shop Counter"}),
 					]),
 				}),
 			]),
 		});
-		expect(registries.items.find((item) => item.id === "stone-arch")).toMatchObject({
-			id: "stone-arch",
-			parentId: "dungeon-entrance",
+		expect(registries.items.find((item) => item.id === "shop-counter")).toMatchObject({
+			id: "shop-counter",
+			parentId: "shop-floor",
 			hierarchy: [
-				{kind: "layer", key: "0", label: "Ground Level"},
-				{kind: "room", key: "dungeon-entrance", label: "Dungeon Entrance"},
+				{kind: "layer", key: "0", label: "Main floor"},
+				{kind: "room", key: "shop-floor", label: "Shop Floor"},
 			],
 		});
 	});

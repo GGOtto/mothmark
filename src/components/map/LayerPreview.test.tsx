@@ -26,7 +26,7 @@ describe("LayerPreview", () => {
 	it("preserves room and connection selection styling", () => {
 		const roomId = idValue(layer.rooms[0]);
 		const connectionId = idValue(
-			world.connections.find((connection) => idValue(connection.id) === "entrance-guardroom")!.id,
+			world.connections.find((connection) => idValue(connection.id) === "shop-stockroom")!.id,
 		);
 		const {container, rerender} = render(
 			<LayerPreview world={world} layer={layer} isFramed={false} mode="static" selectedId={roomId} />,

@@ -16,7 +16,7 @@ export default function AccountPage() {
 					There is not yet a sign-in or account-recovery flow. Clearing this browser’s site data, using
 					private browsing, or moving to another browser can make these worlds inaccessible.
 				</p>
-				<Link href="/editor">Return to your world</Link>
+				<Link href="/worlds">Return to your worlds</Link>
 			</section>
 		</main>
 	);

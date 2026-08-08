@@ -81,8 +81,7 @@ The initial route map is:
 mothmark.app
 ├── /
 ├── /worlds
-├── /editor
-├── /editor/[worldId]
+├── /worlds/[worldId]
 ├── /account
 └── /admin
     ├── /users
@@ -480,8 +479,9 @@ edit it, refresh, and return to it without another browser being able to see or 
 ### UI
 
 - Replace the placeholder home action with `Start building`.
-- `Start building` performs bootstrap and opens `/editor/[worldId]`.
-- `/editor` resolves the current user's most recently available world or bootstraps the first one.
+- `Start building` opens `/worlds`, which bootstraps only when the visitor intentionally enters it.
+- `/worlds/[worldId]` opens an authorized editor world; legacy `/editor` URLs redirect into the
+  `/worlds` route family.
 - The editor displays its current world name.
 - Add a restrained temporary-account explanation reachable from the header or account menu.
 - Keep local fallback behavior only when it cannot expose or overwrite a different user's world.
@@ -510,7 +510,7 @@ edit it, refresh, and return to it without another browser being able to see or 
 - All editor persistence is associated with an active anonymous user and owned world.
 - The first-use and returning-use paths work through the visible interface.
 
-## Slice 2: Multiple-world library and switching
+## [x] Slice 2: Multiple-world library and switching
 
 **Outcome:** An anonymous user can create, see, open, and switch among multiple private worlds without
 drafts or editor state leaking between them.
@@ -531,7 +531,7 @@ drafts or editor state leaking between them.
 - Present a compact world list with name, last edited time, and meaningful save/validation state.
 - Add `New world` with starter-template and blank-world choices.
 - Show finite usage as `N of M worlds` and explain a reached limit without upgrade marketing.
-- Change the main editor route to `/editor/[worldId]`.
+- Keep the main editor route at `/worlds/[worldId]` beneath the world library.
 - Add a compact editor world switcher with recent worlds, `View all worlds`, and `New world`.
 - Hide global autosave controls when no editor target is registered.
 - Finish or visibly reconcile a pending save before navigating to another world.
@@ -1010,6 +1010,15 @@ When registered author accounts are introduced, attach an authentication identit
 user row, change `account_type` to `registered`, preserve ownership, and then decide whether that
 registered owner publishes directly or submits releases for administrator review. Do not encode that
 future review workflow prematurely into the initial anonymous-user interface.
+
+Registered-account work must also close the cross-browser draft gap. A signed-in author should see
+the latest server-saved revision from any browser, while a draft that exists only in another
+browser's IndexedDB must never be mistaken for synced data. On editor entry, reconcile local drafts
+against their recorded server revision: resume and upload a matching draft, but surface a clear
+recovery choice when the server has advanced instead of silently ignoring the draft or overwriting
+newer work. Provide a way to preserve the conflicting draft, such as opening it as a copy or
+exporting it. Cover this with browser tests using two isolated browser profiles, including normal
+cross-browser access, an offline local draft, and a same-world revision conflict.
 
 ## Decisions to make at slice boundaries
 

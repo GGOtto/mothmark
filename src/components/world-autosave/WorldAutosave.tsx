@@ -1,6 +1,6 @@
 "use client";
 
-import {RotateCcw, Save} from "lucide-react";
+import {ChevronDown, RotateCcw, Save} from "lucide-react";
 import {
 	createContext,
 	useCallback,
@@ -14,7 +14,7 @@ import {
 
 import type {World} from "@/schemas/world/worldSchema";
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
-import {deleteMainWorldDraft, writeMainWorldDraft} from "./worldDraftStorage";
+import {deleteWorldDraft, writeWorldDraft} from "./worldDraftStorage";
 
 import "./WorldAutosave.scss";
 
@@ -29,6 +29,8 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 type SaveTarget = {
 	world: World;
 	worldId: string | null;
+	userId: string | null;
+	worldName: string;
 	revision: number | null;
 	restoredFromLocalDraft?: boolean;
 	onPersisted: (worldId: string, revision: number) => void;
@@ -49,6 +51,7 @@ type WorldAutosaveContextValue = {
 	indicatorVisible: boolean;
 	status: SaveStatus;
 	saveNow: () => Promise<void>;
+	prepareForNavigation: () => Promise<boolean>;
 	resetWorld: () => void;
 };
 
@@ -179,7 +182,8 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 		const generation = generationRef.current;
 
 		void queueLocalOperation(async () => {
-			const persisted = await writeMainWorldDraft({
+			const persisted = await writeWorldDraft({
+				userId: currentTarget.userId,
 				world: currentTarget.world,
 				worldId: currentTarget.worldId,
 				baseServerRevision: currentTarget.revision,
@@ -284,11 +288,14 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 
 					const latestSnapshot = serializeWorld(latestTarget.world);
 					if (latestSnapshot === snapshotAtSaveStart) {
-						await deleteMainWorldDraft();
+						if (latestTarget.userId && latestTarget.worldId) {
+							await deleteWorldDraft(latestTarget.userId, latestTarget.worldId);
+						}
 						return;
 					}
 
-					const persisted = await writeMainWorldDraft({
+					const persisted = await writeWorldDraft({
+						userId: latestTarget.userId,
 						world: latestTarget.world,
 						worldId: savedWorld.id,
 						baseServerRevision: savedWorld.revision,
@@ -435,6 +442,15 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 		targetRef.current?.onReset();
 	}, []);
 
+	const prepareForNavigation = useCallback(async () => {
+		const currentTarget = targetRef.current;
+		if (!currentTarget) return true;
+		if (serializeWorld(currentTarget.world) === savedSnapshotRef.current) return true;
+		await saveRef.current();
+		const latestTarget = targetRef.current;
+		return Boolean(latestTarget && serializeWorld(latestTarget.world) === savedSnapshotRef.current);
+	}, []);
+
 	useEffect(() => clearScheduledSaves, [clearScheduledSaves]);
 
 	useEffect(() => {
@@ -474,6 +490,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			indicatorVisible,
 			status,
 			saveNow,
+			prepareForNavigation,
 			resetWorld,
 		}),
 		[
@@ -483,6 +500,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			registerTarget,
 			resetWorld,
 			saveNow,
+			prepareForNavigation,
 			status,
 			target,
 			updateTarget,
@@ -507,6 +525,8 @@ export function useWorldAutosaveRegistration({
 	world,
 	worldId,
 	revision,
+	userId,
+	worldName,
 	restoredFromLocalDraft,
 	onPersisted,
 	onReset,
@@ -517,7 +537,16 @@ export function useWorldAutosaveRegistration({
 	useEffect(() => {
 		if (!ready) return;
 
-		const target = {world, worldId, revision, restoredFromLocalDraft, onPersisted, onReset};
+		const target = {
+			world,
+			worldId,
+			userId,
+			worldName,
+			revision,
+			restoredFromLocalDraft,
+			onPersisted,
+			onReset,
+		};
 
 		if (!registered.current) {
 			registerTarget(target);
@@ -532,6 +561,8 @@ export function useWorldAutosaveRegistration({
 		registerTarget,
 		restoredFromLocalDraft,
 		revision,
+		userId,
+		worldName,
 		updateTarget,
 		world,
 		worldId,
@@ -547,7 +578,8 @@ export function useWorldAutosaveRegistration({
 }
 
 export function WorldAutosaveIndicator() {
-	const {indicatorVisible} = useWorldAutosave();
+	const {indicatorVisible, target} = useWorldAutosave();
+	if (!target) return null;
 
 	return (
 		<span className="worldAutosaveIndicatorSlot" role="status" aria-live="polite">
@@ -566,8 +598,112 @@ export function CurrentWorldName({showLoading = false}: {showLoading?: boolean})
 	if (!target && !showLoading) return null;
 	return (
 		<span className="headerWorldName" aria-label="Current world">
-			{target ? target.world.metadata.title || "Untitled world" : "Loading world…"}
+			{target ? target.worldName || "Untitled world" : "Loading world…"}
 		</span>
+	);
+}
+
+type SwitcherWorld = {id: string; name: string};
+
+export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
+	const {prepareForNavigation, target} = useWorldAutosave();
+	const [open, setOpen] = useState(false);
+	const [worlds, setWorlds] = useState<SwitcherWorld[]>([]);
+	const [navigationError, setNavigationError] = useState("");
+	const firstItemRef = useRef<HTMLButtonElement | null>(null);
+	const switcherRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (!open || !target) return;
+		const controller = new AbortController();
+		fetch("/api/world", {signal: controller.signal})
+			.then(async (response) => {
+				if (!response.ok) throw new Error("Worlds could not be loaded.");
+				const body = (await response.json()) as {data?: {worlds?: SwitcherWorld[]}};
+				setWorlds(Array.isArray(body.data?.worlds) ? body.data.worlds : []);
+			})
+			.catch((error: unknown) => {
+				if ((error as {name?: string}).name !== "AbortError")
+					setNavigationError("Worlds could not be loaded.");
+			});
+		return () => controller.abort();
+	}, [open, target]);
+
+	useEffect(() => {
+		if (open) firstItemRef.current?.focus();
+	}, [open, worlds]);
+
+	useEffect(() => {
+		if (!open) return;
+		const closeOutside = (event: PointerEvent) => {
+			if (event.target instanceof Node && !switcherRef.current?.contains(event.target)) {
+				setOpen(false);
+			}
+		};
+		document.addEventListener("pointerdown", closeOutside, true);
+		return () => document.removeEventListener("pointerdown", closeOutside, true);
+	}, [open]);
+
+	if (!target) return showLoading ? <CurrentWorldName showLoading /> : null;
+
+	const navigate = async (path: string) => {
+		setNavigationError("");
+		if (!(await prepareForNavigation())) {
+			setNavigationError("Save this world before switching.");
+			return;
+		}
+		window.location.assign(path);
+	};
+
+	return (
+		<div
+			ref={switcherRef}
+			className="worldSwitcher"
+			onKeyDown={(event) => {
+				if (event.key === "Escape") {
+					setOpen(false);
+					(event.currentTarget.querySelector(".worldSwitcherTrigger") as HTMLElement)?.focus();
+				}
+			}}
+		>
+			<button
+				type="button"
+				className="worldSwitcherTrigger"
+				aria-label={`Current world: ${target.worldName}`}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				onClick={() => setOpen((value) => !value)}
+			>
+				<span>{target.worldName || "Untitled world"}</span>
+				<ChevronDown size={13} aria-hidden="true" />
+			</button>
+			{open ? (
+				<div className="worldSwitcherMenu" role="menu" aria-label="Switch worlds">
+					{worlds
+						.filter((world) => world.id !== target.worldId)
+						.slice(0, 5)
+						.map((world, index) => (
+							<button
+								ref={index === 0 ? firstItemRef : undefined}
+								key={world.id}
+								type="button"
+								role="menuitem"
+								onClick={() => void navigate(`/worlds/${world.id}`)}
+							>
+								{world.name}
+							</button>
+						))}
+					<div className="worldSwitcherMenuDivider" />
+					<button type="button" role="menuitem" onClick={() => void navigate("/worlds")}>
+						View all worlds
+					</button>
+					<button type="button" role="menuitem" onClick={() => void navigate("/worlds?new=1")}>
+						New world
+					</button>
+					{navigationError ? <p role="alert">{navigationError}</p> : null}
+				</div>
+			) : null}
+		</div>
 	);
 }
 

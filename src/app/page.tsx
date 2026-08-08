@@ -14,7 +14,7 @@ export default function HomePage() {
 					in a temporary account tied to this browser.
 				</p>
 
-				<Link href="/editor" className="homeEditorLink">
+				<Link href="/worlds" className="homeEditorLink">
 					Start building
 				</Link>
 			</section>

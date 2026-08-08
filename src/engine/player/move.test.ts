@@ -19,7 +19,7 @@ describe("move", () => {
 		const moved = silentlyMove(world, game, "e");
 		const blocked = silentlyMove(world, game, "w");
 
-		expect(idValue(moved.player.currentRoom)).toBe("guardroom");
+		expect(idValue(moved.player.currentRoom)).toBe("stockroom");
 		expect(moved.messages).toEqual(game.messages);
 		expect(blocked).toBe(game);
 	});
@@ -59,7 +59,7 @@ describe("move", () => {
 
 		const result = move(world, unlockedGame, "e");
 
-		expect(idValue(result.player.currentRoom)).toBe("guardroom");
+		expect(idValue(result.player.currentRoom)).toBe("stockroom");
 		expect(result.messages.at(-1)).toMatchObject({type: "room"});
 	});
 
@@ -71,7 +71,7 @@ describe("move", () => {
 			roomId: world.startRoomId,
 		} as Effect);
 
-		for (const direction of ["up", "e", "s"] as const) {
+		for (const direction of ["up", "e", "down"] as const) {
 			const result = move(world, lockedGame, direction);
 			expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 			expect(result.messages.at(-1)).toMatchObject({type: "system"});

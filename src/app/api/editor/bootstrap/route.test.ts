@@ -30,16 +30,19 @@ const world: WorldRecord = {
 	deletedAt: null,
 	createdAt: new Date("2026-08-08T12:00:00Z"),
 	updatedAt: new Date("2026-08-08T12:00:00Z"),
+	lastOpenedAt: new Date("2026-08-08T12:00:00Z"),
 };
 
 const bootstrapRequest = (csrfHeader = "csrf") =>
 	new Request("http://localhost/api/editor/bootstrap", {
 		method: "POST",
 		headers: {
+			"content-type": "application/json",
 			origin: "http://localhost",
 			cookie: "mothmark_editor_csrf=csrf",
 			"x-csrf-token": csrfHeader,
 		},
+		body: JSON.stringify({openWorld: true}),
 	});
 
 describe("editor bootstrap", () => {
@@ -59,6 +62,7 @@ describe("editor bootstrap", () => {
 		expect(response.headers.get("set-cookie")).toContain("HttpOnly");
 		expect(response.headers.get("set-cookie")).toContain("SameSite=lax");
 		expect(JSON.stringify(await response.json())).not.toContain("secret-session-token");
+		expect(createAnonymousEditorBootstrap).toHaveBeenCalledWith(true);
 	});
 
 	it("serially ensures one first world for a returning resolved user", async () => {
@@ -82,8 +86,32 @@ describe("editor bootstrap", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(findBootstrapEditorActor).toHaveBeenCalledWith("returning-session-token");
-		expect(getOrCreateFirstOwnedWorld).toHaveBeenCalledWith(userId);
+		expect(getOrCreateFirstOwnedWorld).toHaveBeenCalledWith(userId, false);
 		expect(createAnonymousEditorBootstrap).not.toHaveBeenCalled();
+	});
+
+	it("records an editor opening only when the caller is entering that world", async () => {
+		jest.mocked(findBootstrapEditorActor).mockResolvedValue({
+			userId,
+			accountType: "anonymous",
+			siteRole: "user",
+			audience: "editor",
+		});
+		jest.mocked(getOrCreateFirstOwnedWorld).mockResolvedValue(world);
+		const response = await POST(
+			new Request("http://localhost/api/editor/bootstrap", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf; mothmark_editor_session=returning-session-token",
+					"x-csrf-token": "csrf",
+				},
+				body: JSON.stringify({openWorld: true}),
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(getOrCreateFirstOwnedWorld).toHaveBeenCalledWith(userId, true);
 	});
 
 	it("rejects bootstrap without matching same-origin CSRF proof", async () => {

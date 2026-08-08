@@ -375,7 +375,7 @@ export const WorldSchema = editor
 			}
 		}
 
-		if (!roomIds.has(idValue(world.startRoomId))) {
+		if (world.rooms.length > 0 && !roomIds.has(idValue(world.startRoomId))) {
 			ctx.addIssue({
 				code: "custom",
 				message: `Starting room ${idValue(world.startRoomId)} is not a real room.`,

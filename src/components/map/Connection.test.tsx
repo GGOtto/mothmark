@@ -20,10 +20,16 @@ describe("connection visual bounds", () => {
 		);
 		const roomMinX = Math.min(...rooms.map((room) => room.metadata.position.x - 64));
 		const roomMaxX = Math.max(...rooms.map((room) => room.metadata.position.x + 64));
+		const roomMinY = Math.min(...rooms.map((room) => room.metadata.position.y - 40));
+		const roomMaxY = Math.max(...rooms.map((room) => room.metadata.position.y + 40));
 		const bounds = getConnectionVisualBounds(initialWorld, upperLayer)!;
 
-		expect(bounds.minX).toBeLessThan(roomMinX);
-		expect(bounds.maxX).toBeGreaterThan(roomMaxX);
+		expect(
+			bounds.minX < roomMinX ||
+				bounds.maxX > roomMaxX ||
+				bounds.minY < roomMinY ||
+				bounds.maxY > roomMaxY,
+		).toBe(true);
 	});
 });
 

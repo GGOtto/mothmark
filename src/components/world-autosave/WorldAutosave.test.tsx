@@ -2,21 +2,23 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import type {World} from "@/schemas/world/worldSchema";
-import {deleteMainWorldDraft, writeMainWorldDraft} from "./worldDraftStorage";
+import {deleteWorldDraft, writeWorldDraft} from "./worldDraftStorage";
 
 import {
 	WorldAutosaveIndicator,
 	WorldAutosaveProvider,
 	WorldResetButton,
+	WorldSwitcher,
 	useWorldAutosaveRegistration,
 } from "./WorldAutosave";
 
 jest.mock("./worldDraftStorage", () => ({
-	deleteMainWorldDraft: jest.fn().mockResolvedValue(undefined),
-	writeMainWorldDraft: jest.fn().mockResolvedValue(true),
+	deleteWorldDraft: jest.fn().mockResolvedValue(undefined),
+	writeWorldDraft: jest.fn().mockResolvedValue(true),
 }));
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const handlePersisted = jest.fn();
 const handleReset = jest.fn();
 
@@ -33,6 +35,8 @@ function AutosaveHarness({
 		ready: true,
 		world,
 		worldId,
+		userId,
+		worldName: "Main world",
 		revision,
 		restoredFromLocalDraft,
 		onPersisted: handlePersisted,
@@ -42,6 +46,7 @@ function AutosaveHarness({
 	return (
 		<>
 			<WorldAutosaveIndicator />
+			<WorldSwitcher />
 			<WorldResetButton />
 		</>
 	);
@@ -70,8 +75,8 @@ describe("world autosave", () => {
 		document.cookie = "mothmark_editor_csrf=csrf-token; Path=/";
 		handlePersisted.mockReset();
 		handleReset.mockReset();
-		jest.mocked(deleteMainWorldDraft).mockClear();
-		jest.mocked(writeMainWorldDraft).mockClear();
+		jest.mocked(deleteWorldDraft).mockClear();
+		jest.mocked(writeWorldDraft).mockClear();
 	});
 
 	afterEach(() => {
@@ -122,6 +127,43 @@ describe("world autosave", () => {
 			}),
 		);
 		expect(handlePersisted).toHaveBeenCalledWith(worldId, 2);
+		expect(deleteWorldDraft).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("opens an accessibly named switcher, focuses a recent world, and closes with Escape", async () => {
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: true,
+			json: jest.fn().mockResolvedValue({
+				data: {
+					worlds: [
+						{id: worldId, name: "Main world"},
+						{id: "f76f909d-5c82-4b04-aec6-85c9a175e1a2", name: "Second world"},
+					],
+				},
+			}),
+		});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		renderAutosaveHarness(initialWorld);
+
+		const trigger = screen.getByRole("button", {name: "Current world: Main world"});
+		fireEvent.click(trigger);
+		await act(flushPromises);
+
+		const recentWorld = screen.getByRole("menuitem", {name: "Second world"});
+		expect(recentWorld).toHaveFocus();
+		fireEvent.keyDown(recentWorld, {key: "Escape"});
+		expect(screen.queryByRole("menu", {name: "Switch worlds"})).not.toBeInTheDocument();
+		expect(trigger).toHaveFocus();
+
+		fireEvent.click(trigger);
+		await act(flushPromises);
+		expect(screen.getByRole("menu", {name: "Switch worlds"})).toBeInTheDocument();
+		fireEvent.pointerDown(document.body);
+		expect(screen.queryByRole("menu", {name: "Switch worlds"})).not.toBeInTheDocument();
 	});
 
 	it("checkpoints edits to IndexedDB before syncing them to the server", async () => {
@@ -148,7 +190,8 @@ describe("world autosave", () => {
 			await flushPromises();
 		});
 
-		expect(writeMainWorldDraft).toHaveBeenCalledWith({
+		expect(writeWorldDraft).toHaveBeenCalledWith({
+			userId,
 			world: updatedWorld,
 			worldId,
 			baseServerRevision: 1,

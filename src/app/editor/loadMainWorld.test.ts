@@ -5,10 +5,11 @@ import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {loadEditorWorld, migrateRoomFeaturesToItems} from "./loadMainWorld";
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const jsonResponse = (body: unknown, status = 200): Response =>
 	new Response(JSON.stringify(body), {status, headers: {"content-type": "application/json"}});
 const stored = (id = worldId) => ({
-	data: {id, name: "My world", revision: 4, world: initialWorld},
+	data: {id, name: "My world", ownerUserId: userId, revision: 4, world: initialWorld},
 });
 
 describe("loadEditorWorld", () => {
@@ -22,12 +23,14 @@ describe("loadEditorWorld", () => {
 			world: initialWorld,
 			worldId,
 			worldName: "My world",
+			userId,
 			revision: 4,
 		});
 		expect(fetchWorld).toHaveBeenNthCalledWith(1, "/api/auth/csrf", {signal: undefined});
 		expect(fetchWorld).toHaveBeenNthCalledWith(2, "/api/editor/bootstrap", {
 			method: "POST",
-			headers: {"x-csrf-token": "csrf"},
+			headers: {"content-type": "application/json", "x-csrf-token": "csrf"},
+			body: JSON.stringify({openWorld: true}),
 			signal: undefined,
 		});
 	});
@@ -44,6 +47,12 @@ describe("loadEditorWorld", () => {
 			worldId: requestedId,
 		});
 		expect(fetchWorld).toHaveBeenLastCalledWith(`/api/world/${requestedId}`, {signal: undefined});
+		expect(fetchWorld).toHaveBeenNthCalledWith(2, "/api/editor/bootstrap", {
+			method: "POST",
+			headers: {"content-type": "application/json", "x-csrf-token": "csrf"},
+			body: JSON.stringify({openWorld: false}),
+			signal: undefined,
+		});
 	});
 
 	it("does not replace an authorization or server failure with shared fallback data", async () => {

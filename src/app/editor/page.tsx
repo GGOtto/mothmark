@@ -36,10 +36,7 @@ import {
 	useWorldAutosaveRegistration,
 	WorldResetButton,
 } from "@/components/world-autosave/WorldAutosave";
-import {
-	draftMatchesServer,
-	readMainWorldDraft,
-} from "@/components/world-autosave/worldDraftStorage";
+import {draftMatchesServer, readWorldDraft} from "@/components/world-autosave/worldDraftStorage";
 import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
@@ -91,10 +88,12 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 
 async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
 	const serverWorld = await loadAuthorizedEditorWorld(fetch, signal, requestedWorldId);
-	const draft = await readMainWorldDraft().catch((error: unknown) => {
-		console.warn("Could not read the local world draft.", error);
-		return null;
-	});
+	const draft = await readWorldDraft(serverWorld.userId, serverWorld.worldId).catch(
+		(error: unknown) => {
+			console.warn("Could not read the local world draft.", error);
+			return null;
+		},
+	);
 
 	if (draft && draftMatchesServer(draft, serverWorld)) {
 		return {...serverWorld, world: draft.world, restoredFromLocalDraft: true};
@@ -105,7 +104,9 @@ async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
 
 export default function EditorPage() {
 	const pathname = usePathname();
-	const [requestedWorldId] = useState(() => pathname.match(/^\/editor\/([^/]+)$/)?.[1]);
+	const [requestedWorldId] = useState(
+		() => pathname.match(/^\/worlds\/([^/]+)$/)?.[1] ?? pathname.match(/^\/editor\/([^/]+)$/)?.[1],
+	);
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
 	const [mapZoom, setMapZoom] = useState(1);
@@ -120,6 +121,8 @@ export default function EditorPage() {
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
+	const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+	const [worldName, setWorldName] = useState("");
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
 	const [restoredFromLocalDraft, setRestoredFromLocalDraft] = useState(false);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
@@ -137,19 +140,30 @@ export default function EditorPage() {
 		const abortController = new AbortController();
 
 		loadEditorWorld(abortController.signal, requestedWorldId)
-			.then(({world, worldId, revision, restoredFromLocalDraft: restored}) => {
-				updateWorld(world);
-				setPersistedWorldId(worldId);
-				setPersistedWorldRevision(revision);
-				setRestoredFromLocalDraft(restored);
-				setSelection({
-					selectedId: idValue(world.startRoomId),
-					isConnectionSelected: false,
-				});
-				setConnectionDraft({state: "idle"});
-				setWorldIsLoaded(true);
-				if (!requestedWorldId) window.history.replaceState(null, "", `/editor/${worldId}`);
-			})
+			.then(
+				({
+					world,
+					worldId,
+					worldName: loadedName,
+					userId,
+					revision,
+					restoredFromLocalDraft: restored,
+				}) => {
+					updateWorld(world);
+					setPersistedWorldId(worldId);
+					setOwnerUserId(userId);
+					setWorldName(loadedName);
+					setPersistedWorldRevision(revision);
+					setRestoredFromLocalDraft(restored);
+					setSelection({
+						selectedId: idValue(world.startRoomId),
+						isConnectionSelected: false,
+					});
+					setConnectionDraft({state: "idle"});
+					setWorldIsLoaded(true);
+					if (!requestedWorldId) window.history.replaceState(null, "", `/worlds/${worldId}`);
+				},
+			)
 			.catch((error: unknown) => {
 				if ((error as {name?: string}).name === "AbortError") return;
 
@@ -194,6 +208,8 @@ export default function EditorPage() {
 		ready: worldIsLoaded,
 		world: editorWorld,
 		worldId: persistedWorldId,
+		userId: ownerUserId,
+		worldName,
 		revision: persistedWorldRevision,
 		restoredFromLocalDraft,
 		onPersisted: handleWorldPersisted,

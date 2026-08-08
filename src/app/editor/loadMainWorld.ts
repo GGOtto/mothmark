@@ -6,6 +6,7 @@ const WorldResponseSchema = z.object({
 	data: z.object({
 		id: z.uuid(),
 		name: z.string(),
+		ownerUserId: z.uuid(),
 		world: z.unknown(),
 		revision: z.number().int().positive(),
 	}),
@@ -120,6 +121,7 @@ export type LoadedEditorWorld = {
 	world: World;
 	worldId: string;
 	worldName: string;
+	userId: string;
 	revision: number;
 };
 
@@ -130,7 +132,13 @@ const readWorldResponse = async (response: Response): Promise<LoadedEditorWorld>
 
 	const result = WorldResponseSchema.parse(await response.json()).data;
 	const world = WorldSchema.parse(migrateRoomFeaturesToItems(result.world));
-	return {world, worldId: result.id, worldName: result.name, revision: result.revision};
+	return {
+		world,
+		worldId: result.id,
+		worldName: result.name,
+		userId: result.ownerUserId,
+		revision: result.revision,
+	};
 };
 
 /** Establishes the private editor session and loads only a world authorized for that actor. */
@@ -148,7 +156,8 @@ export async function loadEditorWorld(
 
 	const bootstrapResponse = await fetchWorld("/api/editor/bootstrap", {
 		method: "POST",
-		headers: {"x-csrf-token": csrfBody.data.csrfToken},
+		headers: {"content-type": "application/json", "x-csrf-token": csrfBody.data.csrfToken},
+		body: JSON.stringify({openWorld: !requestedWorldId}),
 		signal,
 	});
 	const bootstrapWorld = await readWorldResponse(bootstrapResponse);

@@ -10,7 +10,12 @@ import {
 } from "@/auth/sessionTokens";
 
 import {getDb} from "./knex";
-import {mapWorldRow, type WorldRecord, type WorldRow} from "./worldsRepository";
+import {
+	ensureDefaultUserLimits,
+	mapWorldRow,
+	type WorldRecord,
+	type WorldRow,
+} from "./worldsRepository";
 
 const database = getDb();
 const LAST_SEEN_WRITE_INTERVAL_MS = 5 * 60 * 1_000;
@@ -125,14 +130,32 @@ export async function findCurrentActor(
 async function ensureFirstOwnedWorld(
 	transaction: Knex.Transaction,
 	userId: string,
+	recordOpened: boolean,
 ): Promise<WorldRecord> {
 	await transaction("users").where({id: userId}).forUpdate().first();
-	const existing = await transaction<WorldRow>("worlds")
-		.where({owner_user_id: userId, kind: "editor"})
-		.whereNull("deleted_at")
-		.orderBy("updated_at", "desc")
+	await ensureDefaultUserLimits(transaction, userId);
+	const existing = await transaction<WorldRow>("worlds as w")
+		.leftJoin("user_world_activity as a", function () {
+			this.on("a.world_id", "=", "w.id").andOn("a.user_id", "=", "w.owner_user_id");
+		})
+		.select("w.*", "a.last_opened_at")
+		.where({"w.owner_user_id": userId, "w.kind": "editor"})
+		.whereNull("w.deleted_at")
+		.orderByRaw("a.last_opened_at desc nulls last")
+		.orderBy("w.updated_at", "desc")
 		.first();
-	if (existing) return mapWorldRow(existing);
+	if (existing) {
+		if (recordOpened) {
+			await transaction("user_world_activity")
+				.insert({user_id: userId, world_id: existing.id, last_opened_at: transaction.fn.now()})
+				.onConflict(["user_id", "world_id"])
+				.merge({last_opened_at: transaction.fn.now()});
+		}
+		return mapWorldRow({
+			...existing,
+			last_opened_at: recordOpened ? new Date() : existing.last_opened_at,
+		});
+	}
 
 	await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", ["mothmark-template-main"]);
 	let template = await transaction<WorldRow>("worlds")
@@ -168,11 +191,19 @@ async function ensureFirstOwnedWorld(
 		.returning("*");
 
 	if (!world) throw new Error("The first editor world could not be created.");
-	return mapWorldRow(world);
+	if (recordOpened) {
+		await transaction("user_world_activity").insert({user_id: userId, world_id: world.id});
+	}
+	return mapWorldRow({...world, last_opened_at: recordOpened ? new Date() : null});
 }
 
-export async function getOrCreateFirstOwnedWorld(userId: string): Promise<WorldRecord> {
-	return database.transaction((transaction) => ensureFirstOwnedWorld(transaction, userId));
+export async function getOrCreateFirstOwnedWorld(
+	userId: string,
+	recordOpened = true,
+): Promise<WorldRecord> {
+	return database.transaction((transaction) =>
+		ensureFirstOwnedWorld(transaction, userId, recordOpened),
+	);
 }
 
 export type AnonymousEditorBootstrap = {
@@ -182,7 +213,9 @@ export type AnonymousEditorBootstrap = {
 	world: WorldRecord;
 };
 
-export async function createAnonymousEditorBootstrap(): Promise<AnonymousEditorBootstrap> {
+export async function createAnonymousEditorBootstrap(
+	recordOpened = true,
+): Promise<AnonymousEditorBootstrap> {
 	const sessionToken = createOpaqueToken();
 	const expiresAt = new Date(Date.now() + EDITOR_SESSION_DURATION_MS);
 
@@ -199,7 +232,7 @@ export async function createAnonymousEditorBootstrap(): Promise<AnonymousEditorB
 			expires_at: expiresAt,
 		});
 
-		const world = await ensureFirstOwnedWorld(transaction, user.id);
+		const world = await ensureFirstOwnedWorld(transaction, user.id, recordOpened);
 		return {userId: user.id, sessionToken, expiresAt, world};
 	});
 }

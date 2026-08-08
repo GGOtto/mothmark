@@ -163,7 +163,7 @@ describe("Map visual layers", () => {
 			<MapHarness initialWorld={configuredWorld} onZoomChange={jest.fn()} />,
 		);
 
-		fireEvent.click(screen.getByRole("button", {name: "Clear Ground Level layer"}));
+		fireEvent.click(screen.getByRole("button", {name: "Clear Main floor layer"}));
 		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
 		await waitFor(() =>
 			expect(screen.queryByRole("button", {name: onlyRoom.name})).not.toBeInTheDocument(),
@@ -305,7 +305,7 @@ describe("Map visual layers", () => {
 			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
 		);
 		const stub = container.querySelector<SVGGElement>(
-			'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
+			'.mapSvgStubs .connectionStub[data-room-id="shop-floor"] .connectionLayerTag',
 		)!;
 		stub.focus();
 
@@ -323,7 +323,7 @@ describe("Map visual layers", () => {
 		);
 
 		fireEvent.keyDown(window, {key: " ", code: "Space"});
-		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const room = screen.getByRole("button", {name: "Shop Floor"});
 		const pointerDown = new MouseEvent("pointerdown", {
 			bubbles: true,
 			button: 0,
@@ -350,7 +350,7 @@ describe("Map visual layers", () => {
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
 		const stub = container.querySelector<SVGGElement>(
-			'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
+			'.mapSvgStubs .connectionStub[data-room-id="shop-floor"] .connectionLayerTag',
 		)!;
 		const initialStubTransform = stub.getAttribute("transform");
 		map.setPointerCapture = jest.fn();
@@ -372,22 +372,22 @@ describe("Map visual layers", () => {
 		fireEvent(map, pointerMove);
 
 		expect(stub).toHaveAttribute("transform", initialStubTransform);
-		expect(viewport).toHaveStyle({transform: "translate(74px, 39px) scale(1)"});
+		expect(viewport).toHaveStyle({transform: "translate(40px, 25px) scale(1)"});
 	});
 
 	it("steps the active map layer with arrow and page keys", () => {
 		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.keyDown(window, {key: "ArrowUp"});
-		expect(screen.getByRole("button", {name: "Layers · Lower Crypts"})).toBeInTheDocument();
-		expect(screen.getByRole("status")).toHaveTextContent("Lower Crypts");
+		expect(screen.getByRole("button", {name: "Layers · Basement"})).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("Basement");
 		fireEvent.keyDown(window, {key: "ArrowDown"});
-		expect(screen.getByRole("button", {name: "Layers · Ground Level"})).toBeInTheDocument();
-		expect(screen.getByRole("status")).toHaveTextContent("Ground Level");
+		expect(screen.getByRole("button", {name: "Layers · Main floor"})).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("Main floor");
 		fireEvent.keyDown(window, {key: "PageDown"});
-		expect(screen.getByRole("button", {name: "Layers · Lower Crypts"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Layers · Basement"})).toBeInTheDocument();
 		fireEvent.keyDown(window, {key: "PageUp"});
-		expect(screen.getByRole("button", {name: "Layers · Ground Level"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Layers · Main floor"})).toBeInTheDocument();
 	});
 
 	it("renders the layer menu over the shared toolbar and map area", () => {
@@ -398,7 +398,7 @@ describe("Map visual layers", () => {
 			</div>,
 		);
 
-		fireEvent.click(screen.getByRole("button", {name: "Layers · Ground Level"}));
+		fireEvent.click(screen.getByRole("button", {name: "Layers · Main floor"}));
 
 		const menu = container.querySelector(".layerMenu");
 		expect(menu).toBeInTheDocument();
@@ -427,11 +427,11 @@ describe("Map visual layers", () => {
 			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
-		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const room = screen.getByRole("button", {name: "Shop Floor"});
 		const getStubTransforms = () =>
 			Array.from(
 				container.querySelectorAll(
-					'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
+					'.mapSvgStubs .connectionStub[data-room-id="shop-floor"] .connectionLayerTag',
 				),
 			).map((stub) => stub.getAttribute("transform"));
 		const stubTransforms = getStubTransforms();
@@ -453,7 +453,7 @@ describe("Map visual layers", () => {
 		Object.defineProperty(pointerMove, "pointerId", {value: 1});
 		fireEvent(map, pointerMove);
 
-		expect(room).toHaveStyle({left: "140px", top: "215px"});
+		expect(room).toHaveStyle({left: "160px", top: "190px"});
 		expect(getStubTransforms()).toEqual(stubTransforms);
 	});
 
@@ -473,11 +473,11 @@ describe("Map visual layers", () => {
 		);
 		fireEvent.click(screen.getByRole("button", {name: "Replace test world"}));
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
-		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const room = screen.getByRole("button", {name: "Shop Floor"});
 		const getStubTransforms = () =>
 			Array.from(
 				container.querySelectorAll(
-					'.mapSvgStubs .connectionStub[data-room-id="dungeon-entrance"] .connectionLayerTag',
+					'.mapSvgStubs .connectionStub[data-room-id="shop-floor"] .connectionLayerTag',
 				),
 			).map((stub) => stub.getAttribute("transform"));
 		const stubTransforms = getStubTransforms();
@@ -508,13 +508,13 @@ describe("Map visual layers", () => {
 				initialWorld={initialWorld}
 				onZoomChange={jest.fn()}
 				tool="edit"
-				initialSelectedId="entrance-guardroom"
+				initialSelectedId="shop-stockroom"
 				initialIsConnectionSelected
 			/>,
 		);
 		const selectedLayer = container.querySelector(".mapSvgSelectedConnection")!;
 		const baseLayer = container.querySelector(".mapSvgConnections")!;
-		const room = screen.getByRole("button", {name: "Dungeon Entrance"});
+		const room = screen.getByRole("button", {name: "Shop Floor"});
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const baseConnectionCount = baseLayer.querySelectorAll(".connection").length;
 
@@ -541,7 +541,7 @@ describe("Map visual layers", () => {
 			<MapHarness
 				initialWorld={initialWorld}
 				onZoomChange={jest.fn()}
-				initialSelectedId="entrance-cistern"
+				initialSelectedId="shop-office"
 				initialIsConnectionSelected
 			/>,
 		);

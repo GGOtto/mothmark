@@ -3,9 +3,10 @@
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
+	createOwnedWorld,
 	deleteOwnedWorld,
 	getOwnedWorld,
-	listOwnedWorlds,
+	getOwnedWorldLibrary,
 	updateOwnedWorld,
 	type WorldRecord,
 } from "@/db/dbal/worldsRepository";
@@ -19,8 +20,9 @@ import {GET as getBySlug} from "./slug/[slug]/route";
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/worldsRepository", () => ({
 	deleteOwnedWorld: jest.fn(),
+	createOwnedWorld: jest.fn(),
 	getOwnedWorld: jest.fn(),
-	listOwnedWorlds: jest.fn(),
+	getOwnedWorldLibrary: jest.fn(),
 	updateOwnedWorld: jest.fn(),
 }));
 
@@ -42,6 +44,7 @@ const storedWorld: WorldRecord = {
 	deletedAt: null,
 	createdAt: new Date("2026-07-18T01:00:00.000Z"),
 	updatedAt: new Date("2026-07-18T02:00:00.000Z"),
+	lastOpenedAt: new Date("2026-07-18T03:00:00.000Z"),
 };
 
 const request = (path: string, method = "GET", body?: unknown): Request =>
@@ -63,14 +66,48 @@ describe("private world API", () => {
 		jest.mocked(resolveCurrentActor).mockResolvedValue(undefined);
 		const response = await list(request("/api/world"));
 		expect(response.status).toBe(401);
-		expect(listOwnedWorlds).not.toHaveBeenCalled();
+		expect(getOwnedWorldLibrary).not.toHaveBeenCalled();
 	});
 
 	it("lists only the current owner's active worlds", async () => {
-		jest.mocked(listOwnedWorlds).mockResolvedValue([storedWorld]);
+		jest.mocked(getOwnedWorldLibrary).mockResolvedValue({
+			worlds: [storedWorld],
+			usage: {count: 1, max: 5},
+		});
 		const response = await list(request("/api/world"));
 		expect(response.status).toBe(200);
-		expect(listOwnedWorlds).toHaveBeenCalledWith(userId);
+		expect(getOwnedWorldLibrary).toHaveBeenCalledWith(userId);
+		expect(await response.json()).toMatchObject({data: {usage: {count: 1, max: 5}}});
+	});
+
+	it("creates a validated starter or blank world within the current owner scope", async () => {
+		jest.mocked(createOwnedWorld).mockResolvedValue(storedWorld);
+		const response = await create(
+			request("/api/world", "POST", {name: "  North archive  ", source: "blank"}),
+		);
+		expect(response.status).toBe(201);
+		expect(createOwnedWorld).toHaveBeenCalledWith(userId, {
+			name: "North archive",
+			source: "blank",
+		});
+	});
+
+	it("returns the same finite-limit rejection when the UI is bypassed", async () => {
+		jest.mocked(createOwnedWorld).mockRejectedValue(
+			Object.assign(new Error("This account has reached its limit of 5 worlds."), {
+				code: "WORLD_LIMIT_REACHED",
+			}),
+		);
+		const response = await create(
+			request("/api/world", "POST", {name: "Too many", source: "starter"}),
+		);
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({
+			error: {
+				code: "WORLD_LIMIT_REACHED",
+				message: "This account has reached its limit of 5 worlds.",
+			},
+		});
 	});
 
 	it("scopes reads to the current owner", async () => {
@@ -122,8 +159,7 @@ describe("private world API", () => {
 		expect(deleteOwnedWorld).toHaveBeenCalledWith(userId, worldId);
 	});
 
-	it("closes generic creation and template/destructive legacy routes", async () => {
-		expect(create().status).toBe(405);
+	it("closes template/destructive legacy routes", async () => {
 		expect(createDefault().status).toBe(404);
 		expect(
 			(

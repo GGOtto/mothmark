@@ -4,7 +4,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {MapPinned, Moon, Sun} from "lucide-react";
 import {useTheme} from "../theme/ThemeProvider";
-import {CurrentWorldName, WorldAutosaveIndicator} from "../world-autosave/WorldAutosave";
+import {WorldAutosaveIndicator, WorldSwitcher} from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
 import "./Header.scss";
 
@@ -15,16 +15,18 @@ export function Header() {
 
 	return (
 		<header className="header">
-			<Link href="/" className="headerLogo" aria-label="Mothmark home">
-				<span className="headerLogoMark" aria-hidden="true">
-					<MapPinned size={15} strokeWidth={1.8} />
-				</span>
+			<div className="headerIdentity">
+				<Link href="/" className="headerLogo" aria-label="Mothmark home">
+					<span className="headerLogoMark" aria-hidden="true">
+						<MapPinned size={15} strokeWidth={1.8} />
+					</span>
 
-				<span className="headerTitle">Mothmark</span>
-			</Link>
+					<span className="headerTitle">Mothmark</span>
+				</Link>
+				<WorldSwitcher showLoading={/^\/worlds\/[^/]+$/.test(pathname)} />
+			</div>
 
 			<nav className="headerNav" aria-label="Primary navigation">
-				<CurrentWorldName showLoading={pathname.startsWith("/editor")} />
 				<WorldAutosaveIndicator />
 				<CommandCopyButton />
 
@@ -37,11 +39,11 @@ export function Header() {
 				</Link>
 
 				<Link
-					href="/editor"
-					className={`headerLink ${pathname.startsWith("/editor") ? "headerLinkActive" : ""}`}
-					aria-current={pathname.startsWith("/editor") ? "page" : undefined}
+					href="/worlds"
+					className={`headerLink ${pathname.startsWith("/worlds") ? "headerLinkActive" : ""}`}
+					aria-current={pathname.startsWith("/worlds") ? "page" : undefined}
 				>
-					Editor
+					Worlds
 				</Link>
 
 				<Link
