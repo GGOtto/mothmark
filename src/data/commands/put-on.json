@@ -27,7 +27,7 @@
 					"entityIds": [],
 					"tags": ["takeable"],
 					"tagMode": "all",
-					"source": "known",
+					"source": "reachable",
 					"extraAliases": []
 				},
 				{
@@ -62,7 +62,36 @@
 		"scope": "global"
 	},
 	"priority": 1,
-	"fallbacks": [],
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "put-on-item"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-on-item-fallback"},
+				"always": {
+					"name": "Cannot resolve held item",
+					"id": {"type": "effect", "id": "put-on-item-fallback-effects"},
+					"type": "group",
+					"effects": [
+						{"type": "message", "operation": "show", "message": "You can't put that anywhere."}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {"type": "command-block", "id": "put-on-target"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-on-target-fallback"},
+				"always": {
+					"name": "Cannot resolve surface",
+					"id": {"type": "effect", "id": "put-on-target-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't put it on that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
 	"behavior": {
 		"id": {
 			"type": "condition-branch",

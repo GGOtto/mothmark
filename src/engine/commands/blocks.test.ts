@@ -327,6 +327,13 @@ describe("matchBlock", () => {
 			type: "target",
 			value: door,
 		});
+		for (const wording of ["the door", "an iron door", "my door"]) {
+			expectVariable(matchBlock(wording, block, {targets}), {
+				blockId: block.id,
+				type: "target",
+				value: door,
+			});
+		}
 	});
 
 	it("does not resolve an ambiguous target", () => {

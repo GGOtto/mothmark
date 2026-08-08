@@ -113,7 +113,34 @@
 		"scope": "global"
 	},
 	"priority": 1,
-	"fallbacks": [],
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "use-target-item"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "use-target-item-fallback"},
+				"always": {
+					"name": "Cannot resolve used item",
+					"id": {"type": "effect", "id": "use-target-item-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't use that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {"type": "command-block", "id": "use-target-object"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "use-target-object-fallback"},
+				"always": {
+					"name": "Cannot resolve use target",
+					"id": {"type": "effect", "id": "use-target-object-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't use it on that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
 	"behavior": {
 		"id": {
 			"type": "condition-branch",

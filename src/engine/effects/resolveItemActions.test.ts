@@ -128,6 +128,24 @@ describe("item-action effects", () => {
 		expect(game.messages.at(-1)?.text).toBe("You inspect the coin.");
 	});
 
+	it("explains invalid repeated take and drop actions", () => {
+		const world = createWorld();
+		const initial = createInitialGameState(world, roomId);
+		const notCarried = resolveEffects(
+			world,
+			initial,
+			group([{type: "item-action", action: "drop", itemId: id("coin")}]),
+		);
+		expect(notCarried.messages.at(-1)?.text).toBe("You're not carrying the coin.");
+
+		const carried = resolveEffects(
+			world,
+			initial,
+			group([{type: "item-action", action: "take", itemId: id("key")}]),
+		);
+		expect(carried.messages.at(-1)?.text).toBe("You're already carrying the key.");
+	});
+
 	it("blocks opening while locked, then unlocks with and consumes a carried matching key", () => {
 		const world = createWorld();
 		let game = createInitialGameState(world, roomId);
@@ -176,6 +194,57 @@ describe("item-action effects", () => {
 		expect(game.messages.at(-1)?.text).toBe("Lock hook.");
 	});
 
+	it("explains repeated open, close, lock, and unlock actions", () => {
+		const world = createWorld();
+		let game = produce(createInitialGameState(world, roomId), (draft) => {
+			const box = draft.itemStates.find((state) => compareIds(state.id, id("box")));
+			if (box) {
+				box.locked = false;
+				box.open = true;
+			}
+		});
+
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "open", itemId: id("box")}]),
+		);
+		expect(game.messages.at(-1)?.text).toBe("The box is already open.");
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "close", itemId: id("box")}]),
+		);
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "close", itemId: id("box")}]),
+		);
+		expect(game.messages.at(-1)?.text).toBe("The box is already closed.");
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "lock", itemId: id("box")}]),
+		);
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "lock", itemId: id("box")}]),
+		);
+		expect(game.messages.at(-1)?.text).toBe("The box is already locked.");
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "unlock", itemId: id("box")}]),
+		);
+		game = resolveEffects(
+			world,
+			game,
+			group([{type: "item-action", action: "unlock", itemId: id("box")}]),
+		);
+		expect(game.messages.at(-1)?.text).toBe("The box is already unlocked.");
+	});
+
 	it("enforces open state, capacity, and carrying for player placement", () => {
 		const world = createWorld();
 		let game = produce(createInitialGameState(world, roomId), (draft) => {
@@ -205,6 +274,16 @@ describe("item-action effects", () => {
 			itemId: id("box"),
 			placement: "inside",
 		});
+	});
+
+	it("explains placement attempts when the item is not carried", () => {
+		const world = createWorld();
+		const game = resolveEffects(
+			world,
+			createInitialGameState(world, roomId),
+			group([{type: "item-action", action: "put-on", itemId: id("coin"), surfaceId: id("table")}]),
+		);
+		expect(game.messages.at(-1)?.text).toBe("You're not carrying the coin.");
 	});
 
 	it("runs a matching use recipe and otherwise uses its fallback", () => {

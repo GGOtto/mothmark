@@ -27,7 +27,7 @@
 					"entityIds": [],
 					"tags": ["takeable"],
 					"tagMode": "all",
-					"source": "known",
+					"source": "reachable",
 					"extraAliases": []
 				}
 			]
@@ -37,7 +37,21 @@
 		"scope": "global"
 	},
 	"priority": 0,
-	"fallbacks": [],
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "drop-target"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "drop-target-fallback"},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {"type": "effect", "id": "drop-target-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't drop that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
 	"behavior": {
 		"id": {
 			"type": "condition-branch",

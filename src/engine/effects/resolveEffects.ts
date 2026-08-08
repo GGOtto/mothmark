@@ -415,9 +415,9 @@ export function resolveItemActionEffect(
 	switch (effect.action) {
 		case "take": {
 			const behavior = findBehavior(authored, "takeable");
-			if (!behavior || !access.reachable || access.carried) {
-				return behavior && !access.carried ? withSystemMessage(game, behavior.blockedMessage) : game;
-			}
+			if (!behavior) return game;
+			if (access.carried) return withSystemMessage(game, `You're already carrying the ${item.name}.`);
+			if (!access.reachable) return withSystemMessage(game, behavior.blockedMessage);
 			if (behavior.allowedWhen && !evaluateCondition(world, game, behavior.allowedWhen)) {
 				return withSystemMessage(game, behavior.blockedMessage);
 			}
@@ -434,7 +434,8 @@ export function resolveItemActionEffect(
 		}
 		case "drop": {
 			const behavior = findBehavior(authored, "takeable");
-			if (!behavior || !access.carried) return game;
+			if (!behavior) return game;
+			if (!access.carried) return withSystemMessage(game, `You're not carrying the ${item.name}.`);
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) state.location = {type: "room", roomId: draft.player.currentRoom};
@@ -463,7 +464,7 @@ export function resolveItemActionEffect(
 			const behavior = findBehavior(authored, "openable");
 			if (!behavior || !access.reachable) return game;
 			if (item.locked) return withSystemMessage(game, behavior.blockedMessage);
-			if (item.open) return game;
+			if (item.open) return withSystemMessage(game, `The ${item.name} is already open.`);
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) state.open = true;
@@ -477,7 +478,8 @@ export function resolveItemActionEffect(
 		}
 		case "close": {
 			const behavior = findBehavior(authored, "openable");
-			if (!behavior || !access.reachable || !item.open) return game;
+			if (!behavior || !access.reachable) return game;
+			if (!item.open) return withSystemMessage(game, `The ${item.name} is already closed.`);
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) state.open = false;
@@ -491,7 +493,8 @@ export function resolveItemActionEffect(
 		}
 		case "lock": {
 			const behavior = findBehavior(authored, "lockable");
-			if (!behavior || !access.reachable || item.locked) return game;
+			if (!behavior || !access.reachable) return game;
+			if (item.locked) return withSystemMessage(game, `The ${item.name} is already locked.`);
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) {
@@ -503,7 +506,8 @@ export function resolveItemActionEffect(
 		}
 		case "unlock": {
 			const behavior = findBehavior(authored, "lockable");
-			if (!behavior || !access.reachable || !item.locked) return game;
+			if (!behavior || !access.reachable) return game;
+			if (!item.locked) return withSystemMessage(game, `The ${item.name} is already unlocked.`);
 			const requestedKey = effect.keyItemId;
 			const keyId =
 				requestedKey ??
@@ -531,7 +535,9 @@ export function resolveItemActionEffect(
 		}
 		case "put-inside":
 		case "put-on": {
-			if (!access.carried) return game;
+			if (!access.carried) {
+				return withSystemMessage(game, `You're not carrying the ${item.name}.`);
+			}
 			const parentId = effect.action === "put-inside" ? effect.containerId : effect.surfaceId;
 			const placement = effect.action === "put-inside" ? "inside" : "on";
 			if (

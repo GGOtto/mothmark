@@ -397,7 +397,7 @@ export function matchTarget(
 	const eligible = (context.targets ?? []).filter((candidate) =>
 		targetMatchesFilters(candidate, block),
 	);
-	const normalizedText = normalize(text);
+	const normalizedText = normalize(text).replace(/^(?:a|an|my|the)\s+/, "");
 	const directMatches = eligible.filter((candidate) =>
 		[candidate.name, ...(candidate.aliases ?? [])].some((name) => normalize(name) === normalizedText),
 	);
