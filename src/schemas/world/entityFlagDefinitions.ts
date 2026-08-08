@@ -5,17 +5,14 @@ export type EntityFlagDefinition = {
 	description?: string;
 };
 
-export const FEATURE_FLAG_DEFINITIONS = {
+export const ITEM_FLAG_DEFINITIONS = {
 	examined: {
 		permanent: true,
 		defaultReadonly: true,
-		description: "Set when the player examines this feature.",
+		description: "Set when the player examines this item.",
 	},
 	hidden: {
 		defaultValue: false,
-	},
-	usable: {
-		defaultValue: true,
 	},
 } satisfies Record<string, EntityFlagDefinition>;
 
@@ -32,16 +29,16 @@ export const ROOM_FLAG_DEFINITIONS = {
 	},
 } satisfies Record<string, EntityFlagDefinition>;
 
-export function getEntityFlagDefinition(flagType: "room" | "feature", flag: string) {
+export function getEntityFlagDefinition(flagType: "room" | "item", flag: string) {
 	const definitions =
 		flagType === "room"
 			? (ROOM_FLAG_DEFINITIONS as Record<string, EntityFlagDefinition>)
-			: (FEATURE_FLAG_DEFINITIONS as Record<string, EntityFlagDefinition>);
+			: (ITEM_FLAG_DEFINITIONS as Record<string, EntityFlagDefinition>);
 	return definitions[flag];
 }
 
 export function entityFlagMutationError(
-	flagType: "room" | "feature",
+	flagType: "room" | "item",
 	flag: string,
 	operation: "set" | "toggle" | "delete",
 ) {

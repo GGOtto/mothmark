@@ -177,7 +177,7 @@ describe("getHigherPriorityCommand block types", () => {
 
 	it("closed wording beats a target", () => {
 		const choiceCommand = command([choice()]);
-		const targetCommand = command([target({entityIds: [toID("feature", "chalkboard")]})]);
+		const targetCommand = command([target({entityIds: [toID("item", "chalkboard")]})]);
 
 		expectWinner(choiceCommand, targetCommand);
 	});
@@ -268,17 +268,17 @@ describe("getHigherPriorityCommand closed value specificity", () => {
 
 describe("getHigherPriorityCommand target specificity", () => {
 	it("prefers explicit entity IDs over every other target filter", () => {
-		const explicit = command([target({entityIds: [toID("feature", "skull")]})]);
+		const explicit = command([target({entityIds: [toID("item", "skull")]})]);
 		const tagged = command([target({tags: ["cursed"]})]);
 
 		expectWinner(explicit, tagged);
 	});
 
 	it("prefers a smaller explicit entity set", () => {
-		const skullOnly = command([target({entityIds: [toID("feature", "skull")]})]);
+		const skullOnly = command([target({entityIds: [toID("item", "skull")]})]);
 		const skullOrIdol = command([
 			target({
-				entityIds: [toID("feature", "skull"), toID("feature", "idol")],
+				entityIds: [toID("item", "skull"), toID("item", "idol")],
 			}),
 		]);
 
@@ -287,7 +287,7 @@ describe("getHigherPriorityCommand target specificity", () => {
 
 	it("prefers tag filters over entity-type filters", () => {
 		const tagged = command([target({tags: ["portable"]})]);
-		const typed = command([target({entityTypes: ["feature"]})]);
+		const typed = command([target({entityTypes: ["item"]})]);
 
 		expectWinner(tagged, typed);
 	});
@@ -325,14 +325,14 @@ describe("getHigherPriorityCommand target specificity", () => {
 	});
 
 	it("prefers a smaller entity-type set", () => {
-		const featureOnly = command([target({entityTypes: ["feature"]})]);
-		const roomOrFeature = command([target({entityTypes: ["room", "feature"]})]);
+		const featureOnly = command([target({entityTypes: ["item"]})]);
+		const roomOrFeature = command([target({entityTypes: ["room", "item"]})]);
 
 		expectWinner(featureOnly, roomOrFeature);
 	});
 
 	it("prefers entity types over a source-only restriction", () => {
-		const typed = command([target({entityTypes: ["feature"]})]);
+		const typed = command([target({entityTypes: ["item"]})]);
 		const visible = command([target({source: "visible"})]);
 
 		expectWinner(typed, visible);
@@ -353,8 +353,8 @@ describe("getHigherPriorityCommand target specificity", () => {
 	});
 
 	it("uses additional filters to distinguish otherwise equal targets", () => {
-		const constrained = command([target({entityIds: [toID("feature", "skull")], tags: ["cursed"]})]);
-		const explicitOnly = command([target({entityIds: [toID("feature", "skull")]})]);
+		const constrained = command([target({entityIds: [toID("item", "skull")], tags: ["cursed"]})]);
+		const explicitOnly = command([target({entityIds: [toID("item", "skull")]})]);
 
 		expectWinner(constrained, explicitOnly);
 	});
@@ -455,7 +455,7 @@ describe("getHigherPriorityCommand command tie-breakers", () => {
 	});
 
 	it("lets block specificity beat narrower scope", () => {
-		const explicitGlobal = command([target({entityIds: [toID("feature", "skull")]})]);
+		const explicitGlobal = command([target({entityIds: [toID("item", "skull")]})]);
 		const generalRoom = command([target()], {
 			scope: {scope: "rooms", roomIds: [toID("room", "crypt")]},
 		});
@@ -471,7 +471,7 @@ describe("getHigherPriorityCommand command tie-breakers", () => {
 	});
 
 	it("does not let authored priority override block specificity", () => {
-		const explicit = command([target({entityIds: [toID("feature", "skull")]})], {priority: -100});
+		const explicit = command([target({entityIds: [toID("item", "skull")]})], {priority: -100});
 		const general = command([target()], {priority: 100});
 
 		expectWinner(explicit, general);

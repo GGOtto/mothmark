@@ -40,19 +40,16 @@ describe("teleport", () => {
 		});
 	});
 
-	it("reconciles missing destination and feature state from the authored world", () => {
+	it("reconciles missing destination state without rebuilding global item state", () => {
 		const game = createGame((draft) => {
 			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "guardroom");
 		});
 
 		const nextGame = teleport(initialWorld, game, toID("room", "guardroom"));
 		const roomState = nextGame.roomStates.find((state) => idValue(state.id) === "guardroom");
-		const authoredRoom = initialWorld.rooms.find((room) => idValue(room.id) === "guardroom");
 
 		expect(roomState).toMatchObject({type: "room", flags: {visited: true}});
-		expect(roomState?.featureStates.map((state) => idValue(state.id))).toEqual(
-			authoredRoom?.features.map((feature) => idValue(feature.id)),
-		);
+		expect(nextGame.itemStates).toEqual(game.itemStates);
 	});
 
 	it("blocks passage-based movement when the runtime active flag is false", () => {

@@ -14,7 +14,8 @@ describe("editor schema variants", () => {
 			"message",
 			"flag",
 			"counter",
-			"feature",
+			"item",
+			"item-action",
 			"room",
 			"player",
 			"effect-ref",
@@ -25,6 +26,20 @@ describe("editor schema variants", () => {
 		expect(
 			schemaFieldOptions(EffectSchema, "operation", {type: "player"}).map((option) => option.value),
 		).toContain("move-in-direction");
+		expect(
+			schemaFieldOptions(EffectSchema, "action", {type: "item-action"}).map((option) => option.value),
+		).toEqual([
+			"take",
+			"drop",
+			"examine",
+			"open",
+			"close",
+			"lock",
+			"put-inside",
+			"put-on",
+			"unlock",
+			"use",
+		]);
 	});
 
 	it("uses the selected effect branch for fields and defaults", () => {
@@ -44,6 +59,7 @@ describe("editor schema variants", () => {
 			"flag",
 			"counter",
 			"current-room",
+			"item",
 			"group",
 			"condition-ref",
 		]);
@@ -67,6 +83,7 @@ describe("editor schema variants", () => {
 			"flag",
 			"counter",
 			"current-room",
+			"item",
 			"condition-ref",
 		]);
 	});

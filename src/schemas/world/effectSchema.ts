@@ -106,27 +106,24 @@ const FlagEffectValueSchema = z
 		z.discriminatedUnion("operation", [
 			z.object({
 				type: z.literal("flag"),
-				"flag-type": z.literal("feature"),
+				"flag-type": z.literal("item"),
 				operation: z.literal("set"),
-				roomId: editor.reference("room", {title: "Room"}),
-				featureId: editor.reference("feature", {title: "Feature"}),
+				itemId: editor.reference("item", {title: "Item"}),
 				flag: editor.string({title: "Flag"}).min(1),
 				value: editor.boolean({title: "Value"}).default(true),
 			}),
 			z.object({
 				type: z.literal("flag"),
-				"flag-type": z.literal("feature"),
+				"flag-type": z.literal("item"),
 				operation: z.literal("toggle"),
-				roomId: editor.reference("room", {title: "Room"}),
-				featureId: editor.reference("feature", {title: "Feature"}),
+				itemId: editor.reference("item", {title: "Item"}),
 				flag: editor.string({title: "Flag"}).min(1),
 			}),
 			z.object({
 				type: z.literal("flag"),
-				"flag-type": z.literal("feature"),
+				"flag-type": z.literal("item"),
 				operation: z.literal("delete"),
-				roomId: editor.reference("room", {title: "Room"}),
-				featureId: editor.reference("feature", {title: "Feature"}),
+				itemId: editor.reference("item", {title: "Item"}),
 				flag: editor.string({title: "Flag"}).min(1),
 			}),
 		]),
@@ -141,7 +138,7 @@ export const FlagEffectSchema = editor.discriminatedUnion(
 	FlagEffectValueSchema,
 	{
 		title: "Flag Effect",
-		description: "Changes a boolean world, room, or feature flag.",
+		description: "Changes a boolean world, room, or item flag.",
 	},
 	{type: "flag", "flag-type": "normal", operation: "set", flag: "", value: true},
 );
@@ -181,61 +178,219 @@ export const CounterEffectSchema = editor.discriminatedUnion(
 	{title: "Counter Effect", description: "Changes a numeric world counter."},
 );
 
-export const FeatureEffectSchema = editor.discriminatedUnion(
+export const ItemEffectSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("operation", [
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("change-name"),
-			value: editor.input(),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("change-description"),
-			value: editor.richText(),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("move-to-room"),
-			roomId: editor.reference("room", {title: "Room"}),
-			newRoomId: editor.reference("room", {title: "New Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("hide-from-player"),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("show-to-player"),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("show-in-room-description"),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("hide-in-room-description"),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
-		z.object({
-			type: z.literal("feature"),
-			operation: z.literal("destroy"),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-		}),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("change-name"),
+				value: editor.input({title: "Name"}),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change name"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("change-examine-text"),
+				value: editor.richText({title: "Examine text"}),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change examine text"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("change-listing-text"),
+				value: editor.textarea({title: "Room listing text"}),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change room listing text"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.enum(["add-alias", "remove-alias", "add-tag", "remove-tag"]),
+				value: editor.input({title: "Value"}).trim().min(1),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change alias or tag"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("move-to-room"),
+				roomId: editor.reference("room", {title: "Room"}),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Move to room"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.enum(["move-to-inventory", "drop-in-current-room"]),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Move to or from inventory"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("place-inside"),
+				itemId: editor.reference("item", {title: "Item"}),
+				containerId: editor.reference("item", {title: "Container"}),
+			},
+			{title: "Place inside item"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("place-on"),
+				itemId: editor.reference("item", {title: "Item"}),
+				surfaceId: editor.reference("item", {title: "Surface"}),
+			},
+			{title: "Place on item"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.enum(["hide", "reveal", "destroy", "restore-start-location"]),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change item location status"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.enum([
+					"open",
+					"close",
+					"lock",
+					"unlock",
+					"mark-examined",
+					"mark-unexamined",
+					"list-in-room",
+					"unlist-in-room",
+				]),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Change item state"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.enum(["empty-into-room", "empty-into-inventory"]),
+				itemId: editor.reference("item", {title: "Item"}),
+				placement: editor.select(z.enum(["inside", "on", "both"]), {title: "Contents"}),
+			},
+			{title: "Empty contents"},
+		),
+		editor.object(
+			{
+				type: z.literal("item"),
+				operation: z.literal("move-contents"),
+				itemId: editor.reference("item", {title: "Item"}),
+				destinationItemId: editor.reference("item", {title: "Destination item"}),
+				placement: editor.select(z.enum(["inside", "on"]), {title: "Placement"}),
+			},
+			{title: "Move contents"},
+		),
 	]),
-	{title: "Feature Effect", description: "Changes a room feature and its runtime flags."},
+	{title: "Item Effect", description: "Changes an item's runtime presentation, location, or state."},
+);
+
+export const ItemActionEffectSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("action", [
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("take"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Take"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("drop"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Drop"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("examine"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Examine"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("open"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Open"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("close"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Close"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("lock"),
+				itemId: editor.reference("item", {title: "Item"}),
+			},
+			{title: "Lock"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("put-inside"),
+				itemId: editor.reference("item", {title: "Item"}),
+				containerId: editor.reference("item", {title: "Container"}),
+			},
+			{title: "Put inside"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("put-on"),
+				itemId: editor.reference("item", {title: "Item"}),
+				surfaceId: editor.reference("item", {title: "Surface"}),
+			},
+			{title: "Put on"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("unlock"),
+				itemId: editor.reference("item", {title: "Item"}),
+				keyItemId: editor.reference("item", {title: "Key"}).optional(),
+			},
+			{title: "Unlock"},
+		),
+		editor.object(
+			{
+				type: z.literal("item-action"),
+				action: z.literal("use"),
+				itemId: editor.reference("item", {title: "Item"}),
+				targetItemId: editor.reference("item", {title: "Target"}).optional(),
+			},
+			{title: "Use"},
+		),
+	]),
+	{
+		title: "Item action",
+		description: "Performs a player-facing item action with eligibility, messages, and hooks.",
+		picker: {showDescriptions: true},
+	},
 );
 
 export const RoomEffectSchema = editor.discriminatedUnion(
@@ -365,7 +520,8 @@ export const GameEffectSchema = editor.discriminatedUnion(
 export type MessageEffect = z.infer<typeof MessageEffectSchema>;
 export type FlagEffect = z.infer<typeof FlagEffectSchema>;
 export type CounterEffect = z.infer<typeof CounterEffectSchema>;
-export type FeatureEffect = z.infer<typeof FeatureEffectSchema>;
+export type ItemEffect = z.infer<typeof ItemEffectSchema>;
+export type ItemActionEffect = z.infer<typeof ItemActionEffectSchema>;
 export type RoomEffect = z.infer<typeof RoomEffectSchema>;
 export type PlayerEffect = z.infer<typeof PlayerEffectSchema>;
 export type EffectReference = z.infer<typeof EffectReferenceSchema>;
@@ -374,16 +530,42 @@ export type Effect =
 	| MessageEffect
 	| FlagEffect
 	| CounterEffect
-	| FeatureEffect
+	| ItemEffect
+	| ItemActionEffect
 	| RoomEffect
 	| PlayerEffect
 	| EffectReference;
 
-function normalizeFlagEffect(value: unknown): unknown {
+function normalizeEffect(value: unknown): unknown {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return value;
 	const effect = value as Record<string, unknown>;
 	if (effect.type === "flag" && !("flag-type" in effect)) {
 		return {...effect, "flag-type": "normal"};
+	}
+	if (effect.type === "item") {
+		const {operation, ...rest} = effect;
+		switch (operation) {
+			case "change-description":
+				return {...rest, type: "item", operation: "change-examine-text"};
+			case "move-to-room": {
+				const {newRoomId, ...remaining} = rest;
+				return newRoomId ? {...remaining, type: "item", operation, roomId: newRoomId} : effect;
+			}
+			case "place-inside-item":
+				return {...rest, type: "item", operation: "place-inside"};
+			case "place-on-item":
+				return {...rest, type: "item", operation: "place-on"};
+			case "hide-from-player":
+				return {...rest, type: "item", operation: "hide"};
+			case "show-to-player":
+				return {...rest, type: "item", operation: "reveal"};
+			case "show-in-room-description":
+				return {...rest, type: "item", operation: "list-in-room"};
+			case "hide-in-room-description":
+				return {...rest, type: "item", operation: "unlist-in-room"};
+			default:
+				return effect;
+		}
 	}
 	return value;
 }
@@ -394,12 +576,13 @@ function normalizeFlagEffect(value: unknown): unknown {
  */
 export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 	z.preprocess(
-		normalizeFlagEffect,
+		normalizeEffect,
 		z.union([
 			MessageEffectSchema,
 			FlagEffectSchema,
 			CounterEffectSchema,
-			FeatureEffectSchema,
+			ItemEffectSchema,
+			ItemActionEffectSchema,
 			RoomEffectSchema,
 			PlayerEffectSchema,
 			EffectReferenceSchema,
@@ -465,4 +648,4 @@ export type EffectGroup = z.infer<typeof EffectGroupSchema>;
 export const WorldEffectSchema = EffectGroupSchema;
 export const EffectUsageSchema = EffectGroupSchema;
 
-// TODO: Restore item, inventory, NPC, event, and flow effects when their domains return.
+// TODO: Restore NPC, event, and flow effects when those domains return.

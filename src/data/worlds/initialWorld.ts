@@ -2,7 +2,7 @@ import {rawInitialCommands} from "../commands/initialCommands";
 import {WorldSchema} from "../../schemas/world/worldSchema";
 import {toID} from "../../utils/idUtils";
 
-function feature(
+function fixedItem(
 	id: string,
 	name: string,
 	aliases: string[],
@@ -10,12 +10,13 @@ function feature(
 	listedInRoom = true,
 ) {
 	return {
-		id,
+		id: toID("item", id),
 		name,
 		aliases,
-		tags: ["room-feature"],
-		description,
-		listedInRoom,
+		tags: ["scenery"],
+		presentation: {listedInRoom, listingText: ""},
+		examine: {text: description},
+		behaviors: [],
 	};
 }
 
@@ -25,7 +26,7 @@ function room(
 	x: number,
 	y: number,
 	description: string,
-	features: ReturnType<typeof feature>[],
+	items: ReturnType<typeof fixedItem>[],
 	levelTag: "upper-level" | "main-level" | "lower-level" = "main-level",
 ) {
 	return {
@@ -35,7 +36,15 @@ function room(
 		tags: ["dungeon", levelTag],
 		metadata: {position: {x, y}},
 		description,
-		features,
+		items: items.map((item) => ({
+			...item,
+			initialState: {
+				location: {type: "room" as const, roomId: toID("room", id)},
+				open: false,
+				locked: false,
+				flags: {examined: false},
+			},
+		})),
 	};
 }
 
@@ -58,7 +67,7 @@ function connection(
 	};
 }
 
-const rawWorld = {
+const rawWorldWithRoomItems = {
 	metadata: {
 		title: "The Barrow Below",
 		author: "Mothmark",
@@ -110,13 +119,13 @@ const rawWorld = {
 			185,
 			"Weathered steps descend beneath a split stone arch. Cold air rises from the dark, carrying the smell of wet earth and old iron.",
 			[
-				feature(
+				fixedItem(
 					"stone-arch",
 					"Stone Arch",
 					["arch", "doorway"],
 					"The arch is carved with worn shields and the faint outline of a crowned serpent.",
 				),
-				feature(
+				fixedItem(
 					"abandoned-torch",
 					"Abandoned Torch",
 					["torch"],
@@ -131,13 +140,13 @@ const rawWorld = {
 			55,
 			"Black water covers the lower steps of a round cistern. Drops fall from the vaulted ceiling and send slow rings across the surface.",
 			[
-				feature(
+				fixedItem(
 					"iron-wheel",
 					"Iron Sluice Wheel",
 					["wheel", "sluice"],
 					"The wheel is stiff with rust, but fresh scratches mark its rim.",
 				),
-				feature(
+				fixedItem(
 					"sunken-statue",
 					"Sunken Statue",
 					["statue", "figure"],
@@ -153,13 +162,13 @@ const rawWorld = {
 			175,
 			"Overturned bunks and a cracked table crowd this low chamber. A draft stirs old playing cards across the floor.",
 			[
-				feature(
+				fixedItem(
 					"duty-roster",
 					"Duty Roster",
 					["roster", "ledger"],
 					"The final watch was signed in, but no one signed out.",
 				),
-				feature(
+				fixedItem(
 					"weapon-rack",
 					"Empty Weapon Rack",
 					["rack", "weapons"],
@@ -174,13 +183,13 @@ const rawWorld = {
 			300,
 			"The worked stone gives way to a damp natural cavern. Blue mushrooms grow in thick shelves around a shallow stream.",
 			[
-				feature(
+				fixedItem(
 					"glowcaps",
 					"Glowcaps",
 					["mushrooms", "fungus"],
 					"Their cool blue light brightens whenever footsteps approach from the crypt.",
 				),
-				feature(
+				fixedItem(
 					"burrow",
 					"Large Burrow",
 					["hole", "tunnel"],
@@ -196,13 +205,13 @@ const rawWorld = {
 			55,
 			"Broken pillars lean across a gallery lined with faded battle murals. Rubble forces the passage into a crooked path.",
 			[
-				feature(
+				fixedItem(
 					"battle-mural",
 					"Battle Mural",
 					["mural", "painting"],
 					"The mural shows armored soldiers sealing something enormous beneath the hill.",
 				),
-				feature(
+				fixedItem(
 					"fallen-pillar",
 					"Fallen Pillar",
 					["pillar", "rubble"],
@@ -217,13 +226,13 @@ const rawWorld = {
 			175,
 			"A small domed shrine stands strangely untouched. Ash surrounds a stone altar, and pale candles burn without giving off heat.",
 			[
-				feature(
+				fixedItem(
 					"serpent-idol",
 					"Serpent Idol",
 					["idol", "serpent"],
 					"The idol's jeweled eyes have been pried out, leaving two deep black sockets.",
 				),
-				feature(
+				fixedItem(
 					"offering-bowl",
 					"Offering Bowl",
 					["bowl", "offering"],
@@ -238,13 +247,13 @@ const rawWorld = {
 			300,
 			"Narrow burial niches fill the walls from floor to ceiling. Several stone covers have fallen open, and their occupants are gone.",
 			[
-				feature(
+				fixedItem(
 					"open-niche",
 					"Open Burial Niche",
 					["niche", "grave"],
 					"The niche contains a torn burial shroud and a trail of dried mud.",
 				),
-				feature(
+				fixedItem(
 					"grave-markers",
 					"Grave Markers",
 					["markers", "names"],
@@ -260,13 +269,13 @@ const rawWorld = {
 			65,
 			"Rows of stone lockers divide the armory. Rusted chain hangs from ceiling hooks, and the floor is littered with broken arrowheads.",
 			[
-				feature(
+				fixedItem(
 					"sealed-locker",
 					"Sealed Locker",
 					["locker", "cabinet"],
 					"Unlike the others, this locker remains closed with a heavy bronze padlock.",
 				),
-				feature(
+				fixedItem(
 					"practice-dummy",
 					"Practice Dummy",
 					["dummy", "target"],
@@ -282,13 +291,13 @@ const rawWorld = {
 			190,
 			"Iron-barred cells face a central drain. Most doors hang open, but one remains firmly locked at the end of the block.",
 			[
-				feature(
+				fixedItem(
 					"locked-cell",
 					"Locked Cell",
 					["cell", "door"],
 					"Something has scratched a map into the inside of the door with hundreds of tiny lines.",
 				),
-				feature(
+				fixedItem(
 					"jailers-desk",
 					"Jailer's Desk",
 					["desk"],
@@ -303,13 +312,13 @@ const rawWorld = {
 			300,
 			"Bones are stacked in careful geometric patterns along the walls. A narrow aisle winds between columns made from skulls and mortar.",
 			[
-				feature(
+				fixedItem(
 					"bone-columns",
 					"Bone Columns",
 					["columns", "bones"],
 					"Several skulls have been turned to face the same dark corner.",
 				),
-				feature(
+				fixedItem(
 					"mortuary-bell",
 					"Mortuary Bell",
 					["bell"],
@@ -325,13 +334,13 @@ const rawWorld = {
 			300,
 			"The vault has settled at an angle, leaving one corner beneath dark water. Iron chests sit on raised platforms around a central plinth.",
 			[
-				feature(
+				fixedItem(
 					"central-plinth",
 					"Central Plinth",
 					["plinth", "pedestal"],
 					"A circular recess in the stone is the right size for a large medallion or seal.",
 				),
-				feature(
+				fixedItem(
 					"iron-chests",
 					"Iron Chests",
 					["chests", "treasure"],
@@ -363,6 +372,16 @@ const rawWorld = {
 		connection("ossuary-vault", "ossuary", "sunken-vault", "e", "w"),
 	],
 	commands: rawInitialCommands,
+};
+
+const rawWorld = {
+	...rawWorldWithRoomItems,
+	rooms: rawWorldWithRoomItems.rooms.map((authoredRoom) => {
+		const roomWithoutItems: Partial<typeof authoredRoom> = {...authoredRoom};
+		delete roomWithoutItems.items;
+		return roomWithoutItems;
+	}),
+	items: rawWorldWithRoomItems.rooms.flatMap((authoredRoom) => authoredRoom.items),
 };
 
 export function createInitialWorld() {

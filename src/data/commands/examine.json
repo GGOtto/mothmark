@@ -1,0 +1,75 @@
+{
+	"id": {
+		"type": "command",
+		"id": "examine"
+	},
+	"name": "Examine",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "examine-verb"
+					},
+					"type": "phrase",
+					"matches": ["examine", "inspect", "x", "look at"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "examine-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": [],
+					"tagMode": "all",
+					"source": "visible",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "examine-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "examine-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "examine",
+					"itemId": {
+						"type": "item",
+						"id": "examine-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "examine-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {RoomStateSchema} from "./entityStateSchemas";
+import {ItemStateSchema, RoomStateSchema} from "./entityStateSchemas";
 import {PlayerStateSchemas} from "./playerStateSchemas";
 import {EventSchema} from "../world/eventSchema";
 import {DirectionSchema} from "../world/roomSchema";
@@ -104,6 +104,7 @@ export const GameStateSchema = z.object({
 	player: PlayerStateSchemas,
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
+	itemStates: z.array(ItemStateSchema),
 	messages: z.array(GameMessageSchema),
 	events: z.array(EventSchema),
 });

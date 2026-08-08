@@ -6,14 +6,7 @@
  * helpers affect only their named collection and do not perform cascading world cleanup.
  */
 import {castDraft, type Draft} from "immer";
-import type {
-	Connection,
-	Layer,
-	Room,
-	RoomFeature,
-	Viewport,
-	World,
-} from "@/schemas/world/worldSchema";
+import type {Connection, Item, Layer, Room, Viewport, World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
 
 /** A callback that mutates an entity while it belongs to an active Immer draft. */
@@ -25,16 +18,8 @@ type RoomReference = string | ID<"room">;
 /** A connection's typed ID or unwrapped string ID. */
 type ConnectionReference = string | ID<"connection">;
 
-/** A room feature's typed ID or unwrapped string ID. */
-type FeatureReference = string | ID<"feature">;
-
-/** The mutable room and feature drafts returned by a room-feature lookup. */
-export type LocatedRoomFeatureDraft = {
-	/** The room that owns the feature. */
-	room: Draft<Room>;
-	/** The feature found within the room. */
-	feature: Draft<RoomFeature>;
-};
+/** An item's typed ID or unwrapped string ID. */
+type ItemReference = string | ID<"item">;
 
 /**
  * Finds a room in a world draft by typed or string ID.
@@ -191,93 +176,64 @@ export function removeConnectionDraft(
 }
 
 /**
- * Finds a feature inside a specific room in the world draft.
- *
- * @returns Both mutable drafts when found, or `undefined` if the room or feature is missing.
+ * Finds an item in the world's authoritative item collection.
  */
-export function findRoomFeatureDraft(
+export function findItemDraft(
 	world: Draft<World>,
-	roomReference: RoomReference,
-	featureReference: FeatureReference,
-): LocatedRoomFeatureDraft | undefined {
-	const room = findRoomDraft(world, roomReference);
-	if (!room) return;
-	const featureId = idValue(featureReference);
-	const feature = room.features.find((candidate) => idValue(candidate.id) === featureId);
-	return feature ? {room, feature} : undefined;
+	reference: ItemReference,
+): Draft<Item> | undefined {
+	const itemId = idValue(reference);
+	return world.items.find((item) => idValue(item.id) === itemId);
 }
 
 /**
- * Adds a feature to a room when both the room exists and the feature ID is unused there.
- *
- * @returns `true` when the feature was added, or `false` for a missing room or duplicate ID.
+ * Adds a globally addressable item when its ID is unused.
  */
-export function addRoomFeatureDraft(
-	world: Draft<World>,
-	roomReference: RoomReference,
-	feature: RoomFeature,
-): boolean {
-	const room = findRoomDraft(world, roomReference);
-	if (!room || room.features.some((candidate) => compareIds(candidate.id, feature.id))) return false;
-	room.features.push(castDraft(feature));
+export function addItemDraft(world: Draft<World>, item: Item): boolean {
+	if (findItemDraft(world, item.id)) return false;
+	world.items.push(castDraft(item));
 	return true;
 }
 
 /**
- * Replaces a feature inside a specific room with a complete feature value.
- *
- * @returns `true` when a feature was replaced, or `false` when the room or feature is missing.
+ * Replaces an item with a complete item value.
  */
-export function replaceRoomFeatureDraft(
+export function replaceItemDraft(
 	world: Draft<World>,
-	roomReference: RoomReference,
-	featureReference: FeatureReference,
-	feature: RoomFeature,
+	reference: ItemReference,
+	item: Item,
 ): boolean {
-	const room = findRoomDraft(world, roomReference);
-	if (!room) return false;
-	const featureIndex = room.features.findIndex(
-		(candidate) => idValue(candidate.id) === idValue(featureReference),
+	const itemIndex = world.items.findIndex(
+		(candidate) => idValue(candidate.id) === idValue(reference),
 	);
-	if (featureIndex === -1) return false;
-	room.features[featureIndex] = castDraft(feature);
+	if (itemIndex === -1) return false;
+	world.items[itemIndex] = castDraft(item);
 	return true;
 }
 
 /**
- * Runs a mutation recipe against a feature inside a specific room.
- *
- * @returns `true` when the recipe ran, or `false` when the room or feature is missing.
+ * Runs a mutation recipe against a global item.
  */
-export function updateRoomFeatureDraft(
+export function updateItemDraft(
 	world: Draft<World>,
-	roomReference: RoomReference,
-	featureReference: FeatureReference,
-	update: DraftRecipe<RoomFeature>,
+	reference: ItemReference,
+	update: DraftRecipe<Item>,
 ): boolean {
-	const located = findRoomFeatureDraft(world, roomReference, featureReference);
-	if (!located) return false;
-	update(located.feature);
+	const item = findItemDraft(world, reference);
+	if (!item) return false;
+	update(item);
 	return true;
 }
 
 /**
- * Removes a feature from a specific room's feature collection.
- *
- * @returns `true` when a feature was removed, or `false` when the room or feature is missing.
+ * Removes an item from the authoritative item collection.
  */
-export function removeRoomFeatureDraft(
-	world: Draft<World>,
-	roomReference: RoomReference,
-	featureReference: FeatureReference,
-): boolean {
-	const room = findRoomDraft(world, roomReference);
-	if (!room) return false;
-	const featureIndex = room.features.findIndex(
-		(candidate) => idValue(candidate.id) === idValue(featureReference),
+export function removeItemDraft(world: Draft<World>, reference: ItemReference): boolean {
+	const itemIndex = world.items.findIndex(
+		(candidate) => idValue(candidate.id) === idValue(reference),
 	);
-	if (featureIndex === -1) return false;
-	room.features.splice(featureIndex, 1);
+	if (itemIndex === -1) return false;
+	world.items.splice(itemIndex, 1);
 	return true;
 }
 

@@ -47,16 +47,187 @@ export const FlagConditionSchema = editor.discriminatedUnion(
 		}),
 		z.object({
 			type: z.literal("flag"),
-			"flag-type": z.literal("feature"),
+			"flag-type": z.literal("item"),
 			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
 				title: "Operation",
 			}),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
+			itemId: editor.reference("item", {title: "Item"}),
 			flag: editor.string({title: "Flag"}).min(1),
 		}),
 	]),
-	{title: "Flag Condition", description: "Checks a boolean world, room, or feature flag."},
+	{title: "Flag Condition", description: "Checks a boolean world, room, or item flag."},
+);
+
+export const ItemStatePredicateSchema = editor.object(
+	{
+		type: z.literal("state"),
+		state: editor.select(
+			z.enum([
+				"visible",
+				"reachable",
+				"known",
+				"carried",
+				"hidden",
+				"destroyed",
+				"examined",
+				"listed",
+				"open",
+				"locked",
+			]),
+			{title: "State"},
+		),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "State", description: "Checks player knowledge, access, location, or item state."},
+);
+
+export const ItemLocationPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("location", [
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.enum(["current-room", "inventory", "hidden", "destroyed"]),
+			},
+			{title: "Simple location"},
+		),
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.literal("room"),
+				roomId: editor.reference("room", {title: "Room"}),
+			},
+			{title: "Room"},
+		),
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.enum(["inside-item", "on-item"]),
+				parentItemId: editor.reference("item", {title: "Containing item"}),
+			},
+			{title: "In or on item"},
+		),
+	]),
+	{title: "Location"},
+);
+
+export const ItemImportantTagPredicateSchema = editor.object(
+	{
+		type: z.literal("important-tag"),
+		tag: editor.select(
+			z.enum(["takeable", "container", "surface", "openable", "lockable", "door", "usable"]),
+			{title: "Behavior"},
+		),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Behavior"},
+);
+
+export const ItemTagPredicateSchema = editor.object(
+	{
+		type: z.literal("tag"),
+		tag: editor.input({title: "Tag"}).trim().min(1),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Author tag"},
+);
+
+export const ItemContentsPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("test", [
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("empty"),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+				value: editor.boolean({title: "Expected"}).default(true),
+			},
+			{title: "Empty"},
+		),
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("contains-item"),
+				itemId: editor.reference("item", {title: "Contained item"}),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+			},
+			{title: "Contains item"},
+		),
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("contains-tag"),
+				tag: editor.input({title: "Tag"}).trim().min(1),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+			},
+			{title: "Contains tagged item"},
+		),
+	]),
+	{title: "Contents"},
+);
+
+export const ItemCapacityPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("test", [
+		editor.object(
+			{
+				type: z.literal("capacity"),
+				test: z.enum(["empty", "full"]),
+				placement: editor.select(z.enum(["inside", "on"]), {title: "Placement"}),
+				value: editor.boolean({title: "Expected"}).default(true),
+			},
+			{title: "Capacity state"},
+		),
+		editor.object(
+			{
+				type: z.literal("capacity"),
+				test: z.literal("can-fit"),
+				itemId: editor.reference("item", {title: "Item to fit"}),
+				placement: editor.select(z.enum(["inside", "on"]), {title: "Placement"}),
+			},
+			{title: "Can fit item"},
+		),
+	]),
+	{title: "Capacity"},
+);
+
+export const ItemCanUnlockPredicateSchema = editor.object(
+	{
+		type: z.literal("can-unlock"),
+		lockItemId: editor.reference("item", {title: "Lock"}),
+		keyItemId: editor.reference("item", {title: "Key"}),
+	},
+	{title: "Can unlock"},
+);
+
+export const ItemDoorPredicateSchema = editor.object(
+	{
+		type: z.literal("door"),
+		test: editor.select(z.enum(["controls-connection", "connection-passable"]), {title: "Test"}),
+		connectionId: editor.reference("connection", {title: "Connection"}).optional(),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Door"},
+);
+
+export const ItemPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("type", [
+		ItemStatePredicateSchema,
+		ItemLocationPredicateSchema,
+		ItemImportantTagPredicateSchema,
+		ItemTagPredicateSchema,
+		ItemContentsPredicateSchema,
+		ItemCapacityPredicateSchema,
+		ItemCanUnlockPredicateSchema,
+		ItemDoorPredicateSchema,
+	]),
+	{title: "Item test", picker: {showDescriptions: true}},
+);
+
+export const ItemConditionSchema = editor.object(
+	{
+		type: z.literal("item"),
+		itemId: editor.reference("item", {title: "Item"}),
+		test: ItemPredicateSchema,
+	},
+	{title: "Item condition", description: "Checks an item's state, location, contents, or behavior."},
 );
 
 export const CounterConditionSchema = editor.discriminatedUnion(
@@ -129,6 +300,7 @@ export const SingleConditionSchema = editor.discriminatedUnion(
 		FlagConditionSchema,
 		CounterConditionSchema,
 		CurrentRoomConditionSchema,
+		ItemConditionSchema,
 	]),
 	{title: "Condition"},
 );
@@ -215,10 +387,10 @@ export const ConditionalTextSchema = editor.object(
 	},
 	{
 		title: "Conditional Text",
-		description: docify(`Text shown when all referenced room or feature conditions pass.`),
+		description: docify(`Text shown when all referenced room or item conditions pass.`),
 	},
 );
 
 export type ConditionalText = z.infer<typeof ConditionalTextSchema>;
 
-// TODO: Reintroduce item, NPC, quest, event, and authored-command conditions with those domains.
+// TODO: Reintroduce NPC, quest, event, and authored-command conditions with those domains.

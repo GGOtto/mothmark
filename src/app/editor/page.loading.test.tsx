@@ -1,12 +1,23 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 
 import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
+import {readMainWorldDraft} from "@/components/world-autosave/worldDraftStorage";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
 
 import EditorPage from "./page";
 
+jest.mock("@/components/world-autosave/worldDraftStorage", () => ({
+	...jest.requireActual("@/components/world-autosave/worldDraftStorage"),
+	readMainWorldDraft: jest.fn(),
+}));
+
 describe("EditorPage loading", () => {
+	beforeEach(() => {
+		jest.mocked(readMainWorldDraft).mockResolvedValue(null);
+	});
+
 	afterEach(() => {
 		jest.restoreAllMocks();
 		Reflect.deleteProperty(globalThis, "fetch");
@@ -106,6 +117,46 @@ describe("EditorPage loading", () => {
 		expect(warning).toHaveBeenCalledWith(
 			"Could not load the main world; using the initial world instead.",
 			expect.any(Error),
+		);
+	});
+
+	it("restores a local draft based on the loaded server revision", async () => {
+		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+		const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+		const localWorld = {
+			...initialWorld,
+			rooms: [{...initialWorld.rooms[0], name: "Recovered entrance"}, ...initialWorld.rooms.slice(1)],
+		};
+		jest.mocked(readMainWorldDraft).mockResolvedValue({
+			key: "main-world",
+			schemaVersion: 1,
+			world: localWorld,
+			worldId,
+			baseServerRevision: 4,
+			updatedAt: Date.now(),
+		});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn(async () => ({
+				status: 200,
+				ok: true,
+				json: async () => ({data: {id: worldId, revision: 4, world: initialWorld}}),
+			})),
+		});
+
+		render(
+			<ThemeProvider>
+				<PopupProvider>
+					<WorldAutosaveProvider>
+						<EditorPage />
+					</WorldAutosaveProvider>
+				</PopupProvider>
+			</ThemeProvider>,
+		);
+
+		await waitFor(() =>
+			expect(screen.getByRole("button", {name: "Recovered entrance"})).toBeInTheDocument(),
 		);
 	});
 

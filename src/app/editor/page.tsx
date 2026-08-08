@@ -11,6 +11,8 @@ import {
 } from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
+import {ItemCatalog} from "@/components/studio/ItemCatalog";
+import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
@@ -30,6 +32,10 @@ import {
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
 import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
+import {
+	draftMatchesServer,
+	readMainWorldDraft,
+} from "@/components/world-autosave/worldDraftStorage";
 import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
@@ -54,8 +60,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Build rooms and connections visually.",
 	},
 	world: {
-		title: "World",
-		description: "Edit rooms, items, NPCs, and world structure.",
+		title: "Items",
+		description: "Edit scenery, portable objects, containers, surfaces, and doors.",
 	},
 	logic: {
 		title: "Logic",
@@ -79,6 +85,40 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
+async function loadEditorWorld(signal: AbortSignal) {
+	const draftPromise = readMainWorldDraft().catch((error: unknown) => {
+		console.warn("Could not read the local world draft.", error);
+		return null;
+	});
+
+	try {
+		const serverWorld = await loadMainWorld(fetch, signal);
+		const draft = await draftPromise;
+
+		if (draft && draftMatchesServer(draft, serverWorld)) {
+			return {
+				world: draft.world,
+				worldId: draft.worldId,
+				revision: draft.baseServerRevision,
+				restoredFromLocalDraft: true,
+			};
+		}
+
+		return {...serverWorld, restoredFromLocalDraft: false};
+	} catch (error) {
+		const draft = await draftPromise;
+		if (draft) {
+			return {
+				world: draft.world,
+				worldId: draft.worldId,
+				revision: draft.baseServerRevision,
+				restoredFromLocalDraft: true,
+			};
+		}
+		throw error;
+	}
+}
+
 export default function EditorPage() {
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
@@ -90,10 +130,12 @@ export default function EditorPage() {
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
+	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
+	const [restoredFromLocalDraft, setRestoredFromLocalDraft] = useState(false);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
 
 	const [selection, setSelection] = useState<EditorSelection>({
@@ -108,11 +150,12 @@ export default function EditorPage() {
 	useEffect(() => {
 		const abortController = new AbortController();
 
-		loadMainWorld(fetch, abortController.signal)
-			.then(({world, worldId, revision}) => {
+		loadEditorWorld(abortController.signal)
+			.then(({world, worldId, revision, restoredFromLocalDraft: restored}) => {
 				updateWorld(world);
 				setPersistedWorldId(worldId);
 				setPersistedWorldRevision(revision);
+				setRestoredFromLocalDraft(restored);
 				setSelection({
 					selectedId: idValue(world.startRoomId),
 					isConnectionSelected: false,
@@ -128,6 +171,7 @@ export default function EditorPage() {
 				updateWorld(fallbackWorld);
 				setPersistedWorldId(null);
 				setPersistedWorldRevision(null);
+				setRestoredFromLocalDraft(false);
 				setSelection({
 					selectedId: idValue(fallbackWorld.startRoomId),
 					isConnectionSelected: false,
@@ -142,6 +186,7 @@ export default function EditorPage() {
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
 		setPersistedWorldRevision(revision);
+		setRestoredFromLocalDraft(false);
 	}, []);
 
 	const handleResetWorld = useCallback(() => {
@@ -153,6 +198,7 @@ export default function EditorPage() {
 		setLogicSelection(null);
 		setSelectedCommandId(null);
 		setCommandSelection(null);
+		setSelectedItemId(idValue(nextWorld.items[0]?.id) || null);
 		setMapZoom(1);
 		setMapRecenterRequest((request) => request + 1);
 	}, [updateWorld]);
@@ -173,6 +219,7 @@ export default function EditorPage() {
 		world: editorWorld,
 		worldId: persistedWorldId,
 		revision: persistedWorldRevision,
+		restoredFromLocalDraft,
 		onPersisted: handleWorldPersisted,
 		onReset: handleResetWorld,
 	});
@@ -191,6 +238,10 @@ export default function EditorPage() {
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
+	const selectedItem = useMemo(
+		() => editorWorld.items.find((item) => idValue(item.id) === selectedItemId) ?? null,
+		[editorWorld.items, selectedItemId],
+	);
 	const selectedCommand = useMemo(
 		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
 		[editorWorld.commands, selectedCommandId],
@@ -229,6 +280,8 @@ export default function EditorPage() {
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItemId={selectedItemId}
+				setSelectedItemId={setSelectedItemId}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -242,12 +295,18 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				updateWorld={updateWorld}
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+				onOpenItem={(itemId) => {
+					setSelectedItemId(itemId);
+					setActiveTab("world");
+				}}
 				logicSection={logicSection}
 				logicSelection={logicSelection}
 				selectedCommandId={selectedCommandId}
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItem={selectedItem}
+				setSelectedItemId={setSelectedItemId}
 			/>
 		</main>
 	);
@@ -280,6 +339,8 @@ type EditorMainPanelProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorMainPanel({
@@ -309,6 +370,8 @@ function EditorMainPanel({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -406,6 +469,8 @@ function EditorMainPanel({
 						setSelectedCommandId={setSelectedCommandId}
 						commandSelection={commandSelection}
 						setCommandSelection={setCommandSelection}
+						selectedItemId={selectedItemId}
+						setSelectedItemId={setSelectedItemId}
 					/>
 				</div>
 			</div>
@@ -539,6 +604,8 @@ type EditorWorkspaceProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorWorkspace({
@@ -566,6 +633,8 @@ function EditorWorkspace({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -649,6 +718,17 @@ function EditorWorkspace({
 			effects: "Build Complex Effects",
 		}[logicSection];
 		return <LogicSectionPlaceholder title={title} onBack={() => setLogicSection("home")} />;
+	}
+
+	if (activeTab === "world") {
+		return (
+			<ItemCatalog
+				world={world}
+				updateWorld={updateWorld}
+				selectedItemId={selectedItemId}
+				onSelectItem={setSelectedItemId}
+			/>
+		);
 	}
 
 	return <PlaceholderWorkspace activeTab={activeTab} />;
@@ -749,12 +829,15 @@ type EditorInspectorProps = {
 	selectedConnection: World["connections"][number] | null;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
+	onOpenItem: (itemId: string) => void;
 	logicSection: LogicSection;
 	logicSelection: LogicSelection | null;
 	selectedCommandId: string | null;
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItem: World["items"][number] | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorInspector({
@@ -764,12 +847,15 @@ function EditorInspector({
 	selectedConnection,
 	updateWorld,
 	onSelectedIdChange,
+	onOpenItem,
 	logicSection,
 	logicSelection,
 	selectedCommandId,
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItem,
+	setSelectedItemId,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -779,6 +865,7 @@ function EditorInspector({
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
+				onOpenItem={onOpenItem}
 			/>
 		);
 	}
@@ -849,6 +936,33 @@ function EditorInspector({
 					selection={commandSelection}
 					onSelectionChange={setCommandSelection}
 				/>
+			</RightSideBar>
+		);
+	}
+
+	if (activeTab === "world") {
+		return (
+			<RightSideBar
+				world={world}
+				updateWorld={updateWorld}
+				selectedRoom={null}
+				selectedConnection={null}
+			>
+				{selectedItem ? (
+					<ItemEditor
+						selectedItem={selectedItem}
+						world={world}
+						updateWorld={updateWorld}
+						onSelectedIdChange={setSelectedItemId}
+					/>
+				) : (
+					<div className="rightSideBarEmptyPanel">
+						<p className="rightSideBarEmptyTitle">Items</p>
+						<p className="rightSideBarEmptyDescription">
+							Select an item to edit its identity, behavior, and start state.
+						</p>
+					</div>
+				)}
 			</RightSideBar>
 		);
 	}

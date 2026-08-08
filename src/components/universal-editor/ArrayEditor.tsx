@@ -10,6 +10,7 @@ import {
 	generateEditorSummary,
 } from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
+import {MultiSelectEditor, type MultiSelectControlMetadata} from "./MultiSelectEditor";
 import {renderEditorControl} from "./renderEditorControl";
 import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
 import {getSchemaAtPath} from "./utils/schemaIntrospection";
@@ -43,6 +44,8 @@ export type ArrayFeatures = {
 	duplicateBehavior?: "exact" | "with-new-id" | "from-template";
 	idField?: string;
 	idPrefix?: string;
+	selectionControl?: "multi-select";
+	selectionTitle?: string;
 };
 
 export type ArrayControlMetadata = EditorControlMetadata & {
@@ -130,6 +133,24 @@ export function ArrayEditor({
 	const maxItems = metadata.features?.maxItems;
 	const canAdd = canEdit && (typeof maxItems !== "number" || value.length < maxItems);
 	const removable = metadata.features?.removable ?? true;
+	const itemMetadata = metadata.features?.itemMetadata;
+	const selectableUnion =
+		metadata.features?.selectionControl === "multi-select" &&
+		itemMetadata?.type === "discriminated-union"
+			? itemMetadata
+			: undefined;
+	const selectionDiscriminator = String(selectableUnion?.features?.discriminator ?? "type");
+	const selectionOptions = (selectableUnion?.features?.options ?? []) as Array<{
+		label: string;
+		value: string;
+		description?: string;
+		defaultValue?: Record<string, unknown>;
+	}>;
+	const selectedTypes = value.flatMap((item) => {
+		if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+		const selectedType = (item as Record<string, unknown>)[selectionDiscriminator];
+		return typeof selectedType === "string" ? [selectedType] : [];
+	});
 
 	function updateItem(index: number, nextItem: unknown) {
 		onChange(value.map((item, itemIndex) => (itemIndex === index ? nextItem : item)));
@@ -194,11 +215,12 @@ export function ArrayEditor({
 					{removeButton}
 				</span>
 			) : null;
-		const itemBody = metadata.features?.itemMetadata ? (
+		const resolvedItemMetadata = metadata.features?.itemMetadata;
+		const itemBody = resolvedItemMetadata ? (
 			renderEditorControl({
 				value: item,
 				onChange: (nextItem) => updateItem(index, nextItem),
-				metadata: metadata.features.itemMetadata,
+				metadata: resolvedItemMetadata,
 				path: [...path, index],
 				disabled,
 				readonly,
@@ -277,6 +299,31 @@ export function ArrayEditor({
 		onChange([...value, cloneValue(defaultItem)]);
 	}
 
+	function changeSelection(nextTypes: string[]) {
+		const existingItems = new Map(
+			value.flatMap((item) => {
+				if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+				const selectedType = (item as Record<string, unknown>)[selectionDiscriminator];
+				return typeof selectedType === "string" ? [[selectedType, item] as const] : [];
+			}),
+		);
+
+		onChange(
+			nextTypes.flatMap((type) => {
+				const existingItem = existingItems.get(type);
+				if (existingItem !== undefined) return [existingItem];
+				const option = selectionOptions.find((candidate) => candidate.value === type);
+				if (!option) return [];
+				return [
+					{
+						...cloneValue(option.defaultValue ?? {}),
+						[selectionDiscriminator]: type,
+					},
+				];
+			}),
+		);
+	}
+
 	return (
 		<FieldShell
 			title={metadata.title}
@@ -293,15 +340,42 @@ export function ArrayEditor({
 				summary: generateEditorSummary(
 					value,
 					metadata.summary,
-					value.length === 0
-						? (metadata.features?.emptyTitle ?? "No items yet")
-						: `${value.length} items`,
+					selectableUnion
+						? value.length === 0
+							? "No behaviors selected"
+							: `${value.length} ${value.length === 1 ? "behavior" : "behaviors"}`
+						: value.length === 0
+							? (metadata.features?.emptyTitle ?? "No items yet")
+							: `${value.length} items`,
 				),
 			}}
 		>
 			<div className="arrayEditor">
-				{value.map(renderItem)}
-				{value.length === 0 ? (
+				{selectableUnion ? (
+					<MultiSelectEditor
+						value={selectedTypes}
+						onChange={changeSelection}
+						metadata={
+							{
+								type: "multi-select",
+								title: metadata.features?.selectionTitle,
+								features: {
+									options: selectionOptions,
+									searchable: false,
+									clearButton: true,
+									showDescriptions: true,
+									showBadges: false,
+								},
+							} satisfies MultiSelectControlMetadata
+						}
+						path={path}
+						disabled={disabled}
+						readonly={readonly}
+						context={context}
+					/>
+				) : null}
+				{selectableUnion ? null : value.map(renderItem)}
+				{value.length === 0 && !selectableUnion ? (
 					<div className="arrayEditor__empty">
 						<strong>{metadata.features?.emptyTitle ?? "No items yet."}</strong>
 						{metadata.features?.emptyDescription ? (
@@ -309,7 +383,7 @@ export function ArrayEditor({
 						) : null}
 					</div>
 				) : null}
-				{metadata.features?.addMenu?.length ? (
+				{selectableUnion ? null : metadata.features?.addMenu?.length ? (
 					<div className="arrayEditor__addMenu">
 						{metadata.features.addMenu.map((item) => (
 							<button

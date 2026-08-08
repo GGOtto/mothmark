@@ -15,7 +15,7 @@ export type TeleportOptions = {
 
 /**
  * Moves an existing player state to a room without resetting the rest of the game.
- * The destination room state and feature states are reconciled with the authored world.
+ * Item state remains global and keeps its current authoritative location.
  */
 export function teleport(
 	world: World,

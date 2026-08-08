@@ -89,6 +89,7 @@ const EMPTY_REGISTRIES: EditorRegistries = buildEditorRegistries({
 	startRoomId: "",
 	rooms: [],
 	connections: [],
+	items: [],
 	conditions: [],
 	effects: [],
 } as unknown as World);

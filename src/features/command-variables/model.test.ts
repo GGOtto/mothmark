@@ -17,7 +17,7 @@ function commandCatalog(failedTarget = false) {
 		...createDefaultFieldObject(TargetBlockSchema),
 		id: toID("command-block", "target-block"),
 		role: "object",
-		entityTypes: ["feature" as const],
+		entityTypes: ["item" as const],
 	};
 	const command = CommandSchema.parse({
 		...createDefaultFieldObject(CommandSchema),

@@ -1,7 +1,8 @@
 import type {ObjectFieldMetadata} from "@/components/universal-editor/ObjectEditor";
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {ConnectionSchema, RoomFeatureSchema, RoomSchema} from "@/schemas/world/roomSchema";
+import {ItemLocationSchema, ItemSchema} from "@/schemas/world/itemSchema";
+import {ConnectionSchema, RoomSchema} from "@/schemas/world/roomSchema";
 import {resolveEditorMetadata} from "./resolveEditorMetadata";
 
 function getObjectFields(schema: z.ZodTypeAny) {
@@ -93,7 +94,6 @@ describe("resolveEditorMetadata object fields", () => {
 			"shortDescription",
 			"aliases",
 			"tags",
-			"features",
 			"flags",
 			"metadata",
 			"id",
@@ -108,7 +108,7 @@ describe("resolveEditorMetadata object fields", () => {
 
 		expect(metadata.features?.groups).toEqual([
 			expect.objectContaining({id: "details", title: "Presentation", order: 10}),
-			expect.objectContaining({id: "features", title: "Features", order: 30}),
+			expect.objectContaining({id: "state", title: "State", order: 30}),
 			expect.objectContaining({
 				id: "availability",
 				title: "Availability",
@@ -123,8 +123,7 @@ describe("resolveEditorMetadata object fields", () => {
 			shortDescription: "details",
 			aliases: "identify",
 			tags: "identify",
-			features: "features",
-			flags: "features",
+			flags: "state",
 		});
 	});
 
@@ -143,36 +142,32 @@ describe("resolveEditorMetadata object fields", () => {
 		});
 	});
 
-	it("renders room features through the link-list editor", () => {
-		const featureField = getObjectFields(RoomSchema).find((field) => field.key === "features");
-
-		expect(featureField?.metadata.type).toBe("link-list");
-		expect(featureField?.metadata.features).toMatchObject({
-			mode: "edit",
-			linkType: "editor",
-			editorTarget: {
-				kind: "entity",
-				entityType: "feature",
-				path: ["{sourcePath}", "{id}"],
-			},
-		});
-	});
-
-	it("applies the recommended room feature authoring field order", () => {
-		const fields = getObjectFields(RoomFeatureSchema);
+	it("applies the item authoring field order", () => {
+		const fields = getObjectFields(ItemSchema);
 
 		expect(fields.map((field) => field.key)).toEqual([
 			"id",
+			"presentation",
+			"behaviors",
 			"name",
-			"kind",
-			"description",
 			"aliases",
 			"tags",
-			"listedInRoom",
-			"flags",
+			"examine",
+			"initialState",
 		]);
 		expect(fields[0].metadata).toMatchObject({
 			type: "hidden",
+		});
+	});
+
+	it("derives discriminated-union branches from the item location schema", () => {
+		const metadata = resolveEditorMetadata(ItemLocationSchema);
+		expect(metadata.features).toMatchObject({
+			discriminator: "type",
+			options: expect.arrayContaining([
+				expect.objectContaining({label: "In a room", value: "room"}),
+				expect.objectContaining({label: "In or on an item", value: "item"}),
+			]),
 		});
 	});
 

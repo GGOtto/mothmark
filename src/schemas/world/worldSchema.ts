@@ -6,6 +6,7 @@ import {EffectGroupSchema} from "./effectSchema";
 import {EventSchema} from "./eventSchema";
 import {CommandSchema} from "./commandSchemas";
 import {ConnectionSchema, RoomSchema} from "./roomSchema";
+import {ITEM_SIZE_UNITS, ItemSchema} from "./itemSchema";
 import {idValue} from "../../utils/idUtils";
 
 export const InitialFlagSchema = editor.object({
@@ -88,13 +89,23 @@ export const WorldSchema = editor
 			deathMessage: editor.string(),
 			rooms: editor.array(RoomSchema, {
 				title: "Rooms",
-				description: "All rooms and their local features.",
+				description: "All rooms in the world.",
 				emptyState: {
 					emptyTitle: "No rooms",
 					emptyDescription: "Add at least one room.",
 					emptyActionLabel: "Add room",
 				},
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "room"},
+			}),
+			items: editor.array(ItemSchema, {
+				title: "Items",
+				description: "All portable and fixed objects, including former room features.",
+				emptyState: {
+					emptyTitle: "No items",
+					emptyDescription: "Add scenery, containers, surfaces, doors, tools, and other objects.",
+					emptyActionLabel: "Add item",
+				},
+				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "item"},
 			}),
 			connections: editor.array(ConnectionSchema, {
 				title: "Connections",
@@ -118,7 +129,7 @@ export const WorldSchema = editor
 			}),
 			conditions: editor.array(WorldConditionSchema, {
 				title: "Conditions",
-				description: "Reusable conditions for rooms and features.",
+				description: "Reusable conditions for rooms and items.",
 				duplicate: {
 					duplicateBehavior: "with-new-id",
 					idField: "identity",
@@ -127,7 +138,7 @@ export const WorldSchema = editor
 			}),
 			effects: editor.array(EffectGroupSchema, {
 				title: "Effects",
-				description: "Reusable effects retained for room and feature interactions.",
+				description: "Reusable effects retained for room and item interactions.",
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "effect"},
 			}),
 			events: editor
@@ -146,7 +157,7 @@ export const WorldSchema = editor
 	)
 	.describe(
 		docify(`
-			The authored world currently contains rooms, connections, room features, and commands.
+			The authored world contains rooms, connections, items, and commands.
 			Conditions, effects, flags, and counters remain as supporting logic.
 
 			TODO: Restore additional entity collections only when their runtime models are rebuilt.
@@ -154,6 +165,7 @@ export const WorldSchema = editor
 	)
 	.superRefine((world, ctx) => {
 		const roomIds = new Set<string>();
+		const itemIds = new Set<string>();
 		const connectionIds = new Set<string>();
 		const commandIds = new Set<string>();
 		const conditionIds = new Set<string>();
@@ -168,19 +180,18 @@ export const WorldSchema = editor
 				});
 			}
 			roomIds.add(roomId);
+		}
 
-			const featureIds = new Set<string>();
-			for (const [featureIndex, feature] of room.features.entries()) {
-				const featureId = idValue(feature.id);
-				if (featureIds.has(featureId)) {
-					ctx.addIssue({
-						code: "custom",
-						message: `Duplicate feature id ${featureId} in room ${roomId}`,
-						path: ["rooms", roomIndex, "features", featureIndex, "id"],
-					});
-				}
-				featureIds.add(featureId);
+		for (const [itemIndex, item] of world.items.entries()) {
+			const itemId = idValue(item.id);
+			if (!itemId || itemIds.has(itemId)) {
+				ctx.addIssue({
+					code: "custom",
+					message: itemId ? `Duplicate item id: ${itemId}` : "Items need an item id.",
+					path: ["items", itemIndex, "id"],
+				});
 			}
+			itemIds.add(itemId);
 		}
 
 		for (const [connectionIndex, connection] of world.connections.entries()) {
@@ -236,6 +247,134 @@ export const WorldSchema = editor
 			conditionIds.add(conditionId);
 		}
 
+		const itemsById = new Map(world.items.map((item) => [idValue(item.id), item]));
+		const containedSize = new Map<string, number>();
+		for (const [itemIndex, item] of world.items.entries()) {
+			const location = item.initialState.location;
+			if (location.type === "room" && !roomIds.has(idValue(location.roomId))) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} starts in a missing room.`,
+					path: ["items", itemIndex, "initialState", "location", "roomId"],
+				});
+			}
+			if (location.type === "hidden" && location.roomId && !roomIds.has(idValue(location.roomId))) {
+				ctx.addIssue({
+					code: "custom",
+					message: `Item ${idValue(item.id)} is associated with a missing room.`,
+					path: ["items", itemIndex, "initialState", "location", "roomId"],
+				});
+			}
+			if (location.type === "item") {
+				const parentId = idValue(location.itemId);
+				const parent = itemsById.get(parentId);
+				if (!parent) {
+					ctx.addIssue({
+						code: "custom",
+						message: `Item ${idValue(item.id)} starts in or on a missing item.`,
+						path: ["items", itemIndex, "initialState", "location", "itemId"],
+					});
+					continue;
+				}
+				if (parent === item) {
+					ctx.addIssue({
+						code: "custom",
+						message: "An item cannot start inside or on itself.",
+						path: ["items", itemIndex, "initialState", "location", "itemId"],
+					});
+					continue;
+				}
+
+				const takeable = item.behaviors.find((behavior) => behavior.type === "takeable");
+				const requiredBehavior = location.placement === "inside" ? "container" : "surface";
+				const receptacle =
+					location.placement === "inside"
+						? parent.behaviors.find((behavior) => behavior.type === "container")
+						: parent.behaviors.find((behavior) => behavior.type === "surface");
+				if (!takeable) {
+					ctx.addIssue({
+						code: "custom",
+						message: "Only takeable items can start inside or on another item.",
+						path: ["items", itemIndex, "initialState", "location"],
+					});
+				} else if (!receptacle) {
+					ctx.addIssue({
+						code: "custom",
+						message: `The target item needs the ${requiredBehavior} behavior.`,
+						path: ["items", itemIndex, "initialState", "location", "itemId"],
+					});
+				} else {
+					const size = ITEM_SIZE_UNITS[takeable.size];
+					const maximum = ITEM_SIZE_UNITS[receptacle.capacity.maximumItemSize];
+					if (size > maximum) {
+						ctx.addIssue({
+							code: "custom",
+							message: `${item.name} is too large for ${parent.name}.`,
+							path: ["items", itemIndex, "initialState", "location"],
+						});
+					}
+					const capacityKey = `${parentId}:${location.placement}`;
+					containedSize.set(capacityKey, (containedSize.get(capacityKey) ?? 0) + size);
+				}
+			}
+
+			for (const behavior of item.behaviors) {
+				if (behavior.type === "door" && !connectionIds.has(idValue(behavior.connectionId))) {
+					ctx.addIssue({
+						code: "custom",
+						message: `Door ${item.name} references a missing connection.`,
+						path: ["items", itemIndex, "behaviors"],
+					});
+				}
+				if (behavior.type === "lockable") {
+					behavior.unlockWith.forEach((requirement, requirementIndex) => {
+						if (requirement.type === "item" && !itemIds.has(idValue(requirement.itemId))) {
+							ctx.addIssue({
+								code: "custom",
+								message: `Lock on ${item.name} references a missing item.`,
+								path: ["items", itemIndex, "behaviors", "unlockWith", requirementIndex],
+							});
+						}
+					});
+				}
+			}
+		}
+
+		for (const [itemIndex, item] of world.items.entries()) {
+			const seen = new Set<string>([idValue(item.id)]);
+			let location = item.initialState.location;
+			while (location.type === "item") {
+				const parentId = idValue(location.itemId);
+				if (seen.has(parentId)) {
+					ctx.addIssue({
+						code: "custom",
+						message: "Item placement cannot contain a cycle.",
+						path: ["items", itemIndex, "initialState", "location"],
+					});
+					break;
+				}
+				seen.add(parentId);
+				const parent = itemsById.get(parentId);
+				if (!parent) break;
+				location = parent.initialState.location;
+			}
+		}
+
+		for (const [itemIndex, item] of world.items.entries()) {
+			for (const behavior of item.behaviors) {
+				if (behavior.type !== "container" && behavior.type !== "surface") continue;
+				const placement = behavior.type === "container" ? "inside" : "on";
+				const used = containedSize.get(`${idValue(item.id)}:${placement}`) ?? 0;
+				if (used > behavior.capacity.capacity) {
+					ctx.addIssue({
+						code: "custom",
+						message: `${item.name} starts over capacity (${used}/${behavior.capacity.capacity}).`,
+						path: ["items", itemIndex, "behaviors"],
+					});
+				}
+			}
+		}
+
 		if (!roomIds.has(idValue(world.startRoomId))) {
 			ctx.addIssue({
 				code: "custom",
@@ -252,4 +391,5 @@ export type WorldInitialState = z.infer<typeof WorldInitialStateSchema>;
 export type WorldMetadata = z.infer<typeof WorldMetadataSchema>;
 export type World = z.infer<typeof WorldSchema>;
 export type Viewport = z.infer<typeof ViewportSchema>;
-export type {Connection, Direction, Point, Room, RoomFeature} from "./roomSchema";
+export type {Connection, Direction, Point, Room} from "./roomSchema";
+export type {Item, ItemBehavior, ItemInitialState, ItemLocation, ItemSize} from "./itemSchema";

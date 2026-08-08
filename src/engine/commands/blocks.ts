@@ -40,7 +40,7 @@ type TargetBlock = Extract<CommandBlock, {type: "target"}>;
 type TargetSource = Exclude<TargetBlock["source"], "any">;
 
 export type TargetMatchCandidate = {
-	reference: ID<"room"> | ID<"feature">;
+	reference: ID<"room"> | ID<"item">;
 	name: string;
 	aliases?: string[];
 	tags?: string[];
