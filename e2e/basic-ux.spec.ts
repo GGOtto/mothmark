@@ -348,7 +348,7 @@ async function writeLocalWorldDraft(
 	);
 }
 
-test("the home page opens the world library without choosing a world", async ({page}) => {
+test("the home page continues without an account into the world library", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 
@@ -362,7 +362,7 @@ test("the home page opens the world library without choosing a world", async ({p
 		"page",
 	);
 
-	await page.getByRole("link", {name: "Start building"}).click();
+	await page.getByRole("link", {name: "Continue without an account"}).click();
 
 	await expect(page).toHaveURL(/\/worlds$/);
 	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
@@ -375,6 +375,30 @@ test("the home page opens the world library without choosing a world", async ({p
 			method: "POST",
 		},
 	]);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the home page offers sign-in without creating a temporary account", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+
+	await page.goto("/");
+	const signInLink = page.getByRole("link", {name: "Sign in", exact: true});
+	const continueLink = page.getByRole("link", {name: "Continue without an account"});
+	const [signInBox, continueBox] = await Promise.all([
+		signInLink.boundingBox(),
+		continueLink.boundingBox(),
+	]);
+	expect(signInBox?.width).toBeCloseTo(continueBox?.width ?? 0, 0);
+
+	await signInLink.click();
+	await expect(page).toHaveURL(/\/sign-in$/);
+	await expect(page.getByRole("heading", {name: "Sign in", exact: true})).toBeVisible();
+	await expect(page.getByRole("link", {name: "Create an account"})).toHaveAttribute(
+		"href",
+		"/register",
+	);
+	expect(editor.bootstrapCount()).toBe(0);
 	expect(browserErrors).toEqual([]);
 });
 
