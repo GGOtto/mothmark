@@ -8,10 +8,9 @@ const createJestConfig = nextJest({
 const config: Config = {
 	clearMocks: true,
 	collectCoverageFrom: [
-		"app/**/*.{ts,tsx}",
-		"components/**/*.{ts,tsx}",
-		"types/**/*.{ts,tsx}",
-		"utils/**/*.{ts,tsx}",
+		"src/**/*.{ts,tsx}",
+		"!src/**/*.test.{ts,tsx}",
+		"!src/**/*.player.test.{ts,tsx}",
 		"!**/*.d.ts",
 		"!**/node_modules/**",
 	],

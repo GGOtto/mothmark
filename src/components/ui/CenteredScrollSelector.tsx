@@ -80,6 +80,7 @@ export function CenteredScrollSelector<TItem>({
 		const offset = event.key === "ArrowUp" ? -1 : 1;
 		const nextItem = items[Math.min(items.length - 1, Math.max(0, currentIndex + offset))];
 		if (!nextItem) return;
+		if (getId(nextItem) === activeId) return;
 		const button = Array.from(
 			listRef.current?.querySelectorAll<HTMLButtonElement>("[data-selector-id]") ?? [],
 		).find((candidate) => candidate.dataset.selectorId === getId(nextItem));
