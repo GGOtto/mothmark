@@ -107,6 +107,18 @@ export async function findBootstrapEditorActor(token: string): Promise<Bootstrap
 	});
 }
 
+export async function findBootstrapPlayActor(token: string): Promise<BootstrapEditorActor> {
+	return database.transaction(async (transaction) => {
+		const now = new Date();
+		const row = await findSessionActorRow(token, transaction, true);
+		if (!row) return undefined;
+		if (row.user_status === "suspended") return "blocked";
+		const actor = activeActorFromSession(row, "play", now);
+		if (!actor) return undefined;
+		return refreshActorActivity(transaction, row, actor, now);
+	});
+}
+
 export async function findCurrentActor(
 	token: string,
 	audience: SessionAudience,

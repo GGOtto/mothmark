@@ -5,9 +5,12 @@ export {
 	ADMIN_SESSION_COOKIE,
 	EDITOR_CSRF_COOKIE,
 	EDITOR_SESSION_COOKIE,
+	PLAY_CSRF_COOKIE,
+	PLAY_SESSION_COOKIE,
 } from "./cookieNames";
 export const EDITOR_SESSION_DURATION_MS = 180 * 24 * 60 * 60 * 1_000;
 export const ADMIN_SESSION_DURATION_MS = 24 * 60 * 60 * 1_000;
+export const PLAY_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1_000;
 
 export function createOpaqueToken(): string {
 	return randomBytes(32).toString("base64url");

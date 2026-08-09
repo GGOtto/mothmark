@@ -5,6 +5,18 @@ export type AdminPermission = {
 	permission: string;
 	source: string;
 };
+export type AdminPublication = {
+	id: string;
+	slug: string;
+	status: "published" | "unpublished" | "suspended";
+	visibility: "listed" | "unlisted";
+	title: string;
+	summary: string;
+	worldId: string;
+	ownerUserId: string;
+	ownerName: string | null;
+	release: {id: string; number: number; publishedAt: string};
+};
 export type AdminWorld = {
 	createdAt: string;
 	deletedAt: string | null;

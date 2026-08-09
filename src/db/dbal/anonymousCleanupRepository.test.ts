@@ -23,17 +23,23 @@ const snapshot = (overrides: Partial<CleanupSnapshot> = {}): CleanupSnapshot => 
 
 describe("anonymous cleanup retention", () => {
 	it.each([
-		[[], "empty"],
-		[[1], "untouched_editor"],
-		[[1, 1], "untouched_editor"],
-		[[1, 2], "authored_editor"],
-	])("derives a current retention class from world revisions", (revisions, expected) => {
-		expect(deriveCleanupClass(revisions)).toBe(expected);
-	});
+		[[], 0, "empty"],
+		[[], 1, "play_only"],
+		[[1], 0, "untouched_editor"],
+		[[1, 1], 0, "untouched_editor"],
+		[[1], 1, "authored_editor"],
+		[[1, 2], 0, "authored_editor"],
+	])(
+		"derives a current retention class from authoritative activity",
+		(revisions, plays, expected) => {
+			expect(deriveCleanupClass(revisions, plays)).toBe(expected);
+		},
+	);
 
 	it.each([
 		["empty", []],
 		["untouched_editor", [1]],
+		["play_only", []],
 		["authored_editor", [2]],
 	] as const)(
 		"is eligible at and after the %s cutoff, but not immediately before",
@@ -44,13 +50,18 @@ describe("anonymous cleanup retention", () => {
 					snapshot({
 						lastSeenAt: new Date(now.getTime() - retention + 1),
 						worldRevisions: [...revisions],
+						playthroughCount: kind === "play_only" ? 1 : 0,
 					}),
 					now,
 				),
 			).toMatchObject({eligible: false, reason: "recent_activity"});
 			expect(
 				evaluateCleanupEligibility(
-					snapshot({lastSeenAt: new Date(now.getTime() - retention), worldRevisions: [...revisions]}),
+					snapshot({
+						lastSeenAt: new Date(now.getTime() - retention),
+						worldRevisions: [...revisions],
+						playthroughCount: kind === "play_only" ? 1 : 0,
+					}),
 					now,
 				),
 			).toMatchObject({eligible: true, retentionClass: kind});
@@ -59,6 +70,7 @@ describe("anonymous cleanup retention", () => {
 					snapshot({
 						lastSeenAt: new Date(now.getTime() - retention - 1),
 						worldRevisions: [...revisions],
+						playthroughCount: kind === "play_only" ? 1 : 0,
 					}),
 					now,
 				),

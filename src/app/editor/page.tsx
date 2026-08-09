@@ -15,6 +15,7 @@ import {RightSideBar} from "@/components/studio/RightSideBar";
 import {ItemCatalog} from "@/components/studio/ItemCatalog";
 import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
+import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
@@ -415,6 +416,9 @@ export default function EditorPage() {
 				setCommandSelection={setCommandSelection}
 				selectedItemId={selectedItemId}
 				setSelectedItemId={setSelectedItemId}
+				persistedWorldId={persistedWorldId}
+				persistedWorldRevision={persistedWorldRevision}
+				worldName={worldName}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -474,6 +478,9 @@ type EditorMainPanelProps = {
 	setCommandSelection: (selection: CommandSelection | null) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	persistedWorldId: string | null;
+	persistedWorldRevision: number | null;
+	worldName: string;
 };
 
 function EditorMainPanel({
@@ -505,6 +512,9 @@ function EditorMainPanel({
 	setCommandSelection,
 	selectedItemId,
 	setSelectedItemId,
+	persistedWorldId,
+	persistedWorldRevision,
+	worldName,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -604,6 +614,9 @@ function EditorMainPanel({
 						setCommandSelection={setCommandSelection}
 						selectedItemId={selectedItemId}
 						setSelectedItemId={setSelectedItemId}
+						persistedWorldId={persistedWorldId}
+						persistedWorldRevision={persistedWorldRevision}
+						worldName={worldName}
 					/>
 				</div>
 			</div>
@@ -739,6 +752,9 @@ type EditorWorkspaceProps = {
 	setCommandSelection: (selection: CommandSelection | null) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	persistedWorldId: string | null;
+	persistedWorldRevision: number | null;
+	worldName: string;
 };
 
 function EditorWorkspace({
@@ -768,6 +784,9 @@ function EditorWorkspace({
 	setCommandSelection,
 	selectedItemId,
 	setSelectedItemId,
+	persistedWorldId,
+	persistedWorldRevision,
+	worldName,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -864,7 +883,14 @@ function EditorWorkspace({
 		);
 	}
 
-	return <PlaceholderWorkspace activeTab={activeTab} />;
+	return (
+		<PlaceholderWorkspace
+			activeTab={activeTab}
+			worldId={persistedWorldId}
+			worldName={worldName}
+			revision={persistedWorldRevision}
+		/>
+	);
 }
 
 type MapWorkspaceProps = {
@@ -936,9 +962,17 @@ function MapWorkspace({
 
 type PlaceholderWorkspaceProps = {
 	activeTab: EditorTab;
+	worldId: string | null;
+	worldName: string;
+	revision: number | null;
 };
 
-function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
+function PlaceholderWorkspace({
+	activeTab,
+	worldId,
+	worldName,
+	revision,
+}: PlaceholderWorkspaceProps) {
 	const metadata = getEditorTabMetadata(activeTab);
 	const isWorldSettings = activeTab === "world-settings";
 
@@ -953,7 +987,12 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 						: `This area will become the ${metadata.title.toLowerCase()} editor. The sidebars and command line stay pinned while this workspace swaps out.`}
 				</p>
 
-				{isWorldSettings ? <WorldResetButton /> : null}
+				{isWorldSettings ? (
+					<>
+						<WorldResetButton />
+						<PublishingPanel worldId={worldId} worldName={worldName} revision={revision} />
+					</>
+				) : null}
 			</div>
 		</div>
 	);

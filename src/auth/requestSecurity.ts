@@ -1,11 +1,17 @@
 import {NextResponse} from "next/server";
 
-import {ADMIN_CSRF_COOKIE, EDITOR_CSRF_COOKIE, readCookie, tokensMatch} from "./sessionTokens";
+import {
+	ADMIN_CSRF_COOKIE,
+	EDITOR_CSRF_COOKIE,
+	PLAY_CSRF_COOKIE,
+	readCookie,
+	tokensMatch,
+} from "./sessionTokens";
 import type {SessionAudience} from "@/db/dbal/sessionsRepository";
 
 export function mutationSecurityError(
 	request: Request,
-	audience: Extract<SessionAudience, "admin" | "editor"> = "editor",
+	audience: SessionAudience = "editor",
 ): NextResponse | undefined {
 	const origin = request.headers.get("origin");
 	if (!origin || origin !== new URL(request.url).origin) {
@@ -17,7 +23,11 @@ export function mutationSecurityError(
 
 	const cookieToken = readCookie(
 		request,
-		audience === "admin" ? ADMIN_CSRF_COOKIE : EDITOR_CSRF_COOKIE,
+		audience === "admin"
+			? ADMIN_CSRF_COOKIE
+			: audience === "play"
+				? PLAY_CSRF_COOKIE
+				: EDITOR_CSRF_COOKIE,
 	);
 	const headerToken = request.headers.get("x-csrf-token") ?? undefined;
 	if (!cookieToken || !headerToken || !tokensMatch(cookieToken, headerToken)) {

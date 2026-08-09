@@ -9,12 +9,15 @@ import {
 	recordAdministratorRead,
 	administratorHasPermission,
 } from "@/db/dbal/adminRepository";
+import {listAdminPublications} from "@/db/dbal/publicationRepository";
 
 import {GET as getSession} from "./session/route";
 import {GET as listUsers} from "./users/route";
 import {GET as getUser} from "./users/[id]/route";
 import {GET as listWorlds} from "./worlds/route";
 import {GET as getWorld} from "./worlds/[id]/route";
+import {GET as listPublications} from "./publications/route";
+import {GET as getPublication} from "./publications/[id]/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/adminRepository", () => ({
@@ -25,6 +28,7 @@ jest.mock("@/db/dbal/adminRepository", () => ({
 	recordAdministratorRead: jest.fn(),
 	administratorHasPermission: jest.fn(),
 }));
+jest.mock("@/db/dbal/publicationRepository", () => ({listAdminPublications: jest.fn()}));
 
 const adminId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const targetId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
@@ -54,19 +58,27 @@ describe("read-only administrator routes", () => {
 			getUser(request(`/api/admin/users/${targetId}`), {params: Promise.resolve({id: targetId})}),
 			listWorlds(request("/api/admin/worlds")),
 			getWorld(request(`/api/admin/worlds/${targetId}`), {params: Promise.resolve({id: targetId})}),
+			listPublications(request("/api/admin/publications")),
+			getPublication(request(`/api/admin/publications/${targetId}`), {
+				params: Promise.resolve({id: targetId}),
+			}),
 		]);
-		expect(responses.map((response) => response.status)).toEqual([401, 401, 401, 401, 401]);
+		expect(responses.map((response) => response.status)).toEqual([401, 401, 401, 401, 401, 401, 401]);
 		expect(listAdminUsers).not.toHaveBeenCalled();
 		expect(listAdminWorlds).not.toHaveBeenCalled();
+		expect(listAdminPublications).not.toHaveBeenCalled();
 	});
 
 	it("lists users and worlds only after administrator authorization", async () => {
 		jest.mocked(listAdminUsers).mockResolvedValue([]);
 		jest.mocked(listAdminWorlds).mockResolvedValue([]);
+		jest.mocked(listAdminPublications).mockResolvedValue([]);
 		expect((await listUsers(request("/api/admin/users"))).status).toBe(200);
 		expect((await listWorlds(request("/api/admin/worlds"))).status).toBe(200);
+		expect((await listPublications(request("/api/admin/publications"))).status).toBe(200);
 		expect(listAdminUsers).toHaveBeenCalledTimes(1);
 		expect(listAdminWorlds).toHaveBeenCalledTimes(1);
+		expect(listAdminPublications).toHaveBeenCalledTimes(1);
 	});
 
 	it("records successful high-sensitivity detail reads without passing content", async () => {

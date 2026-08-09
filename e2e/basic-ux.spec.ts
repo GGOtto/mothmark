@@ -968,6 +968,68 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	expect(browserErrors).toEqual([]);
 });
 
+test("a registered owner publishes the current saved world from world settings", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const environment = await useDeterministicEditorWorld(page);
+	let publishRequest: unknown;
+
+	await page.route("**/api/account", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {accountType: "registered"}}),
+		}),
+	);
+	await page.route(`**/api/world/${environment.worldId}/publication`, async (route) => {
+		if (route.request().method() === "GET") {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: null}),
+			});
+			return;
+		}
+		publishRequest = route.request().postDataJSON();
+		await route.fulfill({
+			status: 201,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					id: "publication-id",
+					slug: "quiet-archive",
+					title: "Quiet archive",
+					summary: "A compact public world.",
+					visibility: "listed",
+					release: {number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
+					worldRevision: 1,
+				},
+			}),
+		});
+	});
+
+	await page.goto(`/worlds/${environment.worldSlug}`);
+	await page.getByRole("button", {name: "World settings"}).click();
+	await expect(page.getByRole("heading", {name: "Publishing"})).toBeVisible();
+	await page.getByLabel("Public title").fill("Quiet archive");
+	await page.getByLabel("Stable public slug").fill("quiet-archive");
+	await page.getByLabel("Short summary").fill("A compact public world.");
+	await page.getByRole("button", {name: "Publish current version"}).click();
+
+	await expect(page.getByText("Release 1 is live from saved revision 1.")).toBeVisible();
+	await expect(page.getByRole("link", {name: "Open published world"})).toHaveAttribute(
+		"href",
+		"/play/quiet-archive",
+	);
+	expect(publishRequest).toEqual({
+		expectedRevision: 1,
+		title: "Quiet archive",
+		slug: "quiet-archive",
+		summary: "A compact public world.",
+		visibility: "listed",
+	});
+	expect(browserErrors).toEqual([]);
+});
+
 test("the theme control communicates and applies its state", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await page.addInitScript(() => window.localStorage.setItem("mothmark-theme", "light"));

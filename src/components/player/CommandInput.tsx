@@ -41,7 +41,14 @@ export function CommandInput({
 	}
 
 	return (
-		<form onSubmit={submitCommand} className="command-input">
+		<form
+			onSubmit={submitCommand}
+			className="command-input"
+			onPointerDown={(event) => {
+				if (event.target instanceof HTMLInputElement) return;
+				event.currentTarget.querySelector<HTMLInputElement>(".command-input__field")?.focus();
+			}}
+		>
 			<span className="command-input__prompt">&gt;&gt;</span>
 
 			<input

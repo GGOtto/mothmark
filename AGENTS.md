@@ -67,6 +67,12 @@
   color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
 - Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
+- Let primary page and workspace content use the available canvas. Do not place catalogs, settings,
+  detail views, or other substantial content in an arbitrarily narrow centered card or max-width
+  wrapper; constrain width only when a deliberately short reading measure or compact form requires it.
+- When a page or workspace can grow vertically, keep its title, search, filters, and primary actions
+  in a non-scrolling header region and scroll only the content body. Do not use one outer scroller that
+  carries page-level controls out of view with the content.
 - Present worlds as restrained, content-led cards in private libraries and public discovery surfaces;
   do not reduce worlds to table or list rows.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
