@@ -1000,7 +1000,7 @@ test("the starter world copy action provides immediate confirmation", async ({pa
 	expect(browserErrors).toEqual([]);
 });
 
-test("administrator sign-in and read-only oversight support deep links and back navigation", async ({
+test("administrator sign-in and granular controls support deep links and back navigation", async ({
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
@@ -1033,9 +1033,13 @@ test("administrator sign-in and read-only oversight support deep links and back 
 		maxWorlds: 5,
 		siteRole: "user",
 		status: "active",
+		suspendedAt: null,
+		suspensionReason: null,
 		trashedWorldCount: 0,
 		worldCount: 1,
 	};
+	let permissionState: "deny" | "inherited" = "inherited";
+	let permissionMutation: unknown;
 	await page.route("**/api/admin/auth/password", (route) =>
 		route.fulfill({
 			status: 200,
@@ -1064,13 +1068,35 @@ test("administrator sign-in and read-only oversight support deep links and back 
 			body: JSON.stringify({
 				data: {
 					...user,
-					permissions: [{allowed: true, permission: "editor.access", source: "account default"}],
+					credentialChangedAt: null,
+					email: null,
+					emailVerifiedAt: null,
+					mfaEnrolled: false,
+					permissions: [
+						{
+							allowed: permissionState !== "deny",
+							expiresAt: null,
+							override: permissionState,
+							permission: "editor.access",
+							source: permissionState === "deny" ? "explicit deny" : "account default",
+						},
+					],
+					registeredAt: null,
 					sessions: [],
 					worlds: [world],
 				},
 			}),
 		}),
 	);
+	await page.route(new RegExp(`/api/admin/users/${userId}/permissions$`), async (route) => {
+		permissionMutation = route.request().postDataJSON();
+		permissionState = "deny";
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {permissions: []}}),
+		});
+	});
 	await page.route(/\/api\/admin\/worlds$/, (route) =>
 		route.fulfill({
 			status: 200,
@@ -1083,6 +1109,13 @@ test("administrator sign-in and read-only oversight support deep links and back 
 			status: 200,
 			contentType: "application/json",
 			body: JSON.stringify({data: {...world, world: initialWorld}}),
+		}),
+	);
+	await page.route(new RegExp(`/api/admin/worlds/${worldId}/edit$`), (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {revision: 4}}),
 		}),
 	);
 	await page.route("**/api/auth/csrf?audience=admin", (route) =>
@@ -1113,12 +1146,25 @@ test("administrator sign-in and read-only oversight support deep links and back 
 
 	await page.getByRole("link", {name: `Anonymous ${userId.slice(0, 8)}`}).click();
 	await expect(page.getByRole("heading", {name: `Anonymous ${userId.slice(0, 8)}`})).toBeVisible();
-	await page.goBack();
+	await expect(page.getByText("Effective: allowed · account default")).toBeVisible();
+	await page.getByLabel("Override for editor.access").selectOption("deny");
+	await expect(page.getByText("Permission update completed.")).toBeVisible();
+	expect(permissionMutation).toEqual({permission: "editor.access", state: "deny"});
+	await expect(page.getByText("Effective: denied · explicit deny")).toBeVisible();
+	await page.getByRole("link", {name: "← Users"}).click();
 	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
 
 	await page.goto(`/admin/worlds/${worldId}`);
 	await expect(page.getByRole("heading", {name: "Private test world"})).toBeVisible();
+	await page.goBack();
+	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
+	await page.goto(`/admin/worlds/${worldId}`);
 	await expect(page.getByText("Inspection only")).toBeVisible();
+	await page.getByRole("button", {name: "Enter administrative edit mode"}).click();
+	await expect(page.getByRole("status")).toContainText("Administrative editing");
+	await expect(page.getByRole("button", {name: "Save administrative edit"})).toBeDisabled();
+	await page.getByLabel("Administrative reason").fill("Repair a malformed maintained document");
+	await expect(page.getByRole("button", {name: "Save administrative edit"})).toBeEnabled();
 	await page.setViewportSize({width: 390, height: 844});
 	expect(
 		await page.evaluate(

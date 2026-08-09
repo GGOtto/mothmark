@@ -13,6 +13,7 @@ import {
 	handleWorldRouteError,
 	invalidJsonResponse,
 	validationErrorResponse,
+	worldPermissionError,
 } from "./_shared";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "editor.access");
+		if (permissionError) return permissionError;
 		if (new URL(request.url).searchParams.get("view") === "trash") {
 			return NextResponse.json({data: {worlds: await listOwnedTrashedWorlds(actor.userId)}});
 		}
@@ -47,6 +50,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.create");
+		if (permissionError) return permissionError;
 		return NextResponse.json(
 			{data: await createOwnedWorld(actor.userId, parsed.data)},
 			{status: 201},

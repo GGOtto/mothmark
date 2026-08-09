@@ -49,6 +49,12 @@ export function AdminShell({children}: {children: ReactNode}) {
 					>
 						Worlds
 					</Link>
+					<Link
+						href="/admin/audit"
+						aria-current={pathname.startsWith("/admin/audit") ? "page" : undefined}
+					>
+						Audit
+					</Link>
 					<button type="button" onClick={() => void signOut()} disabled={signingOut}>
 						{signingOut ? "Signing out…" : "Sign out"}
 					</button>

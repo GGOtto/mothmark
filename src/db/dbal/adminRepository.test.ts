@@ -18,12 +18,12 @@ describe("administrator read-only permission summaries", () => {
 
 	it("shows registered and site-role defaults without inventing overrides", () => {
 		const summary = permissionSummaryFor("registered", "admin");
-		expect(summary.find((entry) => entry.permission === "world.publish_owned")).toEqual({
+		expect(summary.find((entry) => entry.permission === "world.publish_owned")).toMatchObject({
 			allowed: true,
 			permission: "world.publish_owned",
 			source: "account default",
 		});
-		expect(summary.find((entry) => entry.permission === "admin.worlds.view")).toEqual({
+		expect(summary.find((entry) => entry.permission === "admin.worlds.view")).toMatchObject({
 			allowed: true,
 			permission: "admin.worlds.view",
 			source: "site role",

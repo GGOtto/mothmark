@@ -7,6 +7,7 @@ import {
 	listAdminUsers,
 	listAdminWorlds,
 	recordAdministratorRead,
+	administratorHasPermission,
 } from "@/db/dbal/adminRepository";
 
 import {GET as getSession} from "./session/route";
@@ -22,6 +23,7 @@ jest.mock("@/db/dbal/adminRepository", () => ({
 	listAdminUsers: jest.fn(),
 	listAdminWorlds: jest.fn(),
 	recordAdministratorRead: jest.fn(),
+	administratorHasPermission: jest.fn(),
 }));
 
 const adminId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
@@ -35,7 +37,10 @@ const admin = {
 const request = (path: string) => new Request(`http://localhost${path}`);
 
 describe("read-only administrator routes", () => {
-	beforeEach(() => jest.mocked(resolveCurrentActor).mockResolvedValue(admin));
+	beforeEach(() => {
+		jest.mocked(resolveCurrentActor).mockResolvedValue(admin);
+		jest.mocked(administratorHasPermission).mockResolvedValue(true);
+	});
 
 	it.each([
 		["anonymous", undefined],

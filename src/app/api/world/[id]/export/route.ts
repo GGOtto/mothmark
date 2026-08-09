@@ -9,6 +9,7 @@ import {
 	handleWorldRouteError,
 	validationErrorResponse,
 	worldNotFoundResponse,
+	worldPermissionError,
 } from "../../_shared";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ export async function GET(
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.export_owned");
+		if (permissionError) return permissionError;
 		const exported = await exportOwnedWorld(actor.userId, parsedId.data);
 		if (!exported) return worldNotFoundResponse();
 		return NextResponse.json(exported, {

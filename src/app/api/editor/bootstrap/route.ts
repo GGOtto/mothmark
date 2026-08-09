@@ -9,7 +9,8 @@ import {
 	getOrCreateFirstOwnedWorld,
 	getRecentOwnedWorld,
 } from "@/db/dbal/sessionsRepository";
-import {handleWorldRouteError} from "../../world/_shared";
+import {userHasPermission} from "@/db/dbal/permissionRepository";
+import {handleWorldRouteError, worldPermissionError} from "../../world/_shared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,6 +45,16 @@ export async function POST(request: Request): Promise<NextResponse> {
 		const actor = sessionToken ? await findBootstrapEditorActor(sessionToken) : undefined;
 		if (actor === "blocked") return authRequiredResponse();
 		if (actor) {
+			const accessError = await worldPermissionError(actor, "editor.access");
+			if (accessError) return accessError;
+			if (recordOpened && !(await userHasPermission(actor.userId, "world.create"))) {
+				const existing = await getRecentOwnedWorld(actor.userId);
+				if (!existing)
+					return NextResponse.json(
+						{error: {code: "FORBIDDEN", message: "This account cannot create a world."}},
+						{status: 403},
+					);
+			}
 			const world = recordOpened
 				? await getOrCreateFirstOwnedWorld(actor.userId, true)
 				: await getRecentOwnedWorld(actor.userId);

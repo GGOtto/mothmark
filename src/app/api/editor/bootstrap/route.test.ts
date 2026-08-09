@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {
 	createAnonymousEditorBootstrap,
 	findBootstrapEditorActor,
@@ -17,6 +18,7 @@ jest.mock("@/db/dbal/sessionsRepository", () => ({
 	getOrCreateFirstOwnedWorld: jest.fn(),
 	getRecentOwnedWorld: jest.fn(),
 }));
+jest.mock("@/db/dbal/permissionRepository", () => ({userHasPermission: jest.fn()}));
 
 const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const world: WorldRecord = {
@@ -50,6 +52,7 @@ const bootstrapRequest = (csrfHeader = "csrf") =>
 	});
 
 describe("editor bootstrap", () => {
+	beforeEach(() => jest.mocked(userHasPermission).mockResolvedValue(true));
 	it("atomically provisions the first anonymous editor path and sets a hardened session cookie", async () => {
 		jest.mocked(createAnonymousEditorBootstrap).mockResolvedValue({
 			userId,

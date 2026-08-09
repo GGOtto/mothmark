@@ -1,6 +1,9 @@
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
+import type {Permission} from "@/auth/permissions";
+import type {CurrentActor} from "@/db/dbal/sessionsRepository";
+import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {WORLD_EDITOR_SLUG_MAX_LENGTH, isWorldEditorSlug} from "@/utils/worldSlug";
 
@@ -82,6 +85,17 @@ export const worldRevisionConflictResponse = (): NextResponse =>
 		},
 		{status: 409},
 	);
+
+export async function worldPermissionError(
+	actor: CurrentActor,
+	permission: Permission,
+): Promise<NextResponse | undefined> {
+	if (await userHasPermission(actor.userId, permission)) return undefined;
+	return NextResponse.json(
+		{error: {code: "FORBIDDEN", message: "This account does not have that capability."}},
+		{status: 403},
+	);
+}
 
 export const handleWorldRouteError = (error: unknown): NextResponse => {
 	if ((error as {code?: string}).code === "WORLD_LIMIT_REACHED") {

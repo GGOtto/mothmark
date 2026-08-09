@@ -121,6 +121,13 @@
 	color: var(--color-danger);
 	font-size: 13px;
 }
+.adminNotice {
+	padding: 10px 12px;
+	border: 1px solid var(--color-success);
+	border-radius: var(--radius-panel);
+	color: var(--color-success);
+	font-size: 13px;
+}
 .adminTableFrame {
 	overflow-x: auto;
 	border: 1px solid var(--color-border);
@@ -206,6 +213,154 @@
 		color: var(--color-text-muted);
 		font-size: 13px;
 	}
+}
+.adminSection label,
+.adminControlGrid label,
+.adminFilterGrid label {
+	display: grid;
+	gap: 6px;
+	color: var(--color-text-muted);
+	font-size: 12px;
+	font-weight: 600;
+}
+.adminSection input,
+.adminSection select,
+.adminSection textarea,
+.adminFilterGrid input {
+	min-width: 0;
+	box-sizing: border-box;
+	padding: 8px 9px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	font: inherit;
+}
+.adminSection textarea {
+	width: 100%;
+	min-height: 68px;
+	margin: 6px 0 12px;
+	resize: vertical;
+}
+.adminSection select option {
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+}
+.adminSection button,
+.adminButtonLink {
+	display: inline-flex;
+	min-height: 34px;
+	box-sizing: border-box;
+	align-items: center;
+	justify-content: center;
+	padding: 0 11px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	font: inherit;
+	font-size: 12px;
+	text-decoration: none;
+	cursor: pointer;
+}
+.adminSection button:hover,
+.adminButtonLink:hover {
+	border-color: var(--color-action);
+}
+.adminSection button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.adminSection .adminDangerButton {
+	border-color: var(--color-danger);
+	color: var(--color-danger);
+}
+.adminControlGrid,
+.adminFilterGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+}
+.adminFilterGrid {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+	label {
+		min-width: 0;
+	}
+	input {
+		width: 100%;
+	}
+}
+.adminControlGrid form,
+.adminControlGrid > div {
+	display: grid;
+	align-content: start;
+	gap: 8px;
+}
+.adminControlGrid small,
+.adminTransferControl small {
+	color: var(--color-text-faint);
+	font-size: 11px;
+}
+.adminInlineControl,
+.adminButtonRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.adminInlineControl input {
+	flex: 1;
+}
+.adminTransferControl {
+	display: grid;
+	gap: 6px;
+	margin-top: 18px;
+}
+.adminPermissionList li > div {
+	display: grid;
+	gap: 5px;
+}
+.adminEffectiveResult {
+	display: block;
+}
+.adminEffectiveResult.isAllowed {
+	color: var(--color-success);
+}
+.adminEffectiveResult.isDenied {
+	color: var(--color-text-faint);
+}
+.adminVisuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+.adminEditingBanner {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	margin: -32px 0 20px;
+	padding: 10px 14px;
+	border: 1px solid var(--color-focus);
+	border-radius: var(--radius-panel);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	font-size: 13px;
+	box-shadow: var(--shadow-float);
+}
+.adminEditingBanner strong {
+	color: var(--color-focus);
+}
+.adminJsonEditor {
+	min-height: 520px !important;
+	font-family: ui-monospace, monospace !important;
+	font-size: 12px !important;
+	line-height: 1.5;
 }
 .adminSectionHeading {
 	display: flex;
@@ -328,7 +483,7 @@
 		padding: 0 10px;
 		border: 1px solid var(--color-control-border);
 		border-radius: var(--radius-control);
-		background: var(--color-control-background);
+		background: var(--color-surface-raised);
 		color: var(--color-text);
 		font: inherit;
 	}
@@ -408,6 +563,16 @@
 	}
 	.adminDefinitionGrid {
 		grid-template-columns: 1fr;
+	}
+	.adminControlGrid,
+	.adminFilterGrid {
+		grid-template-columns: 1fr;
+	}
+	.adminEditingBanner {
+		align-items: flex-start;
+		flex-direction: column;
+		margin-top: -22px;
+		gap: 3px;
 	}
 	.adminRecordList li,
 	.adminPermissionList li {

@@ -968,7 +968,7 @@ OIDC is no longer part of Mothmark.
 - Verification and recovery email, throttling, credential storage, and operational recovery are
   documented and exercised before any public signup is enabled in production.
 
-## Slice 6: Administrator permissions, limits, and world control
+## [x] Slice 6: Administrator permissions, limits, and world control
 
 **Outcome:** The administrator can change a user's effective capabilities and limits, suspend access,
 revoke sessions, and manage exceptional world situations with a complete audit trail.
