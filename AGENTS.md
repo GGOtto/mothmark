@@ -67,6 +67,9 @@
   color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
 - Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
+- Do not expose production navigation to placeholder pages that have no real schema-backed object or
+  user task. Hide unfinished destinations until their functionality exists instead of filling them
+  with generic cards, roadmap copy, invented examples, or decorative content.
 - Let primary page and workspace content use the available canvas. Do not place catalogs, settings,
   detail views, or other substantial content in an arbitrarily narrow centered card or max-width
   wrapper; constrain width only when a deliberately short reading measure or compact form requires it.
@@ -75,6 +78,14 @@
   carries page-level controls out of view with the content.
 - Present worlds as restrained, content-led cards in private libraries and public discovery surfaces;
   do not reduce worlds to table or list rows.
+- Treat Items as a two-surface workflow: a full-workspace object selector followed by a dedicated
+  full-workspace item page. Do not bring the map into the Items view or make the right property
+  inspector the primary item editor. Do not assume, generate, or infer item imagery that authors have
+  not supplied, and do not fall back to dashboard grids or decorative fields of names. The selector's
+  visual identity may use a small maintained library of flat, stylized, reusable SVG categories
+  selected by recognized item tags; never create bespoke or inferred artwork for each item. Keep
+  item names horizontal and visible, avoid realistic or metallic rendering, and avoid RPG inventory
+  conventions or ornamental fantasy chrome.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
 - Use action blue for interaction, brass for focus and rare identity emphasis, and semantic colors only
   for their named statuses. Do not introduce another primary-action color.
