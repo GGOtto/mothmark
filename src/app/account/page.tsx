@@ -135,20 +135,25 @@ export default function AccountPage() {
 								A pending cleanup was cancelled when you returned. Your work remains available.
 							</p>
 						) : null}
-						<div className="accountActions">
-							<a href="/api/account/export">Export all data</a>
-							<button ref={deleteTrigger} type="button" onClick={() => setDeleteOpen(true)}>
-								Delete account
-							</button>
-						</div>
 					</>
 				) : !loading ? (
 					<p>Enter the world library to create a temporary account on this browser.</p>
 				) : null}
-				<div className="accountLinks">
-					<Link href="/worlds">{account ? "Return to your worlds" : "Open your worlds"}</Link>
-					<Link href="/privacy">Privacy and cookies</Link>
-				</div>
+				<nav className="accountNavigation" aria-label="Account actions">
+					<a href="/api/account/export">Export all data</a>
+					<div className="accountLinks">
+						<Link href="/worlds">{account ? "Return to your worlds" : "Open your worlds"}</Link>
+						<Link href="/privacy">Privacy and cookies</Link>
+					</div>
+					<button
+						className="accountDelete"
+						ref={deleteTrigger}
+						type="button"
+						onClick={() => setDeleteOpen(true)}
+					>
+						Delete account
+					</button>
+				</nav>
 			</section>
 
 			{deleteOpen && account ? (

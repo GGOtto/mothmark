@@ -50,18 +50,25 @@
 		color: var(--color-danger) !important;
 	}
 
-	.accountActions,
+	.accountNavigation {
+		display: flex;
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 12px;
+		margin-top: 20px;
+	}
+
 	.accountLinks {
 		display: flex;
 		align-items: center;
 		gap: 16px;
 	}
 
-	.accountActions {
-		margin-top: 20px;
+	.accountNavigation a {
+		margin-top: 0;
 	}
 
-	.accountActions button {
+	.accountDelete {
 		padding: 0;
 		border: 0;
 		background: transparent;
@@ -69,6 +76,7 @@
 		font: inherit;
 		font-size: 14px;
 		cursor: pointer;
+		font-weight: 1000;
 	}
 
 	.accountLabel {
@@ -104,7 +112,6 @@
 		.accountDetails {
 			grid-template-columns: 1fr;
 		}
-		.accountActions,
 		.accountLinks {
 			align-items: flex-start;
 			flex-direction: column;
