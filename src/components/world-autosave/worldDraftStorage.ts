@@ -120,6 +120,24 @@ export async function deleteWorldDraft(userId: string, worldId: string): Promise
 	);
 }
 
+export async function deleteWorldDraftsForUser(userId: string): Promise<void> {
+	for (const draft of await listWorldDrafts(userId)) {
+		await deleteWorldDraft(userId, draft.worldId);
+	}
+}
+
+/** Removes drafts left behind by an inaccessible browser-bound account. */
+export async function deleteWorldDraftsExceptUser(userId: string): Promise<void> {
+	if (!indexedDbAvailable()) return;
+	const storedDrafts = await runDraftRequest<unknown[]>("readonly", (store) => store.getAll());
+	for (const stored of storedDrafts) {
+		const parsed = WorldDraftSchema.safeParse(stored);
+		if (parsed.success && parsed.data.userId !== userId) {
+			await deleteWorldDraft(parsed.data.userId, parsed.data.worldId);
+		}
+	}
+}
+
 export function draftMatchesServer(
 	draft: WorldDraft,
 	server: {userId: string; worldId: string; revision: number},

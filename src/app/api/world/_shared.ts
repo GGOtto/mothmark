@@ -2,13 +2,21 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {WorldSchema} from "@/schemas/world/worldSchema";
+import {WORLD_EDITOR_SLUG_MAX_LENGTH, isWorldEditorSlug} from "@/utils/worldSlug";
 
 export const WorldIdSchema = z.uuid();
+export const WorldLocatorSchema = z
+	.string()
+	.refine((value) => z.uuid().safeParse(value).success || isWorldEditorSlug(value), {
+		message: `The world locator must be a UUID or an editor slug up to ${WORLD_EDITOR_SLUG_MAX_LENGTH} characters.`,
+	});
 
-export const CreateWorldRequestSchema = z.object({
-	name: z.string().trim().min(1).max(80),
-	source: z.enum(["starter", "blank"]),
-});
+const WorldNameSchema = z.string().trim().min(1).max(80);
+
+export const CreateWorldRequestSchema = z.discriminatedUnion("source", [
+	z.object({name: WorldNameSchema, source: z.enum(["starter", "blank"])}),
+	z.object({name: WorldNameSchema, source: z.literal("import"), world: WorldSchema}),
+]);
 
 export const CreateDefaultWorldRequestSchema = z.object({
 	name: z.string().trim().min(1),
@@ -18,7 +26,7 @@ export const CreateDefaultWorldRequestSchema = z.object({
 
 export const UpdateWorldRequestSchema = z
 	.object({
-		name: z.string().trim().min(1).optional(),
+		name: z.string().trim().min(1).max(80).optional(),
 		world: WorldSchema.optional(),
 		expectedRevision: z.number().int().positive().optional(),
 	})

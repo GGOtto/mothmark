@@ -73,6 +73,37 @@
 	}
 }
 
+.worldLibraryViews {
+	display: flex;
+	gap: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.worldLibraryViews button {
+	position: relative;
+	padding: 12px 2px 10px;
+	border: 0;
+	background: transparent;
+	color: var(--color-text-muted);
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+
+	&[aria-current="page"] {
+		color: var(--color-text);
+
+		&::after {
+			position: absolute;
+			right: 0;
+			bottom: -1px;
+			left: 0;
+			height: 2px;
+			background: var(--color-action);
+			content: "";
+		}
+	}
+}
+
 .worldList {
 	margin: 0;
 	padding: 0;
@@ -80,9 +111,13 @@
 	border-top: 1px solid var(--color-border);
 }
 .worldList li {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
 	border-bottom: 1px solid var(--color-border);
 }
-.worldList a {
+.worldListMain {
 	display: grid;
 	grid-template-columns: 32px minmax(0, 1fr) auto;
 	align-items: center;
@@ -98,6 +133,99 @@
 		outline: 2px solid var(--color-focus);
 		outline-offset: -2px;
 	}
+}
+
+.worldListTrashIdentity {
+	grid-template-columns: 32px minmax(0, 1fr);
+}
+
+.worldListActions {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-right: 8px;
+}
+
+.worldListActions > button,
+.worldActionsTrigger {
+	height: 30px;
+	padding: 0 9px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-text);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+
+	&:hover,
+	&:focus-visible {
+		background: var(--color-surface-strong);
+	}
+}
+
+.worldActionsTrigger {
+	display: inline-flex;
+	width: 32px;
+	flex: 0 0 32px;
+	box-sizing: border-box;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	line-height: 0;
+
+	svg {
+		display: block;
+	}
+}
+
+.worldActionsMenu {
+	position: absolute;
+	top: 34px;
+	right: 8px;
+	z-index: 20;
+	display: grid;
+	width: 158px;
+	box-sizing: border-box;
+	padding: 5px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-panel);
+	background: var(--color-surface-raised);
+	box-shadow: var(--shadow-float);
+}
+
+.worldActionsMenu button,
+.worldActionsMenu a {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 8px;
+	border: 0;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-text);
+	font: inherit;
+	font-size: 13px;
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+
+	&:hover,
+	&:focus-visible {
+		background: var(--color-surface-strong);
+	}
+}
+
+.worldDangerAction {
+	color: var(--color-danger) !important;
+}
+
+.worldLibraryEmpty {
+	margin: 0;
+	padding: 28px 2px;
+	color: var(--color-text-muted);
+	font-size: 13px;
 }
 
 .worldListIcon {
@@ -123,8 +251,8 @@
 .worldListActivity {
 	justify-items: end;
 }
-.worldListActivity > span {
-	color: var(--color-success);
+.worldListCounts {
+	color: var(--color-text-muted);
 	font-size: 12px;
 }
 .worldLibraryLoading,
@@ -208,10 +336,37 @@
 	gap: 8px;
 	margin-top: 10px;
 }
+
+.worldImportField {
+	display: grid;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-panel);
+
+	label,
+	small {
+		color: var(--color-text-muted);
+		font-size: 12px;
+	}
+
+	input[type="file"] {
+		max-width: 100%;
+		color: var(--color-text);
+		font: inherit;
+		font-size: 12px;
+	}
+}
 .worldDialogActions button:first-child {
 	border-color: var(--color-control-border);
 	background: transparent;
 	color: var(--color-text);
+}
+
+.worldDialogActions .worldDialogDanger {
+	border-color: var(--color-danger);
+	background: var(--color-danger);
+	color: var(--color-action-contrast);
 }
 
 @media (max-width: 560px) {
@@ -221,7 +376,7 @@
 	.worldLibraryHeader {
 		align-items: start;
 	}
-	.worldList a {
+	.worldListMain {
 		grid-template-columns: 24px minmax(0, 1fr);
 	}
 	.worldListActivity {
@@ -230,5 +385,12 @@
 	}
 	.worldLibraryUsage {
 		display: grid;
+	}
+	.worldList li {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.worldListActions {
+		justify-content: flex-end;
+		padding: 0 8px 10px;
 	}
 }

@@ -5,13 +5,22 @@ import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
 	createOwnedWorld,
 	deleteOwnedWorld,
+	duplicateOwnedWorld,
+	exportOwnedWorld,
 	getOwnedWorld,
+	getOwnedWorldBySlug,
 	getOwnedWorldLibrary,
+	listOwnedTrashedWorlds,
+	permanentlyDeleteOwnedWorld,
+	restoreOwnedWorld,
 	updateOwnedWorld,
 	type WorldRecord,
 } from "@/db/dbal/worldsRepository";
 
 import {DELETE, GET as getById, PUT} from "./[id]/route";
+import {POST as duplicate} from "./[id]/duplicate/route";
+import {GET as exportWorld} from "./[id]/export/route";
+import {POST as restore} from "./[id]/restore/route";
 import {PATCH as updateSchemaVersion} from "./[id]/schema-version/route";
 import {POST as createDefault} from "./default/route";
 import {GET as list, POST as create} from "./route";
@@ -20,9 +29,15 @@ import {GET as getBySlug} from "./slug/[slug]/route";
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/worldsRepository", () => ({
 	deleteOwnedWorld: jest.fn(),
+	duplicateOwnedWorld: jest.fn(),
+	exportOwnedWorld: jest.fn(),
 	createOwnedWorld: jest.fn(),
 	getOwnedWorld: jest.fn(),
+	getOwnedWorldBySlug: jest.fn(),
 	getOwnedWorldLibrary: jest.fn(),
+	listOwnedTrashedWorlds: jest.fn(),
+	permanentlyDeleteOwnedWorld: jest.fn(),
+	restoreOwnedWorld: jest.fn(),
 	updateOwnedWorld: jest.fn(),
 }));
 
@@ -42,6 +57,8 @@ const storedWorld: WorldRecord = {
 	kind: "editor",
 	updatedByUserId: userId,
 	deletedAt: null,
+	editorSlug: "main-world",
+	trashPurgeAfter: null,
 	createdAt: new Date("2026-07-18T01:00:00.000Z"),
 	updatedAt: new Date("2026-07-18T02:00:00.000Z"),
 	lastOpenedAt: new Date("2026-07-18T03:00:00.000Z"),
@@ -80,6 +97,13 @@ describe("private world API", () => {
 		expect(await response.json()).toMatchObject({data: {usage: {count: 1, max: 5}}});
 	});
 
+	it("lists only the current owner's trashed worlds", async () => {
+		jest.mocked(listOwnedTrashedWorlds).mockResolvedValue([{...storedWorld, deletedAt: new Date()}]);
+		const response = await list(request("/api/world?view=trash"));
+		expect(response.status).toBe(200);
+		expect(listOwnedTrashedWorlds).toHaveBeenCalledWith(userId);
+	});
+
 	it("creates a validated starter or blank world within the current owner scope", async () => {
 		jest.mocked(createOwnedWorld).mockResolvedValue(storedWorld);
 		const response = await create(
@@ -90,6 +114,35 @@ describe("private world API", () => {
 			name: "North archive",
 			source: "blank",
 		});
+	});
+
+	it("creates a world from a current schema-backed JSON import", async () => {
+		jest.mocked(createOwnedWorld).mockResolvedValue(storedWorld);
+		const response = await create(
+			request("/api/world", "POST", {
+				name: "Imported archive",
+				source: "import",
+				world: initialWorld,
+			}),
+		);
+		expect(response.status).toBe(201);
+		expect(createOwnedWorld).toHaveBeenCalledWith(userId, {
+			name: "Imported archive",
+			source: "import",
+			world: initialWorld,
+		});
+	});
+
+	it("rejects an invalid imported world before repository access", async () => {
+		const response = await create(
+			request("/api/world", "POST", {
+				name: "Broken import",
+				source: "import",
+				world: {rooms: []},
+			}),
+		);
+		expect(response.status).toBe(400);
+		expect(createOwnedWorld).not.toHaveBeenCalled();
 	});
 
 	it("returns the same finite-limit rejection when the UI is bypassed", async () => {
@@ -117,6 +170,15 @@ describe("private world API", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(getOwnedWorld).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("resolves readable editor slugs only within the current owner scope", async () => {
+		jest.mocked(getOwnedWorldBySlug).mockResolvedValue(storedWorld);
+		const response = await getById(request("/api/world/main-world"), {
+			params: Promise.resolve({id: "main-world"}),
+		});
+		expect(response.status).toBe(200);
+		expect(getOwnedWorldBySlug).toHaveBeenCalledWith(userId, "main-world");
 	});
 
 	it("does not distinguish another user's world from a missing world", async () => {
@@ -157,6 +219,79 @@ describe("private world API", () => {
 		});
 		expect(response.status).toBe(204);
 		expect(deleteOwnedWorld).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("permanently deletes only through the owner-scoped trash operation", async () => {
+		jest.mocked(permanentlyDeleteOwnedWorld).mockResolvedValue(true);
+		const response = await DELETE(request(`/api/world/${worldId}?permanent=1`, "DELETE"), {
+			params: Promise.resolve({id: worldId}),
+		});
+		expect(response.status).toBe(204);
+		expect(permanentlyDeleteOwnedWorld).toHaveBeenCalledWith(userId, worldId);
+		expect(deleteOwnedWorld).not.toHaveBeenCalled();
+	});
+
+	it("duplicates and restores within the owner scope", async () => {
+		jest.mocked(duplicateOwnedWorld).mockResolvedValue({...storedWorld, id: crypto.randomUUID()});
+		jest.mocked(restoreOwnedWorld).mockResolvedValue(storedWorld);
+		expect(
+			(
+				await duplicate(request(`/api/world/${worldId}/duplicate`, "POST"), {
+					params: Promise.resolve({id: worldId}),
+				})
+			).status,
+		).toBe(201);
+		expect(
+			(
+				await restore(request(`/api/world/${worldId}/restore`, "POST"), {
+					params: Promise.resolve({id: worldId}),
+				})
+			).status,
+		).toBe(200);
+		expect(duplicateOwnedWorld).toHaveBeenCalledWith(userId, worldId);
+		expect(restoreOwnedWorld).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("rejects duplicate and restore when the active-world limit is full", async () => {
+		const limitError = Object.assign(new Error("This account has reached its limit of 5 worlds."), {
+			code: "WORLD_LIMIT_REACHED",
+		});
+		jest.mocked(duplicateOwnedWorld).mockRejectedValue(limitError);
+		jest.mocked(restoreOwnedWorld).mockRejectedValue(limitError);
+		expect(
+			(
+				await duplicate(request(`/api/world/${worldId}/duplicate`, "POST"), {
+					params: Promise.resolve({id: worldId}),
+				})
+			).status,
+		).toBe(409);
+		expect(
+			(
+				await restore(request(`/api/world/${worldId}/restore`, "POST"), {
+					params: Promise.resolve({id: worldId}),
+				})
+			).status,
+		).toBe(409);
+	});
+
+	it("exports the current schema-backed world without exposing another owner", async () => {
+		jest.mocked(exportOwnedWorld).mockResolvedValue({
+			editorSlug: "main-world",
+			exportedAt: new Date().toISOString(),
+			format: "mothmark-world",
+			schemaVersion: 1,
+			world: initialWorld,
+			worldId,
+			worldName: storedWorld.name,
+			worldRevision: 1,
+		});
+		const response = await exportWorld(request(`/api/world/${worldId}/export`), {
+			params: Promise.resolve({id: worldId}),
+		});
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-disposition")).toContain("main-world.mothmark.json");
+		expect((await response.json()).world).toEqual(initialWorld);
+		expect(exportOwnedWorld).toHaveBeenCalledWith(userId, worldId);
 	});
 
 	it("closes template/destructive legacy routes", async () => {

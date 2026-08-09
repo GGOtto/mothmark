@@ -9,7 +9,14 @@ const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const jsonResponse = (body: unknown, status = 200): Response =>
 	new Response(JSON.stringify(body), {status, headers: {"content-type": "application/json"}});
 const stored = (id = worldId) => ({
-	data: {id, name: "My world", ownerUserId: userId, revision: 4, world: initialWorld},
+	data: {
+		editorSlug: "my-world",
+		id,
+		name: "My world",
+		ownerUserId: userId,
+		revision: 4,
+		world: initialWorld,
+	},
 });
 
 describe("loadEditorWorld", () => {
@@ -20,6 +27,7 @@ describe("loadEditorWorld", () => {
 			.mockResolvedValueOnce(jsonResponse(stored(), 201));
 
 		await expect(loadEditorWorld(fetchWorld)).resolves.toEqual({
+			editorSlug: "my-world",
 			world: initialWorld,
 			worldId,
 			worldName: "My world",
@@ -35,16 +43,16 @@ describe("loadEditorWorld", () => {
 		});
 	});
 
-	it("loads an explicitly requested world only through the owner-scoped ID route", async () => {
-		const requestedId = "f76f909d-5c82-4b04-aec6-85c9a175e1a2";
+	it("loads an explicitly requested world only through the owner-scoped locator route", async () => {
+		const requestedId = "my-world";
 		const fetchWorld = jest
 			.fn()
 			.mockResolvedValueOnce(jsonResponse({data: {csrfToken: "csrf"}}))
-			.mockResolvedValueOnce(jsonResponse(stored()))
-			.mockResolvedValueOnce(jsonResponse(stored(requestedId)));
+			.mockResolvedValueOnce(jsonResponse({data: null, meta: {userId}}))
+			.mockResolvedValueOnce(jsonResponse(stored()));
 
 		await expect(loadEditorWorld(fetchWorld, undefined, requestedId)).resolves.toMatchObject({
-			worldId: requestedId,
+			worldId,
 		});
 		expect(fetchWorld).toHaveBeenLastCalledWith(`/api/world/${requestedId}`, {signal: undefined});
 		expect(fetchWorld).toHaveBeenNthCalledWith(2, "/api/editor/bootstrap", {
@@ -52,6 +60,20 @@ describe("loadEditorWorld", () => {
 			headers: {"content-type": "application/json", "x-csrf-token": "csrf"},
 			body: JSON.stringify({openWorld: false}),
 			signal: undefined,
+		});
+	});
+
+	it("falls back to the internal ID during a rolling deployment without editor slugs", async () => {
+		const legacyResponse = stored();
+		delete (legacyResponse.data as {editorSlug?: string}).editorSlug;
+		const fetchWorld = jest
+			.fn()
+			.mockResolvedValueOnce(jsonResponse({data: {csrfToken: "csrf"}}))
+			.mockResolvedValueOnce(jsonResponse(legacyResponse, 201));
+
+		await expect(loadEditorWorld(fetchWorld)).resolves.toMatchObject({
+			editorSlug: worldId,
+			worldId,
 		});
 	});
 

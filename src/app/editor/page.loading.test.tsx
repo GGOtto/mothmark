@@ -36,6 +36,7 @@ describe("EditorPage loading", () => {
 					ok: true,
 					json: async () => ({
 						data: {
+							editorSlug: "my-private-world",
 							id: worldId,
 							name: "My private world",
 							ownerUserId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",

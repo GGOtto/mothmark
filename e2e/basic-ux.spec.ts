@@ -1,6 +1,7 @@
 import {expect, test, type Page} from "@playwright/test";
 
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
+import {createUniqueWorldSlug} from "../src/utils/worldSlug";
 
 type BootstrapRequest = {
 	cookie: string | undefined;
@@ -9,6 +10,8 @@ type BootstrapRequest = {
 };
 
 type DeterministicWorld = {
+	deletedAt?: string | null;
+	editorSlug: string;
 	id: string;
 	name: string;
 	ownerUserId: string;
@@ -16,6 +19,7 @@ type DeterministicWorld = {
 	revision: number;
 	updatedAt: string;
 	lastOpenedAt: string;
+	trashPurgeAfter?: string | null;
 };
 
 function collectBrowserErrors(page: Page) {
@@ -43,8 +47,15 @@ async function useDeterministicEditorWorld(
 		"7973548a-9957-40f4-8146-64d3ff7fb017",
 	];
 	const storedWorlds = sharedWorlds ?? new Map<string, DeterministicWorld>();
+	const trashedWorlds = new Map<string, DeterministicWorld>();
+	const createEditorSlug = (name: string) =>
+		createUniqueWorldSlug(
+			name,
+			[...storedWorlds.values(), ...trashedWorlds.values()].map((world) => world.editorSlug),
+		);
 	if (!storedWorlds.has(worldId)) {
 		storedWorlds.set(worldId, {
+			editorSlug: createEditorSlug("Private test world"),
 			id: worldId,
 			name: "Private test world",
 			ownerUserId,
@@ -75,10 +86,18 @@ async function useDeterministicEditorWorld(
 		await route.fulfill({
 			status: 200,
 			contentType: "application/json",
-			body: JSON.stringify({data: storedWorlds.get(worldId)}),
+			body: JSON.stringify({data: storedWorlds.get(worldId), meta: {userId: ownerUserId}}),
 		});
 	});
-	await page.route("**/api/world", async (route) => {
+	await page.route(/\/api\/world(?:\?.*)?$/, async (route) => {
+		if (new URL(route.request().url()).searchParams.get("view") === "trash") {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: {worlds: [...trashedWorlds.values()]}}),
+			});
+			return;
+		}
 		if (route.request().method() === "POST") {
 			if (storedWorlds.size >= maxWorlds) {
 				await route.fulfill({
@@ -95,24 +114,28 @@ async function useDeterministicEditorWorld(
 			}
 			const input = route.request().postDataJSON() as {
 				name: string;
-				source: "starter" | "blank";
+				source: "starter" | "blank" | "import";
+				world?: typeof initialWorld;
 			};
 			const id = additionalIds[storedWorlds.size - 1];
 			const createdWorld =
-				input.source === "blank"
-					? {
-							...initialWorld,
-							metadata: {...initialWorld.metadata, title: input.name, layers: []},
-							startRoomId: {type: "room" as const, id: "room-1"},
-							rooms: [],
-							items: [],
-							connections: [],
-							conditions: [],
-							effects: [],
-							events: [],
-						}
-					: {...initialWorld, metadata: {...initialWorld.metadata, title: input.name}};
+				input.source === "import" && input.world
+					? {...input.world, metadata: {...input.world.metadata, title: input.name}}
+					: input.source === "blank"
+						? {
+								...initialWorld,
+								metadata: {...initialWorld.metadata, title: input.name, layers: []},
+								startRoomId: {type: "room" as const, id: "room-1"},
+								rooms: [],
+								items: [],
+								connections: [],
+								conditions: [],
+								effects: [],
+								events: [],
+							}
+						: {...initialWorld, metadata: {...initialWorld.metadata, title: input.name}};
 			const created = {
+				editorSlug: createEditorSlug(input.name),
 				id,
 				name: input.name,
 				ownerUserId,
@@ -140,9 +163,100 @@ async function useDeterministicEditorWorld(
 			}),
 		});
 	});
-	await page.route("**/api/world/*", async (route) => {
-		const requestedId = new URL(route.request().url()).pathname.split("/").at(-1);
-		const stored = requestedId ? storedWorlds.get(requestedId) : undefined;
+	await page.route("**/api/world/**", async (route) => {
+		const url = new URL(route.request().url());
+		const segments = url.pathname.split("/").filter(Boolean);
+		const requestedId = segments[2];
+		const action = segments[3];
+		const stored = requestedId
+			? [...storedWorlds.values()].find(
+					(world) => world.id === requestedId || world.editorSlug === requestedId,
+				)
+			: undefined;
+		const trashed = requestedId ? trashedWorlds.get(requestedId) : undefined;
+
+		if (stored && action === "duplicate") {
+			if (storedWorlds.size >= maxWorlds) {
+				await route.fulfill({
+					status: 409,
+					contentType: "application/json",
+					body: JSON.stringify({
+						error: {message: `This account has reached its limit of ${maxWorlds} worlds.`},
+					}),
+				});
+				return;
+			}
+			const duplicateId = additionalIds.find((id) => !storedWorlds.has(id) && !trashedWorlds.has(id));
+			if (!duplicateId) throw new Error("No deterministic world ID is available.");
+			const duplicate = {
+				...stored,
+				editorSlug: createEditorSlug(`${stored.name} copy`),
+				id: duplicateId,
+				name: `${stored.name} copy`,
+				world: {...stored.world, metadata: {...stored.world.metadata, title: `${stored.name} copy`}},
+			};
+			storedWorlds.set(duplicateId, duplicate);
+			await route.fulfill({
+				status: 201,
+				contentType: "application/json",
+				body: JSON.stringify({data: duplicate}),
+			});
+			return;
+		}
+
+		if (trashed && action === "restore") {
+			if (storedWorlds.size >= maxWorlds) {
+				await route.fulfill({
+					status: 409,
+					contentType: "application/json",
+					body: JSON.stringify({
+						error: {message: `This account has reached its limit of ${maxWorlds} worlds.`},
+					}),
+				});
+				return;
+			}
+			trashedWorlds.delete(trashed.id);
+			storedWorlds.set(trashed.id, {...trashed, deletedAt: null, trashPurgeAfter: null});
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: trashed}),
+			});
+			return;
+		}
+
+		if (stored && action === "export") {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				headers: {
+					"content-disposition": `attachment; filename="${stored.editorSlug}.mothmark.json"`,
+				},
+				body: JSON.stringify({format: "mothmark-world", world: stored.world}),
+			});
+			return;
+		}
+
+		if (route.request().method() === "DELETE" && stored) {
+			storedWorlds.delete(stored.id);
+			trashedWorlds.set(stored.id, {
+				...stored,
+				deletedAt: new Date().toISOString(),
+				trashPurgeAfter: new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000).toISOString(),
+			});
+			await route.fulfill({status: 204});
+			return;
+		}
+
+		if (
+			route.request().method() === "DELETE" &&
+			trashed &&
+			url.searchParams.get("permanent") === "1"
+		) {
+			trashedWorlds.delete(trashed.id);
+			await route.fulfill({status: 204});
+			return;
+		}
 		if (!stored) {
 			await route.fulfill({
 				status: 404,
@@ -154,7 +268,8 @@ async function useDeterministicEditorWorld(
 
 		if (route.request().method() === "PUT") {
 			const body = route.request().postDataJSON() as {
-				world: typeof initialWorld;
+				name?: string;
+				world?: typeof initialWorld;
 				expectedRevision?: number;
 			};
 			if (body.expectedRevision !== undefined && body.expectedRevision !== stored.revision) {
@@ -170,7 +285,8 @@ async function useDeterministicEditorWorld(
 				});
 				return;
 			}
-			stored.world = body.world;
+			if (body.world) stored.world = body.world;
+			if (body.name) stored.name = body.name;
 			stored.revision += 1;
 			stored.updatedAt = new Date().toISOString();
 			saveCount += 1;
@@ -184,11 +300,13 @@ async function useDeterministicEditorWorld(
 
 	return {
 		worldId,
+		worldSlug: storedWorlds.get(worldId)?.editorSlug ?? "private-test-world",
 		bootstrapCount: () => bootstrapCount,
 		bootstrapRequests: () => [...bootstrapRequests],
 		saveCount: () => saveCount,
 		worlds: () => [...storedWorlds.values()],
 		worldStore: storedWorlds,
+		trashedWorlds: () => [...trashedWorlds.values()],
 	};
 }
 
@@ -269,10 +387,75 @@ test("temporary account guidance does not create an account until editor entry",
 	await expect(page.getByText(/There is not yet a sign-in or account-recovery flow/)).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(0);
 
-	await page.getByRole("link", {name: "Return to your worlds"}).click();
+	await page.getByRole("link", {name: "Open your worlds"}).click();
 	await expect(page).toHaveURL(/\/worlds$/);
 	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(1);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the temporary account page shows retention, exports data, and confirms deletion", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await useDeterministicEditorWorld(page);
+	let deleted = false;
+	await page.route("**/api/account/export", async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			headers: {"content-disposition": 'attachment; filename="mothmark-account-export.json"'},
+			body: JSON.stringify({format: "mothmark-account", worlds: []}),
+		});
+	});
+	await page.route("**/api/account", async (route) => {
+		if (route.request().method() === "DELETE") {
+			deleted = true;
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: {deleted: true}}),
+			});
+			return;
+		}
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					accountType: "anonymous",
+					cleanupAfter: null,
+					cleanupCancelledAt: new Date().toISOString(),
+					cleanupWasRecentlyCancelled: true,
+					createdAt: "2026-08-01T12:00:00.000Z",
+					retentionClass: "authored_editor",
+					usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
+					userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+				},
+			}),
+		});
+	});
+
+	await page.goto("/account");
+	await expect(page.getByText("1 of 5")).toBeVisible();
+	await expect(page.getByText(/180 days of inactivity/)).toBeVisible();
+	await expect(page.getByText(/pending cleanup was cancelled/)).toBeVisible();
+	const exportPromise = page.waitForEvent("download");
+	await page.getByRole("link", {name: "Export all data"}).click();
+	expect((await exportPromise).suggestedFilename()).toBe("mothmark-account-export.json");
+
+	const deleteButton = page.getByRole("button", {name: "Delete account"});
+	await deleteButton.click();
+	await expect(page.getByRole("dialog", {name: "Delete this account?"})).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(deleteButton).toBeFocused();
+	await deleteButton.click();
+	await page
+		.getByRole("dialog", {name: "Delete this account?"})
+		.getByRole("button", {name: "Delete account"})
+		.click();
+	await expect(page).toHaveURL(/\/$/);
+	expect(deleted).toBe(true);
 	expect(browserErrors).toEqual([]);
 });
 
@@ -309,7 +492,7 @@ test("an inaccessible world cannot be restored from an old local draft", async (
 	});
 	await page.goto(`/worlds/${inaccessibleWorldId}`);
 
-	await expect(page.getByLabel("Current world")).toHaveText("Loading world…");
+	await expect(page.getByRole("banner").getByLabel("Current world")).toHaveText("Loading world…");
 	await expect(page.getByRole("button", {name: "Leaked private draft"})).not.toBeVisible();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeDisabled();
 	expect(browserErrors.filter((error) => !error.includes("status of 404"))).toEqual([]);
@@ -330,10 +513,10 @@ test("private worlds persist for one browser and remain unresolved for another",
 		"b84151a0-ce68-4aa9-984f-b0306bcfa2c7",
 	);
 
-	await firstPage.goto(`/worlds/${first.worldId}`);
-	await secondPage.goto(`/worlds/${second.worldId}`);
-	await expect(firstPage).toHaveURL(new RegExp(`/worlds/${first.worldId}$`));
-	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${second.worldId}$`));
+	await firstPage.goto(`/worlds/${first.worldSlug}`);
+	await secondPage.goto(`/worlds/${second.worldSlug}`);
+	await expect(firstPage).toHaveURL(new RegExp(`/worlds/${first.worldSlug}$`));
+	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${second.worldSlug}$`));
 
 	const nameField = firstPage.getByRole("textbox", {name: "Name", exact: true});
 	await expect(nameField).toBeVisible();
@@ -347,7 +530,9 @@ test("private worlds persist for one browser and remain unresolved for another",
 	expect(first.bootstrapCount()).toBe(2);
 
 	await secondPage.goto(`/worlds/${first.worldId}`);
-	await expect(secondPage.getByLabel("Current world")).toHaveText("Loading world…");
+	await expect(secondPage.getByRole("banner").getByLabel("Current world")).toHaveText(
+		"Loading world…",
+	);
 	await expect(secondPage.getByRole("button", {name: "A private entrance"})).not.toBeVisible();
 	await expect(secondPage.getByRole("textbox", {name: "Game command"})).toBeDisabled();
 
@@ -366,8 +551,8 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	const first = await useDeterministicEditorWorld(firstPage);
 	await useDeterministicEditorWorld(secondPage, first.worldId, 5, first.worldStore);
 
-	await firstPage.goto(`/worlds/${first.worldId}`);
-	await secondPage.goto(`/worlds/${first.worldId}`);
+	await firstPage.goto(`/worlds/${first.worldSlug}`);
+	await secondPage.goto(`/worlds/${first.worldSlug}`);
 	const firstName = firstPage.getByRole("textbox", {name: "Name", exact: true});
 	const secondName = secondPage.getByRole("textbox", {name: "Name", exact: true});
 	await firstName.fill("First tab revision");
@@ -386,7 +571,7 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	await expect(
 		secondPage.getByText("Save this world before switching.", {exact: true}),
 	).toBeVisible();
-	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${first.worldId}$`));
+	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${first.worldSlug}$`));
 	expect(first.worlds()[0].world.rooms[0].name).toBe("First tab revision");
 	expect(firstErrors).toEqual([]);
 	expect(secondErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
@@ -411,7 +596,7 @@ test("the world library creates, switches, isolates, and limits private worlds",
 		await dialog.getByRole("textbox", {name: "World name"}).fill(name);
 		await dialog.getByRole("radio", {name: source}).check();
 		await dialog.getByRole("button", {name: "Create world"}).click();
-		await expect(page).toHaveURL(/\/worlds\/[0-9a-f-]+$/);
+		await expect(page).toHaveURL(new RegExp(`/worlds/${name.toLowerCase().replaceAll(" ", "-")}$`));
 		if (source === "Blank world") {
 			await expect(page.getByText("No rooms available. Add a room to begin exploring.")).toBeVisible();
 			await expect(page.getByRole("button", {name: "Shop Floor"})).not.toBeVisible();
@@ -430,7 +615,9 @@ test("the world library creates, switches, isolates, and limits private worlds",
 	await createWorld("Bell archive", "Bell landing", "Starter world");
 
 	await expect(page.getByText("3 of 3 worlds")).toBeVisible();
-	await expect(page.getByText("Delete a world before creating another.")).toBeVisible();
+	await expect(
+		page.getByText("Move a world to trash before creating or restoring another."),
+	).toBeVisible();
 	await expect(page.getByRole("button", {name: "New world"})).toBeDisabled();
 
 	await page.getByRole("link", {name: /Ash archive/}).click();
@@ -444,7 +631,28 @@ test("the world library creates, switches, isolates, and limits private worlds",
 	await page.goto("/worlds");
 	await page.setViewportSize({width: 390, height: 844});
 	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
-	await expect(page.getByRole("link", {name: /Private test world/})).toBeVisible();
+	const privateWorldRow = page.getByRole("link", {name: /Private test world/});
+	await expect(privateWorldRow).toBeVisible();
+	await expect(
+		privateWorldRow.getByText(
+			`${initialWorld.rooms.length} rooms · ${initialWorld.items.length} items`,
+		),
+	).toBeVisible();
+	const actionTrigger = page.getByRole("button", {name: "Actions for Private test world"});
+	const [triggerBox, iconBox] = await Promise.all([
+		actionTrigger.boundingBox(),
+		actionTrigger.locator("svg").boundingBox(),
+	]);
+	expect(triggerBox).not.toBeNull();
+	expect(iconBox).not.toBeNull();
+	if (triggerBox && iconBox) {
+		expect(
+			Math.abs(triggerBox.x + triggerBox.width / 2 - (iconBox.x + iconBox.width / 2)),
+		).toBeLessThan(1);
+		expect(
+			Math.abs(triggerBox.y + triggerBox.height / 2 - (iconBox.y + iconBox.height / 2)),
+		).toBeLessThan(1);
+	}
 
 	const apiLimitStatus = await page.evaluate(async () => {
 		const response = await fetch("/api/world", {
@@ -459,10 +667,116 @@ test("the world library creates, switches, isolates, and limits private worlds",
 	expect(browserErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
 });
 
+test("a new world can start from an exported JSON file", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await useDeterministicEditorWorld(page);
+	const importedWorld = {
+		...initialWorld,
+		rooms: [{...initialWorld.rooms[0], name: "Imported landing"}, ...initialWorld.rooms.slice(1)],
+	};
+
+	await page.goto("/worlds");
+	await page.getByRole("button", {name: "New world"}).click();
+	const dialog = page.getByRole("dialog", {name: "New world"});
+	await dialog.getByRole("radio", {name: "Import JSON file"}).check();
+	await dialog.getByLabel("World JSON file").setInputFiles({
+		name: "imported-archive.mothmark.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({format: "mothmark-world", worldName: "Imported archive", world: importedWorld}),
+		),
+	});
+	await expect(dialog.getByRole("textbox", {name: "World name"})).toHaveValue("Imported archive");
+	await dialog.getByRole("button", {name: "Create world"}).click();
+
+	await expect(page).toHaveURL(/\/worlds\/imported-archive$/);
+	await expect(page.getByRole("button", {name: "Imported landing"})).toBeVisible();
+	expect(browserErrors).toEqual([]);
+});
+
+test("world lifecycle actions rename, export, duplicate, trash, restore, and permanently delete", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto("/worlds");
+
+	const actions = page.getByRole("button", {name: "Actions for Private test world"});
+	await actions.click();
+	await page.getByRole("menuitem", {name: "Rename"}).click();
+	const renameDialog = page.getByRole("dialog", {name: "Rename world"});
+	await renameDialog.getByRole("textbox", {name: "World name"}).fill("Renamed archive");
+	await renameDialog.getByRole("button", {name: "Rename"}).click();
+	await expect(page.getByRole("link", {name: /Renamed archive/})).toBeVisible();
+
+	await page.getByRole("button", {name: "Actions for Renamed archive"}).click();
+	const downloadPromise = page.waitForEvent("download");
+	await page.getByRole("menuitem", {name: "Export"}).click();
+	expect((await downloadPromise).suggestedFilename()).toBe(`${editor.worldSlug}.mothmark.json`);
+
+	await page.getByRole("button", {name: "Actions for Renamed archive"}).click();
+	await page.getByRole("menuitem", {name: "Duplicate"}).click();
+	await expect(page.getByRole("link", {name: /Renamed archive copy/})).toBeVisible();
+
+	const renamedActions = page.getByRole("button", {
+		name: "Actions for Renamed archive",
+		exact: true,
+	});
+	await renamedActions.click();
+	await page.getByRole("menuitem", {name: "Move to trash"}).click();
+	await expect(page.getByRole("dialog", {name: "Move world to trash?"})).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(renamedActions).toBeFocused();
+
+	await renamedActions.click();
+	await page.getByRole("menuitem", {name: "Move to trash"}).click();
+	await page
+		.getByRole("dialog", {name: "Move world to trash?"})
+		.getByRole("button", {name: "Move to trash"})
+		.click();
+	await expect(page.getByRole("link", {name: /Renamed archive$/})).not.toBeVisible();
+
+	await page.getByRole("button", {name: /^Trash/}).click();
+	await expect(page.getByRole("heading", {name: "Trash"})).toBeVisible();
+	await expect(page.getByText("Renamed archive", {exact: true})).toBeVisible();
+	await page.getByRole("button", {name: "Restore"}).click();
+	await expect(page.getByText("Trash is empty.")).toBeVisible();
+
+	await page.getByRole("button", {name: "Worlds", exact: true}).click();
+	await page.getByRole("button", {name: "Actions for Renamed archive copy"}).click();
+	await page.getByRole("menuitem", {name: "Move to trash"}).click();
+	await page
+		.getByRole("dialog", {name: "Move world to trash?"})
+		.getByRole("button", {name: "Move to trash"})
+		.click();
+	await page.getByRole("button", {name: /^Trash/}).click();
+
+	const permanent = page.getByRole("button", {name: "Delete permanently"});
+	await permanent.click();
+	await expect(page.getByRole("dialog", {name: "Delete world permanently?"})).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(permanent).toBeFocused();
+	await permanent.click();
+	await page
+		.getByRole("dialog", {name: "Delete world permanently?"})
+		.getByRole("button", {name: "Delete permanently"})
+		.click();
+	await expect(page.getByText("Trash is empty.")).toBeVisible();
+
+	await page.setViewportSize({width: 390, height: 844});
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
+	expect(browserErrors).toEqual([]);
+});
+
 test("primary editor workspaces are directly reachable", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
-	await page.goto(`/worlds/${editor.worldId}`);
+	await page.goto("/worlds/undefined");
+	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 
 	await page.getByRole("button", {name: "Items"}).click();
@@ -477,11 +791,11 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await page.getByRole("button", {name: /Commands/}).click();
 	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
 
-	await page.getByRole("button", {name: "World Config"}).click();
-	await expect(page.getByRole("button", {name: "Reset example"})).toBeVisible();
+	await page.getByRole("button", {name: "World settings"}).click();
+	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
 
 	await page.goto(`/editor/${editor.worldId}`);
-	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldId}$`));
+	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
 	expect(browserErrors).toEqual([]);
 });
 

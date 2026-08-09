@@ -4,6 +4,7 @@ import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 
 const WorldResponseSchema = z.object({
 	data: z.object({
+		editorSlug: z.string().min(1).nullable().optional(),
 		id: z.uuid(),
 		name: z.string(),
 		ownerUserId: z.uuid(),
@@ -118,6 +119,7 @@ export function migrateRoomFeaturesToItems(value: unknown): unknown {
 }
 
 export type LoadedEditorWorld = {
+	editorSlug: string;
 	world: World;
 	worldId: string;
 	worldName: string;
@@ -133,6 +135,7 @@ const readWorldResponse = async (response: Response): Promise<LoadedEditorWorld>
 	const result = WorldResponseSchema.parse(await response.json()).data;
 	const world = WorldSchema.parse(migrateRoomFeaturesToItems(result.world));
 	return {
+		editorSlug: result.editorSlug ?? result.id,
 		world,
 		worldId: result.id,
 		worldName: result.name,
@@ -160,9 +163,11 @@ export async function loadEditorWorld(
 		body: JSON.stringify({openWorld: !requestedWorldId}),
 		signal,
 	});
-	const bootstrapWorld = await readWorldResponse(bootstrapResponse);
-
-	if (!requestedWorldId || requestedWorldId === bootstrapWorld.worldId) return bootstrapWorld;
-
-	return readWorldResponse(await fetchWorld(`/api/world/${requestedWorldId}`, {signal}));
+	if (!bootstrapResponse.ok) {
+		throw new Error(`Failed to load the editor world (${bootstrapResponse.status}).`);
+	}
+	if (requestedWorldId) {
+		return readWorldResponse(await fetchWorld(`/api/world/${requestedWorldId}`, {signal}));
+	}
+	return readWorldResponse(bootstrapResponse);
 }

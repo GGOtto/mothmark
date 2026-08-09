@@ -73,8 +73,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Review validation errors and broken world logic.",
 	},
 	"world-settings": {
-		title: "World Config",
-		description: "Configure project-level world settings.",
+		title: "World settings",
+		description: "Configure world-level settings.",
 	},
 	"editor-settings": {
 		title: "Settings",
@@ -104,9 +104,11 @@ async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
 
 export default function EditorPage() {
 	const pathname = usePathname();
-	const [requestedWorldId] = useState(
-		() => pathname.match(/^\/worlds\/([^/]+)$/)?.[1] ?? pathname.match(/^\/editor\/([^/]+)$/)?.[1],
-	);
+	const [requestedWorldId] = useState(() => {
+		const locator =
+			pathname.match(/^\/worlds\/([^/]+)$/)?.[1] ?? pathname.match(/^\/editor\/([^/]+)$/)?.[1];
+		return locator === "undefined" ? undefined : locator;
+	});
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
 	const [mapZoom, setMapZoom] = useState(1);
@@ -142,6 +144,7 @@ export default function EditorPage() {
 		loadEditorWorld(abortController.signal, requestedWorldId)
 			.then(
 				({
+					editorSlug,
 					world,
 					worldId,
 					worldName: loadedName,
@@ -161,7 +164,9 @@ export default function EditorPage() {
 					});
 					setConnectionDraft({state: "idle"});
 					setWorldIsLoaded(true);
-					if (!requestedWorldId) window.history.replaceState(null, "", `/worlds/${worldId}`);
+					if (window.location.pathname !== `/worlds/${editorSlug}`) {
+						window.history.replaceState(null, "", `/worlds/${editorSlug}`);
+					}
 				},
 			)
 			.catch((error: unknown) => {
@@ -244,9 +249,6 @@ export default function EditorPage() {
 
 	return (
 		<main className="editorPage">
-			<p className="editorWorldName" aria-label="Current world">
-				{worldIsLoaded ? editorWorld.metadata.title || "Untitled world" : "Loading world…"}
-			</p>
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<EditorMainPanel
@@ -811,7 +813,7 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 
 				<p className="placeholderWorkspaceDescription">
 					{isWorldSettings
-						? "World-level controls apply only to this private world."
+						? "Reset replaces every room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world. Your private world identity stays the same."
 						: `This area will become the ${metadata.title.toLowerCase()} editor. The sidebars and command line stay pinned while this workspace swaps out.`}
 				</p>
 

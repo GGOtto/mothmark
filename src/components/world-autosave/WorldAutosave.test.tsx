@@ -136,8 +136,12 @@ describe("world autosave", () => {
 			json: jest.fn().mockResolvedValue({
 				data: {
 					worlds: [
-						{id: worldId, name: "Main world"},
-						{id: "f76f909d-5c82-4b04-aec6-85c9a175e1a2", name: "Second world"},
+						{editorSlug: "main-world", id: worldId, name: "Main world"},
+						{
+							editorSlug: "second-world",
+							id: "f76f909d-5c82-4b04-aec6-85c9a175e1a2",
+							name: "Second world",
+						},
 					],
 				},
 			}),
@@ -234,7 +238,7 @@ describe("world autosave", () => {
 		jest.spyOn(window, "confirm").mockReturnValue(true);
 		renderAutosaveHarness(initialWorld);
 
-		fireEvent.click(screen.getByRole("button", {name: "Reset example"}));
+		fireEvent.click(screen.getByRole("button", {name: "Reset to starter world"}));
 
 		expect(handleReset).toHaveBeenCalledTimes(1);
 	});

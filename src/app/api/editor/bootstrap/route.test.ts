@@ -5,6 +5,7 @@ import {
 	createAnonymousEditorBootstrap,
 	findBootstrapEditorActor,
 	getOrCreateFirstOwnedWorld,
+	getRecentOwnedWorld,
 } from "@/db/dbal/sessionsRepository";
 import type {WorldRecord} from "@/db/dbal/worldsRepository";
 
@@ -14,6 +15,7 @@ jest.mock("@/db/dbal/sessionsRepository", () => ({
 	createAnonymousEditorBootstrap: jest.fn(),
 	findBootstrapEditorActor: jest.fn(),
 	getOrCreateFirstOwnedWorld: jest.fn(),
+	getRecentOwnedWorld: jest.fn(),
 }));
 
 const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
@@ -28,6 +30,8 @@ const world: WorldRecord = {
 	kind: "editor",
 	updatedByUserId: userId,
 	deletedAt: null,
+	editorSlug: "main-world",
+	trashPurgeAfter: null,
 	createdAt: new Date("2026-08-08T12:00:00Z"),
 	updatedAt: new Date("2026-08-08T12:00:00Z"),
 	lastOpenedAt: new Date("2026-08-08T12:00:00Z"),
@@ -65,14 +69,14 @@ describe("editor bootstrap", () => {
 		expect(createAnonymousEditorBootstrap).toHaveBeenCalledWith(true);
 	});
 
-	it("serially ensures one first world for a returning resolved user", async () => {
+	it("returns a recent world without recreating a returning user's empty library", async () => {
 		jest.mocked(findBootstrapEditorActor).mockResolvedValue({
 			userId,
 			accountType: "anonymous",
 			siteRole: "user",
 			audience: "editor",
 		});
-		jest.mocked(getOrCreateFirstOwnedWorld).mockResolvedValue(world);
+		jest.mocked(getRecentOwnedWorld).mockResolvedValue(world);
 
 		const response = await POST(
 			new Request("http://localhost/api/editor/bootstrap", {
@@ -86,8 +90,32 @@ describe("editor bootstrap", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(findBootstrapEditorActor).toHaveBeenCalledWith("returning-session-token");
-		expect(getOrCreateFirstOwnedWorld).toHaveBeenCalledWith(userId, false);
+		expect(getRecentOwnedWorld).toHaveBeenCalledWith(userId);
+		expect(getOrCreateFirstOwnedWorld).not.toHaveBeenCalled();
 		expect(createAnonymousEditorBootstrap).not.toHaveBeenCalled();
+	});
+
+	it("keeps an intentionally empty returning library empty", async () => {
+		jest.mocked(findBootstrapEditorActor).mockResolvedValue({
+			userId,
+			accountType: "anonymous",
+			siteRole: "user",
+			audience: "editor",
+		});
+		jest.mocked(getRecentOwnedWorld).mockResolvedValue(undefined);
+		const response = await POST(
+			new Request("http://localhost/api/editor/bootstrap", {
+				method: "POST",
+				headers: {
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf; mothmark_editor_session=returning-session-token",
+					"x-csrf-token": "csrf",
+				},
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({data: null, meta: {userId}});
+		expect(getOrCreateFirstOwnedWorld).not.toHaveBeenCalled();
 	});
 
 	it("records an editor opening only when the caller is entering that world", async () => {

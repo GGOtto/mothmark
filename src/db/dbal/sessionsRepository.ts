@@ -12,6 +12,7 @@ import {
 import {getDb} from "./knex";
 import {
 	ensureDefaultUserLimits,
+	createOwnedEditorSlug,
 	mapWorldRow,
 	type WorldRecord,
 	type WorldRow,
@@ -27,6 +28,7 @@ export type CurrentActor = {
 	accountType: "anonymous" | "registered";
 	siteRole: "admin" | "user";
 	audience: SessionAudience;
+	cleanupCancelled?: true;
 };
 
 export type SessionActorRow = {
@@ -66,8 +68,12 @@ export function activeActorFromSession(
 	};
 }
 
-async function findSessionActorRow(token: string): Promise<SessionActorRow | undefined> {
-	return database("sessions as s")
+async function findSessionActorRow(
+	token: string,
+	connection: Knex | Knex.Transaction = database,
+	lockUser = false,
+): Promise<SessionActorRow | undefined> {
+	const query = connection("sessions as s")
 		.join("users as u", "u.id", "s.user_id")
 		.select<SessionActorRow[]>(
 			"s.id as session_id",
@@ -82,49 +88,69 @@ async function findSessionActorRow(token: string): Promise<SessionActorRow | und
 			"u.deleted_at as user_deleted_at",
 			"u.cleanup_scheduled_at",
 		)
-		.where("s.token_hash", hashSessionToken(token))
-		.first();
+		.where("s.token_hash", hashSessionToken(token));
+	if (lockUser) query.forUpdate("u");
+	return query.first();
 }
 
 export type BootstrapEditorActor = CurrentActor | "blocked" | undefined;
 
 export async function findBootstrapEditorActor(token: string): Promise<BootstrapEditorActor> {
-	const row = await findSessionActorRow(token);
-	if (!row) return undefined;
-	if (row.user_status === "suspended") return "blocked";
-	return activeActorFromSession(row, "editor", new Date());
+	return database.transaction(async (transaction) => {
+		const now = new Date();
+		const row = await findSessionActorRow(token, transaction, true);
+		if (!row) return undefined;
+		if (row.user_status === "suspended") return "blocked";
+		const actor = activeActorFromSession(row, "editor", now);
+		if (!actor) return undefined;
+		return refreshActorActivity(transaction, row, actor, now);
+	});
 }
 
 export async function findCurrentActor(
 	token: string,
 	audience: SessionAudience,
 ): Promise<CurrentActor | undefined> {
-	const now = new Date();
-	const row = await findSessionActorRow(token);
+	return database.transaction(async (transaction) => {
+		const now = new Date();
+		const row = await findSessionActorRow(token, transaction, true);
+		if (!row) return undefined;
+		const actor = activeActorFromSession(row, audience, now);
+		if (!actor) return undefined;
+		return refreshActorActivity(transaction, row, actor, now);
+	});
+}
 
-	if (!row) return undefined;
-	const actor = activeActorFromSession(row, audience, now);
-	if (!actor) return undefined;
-
+async function refreshActorActivity(
+	transaction: Knex.Transaction,
+	row: SessionActorRow,
+	actor: CurrentActor,
+	now: Date,
+): Promise<CurrentActor> {
 	const sessionSeenIsStale =
 		now.getTime() - new Date(row.session_last_seen_at).getTime() >= LAST_SEEN_WRITE_INTERVAL_MS;
 	if (sessionSeenIsStale || row.cleanup_scheduled_at) {
-		await database.transaction(async (transaction) => {
-			if (sessionSeenIsStale) {
-				await transaction("sessions").where({id: row.session_id}).update({last_seen_at: now});
-			}
-			await transaction("users")
-				.where({id: row.user_id})
-				.update({
-					...(sessionSeenIsStale && {last_seen_at: now}),
-					cleanup_scheduled_at: null,
-					cleanup_after: null,
-					cleanup_reason: null,
-				});
-		});
+		if (sessionSeenIsStale) {
+			await transaction("sessions").where({id: row.session_id}).update({last_seen_at: now});
+		}
+		await transaction("users")
+			.where({id: row.user_id})
+			.update({
+				...(sessionSeenIsStale && {last_seen_at: now}),
+				...(row.cleanup_scheduled_at && {cleanup_cancelled_at: now}),
+				cleanup_scheduled_at: null,
+				cleanup_after: null,
+				cleanup_reason: null,
+				updated_at: now,
+			});
+		if (row.cleanup_scheduled_at) {
+			await transaction("operational_events").insert({
+				event_type: "anonymous_cleanup_cancelled_on_return",
+				details: {userId: row.user_id},
+			});
+		}
 	}
-
-	return actor;
+	return row.cleanup_scheduled_at ? {...actor, cleanupCancelled: true} : actor;
 }
 
 async function ensureFirstOwnedWorld(
@@ -177,9 +203,11 @@ async function ensureFirstOwnedWorld(
 	}
 
 	if (!template) throw new Error("The initial world template could not be created.");
+	const editorSlug = await createOwnedEditorSlug(transaction, userId, template.name);
 
 	const [world] = await transaction<WorldRow>("worlds")
 		.insert({
+			editor_slug: editorSlug,
 			name: template.name,
 			slug: null,
 			world: template.world,
@@ -204,6 +232,20 @@ export async function getOrCreateFirstOwnedWorld(
 	return database.transaction((transaction) =>
 		ensureFirstOwnedWorld(transaction, userId, recordOpened),
 	);
+}
+
+export async function getRecentOwnedWorld(userId: string): Promise<WorldRecord | undefined> {
+	const row = await database<WorldRow>("worlds as w")
+		.leftJoin("user_world_activity as a", function () {
+			this.on("a.world_id", "=", "w.id").andOn("a.user_id", "=", "w.owner_user_id");
+		})
+		.select("w.*", "a.last_opened_at")
+		.where({"w.owner_user_id": userId, "w.kind": "editor"})
+		.whereNull("w.deleted_at")
+		.orderByRaw("a.last_opened_at desc nulls last")
+		.orderBy("w.updated_at", "desc")
+		.first();
+	return row ? mapWorldRow(row) : undefined;
 }
 
 export type AnonymousEditorBootstrap = {

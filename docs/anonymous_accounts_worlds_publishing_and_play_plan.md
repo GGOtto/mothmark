@@ -81,7 +81,7 @@ The initial route map is:
 mothmark.app
 ├── /
 ├── /worlds
-├── /worlds/[worldId]
+├── /worlds/[editorSlug]
 ├── /account
 └── /admin
     ├── /users
@@ -101,6 +101,11 @@ play.mothmark.app
 
 `play.mothmark.app/[world]` uses the publication slug. It must never expose an editor-world UUID as
 the public identifier.
+
+Private editor URLs use a separate stable, owner-scoped `editor_slug` derived from the world name.
+It is readable but not public or authoritative: the owner session still gates every lookup, world
+UUIDs remain internal mutation identifiers, and old UUID URLs canonicalize to the editor slug. A
+rename does not change an existing editor slug. Publication slugs remain a distinct later concept.
 
 The two hosts may share one Next.js codebase and database. Host-aware routing must keep their public
 route surfaces distinct. Do not expose editor or administrator endpoints through the play host.
@@ -472,7 +477,8 @@ edit it, refresh, and return to it without another browser being able to see or 
 - Store only the session-token hash.
 - Add server-only current-actor and authorization helpers.
 - Scope world repository operations by owner.
-- Replace the shared `slug/main` editor load and save path with an authorized world-ID path.
+- Replace the shared `slug/main` editor load and save path with an authorized owner-scoped world
+  path.
 - Close or internalize generic destructive world and schema-version routes before public access.
 - Require same-origin and CSRF validation on mutations.
 
@@ -480,7 +486,7 @@ edit it, refresh, and return to it without another browser being able to see or 
 
 - Replace the placeholder home action with `Start building`.
 - `Start building` opens `/worlds`, which bootstraps only when the visitor intentionally enters it.
-- `/worlds/[worldId]` opens an authorized editor world; legacy `/editor` URLs redirect into the
+- `/worlds/[editorSlug]` opens an authorized editor world; legacy UUID and `/editor` URLs redirect into the
   `/worlds` route family.
 - The editor displays its current world name.
 - Add a restrained temporary-account explanation reachable from the header or account menu.
@@ -521,17 +527,18 @@ drafts or editor state leaking between them.
 - Add `user_world_activity` and record `last_opened_at` independently of edit timestamps.
 - Add authorized create and list operations for owned active editor worlds.
 - Enforce the world limit transactionally under concurrent create requests.
-- Validate world names but do not expose public slugs or publishing metadata.
+- Validate world names and create stable owner-scoped editor slugs, but do not expose publication
+  slugs or publishing metadata.
 - Key local drafts by both user ID and world ID.
 - Maintain independent server revision and recovery metadata for each local draft.
 
 ### UI
 
 - Add `/worlds` as the returning user's primary page.
-- Present a compact world list with name, last edited time, and meaningful save/validation state.
-- Add `New world` with starter-template and blank-world choices.
+- Present a compact world list with name, last edited time, and room/item counts.
+- Add `New world` with starter-template, blank-world, and validated JSON-import choices.
 - Show finite usage as `N of M worlds` and explain a reached limit without upgrade marketing.
-- Keep the main editor route at `/worlds/[worldId]` beneath the world library.
+- Keep the main editor route at `/worlds/[editorSlug]` beneath the world library.
 - Add a compact editor world switcher with recent worlds, `View all worlds`, and `New world`.
 - Hide global autosave controls when no editor target is registered.
 - Finish or visibly reconcile a pending save before navigating to another world.
@@ -550,7 +557,7 @@ drafts or editor state leaking between them.
   isolated.
 - Open the same world in two tabs and verify revision conflict behavior.
 - Reach the configured limit and confirm both UI and API reject another world.
-- Enter another user's editor URL and receive the same unresolved result as a missing UUID.
+- Enter another user's editor URL and receive the same unresolved result as a missing editor slug.
 - Verify the world library at ordinary desktop and narrow mobile widths; the editor may retain its
   documented desktop limitation.
 
@@ -560,7 +567,13 @@ drafts or editor state leaking between them.
 - Multiple private worlds work through database persistence, autosave, local recovery, and navigation.
 - Quotas and ownership remain enforceable when the UI is bypassed.
 
-## Slice 3: World lifecycle and temporary-account controls
+## [x] Slice 3: World lifecycle and temporary-account controls
+
+Slice 3 uses the provisional inactivity periods above: 24 hours for empty accounts, 7 days for
+untouched editor accounts, and 180 days for authored editor accounts. Scheduling starts a separate
+7-day grace period. Trashed worlds remain recoverable for 30 days; automatic trash purging is not
+enabled in this slice, while an owner-confirmed permanent deletion is immediate and irreversible.
+Restoring a world is rejected when the owner is already at the active-world limit.
 
 **Outcome:** A user can manage the complete private lifecycle of their worlds, understand the limits
 of a browser-bound temporary account, and abandoned anonymous accounts are removed safely instead of
@@ -569,6 +582,8 @@ accumulating forever.
 ### Data and services
 
 - Add authorized rename, duplicate, export, soft-delete, restore, and permanent-delete operations.
+- Use the stable private editor slug in export filenames and retain the internal UUID in export
+  recovery metadata.
 - Count only active worlds against the world limit; define how restored worlds behave when the user
   is already at the limit.
 - Preserve recoverable soft-deleted worlds for a documented interval before permanent purge is

@@ -7,6 +7,7 @@ import {
 	createAnonymousEditorBootstrap,
 	findBootstrapEditorActor,
 	getOrCreateFirstOwnedWorld,
+	getRecentOwnedWorld,
 } from "@/db/dbal/sessionsRepository";
 import {handleWorldRouteError} from "../../world/_shared";
 
@@ -43,11 +44,17 @@ export async function POST(request: Request): Promise<NextResponse> {
 		const actor = sessionToken ? await findBootstrapEditorActor(sessionToken) : undefined;
 		if (actor === "blocked") return authRequiredResponse();
 		if (actor) {
-			return NextResponse.json({data: await getOrCreateFirstOwnedWorld(actor.userId, recordOpened)});
+			const world = recordOpened
+				? await getOrCreateFirstOwnedWorld(actor.userId, true)
+				: await getRecentOwnedWorld(actor.userId);
+			return NextResponse.json({data: world ?? null, meta: {userId: actor.userId}});
 		}
 
 		const bootstrap = await createAnonymousEditorBootstrap(recordOpened);
-		const response = NextResponse.json({data: bootstrap.world}, {status: 201});
+		const response = NextResponse.json(
+			{data: bootstrap.world, meta: {userId: bootstrap.userId}},
+			{status: 201},
+		);
 		response.cookies.set(EDITOR_SESSION_COOKIE, bootstrap.sessionToken, {
 			httpOnly: true,
 			sameSite: "lax",

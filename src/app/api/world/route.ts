@@ -2,7 +2,11 @@ import {NextResponse} from "next/server";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
-import {createOwnedWorld, getOwnedWorldLibrary} from "@/db/dbal/worldsRepository";
+import {
+	createOwnedWorld,
+	getOwnedWorldLibrary,
+	listOwnedTrashedWorlds,
+} from "@/db/dbal/worldsRepository";
 
 import {
 	CreateWorldRequestSchema,
@@ -18,6 +22,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		if (new URL(request.url).searchParams.get("view") === "trash") {
+			return NextResponse.json({data: {worlds: await listOwnedTrashedWorlds(actor.userId)}});
+		}
 		return NextResponse.json({data: await getOwnedWorldLibrary(actor.userId)});
 	} catch (error) {
 		return handleWorldRouteError(error);

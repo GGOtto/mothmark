@@ -95,7 +95,10 @@
 - Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
   deliberately bounded theme previews. All other production colors must use semantic tokens.
 - Keep private-world navigation under `/worlds`: the library is `/worlds` and an editor is
-  `/worlds/[worldId]`. Treat old `/editor` URLs as redirects, not the primary route family.
+  `/worlds/[editorSlug]`. Use a stable, owner-scoped readable editor slug for private URLs and export
+  filenames while keeping the world UUID internal. Editor slugs are distinct from future publication
+  slugs and do not grant or broaden access. Treat old UUID and `/editor` URLs as redirects, not the
+  primary route family.
 - A blank-world choice must contain no authored rooms, items, connections, layers, conditions,
   effects, or events. The first room a user adds becomes its starting room.
 - Keep the bundled starter world small, plainspoken, and clearly instructional. Avoid sprawling

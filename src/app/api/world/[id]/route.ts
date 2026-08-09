@@ -2,10 +2,17 @@ import {NextResponse} from "next/server";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
-import {deleteOwnedWorld, getOwnedWorld, updateOwnedWorld} from "@/db/dbal/worldsRepository";
+import {
+	deleteOwnedWorld,
+	getOwnedWorld,
+	getOwnedWorldBySlug,
+	permanentlyDeleteOwnedWorld,
+	updateOwnedWorld,
+} from "@/db/dbal/worldsRepository";
 
 import {
 	WorldIdSchema,
+	WorldLocatorSchema,
 	handleWorldRouteError,
 	invalidJsonResponse,
 	UpdateWorldRequestSchema,
@@ -26,17 +33,24 @@ const parseWorldId = async (context: WorldRouteContext) => {
 	return WorldIdSchema.safeParse(id);
 };
 
-export async function GET(request: Request, context: WorldRouteContext): Promise<NextResponse> {
-	const idResult = await parseWorldId(context);
+const parseWorldLocator = async (context: WorldRouteContext) => {
+	const {id} = await context.params;
+	return WorldLocatorSchema.safeParse(id);
+};
 
-	if (!idResult.success) {
-		return validationErrorResponse(idResult.error.issues);
+export async function GET(request: Request, context: WorldRouteContext): Promise<NextResponse> {
+	const locatorResult = await parseWorldLocator(context);
+
+	if (!locatorResult.success) {
+		return validationErrorResponse(locatorResult.error.issues);
 	}
 
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
-		const world = await getOwnedWorld(actor.userId, idResult.data);
+		const world = WorldIdSchema.safeParse(locatorResult.data).success
+			? await getOwnedWorld(actor.userId, locatorResult.data)
+			: await getOwnedWorldBySlug(actor.userId, locatorResult.data);
 		return world ? NextResponse.json({data: world}) : worldNotFoundResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
@@ -94,9 +108,11 @@ export async function DELETE(request: Request, context: WorldRouteContext): Prom
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
-		return (await deleteOwnedWorld(actor.userId, idResult.data))
-			? new Response(null, {status: 204})
-			: worldNotFoundResponse();
+		const permanent = new URL(request.url).searchParams.get("permanent") === "1";
+		const deleted = permanent
+			? await permanentlyDeleteOwnedWorld(actor.userId, idResult.data)
+			: await deleteOwnedWorld(actor.userId, idResult.data);
+		return deleted ? new Response(null, {status: 204}) : worldNotFoundResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
 	}

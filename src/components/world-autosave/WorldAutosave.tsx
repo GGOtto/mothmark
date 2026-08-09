@@ -603,7 +603,7 @@ export function CurrentWorldName({showLoading = false}: {showLoading?: boolean})
 	);
 }
 
-type SwitcherWorld = {id: string; name: string};
+type SwitcherWorld = {editorSlug: string | null; id: string; name: string};
 
 export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 	const {prepareForNavigation, target} = useWorldAutosave();
@@ -688,7 +688,7 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 								key={world.id}
 								type="button"
 								role="menuitem"
-								onClick={() => void navigate(`/worlds/${world.id}`)}
+								onClick={() => void navigate(`/worlds/${world.editorSlug ?? world.id}`)}
 							>
 								{world.name}
 							</button>
@@ -714,7 +714,7 @@ export function WorldResetButton() {
 
 	const confirmReset = () => {
 		const confirmed = window.confirm(
-			"Replace the current world with the bundled initial world? The replacement will be autosaved.",
+			"Replace every authored room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world? This replacement will be autosaved.",
 		);
 		if (confirmed) resetWorld();
 	};
@@ -724,10 +724,10 @@ export function WorldResetButton() {
 			type="button"
 			className="worldResetButton"
 			onClick={confirmReset}
-			title="Reset world to the bundled example"
+			title="Reset world to the bundled starter"
 		>
 			<RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
-			Reset example
+			Reset to starter world
 		</button>
 	);
 }

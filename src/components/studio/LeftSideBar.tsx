@@ -42,7 +42,7 @@ const editorNavItems: NavItem[] = [
 const utilityNavItems: NavItem[] = [
 	{
 		id: "world-settings",
-		label: "World Config",
+		label: "World settings",
 		icon: ScrollText,
 	},
 	{
