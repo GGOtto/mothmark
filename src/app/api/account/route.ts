@@ -3,6 +3,7 @@ import {NextResponse} from "next/server";
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
 import {getOwnedAccountSummary, permanentlyDeleteOwnedAccount} from "@/db/dbal/accountRepository";
+import {deleteRegisteredAccount} from "@/db/dbal/registeredAccountRepository";
 import {EDITOR_SESSION_COOKIE} from "@/auth/sessionTokens";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,38 @@ export async function DELETE(request: Request): Promise<NextResponse> {
 	if (securityError) return securityError;
 	const actor = await resolveCurrentActor(request, "editor");
 	if (!actor) return authRequiredResponse();
-	if (!(await permanentlyDeleteOwnedAccount(actor.userId))) return authRequiredResponse();
+	if (actor.accountType === "registered") {
+		let password = "";
+		try {
+			const body = (await request.json()) as {password?: unknown};
+			if (typeof body.password === "string") password = body.password;
+		} catch {
+			return NextResponse.json(
+				{error: {code: "INVALID_JSON", message: "The request body must contain valid JSON."}},
+				{status: 400},
+			);
+		}
+		const result = await deleteRegisteredAccount({password, userId: actor.userId});
+		if (result === "sole_administrator") {
+			return NextResponse.json(
+				{
+					error: {
+						code: "SOLE_ADMINISTRATOR",
+						message: "Provision a replacement administrator before deleting this account.",
+					},
+				},
+				{status: 409},
+			);
+		}
+		if (result === "invalid_credentials") {
+			return NextResponse.json(
+				{error: {code: "INVALID_CREDENTIALS", message: "The password is incorrect."}},
+				{status: 401},
+			);
+		}
+	} else if (!(await permanentlyDeleteOwnedAccount(actor.userId))) {
+		return authRequiredResponse();
+	}
 	const response = NextResponse.json({data: {deleted: true}});
 	response.cookies.set(EDITOR_SESSION_COOKIE, "", {
 		httpOnly: true,

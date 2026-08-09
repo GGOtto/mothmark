@@ -13,6 +13,11 @@ export default function PrivacyPage() {
 					private worlds separate from other visitors. The cookie is not used for advertising.
 				</p>
 				<p>
+					Registered accounts store a verified email address and a one-way Argon2id password hash.
+					Verification and recovery links are short-lived and single-use. The administrator area uses a
+					separate necessary session cookie and requires a second factor.
+				</p>
+				<p>
 					World documents and basic activity times are stored so editing, recovery, quotas, and
 					inactivity cleanup work. Local recovery drafts may also be stored in this browser.
 				</p>

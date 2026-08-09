@@ -27,14 +27,17 @@ export type AccountSummary = {
 	cleanupWasRecentlyCancelled: boolean;
 	cleanupScheduledAt: string | null;
 	createdAt: string;
+	email: string | null;
 	retentionClass: AnonymousCleanupClass;
+	sessions: Array<{createdAt: string; expiresAt: string; id: string; lastSeenAt: string}>;
+	siteRole: AccountRow["site_role"];
 	status: AccountRow["status"];
 	usage: {activeWorlds: number; maxWorlds: number; trashedWorlds: number};
 	userId: string;
 };
 
 export type AccountExport = {
-	account: Pick<AccountSummary, "accountType" | "createdAt" | "userId">;
+	account: Pick<AccountSummary, "accountType" | "createdAt" | "email" | "userId">;
 	exportedAt: string;
 	format: "mothmark-account";
 	worlds: Array<{
@@ -54,7 +57,7 @@ const toIso = (value: Date | string | null): string | null =>
 	value === null ? null : new Date(value).toISOString();
 
 export async function getOwnedAccountSummary(userId: string): Promise<AccountSummary | undefined> {
-	const [user, worlds, limit] = await Promise.all([
+	const [user, worlds, limit, email, sessions] = await Promise.all([
 		database<AccountRow>("users").where({id: userId}).first(),
 		database("worlds")
 			.select<Pick<WorldRow, "deleted_at" | "revision">[]>("deleted_at", "revision")
@@ -63,6 +66,12 @@ export async function getOwnedAccountSummary(userId: string): Promise<AccountSum
 			.select<{max_worlds: number}[]>("max_worlds")
 			.where({user_id: userId})
 			.first(),
+		database("user_emails").select<{email: string}[]>("email").where({user_id: userId}).first(),
+		database("sessions")
+			.where({audience: "editor", user_id: userId})
+			.whereNull("revoked_at")
+			.where("expires_at", ">", database.fn.now())
+			.orderBy("last_seen_at", "desc"),
 	]);
 	if (!user) return undefined;
 
@@ -76,7 +85,15 @@ export async function getOwnedAccountSummary(userId: string): Promise<AccountSum
 		),
 		cleanupScheduledAt: toIso(user.cleanup_scheduled_at),
 		createdAt: new Date(user.created_at).toISOString(),
+		email: email?.email ?? null,
 		retentionClass: deriveCleanupClass(worlds.map((world) => world.revision)),
+		sessions: sessions.map((session) => ({
+			createdAt: new Date(session.created_at).toISOString(),
+			expiresAt: new Date(session.expires_at).toISOString(),
+			id: session.id,
+			lastSeenAt: new Date(session.last_seen_at).toISOString(),
+		})),
+		siteRole: user.site_role,
 		status: user.status,
 		usage: {
 			activeWorlds: worlds.filter((world) => world.deleted_at === null).length,
@@ -99,6 +116,7 @@ export async function exportOwnedAccount(userId: string): Promise<AccountExport 
 		account: {
 			accountType: summary.accountType,
 			createdAt: summary.createdAt,
+			email: summary.email,
 			userId: summary.userId,
 		},
 		exportedAt: new Date().toISOString(),

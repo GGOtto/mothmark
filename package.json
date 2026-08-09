@@ -10,7 +10,10 @@
 		"db:migrate": "phase run 'DATABASE_URL=\"${DATABASE_MIGRATION_URL:-$DATABASE_URL}\" pnpm migrate'",
 		"db:make": "node --import tsx db/createMigration.ts",
 		"migrate": "node --import tsx db/migrate.ts",
-		"cleanup:anonymous": "node --import tsx scripts/anonymousCleanup.ts",
+		"cleanup:anonymous": "node --conditions=react-server --import tsx scripts/anonymousCleanup.ts",
+		"admin:create": "phase run 'node --conditions=react-server --import tsx scripts/adminCreate.ts'",
+		"admin:recover": "phase run 'node --conditions=react-server --import tsx scripts/adminRecover.ts'",
+		"auth:benchmark": "node --conditions=react-server --import tsx scripts/benchmarkPasswordHash.ts",
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint",
@@ -29,6 +32,7 @@
 		"*.{js,jsx,ts,tsx,json,css,scss,md,mdx}": "prettier --write"
 	},
 	"dependencies": {
+		"@node-rs/argon2": "^2.0.2",
 		"@types/jest": "^30.0.0",
 		"@vercel/analytics": "^2.0.1",
 		"immer": "^11.1.15",
@@ -41,6 +45,7 @@
 		"react-hotkeys-hook": "^5.3.3",
 		"sass": "^1.101.0",
 		"save-dev": "0.0.1-security",
+		"server-only": "^0.0.1",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

@@ -1,7 +1,13 @@
 import {createHash, randomBytes, timingSafeEqual} from "node:crypto";
 
-export {EDITOR_CSRF_COOKIE, EDITOR_SESSION_COOKIE} from "./cookieNames";
+export {
+	ADMIN_CSRF_COOKIE,
+	ADMIN_SESSION_COOKIE,
+	EDITOR_CSRF_COOKIE,
+	EDITOR_SESSION_COOKIE,
+} from "./cookieNames";
 export const EDITOR_SESSION_DURATION_MS = 180 * 24 * 60 * 60 * 1_000;
+export const ADMIN_SESSION_DURATION_MS = 24 * 60 * 60 * 1_000;
 
 export function createOpaqueToken(): string {
 	return randomBytes(32).toString("base64url");

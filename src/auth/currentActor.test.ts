@@ -37,4 +37,21 @@ describe("current actor resolution", () => {
 		await expect(resolveCurrentActor(request, "editor")).resolves.toEqual(actor);
 		expect(findCurrentActor).toHaveBeenCalledWith("opaque-token", "editor");
 	});
+
+	it("uses a separate host-only credential for the admin audience", async () => {
+		const actor = {
+			userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+			accountType: "registered",
+			siteRole: "admin",
+			audience: "admin",
+		} as const;
+		jest.mocked(findCurrentActor).mockResolvedValue(actor);
+		const request = new Request("http://localhost/admin/users", {
+			headers: {
+				cookie: "mothmark_editor_session=editor-token; mothmark_admin_session=admin-token",
+			},
+		});
+		await expect(resolveCurrentActor(request, "admin")).resolves.toEqual(actor);
+		expect(findCurrentActor).toHaveBeenCalledWith("admin-token", "admin");
+	});
 });

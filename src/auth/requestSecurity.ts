@@ -1,8 +1,12 @@
 import {NextResponse} from "next/server";
 
-import {EDITOR_CSRF_COOKIE, readCookie, tokensMatch} from "./sessionTokens";
+import {ADMIN_CSRF_COOKIE, EDITOR_CSRF_COOKIE, readCookie, tokensMatch} from "./sessionTokens";
+import type {SessionAudience} from "@/db/dbal/sessionsRepository";
 
-export function mutationSecurityError(request: Request): NextResponse | undefined {
+export function mutationSecurityError(
+	request: Request,
+	audience: Extract<SessionAudience, "admin" | "editor"> = "editor",
+): NextResponse | undefined {
 	const origin = request.headers.get("origin");
 	if (!origin || origin !== new URL(request.url).origin) {
 		return NextResponse.json(
@@ -11,7 +15,10 @@ export function mutationSecurityError(request: Request): NextResponse | undefine
 		);
 	}
 
-	const cookieToken = readCookie(request, EDITOR_CSRF_COOKIE);
+	const cookieToken = readCookie(
+		request,
+		audience === "admin" ? ADMIN_CSRF_COOKIE : EDITOR_CSRF_COOKIE,
+	);
 	const headerToken = request.headers.get("x-csrf-token") ?? undefined;
 	if (!cookieToken || !headerToken || !tokensMatch(cookieToken, headerToken)) {
 		return NextResponse.json(
@@ -26,5 +33,11 @@ export function mutationSecurityError(request: Request): NextResponse | undefine
 export const authRequiredResponse = (): NextResponse =>
 	NextResponse.json(
 		{error: {code: "AUTH_REQUIRED", message: "An active editor session is required."}},
+		{status: 401},
+	);
+
+export const adminAuthRequiredResponse = (): NextResponse =>
+	NextResponse.json(
+		{error: {code: "ADMIN_AUTH_REQUIRED", message: "An active administrator session is required."}},
 		{status: 401},
 	);

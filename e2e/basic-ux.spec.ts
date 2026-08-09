@@ -354,7 +354,9 @@ test("the home page opens the world library without choosing a world", async ({p
 
 	await page.goto("/");
 	expect(editor.bootstrapCount()).toBe(0);
-	await expect(page.getByRole("heading", {name: "Build a world that answers back."})).toBeVisible();
+	await expect(
+		page.getByRole("heading", {name: "Build and play text based adventure games."}),
+	).toBeVisible();
 	await expect(page.getByRole("link", {name: "Home", exact: true})).toHaveAttribute(
 		"aria-current",
 		"page",
@@ -384,7 +386,9 @@ test("temporary account guidance does not create an account until editor entry",
 	await expect(
 		page.getByRole("heading", {name: "Your worlds stay with this browser"}),
 	).toBeVisible();
-	await expect(page.getByText(/There is not yet a sign-in or account-recovery flow/)).toBeVisible();
+	await expect(
+		page.getByText(/moving to another browser can make these worlds inaccessible/),
+	).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(0);
 
 	await page.getByRole("link", {name: "Open your worlds"}).click();
@@ -392,6 +396,117 @@ test("temporary account guidance does not create an account until editor entry",
 	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(1);
 	expect(browserErrors).toEqual([]);
+});
+
+test("registered account forms preserve generic responses, autofill semantics, and narrow layouts", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/auth/csrf", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			headers: {"set-cookie": "mothmark_editor_csrf=csrf; Path=/; SameSite=Lax"},
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
+		}),
+	);
+	await page.route("**/api/auth/register", (route) =>
+		route.fulfill({
+			status: 202,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {message: "If the address can be registered, a verification message is on its way."},
+			}),
+		}),
+	);
+	await page.route("**/api/auth/resend-verification", (route) =>
+		route.fulfill({
+			status: 202,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {message: "If a verification is pending, a new message is on its way."},
+			}),
+		}),
+	);
+	await page.route("**/api/auth/verify-email", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					status: "verified",
+					upgradedAnonymous: false,
+					userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+				},
+			}),
+		}),
+	);
+	await page.route("**/api/auth/forgot-password", (route) =>
+		route.fulfill({
+			status: 202,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {message: "If the address belongs to an account, a recovery message is on its way."},
+			}),
+		}),
+	);
+	await page.route("**/api/auth/reset-password", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {passwordReset: true}}),
+		}),
+	);
+	await page.route("**/api/auth/sign-in", (route) =>
+		route.fulfill({
+			status: 401,
+			contentType: "application/json",
+			body: JSON.stringify({
+				error: {message: "The email or password is incorrect. Try again or reset your password."},
+			}),
+		}),
+	);
+
+	await page.setViewportSize({width: 390, height: 844});
+	await page.goto("/register");
+	await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
+	await expect(page.getByLabel("Password", {exact: true})).toHaveAttribute(
+		"autocomplete",
+		"new-password",
+	);
+	await page.getByLabel("Email").fill("author@example.com");
+	await page.getByLabel("Password", {exact: true}).fill("a durable registration password");
+	await page.getByLabel("Confirm password").fill("a durable registration password");
+	await page.getByRole("button", {name: "Send verification email"}).click();
+	await expect(page.getByText(/If the address can be registered/)).toBeVisible();
+	await page.getByRole("button", {name: "Resend verification email"}).click();
+	await expect(page.getByText(/If a verification is pending/)).toBeVisible();
+
+	await page.goto("/verify-email?token=one-time-token");
+	await expect(page.getByText("Your email is verified. Sign in to open your worlds.")).toBeVisible();
+	await page.goto("/forgot-password");
+	await page.getByLabel("Email").fill("unknown@example.com");
+	await page.getByRole("button", {name: "Send recovery email"}).click();
+	await expect(page.getByText(/If the address belongs to an account/)).toBeVisible();
+
+	await page.goto("/reset-password?token=reset-token");
+	await page.getByLabel("New password", {exact: true}).fill("a new durable password value");
+	await page.getByLabel("Confirm password").fill("a new durable password value");
+	await page.getByRole("button", {name: "Reset password"}).click();
+	await expect(page.getByText(/all existing sessions were revoked/)).toBeVisible();
+
+	await page.goto("/sign-in");
+	await expect(page.getByLabel("Password")).toHaveAttribute("autocomplete", "current-password");
+	await page.getByLabel("Email").fill("unknown@example.com");
+	await page.getByLabel("Password").fill("a plausible password value");
+	await page.getByRole("button", {name: "Sign in"}).click();
+	await expect(page.getByText(/The email or password is incorrect/)).toBeVisible();
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
+	expect(browserErrors.filter((error) => !error.includes("status of 401"))).toEqual([]);
 });
 
 test("the temporary account page shows retention, exports data, and confirms deletion", async ({
@@ -496,6 +611,36 @@ test("an inaccessible world cannot be restored from an old local draft", async (
 	await expect(page.getByRole("button", {name: "Leaked private draft"})).not.toBeVisible();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeDisabled();
 	expect(browserErrors.filter((error) => !error.includes("status of 404"))).toEqual([]);
+});
+
+test("a stale local draft is reconciled explicitly instead of being discarded", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const worldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6";
+	const editor = await useDeterministicEditorWorld(page, worldId);
+	await page.goto("/");
+	await writeLocalWorldDraft(page, {
+		world: {...initialWorld, metadata: {...initialWorld.metadata, title: "Older local draft"}},
+		worldId,
+		revision: 1,
+	});
+	const server = editor.worldStore.get(worldId);
+	if (!server) throw new Error("The deterministic server world is missing.");
+	server.revision = 2;
+	server.world = {
+		...initialWorld,
+		metadata: {...initialWorld.metadata, title: "Newer server world"},
+	};
+
+	await page.goto(`/worlds/${editor.worldSlug}`);
+	const dialog = page.getByRole("dialog", {name: "This browser has an older local draft"});
+	await expect(dialog).toContainText("server is now at revision 2");
+	await expect(dialog).toContainText("based on revision 1");
+	await expect(dialog.getByRole("button", {name: "Open draft as a copy"})).toBeVisible();
+	await expect(dialog.getByRole("button", {name: "Export draft"})).toBeVisible();
+	await dialog.getByRole("button", {name: "Use server version"}).click();
+	await expect(dialog).not.toBeVisible();
+	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
+	expect(browserErrors).toEqual([]);
 });
 
 test("private worlds persist for one browser and remain unresolved for another", async ({
@@ -829,4 +974,150 @@ test("the starter world copy action provides immediate confirmation", async ({pa
 	const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
 	expect(JSON.parse(clipboardText)).toMatchObject({metadata: expect.any(Object)});
 	expect(browserErrors).toEqual([]);
+});
+
+test("administrator sign-in and read-only oversight support deep links and back navigation", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const userId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+	const worldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6";
+	const now = "2026-08-08T12:00:00.000Z";
+	const world = {
+		createdAt: now,
+		deletedAt: null,
+		editorSlug: "private-test-world",
+		id: worldId,
+		lifecycle: "active",
+		name: "Private test world",
+		owner: {accountType: "anonymous", displayName: null, id: userId},
+		revision: 3,
+		schemaVersion: 1,
+		trashPurgeAfter: null,
+		updatedAt: now,
+		worldSizeBytes: 4096,
+	};
+	const user = {
+		accountType: "anonymous",
+		cleanupAfter: null,
+		cleanupReason: null,
+		cleanupScheduledAt: null,
+		createdAt: now,
+		displayName: null,
+		id: userId,
+		lastSeenAt: now,
+		maxWorlds: 5,
+		siteRole: "user",
+		status: "active",
+		trashedWorldCount: 0,
+		worldCount: 1,
+	};
+	await page.route("**/api/admin/auth/password", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {secondFactorRequired: true}}),
+		}),
+	);
+	await page.route("**/api/admin/auth/second-factor", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {authenticated: true}}),
+		}),
+	);
+	await page.route(/\/api\/admin\/users$/, (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {users: [user]}}),
+		}),
+	);
+	await page.route(new RegExp(`/api/admin/users/${userId}$`), (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					...user,
+					permissions: [{allowed: true, permission: "editor.access", source: "account default"}],
+					sessions: [],
+					worlds: [world],
+				},
+			}),
+		}),
+	);
+	await page.route(/\/api\/admin\/worlds$/, (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {worlds: [world]}}),
+		}),
+	);
+	await page.route(new RegExp(`/api/admin/worlds/${worldId}$`), (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {...world, world: initialWorld}}),
+		}),
+	);
+	await page.route("**/api/auth/csrf?audience=admin", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {csrfToken: "admin-csrf"}}),
+		}),
+	);
+	await page.route("**/api/admin/auth/sign-out", (route) => route.fulfill({status: 204}));
+
+	await page.goto("/admin/sign-in");
+	await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
+	await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "username");
+	await expect(page.getByLabel("Password")).toHaveAttribute("autocomplete", "current-password");
+	await expect(page.getByRole("link", {name: "Mothmark home"})).not.toBeVisible();
+	await page.getByLabel("Email").fill("administrator@example.com");
+	await page.getByLabel("Password").fill("a strong administrator password");
+	await page.getByRole("button", {name: "Continue"}).click();
+	await expect(page.getByLabel("Authentication code")).toHaveAttribute(
+		"autocomplete",
+		"one-time-code",
+	);
+	await page.getByLabel("Authentication code").fill("123456");
+	await page.getByRole("button", {name: "Sign in"}).click();
+	await expect(page).toHaveURL(/\/admin\/users$/);
+	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
+
+	await page.getByRole("link", {name: `Anonymous ${userId.slice(0, 8)}`}).click();
+	await expect(page.getByRole("heading", {name: `Anonymous ${userId.slice(0, 8)}`})).toBeVisible();
+	await page.goBack();
+	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
+
+	await page.goto(`/admin/worlds/${worldId}`);
+	await expect(page.getByRole("heading", {name: "Private test world"})).toBeVisible();
+	await expect(page.getByText("Inspection only")).toBeVisible();
+	await page.setViewportSize({width: 390, height: 844});
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
+
+	await page.getByRole("button", {name: "Sign out"}).click();
+	await expect(page).toHaveURL(/\/admin\/sign-in$/);
+	expect(browserErrors).toEqual([]);
+});
+
+test("an expired administrator session returns a direct deep link to sign-in", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route(/\/api\/admin\/users$/, (route) =>
+		route.fulfill({
+			status: 401,
+			contentType: "application/json",
+			body: JSON.stringify({error: {code: "ADMIN_AUTH_REQUIRED"}}),
+		}),
+	);
+	await page.goto("/admin/users");
+	await expect(page).toHaveURL(/\/admin\/sign-in\?next=%2Fadmin%2Fusers$/);
+	await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
+	expect(browserErrors.filter((error) => !error.includes("status of 401"))).toEqual([]);
 });

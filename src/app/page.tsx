@@ -7,7 +7,7 @@ export default function HomePage() {
 			<section className="homeCard">
 				<p className="homeEyebrow">Mothmark</p>
 
-				<h1>Build a world that answers back.</h1>
+				<h1>Build and play text based adventure games.</h1>
 
 				<p className="homeDescription">
 					Map places, write commands, and test a text adventure in one quiet workspace. Your work is kept

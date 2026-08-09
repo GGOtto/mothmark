@@ -27,6 +27,21 @@ describe("active session authorization", () => {
 		});
 	});
 
+	it("accepts a registered administrator only in an admin-audience session", () => {
+		const adminSession: SessionActorRow = {
+			...activeSession,
+			account_type: "registered",
+			site_role: "admin",
+			audience: "admin",
+		};
+		expect(activeActorFromSession(adminSession, "admin", now)).toMatchObject({
+			accountType: "registered",
+			audience: "admin",
+			siteRole: "admin",
+		});
+		expect(activeActorFromSession(adminSession, "editor", now)).toBeUndefined();
+	});
+
 	it.each([
 		["wrong audience", {...activeSession, audience: "play" as const}],
 		["expired", {...activeSession, expires_at: now}],

@@ -68,6 +68,71 @@
 		margin-top: 0;
 	}
 
+	.accountNavigation button:not(.accountDelete),
+	.accountPasswordForm button,
+	.accountPrimaryAction {
+		display: inline-flex;
+		height: 36px;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0 12px;
+		border: 1px solid var(--color-action);
+		border-radius: var(--radius-control);
+		background: var(--color-action);
+		color: var(--color-action-contrast);
+		font: inherit;
+		font-size: 14px;
+		font-weight: 650;
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	.accountSection {
+		margin-top: 20px;
+		padding-top: 18px;
+		border-top: 1px solid var(--color-border);
+
+		h2 {
+			margin: 0 0 8px;
+			font-size: 16px;
+		}
+
+		ul {
+			margin: 8px 0;
+			padding-left: 20px;
+			color: var(--color-text-muted);
+			font-size: 13px;
+		}
+	}
+
+	.accountPasswordForm {
+		display: grid;
+		gap: 7px;
+
+		label {
+			color: var(--color-text-muted);
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		input {
+			height: 38px;
+			box-sizing: border-box;
+			padding: 0 10px;
+			border: 1px solid var(--color-control-border);
+			border-radius: var(--radius-control);
+			background: var(--color-control-background);
+			color: var(--color-text);
+			font: inherit;
+		}
+
+		button {
+			justify-self: start;
+		}
+	}
+
 	.accountDelete {
 		padding: 0;
 		border: 0;
@@ -148,6 +213,23 @@
 		color: var(--color-text-muted);
 		font-size: 14px;
 		line-height: 1.55;
+	}
+	label {
+		display: block;
+		margin-bottom: 6px;
+		color: var(--color-text-muted);
+		font-size: 13px;
+		font-weight: 600;
+	}
+	input {
+		width: 100%;
+		height: 38px;
+		box-sizing: border-box;
+		padding: 0 10px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-control-background);
+		color: var(--color-text);
 	}
 }
 

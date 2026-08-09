@@ -3,6 +3,8 @@
 ## Collaboration
 
 - Treat exploratory product and interface ideas as design discussion until the user explicitly asks to build them. Do not turn an open design conversation into implementation prematurely.
+- Keep application secrets in the matching Phase environment, including local Development; do not
+  add secrets to local `.env` files.
 
 ## Test data
 
@@ -65,6 +67,8 @@
   color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
 - Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
+- Present worlds as restrained, content-led cards in private libraries and public discovery surfaces;
+  do not reduce worlds to table or list rows.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
 - Use action blue for interaction, brass for focus and rare identity emphasis, and semantic colors only
   for their named statuses. Do not introduce another primary-action color.

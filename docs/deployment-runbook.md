@@ -52,13 +52,18 @@ the preview connection configuration stable.
 
 Use these variables in Phase `Staging` and `Production`:
 
-| Variable                 | Value                                              | Synced to Vercel? |
-| ------------------------ | -------------------------------------------------- | ----------------- |
-| `DATABASE_URL`           | Pooled Neon connection string containing `-pooler` | Yes               |
-| `DATABASE_MIGRATION_URL` | Direct Neon connection string without `-pooler`    | No                |
-| `DATABASE_SSL`           | `true`                                             | Yes               |
-| `DATABASE_POOL_MIN`      | `0`                                                | Yes               |
-| `DATABASE_POOL_MAX`      | `1`                                                | Yes               |
+| Variable                    | Value                                              | Synced to Vercel? |
+| --------------------------- | -------------------------------------------------- | ----------------- |
+| `DATABASE_URL`              | Pooled Neon connection string containing `-pooler` | Yes               |
+| `DATABASE_MIGRATION_URL`    | Direct Neon connection string without `-pooler`    | No                |
+| `DATABASE_SSL`              | `true`                                             | Yes               |
+| `DATABASE_POOL_MIN`         | `0`                                                | Yes               |
+| `DATABASE_POOL_MAX`         | `1`                                                | Yes               |
+| `PUBLIC_APP_ORIGIN`         | Exact public origin without a trailing slash       | Yes               |
+| `AUTH_EMAIL_FROM`           | Verified Resend sender address                     | Yes               |
+| `RESEND_API_KEY`            | Resend transactional-email API key                 | Yes               |
+| `CREDENTIAL_ENCRYPTION_KEY` | 32 random bytes encoded as base64                  | Yes               |
+| `ADMIN_EMAIL`               | Sole administrator's verified email                | No                |
 
 The application uses the pooled URL. Knex migrations use the direct URL through the Phase command
 shown below. Neon recommends direct connections for schema migration tools and pooled connections
@@ -119,7 +124,10 @@ Git history.
 4. Add the variables from [Environment map](#environment-map) to `Staging`, using the Neon
    `preview` URLs.
 5. Add the same variables to `Production`, using the Neon `production` URLs.
-6. Authenticate and initialize the repository locally:
+6. For local registration testing, add `PUBLIC_APP_ORIGIN=http://localhost:3000`,
+   `AUTH_EMAIL_FROM`, and `RESEND_API_KEY` to Phase `Development`. Keep them in Phase; do not copy
+   them into `.env` files.
+7. Authenticate and initialize the repository locally:
 
 ```bash
 phase auth
@@ -195,10 +203,69 @@ Create the Vercel project before this step so Phase can select it as a destinati
    - `DATABASE_SSL`
    - `DATABASE_POOL_MIN`
    - `DATABASE_POOL_MAX`
+   - `PUBLIC_APP_ORIGIN`
+   - `AUTH_EMAIL_FROM`
+   - `RESEND_API_KEY`
+   - `CREDENTIAL_ENCRYPTION_KEY`
 7. Confirm that `DATABASE_MIGRATION_URL` is excluded from both Vercel syncs.
 
 Avoid creating duplicate variables scoped to Vercel **All Environments**. Environment-specific
 variables synced by Phase take precedence and duplicate definitions make troubleshooting harder.
+
+### Configure authentication email and the administrator
+
+Create separate Resend API keys and verified senders for Staging and Production. Set
+`PUBLIC_APP_ORIGIN` to each environment's canonical HTTPS origin. Authentication messages contain
+only a short-lived, single-use verification or recovery token. Never log those URLs.
+
+Generate the credential-encryption key locally and place it directly into the matching Phase
+environment:
+
+```bash
+openssl rand -base64 32
+```
+
+Do not reuse the key between environments. It encrypts TOTP seeds at rest and must be included in
+protected database-recovery material. Losing it makes existing authenticators unreadable; exposing
+it requires an MFA reset.
+
+After applying the registered-account migration, set `ADMIN_EMAIL` in the Phase environment used
+for the command and run:
+
+```bash
+phase run --env staging 'pnpm admin:create'
+phase run --env production 'pnpm admin:create'
+```
+
+The command reads the password from a non-echoing terminal prompt, displays a TOTP enrollment URI,
+requires a current authenticator code before committing, and then displays ten one-time recovery
+codes. Store those codes offline and remove `ADMIN_EMAIL` after provisioning. The command creates
+or upgrades exactly that verified address, refuses to replace another administrator, revokes old
+sessions, and records no credential material.
+
+Before enabling public registration in each deployed runtime, run `pnpm auth:benchmark` there and
+record the three Argon2id timings in the release record. The versioned defaults use 64 MiB, four
+passes, and one lane. Review them if the average falls outside the team's 50–250 ms operational
+target; changing the stored versioned parameters upgrades hashes on the next successful sign-in
+without requiring a password reset.
+
+#### Administrator identity recovery
+
+Recovery is intentionally unavailable through the application. Independently verify the operator
+and database target, take a backup, obtain explicit approval, and run exactly one reviewed command:
+
+```bash
+phase run --env production 'pnpm admin:recover password'
+phase run --env production 'pnpm admin:recover mfa'
+phase run --env production 'pnpm admin:recover replace'
+```
+
+The command requires typing an operation-specific confirmation. Password input remains non-echoing.
+Either operation revokes all administrator sessions and records a credential-free operational
+event. MFA recovery replaces the authenticator and every recovery code, so store the newly printed
+codes offline before ending the maintenance window. Replacement additionally requires `ADMIN_EMAIL`
+to name a different existing verified account; it transfers the sole role, enrolls fresh MFA,
+revokes both users' sessions, and demotes the former administrator to an ordinary registered user.
 
 ### 8. Redeploy with the synced environment
 
@@ -214,8 +281,8 @@ Vercel environment changes affect only new deployments.
 
 Open the protected production URL and verify:
 
-1. `/editor` displays the loading grid before the world appears.
-2. On first entry, the URL changes to `/editor/[worldId]` and an initial world cloned from the
+1. `/worlds` intentionally creates a temporary account and displays its private library.
+2. Opening its first world changes the URL to `/worlds/[editorSlug]` and loads a world cloned from the
    template loads.
 3. Make a small, recognizable edit.
 4. Wait for the `Saving...` indicator to disappear.
@@ -225,9 +292,12 @@ Open the protected production URL and verify:
    the world.
 8. Confirm `/api/world/slug/main` returns 404 and `/api/world` returns 401 without the editor session.
 9. Open **Vercel → Project → Logs** and check for database or route errors.
+10. Register a preview account, consume its email verification link, sign out, and sign in again.
+11. Confirm `/admin/sign-in` requires both the provisioned password and a current TOTP code.
 
-Entering the editor is intentional account creation. It atomically creates the anonymous user,
-editor-audience session, and first owned world. Browsing `/`, `/starter`, or `/account` does not.
+Entering `/worlds` is intentional account creation. It atomically creates the anonymous user,
+editor-audience session, and first owned world. Browsing `/`, `/starter`, `/sign-in`, `/register`, or
+`/account` does not.
 
 ### 10. Verify preview isolation
 
@@ -280,12 +350,14 @@ opaque and hashed at rest, cookies are host-only and hardened, world operations 
 mutations require origin and CSRF validation, and generic creation, slug lookup, and schema-version
 routes are closed.
 
-Before disabling Production Vercel Authentication, verify the migration and private-world browser
-workflow against the production database, add the intended request body-size limit, and configure
-Vercel WAF rate limiting. Keep previews authenticated.
+Before disabling Production Vercel Authentication, verify registration, email delivery, recovery,
+MFA, account deletion, and the private-world browser workflow against the production database. Add
+the intended request body-size limit and configure Vercel WAF rate limiting. Keep previews
+authenticated.
 
-Start with a Vercel WAF rule around 60 writes per minute per IP for the public editor endpoint, then
-adjust from observed traffic. Vercel's [WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+The application applies bounded account and network throttles to authentication attempts. Add a
+coarser Vercel WAF limit around the public authentication and editor endpoints, then adjust from
+observed traffic. Vercel's [WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
 is available on all plans.
 
 Only after those operational checks should Production Vercel Authentication be disabled.

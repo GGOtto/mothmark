@@ -6,6 +6,7 @@ import {
 	getOwnedAccountSummary,
 	permanentlyDeleteOwnedAccount,
 } from "@/db/dbal/accountRepository";
+import {deleteRegisteredAccount} from "@/db/dbal/registeredAccountRepository";
 
 import {DELETE, GET} from "./route";
 import {GET as exportAccount} from "./export/route";
@@ -16,6 +17,7 @@ jest.mock("@/db/dbal/accountRepository", () => ({
 	getOwnedAccountSummary: jest.fn(),
 	permanentlyDeleteOwnedAccount: jest.fn(),
 }));
+jest.mock("@/db/dbal/registeredAccountRepository", () => ({deleteRegisteredAccount: jest.fn()}));
 
 const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const actor = {userId, accountType: "anonymous", siteRole: "user", audience: "editor"} as const;
@@ -51,7 +53,10 @@ describe("temporary account API", () => {
 			cleanupWasRecentlyCancelled: false,
 			cleanupScheduledAt: null,
 			createdAt: "2026-08-08T12:00:00.000Z",
+			email: null,
 			retentionClass: "untouched_editor",
+			sessions: [],
+			siteRole: "user",
 			status: "active",
 			usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
 			userId,
@@ -63,7 +68,12 @@ describe("temporary account API", () => {
 
 	it("exports all owned data through a download response", async () => {
 		jest.mocked(exportOwnedAccount).mockResolvedValue({
-			account: {accountType: "anonymous", createdAt: "2026-08-08T12:00:00.000Z", userId},
+			account: {
+				accountType: "anonymous",
+				createdAt: "2026-08-08T12:00:00.000Z",
+				email: null,
+				userId,
+			},
 			exportedAt: "2026-08-08T12:00:00.000Z",
 			format: "mothmark-account",
 			worlds: [],
@@ -83,5 +93,43 @@ describe("temporary account API", () => {
 		expect(permanentlyDeleteOwnedAccount).toHaveBeenCalledWith(userId);
 		expect(response.headers.get("set-cookie")).toContain("mothmark_editor_session=");
 		expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+	});
+
+	it("requires password confirmation for registered deletion and rejects the sole administrator", async () => {
+		jest.mocked(resolveCurrentActor).mockResolvedValue({...actor, accountType: "registered"});
+		jest.mocked(deleteRegisteredAccount).mockResolvedValue("sole_administrator");
+		const adminResponse = await DELETE(
+			new Request("http://localhost/api/account", {
+				method: "DELETE",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf",
+					"x-csrf-token": "csrf",
+				},
+				body: JSON.stringify({password: "current password value"}),
+			}),
+		);
+		expect(adminResponse.status).toBe(409);
+		expect(deleteRegisteredAccount).toHaveBeenCalledWith({
+			password: "current password value",
+			userId,
+		});
+
+		jest.mocked(deleteRegisteredAccount).mockResolvedValue("deleted");
+		const response = await DELETE(
+			new Request("http://localhost/api/account", {
+				method: "DELETE",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf",
+					"x-csrf-token": "csrf",
+				},
+				body: JSON.stringify({password: "current password value"}),
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(permanentlyDeleteOwnedAccount).not.toHaveBeenCalled();
 	});
 });
