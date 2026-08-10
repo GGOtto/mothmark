@@ -3,13 +3,15 @@ import Link from "next/link";
 
 import {FeaturedPublicationsCarousel} from "./FeaturedPublicationsCarousel";
 import {HomeExample} from "./HomeExample";
-import {HomeFooter} from "./HomeFooter";
+import {HomeScrollReset} from "./HomeScrollReset";
+import {SiteFooter} from "@/components/footer/SiteFooter";
 
 import "./page.scss";
 
 export default function HomePage() {
 	return (
 		<div className="homePage">
+			<HomeScrollReset />
 			<main>
 				<section className="homeIntro" id="about-mothmark">
 					<div className="homeIntroCopy">
@@ -101,7 +103,7 @@ export default function HomePage() {
 				</section>
 			</main>
 
-			<HomeFooter />
+			<SiteFooter />
 		</div>
 	);
 }

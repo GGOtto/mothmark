@@ -96,6 +96,41 @@ describe("Map layer viewports", () => {
 		expect(map).toHaveClass("map--tool-pan");
 	});
 
+	it("zooms a read-only map around a two-pointer pinch", () => {
+		const {container} = render(
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" readOnly />,
+		);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
+		map.setPointerCapture = jest.fn();
+
+		const firstPointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 100,
+			clientY: 100,
+		});
+		Object.defineProperty(firstPointerDown, "pointerId", {value: 1});
+		fireEvent(map, firstPointerDown);
+		const secondPointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 200,
+			clientY: 100,
+		});
+		Object.defineProperty(secondPointerDown, "pointerId", {value: 2});
+		fireEvent(map, secondPointerDown);
+		const secondPointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 250,
+			clientY: 100,
+		});
+		Object.defineProperty(secondPointerMove, "pointerId", {value: 2});
+		fireEvent(map, secondPointerMove);
+
+		expect(viewport.style.transform).toContain("scale(1.5)");
+	});
+
 	it("restores each layer's viewport after switching layers", () => {
 		const groundLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 0)!;
 		const upperLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 1)!;
