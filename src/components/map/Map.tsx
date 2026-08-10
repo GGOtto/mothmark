@@ -58,6 +58,8 @@ type DragState = {
 type MapProps = {
 	world: World;
 	isLoading?: boolean;
+	readOnly?: boolean;
+	ariaLabel?: string;
 	tool: MapTool;
 	onToolChange: (tool: MapTool) => void;
 	onTemporaryToolChange?: (tool: MapTool | null) => void;
@@ -97,6 +99,8 @@ const MAX_ZOOM = 2.5;
 export function Map({
 	world,
 	isLoading = false,
+	readOnly = false,
+	ariaLabel = "World map",
 	tool,
 	onToolChange,
 	onTemporaryToolChange,
@@ -120,7 +124,13 @@ export function Map({
 	const isSpaceToolActiveRef = useRef(false);
 	const isMapPointerDownRef = useRef(false);
 	const suppressNextMapClickRef = useRef(false);
-	const effectiveTool: MapTool = isSpaceToolActive ? (tool === "edit" ? "pan" : "edit") : tool;
+	const effectiveTool: MapTool = readOnly
+		? "pan"
+		: isSpaceToolActive
+			? tool === "edit"
+				? "pan"
+				: "edit"
+			: tool;
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
@@ -136,13 +146,15 @@ export function Map({
 			viewportRef.current = nextViewport;
 			setViewport(nextViewport);
 			setCurrentLayer((layer) => ({...layer, viewport: nextViewport}));
-			updateWorld((world) => {
-				if (!setLayerViewportDraft(world, currentLayer.layer, nextViewport)) {
-					upsertLayerDraft(world, {...currentLayer, viewport: nextViewport});
-				}
-			});
+			if (!readOnly) {
+				updateWorld((world) => {
+					if (!setLayerViewportDraft(world, currentLayer.layer, nextViewport)) {
+						upsertLayerDraft(world, {...currentLayer, viewport: nextViewport});
+					}
+				});
+			}
 		},
-		[currentLayer, updateWorld],
+		[currentLayer, readOnly, updateWorld],
 	);
 
 	const changeCurrentLayer = useCallback((layer: Layer) => {
@@ -171,7 +183,7 @@ export function Map({
 	);
 
 	useEffect(() => {
-		if (isLoading) return;
+		if (isLoading || readOnly) return;
 
 		const initializedById = new globalThis.Map<string, ConnectionType>();
 		for (const connection of world.connections) {
@@ -188,10 +200,10 @@ export function Map({
 				});
 			}
 		});
-	}, [isLoading, updateWorld, world]);
+	}, [isLoading, readOnly, updateWorld, world]);
 
 	useEffect(() => {
-		if (isLoading) return;
+		if (isLoading || readOnly) return;
 
 		function isTextEntryTarget(target: EventTarget | null) {
 			return (
@@ -288,6 +300,7 @@ export function Map({
 		isLayerMenuOpen,
 		onToolChange,
 		onTemporaryToolChange,
+		readOnly,
 		tool,
 		world,
 	]);
@@ -300,12 +313,12 @@ export function Map({
 		const mapElement = mapRef.current;
 		if (!mapElement) return;
 
-		function preventHorizontalNavigation(event: WheelEvent) {
-			if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) event.preventDefault();
+		function preventPageNavigation(event: WheelEvent) {
+			event.preventDefault();
 		}
 
-		mapElement.addEventListener("wheel", preventHorizontalNavigation, {passive: false});
-		return () => mapElement.removeEventListener("wheel", preventHorizontalNavigation);
+		mapElement.addEventListener("wheel", preventPageNavigation, {passive: false});
+		return () => mapElement.removeEventListener("wheel", preventPageNavigation);
 	}, [isLoading]);
 
 	if (isLoading) {
@@ -574,7 +587,6 @@ export function Map({
 	}
 
 	function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
-		event.preventDefault();
 		if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
 		const bounds = event.currentTarget.getBoundingClientRect();
 		const pointer = {x: event.clientX - bounds.left, y: event.clientY - bounds.top};
@@ -657,7 +669,8 @@ export function Map({
 		<div
 			ref={mapRef}
 			data-map
-			className={`map map--tool-${effectiveTool} ${panState ? "map--panning" : ""}`}
+			aria-label={ariaLabel}
+			className={`map map--tool-${effectiveTool} ${readOnly ? "map--read-only" : ""} ${panState ? "map--panning" : ""}`}
 			style={{
 				backgroundPosition: `${viewport.x}px ${viewport.y}px`,
 				backgroundSize: `auto, auto, ${48 * viewport.zoom}px ${48 * viewport.zoom}px, ${48 * viewport.zoom}px ${48 * viewport.zoom}px`,
@@ -687,7 +700,7 @@ export function Map({
 			onClick={handleBlankMapClick}
 			onContextMenu={(event) => event.preventDefault()}
 		>
-			{isLayerMenuOpen ? (
+			{!readOnly && isLayerMenuOpen ? (
 				layerMenuHost ? (
 					createPortal(layerMenu, layerMenuHost)
 				) : (
@@ -702,7 +715,7 @@ export function Map({
 						<MapLayerContent
 							world={world}
 							layer={currentLayer}
-							isInteractive={effectiveTool === "edit"}
+							isInteractive={!readOnly && effectiveTool === "edit"}
 							selectedId={selectedId}
 							isConnectionSelected={isConnectionSelected}
 							onRoomPointerDown={handleRoomPointerDown}
@@ -723,21 +736,25 @@ export function Map({
 							}
 						/>
 					</div>
-					<LayoutControl
-						world={world}
-						setCurrentLayer={changeCurrentLayer}
-						currentLayer={currentLayer}
-						isLayerMenuOpen={isLayerMenuOpen}
-						setIsLayerMenuOpen={setIsLayerMenuOpen}
-					/>
-					<button
-						type="button"
-						className="layerClearButton"
-						onClick={handleLayerClear}
-						aria-label={`Clear ${currentLayer.name} layer`}
-					>
-						<Trash className="layerClearButton--icon" />
-					</button>
+					{readOnly ? null : (
+						<>
+							<LayoutControl
+								world={world}
+								setCurrentLayer={changeCurrentLayer}
+								currentLayer={currentLayer}
+								isLayerMenuOpen={isLayerMenuOpen}
+								setIsLayerMenuOpen={setIsLayerMenuOpen}
+							/>
+							<button
+								type="button"
+								className="layerClearButton"
+								onClick={handleLayerClear}
+								aria-label={`Clear ${currentLayer.name} layer`}
+							>
+								<Trash className="layerClearButton--icon" />
+							</button>
+						</>
+					)}
 				</>
 			)}
 		</div>

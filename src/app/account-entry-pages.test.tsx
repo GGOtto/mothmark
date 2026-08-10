@@ -8,6 +8,11 @@ import RegisterPage from "./register/page";
 import SignInPage from "./sign-in/page";
 
 jest.mock("@/auth/currentPageActor", () => ({resolveCurrentEditorPageActor: jest.fn()}));
+jest.mock("./FeaturedPublicationsCarousel", () => ({
+	FeaturedPublicationsCarousel: () => <div>Featured publications</div>,
+}));
+jest.mock("./HomeExample", () => ({HomeExample: () => <div>Corner Shop example</div>}));
+jest.mock("./HomeFooter", () => ({HomeFooter: () => <footer>Mothmark footer</footer>}));
 jest.mock("next/navigation", () => ({
 	redirect: jest.fn(() => {
 		throw new Error("NEXT_REDIRECT");
@@ -21,26 +26,24 @@ const actor = (accountType: "anonymous" | "registered") => ({
 	audience: "editor" as const,
 });
 
+describe("home entry", () => {
+	it("keeps building and play as the two immediate page actions", () => {
+		render(<HomePage />);
+
+		expect(screen.getByRole("link", {name: "Start building"})).toHaveAttribute("href", "/worlds");
+		expect(screen.getByRole("link", {name: "Find a world to play"})).toHaveAttribute("href", "/play");
+	});
+
+	it("marks unfinished video lessons as unavailable", () => {
+		render(<HomePage />);
+
+		for (const button of screen.getAllByRole("button", {name: "Watch video"})) {
+			expect(button).toBeDisabled();
+		}
+	});
+});
+
 describe("registered account entry", () => {
-	it("replaces public account choices with a My worlds action", async () => {
-		jest.mocked(resolveCurrentEditorPageActor).mockResolvedValue(actor("registered"));
-
-		render(await HomePage());
-
-		expect(screen.getByRole("link", {name: "My worlds"})).toHaveAttribute("href", "/worlds");
-		expect(screen.queryByRole("link", {name: "Sign in"})).not.toBeInTheDocument();
-		expect(screen.queryByRole("link", {name: "Continue without an account"})).not.toBeInTheDocument();
-	});
-
-	it("keeps sign-in available to temporary accounts", async () => {
-		jest.mocked(resolveCurrentEditorPageActor).mockResolvedValue(actor("anonymous"));
-
-		render(await HomePage());
-
-		expect(screen.getByRole("link", {name: "Sign in"})).toHaveAttribute("href", "/sign-in");
-		expect(screen.queryByRole("link", {name: "My worlds"})).not.toBeInTheDocument();
-	});
-
 	it.each([
 		["sign-in", SignInPage],
 		["registration", RegisterPage],

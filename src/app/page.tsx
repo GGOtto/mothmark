@@ -1,45 +1,107 @@
+import {ArrowRight, Play} from "lucide-react";
 import Link from "next/link";
 
-import {resolveCurrentEditorPageActor} from "@/auth/currentPageActor";
+import {FeaturedPublicationsCarousel} from "./FeaturedPublicationsCarousel";
+import {HomeExample} from "./HomeExample";
+import {HomeFooter} from "./HomeFooter";
 
 import "./page.scss";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-	const actor = await resolveCurrentEditorPageActor();
-	const registered = actor?.accountType === "registered";
-
+export default function HomePage() {
 	return (
-		<main className="homePage">
-			<section className="homeCard">
-				<p className="homeEyebrow">Mothmark</p>
+		<div className="homePage">
+			<main>
+				<section className="homeIntro" id="about-mothmark">
+					<div className="homeIntroCopy">
+						<h1>A place to build and play text adventures.</h1>
+						<p>
+							Map places, write commands, shape the rules, and test every turn in one connected browser
+							workspace.
+						</p>
+						<div className="homeIntroActions">
+							<Link href="/worlds" className="homePrimaryAction">
+								Start building
+							</Link>
+							<Link href="/play" className="homeSecondaryAction">
+								Find a world to play
+							</Link>
+						</div>
+					</div>
 
-				<h1>Build and play text based adventure games.</h1>
+					<HomeExample />
+				</section>
 
-				<p className="homeDescription">
-					{registered
-						? "Map places, write commands, and test a text adventure in one quiet workspace. Your saved worlds are ready when you are."
-						: "Map places, write commands, and test a text adventure in one quiet workspace. Sign in to open your account, or continue with a temporary account tied to this browser."}
-				</p>
+				<FeaturedPublicationsCarousel />
 
-				<div className="homeActions">
-					{registered ? (
-						<Link href="/worlds" className="homePrimaryLink">
-							My worlds
+				<section className="homeGetStarted" aria-label="Get started with Mothmark">
+					<article className="homeTutorial">
+						<h2>Build your first room</h2>
+						<p>
+							Follow a short tutorial through the editor and make a playable scene while learning the parts
+							of a Mothmark world.
+						</p>
+						<ol>
+							<li>
+								<span>1</span>
+								<div>
+									<strong>Place a room</strong>
+									<small>Give the player somewhere to begin.</small>
+								</div>
+							</li>
+							<li>
+								<span>2</span>
+								<div>
+									<strong>Add an item</strong>
+									<small>Write what the player can examine.</small>
+								</div>
+							</li>
+							<li>
+								<span>3</span>
+								<div>
+									<strong>Try a command</strong>
+									<small>Play the scene in the embedded terminal.</small>
+								</div>
+							</li>
+						</ol>
+						<Link href="/worlds" className="homePrimaryAction">
+							Open the editor <ArrowRight size={16} aria-hidden="true" />
 						</Link>
-					) : (
-						<>
-							<Link href="/sign-in" className="homePrimaryLink">
-								Sign in
-							</Link>
-							<Link href="/worlds" className="homeSecondaryLink">
-								Continue without an account
-							</Link>
-						</>
-					)}
-				</div>
-			</section>
-		</main>
+					</article>
+
+					<section className="homeVideos" aria-labelledby="home-videos-title">
+						<h2 id="home-videos-title">Watch videos</h2>
+						<p>Short walkthroughs will show the editor in use. These lessons are still being prepared.</p>
+						<div className="homeVideoList">
+							<article className="homeVideoStub">
+								<div className="homeVideoPreview" aria-hidden="true">
+									<Play size={20} />
+								</div>
+								<div>
+									<h3>Map your first room</h3>
+									<small>Video coming soon</small>
+								</div>
+								<button type="button" disabled>
+									Watch video
+								</button>
+							</article>
+							<article className="homeVideoStub">
+								<div className="homeVideoPreview" aria-hidden="true">
+									<Play size={20} />
+								</div>
+								<div>
+									<h3>Build and test a command</h3>
+									<small>Video coming soon</small>
+								</div>
+								<button type="button" disabled>
+									Watch video
+								</button>
+							</article>
+						</div>
+					</section>
+				</section>
+			</main>
+
+			<HomeFooter />
+		</div>
 	);
 }

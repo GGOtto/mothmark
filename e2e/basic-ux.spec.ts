@@ -35,6 +35,32 @@ function collectBrowserErrors(page: Page) {
 	return errors;
 }
 
+async function useHomePublications(page: Page) {
+	await page.route("**/api/play/publications", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					publications: [
+						{
+							authorUsername: "archivekeeper",
+							id: "publication-id",
+							slug: "quiet-archive",
+							title: "Quiet archive",
+							summary: "A compact world for testing hosted play.",
+							release: {
+								number: 1,
+								publishedAt: "2026-08-09T12:00:00.000Z",
+							},
+						},
+					],
+				},
+			}),
+		}),
+	);
+}
+
 async function useDeterministicEditorWorld(
 	page: Page,
 	worldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6",
@@ -359,6 +385,7 @@ async function writeLocalWorldDraft(
 test("the home page continues without an account into the world library", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
+	await useHomePublications(page);
 
 	await page.goto("/");
 	const pageSelector = page
@@ -368,14 +395,14 @@ test("the home page continues without an account into the world library", async 
 	await expect(page.getByRole("menuitem", {name: "Play"})).toHaveAttribute("href", "/play");
 	expect(editor.bootstrapCount()).toBe(0);
 	await expect(
-		page.getByRole("heading", {name: "Build and play text based adventure games."}),
+		page.getByRole("heading", {name: "A place to build and play text adventures."}),
 	).toBeVisible();
 	await expect(page.getByRole("link", {name: "Mothmark home"})).toHaveAttribute(
 		"aria-current",
 		"page",
 	);
 
-	await page.getByRole("link", {name: "Continue without an account"}).click();
+	await page.getByRole("link", {name: "Start building"}).click();
 
 	await expect(page).toHaveURL(/\/worlds$/);
 	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
@@ -391,27 +418,53 @@ test("the home page continues without an account into the world library", async 
 	expect(browserErrors).toEqual([]);
 });
 
-test("the home page offers sign-in without creating a temporary account", async ({page}) => {
+test("the home page example plays through the real command path", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
+	await useHomePublications(page);
 
 	await page.goto("/");
-	const signInLink = page.getByRole("link", {name: "Sign in", exact: true});
-	const continueLink = page.getByRole("link", {name: "Continue without an account"});
-	const [signInBox, continueBox] = await Promise.all([
-		signInLink.boundingBox(),
-		continueLink.boundingBox(),
-	]);
-	expect(signInBox?.width).toBeCloseTo(continueBox?.width ?? 0, 0);
-
-	await signInLink.click();
-	await expect(page).toHaveURL(/\/sign-in$/);
-	await expect(page.getByRole("heading", {name: "Sign in", exact: true})).toBeVisible();
-	await expect(page.getByRole("link", {name: "Create an account"})).toHaveAttribute(
-		"href",
-		"/register",
-	);
+	const exampleMap = page.getByLabel("Pan and zoom map of the Corner Shop example world");
+	await expect(exampleMap).toBeVisible();
+	const mapViewport = exampleMap.locator(".mapViewport");
+	const initialMapTransform = await mapViewport.getAttribute("style");
+	await exampleMap.hover();
+	await page.mouse.wheel(0, -240);
+	await expect.poll(() => mapViewport.getAttribute("style")).not.toBe(initialMapTransform);
+	await page.getByRole("textbox", {name: "Game command"}).fill("east");
+	await page.getByRole("textbox", {name: "Game command"}).press("Enter");
+	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
+	const videoButtons = page.getByRole("button", {name: "Watch video"});
+	await expect(videoButtons).toHaveCount(2);
+	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
 	expect(editor.bootstrapCount()).toBe(0);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the home tutorial and videos share a desktop row and stack on mobile", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await useHomePublications(page);
+
+	await page.setViewportSize({width: 1280, height: 900});
+	await page.goto("/");
+	const tutorial = page.locator(".homeTutorial");
+	const videos = page.locator(".homeVideos");
+	const [desktopTutorial, desktopVideos] = await Promise.all([
+		tutorial.boundingBox(),
+		videos.boundingBox(),
+	]);
+	expect(Math.abs((desktopTutorial?.y ?? 0) - (desktopVideos?.y ?? 0))).toBeLessThan(2);
+
+	await page.setViewportSize({width: 390, height: 844});
+	const [mobileTutorial, mobileVideos] = await Promise.all([
+		tutorial.boundingBox(),
+		videos.boundingBox(),
+	]);
+	expect(mobileVideos?.y ?? 0).toBeGreaterThan(
+		(mobileTutorial?.y ?? 0) + (mobileTutorial?.height ?? 0) - 2,
+	);
+	expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 	expect(browserErrors).toEqual([]);
 });
 
