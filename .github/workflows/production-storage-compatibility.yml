@@ -17,7 +17,7 @@ jobs:
       github.event.client_payload.environment == 'production'
     name: Migrate and validate retained content
     runs-on: ubuntu-latest
-    environment: production
+    environment: Production
     permissions:
       contents: read
       statuses: write

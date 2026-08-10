@@ -1,0 +1,79 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-storage-release
+  cancel-in-progress: false
+
+jobs:
+  migrate-validate-and-deploy:
+    name: Migrate, validate, and deploy staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: Preview
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+      DATABASE_SSL: "true"
+      DATABASE_POOL_MIN: "0"
+      DATABASE_POOL_MAX: "1"
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+    steps:
+      - name: Check out the staging commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'staging' }}
+
+      - name: Record the candidate commit
+        run: echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Verify release configuration
+        run: |
+          : "${DATABASE_URL:?Missing DATABASE_MIGRATION_URL in the GitHub Preview environment}"
+          : "${VERCEL_TOKEN:?Missing VERCEL_TOKEN in the GitHub Preview environment}"
+          : "${VERCEL_ORG_ID:?Missing VERCEL_ORG_ID in the GitHub Preview environment}"
+          : "${VERCEL_PROJECT_ID:?Missing VERCEL_PROJECT_ID in the GitHub Preview environment}"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations and validate retained content
+        run: VERCEL_GIT_COMMIT_SHA="$DEPLOY_SHA" pnpm release:migrate
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@58.0.0
+
+      - name: Pull staging build configuration
+        run: vercel pull --yes --environment=preview --git-branch=staging --token="$VERCEL_TOKEN"
+
+      - name: Build the staging candidate
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy the validated staging candidate
+        run: >-
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+          --meta githubDeployment=1
+          --meta githubCommitRef=staging
+          --meta githubCommitSha="$DEPLOY_SHA"
+          --meta githubCommitOrg="$GITHUB_REPOSITORY_OWNER"
+          --meta githubCommitRepo="$GITHUB_REPOSITORY_NAME"
