@@ -23,12 +23,23 @@ function getPrefix(type: GameMessage["type"]) {
 
 export function OutputLog({messages}: OutputLogProps) {
 	const bottomRef = useRef<HTMLDivElement | null>(null);
+	const shouldFollowRef = useRef(true);
 
 	useEffect(() => {
-		bottomRef.current?.scrollIntoView?.({
-			block: "end",
-		});
+		if (shouldFollowRef.current) bottomRef.current?.scrollIntoView?.({block: "end"});
 	}, [messages]);
+
+	useEffect(() => {
+		const scroller = bottomRef.current?.closest<HTMLElement>(".game-player__output");
+		if (!scroller) return;
+		const updateFollow = () => {
+			shouldFollowRef.current =
+				scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
+		};
+		updateFollow();
+		scroller.addEventListener("scroll", updateFollow, {passive: true});
+		return () => scroller.removeEventListener("scroll", updateFollow);
+	}, []);
 
 	return (
 		<div className="output-log">

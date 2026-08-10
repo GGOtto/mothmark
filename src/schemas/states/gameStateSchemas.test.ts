@@ -1,6 +1,6 @@
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
-import {FeatureStateSchema, RoomStateSchema} from "./entityStateSchemas";
+import {ItemStateSchema, RoomStateSchema} from "./entityStateSchemas";
 import {
 	CommandVariableRepositorySchema,
 	CommandVariableSchema,
@@ -17,7 +17,7 @@ describe("command variables", () => {
 	it.each([
 		{type: "phrase", value: "put"},
 		{type: "relation", value: "in"},
-		{type: "target", value: toID("feature", "offering-bowl")},
+		{type: "target", value: toID("item", "offering-bowl")},
 		{type: "number", value: 3},
 		{type: "boolean", value: true},
 		{type: "direction", value: "n"},
@@ -62,16 +62,16 @@ describe("entity state snapshots", () => {
 				type: "room",
 				id: toID("room", "foyer"),
 				flags: {},
-				featureStates: [],
+				itemStates: [],
 			}).success,
 		).toBe(false);
 	});
 
 	it("requires all player-facing feature fields", () => {
 		expect(
-			FeatureStateSchema.safeParse({
-				type: "feature",
-				id: toID("feature", "bell"),
+			ItemStateSchema.safeParse({
+				type: "item",
+				id: toID("item", "bell"),
 				flags: {},
 			}).success,
 		).toBe(false);

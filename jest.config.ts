@@ -8,10 +8,9 @@ const createJestConfig = nextJest({
 const config: Config = {
 	clearMocks: true,
 	collectCoverageFrom: [
-		"app/**/*.{ts,tsx}",
-		"components/**/*.{ts,tsx}",
-		"types/**/*.{ts,tsx}",
-		"utils/**/*.{ts,tsx}",
+		"src/**/*.{ts,tsx}",
+		"!src/**/*.test.{ts,tsx}",
+		"!src/**/*.player.test.{ts,tsx}",
 		"!**/*.d.ts",
 		"!**/node_modules/**",
 	],
@@ -21,7 +20,7 @@ const config: Config = {
 	},
 	setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
 	testEnvironment: "jsdom",
-	testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
+	testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/e2e/", "<rootDir>/node_modules/"],
 };
 
 export default createJestConfig(config);

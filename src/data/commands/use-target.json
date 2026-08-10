@@ -1,0 +1,189 @@
+{
+	"id": {
+		"type": "command",
+		"id": "use-targeted"
+	},
+	"name": "Use with target",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-verb"
+					},
+					"type": "phrase",
+					"matches": ["use"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["usable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-with"
+					},
+					"type": "relation",
+					"relation": "with",
+					"aliasMode": "defaults",
+					"aliases": [],
+					"role": "relation"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-object"
+					},
+					"type": "target",
+					"role": "indirect-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": [],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-verb"
+					},
+					"type": "phrase",
+					"matches": ["use"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["usable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-on"
+					},
+					"type": "relation",
+					"relation": "on",
+					"aliasMode": "defaults",
+					"aliases": [],
+					"role": "relation"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target-object"
+					},
+					"type": "target",
+					"role": "indirect-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": [],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 1,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "use-target-item"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "use-target-item-fallback"},
+				"always": {
+					"name": "Cannot resolve used item",
+					"id": {"type": "effect", "id": "use-target-item-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't use that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {"type": "command-block", "id": "use-target-object"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "use-target-object-fallback"},
+				"always": {
+					"name": "Cannot resolve use target",
+					"id": {"type": "effect", "id": "use-target-object-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't use it on that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "use-target-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "use-target-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "use",
+					"itemId": {
+						"type": "item",
+						"id": "use-item-fallback"
+					},
+					"targetItemId": {
+						"type": "item",
+						"id": "use-target-fallback"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "use-target-item"
+							},
+							"field": "itemId"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "use-target-object"
+							},
+							"field": "targetItemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

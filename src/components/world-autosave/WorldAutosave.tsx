@@ -1,6 +1,6 @@
 "use client";
 
-import {RotateCcw, Save} from "lucide-react";
+import {ChevronDown, RotateCcw, Save} from "lucide-react";
 import {
 	createContext,
 	useCallback,
@@ -13,11 +13,14 @@ import {
 } from "react";
 
 import type {World} from "@/schemas/world/worldSchema";
+import {readBrowserCsrfToken} from "@/auth/browserCsrf";
+import {deleteWorldDraft, writeWorldDraft} from "./worldDraftStorage";
 
 import "./WorldAutosave.scss";
 
-const SAVE_DEBOUNCE_MS = 2_000;
-const SAVE_MAX_WAIT_MS = 15_000;
+const LOCAL_DRAFT_DEBOUNCE_MS = 500;
+const SAVE_DEBOUNCE_MS = 10_000;
+const SAVE_MAX_WAIT_MS = 60_000;
 const INDICATOR_MIN_VISIBLE_MS = 2_000;
 const RETRY_DELAYS_MS = [5_000, 15_000, 30_000] as const;
 
@@ -26,7 +29,10 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 type SaveTarget = {
 	world: World;
 	worldId: string | null;
+	userId: string | null;
+	worldName: string;
 	revision: number | null;
+	restoredFromLocalDraft?: boolean;
 	onPersisted: (worldId: string, revision: number) => void;
 	onReset: () => void;
 };
@@ -45,6 +51,7 @@ type WorldAutosaveContextValue = {
 	indicatorVisible: boolean;
 	status: SaveStatus;
 	saveNow: () => Promise<void>;
+	prepareForNavigation: () => Promise<boolean>;
 	resetWorld: () => void;
 };
 
@@ -95,20 +102,13 @@ const readSavedWorld = async (response: Response): Promise<SavedWorld> => {
 };
 
 const persistWorld = async (target: SaveTarget): Promise<SavedWorld> => {
-	const isExistingWorld = target.worldId !== null;
-	const response = await fetch(isExistingWorld ? `/api/world/${target.worldId}` : "/api/world", {
-		method: isExistingWorld ? "PUT" : "POST",
-		headers: {"content-type": "application/json"},
-		body: JSON.stringify(
-			isExistingWorld
-				? {world: target.world, expectedRevision: target.revision ?? undefined}
-				: {
-						name: target.world.metadata.title || "Main World",
-						slug: "main",
-						world: target.world,
-						schemaVersion: 1,
-					},
-		),
+	if (!target.worldId) throw new WorldSaveError("The private world is not ready to save.", false);
+	const csrfToken = readBrowserCsrfToken();
+	if (!csrfToken) throw new WorldSaveError("The editor security token is missing.", false);
+	const response = await fetch(`/api/world/${target.worldId}`, {
+		method: "PUT",
+		headers: {"content-type": "application/json", "x-csrf-token": csrfToken},
+		body: JSON.stringify({world: target.world, expectedRevision: target.revision ?? undefined}),
 	});
 
 	return readSavedWorld(response);
@@ -117,13 +117,17 @@ const persistWorld = async (target: SaveTarget): Promise<SavedWorld> => {
 export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 	const [target, setTarget] = useState<SaveTarget | null>(null);
 	const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+	const [localSnapshot, setLocalSnapshot] = useState<string | null>(null);
 	const [status, setStatus] = useState<SaveStatus>("idle");
 	const [indicatorVisible, setIndicatorVisible] = useState(false);
 
 	const targetRef = useRef<SaveTarget | null>(null);
 	const savedSnapshotRef = useRef<string | null>(null);
+	const localSnapshotRef = useRef<string | null>(null);
+	const localOperationQueueRef = useRef<Promise<void>>(Promise.resolve());
 	const inFlightRef = useRef<Promise<void> | null>(null);
 	const queuedSaveRef = useRef(false);
+	const localDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const maxWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -133,21 +137,75 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 	const generationRef = useRef(0);
 	const saveRef = useRef<() => Promise<void>>(async () => {});
 	const scheduleRef = useRef<() => void>(() => {});
+	const persistLocalRef = useRef<() => void>(() => {});
+	const scheduleLocalRef = useRef<() => void>(() => {});
 
 	const currentSnapshot = useMemo(() => (target ? serializeWorld(target.world) : null), [target]);
 	const isDirty = currentSnapshot !== null && currentSnapshot !== savedSnapshot;
+	const isLocallyDirty =
+		currentSnapshot !== null &&
+		currentSnapshot !== savedSnapshot &&
+		currentSnapshot !== localSnapshot;
 
 	const clearScheduledSaves = useCallback(() => {
+		if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
 		if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 		if (maxWaitTimerRef.current) clearTimeout(maxWaitTimerRef.current);
 		if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
 		if (indicatorTimerRef.current) clearTimeout(indicatorTimerRef.current);
 
+		localDraftTimerRef.current = null;
 		debounceTimerRef.current = null;
 		maxWaitTimerRef.current = null;
 		retryTimerRef.current = null;
 		indicatorTimerRef.current = null;
 	}, []);
+
+	const queueLocalOperation = useCallback((operation: () => Promise<void>) => {
+		localOperationQueueRef.current = localOperationQueueRef.current
+			.then(operation)
+			.catch((error: unknown) => {
+				console.warn("Could not update the local world draft.", error);
+			});
+		return localOperationQueueRef.current;
+	}, []);
+
+	const persistLocalDraftNow = useCallback(() => {
+		if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
+		localDraftTimerRef.current = null;
+
+		const currentTarget = targetRef.current;
+		if (!currentTarget) return;
+
+		const snapshot = serializeWorld(currentTarget.world);
+		if (snapshot === savedSnapshotRef.current || snapshot === localSnapshotRef.current) return;
+		const generation = generationRef.current;
+
+		void queueLocalOperation(async () => {
+			const persisted = await writeWorldDraft({
+				userId: currentTarget.userId,
+				world: currentTarget.world,
+				worldId: currentTarget.worldId,
+				baseServerRevision: currentTarget.revision,
+			});
+			if (!persisted || generationRef.current !== generation) return;
+			localSnapshotRef.current = snapshot;
+			setLocalSnapshot(snapshot);
+		});
+	}, [queueLocalOperation]);
+
+	const scheduleLocalDraft = useCallback(() => {
+		if (localDraftTimerRef.current) clearTimeout(localDraftTimerRef.current);
+		localDraftTimerRef.current = setTimeout(() => {
+			localDraftTimerRef.current = null;
+			persistLocalRef.current();
+		}, LOCAL_DRAFT_DEBOUNCE_MS);
+	}, []);
+
+	useEffect(() => {
+		persistLocalRef.current = persistLocalDraftNow;
+		scheduleLocalRef.current = scheduleLocalDraft;
+	}, [persistLocalDraftNow, scheduleLocalDraft]);
 
 	const showIndicator = useCallback(() => {
 		if (indicatorTimerRef.current) clearTimeout(indicatorTimerRef.current);
@@ -222,6 +280,30 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 					targetRef.current = updatedTarget;
 					setTarget(updatedTarget);
 				}
+				localSnapshotRef.current = snapshotAtSaveStart;
+				setLocalSnapshot(snapshotAtSaveStart);
+				void queueLocalOperation(async () => {
+					const latestTarget = targetRef.current;
+					if (!latestTarget || generationRef.current !== generationAtSaveStart) return;
+
+					const latestSnapshot = serializeWorld(latestTarget.world);
+					if (latestSnapshot === snapshotAtSaveStart) {
+						if (latestTarget.userId && latestTarget.worldId) {
+							await deleteWorldDraft(latestTarget.userId, latestTarget.worldId);
+						}
+						return;
+					}
+
+					const persisted = await writeWorldDraft({
+						userId: latestTarget.userId,
+						world: latestTarget.world,
+						worldId: savedWorld.id,
+						baseServerRevision: savedWorld.revision,
+					});
+					if (!persisted || generationRef.current !== generationAtSaveStart) return;
+					localSnapshotRef.current = latestSnapshot;
+					setLocalSnapshot(latestSnapshot);
+				});
 				setStatus("saved");
 				targetAtSaveStart.onPersisted(savedWorld.id, savedWorld.revision);
 			} catch (error) {
@@ -265,7 +347,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 
 		inFlightRef.current = request;
 		await request;
-	}, [hideIndicatorAfterMinimum, showIndicator]);
+	}, [hideIndicatorAfterMinimum, queueLocalOperation, showIndicator]);
 
 	useEffect(() => {
 		saveRef.current = saveNow;
@@ -306,14 +388,18 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			retryAttemptRef.current = 0;
 			targetRef.current = nextTarget;
 			const snapshot = serializeWorld(nextTarget.world);
-			savedSnapshotRef.current = snapshot;
+			const serverSnapshot = nextTarget.restoredFromLocalDraft ? null : snapshot;
+			savedSnapshotRef.current = serverSnapshot;
+			localSnapshotRef.current = snapshot;
 			setTarget(nextTarget);
-			setSavedSnapshot(snapshot);
+			setSavedSnapshot(serverSnapshot);
+			setLocalSnapshot(snapshot);
 			setStatus("idle");
 			indicatorVisibleSinceRef.current = null;
 			setIndicatorVisible(false);
+			if (nextTarget.restoredFromLocalDraft) scheduleAutosave();
 		},
-		[clearScheduledSaves],
+		[clearScheduledSaves, scheduleAutosave],
 	);
 
 	const updateTarget = useCallback((nextTarget: SaveTarget) => {
@@ -331,40 +417,68 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 		targetRef.current = mergedTarget;
 		setTarget(mergedTarget);
 		setStatus((currentStatus) => (currentStatus === "error" ? "idle" : currentStatus));
+		scheduleLocalRef.current();
 		scheduleRef.current();
 	}, []);
 
 	const clearTarget = useCallback(() => {
+		persistLocalDraftNow();
 		generationRef.current += 1;
 		clearScheduledSaves();
 		queuedSaveRef.current = false;
 		retryAttemptRef.current = 0;
 		targetRef.current = null;
 		savedSnapshotRef.current = null;
+		localSnapshotRef.current = null;
 		setTarget(null);
 		setSavedSnapshot(null);
+		setLocalSnapshot(null);
 		setStatus("idle");
 		indicatorVisibleSinceRef.current = null;
 		setIndicatorVisible(false);
-	}, [clearScheduledSaves]);
+	}, [clearScheduledSaves, persistLocalDraftNow]);
 
 	const resetWorld = useCallback(() => {
 		targetRef.current?.onReset();
 	}, []);
 
+	const prepareForNavigation = useCallback(async () => {
+		const currentTarget = targetRef.current;
+		if (!currentTarget) return true;
+		if (serializeWorld(currentTarget.world) === savedSnapshotRef.current) return true;
+		await saveRef.current();
+		const latestTarget = targetRef.current;
+		return Boolean(latestTarget && serializeWorld(latestTarget.world) === savedSnapshotRef.current);
+	}, []);
+
 	useEffect(() => clearScheduledSaves, [clearScheduledSaves]);
 
 	useEffect(() => {
-		if (!isDirty) return;
+		if (!isLocallyDirty) return;
 
 		const warnAboutUnsavedChanges = (event: BeforeUnloadEvent) => {
+			persistLocalRef.current();
 			event.preventDefault();
 			event.returnValue = "";
 		};
 
 		window.addEventListener("beforeunload", warnAboutUnsavedChanges);
 		return () => window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
-	}, [isDirty]);
+	}, [isLocallyDirty]);
+
+	useEffect(() => {
+		const persistBeforeBackgrounding = () => {
+			if (document.visibilityState === "hidden") persistLocalRef.current();
+		};
+		const saveWhenOnline = () => void saveRef.current();
+
+		document.addEventListener("visibilitychange", persistBeforeBackgrounding);
+		window.addEventListener("online", saveWhenOnline);
+		return () => {
+			document.removeEventListener("visibilitychange", persistBeforeBackgrounding);
+			window.removeEventListener("online", saveWhenOnline);
+		};
+	}, []);
 
 	const value = useMemo<WorldAutosaveContextValue>(
 		() => ({
@@ -376,6 +490,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			indicatorVisible,
 			status,
 			saveNow,
+			prepareForNavigation,
 			resetWorld,
 		}),
 		[
@@ -385,6 +500,7 @@ export function WorldAutosaveProvider({children}: {children: ReactNode}) {
 			registerTarget,
 			resetWorld,
 			saveNow,
+			prepareForNavigation,
 			status,
 			target,
 			updateTarget,
@@ -409,6 +525,9 @@ export function useWorldAutosaveRegistration({
 	world,
 	worldId,
 	revision,
+	userId,
+	worldName,
+	restoredFromLocalDraft,
 	onPersisted,
 	onReset,
 }: SaveTarget & {ready: boolean}) {
@@ -418,7 +537,16 @@ export function useWorldAutosaveRegistration({
 	useEffect(() => {
 		if (!ready) return;
 
-		const target = {world, worldId, revision, onPersisted, onReset};
+		const target = {
+			world,
+			worldId,
+			userId,
+			worldName,
+			revision,
+			restoredFromLocalDraft,
+			onPersisted,
+			onReset,
+		};
 
 		if (!registered.current) {
 			registerTarget(target);
@@ -426,7 +554,19 @@ export function useWorldAutosaveRegistration({
 		} else {
 			updateTarget(target);
 		}
-	}, [onPersisted, onReset, ready, registerTarget, revision, updateTarget, world, worldId]);
+	}, [
+		onPersisted,
+		onReset,
+		ready,
+		registerTarget,
+		restoredFromLocalDraft,
+		revision,
+		userId,
+		worldName,
+		updateTarget,
+		world,
+		worldId,
+	]);
 
 	useEffect(
 		() => () => {
@@ -438,7 +578,8 @@ export function useWorldAutosaveRegistration({
 }
 
 export function WorldAutosaveIndicator() {
-	const {indicatorVisible} = useWorldAutosave();
+	const {indicatorVisible, target} = useWorldAutosave();
+	if (!target) return null;
 
 	return (
 		<span className="worldAutosaveIndicatorSlot" role="status" aria-live="polite">
@@ -452,6 +593,120 @@ export function WorldAutosaveIndicator() {
 	);
 }
 
+export function CurrentWorldName({showLoading = false}: {showLoading?: boolean}) {
+	const {target} = useWorldAutosave();
+	if (!target && !showLoading) return null;
+	return (
+		<span className="headerWorldName" aria-label="Current world">
+			{target ? target.worldName || "Untitled world" : "Loading world…"}
+		</span>
+	);
+}
+
+type SwitcherWorld = {editorSlug: string | null; id: string; name: string};
+
+export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
+	const {prepareForNavigation, target} = useWorldAutosave();
+	const [open, setOpen] = useState(false);
+	const [worlds, setWorlds] = useState<SwitcherWorld[]>([]);
+	const [navigationError, setNavigationError] = useState("");
+	const firstItemRef = useRef<HTMLButtonElement | null>(null);
+	const switcherRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (!open || !target) return;
+		const controller = new AbortController();
+		fetch("/api/world", {signal: controller.signal})
+			.then(async (response) => {
+				if (!response.ok) throw new Error("Worlds could not be loaded.");
+				const body = (await response.json()) as {data?: {worlds?: SwitcherWorld[]}};
+				setWorlds(Array.isArray(body.data?.worlds) ? body.data.worlds : []);
+			})
+			.catch((error: unknown) => {
+				if ((error as {name?: string}).name !== "AbortError")
+					setNavigationError("Worlds could not be loaded.");
+			});
+		return () => controller.abort();
+	}, [open, target]);
+
+	useEffect(() => {
+		if (open) firstItemRef.current?.focus();
+	}, [open, worlds]);
+
+	useEffect(() => {
+		if (!open) return;
+		const closeOutside = (event: PointerEvent) => {
+			if (event.target instanceof Node && !switcherRef.current?.contains(event.target)) {
+				setOpen(false);
+			}
+		};
+		document.addEventListener("pointerdown", closeOutside, true);
+		return () => document.removeEventListener("pointerdown", closeOutside, true);
+	}, [open]);
+
+	if (!target) return showLoading ? <CurrentWorldName showLoading /> : null;
+
+	const navigate = async (path: string) => {
+		setNavigationError("");
+		if (!(await prepareForNavigation())) {
+			setNavigationError("Save this world before switching.");
+			return;
+		}
+		window.location.assign(path);
+	};
+
+	return (
+		<div
+			ref={switcherRef}
+			className="worldSwitcher"
+			onKeyDown={(event) => {
+				if (event.key === "Escape") {
+					setOpen(false);
+					(event.currentTarget.querySelector(".worldSwitcherTrigger") as HTMLElement)?.focus();
+				}
+			}}
+		>
+			<button
+				type="button"
+				className="worldSwitcherTrigger"
+				aria-label={`Current world: ${target.worldName}`}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				onClick={() => setOpen((value) => !value)}
+			>
+				<span>{target.worldName || "Untitled world"}</span>
+				<ChevronDown size={13} aria-hidden="true" />
+			</button>
+			{open ? (
+				<div className="worldSwitcherMenu" role="menu" aria-label="Switch worlds">
+					{worlds
+						.filter((world) => world.id !== target.worldId)
+						.slice(0, 5)
+						.map((world, index) => (
+							<button
+								ref={index === 0 ? firstItemRef : undefined}
+								key={world.id}
+								type="button"
+								role="menuitem"
+								onClick={() => void navigate(`/worlds/${world.editorSlug ?? world.id}`)}
+							>
+								{world.name}
+							</button>
+						))}
+					<div className="worldSwitcherMenuDivider" />
+					<button type="button" role="menuitem" onClick={() => void navigate("/worlds")}>
+						View all worlds
+					</button>
+					<button type="button" role="menuitem" onClick={() => void navigate("/worlds?new=1")}>
+						New world
+					</button>
+					{navigationError ? <p role="alert">{navigationError}</p> : null}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
 export function WorldResetButton() {
 	const {resetWorld, target} = useWorldAutosave();
 
@@ -459,7 +714,7 @@ export function WorldResetButton() {
 
 	const confirmReset = () => {
 		const confirmed = window.confirm(
-			"Replace the current world with the bundled initial world? The replacement will be autosaved.",
+			"Replace every authored room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world? This replacement will be autosaved.",
 		);
 		if (confirmed) resetWorld();
 	};
@@ -467,12 +722,12 @@ export function WorldResetButton() {
 	return (
 		<button
 			type="button"
-			className="headerResetButton"
+			className="worldResetButton"
 			onClick={confirmReset}
-			title="Reset world to the bundled example"
+			title="Reset world to the bundled starter"
 		>
 			<RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
-			Reset example
+			Reset to starter world
 		</button>
 	);
 }

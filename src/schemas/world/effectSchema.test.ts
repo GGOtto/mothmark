@@ -32,6 +32,16 @@ describe("effect storage schemas", () => {
 		).toBe(true);
 	});
 
+	it("accepts saved text create, set, and delete effects", () => {
+		for (const effect of [
+			{type: "text", operation: "create", text: "answer", value: "moth"},
+			{type: "text", operation: "set", text: "answer", value: "mark"},
+			{type: "text", operation: "delete", text: "answer"},
+		]) {
+			expect(EffectSchema.safeParse(effect).success).toBe(true);
+		}
+	});
+
 	it("uses a complete EffectGroup for effect controls and world storage", () => {
 		const group = {
 			id: "open-gate-sequence",
@@ -103,10 +113,10 @@ describe("effect storage schemas", () => {
 		expect(
 			EffectSchema.safeParse({
 				type: "flag",
-				"flag-type": "feature",
+				"flag-type": "item",
 				operation: "toggle",
 				roomId: toID("room", "vault"),
-				featureId: toID("feature", "door"),
+				itemId: toID("item", "door"),
 				flag: "locked",
 			}).success,
 		).toBe(true);
@@ -116,6 +126,58 @@ describe("effect storage schemas", () => {
 		expect(
 			EffectSchema.parse({type: "flag", operation: "set", flag: "gate.open", value: true}),
 		).toMatchObject({"flag-type": "normal"});
+	});
+
+	it.each([
+		{type: "item", operation: "change-listing-text", itemId: toID("item", "item"), value: "Here."},
+		{
+			type: "item",
+			operation: "place-inside",
+			itemId: toID("item", "item"),
+			containerId: toID("item", "box"),
+		},
+		{type: "item", operation: "empty-into-room", itemId: toID("item", "item"), placement: "both"},
+		{
+			type: "item",
+			operation: "move-contents",
+			itemId: toID("item", "item"),
+			destinationItemId: toID("item", "table"),
+			placement: "on",
+		},
+		{
+			type: "item-action",
+			action: "take",
+			itemId: toID("item", "item"),
+		},
+		{
+			type: "item-action",
+			action: "unlock",
+			itemId: toID("item", "item"),
+			keyItemId: toID("item", "key"),
+		},
+		{
+			type: "item-action",
+			action: "put-on",
+			itemId: toID("item", "item"),
+			surfaceId: toID("item", "table"),
+		},
+		{type: "item-action", action: "use", itemId: toID("item", "item")},
+	])("accepts item effect %#", (effect) => {
+		expect(EffectSchema.safeParse(effect).success).toBe(true);
+	});
+
+	it("normalizes legacy direct item effects", () => {
+		expect(
+			EffectSchema.parse({
+				type: "item",
+				operation: "change-description",
+				itemId: toID("item", "door"),
+				value: "Changed.",
+			}),
+		).toMatchObject({
+			operation: "change-examine-text",
+			itemId: toID("item", "door"),
+		});
 	});
 
 	it("rejects readonly edits and permanent deletion", () => {

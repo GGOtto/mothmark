@@ -1,15 +1,26 @@
 import {NextResponse} from "next/server";
 
-import {deleteWorld, getWorld, updateWorld} from "@/db/dbal/worldsRepository";
+import {resolveCurrentActor} from "@/auth/currentActor";
+import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {readBoundedJson, WORLD_REQUEST_MAX_BYTES} from "@/auth/requestBody";
+import {
+	deleteOwnedWorld,
+	getOwnedWorld,
+	getOwnedWorldBySlug,
+	permanentlyDeleteOwnedWorld,
+	updateOwnedWorld,
+} from "@/db/dbal/worldsRepository";
 
 import {
 	WorldIdSchema,
+	WorldLocatorSchema,
 	handleWorldRouteError,
-	invalidJsonResponse,
+	requestBodyErrorResponse,
 	UpdateWorldRequestSchema,
 	validationErrorResponse,
 	worldNotFoundResponse,
 	worldRevisionConflictResponse,
+	worldPermissionError,
 } from "../_shared";
 
 export const dynamic = "force-dynamic";
@@ -24,15 +35,26 @@ const parseWorldId = async (context: WorldRouteContext) => {
 	return WorldIdSchema.safeParse(id);
 };
 
-export async function GET(_: Request, context: WorldRouteContext): Promise<NextResponse> {
-	const idResult = await parseWorldId(context);
+const parseWorldLocator = async (context: WorldRouteContext) => {
+	const {id} = await context.params;
+	return WorldLocatorSchema.safeParse(id);
+};
 
-	if (!idResult.success) {
-		return validationErrorResponse(idResult.error.issues);
+export async function GET(request: Request, context: WorldRouteContext): Promise<NextResponse> {
+	const locatorResult = await parseWorldLocator(context);
+
+	if (!locatorResult.success) {
+		return validationErrorResponse(locatorResult.error.issues);
 	}
 
 	try {
-		const world = await getWorld(idResult.data);
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "editor.access");
+		if (permissionError) return permissionError;
+		const world = WorldIdSchema.safeParse(locatorResult.data).success
+			? await getOwnedWorld(actor.userId, locatorResult.data)
+			: await getOwnedWorldBySlug(actor.userId, locatorResult.data);
 		return world ? NextResponse.json({data: world}) : worldNotFoundResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
@@ -45,13 +67,15 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	if (!idResult.success) {
 		return validationErrorResponse(idResult.error.issues);
 	}
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
 
 	let body: unknown;
 
 	try {
-		body = await request.json();
-	} catch {
-		return invalidJsonResponse();
+		body = await readBoundedJson(request, WORLD_REQUEST_MAX_BYTES);
+	} catch (error) {
+		return requestBodyErrorResponse(error);
 	}
 
 	const bodyResult = UpdateWorldRequestSchema.safeParse(body);
@@ -61,8 +85,12 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	}
 
 	try {
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.update_owned");
+		if (permissionError) return permissionError;
 		const {expectedRevision, ...update} = bodyResult.data;
-		const world = await updateWorld(idResult.data, update, expectedRevision);
+		const world = await updateOwnedWorld(actor.userId, idResult.data, update, expectedRevision);
 
 		if (world) return NextResponse.json({data: world});
 
@@ -74,17 +102,25 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 
 export const PATCH = PUT;
 
-export async function DELETE(_: Request, context: WorldRouteContext): Promise<Response> {
+export async function DELETE(request: Request, context: WorldRouteContext): Promise<Response> {
 	const idResult = await parseWorldId(context);
 
 	if (!idResult.success) {
 		return validationErrorResponse(idResult.error.issues);
 	}
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
 
 	try {
-		return (await deleteWorld(idResult.data))
-			? new Response(null, {status: 204})
-			: worldNotFoundResponse();
+		const actor = await resolveCurrentActor(request, "editor");
+		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.delete_owned");
+		if (permissionError) return permissionError;
+		const permanent = new URL(request.url).searchParams.get("permanent") === "1";
+		const deleted = permanent
+			? await permanentlyDeleteOwnedWorld(actor.userId, idResult.data)
+			: await deleteOwnedWorld(actor.userId, idResult.data);
+		return deleted ? new Response(null, {status: 204}) : worldNotFoundResponse();
 	} catch (error) {
 		return handleWorldRouteError(error);
 	}

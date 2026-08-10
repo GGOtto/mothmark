@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
-import {FEATURE_FLAG_DEFINITIONS, ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
+import {ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
 import {DirectionSchema} from "./directionSchema";
 
 export {DirectionSchema} from "./directionSchema";
@@ -53,194 +53,6 @@ export const ConnectionMetadataSchema = z
 		toLayerStubPoint: PointSchema.optional(),
 	})
 	.default({});
-
-export const RoomFeatureKindSchema = editor.select(
-	z
-		.enum(["feature", "container", "surface", "door", "exit", "decoration", "hazard"])
-		.default("feature"),
-	{
-		title: "Feature Kind",
-		description: docify(`
-			The kind of room feature.
-
-			feature:
-			A normal interactable object that cannot be picked up.
-
-			container:
-			An enclosed feature, such as a chest, cabinet, drawer, box, or bag.
-
-			surface:
-			An open supporting feature, such as a table, shelf, desk, altar, or counter.
-
-			door:
-			A feature that may control movement or locked/unlocked state.
-
-			exit:
-			A visible destination or passage.
-
-			decoration:
-			Mostly descriptive, but still targetable if desired.
-
-			hazard:
-			A dangerous or stateful room feature.
-		`),
-		options: [
-			{
-				label: "Feature",
-				value: "feature",
-				description: "A normal interactable object that cannot be picked up.",
-			},
-			{
-				label: "Container",
-				value: "container",
-				description: "An enclosed feature, such as a chest, cabinet, drawer, box, or bag.",
-			},
-			{
-				label: "Surface",
-				value: "surface",
-				description: "An open supporting feature, such as a table, shelf, desk, altar, or counter.",
-			},
-			{
-				label: "Door",
-				value: "door",
-				description: "A feature that may control movement or locked/unlocked state.",
-			},
-			{
-				label: "Exit",
-				value: "exit",
-				description: "A visible destination or passage.",
-			},
-			{
-				label: "Decoration",
-				value: "decoration",
-				description: "Mostly descriptive, but still targetable if desired.",
-				tone: "quiet",
-			},
-			{
-				label: "Hazard",
-				value: "hazard",
-				description: "A dangerous or stateful room feature.",
-				tone: "warning",
-			},
-		],
-	},
-);
-
-export const RoomFeatureSchema = editor.object(
-	{
-		id: editor.id("feature", {
-			title: "Feature ID",
-			description: "The unique id used to identify this room feature.",
-			required: true,
-			layout: {
-				width: "half",
-				order: 1,
-			},
-		}),
-
-		name: editor
-			.input({
-				title: "Name",
-				description: "The display name of the room feature.",
-				placeholder: "Kitchen Table",
-				required: true,
-				layout: {
-					width: "half",
-					order: 2,
-				},
-			})
-			.min(1),
-
-		aliases: editor.aliasList({
-			title: "Aliases",
-			description: "Alternative names the player can use to refer to this feature.",
-			layout: {
-				width: "full",
-				order: 5,
-			},
-		}),
-
-		tags: editor.tagList("features", {
-			title: "Tags",
-			description: "Tags used to group this feature.",
-			layout: {
-				width: "full",
-				order: 6,
-			},
-		}),
-
-		kind: RoomFeatureKindSchema.describe("The feature's interaction category."),
-
-		description: editor.richText({
-			placeholder: "Describe what the player sees...",
-			layout: {
-				group: "details",
-				width: "full",
-				order: 3,
-			},
-			title: "Description",
-			description: "A default description with optional conditional variants.",
-			appearance: {
-				chrome: "field",
-			},
-		}),
-
-		listedInRoom: editor
-			.boolean({
-				title: "Listed in Room",
-				description:
-					"Controls whether the feature is listed separately in the room output. Features can still be mentioned in the room description when this is false.",
-				layout: {
-					width: "half",
-					order: 7,
-				},
-			})
-			.default(false),
-
-		flags: editor
-			.objectFlags({
-				title: "Flags",
-				description: "Boolean state attached to this feature and its initial values.",
-				layout: {
-					width: "full",
-					order: 11,
-				},
-				features: {flags: FEATURE_FLAG_DEFINITIONS},
-			})
-			.default({examined: false}),
-	},
-	{
-		title: "Room Feature",
-		description: docify(`
-			A room feature is an interactable thing inside a room that the player usually
-			cannot pick up.
-
-			Features cover scenery, containers, surfaces, doors, exits, hazards, and
-			other room-local objects.
-		`),
-		duplicate: {
-			duplicateBehavior: "with-new-id",
-			idField: "id",
-			idPrefix: "feature",
-		},
-		childControls: {
-			kind: {
-				title: "Kind",
-				description: "The feature's interaction category.",
-				layout: {
-					width: "half",
-					order: 3,
-				},
-			},
-			description: {
-				layout: {
-					width: "full",
-					order: 4,
-				},
-			},
-		},
-	},
-);
 
 export const RoomSchema = editor.object(
 	{
@@ -320,42 +132,12 @@ export const RoomSchema = editor.object(
 			},
 		}),
 
-		features: editor.linkList(
-			{
-				title: "Features",
-				description: "Interactive room features that exist inside this room.",
-				layout: {
-					group: "features",
-					width: "full",
-					order: 7,
-				},
-				features: {
-					mode: "edit",
-					linkType: "editor",
-					emptyText: "No features",
-					clickHint: "Edit",
-					editorTarget: {
-						kind: "entity",
-						entityType: "feature",
-						path: ["{sourcePath}", "{id}"],
-						create: {
-							enabled: true,
-							buttonLabel: "Add feature",
-							defaultLabel: "New feature",
-							idPrefix: "feature",
-						},
-					},
-				},
-			},
-			z.array(RoomFeatureSchema).default([]),
-		),
-
 		flags: editor
 			.objectFlags({
 				title: "Flags",
 				description: "Boolean state attached to this room and its initial values.",
 				layout: {
-					group: "features",
+					group: "state",
 					width: "full",
 					order: 8,
 				},
@@ -386,9 +168,9 @@ export const RoomSchema = editor.object(
 					],
 				},
 				{
-					id: "features",
-					title: "Features",
-					description: "Interactive features located in this room.",
+					id: "state",
+					title: "State",
+					description: "Initial room state. Items placed in this room are edited from Items.",
 					order: 30,
 					defaultCollapsed: true,
 				},
@@ -526,5 +308,3 @@ export type Point = z.infer<typeof PointSchema>;
 export type Pathway = z.infer<typeof PathwaySchema>;
 export type Room = z.infer<typeof RoomSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
-export type RoomFeatureKind = z.infer<typeof RoomFeatureKindSchema>;
-export type RoomFeature = z.infer<typeof RoomFeatureSchema>;

@@ -1,148 +1,369 @@
 import "server-only";
 
+import {produce} from "immer";
+import type {Knex} from "knex";
+
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
+import {createBlankWorldDocument} from "@/data/worlds/createBlankWorld";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
-import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {createUniqueWorldSlug} from "@/utils/worldSlug";
 
 import {getDb} from "./knex";
 
+export {createBlankWorldDocument} from "@/data/worlds/createBlankWorld";
+
 const database = getDb();
+
+export const DEFAULT_MAX_WORLDS = 5;
+export const TRASH_RECOVERY_MS = 30 * 24 * 60 * 60 * 1_000;
+
+export type WorldKind = "editor" | "template";
 
 export type WorldRecord = {
 	id: string;
 	name: string;
 	slug: string | null;
-	world: World;
+	world: unknown;
 	revision: number;
 	schemaVersion: number;
+	ownerUserId: string | null;
+	kind: WorldKind;
+	updatedByUserId: string | null;
+	deletedAt: Date | null;
+	editorSlug: string | null;
+	trashPurgeAfter: Date | null;
 	createdAt: Date;
 	updatedAt: Date;
+	lastOpenedAt: Date | null;
+	publication?: {
+		status: "published" | "unpublished" | "suspended";
+		visibility: "listed" | "unlisted";
+		slug: string;
+		releaseNumber: number;
+		worldRevision: number;
+		unpublishedChanges: boolean;
+	} | null;
 };
 
-type WorldRow = {
+export type WorldRow = {
 	id: string;
 	name: string;
 	slug: string | null;
 	world: World;
 	revision: number;
 	schema_version: number;
+	owner_user_id: string | null;
+	kind: WorldKind;
+	updated_by_user_id: string | null;
+	deleted_at: Date | string | null;
+	editor_slug: string | null;
+	trash_purge_after?: Date | string | null;
 	created_at: Date | string;
 	updated_at: Date | string;
-};
-
-export type CreateWorldInput = {
-	name: string;
-	slug?: string | null;
-	world: World;
-	schemaVersion?: number;
-};
-
-export type CreateDefaultWorldInput = {
-	name: string;
-	slug?: string | null;
-	schemaVersion?: number;
+	last_opened_at?: Date | string | null;
+	publication_status?: "published" | "unpublished" | "suspended" | null;
+	publication_visibility?: "listed" | "unlisted" | null;
+	publication_slug?: string | null;
+	publication_release_number?: number | null;
+	publication_world_revision?: number | null;
 };
 
 export type UpdateWorldInput = {
 	name?: string;
-	slug?: string | null;
 	world?: World;
 };
 
-function mapWorldRow(row: WorldRow): WorldRecord {
+export function mapWorldRow(row: WorldRow): WorldRecord {
 	return {
 		id: row.id,
 		name: row.name,
 		slug: row.slug,
-		world: row.world,
+		world: parseStoredWorld(row.world, row.schema_version, {
+			id: row.id,
+			name: row.name,
+			storage: row.kind === "template" ? "template" : "editor",
+		}),
 		revision: row.revision,
 		schemaVersion: row.schema_version,
+		ownerUserId: row.owner_user_id,
+		kind: row.kind,
+		updatedByUserId: row.updated_by_user_id,
+		deletedAt: row.deleted_at ? new Date(row.deleted_at) : null,
+		editorSlug: row.editor_slug ?? null,
+		trashPurgeAfter: row.trash_purge_after ? new Date(row.trash_purge_after) : null,
 		createdAt: new Date(row.created_at),
 		updatedAt: new Date(row.updated_at),
+		lastOpenedAt: row.last_opened_at ? new Date(row.last_opened_at) : null,
+		publication:
+			row.publication_status &&
+			row.publication_visibility &&
+			row.publication_slug &&
+			row.publication_release_number &&
+			row.publication_world_revision
+				? {
+						status: row.publication_status,
+						visibility: row.publication_visibility,
+						slug: row.publication_slug,
+						releaseNumber: Number(row.publication_release_number),
+						worldRevision: Number(row.publication_world_revision),
+						unpublishedChanges: row.revision !== Number(row.publication_world_revision),
+					}
+				: null,
 	};
 }
 
-/**
- * Creates and returns a stored world.
- */
-export async function createWorld(input: CreateWorldInput): Promise<WorldRecord> {
-	const [row] = await database<WorldRow>("worlds")
-		.insert({
-			name: input.name,
-			slug: input.slug ?? null,
-			world: input.world,
-			schema_version: input.schemaVersion ?? 1,
-		})
-		.returning("*");
+export type WorldLibrary = {
+	worlds: WorldRecord[];
+	usage: {count: number; max: number};
+};
 
-	if (!row) {
-		throw new Error("Failed to create world.");
+export type WorldExport = {
+	editorSlug: string;
+	exportedAt: string;
+	format: "mothmark-world";
+	schemaVersion: number;
+	world: World;
+	worldId: string;
+	worldName: string;
+	worldRevision: number;
+};
+
+export function createWorldExportDocument(
+	world: Pick<WorldRecord, "editorSlug" | "id" | "name" | "revision" | "schemaVersion" | "world">,
+	exportedAt = new Date(),
+): WorldExport {
+	return {
+		editorSlug: world.editorSlug ?? worldSlugBaseForLegacyExport(world.name),
+		exportedAt: exportedAt.toISOString(),
+		format: "mothmark-world",
+		schemaVersion: PERSISTED_SCHEMA_VERSION,
+		world: WorldSchema.parse(world.world),
+		worldId: world.id,
+		worldName: world.name,
+		worldRevision: world.revision,
+	};
+}
+
+const worldSlugBaseForLegacyExport = (name: string) => createUniqueWorldSlug(name, []);
+
+export type CreateOwnedWorldInput =
+	| {name: string; source: "blank" | "starter"}
+	| {name: string; source: "import"; world: World; schemaVersion?: number};
+
+export class WorldLimitReachedError extends Error {
+	readonly code = "WORLD_LIMIT_REACHED";
+
+	constructor(readonly maxWorlds: number) {
+		super(`This account has reached its limit of ${maxWorlds} worlds.`);
+		this.name = "WorldLimitReachedError";
 	}
-
-	return mapWorldRow(row);
 }
 
-/**
- * Create a world with default fields.
- */
-export async function createDefaultWorld(input: CreateDefaultWorldInput): Promise<WorldRecord> {
-	const world = createDefaultFieldObject(WorldSchema);
-	const row = await createWorld({world, ...input});
-	return row;
+export function remainingWorldCapacity(activeWorlds: number, maxWorlds: number): number {
+	return Math.max(0, maxWorlds - activeWorlds);
 }
 
-/**
- * Lists stored worlds with the most recently updated first.
- */
-export async function listWorlds(): Promise<WorldRecord[]> {
-	const rows = await database<WorldRow>("worlds").orderBy("updated_at", "desc");
+type UserLimitRow = {user_id: string; max_worlds: number};
 
+export async function ensureDefaultUserLimits(
+	transaction: Knex.Transaction,
+	userId: string,
+): Promise<UserLimitRow> {
+	await transaction<UserLimitRow>("user_limits")
+		.insert({user_id: userId, max_worlds: DEFAULT_MAX_WORLDS})
+		.onConflict("user_id")
+		.ignore();
+	const limit = await transaction<UserLimitRow>("user_limits").where({user_id: userId}).first();
+	if (!limit) throw new Error("The user's world limit could not be resolved.");
+	return limit;
+}
+
+async function recordWorldOpened(
+	transaction: Knex.Transaction | Knex,
+	userId: string,
+	worldId: string,
+): Promise<void> {
+	await transaction("user_world_activity")
+		.insert({user_id: userId, world_id: worldId, last_opened_at: transaction.fn.now()})
+		.onConflict(["user_id", "world_id"])
+		.merge({last_opened_at: transaction.fn.now()});
+}
+
+async function requireAvailableWorldCapacity(
+	transaction: Knex.Transaction,
+	ownerUserId: string,
+): Promise<void> {
+	const limit = await ensureDefaultUserLimits(transaction, ownerUserId);
+	const activeCount = await transaction("worlds")
+		.where({owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at")
+		.count<{count: string}>("id as count")
+		.first();
+	if (remainingWorldCapacity(Number(activeCount?.count ?? 0), limit.max_worlds) === 0) {
+		throw new WorldLimitReachedError(limit.max_worlds);
+	}
+}
+
+export async function createOwnedEditorSlug(
+	transaction: Knex.Transaction,
+	ownerUserId: string,
+	name: string,
+): Promise<string> {
+	const existing = await transaction<{editor_slug: string}>("worlds")
+		.select("editor_slug")
+		.where("owner_user_id", ownerUserId)
+		.where("kind", "editor")
+		.whereNotNull("editor_slug");
+	return createUniqueWorldSlug(
+		name,
+		existing.map((world) => world.editor_slug),
+	);
+}
+
+/** Lists only active editor worlds owned by the actor. */
+export async function listOwnedWorlds(ownerUserId: string): Promise<WorldRecord[]> {
+	const rows = await database<WorldRow>("worlds as w")
+		.leftJoin("user_world_activity as a", function () {
+			this.on("a.world_id", "=", "w.id").andOn("a.user_id", "=", "w.owner_user_id");
+		})
+		.leftJoin("world_publications as p", "p.world_id", "w.id")
+		.leftJoin("world_releases as r", "r.id", "p.current_release_id")
+		.leftJoin("world_versions as v", "v.id", "r.world_version_id")
+		.select(
+			"w.*",
+			"a.last_opened_at",
+			"p.status as publication_status",
+			"p.visibility as publication_visibility",
+			"p.slug as publication_slug",
+			"r.release_number as publication_release_number",
+			"v.revision as publication_world_revision",
+		)
+		.where({"w.owner_user_id": ownerUserId, "w.kind": "editor"})
+		.whereNull("w.deleted_at")
+		.orderByRaw("a.last_opened_at desc nulls last")
+		.orderBy("w.updated_at", "desc");
 	return rows.map(mapWorldRow);
 }
 
-/**
- * Gets a world by its database ID.
- *
- * Returns undefined when no matching world exists.
- */
-export async function getWorld(id: string): Promise<WorldRecord | undefined> {
-	const row = await database<WorldRow>("worlds").where({id}).first();
-
-	return row ? mapWorldRow(row) : undefined;
+/** Lists only recoverable, trashed editor worlds owned by the actor. */
+export async function listOwnedTrashedWorlds(ownerUserId: string): Promise<WorldRecord[]> {
+	const rows = await database<WorldRow>("worlds")
+		.where({owner_user_id: ownerUserId, kind: "editor"})
+		.whereNotNull("deleted_at")
+		.orderBy("deleted_at", "desc");
+	return rows.map(mapWorldRow);
 }
 
-/**
- * Gets a world by its public slug.
- */
-export async function getWorldBySlug(slug: string): Promise<WorldRecord | undefined> {
-	const row = await database<WorldRow>("worlds").where({slug}).first();
-
-	return row ? mapWorldRow(row) : undefined;
+export async function getOwnedWorldLibrary(ownerUserId: string): Promise<WorldLibrary> {
+	const [worlds, limit] = await Promise.all([
+		listOwnedWorlds(ownerUserId),
+		database<UserLimitRow>("user_limits").where({user_id: ownerUserId}).first(),
+	]);
+	return {
+		worlds,
+		usage: {count: worlds.length, max: limit?.max_worlds ?? DEFAULT_MAX_WORLDS},
+	};
 }
 
-/**
- * Updates a world's document and optional display metadata.
- *
- * This does not update schema_version. Use updateWorldSchemaVersion
- * when the stored document has been migrated to a newer schema.
- *
- * Returns undefined when no matching world exists.
- */
-export async function updateWorld(
+/** Resolves missing, deleted, template, and another user's worlds identically. */
+export async function getOwnedWorld(
+	ownerUserId: string,
+	id: string,
+): Promise<WorldRecord | undefined> {
+	const row = await database<WorldRow>("worlds")
+		.where({id, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at")
+		.first();
+	if (!row) return undefined;
+	await recordWorldOpened(database, ownerUserId, id);
+	return mapWorldRow({...row, last_opened_at: new Date()});
+}
+
+/** Resolves a private editor slug only inside the current owner's active-world scope. */
+export async function getOwnedWorldBySlug(
+	ownerUserId: string,
+	editorSlug: string,
+): Promise<WorldRecord | undefined> {
+	const row = await database<WorldRow>("worlds")
+		.where({editor_slug: editorSlug, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at")
+		.first();
+	if (!row) return undefined;
+	await recordWorldOpened(database, ownerUserId, row.id);
+	return mapWorldRow({...row, last_opened_at: new Date()});
+}
+
+export async function createOwnedWorld(
+	ownerUserId: string,
+	input: CreateOwnedWorldInput,
+): Promise<WorldRecord> {
+	return database.transaction(async (transaction) => {
+		const owner = await transaction("users").where({id: ownerUserId}).forUpdate().first();
+		if (!owner) throw new Error("The world owner could not be resolved.");
+		await requireAvailableWorldCapacity(transaction, ownerUserId);
+
+		let sourceWorld = input.source === "import" ? input.world : createBlankWorldDocument(input.name);
+		if (input.source === "import") {
+			sourceWorld = parseStoredWorld(input.world, input.schemaVersion ?? PERSISTED_SCHEMA_VERSION, {
+				id: "import",
+				storage: "unknown",
+			});
+		}
+		if (input.source === "starter") {
+			const template = await transaction<WorldRow>("worlds")
+				.where({kind: "template", slug: "main"})
+				.first();
+			if (!template) throw new Error("The starter template could not be resolved.");
+			sourceWorld = parseStoredWorld(template.world, template.schema_version, {
+				id: template.id,
+				storage: "template",
+			});
+		}
+		sourceWorld = produce(sourceWorld, (draft) => {
+			draft.metadata.title = input.name;
+		});
+		const editorSlug = await createOwnedEditorSlug(transaction, ownerUserId, input.name);
+
+		const [row] = await transaction<WorldRow>("worlds")
+			.insert({
+				editor_slug: editorSlug,
+				name: input.name,
+				slug: null,
+				world: sourceWorld,
+				schema_version: PERSISTED_SCHEMA_VERSION,
+				kind: "editor",
+				owner_user_id: ownerUserId,
+				updated_by_user_id: ownerUserId,
+			})
+			.returning("*");
+		if (!row) throw new Error("The world could not be created.");
+		await recordWorldOpened(transaction, ownerUserId, row.id);
+		return mapWorldRow({...row, last_opened_at: new Date()});
+	});
+}
+
+/** Updates an active editor world only within its owner's authorization scope. */
+export async function updateOwnedWorld(
+	ownerUserId: string,
 	id: string,
 	input: UpdateWorldInput,
 	expectedRevision?: number,
 ): Promise<WorldRecord | undefined> {
-	const query = database<WorldRow>("worlds").where({id});
+	const query = database<WorldRow>("worlds")
+		.where({id, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at");
 
-	if (expectedRevision !== undefined) {
-		query.where({revision: expectedRevision});
-	}
+	if (expectedRevision !== undefined) query.where({revision: expectedRevision});
 
 	const [row] = await query
 		.update({
 			...(input.name !== undefined && {name: input.name}),
-			...(input.slug !== undefined && {slug: input.slug}),
-			...(input.world !== undefined && {world: input.world}),
+			...(input.world !== undefined && {
+				world: input.world,
+				schema_version: PERSISTED_SCHEMA_VERSION,
+			}),
+			updated_by_user_id: ownerUserId,
 			revision: database.raw("?? + 1", ["revision"]),
 			updated_at: database.fn.now(),
 		})
@@ -151,38 +372,113 @@ export async function updateWorld(
 	return row ? mapWorldRow(row) : undefined;
 }
 
-/**
- * Deletes a stored world. Returns false when no matching world exists.
- */
-export async function deleteWorld(id: string): Promise<boolean> {
-	const deletedCount = await database<WorldRow>("worlds").where({id}).delete();
+/** Soft-deletes an active editor world only within its owner's authorization scope. */
+export async function deleteOwnedWorld(ownerUserId: string, id: string): Promise<boolean> {
+	const now = new Date();
+	const updatedCount = await database<WorldRow>("worlds")
+		.where({id, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at")
+		.update({
+			deleted_at: now,
+			trash_purge_after: new Date(now.getTime() + TRASH_RECOVERY_MS),
+			updated_by_user_id: ownerUserId,
+		});
+	return updatedCount > 0;
+}
 
+export async function duplicateOwnedWorld(
+	ownerUserId: string,
+	id: string,
+): Promise<WorldRecord | undefined> {
+	return database.transaction(async (transaction) => {
+		const owner = await transaction("users").where({id: ownerUserId}).forUpdate().first();
+		if (!owner) return undefined;
+		const source = await transaction<WorldRow>("worlds")
+			.where({id, owner_user_id: ownerUserId, kind: "editor"})
+			.whereNull("deleted_at")
+			.first();
+		if (!source) return undefined;
+		await requireAvailableWorldCapacity(transaction, ownerUserId);
+
+		const suffix = " copy";
+		const name = `${source.name.slice(0, 80 - suffix.length).trimEnd()}${suffix}`;
+		const world = produce(
+			parseStoredWorld(source.world, source.schema_version, {
+				id: source.id,
+				storage: "editor",
+			}),
+			(draft) => {
+				draft.metadata.title = name;
+			},
+		);
+		const editorSlug = await createOwnedEditorSlug(transaction, ownerUserId, name);
+		const [row] = await transaction<WorldRow>("worlds")
+			.insert({
+				editor_slug: editorSlug,
+				name,
+				slug: null,
+				world,
+				schema_version: PERSISTED_SCHEMA_VERSION,
+				kind: "editor",
+				owner_user_id: ownerUserId,
+				updated_by_user_id: ownerUserId,
+			})
+			.returning("*");
+		if (!row) throw new Error("The world copy could not be created.");
+		await recordWorldOpened(transaction, ownerUserId, row.id);
+		return mapWorldRow({...row, last_opened_at: new Date()});
+	});
+}
+
+export async function restoreOwnedWorld(
+	ownerUserId: string,
+	id: string,
+): Promise<WorldRecord | undefined> {
+	return database.transaction(async (transaction) => {
+		const owner = await transaction("users").where({id: ownerUserId}).forUpdate().first();
+		if (!owner) return undefined;
+		const trashed = await transaction<WorldRow>("worlds")
+			.where({id, owner_user_id: ownerUserId, kind: "editor"})
+			.whereNotNull("deleted_at")
+			.first();
+		if (!trashed) return undefined;
+		await requireAvailableWorldCapacity(transaction, ownerUserId);
+		const [row] = await transaction<WorldRow>("worlds")
+			.where({id, owner_user_id: ownerUserId, kind: "editor"})
+			.whereNotNull("deleted_at")
+			.update({deleted_at: null, trash_purge_after: null, updated_by_user_id: ownerUserId})
+			.returning("*");
+		return row ? mapWorldRow(row) : undefined;
+	});
+}
+
+/** Permanently deletes only a world already in the owner's trash. */
+export async function permanentlyDeleteOwnedWorld(
+	ownerUserId: string,
+	id: string,
+): Promise<boolean> {
+	const deletedCount = await database<WorldRow>("worlds")
+		.where({id, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNotNull("deleted_at")
+		.delete();
 	return deletedCount > 0;
 }
 
-/**
- * Updates the schema version associated with a stored world.
- *
- * This should normally be called only after the world document itself
- * has successfully been migrated.
- *
- * Returns undefined when no matching world exists.
- */
-export async function updateWorldSchemaVersion(
+export async function exportOwnedWorld(
+	ownerUserId: string,
 	id: string,
-	schemaVersion: number,
-): Promise<WorldRecord | undefined> {
-	if (!Number.isInteger(schemaVersion) || schemaVersion < 1) {
-		throw new Error("schemaVersion must be a positive integer.");
-	}
-
-	const [row] = await database<WorldRow>("worlds")
-		.where({id})
-		.update({
-			schema_version: schemaVersion,
-			updated_at: database.fn.now(),
-		})
-		.returning("*");
-
-	return row ? mapWorldRow(row) : undefined;
+): Promise<WorldExport | undefined> {
+	const row = await database<WorldRow>("worlds")
+		.where({id, owner_user_id: ownerUserId, kind: "editor"})
+		.whereNull("deleted_at")
+		.first();
+	if (!row) return undefined;
+	return createWorldExportDocument({
+		editorSlug: row.editor_slug,
+		id: row.id,
+		name: row.name,
+		revision: row.revision,
+		schemaVersion: row.schema_version,
+		world: parseStoredWorld(row.world, row.schema_version, {id: row.id, storage: "editor"}),
+	});
 }

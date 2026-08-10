@@ -36,7 +36,7 @@ describe("createRoomMessage", () => {
 
 	it("uses the runtime full description for an unvisited room", () => {
 		const initialGame = createInitialGameState(world, world.startRoomId);
-		const room = world.rooms.find((candidate) => candidate.id.id === "guardroom")!;
+		const room = world.rooms.find((candidate) => candidate.id.id === "stockroom")!;
 		const game = resolveRoomEffect(initialGame, {
 			type: "room",
 			operation: "set-description",

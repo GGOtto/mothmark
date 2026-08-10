@@ -154,6 +154,7 @@ export type EditorControlContext = {
 	editorNavigation?: EditorNavigationContext;
 	editorChrome?: EditorChromeContext;
 	commandVariables?: CommandVariableEditorContext;
+	logicEditorPresentation?: "popup" | "inline";
 
 	readOnly?: boolean;
 	disabled?: boolean;

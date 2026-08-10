@@ -17,6 +17,10 @@
 		padding-top: 8px;
 	}
 
+	.itemEditor {
+		padding-top: 8px;
+	}
+
 	.rightSideBarFieldGroup {
 		margin-top: 14px;
 	}
@@ -142,6 +146,125 @@
 		font-size: 18px;
 		font-weight: 700;
 		line-height: 1.2;
+	}
+
+	.roomEditorStartingItems {
+		margin-top: 14px;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		background: var(--color-surface);
+		padding: 10px;
+	}
+
+	.roomEditorStartingItemsHeader {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 10px;
+
+		h3,
+		p {
+			margin: 0;
+		}
+
+		h3 {
+			color: var(--color-text);
+			font-size: 13px;
+			line-height: 1.3;
+		}
+
+		p {
+			margin-top: 3px;
+			color: var(--color-text-muted);
+			font-size: 11px;
+			line-height: 1.35;
+		}
+
+		> button {
+			display: inline-flex;
+			flex: 0 0 auto;
+			align-items: center;
+			gap: 5px;
+			border: 1px solid var(--color-action);
+			border-radius: 4px;
+			background: transparent;
+			color: var(--color-action);
+			cursor: pointer;
+			font: inherit;
+			font-size: 11px;
+			font-weight: 700;
+			padding: 6px 7px;
+		}
+
+		> button:hover {
+			background: var(--color-surface-strong);
+		}
+	}
+
+	.roomEditorStartingItemsList {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 9px 0 0;
+		padding: 0;
+		list-style: none;
+
+		li > button {
+			display: grid;
+			width: 100%;
+			min-width: 0;
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 7px;
+			box-sizing: border-box;
+			border: 1px solid var(--color-control-border);
+			border-radius: 4px;
+			background: var(--color-surface-raised);
+			color: var(--color-text);
+			cursor: pointer;
+			font: inherit;
+			padding: 7px;
+			text-align: left;
+		}
+
+		li > button:hover {
+			border-color: var(--color-action);
+			background: var(--color-surface-strong);
+		}
+
+		span,
+		strong,
+		small {
+			display: block;
+			min-width: 0;
+		}
+
+		strong,
+		small {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		strong {
+			font-size: 12px;
+		}
+
+		small,
+		em {
+			color: var(--color-text-muted);
+			font-size: 10px;
+			font-style: normal;
+		}
+	}
+
+	.roomEditorStartingItemsEmpty {
+		margin: 9px 0 0;
+		border: 1px dashed var(--color-border);
+		border-radius: 4px;
+		color: var(--color-text-muted);
+		font-size: 11px;
+		padding: 8px;
 	}
 
 	.roomEditorFeaturePanel {

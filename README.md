@@ -51,6 +51,11 @@ PostgreSQL work, but they are not part of the normal development path.
 Migration files live in `db/migrations`. Application database access should go through the DBAL in
 `src/db/dbal`; call `getDb()` to get the shared Knex client.
 
+Persisted schema evolution and production gating are documented in
+[SCHEMA_COMPATIBILITY_README.md](SCHEMA_COMPATIBILITY_README.md),
+[BREAKING_SCHEMA_MIGRATIONS_README.md](BREAKING_SCHEMA_MIGRATIONS_README.md), and
+[DEPLOYMENT_STORAGE_GATE_README.md](DEPLOYMENT_STORAGE_GATE_README.md).
+
 ### World API
 
 | Method | Path                            | Purpose                                       |

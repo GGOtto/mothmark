@@ -19,8 +19,9 @@ Text stores stable command-block IDs, never author-facing roles:
 only value available from the block whose fallback is running. The editor renders these strings as
 atomic colored chips and serializes them back to this syntax.
 
-Phrase and relation blocks describe command structure, so they are deliberately excluded from the
-variable catalog.
+Every matched block exposes the player's entered text through the `text` projection, including
+phrase and relation blocks. Non-structural blocks also expose their typed value, and targets expose
+their resolved entity, current name, and current description.
 
 ## Whole-field bindings
 

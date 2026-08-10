@@ -1,15 +1,50 @@
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
+import type {Permission} from "@/auth/permissions";
+import type {CurrentActor} from "@/db/dbal/sessionsRepository";
+import {userHasPermission} from "@/db/dbal/permissionRepository";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
 import {WorldSchema} from "@/schemas/world/worldSchema";
+import {WORLD_EDITOR_SLUG_MAX_LENGTH, isWorldEditorSlug} from "@/utils/worldSlug";
+import {RequestBodyError} from "@/auth/requestBody";
 
 export const WorldIdSchema = z.uuid();
+export const WorldLocatorSchema = z
+	.string()
+	.refine((value) => z.uuid().safeParse(value).success || isWorldEditorSlug(value), {
+		message: `The world locator must be a UUID or an editor slug up to ${WORLD_EDITOR_SLUG_MAX_LENGTH} characters.`,
+	});
 
-export const CreateWorldRequestSchema = z.object({
-	name: z.string().trim().min(1),
-	slug: z.string().trim().min(1).nullable().optional(),
-	world: WorldSchema,
-	schemaVersion: z.number().int().positive().optional(),
+const WorldNameSchema = z.string().trim().min(1).max(80);
+
+const RawCreateWorldRequestSchema = z.discriminatedUnion("source", [
+	z.object({name: WorldNameSchema, source: z.enum(["starter", "blank"])}),
+	z.object({
+		name: WorldNameSchema,
+		source: z.literal("import"),
+		world: z.unknown(),
+		schemaVersion: z.number().int().positive().optional(),
+	}),
+]);
+
+export const CreateWorldRequestSchema = RawCreateWorldRequestSchema.transform((input, context) => {
+	if (input.source === "import") {
+		try {
+			return {
+				...input,
+				world: parseStoredWorld(input.world, input.schemaVersion ?? PERSISTED_SCHEMA_VERSION, {
+					id: "import",
+					storage: "unknown",
+				}),
+			};
+		} catch {
+			context.addIssue({code: "custom", message: "The imported world is not compatible."});
+			return z.NEVER;
+		}
+	}
+	return input;
 });
 
 export const CreateDefaultWorldRequestSchema = z.object({
@@ -20,17 +55,13 @@ export const CreateDefaultWorldRequestSchema = z.object({
 
 export const UpdateWorldRequestSchema = z
 	.object({
-		name: z.string().trim().min(1).optional(),
-		slug: z.string().trim().min(1).nullable().optional(),
+		name: z.string().trim().min(1).max(80).optional(),
 		world: WorldSchema.optional(),
 		expectedRevision: z.number().int().positive().optional(),
 	})
-	.refine(
-		(input) => input.name !== undefined || input.slug !== undefined || input.world !== undefined,
-		{
-			message: "At least one world field must be provided.",
-		},
-	);
+	.refine((input) => input.name !== undefined || input.world !== undefined, {
+		message: "At least one world field must be provided.",
+	});
 
 export const UpdateSchemaVersionRequestSchema = z.object({
 	schemaVersion: z.number().int().positive(),
@@ -46,6 +77,11 @@ export const invalidJsonResponse = (): NextResponse =>
 		},
 		{status: 400},
 	);
+
+export const requestBodyErrorResponse = (error: unknown): NextResponse =>
+	error instanceof RequestBodyError && error.code === "REQUEST_TOO_LARGE"
+		? NextResponse.json({error: {code: error.code, message: error.message}}, {status: 413})
+		: invalidJsonResponse();
 
 export const validationErrorResponse = (issues: z.core.$ZodIssue[]): NextResponse =>
 	NextResponse.json(
@@ -81,7 +117,29 @@ export const worldRevisionConflictResponse = (): NextResponse =>
 		{status: 409},
 	);
 
+export async function worldPermissionError(
+	actor: CurrentActor,
+	permission: Permission,
+): Promise<NextResponse | undefined> {
+	if (await userHasPermission(actor.userId, permission)) return undefined;
+	return NextResponse.json(
+		{error: {code: "FORBIDDEN", message: "This account does not have that capability."}},
+		{status: 403},
+	);
+}
+
 export const handleWorldRouteError = (error: unknown): NextResponse => {
+	if ((error as {code?: string}).code === "WORLD_LIMIT_REACHED") {
+		return NextResponse.json(
+			{
+				error: {
+					code: "WORLD_LIMIT_REACHED",
+					message: error instanceof Error ? error.message : "The world limit has been reached.",
+				},
+			},
+			{status: 409},
+		);
+	}
 	if ((error as {code?: string}).code === "23505") {
 		return NextResponse.json(
 			{

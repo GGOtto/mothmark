@@ -80,11 +80,11 @@ export const RELATION_PREPOSITIONS: Record<RelationType, readonly string[]> = {
 	as: ["as", "like", "in the role of", "in the capacity of"],
 };
 
-export const TargetEntityTypeSchema = z.enum(["room", "feature"]);
+export const TargetEntityTypeSchema = z.enum(["room", "item"]);
 
 export const TargetReferenceSchema = z.union([
 	editor.reference("room", {title: "Room"}),
-	editor.reference("feature", {title: "Feature"}),
+	editor.reference("item", {title: "Item"}),
 ]);
 
 export const ChoiceOptionSchema = editor.object(
@@ -160,7 +160,7 @@ export const TargetBlockSchema = editor.object(
 				description: "Leave empty to allow any supported entity type.",
 				options: [
 					{label: "Room", value: "room"},
-					{label: "Feature", value: "feature"},
+					{label: "Item", value: "item"},
 				],
 			},
 			z.array(TargetEntityTypeSchema).default([]),
@@ -208,7 +208,8 @@ export const NumberBlockSchema = editor.object(
 		allowWords: editor
 			.boolean({
 				title: "Allow written numbers",
-				description: "Accept wording such as three as well as the digit 3.",
+				description:
+					"Accept wording such as three as well as the digit 3. Players may optionally say number or the number before either form.",
 			})
 			.default(true),
 	},
@@ -605,6 +606,11 @@ export const CommandSchema = editor
 
 		function acceptedFieldType(record: Record<string, unknown>, field: string) {
 			const fallback = record[field];
+			if (record.type === "comparison" && (field === "left" || field === "right")) {
+				return "number" as const;
+			}
+			if (record.type === "counter" && field === "counter") return "number" as const;
+			if (record.type === "flag" && field === "flag") return "boolean" as const;
 			if (field === "direction") return "direction" as const;
 			if (typeof fallback === "number") return "number" as const;
 			if (typeof fallback === "boolean") return "boolean" as const;
@@ -663,7 +669,7 @@ export const CommandSchema = editor
 				acceptedEntityType &&
 				block.type === "target" &&
 				block.entityTypes.length > 0 &&
-				!block.entityTypes.includes(acceptedEntityType as "room" | "feature")
+				!block.entityTypes.includes(acceptedEntityType as "room" | "item")
 			) {
 				ctx.addIssue({
 					code: "custom",

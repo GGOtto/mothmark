@@ -5,9 +5,11 @@ import type {ReactNode} from "react";
 import {compareIds} from "@/utils/idUtils";
 import type {EditorControlProps} from "@/types/universalEditorTypes";
 import {
+	acceptedVariableType,
 	compatibleVariableOptions,
 	type CommandVariableEditorContext,
 	type CommandVariableOption,
+	unavailableVariableMessage,
 } from "./model";
 import {VariableMenu} from "./VariableMenu";
 import {VariableToken} from "./VariableToken";
@@ -27,7 +29,9 @@ export function VariableFieldEditor({
 	const {context, metadata, path, value} = props;
 	const options = compatibleVariableOptions(context.commandVariables, metadata);
 	const binding = context.commandVariables.getBinding(path);
-	if (options.length === 0 && !binding) return children;
+	const variableType = acceptedVariableType(metadata);
+	const unavailableMessage = variableType ? unavailableVariableMessage(variableType) : undefined;
+	if (options.length === 0 && !binding && !metadata.commandVariableType) return children;
 	const selected = binding
 		? options.find(
 				(option) =>
@@ -69,7 +73,15 @@ export function VariableFieldEditor({
 			</div>
 			{!binding ? (
 				<div className="variableFieldEditor__add">
-					<VariableMenu options={options} label="Use variable" onSelect={select} />
+					<VariableMenu
+						options={options}
+						label="Use command value"
+						disabledReason={unavailableMessage}
+						onSelect={select}
+					/>
+					{options.length === 0 && unavailableMessage ? (
+						<span className="variableFieldEditor__unavailable">{unavailableMessage}</span>
+					) : null}
 				</div>
 			) : null}
 		</div>

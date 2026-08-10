@@ -126,9 +126,6 @@
 	&.is-previewed {
 		background: color-mix(in srgb, var(--color-action) 7%, var(--color-surface));
 	}
-	&.is-previewed {
-		box-shadow: inset 3px 0 var(--color-action);
-	}
 	&.is-disabled .commandLibrary__rowText,
 	&.is-disabled .commandLibrary__rowIcon {
 		opacity: 0.55;

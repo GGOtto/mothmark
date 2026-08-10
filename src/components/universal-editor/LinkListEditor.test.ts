@@ -6,12 +6,12 @@ describe("editorValues", () => {
 			editorValues(
 				[
 					{
-						id: {type: "feature", id: "stone-arch"},
+						id: {type: "item", id: "stone-arch"},
 						name: "Stone Arch",
 					},
 				],
-				{kind: "entity", entityType: "feature"},
+				{kind: "entity", entityType: "item"},
 			),
-		).toEqual([{type: "feature", id: "stone-arch", label: "Stone Arch"}]);
+		).toEqual([{type: "item", id: "stone-arch", label: "Stone Arch"}]);
 	});
 });

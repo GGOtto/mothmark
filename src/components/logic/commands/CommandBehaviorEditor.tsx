@@ -1,20 +1,35 @@
 "use client";
 
 import {ArrowLeft, Plus, Workflow} from "lucide-react";
+import {produce} from "immer";
 import {useLayoutEffect, useRef} from "react";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import {EffectBranch} from "@/components/logic/shared/EffectBranch";
-import type {CommandConditionBranch, CommandEffectGroup} from "@/schemas/world/commandLogicSchemas";
+import {useLogicEditorPopup} from "@/components/universal-editor/useLogicEditorPopup";
+import {
+	generateConditionSummary,
+	generateEffectSummary,
+} from "@/components/universal-editor/utils/universalEditorUtils";
+import {buildCommandVariableCatalog} from "@/features/command-variables";
+import {
+	CommandConditionSchema,
+	CommandEffectGroupSchema,
+	CommandEffectSchema,
+	type CommandConditionBranch,
+	type CommandEffectGroup,
+} from "@/schemas/world/commandLogicSchemas";
 import type {Command, CommandBlock} from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {idValue, toID} from "@/utils/idUtils";
 import type {CommandSelection} from "../shared";
+import {CommandConditionEditorSchema} from "../shared/logicEditorSchemas";
 import {commandBlockWord} from "./CommandSummary";
 import {createBlockFallbackBehavior} from "./commandFallback";
 
 type BranchKey = "always" | "if" | "elif" | "else";
 type BehaviorTarget = {kind: "command"} | {kind: "fallback"; blockId: string};
+type BranchCondition = NonNullable<CommandConditionBranch["if"]>["condition"];
 
 function targetFromSelection(selection: CommandSelection): BehaviorTarget | null {
 	if (selection.kind === "behavior") return {kind: "command"};
@@ -74,6 +89,20 @@ function branchGroup(behavior: CommandConditionBranch, branch: BranchKey, elifIn
 	return behavior.elifs?.[elifIndex ?? -1]?.effect;
 }
 
+function branchCondition(
+	behavior: CommandConditionBranch,
+	branch: "if" | "elif",
+	elifIndex?: number,
+) {
+	return branch === "if" ? behavior.if?.condition : behavior.elifs?.[elifIndex ?? -1]?.condition;
+}
+
+function effectGroupSummary(group: CommandEffectGroup) {
+	if (group.effects.length === 0) return "No effects configured";
+	const first = generateEffectSummary(group.effects[0], CommandEffectSchema);
+	return group.effects.length === 1 ? first : `${first} + ${group.effects.length - 1} more`;
+}
+
 function fallbackTitle(block: CommandBlock | undefined) {
 	if (!block) return "Fallback behavior";
 	return `${block.type.charAt(0).toLocaleUpperCase()}${block.type.slice(1)} fallback`;
@@ -93,6 +122,7 @@ export function CommandBehaviorEditor({
 	onSelectionChange: (selection: CommandSelection | null) => void;
 }) {
 	const popup = useOptionalPopup();
+	const openLogicEditor = useLogicEditorPopup();
 	const target = targetFromSelection(selection);
 	const behavior = target ? behaviorFor(command, target) : undefined;
 	const fallbackLocation =
@@ -114,8 +144,6 @@ export function CommandBehaviorEditor({
 	if (!target || !behavior) return <p className="logicEmpty">Behavior not found.</p>;
 
 	const commandId = idValue(command.id);
-	const behaviorKind = target.kind === "command" ? "command" : "fallback";
-
 	function updateBehavior(recipe: (draft: CommandConditionBranch) => void) {
 		updateWorld((draft) => {
 			const nextCommand = draft.commands.find((candidate) => idValue(candidate.id) === commandId);
@@ -129,37 +157,90 @@ export function CommandBehaviorEditor({
 		});
 	}
 
-	function selectCondition(branch: "if" | "elif", elifIndex?: number) {
-		onSelectionChange({
-			kind: "behavior-condition",
-			commandId,
-			behavior: behaviorKind,
-			blockId: target!.kind === "fallback" ? target!.blockId : undefined,
-			branch,
-			elifIndex,
+	function worldWithBehaviorUpdate(recipe: (draft: CommandConditionBranch) => void) {
+		return produce(world, (draft) => {
+			const nextCommand = draft.commands.find((candidate) => idValue(candidate.id) === commandId);
+			if (!nextCommand) return;
+			const nextBehavior =
+				target!.kind === "command"
+					? nextCommand.behavior
+					: nextCommand.fallbacks.find((fallback) => idValue(fallback.blockId) === target!.blockId)
+							?.behavior;
+			if (nextBehavior) recipe(nextBehavior);
 		});
 	}
 
-	function selectEffect(branch: BranchKey, elifIndex?: number) {
-		onSelectionChange({
-			kind: "behavior-effect",
-			commandId,
-			behavior: behaviorKind,
-			blockId: target!.kind === "fallback" ? target!.blockId : undefined,
-			branch,
-			elifIndex,
+	function editCondition(
+		branch: "if" | "elif",
+		elifIndex?: number,
+		value = branchCondition(behavior!, branch, elifIndex),
+		editorWorld = world,
+	) {
+		if (!value) return;
+		const failedBlockId =
+			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
+		void openLogicEditor<BranchCondition>({
+			kind: "condition",
+			schema: CommandConditionEditorSchema,
+			value,
+			world: editorWorld,
+			updateWorld,
+			commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
+			summary: (condition) => generateConditionSummary(condition, CommandConditionSchema),
+			onChange: (condition) => {
+				updateBehavior((next) => {
+					if (branch === "if" && next.if) next.if.condition = condition;
+					else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
+						next.elifs[elifIndex ?? -1].condition = condition;
+					}
+				});
+			},
+		});
+	}
+
+	function editEffect(
+		branch: BranchKey,
+		elifIndex?: number,
+		value = branchGroup(behavior!, branch, elifIndex),
+		editorWorld = world,
+	) {
+		if (!value) return;
+		const failedBlockId =
+			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
+		void openLogicEditor<CommandEffectGroup>({
+			kind: "effect",
+			schema: CommandEffectGroupSchema,
+			value,
+			world: editorWorld,
+			updateWorld,
+			commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
+			summary: effectGroupSummary,
+			onChange: (group) => {
+				updateBehavior((next) => {
+					if (branch === "always") next.always = group;
+					else if (branch === "if" && next.if) next.if.effect = group;
+					else if (branch === "else") next.else = group;
+					else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
+						next.elifs[elifIndex ?? -1].effect = group;
+					}
+				});
+			},
 		});
 	}
 
 	function addEffect(branch: BranchKey, elifIndex?: number) {
-		updateBehavior((next) => {
-			branchGroup(next, branch, elifIndex)?.effects.push({
-				type: "message",
-				operation: "show",
-				message: "",
-			});
+		const group = branchGroup(behavior!, branch, elifIndex);
+		if (!group) return;
+		const nextGroup: CommandEffectGroup = {
+			...group,
+			effects: [...group.effects, {type: "message", operation: "show", message: ""}],
+		};
+		const editorWorld = worldWithBehaviorUpdate((next) => {
+			const targetGroup = branchGroup(next, branch, elifIndex);
+			if (targetGroup) targetGroup.effects = nextGroup.effects;
 		});
-		selectEffect(branch, elifIndex);
+		updateWorld(editorWorld);
+		editEffect(branch, elifIndex, nextGroup, editorWorld);
 	}
 
 	function removeEffect(branch: BranchKey, index: number, elifIndex?: number) {
@@ -304,17 +385,19 @@ export function CommandBehaviorEditor({
 							<button
 								type="button"
 								onClick={() => {
+									const condition = defaultCondition();
 									pendingBranchScrollRef.current = "if";
-									updateBehavior(
+									const editorWorld = worldWithBehaviorUpdate(
 										(next) =>
 											void (next.if = {
-												condition: defaultCondition(),
+												condition,
 												effect: emptyGroup(commandId, "If"),
 												delayTurns: 0,
 												cancelIfConditionFails: true,
 											}),
 									);
-									selectCondition("if");
+									updateWorld(editorWorld);
+									editCondition("if", undefined, condition, editorWorld);
 								}}
 							>
 								<Plus size={15} />
@@ -328,17 +411,19 @@ export function CommandBehaviorEditor({
 								type="button"
 								onClick={() => {
 									const index = behavior.elifs?.length ?? 0;
+									const condition = defaultCondition();
 									pendingBranchScrollRef.current = `elif-${index}`;
-									updateBehavior(
+									const editorWorld = worldWithBehaviorUpdate(
 										(next) =>
 											void (next.elifs ??= []).push({
-												condition: defaultCondition(),
+												condition,
 												effect: emptyGroup(commandId, `Else if ${index + 1}`),
 												delayTurns: 0,
 												cancelIfConditionFails: true,
 											}),
 									);
-									selectCondition("elif", index);
+									updateWorld(editorWorld);
+									editCondition("elif", index, condition, editorWorld);
 								}}
 							>
 								<Plus size={15} />
@@ -372,8 +457,8 @@ export function CommandBehaviorEditor({
 						label="Always"
 						world={world}
 						group={behavior.always}
-						onSelectGroup={() => selectEffect("always")}
-						onSelectInlineGroup={() => selectEffect("always")}
+						onSelectGroup={() => editEffect("always")}
+						onSelectInlineGroup={() => editEffect("always")}
 						onAddEffect={() => addEffect("always")}
 						onRemoveEffect={(index) => removeEffect("always", index)}
 						onMoveEffect={(from, to) => moveEffect("always", from, to)}
@@ -389,7 +474,7 @@ export function CommandBehaviorEditor({
 						condition={behavior.if.condition}
 						delayTurns={behavior.if.delayTurns}
 						cancelIfConditionFails={behavior.if.cancelIfConditionFails}
-						onSelectCondition={() => selectCondition("if")}
+						onSelectCondition={() => editCondition("if")}
 						onDelayEnabledChange={(enabled) =>
 							updateBehavior((next) => {
 								if (next.if) next.if.delayTurns = enabled ? 1 : 0;
@@ -405,8 +490,8 @@ export function CommandBehaviorEditor({
 								if (next.if) next.if.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={() => selectEffect("if")}
-						onSelectInlineGroup={() => selectEffect("if")}
+						onSelectGroup={() => editEffect("if")}
+						onSelectInlineGroup={() => editEffect("if")}
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
 						onMoveEffect={(from, to) => moveEffect("if", from, to)}
@@ -429,7 +514,7 @@ export function CommandBehaviorEditor({
 						condition={branch.condition}
 						delayTurns={branch.delayTurns}
 						cancelIfConditionFails={branch.cancelIfConditionFails}
-						onSelectCondition={() => selectCondition("elif", index)}
+						onSelectCondition={() => editCondition("elif", index)}
 						onDelayEnabledChange={(enabled) =>
 							updateBehavior((next) => {
 								const item = next.elifs?.[index];
@@ -448,8 +533,8 @@ export function CommandBehaviorEditor({
 								if (item) item.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={() => selectEffect("elif", index)}
-						onSelectInlineGroup={() => selectEffect("elif", index)}
+						onSelectGroup={() => editEffect("elif", index)}
+						onSelectInlineGroup={() => editEffect("elif", index)}
 						onAddEffect={() => addEffect("elif", index)}
 						onRemoveEffect={(effectIndex) => removeEffect("elif", effectIndex, index)}
 						onMoveEffect={(from, to) => moveEffect("elif", from, to, index)}
@@ -464,8 +549,8 @@ export function CommandBehaviorEditor({
 						label="Else"
 						world={world}
 						group={behavior.else}
-						onSelectGroup={() => selectEffect("else")}
-						onSelectInlineGroup={() => selectEffect("else")}
+						onSelectGroup={() => editEffect("else")}
+						onSelectInlineGroup={() => editEffect("else")}
 						onAddEffect={() => addEffect("else")}
 						onRemoveEffect={(index) => removeEffect("else", index)}
 						onMoveEffect={(from, to) => moveEffect("else", from, to)}

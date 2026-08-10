@@ -47,7 +47,6 @@ export type EntityType =
 	| "command"
 	| "event"
 	| "effect"
-	| "feature"
 	| "condition"
 	| "container"
 	| "surface"
@@ -87,7 +86,6 @@ export type FlagRegistry = {
 export type EditorTagRegistry = {
 	rooms: string[];
 	items: string[];
-	features: string[];
 	npcs: string[];
 	topics: string[];
 	quests: string[];
@@ -106,7 +104,6 @@ export type EditorRegistries = {
 	commands: EditorEntityOption[];
 	events: EditorEntityOption[];
 	effects: EditorEntityOption[];
-	features: EditorEntityOption[];
 	conditions: EditorEntityOption[];
 	containers: EditorEntityOption[];
 	surfaces: EditorEntityOption[];
@@ -114,6 +111,7 @@ export type EditorRegistries = {
 
 	flags: EditorKeyOption[];
 	counters: EditorKeyOption[];
+	texts: EditorKeyOption[];
 
 	tags: EditorTagRegistry;
 };

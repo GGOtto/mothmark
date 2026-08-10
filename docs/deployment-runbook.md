@@ -7,13 +7,12 @@ This runbook deploys Mothmark with:
 - Phase as the source of truth for environment variables
 - GitHub as the deployment source
 
-The production application currently has one shared world with the slug `main`. Everyone will
-eventually be allowed to edit that world. Until the public editor API described in [Public launch
-gate](#public-launch-gate) is implemented, keep every deployment behind Vercel Authentication.
+The production application gives each editor browser a private anonymous account and owned world.
+The `main` world is a read-only template and is never served through the public world API. Keep
+previews behind Vercel Authentication; production protection remains a launch decision described in
+[Public launch gate](#public-launch-gate).
 
 ## The short version for every release after setup
-
-If the release has no database migration:
 
 ```bash
 pnpm lint
@@ -25,39 +24,49 @@ git push origin <branch>
 
 1. Open the Vercel preview created for the branch.
 2. Test loading, editing, autosaving, and refreshing the `main` world.
-3. Merge the branch into `main`.
-4. Verify the production deployment and its logs.
-
-If the release includes a database migration:
-
-1. Apply the migration to Neon `preview`.
-2. Deploy and test the Vercel preview.
-3. Apply the same migration to Neon `production`.
-4. Merge into `main` so Vercel deploys the compatible application code.
+3. For a database change, push the reviewed candidate to the long-lived `staging` branch. The
+   staging workflow applies migrations and validates retained data before building and deploying
+   that exact commit; test its canonical staging URL.
+4. Promote the validated `staging` commit to `prod`.
+5. Let Vercel's `vercel.deployment.ready` event start the required production storage compatibility
+   check, which applies migrations and validates all retained content before Vercel promotes the
+   candidate.
+6. Verify the production deployment and its logs.
 
 Never run migrations from `next build` or application startup.
 
+The authoritative schema and release-gate procedures live in the root-level
+`SCHEMA_COMPATIBILITY_README.md`, `BREAKING_SCHEMA_MIGRATIONS_README.md`, and
+`DEPLOYMENT_STORAGE_GATE_README.md` files.
+
 ## Environment map
 
-| Purpose           | Git branch               | Vercel environment | Phase environment | Neon branch      |
-| ----------------- | ------------------------ | ------------------ | ----------------- | ---------------- |
-| Local development | Any                      | Development        | Development       | Local PostgreSQL |
-| Hosted testing    | Any branch except `main` | Preview            | Staging           | `preview`        |
-| Live application  | `main`                   | Production         | Production        | `production`     |
+| Purpose           | Git branch                 | Vercel environment | Phase environment | Neon branch      |
+| ----------------- | -------------------------- | ------------------ | ----------------- | ---------------- |
+| Local development | Any                        | Development        | Development       | Local PostgreSQL |
+| Integration       | `main`                     | Preview            | Staging           | `preview`        |
+| Hosted staging    | `staging`                  | Preview            | Staging           | `preview`        |
+| Feature preview   | Other branch except `prod` | Preview            | Staging           | `preview`        |
+| Live application  | `prod`                     | Production         | Production        | `production`     |
 
 The long-lived Neon `preview` branch is reset from its `production` parent every Monday at 12:00
-UTC. This replaces all preview-only schema and data with the current production state while keeping
-the preview connection configuration stable.
+UTC. The reset workflow then reapplies the current `staging` branch's migrations and validates its
+retained content while keeping the preview connection configuration stable.
 
 Use these variables in Phase `Staging` and `Production`:
 
-| Variable                 | Value                                              | Synced to Vercel? |
-| ------------------------ | -------------------------------------------------- | ----------------- |
-| `DATABASE_URL`           | Pooled Neon connection string containing `-pooler` | Yes               |
-| `DATABASE_MIGRATION_URL` | Direct Neon connection string without `-pooler`    | No                |
-| `DATABASE_SSL`           | `true`                                             | Yes               |
-| `DATABASE_POOL_MIN`      | `0`                                                | Yes               |
-| `DATABASE_POOL_MAX`      | `1`                                                | Yes               |
+| Variable                    | Value                                              | Synced to Vercel? |
+| --------------------------- | -------------------------------------------------- | ----------------- |
+| `DATABASE_URL`              | Pooled Neon connection string containing `-pooler` | Yes               |
+| `DATABASE_MIGRATION_URL`    | Direct Neon connection string without `-pooler`    | No                |
+| `DATABASE_SSL`              | `true`                                             | Yes               |
+| `DATABASE_POOL_MIN`         | `0`                                                | Yes               |
+| `DATABASE_POOL_MAX`         | `1`                                                | Yes               |
+| `PUBLIC_APP_ORIGIN`         | Exact public origin without a trailing slash       | Yes               |
+| `AUTH_EMAIL_FROM`           | Verified Resend sender address                     | Yes               |
+| `RESEND_API_KEY`            | Resend transactional-email API key                 | Yes               |
+| `CREDENTIAL_ENCRYPTION_KEY` | 32 random bytes encoded as base64                  | Yes               |
+| `ADMIN_EMAIL`               | Sole administrator's verified email                | No                |
 
 The application uses the pooled URL. Knex migrations use the direct URL through the Phase command
 shown below. Neon recommends direct connections for schema migration tools and pooled connections
@@ -73,7 +82,8 @@ The Git remote should be:
 git@github.com:GGOtto/mothmark.git
 ```
 
-The production branch is `main`. Before the first deployment, run:
+The repository default/integration branch is `main`; Vercel's production branch is `prod`. Before
+the first deployment, run:
 
 ```bash
 pnpm lint
@@ -88,7 +98,7 @@ Review and commit only the intended files, then push them:
 ```bash
 git add <files>
 git commit -m "Prepare Mothmark for deployment"
-git push origin main
+git push origin <branch>
 ```
 
 ### 2. Create Neon production and preview databases
@@ -118,7 +128,10 @@ Git history.
 4. Add the variables from [Environment map](#environment-map) to `Staging`, using the Neon
    `preview` URLs.
 5. Add the same variables to `Production`, using the Neon `production` URLs.
-6. Authenticate and initialize the repository locally:
+6. For local registration testing, add `PUBLIC_APP_ORIGIN=http://localhost:3000`,
+   `AUTH_EMAIL_FROM`, and `RESEND_API_KEY` to Phase `Development`. Keep them in Phase; do not copy
+   them into `.env` files.
+7. Authenticate and initialize the repository locally:
 
 ```bash
 phase auth
@@ -155,19 +168,24 @@ Expected output either lists an applied migration batch or says the database is 
 4. Use:
    - Framework preset: **Next.js**
    - Root directory: `./`
-   - Production branch: `main`
+   - Production branch: `prod`
    - Install command: Vercel default
    - Build command: Vercel default
 5. Deploy the project.
 
-Vercel creates previews for non-`main` branches and production deployments for `main`. The first
+Vercel creates previews for non-`prod` branches and production deployments for `prod`. The first
 deployment may not have working database access until Phase is synced; that is safe because the
 database migrations were already applied.
 
+The committed `vercel.json` disables Vercel's automatic deployment only for the long-lived
+`staging` branch. That branch is deployed by GitHub Actions after its database gate passes. Leave
+automatic Git deployments enabled for `prod` so the production Deployment Check can gate domain
+promotion, and for ordinary feature-preview branches that do not add shared migrations.
+
 ### 6. Protect the deployment
 
-The current generic world routes include create, update, list, delete, and schema-version
-operations. Do not expose them publicly yet.
+Use Vercel Authentication while the product is in private development, even though editor worlds
+are now protected by opaque sessions, owner scopes, same-origin checks, and CSRF validation.
 
 1. Open the Vercel project.
 2. Go to **Settings → Deployment Protection**.
@@ -194,12 +212,92 @@ Create the Vercel project before this step so Phase can select it as a destinati
    - `DATABASE_SSL`
    - `DATABASE_POOL_MIN`
    - `DATABASE_POOL_MAX`
+   - `PUBLIC_APP_ORIGIN`
+   - `AUTH_EMAIL_FROM`
+   - `RESEND_API_KEY`
+   - `CREDENTIAL_ENCRYPTION_KEY`
 7. Confirm that `DATABASE_MIGRATION_URL` is excluded from both Vercel syncs.
 
 Avoid creating duplicate variables scoped to Vercel **All Environments**. Environment-specific
 variables synced by Phase take precedence and duplicate definitions make troubleshooting harder.
 
-### 8. Redeploy with the synced environment
+### 8. Configure the staging deployment workflow
+
+The repository includes `.github/workflows/deploy-staging.yml`. Configure the GitHub `Preview`
+environment before relying on the canonical staging deployment:
+
+1. Install Neon's GitHub integration so the repository has the `NEON_API_KEY` secret and
+   `NEON_PROJECT_ID` variable. The workflow resolves a fresh, direct connection URI for the exact
+   `preview` branch and masks it before exporting it to later steps; no migration URL is copied into
+   GitHub.
+2. Add a narrowly scoped `VERCEL_TOKEN` secret to that GitHub environment.
+3. Add `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` as GitHub environment variables.
+4. In Vercel, assign the canonical staging domain to the `staging` Git branch and keep its
+   branch-specific Preview variables configured.
+5. Push or merge a commit to `staging` and confirm **Deploy staging / Migrate, validate, and deploy
+   staging** succeeds. Do not manually deploy that branch around a failed gate.
+
+The workflow applies migrations before it builds or deploys the exact staging commit. The production
+Deployment Check resolves the direct `production` branch connection through the same Neon integration,
+then follows the gate described in
+`DEPLOYMENT_STORAGE_GATE_README.md`.
+
+### Configure authentication email and the administrator
+
+Create separate Resend API keys and verified senders for Staging and Production. Set
+`PUBLIC_APP_ORIGIN` to each environment's canonical HTTPS origin. Authentication messages contain
+only a short-lived, single-use verification or recovery token. Never log those URLs.
+
+Generate the credential-encryption key locally and place it directly into the matching Phase
+environment:
+
+```bash
+openssl rand -base64 32
+```
+
+Do not reuse the key between environments. It encrypts TOTP seeds at rest and must be included in
+protected database-recovery material. Losing it makes existing authenticators unreadable; exposing
+it requires an MFA reset.
+
+After applying the registered-account migration, set `ADMIN_EMAIL` in the Phase environment used
+for the command and run:
+
+```bash
+phase run --env staging 'pnpm admin:create'
+phase run --env production 'pnpm admin:create'
+```
+
+The command reads the password from a non-echoing terminal prompt, displays a TOTP enrollment URI,
+requires a current authenticator code before committing, and then displays ten one-time recovery
+codes. Store those codes offline and remove `ADMIN_EMAIL` after provisioning. The command creates
+or upgrades exactly that verified address, refuses to replace another administrator, revokes old
+sessions, and records no credential material.
+
+Before enabling public registration in each deployed runtime, run `pnpm auth:benchmark` there and
+record the three Argon2id timings in the release record. The versioned defaults use 64 MiB, four
+passes, and one lane. Review them if the average falls outside the team's 50–250 ms operational
+target; changing the stored versioned parameters upgrades hashes on the next successful sign-in
+without requiring a password reset.
+
+#### Administrator identity recovery
+
+Recovery is intentionally unavailable through the application. Independently verify the operator
+and database target, take a backup, obtain explicit approval, and run exactly one reviewed command:
+
+```bash
+phase run --env production 'pnpm admin:recover password'
+phase run --env production 'pnpm admin:recover mfa'
+phase run --env production 'pnpm admin:recover replace'
+```
+
+The command requires typing an operation-specific confirmation. Password input remains non-echoing.
+Either operation revokes all administrator sessions and records a credential-free operational
+event. MFA recovery replaces the authenticator and every recovery code, so store the newly printed
+codes offline before ending the maintenance window. Replacement additionally requires `ADMIN_EMAIL`
+to name a different existing verified account; it transfers the sole role, enrolls fresh MFA,
+revokes both users' sessions, and demotes the former administrator to an ordinary registered user.
+
+### 9. Redeploy with the synced environment
 
 Vercel environment changes affect only new deployments.
 
@@ -209,24 +307,29 @@ Vercel environment changes affect only new deployments.
 4. For this first database-enabled deployment, do not reuse the previous build cache.
 5. Wait for the deployment state to become **Ready**.
 
-### 9. Verify production
+### 10. Verify production
 
 Open the protected production URL and verify:
 
-1. `/editor` displays the loading grid before the world appears.
-2. If the database is empty, the initial world loads.
+1. `/worlds` intentionally creates a temporary account and displays its private library.
+2. Opening its first world changes the URL to `/worlds/[editorSlug]` and loads a world cloned from the
+   template loads.
 3. Make a small, recognizable edit.
 4. Wait for the `Saving...` indicator to disappear.
 5. Refresh the page.
 6. Confirm the edit remains.
-7. Open `/api/world/slug/main` and confirm it returns a record containing `id`, `world`, and
-   `revision`.
-8. Open **Vercel → Project → Logs** and check for database or route errors.
+7. Open the same editor URL in a private browser window and confirm the other browser cannot resolve
+   the world.
+8. Confirm `/api/world/slug/main` returns 404 and `/api/world` returns 401 without the editor session.
+9. Open **Vercel → Project → Logs** and check for database or route errors.
+10. Register a preview account, consume its email verification link, sign out, and sign in again.
+11. Confirm `/admin/sign-in` requires both the provisioned password and a current TOTP code.
 
-The initial world is not inserted just by loading it. It becomes the stored `main` world after the
-first edit causes autosave.
+Entering `/worlds` is intentional account creation. It atomically creates the anonymous user,
+editor-audience session, and first owned world. Browsing `/`, `/starter`, `/sign-in`, `/register`, or
+`/account` does not.
 
-### 10. Verify preview isolation
+### 11. Verify preview isolation
 
 Create a test branch:
 
@@ -241,7 +344,7 @@ continuing.
 
 Delete the test Git branch after verification using the team's normal Git workflow.
 
-### 11. Enable the weekly preview refresh
+### 12. Enable the weekly preview refresh
 
 The repository includes
 [`.github/workflows/refresh-preview-database.yml`](../.github/workflows/refresh-preview-database.yml).
@@ -258,55 +361,75 @@ Configure the workflow:
 3. Open **GitHub → Actions → Refresh preview database**.
 4. Select **Run workflow** for the first manual refresh.
 5. Confirm the action succeeds.
-6. Open the preview editor and verify that it now contains the current production `main` world.
+6. Open the preview editor and verify that a new anonymous account can clone the production
+   template.
 
 Neon's reset operation makes a child branch match the latest state of its parent and discards the
 child's changes. The workflow uses Neon's official [Reset Branch
 Action](https://github.com/neondatabase/reset-branch-action).
 
-The reset does not require a Vercel redeployment or a Phase resync. The existing preview connection
-continues to target the same Neon branch. Any editor tab open during the reset may hold a stale world
-revision and should be refreshed.
+The reset does not require a Vercel redeployment or a Phase resync. After resetting, the same job
+reapplies every migration from `staging` and runs exhaustive retained-content validation. The
+existing preview connection continues to target the same Neon branch. Any editor tab open during
+the reset may hold a stale world revision and should be refreshed.
 
-## Public launch gate
+## Public launch and operational gate
 
-Vercel Authentication protects the entire app, so it is appropriate during private development.
-The intended public product does not need user accounts: visitors may all edit one shared world.
-Before disabling Vercel Authentication for Production, narrow and protect the API.
+Production serves private editor accounts, public publication metadata, immutable playable
+releases, and a separately authenticated administrator surface. Preview deployments remain behind
+Vercel Authentication. Production protection may be disabled only after the checks below pass
+against the production database and canonical public host.
 
-The public browser should receive only:
+- Verify registration, verification, sign-in, recovery, MFA, account deletion, private-world
+  isolation, publication, two independent play sessions, progress deletion, and suspension.
+- Confirm request-size enforcement, application authentication/hosted-play throttles, and a coarser
+  Vercel WAF limit. Start the WAF above application limits and tune it from observed traffic so it
+  absorbs floods without becoming an inexpensive account lockout mechanism.
+- Confirm `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+  origin checks, CSRF enforcement, private `no-store` responses, and disabled browser source maps.
+- Inspect logs for passwords, hashes, MFA material, email addresses, tokens, authored worlds,
+  commands, transcripts, and provider payloads. None belong in structured logs.
+- Verify the privacy page describes hosted command inspection and the only active cookies are the
+  necessary editor, play, administrator, and audience-matched CSRF cookies.
 
-- `GET /api/editor/world`, which always returns `main`
-- `PUT /api/editor/world`, which validates and updates only `main`
+The application bounds auth bodies at 8 KiB, publication-management bodies at 4 KiB, command API
+bodies at 2 KiB, commands at 500 characters, and editor world bodies slightly above the 1 MiB world
+limit. Hosted throttles are recorded as hashed principal/network dimensions. Vercel's
+[WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) remains the
+outer abuse-control layer.
 
-The public write route should require:
+### Backup and restore
 
-- a signed anonymous `HttpOnly`, `Secure`, `SameSite=Lax` session cookie;
-- a matching same-origin `Origin` header;
-- an application CSRF header;
-- the existing Zod world validation and revision check;
-- a request body-size limit;
-- Vercel WAF rate limiting.
+Before migrations or destructive cleanup, create or confirm a Neon point-in-time restore point and
+record the branch, migration batch, and operator in the release record. Restore into a new Neon
+branch first, run migrations and integrity checks there, then change the Phase `DATABASE_URL` only
+after approval. Never test recovery by overwriting the production branch.
 
-Keep these generic or destructive operations inaccessible to public sessions:
+### Cleanup and retention operations
 
-- listing all worlds;
-- creating arbitrary worlds or slugs;
-- fetching or updating arbitrary IDs;
-- deleting worlds;
-- changing schema versions;
-- resetting `main` to the example.
+Run `phase run --env production 'pnpm cleanup:anonymous --dry-run'` and review scheduled, cancelled,
+deferred, failed, and unexpectedly large counts before scheduling. Run bounded purge batches only
+after the grace window. Purge expired diagnostic rows separately with
+`pnpm cleanup:anonymous --purge-playthroughs --batch=100`. Alert on any failed batch, a result over
+the reviewed batch bound, or a sustained rise in scheduled/purged counts. Trashed worlds remain
+recoverable for 30 days; playthrough identity is anonymized before its separate 90-day diagnostic
+retention expires.
 
-A browser cannot safely contain a private API key. Anonymous sessions, origin and CSRF checks, a
-narrow route surface, validation, and rate limiting reduce accidental and automated abuse; they do
-not make a determined public editor user unable to replay their own allowed request.
+### Suspended publications
 
-Start with a Vercel WAF rule around 60 writes per minute per IP for the public editor endpoint, then
-adjust from observed traffic. Vercel's [WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
-is available on all plans.
+Suspension immediately blocks bootstrap, resume, restart, and command submission. Record a concise
+moderation reason in the administrator action. After review, lifting suspension leaves the
+publication unpublished; the owner explicitly republishes. Do not edit or delete immutable releases
+to enforce a suspension.
 
-Only after this gate is implemented and tested should Production Vercel Authentication be disabled.
-Keep Vercel previews authenticated.
+### Email and credential operations
+
+Monitor Resend delivery, bounce, complaint, and provider failures using message identifiers and
+event types only; never log recipient addresses or verification/reset links. Rotate the Resend key
+in the matching Phase environment, sync it to Vercel, deploy, verify a synthetic delivery, then
+revoke the former key. Rotate `CREDENTIAL_ENCRYPTION_KEY` only with a reviewed re-encryption plan and
+a verified backup; replacing it directly makes existing TOTP seeds unreadable. Administrator
+password and MFA recovery continue to use the operator-only commands documented above.
 
 ## Deploying a routine change
 
@@ -345,10 +468,18 @@ Use the Vercel preview link to test at minimum:
 - the specific feature being released;
 - Vercel runtime logs.
 
+An ordinary feature preview uses the schema already installed on the shared Neon `preview` branch.
+If the change includes a migration, promote the reviewed commit to the long-lived `staging` branch
+and test the canonical staging deployment instead. The staging workflow owns changes to the shared
+preview schema.
+
 ### 4. Release
 
-Merge the branch into `main`. Vercel deploys the merge automatically. After the deployment becomes
-Ready, repeat the production smoke test and check logs.
+Merge the feature into `main`, then promote the reviewed integration candidate to `staging`. After
+the controlled staging workflow succeeds and the canonical staging smoke test passes, promote that
+same commit to `prod`. Vercel builds the production candidate automatically, and its required
+storage compatibility check applies migrations before the production domains move. Repeat the
+production smoke test and check logs after promotion.
 
 ## Weekly preview database refresh
 
@@ -374,6 +505,10 @@ workflow**. Check the workflow result before relying on preview for testing.
 
 ## Deploying a database migration
 
+Follow the root-level `BREAKING_SCHEMA_MIGRATIONS_README.md` and
+`DEPLOYMENT_STORAGE_GATE_README.md`. The commands below are retained for isolated staging and
+initial setup; routine production migration is performed by the required deployment check.
+
 Create a migration with a descriptive snake-case name:
 
 ```bash
@@ -391,20 +526,16 @@ Prefer backward-compatible, expand-and-contract changes:
 4. Deploy code that uses the new shape exclusively.
 5. **Contract:** remove old columns or constraints in a later release.
 
-Apply and test preview:
+Apply and test staging by pushing the reviewed commit to the long-lived branch:
 
 ```bash
-phase run --env staging 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm migrate'
+git push origin HEAD:staging
 ```
 
-Once preview passes, apply production before merging the compatible application code:
-
-```bash
-phase run --env production 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm migrate'
-```
-
-Then merge into `main`. Do not automatically run a destructive migration merely because an
-application deployment started.
+The staging workflow applies the migration, validates retained content, and only then builds and
+deploys that exact commit. Once staging passes, promote the same candidate to `prod`. The required
+production compatibility check applies the same migration and blocks Vercel promotion if any
+retained content fails parsing or replay.
 
 ## Rollback and recovery
 
@@ -420,31 +551,15 @@ If a deployment is broken but the migration was backward-compatible:
 Do not immediately run `knex migrate:rollback` in production. Application rollback and database
 rollback are different operations, and a down migration can destroy data needed by the new release.
 
-### Reset the shared world manually
+### Reset a private editor world
 
-Until an admin-only reset route exists, reset through the Neon SQL Editor. Verify the target branch
-and inspect the row before deleting anything:
-
-```sql
-select id, name, slug, revision, updated_at
-from worlds
-where slug = 'main';
-```
-
-For the intended branch only, delete `main`:
-
-```sql
-delete from worlds
-where slug = 'main';
-```
-
-This is destructive. Neon restore history is the recovery mechanism if the wrong data is removed.
-After deletion, `/editor` loads the checked-in initial world. The first subsequent edit saves a new
-`main` record.
+Use the editor's **Reset example** action and allow autosave to finish. Do not delete the `main`
+template: it is the source for new anonymous worlds. Until the administrator world tools land,
+database-level recovery should be handled through Neon restore history rather than ad hoc deletes.
 
 ## Troubleshooting
 
-### The app builds but `/api/world/slug/main` returns 500
+### Entering `/editor` returns 500
 
 Check:
 
@@ -457,8 +572,11 @@ Check:
 
 ### The API says the `revision` column does not exist
 
-The Neon branch is missing migrations. Apply them to the affected Phase environment using the
-commands in [Apply the initial migrations](#4-apply-the-initial-migrations).
+The Neon branch is missing migrations. For staging, rerun **Deploy staging** or **Refresh preview
+database** and inspect the first failing migration/validation step. For production, rerun the
+required production storage compatibility check after correcting its environment. Use the manual
+commands in [Apply the initial migrations](#4-apply-the-initial-migrations) only for initial setup or
+operator recovery.
 
 ### Preview edits production data
 
@@ -475,17 +593,14 @@ revision check.
 Confirm the application uses the pooled `-pooler` URL and migrations are being run with the direct
 URL. Keep `DATABASE_POOL_MIN=0` and begin with `DATABASE_POOL_MAX=1` for Vercel functions.
 
-## Later automation
+## Automated migration gates
 
-The first releases intentionally keep production migrations explicit. When releases become
-frequent, add a GitHub Actions workflow that:
+Staging and production migration automation is now active. Staging migrates and validates before
+its GitHub Actions-controlled deployment; production builds first and then migrates and validates
+before Vercel assigns production domains. Both paths run `pnpm release:migrate`, use direct database
+connections, serialize migrations, and retain the previously current deployment when their gate
+fails.
 
-1. runs lint, type-check, tests, and build;
-2. migrates the Neon preview branch before preview integration tests;
-3. requires approval for the production environment;
-4. migrates Neon production with the direct connection;
-5. triggers or promotes the Vercel production deployment only after migration succeeds.
-
-Do not combine uncontrolled Vercel Git auto-deploys with destructive migrations. Keep migrations
-backward-compatible or change production deployment to a gated workflow before automating this
-sequence.
+Do not re-enable uncontrolled Vercel Git auto-deployments for `staging`, prepend migrations to the
+Vercel build command, or bypass the production Deployment Check. Keep migrations backward-compatible
+across the old and candidate application versions.

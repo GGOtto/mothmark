@@ -28,35 +28,247 @@ export const ConditionReferenceSchema = editor.object(
 
 export const FlagConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("flag-type", [
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("normal").default("normal"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("is"),
+				flag: editor.flagKey({title: "Flag", commandVariableType: "boolean"}),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
-			flag: editor.flagKey({title: "Flag"}),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("room"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.enum(["exists", "missing"]),
+				flag: editor.flagKey({title: "Flag"}),
 			}),
-			roomId: editor.reference("room", {title: "Room"}),
-			flag: editor.string({title: "Flag"}).min(1),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("feature"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.literal("is"),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
-			roomId: editor.reference("room", {title: "Room"}),
-			featureId: editor.reference("feature", {title: "Feature"}),
-			flag: editor.string({title: "Flag"}).min(1),
-		}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.enum(["exists", "missing"]),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("item"),
+				operation: z.literal("is"),
+				itemId: editor.reference("item", {title: "Item"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("item"),
+				operation: z.enum(["exists", "missing"]),
+				itemId: editor.reference("item", {title: "Item"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
 	]),
-	{title: "Flag Condition", description: "Checks a boolean world, room, or feature flag."},
+	{title: "Flag condition", description: "Checks a boolean world, room, or item flag."},
+);
+
+export const ItemStatePredicateSchema = editor.object(
+	{
+		type: z.literal("state"),
+		state: editor.select(
+			z.enum([
+				"visible",
+				"reachable",
+				"known",
+				"carried",
+				"hidden",
+				"destroyed",
+				"examined",
+				"listed",
+				"open",
+				"locked",
+			]),
+			{title: "State"},
+		),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "State", description: "Checks player knowledge, access, location, or item state."},
+);
+
+export const ItemLocationPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("location", [
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.enum(["current-room", "inventory", "hidden", "destroyed"]),
+			},
+			{title: "Simple location"},
+		),
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.literal("room"),
+				roomId: editor.reference("room", {title: "Room"}),
+			},
+			{title: "Room"},
+		),
+		editor.object(
+			{
+				type: z.literal("location"),
+				location: z.enum(["inside-item", "on-item"]),
+				parentItemId: editor.reference("item", {title: "Containing item"}),
+			},
+			{title: "In or on item"},
+		),
+	]),
+	{title: "Location"},
+);
+
+export const ItemImportantTagPredicateSchema = editor.object(
+	{
+		type: z.literal("important-tag"),
+		tag: editor.select(
+			z.enum(["takeable", "container", "surface", "openable", "lockable", "door", "usable"]),
+			{title: "Behavior"},
+		),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Behavior"},
+);
+
+export const ItemTagPredicateSchema = editor.object(
+	{
+		type: z.literal("tag"),
+		tag: editor.input({title: "Tag"}).trim().min(1),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Author tag"},
+);
+
+export const ItemContentsPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("test", [
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("empty"),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+				value: editor.boolean({title: "Expected"}).default(true),
+			},
+			{title: "Empty"},
+		),
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("contains-item"),
+				itemId: editor.reference("item", {title: "Contained item"}),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+			},
+			{title: "Contains item"},
+		),
+		editor.object(
+			{
+				type: z.literal("contents"),
+				test: z.literal("contains-tag"),
+				tag: editor.input({title: "Tag"}).trim().min(1),
+				placement: editor.select(z.enum(["inside", "on", "either"]), {title: "Placement"}),
+			},
+			{title: "Contains tagged item"},
+		),
+	]),
+	{title: "Contents"},
+);
+
+export const ItemCapacityPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("test", [
+		editor.object(
+			{
+				type: z.literal("capacity"),
+				test: z.enum(["empty", "full"]),
+				placement: editor.select(z.enum(["inside", "on"]), {title: "Placement"}),
+				value: editor.boolean({title: "Expected"}).default(true),
+			},
+			{title: "Capacity state"},
+		),
+		editor.object(
+			{
+				type: z.literal("capacity"),
+				test: z.literal("can-fit"),
+				itemId: editor.reference("item", {title: "Item to fit"}),
+				placement: editor.select(z.enum(["inside", "on"]), {title: "Placement"}),
+			},
+			{title: "Can fit item"},
+		),
+	]),
+	{title: "Capacity"},
+);
+
+export const ItemCanUnlockPredicateSchema = editor.object(
+	{
+		type: z.literal("can-unlock"),
+		lockItemId: editor.reference("item", {title: "Lock"}),
+		keyItemId: editor.reference("item", {title: "Key"}),
+	},
+	{title: "Can unlock"},
+);
+
+export const ItemDoorPredicateSchema = editor.object(
+	{
+		type: z.literal("door"),
+		test: editor.select(z.enum(["controls-connection", "connection-passable"]), {title: "Test"}),
+		connectionId: editor.reference("connection", {title: "Connection"}).optional(),
+		value: editor.boolean({title: "Expected"}).default(true),
+	},
+	{title: "Door"},
+);
+
+export const ItemPredicateSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("type", [
+		ItemStatePredicateSchema,
+		ItemLocationPredicateSchema,
+		ItemImportantTagPredicateSchema,
+		ItemTagPredicateSchema,
+		ItemContentsPredicateSchema,
+		ItemCapacityPredicateSchema,
+		ItemCanUnlockPredicateSchema,
+		ItemDoorPredicateSchema,
+	]),
+	{title: "Item test", picker: {showDescriptions: true}},
+);
+
+export const ItemConditionSchema = editor.object(
+	{
+		type: z.literal("item"),
+		itemId: editor.reference("item", {title: "Item"}),
+		test: ItemPredicateSchema,
+	},
+	{title: "Item condition", description: "Checks an item's state, location, contents, or behavior."},
 );
 
 export const CounterConditionSchema = editor.discriminatedUnion(
@@ -64,30 +276,56 @@ export const CounterConditionSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("compare"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 			operator: ComparisonOperatorSchema,
-			value: editor.number({title: "Value"}),
+			value: editor.number({title: "Value", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("between"),
-			counter: editor.input({title: "Counter"}),
-			min: editor.number({title: "Minimum"}),
-			max: editor.number({title: "Maximum"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
+			min: editor.number({title: "Minimum", commandVariableType: "number"}),
+			max: editor.number({title: "Maximum", commandVariableType: "number"}),
 			inclusive: editor.boolean({title: "Inclusive"}).default(true),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("exists"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("missing"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 		}),
 	]),
 	{title: "Counter Condition", description: "Checks a numeric world counter."},
+);
+
+export const TextConditionSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("text"),
+			operation: z.enum([
+				"is",
+				"is-not",
+				"starts-with",
+				"does-not-start-with",
+				"ends-with",
+				"does-not-end-with",
+				"contains",
+				"does-not-contain",
+			]),
+			text: editor.textKey({title: "Text variable", commandVariableType: "string"}),
+			value: editor.input({title: "Value", commandVariableType: "string"}),
+		}),
+		z.object({
+			type: z.literal("text"),
+			operation: z.enum(["is-empty", "is-not-empty", "exists", "missing"]),
+			text: editor.textKey({title: "Text variable", commandVariableType: "string"}),
+		}),
+	]),
+	{title: "Text condition", description: "Checks a saved text value."},
 );
 
 export const CurrentRoomConditionSchema = editor.discriminatedUnion(
@@ -128,7 +366,9 @@ export const SingleConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		FlagConditionSchema,
 		CounterConditionSchema,
+		TextConditionSchema,
 		CurrentRoomConditionSchema,
+		ItemConditionSchema,
 	]),
 	{title: "Condition"},
 );
@@ -215,10 +455,10 @@ export const ConditionalTextSchema = editor.object(
 	},
 	{
 		title: "Conditional Text",
-		description: docify(`Text shown when all referenced room or feature conditions pass.`),
+		description: docify(`Text shown when all referenced room or item conditions pass.`),
 	},
 );
 
 export type ConditionalText = z.infer<typeof ConditionalTextSchema>;
 
-// TODO: Reintroduce item, NPC, quest, event, and authored-command conditions with those domains.
+// TODO: Reintroduce NPC, quest, event, and authored-command conditions with those domains.

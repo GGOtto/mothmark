@@ -39,6 +39,7 @@ export type EditorControlType =
 	| "connection-picker"
 	| "flag-picker"
 	| "counter-picker"
+	| "text-picker"
 	| "flag-editor"
 	| "object-flag-editor"
 	| "direction-picker"
@@ -62,7 +63,6 @@ export type EditorEntityType =
 	| "command"
 	| "event"
 	| "effect"
-	| "feature"
 	| "condition"
 	| "container"
 	| "surface"
@@ -70,7 +70,7 @@ export type EditorEntityType =
 	| "direction";
 
 export type EditorTagSource =
-	"rooms" | "items" | "features" | "npcs" | "topics" | "quests" | "commands" | "events" | "all";
+	"rooms" | "items" | "npcs" | "topics" | "quests" | "commands" | "events" | "all";
 
 export type EditorOption = {
 	label: string;

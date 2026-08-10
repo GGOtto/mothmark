@@ -1,16 +1,23 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {DirectionSchema, RoomFeatureKindSchema} from "../world/roomSchema";
+import {DirectionSchema} from "../world/roomSchema";
+import {ItemLocationSchema} from "../world/itemSchema";
 
-export const FeatureStateSchema = z.object({
-	type: z.literal("feature"),
-	id: editor.reference("feature"),
+export const ItemStateSchema = z.object({
+	type: z.literal("item"),
+	id: editor.reference("item"),
 	name: z.string(),
 	description: z.string(),
 	aliases: z.array(z.string()),
 	tags: z.array(z.string()),
-	kind: RoomFeatureKindSchema,
+	behaviorTags: z.array(
+		z.enum(["takeable", "container", "surface", "openable", "lockable", "door", "usable"]),
+	),
 	listedInRoom: z.boolean(),
+	listingText: z.string(),
+	location: ItemLocationSchema,
+	open: z.boolean(),
+	locked: z.boolean(),
 	flags: z.record(z.string(), z.boolean()),
 });
 
@@ -24,9 +31,8 @@ export const RoomStateSchema = z.object({
 	tags: z.array(z.string()),
 	lockedExits: z.array(DirectionSchema),
 	flags: z.record(z.string(), z.boolean()),
-	featureStates: z.array(FeatureStateSchema),
 });
 
-export type FeatureState = z.infer<typeof FeatureStateSchema>;
+export type ItemState = z.infer<typeof ItemStateSchema>;
 export type RoomState = z.infer<typeof RoomStateSchema>;
-export type EntityState = FeatureState | RoomState;
+export type EntityState = ItemState | RoomState;

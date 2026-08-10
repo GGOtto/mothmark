@@ -1,0 +1,89 @@
+{
+	"id": {
+		"type": "command",
+		"id": "use"
+	},
+	"name": "Use",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-verb"
+					},
+					"type": "phrase",
+					"matches": ["use"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "use-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["usable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "use-target"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "use-target-fallback"},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {"type": "effect", "id": "use-target-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't use that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "use-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "use-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "use",
+					"itemId": {
+						"type": "item",
+						"id": "use-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "use-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

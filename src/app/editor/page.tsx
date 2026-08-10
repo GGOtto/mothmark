@@ -3,6 +3,7 @@
 import type React from "react";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {produce} from "immer";
+import {usePathname} from "next/navigation";
 import {
 	ToolBar,
 	type ToolBarStatus,
@@ -11,7 +12,10 @@ import {
 } from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
+import {ItemCatalog} from "@/components/studio/ItemCatalog";
+import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
+import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
@@ -29,13 +33,23 @@ import {
 	type LogicSelection,
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
-import {useWorldAutosaveRegistration} from "@/components/world-autosave/WorldAutosave";
+import {readBrowserCsrfToken} from "@/auth/browserCsrf";
+import {
+	useWorldAutosaveRegistration,
+	WorldResetButton,
+} from "@/components/world-autosave/WorldAutosave";
+import {
+	deleteWorldDraft,
+	draftMatchesServer,
+	readWorldDraft,
+	type WorldDraft,
+} from "@/components/world-autosave/worldDraftStorage";
 import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
 import {getConnectionDraftStatus} from "./utils/editorPageUtils";
-import {loadMainWorld} from "./loadMainWorld";
+import {loadEditorWorld as loadAuthorizedEditorWorld} from "./loadMainWorld";
 import "./page.scss";
 
 type EditorSelection = {
@@ -54,8 +68,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Build rooms and connections visually.",
 	},
 	world: {
-		title: "World",
-		description: "Edit rooms, items, NPCs, and world structure.",
+		title: "Items",
+		description: "Edit scenery, portable objects, containers, surfaces, and doors.",
 	},
 	logic: {
 		title: "Logic",
@@ -66,8 +80,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		description: "Review validation errors and broken world logic.",
 	},
 	"world-settings": {
-		title: "World Config",
-		description: "Configure project-level world settings.",
+		title: "World settings",
+		description: "Configure world-level settings.",
 	},
 	"editor-settings": {
 		title: "Settings",
@@ -79,7 +93,39 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 	},
 };
 
+async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
+	const serverWorld = await loadAuthorizedEditorWorld(fetch, signal, requestedWorldId);
+	const draft = await readWorldDraft(serverWorld.userId, serverWorld.worldId).catch(
+		(error: unknown) => {
+			console.warn("Could not read the local world draft.", error);
+			return null;
+		},
+	);
+
+	if (draft && draftMatchesServer(draft, serverWorld)) {
+		return {
+			...serverWorld,
+			world: draft.world,
+			restoredFromLocalDraft: true,
+			draftConflict: undefined,
+		};
+	}
+	if (draft) {
+		return {...serverWorld, restoredFromLocalDraft: false, draftConflict: draft};
+	}
+
+	return {...serverWorld, restoredFromLocalDraft: false, draftConflict: undefined};
+}
+
+type LoadedWorld = Awaited<ReturnType<typeof loadEditorWorld>>;
+
 export default function EditorPage() {
+	const pathname = usePathname();
+	const [requestedWorldId] = useState(() => {
+		const locator =
+			pathname.match(/^\/worlds\/([^/]+)$/)?.[1] ?? pathname.match(/^\/editor\/([^/]+)$/)?.[1];
+		return locator === "undefined" ? undefined : locator;
+	});
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
 	const [mapTool, setMapTool] = useState<MapTool>("edit");
 	const [mapZoom, setMapZoom] = useState(1);
@@ -90,11 +136,21 @@ export default function EditorPage() {
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
+	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
+	const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+	const [worldName, setWorldName] = useState("");
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
+	const [restoredFromLocalDraft, setRestoredFromLocalDraft] = useState(false);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
+	const [draftConflict, setDraftConflict] = useState<{
+		draft: WorldDraft;
+		server: LoadedWorld;
+	} | null>(null);
+	const [draftConflictBusy, setDraftConflictBusy] = useState(false);
+	const [draftConflictError, setDraftConflictError] = useState("");
 
 	const [selection, setSelection] = useState<EditorSelection>({
 		selectedId: null,
@@ -108,40 +164,123 @@ export default function EditorPage() {
 	useEffect(() => {
 		const abortController = new AbortController();
 
-		loadMainWorld(fetch, abortController.signal)
-			.then(({world, worldId, revision}) => {
+		loadEditorWorld(abortController.signal, requestedWorldId)
+			.then((loaded) => {
+				if (loaded.draftConflict) {
+					setDraftConflict({draft: loaded.draftConflict, server: loaded});
+					return;
+				}
+				const {
+					editorSlug,
+					world,
+					worldId,
+					worldName: loadedName,
+					userId,
+					revision,
+					restoredFromLocalDraft: restored,
+				} = loaded;
 				updateWorld(world);
 				setPersistedWorldId(worldId);
+				setOwnerUserId(userId);
+				setWorldName(loadedName);
 				setPersistedWorldRevision(revision);
+				setRestoredFromLocalDraft(restored);
 				setSelection({
 					selectedId: idValue(world.startRoomId),
 					isConnectionSelected: false,
 				});
 				setConnectionDraft({state: "idle"});
 				setWorldIsLoaded(true);
+				if (window.location.pathname !== `/worlds/${editorSlug}`) {
+					window.history.replaceState(null, "", `/worlds/${editorSlug}`);
+				}
 			})
 			.catch((error: unknown) => {
 				if ((error as {name?: string}).name === "AbortError") return;
 
-				console.warn("Could not load the main world; using the initial world instead.", error);
-				const fallbackWorld = createInitialWorld();
-				updateWorld(fallbackWorld);
-				setPersistedWorldId(null);
-				setPersistedWorldRevision(null);
-				setSelection({
-					selectedId: idValue(fallbackWorld.startRoomId),
-					isConnectionSelected: false,
-				});
-				setConnectionDraft({state: "idle"});
-				setWorldIsLoaded(true);
+				console.warn("Could not load the private editor world.", error);
 			});
 
 		return () => abortController.abort();
-	}, [updateWorld]);
+	}, [requestedWorldId, updateWorld]);
+
+	const acceptServerWorld = useCallback(async () => {
+		if (!draftConflict) return;
+		setDraftConflictBusy(true);
+		setDraftConflictError("");
+		try {
+			await deleteWorldDraft(draftConflict.draft.userId, draftConflict.draft.worldId);
+			const {server} = draftConflict;
+			updateWorld(server.world);
+			setPersistedWorldId(server.worldId);
+			setOwnerUserId(server.userId);
+			setWorldName(server.worldName);
+			setPersistedWorldRevision(server.revision);
+			setRestoredFromLocalDraft(false);
+			setSelection({selectedId: idValue(server.world.startRoomId), isConnectionSelected: false});
+			setConnectionDraft({state: "idle"});
+			setWorldIsLoaded(true);
+			setDraftConflict(null);
+			if (window.location.pathname !== `/worlds/${server.editorSlug}`) {
+				window.history.replaceState(null, "", `/worlds/${server.editorSlug}`);
+			}
+		} catch {
+			setDraftConflictError("The local draft could not be cleared. Export it before continuing.");
+		} finally {
+			setDraftConflictBusy(false);
+		}
+	}, [draftConflict, updateWorld]);
+
+	const exportDraft = useCallback(() => {
+		if (!draftConflict) return;
+		const blob = new Blob([JSON.stringify(draftConflict.draft.world, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement("a");
+		anchor.href = url;
+		anchor.download = `${draftConflict.server.editorSlug}-local-draft.mothmark.json`;
+		anchor.click();
+		URL.revokeObjectURL(url);
+		void acceptServerWorld();
+	}, [acceptServerWorld, draftConflict]);
+
+	const openDraftAsCopy = useCallback(async () => {
+		if (!draftConflict) return;
+		setDraftConflictBusy(true);
+		setDraftConflictError("");
+		try {
+			const csrf = readBrowserCsrfToken();
+			if (!csrf) throw new Error("The editor security token is missing.");
+			const response = await fetch("/api/world", {
+				method: "POST",
+				headers: {"content-type": "application/json", "x-csrf-token": csrf},
+				body: JSON.stringify({
+					name: `${draftConflict.server.worldName} recovered draft`,
+					source: "import",
+					world: draftConflict.draft.world,
+				}),
+			});
+			const result = (await response.json()) as {
+				data?: {editorSlug?: string};
+				error?: {message?: string};
+			};
+			if (!response.ok || !result.data?.editorSlug)
+				throw new Error(result.error?.message || "The draft copy could not be created.");
+			await deleteWorldDraft(draftConflict.draft.userId, draftConflict.draft.worldId);
+			window.location.assign(`/worlds/${result.data.editorSlug}`);
+		} catch (caught) {
+			setDraftConflictError(
+				caught instanceof Error ? caught.message : "The draft copy could not be created.",
+			);
+			setDraftConflictBusy(false);
+		}
+	}, [draftConflict]);
 
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
 		setPersistedWorldRevision(revision);
+		setRestoredFromLocalDraft(false);
 	}, []);
 
 	const handleResetWorld = useCallback(() => {
@@ -153,6 +292,7 @@ export default function EditorPage() {
 		setLogicSelection(null);
 		setSelectedCommandId(null);
 		setCommandSelection(null);
+		setSelectedItemId(idValue(nextWorld.items[0]?.id) || null);
 		setMapZoom(1);
 		setMapRecenterRequest((request) => request + 1);
 	}, [updateWorld]);
@@ -172,7 +312,10 @@ export default function EditorPage() {
 		ready: worldIsLoaded,
 		world: editorWorld,
 		worldId: persistedWorldId,
+		userId: ownerUserId,
+		worldName,
 		revision: persistedWorldRevision,
+		restoredFromLocalDraft,
 		onPersisted: handleWorldPersisted,
 		onReset: handleResetWorld,
 	});
@@ -191,6 +334,10 @@ export default function EditorPage() {
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
+	const selectedItem = useMemo(
+		() => editorWorld.items.find((item) => idValue(item.id) === selectedItemId) ?? null,
+		[editorWorld.items, selectedItemId],
+	);
 	const selectedCommand = useMemo(
 		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
 		[editorWorld.commands, selectedCommandId],
@@ -201,6 +348,44 @@ export default function EditorPage() {
 
 	return (
 		<main className="editorPage">
+			{draftConflict ? (
+				<div className="draftConflictBackdrop">
+					<section
+						className="draftConflictDialog"
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="draft-conflict-title"
+					>
+						<h2 id="draft-conflict-title">This browser has an older local draft</h2>
+						<p>
+							The server is now at revision {draftConflict.server.revision}, while this draft was based on
+							revision {draftConflict.draft.baseServerRevision}. Choose which work to keep; Mothmark will
+							not overwrite either version silently.
+						</p>
+						{draftConflictError ? (
+							<p className="draftConflictError" role="alert">
+								{draftConflictError}
+							</p>
+						) : null}
+						<div className="draftConflictActions">
+							<button type="button" onClick={() => void openDraftAsCopy()} disabled={draftConflictBusy}>
+								Open draft as a copy
+							</button>
+							<button type="button" onClick={exportDraft} disabled={draftConflictBusy}>
+								Export draft
+							</button>
+							<button
+								type="button"
+								className="draftConflictPrimary"
+								onClick={() => void acceptServerWorld()}
+								disabled={draftConflictBusy}
+							>
+								Use server version
+							</button>
+						</div>
+					</section>
+				</div>
+			) : null}
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<EditorMainPanel
@@ -229,6 +414,11 @@ export default function EditorPage() {
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItemId={selectedItemId}
+				setSelectedItemId={setSelectedItemId}
+				persistedWorldId={persistedWorldId}
+				persistedWorldRevision={persistedWorldRevision}
+				worldName={worldName}
 				onMapRecenter={() => {
 					setMapZoom(1);
 					setMapRecenterRequest((request) => request + 1);
@@ -242,12 +432,18 @@ export default function EditorPage() {
 				selectedConnection={selectedConnection}
 				updateWorld={updateWorld}
 				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+				onOpenItem={(itemId) => {
+					setSelectedItemId(itemId);
+					setActiveTab("world");
+				}}
 				logicSection={logicSection}
 				logicSelection={logicSelection}
 				selectedCommandId={selectedCommandId}
 				setSelectedCommandId={setSelectedCommandId}
 				commandSelection={commandSelection}
 				setCommandSelection={setCommandSelection}
+				selectedItem={selectedItem}
+				setSelectedItemId={setSelectedItemId}
 			/>
 		</main>
 	);
@@ -280,6 +476,11 @@ type EditorMainPanelProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
+	persistedWorldId: string | null;
+	persistedWorldRevision: number | null;
+	worldName: string;
 };
 
 function EditorMainPanel({
@@ -309,6 +510,11 @@ function EditorMainPanel({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
+	persistedWorldId,
+	persistedWorldRevision,
+	worldName,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
@@ -406,6 +612,11 @@ function EditorMainPanel({
 						setSelectedCommandId={setSelectedCommandId}
 						commandSelection={commandSelection}
 						setCommandSelection={setCommandSelection}
+						selectedItemId={selectedItemId}
+						setSelectedItemId={setSelectedItemId}
+						persistedWorldId={persistedWorldId}
+						persistedWorldRevision={persistedWorldRevision}
+						worldName={worldName}
 					/>
 				</div>
 			</div>
@@ -539,6 +750,11 @@ type EditorWorkspaceProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItemId: string | null;
+	setSelectedItemId: (itemId: string | null) => void;
+	persistedWorldId: string | null;
+	persistedWorldRevision: number | null;
+	worldName: string;
 };
 
 function EditorWorkspace({
@@ -566,6 +782,11 @@ function EditorWorkspace({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItemId,
+	setSelectedItemId,
+	persistedWorldId,
+	persistedWorldRevision,
+	worldName,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -651,7 +872,25 @@ function EditorWorkspace({
 		return <LogicSectionPlaceholder title={title} onBack={() => setLogicSection("home")} />;
 	}
 
-	return <PlaceholderWorkspace activeTab={activeTab} />;
+	if (activeTab === "world") {
+		return (
+			<ItemCatalog
+				world={world}
+				updateWorld={updateWorld}
+				selectedItemId={selectedItemId}
+				onSelectItem={setSelectedItemId}
+			/>
+		);
+	}
+
+	return (
+		<PlaceholderWorkspace
+			activeTab={activeTab}
+			worldId={persistedWorldId}
+			worldName={worldName}
+			revision={persistedWorldRevision}
+		/>
+	);
 }
 
 type MapWorkspaceProps = {
@@ -723,10 +962,19 @@ function MapWorkspace({
 
 type PlaceholderWorkspaceProps = {
 	activeTab: EditorTab;
+	worldId: string | null;
+	worldName: string;
+	revision: number | null;
 };
 
-function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
+function PlaceholderWorkspace({
+	activeTab,
+	worldId,
+	worldName,
+	revision,
+}: PlaceholderWorkspaceProps) {
 	const metadata = getEditorTabMetadata(activeTab);
+	const isWorldSettings = activeTab === "world-settings";
 
 	return (
 		<div className="placeholderWorkspace">
@@ -734,9 +982,17 @@ function PlaceholderWorkspace({activeTab}: PlaceholderWorkspaceProps) {
 				<p className="placeholderWorkspaceTitle">{metadata.title}</p>
 
 				<p className="placeholderWorkspaceDescription">
-					This area will become the {metadata.title.toLowerCase()} editor. The sidebars and command line
-					stay pinned while this workspace swaps out.
+					{isWorldSettings
+						? "Reset replaces every room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world. Your private world identity stays the same."
+						: `This area will become the ${metadata.title.toLowerCase()} editor. The sidebars and command line stay pinned while this workspace swaps out.`}
 				</p>
+
+				{isWorldSettings ? (
+					<>
+						<WorldResetButton />
+						<PublishingPanel worldId={worldId} worldName={worldName} revision={revision} />
+					</>
+				) : null}
 			</div>
 		</div>
 	);
@@ -749,12 +1005,15 @@ type EditorInspectorProps = {
 	selectedConnection: World["connections"][number] | null;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
+	onOpenItem: (itemId: string) => void;
 	logicSection: LogicSection;
 	logicSelection: LogicSelection | null;
 	selectedCommandId: string | null;
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedItem: World["items"][number] | null;
+	setSelectedItemId: (itemId: string | null) => void;
 };
 
 function EditorInspector({
@@ -764,12 +1023,15 @@ function EditorInspector({
 	selectedConnection,
 	updateWorld,
 	onSelectedIdChange,
+	onOpenItem,
 	logicSection,
 	logicSelection,
 	selectedCommandId,
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedItem,
+	setSelectedItemId,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -779,6 +1041,7 @@ function EditorInspector({
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
+				onOpenItem={onOpenItem}
 			/>
 		);
 	}
@@ -849,6 +1112,33 @@ function EditorInspector({
 					selection={commandSelection}
 					onSelectionChange={setCommandSelection}
 				/>
+			</RightSideBar>
+		);
+	}
+
+	if (activeTab === "world") {
+		return (
+			<RightSideBar
+				world={world}
+				updateWorld={updateWorld}
+				selectedRoom={null}
+				selectedConnection={null}
+			>
+				{selectedItem ? (
+					<ItemEditor
+						selectedItem={selectedItem}
+						world={world}
+						updateWorld={updateWorld}
+						onSelectedIdChange={setSelectedItemId}
+					/>
+				) : (
+					<div className="rightSideBarEmptyPanel">
+						<p className="rightSideBarEmptyTitle">Items</p>
+						<p className="rightSideBarEmptyDescription">
+							Select an item to edit its identity, behavior, and start state.
+						</p>
+					</div>
+				)}
 			</RightSideBar>
 		);
 	}

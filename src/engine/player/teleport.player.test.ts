@@ -30,16 +30,15 @@ describe("teleportation through the player path", () => {
 		);
 	});
 
-	it("preserves destroyed features across later room visits", () => {
+	it("preserves destroyed items across later room visits", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const event = createPlayerTestEvent(
 			"destroy-bell",
 			[
 				{
-					type: "feature",
+					type: "item",
 					operation: "destroy",
-					roomId: toID("room", "foyer"),
-					featureId: toID("feature", "brass-bell"),
+					itemId: toID("item", "brass-bell"),
 				},
 			],
 			(draft) => {
@@ -57,9 +56,7 @@ describe("teleportation through the player path", () => {
 
 		expect(returnedGame.messages.at(-1)?.text).not.toContain("brass bell");
 		expect(
-			returnedGame.roomStates
-				.find((room) => idValue(room.id) === "foyer")
-				?.featureStates.some((feature) => idValue(feature.id) === "brass-bell"),
-		).toBe(false);
+			returnedGame.itemStates.find((item) => idValue(item.id) === "brass-bell")?.location,
+		).toEqual({type: "destroyed"});
 	});
 });

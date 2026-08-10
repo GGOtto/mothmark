@@ -3,19 +3,13 @@ import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import type {Effect, EffectGroup} from "@/schemas/world/effectSchema";
 import {EventSchema, type Event} from "@/schemas/world/eventSchema";
-import {
-	ConnectionSchema,
-	RoomFeatureSchema,
-	RoomSchema,
-	type Connection,
-	type Room,
-	type RoomFeature,
-} from "@/schemas/world/roomSchema";
+import {ConnectionSchema, RoomSchema, type Connection, type Room} from "@/schemas/world/roomSchema";
+import {ItemSchema, type Item} from "@/schemas/world/itemSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {createInitialGameState} from "../states/createInitialState";
-import {moveCommand} from "@/data/commands/move";
+import {moveCommand} from "@/data/commands/initialCommands";
 
 export type PlayerTestScenarioName = "navigation" | "conditional-travel" | "turn-event";
 
@@ -30,7 +24,6 @@ function createRoom(
 	description: string,
 	options: {
 		shortDescription?: string;
-		features?: RoomFeature[];
 		x?: number;
 		y?: number;
 	} = {},
@@ -40,23 +33,24 @@ function createRoom(
 		draft.name = name;
 		draft.description = description;
 		draft.shortDescription = options.shortDescription ?? "";
-		draft.features = options.features ?? [];
 		draft.metadata.position = {x: options.x ?? 0, y: options.y ?? 0};
 	});
 }
 
-export function createPlayerTestFeature(
+export function createPlayerTestItem(
 	id: string,
 	name: string,
 	description: string,
+	roomId: string,
 	aliases: string[] = [],
-): RoomFeature {
-	return produce(createDefaultFieldObject(RoomFeatureSchema), (draft) => {
-		draft.id = toID("feature", id);
+): Item {
+	return produce(createDefaultFieldObject(ItemSchema), (draft) => {
+		draft.id = toID("item", id);
 		draft.name = name;
-		draft.description = description;
+		draft.examine.text = description;
 		draft.aliases = aliases;
-		draft.listedInRoom = true;
+		draft.presentation.listedInRoom = true;
+		draft.initialState.location = {type: "room", roomId: toID("room", roomId)};
 	});
 }
 
@@ -104,6 +98,7 @@ function createWorld(
 	startRoomId: string,
 	rooms: Room[],
 	connections: Connection[] = [],
+	items: Item[] = [],
 ): World {
 	return produce(createDefaultFieldObject(WorldSchema), (draft) => {
 		draft.metadata.title = title;
@@ -111,15 +106,17 @@ function createWorld(
 		draft.deathMessage = "You have died.";
 		draft.rooms = rooms;
 		draft.connections = connections;
+		draft.items = items;
 		draft.commands = [moveCommand];
 	});
 }
 
 function createNavigationWorld(): World {
-	const bell = createPlayerTestFeature(
+	const bell = createPlayerTestItem(
 		"brass-bell",
 		"Brass Bell",
 		"A small brass bell hangs beside the doorway.",
+		"foyer",
 		["bell"],
 	);
 	const foyer = createRoom(
@@ -128,7 +125,6 @@ function createNavigationWorld(): World {
 		"A plain foyer provides a dependable starting point.",
 		{
 			shortDescription: "You are back in the test foyer.",
-			features: [bell],
 			x: 0,
 		},
 	);
@@ -147,6 +143,7 @@ function createNavigationWorld(): World {
 		"foyer",
 		[foyer, gallery],
 		[createConnection("foyer-gallery", "foyer", "gallery", "e", "w")],
+		[bell],
 	);
 }
 

@@ -236,8 +236,9 @@ describe("events and conditions through the player path", () => {
 					{
 						type: "flag",
 						"flag-type": "normal",
-						operation: "true",
+						operation: "is",
 						flag: "mechanism-ready",
+						value: true,
 					},
 					{
 						type: "counter",

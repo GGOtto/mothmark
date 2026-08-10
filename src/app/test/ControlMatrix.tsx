@@ -195,7 +195,7 @@ const SAMPLE_ENTITIES: EntityPickerOption[] = [
 			},
 			{
 				label: "Features",
-				items: [{id: "glass-case", label: "Glass Case", entityType: "feature", detail: "Container"}],
+				items: [{id: "glass-case", label: "Glass Case", entityType: "item", detail: "Container"}],
 			},
 		],
 	},
@@ -221,7 +221,7 @@ const SAMPLE_ENTITIES: EntityPickerOption[] = [
 		id: "glass-case",
 		label: "Glass Case",
 		description: "A feature that can be inspected and unlocked.",
-		entityType: "feature",
+		entityType: "item",
 	},
 ];
 

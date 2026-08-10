@@ -2,6 +2,7 @@ import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {Connection, Direction, World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import type {MatchBlockContext, TargetMatchCandidate} from "./blocks";
+import {isConnectionBlockedByDoor} from "../player/move";
 
 function canTravelForward(connection: Connection) {
 	return connection.pathway === "two-way" || connection.pathway === "forwards";
@@ -33,7 +34,14 @@ function reachableRoomIds(world: World, game: GameState): Set<string> {
 			destinationId = connection.fromRoomId;
 		}
 
-		if (!direction || !destinationId || currentRoomState.lockedExits.includes(direction)) continue;
+		if (
+			!direction ||
+			!destinationId ||
+			currentRoomState.lockedExits.includes(direction) ||
+			isConnectionBlockedByDoor(world, game, connection, game.player.currentRoom)
+		) {
+			continue;
+		}
 		const destination = game.roomStates.find((room) => compareIds(room.id, destinationId));
 		if (destination?.flags.active ?? false) reachable.add(idValue(destinationId));
 	}
@@ -57,27 +65,57 @@ function roomSources(
 	return sources;
 }
 
-function featureSources(
-	roomId: ID<"room">,
-	hidden: boolean,
-	listedInRoom: boolean,
-	examined: boolean,
-	roomVisited: boolean,
-	game: GameState,
-): TargetMatchCandidate["sources"] {
+function itemSources(itemId: ID<"item">, game: GameState): TargetMatchCandidate["sources"] {
 	const sources: TargetMatchCandidate["sources"] = [];
-	const isCurrentRoom = compareIds(roomId, game.player.currentRoom);
+	const item = game.itemStates.find((candidate) => compareIds(candidate.id, itemId));
+	if (
+		!item ||
+		item.flags.hidden ||
+		item.location.type === "hidden" ||
+		item.location.type === "destroyed"
+	) {
+		return sources;
+	}
 
-	if (isCurrentRoom) sources.push("current-room");
-	if (isCurrentRoom && !hidden) sources.push("visible", "reachable");
-	if (examined || (roomVisited && !hidden && listedInRoom)) sources.push("known");
+	let location = item.location;
+	let accessible = true;
+	const seen = new Set<string>([idValue(item.id)]);
+	while (location.type === "item") {
+		const parentItemId = location.itemId;
+		const parentId = idValue(parentItemId);
+		if (seen.has(parentId)) return sources;
+		seen.add(parentId);
+		const parent = game.itemStates.find((candidate) => compareIds(candidate.id, parentItemId));
+		if (
+			!parent ||
+			parent.flags.hidden ||
+			parent.location.type === "hidden" ||
+			parent.location.type === "destroyed"
+		) {
+			return sources;
+		}
+		if (location.placement === "inside" && !parent.open) accessible = false;
+		location = parent.location;
+	}
+
+	if (location.type === "inventory") {
+		if (accessible) sources.push("visible", "reachable");
+		sources.push("known");
+		return sources;
+	}
+
+	if (location.type !== "room") return sources;
+	const isCurrentRoom = compareIds(location.roomId, game.player.currentRoom);
+	const roomState = game.roomStates.find((room) => compareIds(room.id, location.roomId));
+	if (isCurrentRoom && accessible) sources.push("current-room", "visible", "reachable");
+	if (item.flags.examined || (roomState?.flags.visited && item.listedInRoom)) sources.push("known");
 
 	return sources;
 }
 
 /**
  * Builds target candidates from the complete runtime entity snapshot. Runtime
- * names, aliases, tags, flags, and feature locations are authoritative; the
+ * names, aliases, tags, flags, and item locations are authoritative; the
  * authored world supplies connection topology for reachability.
  */
 export function resolveTargetMatchContext(world: World, game: GameState): MatchBlockContext {
@@ -92,23 +130,16 @@ export function resolveTargetMatchContext(world: World, game: GameState): MatchB
 			tags: [...room.tags],
 			sources: roomSources(room.id, game, reachable),
 		});
+	}
 
-		for (const feature of room.featureStates) {
-			targets.push({
-				reference: feature.id,
-				name: feature.name,
-				aliases: [...feature.aliases],
-				tags: [...feature.tags],
-				sources: featureSources(
-					room.id,
-					feature.flags.hidden ?? false,
-					feature.listedInRoom,
-					feature.flags.examined ?? false,
-					room.flags.visited ?? false,
-					game,
-				),
-			});
-		}
+	for (const item of game.itemStates) {
+		targets.push({
+			reference: item.id,
+			name: item.name,
+			aliases: [...item.aliases],
+			tags: [...new Set([...item.tags, ...item.behaviorTags])],
+			sources: itemSources(item.id, game),
+		});
 	}
 
 	return {targets};

@@ -45,7 +45,7 @@ export type SpecializedControlMetadata = EditorControlMetadata & {
 export type IdControlMetadata = EditorControlMetadata & {
 	type: "id";
 	features?: {
-		scope?: "world" | "room" | "feature" | "connection" | "command" | "flag";
+		scope?: "world" | "room" | "item" | "connection" | "command" | "flag";
 		checkUnique?: boolean;
 		knownIds?: string[];
 		renameReferences?: boolean;
@@ -155,7 +155,7 @@ const FALLBACK_SCOPE_OPTIONS: EditorSelectOption[] = [
 	{label: "Global", value: "global", description: "Available everywhere."},
 	{label: "World", value: "world", description: "Available anywhere in this world."},
 	{label: "Room", value: "room", description: "Available only in selected rooms."},
-	{label: "Feature", value: "feature", description: "Attached to a specific room feature."},
+	{label: "Item", value: "item", description: "Attached to a specific item."},
 	{label: "Item", value: "item", description: "Available when the player has or sees an item."},
 	{label: "Character", value: "character", description: "Attached to a character."},
 	{label: "Command", value: "command", description: "Available inside a command."},

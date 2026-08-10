@@ -219,6 +219,35 @@ function buildPickerFeatures(metadata?: EditorFieldMetadata) {
 	};
 }
 
+function buildDiscriminatedUnionFeatures(schema: z.ZodTypeAny, metadata?: EditorFieldMetadata) {
+	const unwrapped = unwrapSchema(schema);
+	const def = getDef(unwrapped);
+	const discriminator = def.discriminator ?? "type";
+	const options = (def.options ?? []).flatMap((optionSchema) => {
+		const shape = getObjectShape(optionSchema);
+		const discriminatorSchema = shape?.[discriminator];
+		const literalValues = discriminatorSchema ? getDef(unwrapSchema(discriminatorSchema)).values : [];
+		const value = literalValues?.[0];
+		if (typeof value !== "string") return [];
+		const optionMetadata = resolveEditorMetadata(optionSchema);
+		return [
+			{
+				label: optionMetadata.title ?? optionLabel(value),
+				value,
+				description: optionMetadata.description,
+				defaultValue: createDefaultFieldObject(optionSchema) as Record<string, unknown>,
+				fields: optionMetadata.features?.fields as ObjectFieldMetadata[] | undefined,
+			},
+		];
+	});
+
+	return {
+		...featureDefaults(metadata),
+		discriminator,
+		options,
+	};
+}
+
 function buildChildControls(schema: z.ZodTypeAny, metadata?: EditorFieldMetadata) {
 	const shape = getObjectShape(schema);
 	if (!shape) return metadata?.childControls;
@@ -243,6 +272,7 @@ function buildFeatures(
 ) {
 	if (type === "object") return buildObjectFeatures(schema, metadata);
 	if (type === "array") return buildArrayFeatures(schema, metadata);
+	if (type === "discriminated-union") return buildDiscriminatedUnionFeatures(schema, metadata);
 	if (type === "select" || type === "multi-select" || type === "scope-picker") {
 		return buildSelectFeatures(schema, metadata);
 	}
@@ -252,6 +282,7 @@ function buildFeatures(
 		type === "connection-picker" ||
 		type === "flag-picker" ||
 		type === "counter-picker" ||
+		type === "text-picker" ||
 		type === "tag-list" ||
 		type === "id"
 	) {

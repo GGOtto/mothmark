@@ -3,7 +3,7 @@ import {compareIds, type ID} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import {createRoomMessage} from "../messages/createRoomMessage";
 import {getRoom} from "../utils/lookupUtils";
-import {createRoomState} from "./createEntityState";
+import {createItemState, createRoomState} from "./createEntityState";
 
 export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
 	const startingRoom = getRoom(world, startingRoomId);
@@ -18,9 +18,13 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 			counters: world.initialState.counters.map(({counter, value}) => ({
 				[String(counter)]: Number(value),
 			})),
+			texts: world.initialState.texts.map(({text, value}) => ({
+				[String(text)]: String(value),
+			})),
 			command: [],
 		},
 		roomStates: world.rooms.map(createRoomState),
+		itemStates: world.items.map(createItemState),
 		events: [...(world.events ?? [])].sort((left, right) => right.priority - left.priority),
 		messages: [],
 	};

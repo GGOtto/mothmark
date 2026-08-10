@@ -7,12 +7,14 @@ import {replaceRoomDraft} from "@/app/editor/utils/worldDraftUtils";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
 import {compareIds, idValue, toID, updateWorldEntityId} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
+import {RoomStartingItems} from "./RoomStartingItems";
 
 type RoomEditorProps = {
 	selectedRoom: Room;
 	world?: World;
 	updateWorld?: UpdateWorld;
 	onSelectedIdChange?: (selectedId: string) => void;
+	onOpenItem?: (itemId: string) => void;
 };
 
 export function RoomEditor({
@@ -20,6 +22,7 @@ export function RoomEditor({
 	world,
 	updateWorld,
 	onSelectedIdChange,
+	onOpenItem,
 }: RoomEditorProps) {
 	const {theme} = useTheme();
 	const duplicateRoomId = useMemo(() => {
@@ -78,6 +81,15 @@ export function RoomEditor({
 				className="roomEditorUniversal"
 				allowDelete={true}
 			/>
+
+			{world && updateWorld ? (
+				<RoomStartingItems
+					room={selectedRoom}
+					world={world}
+					updateWorld={updateWorld}
+					onOpenItem={onOpenItem}
+				/>
+			) : null}
 		</div>
 	);
 }

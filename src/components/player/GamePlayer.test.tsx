@@ -46,14 +46,14 @@ describe("GamePlayer focus", () => {
 
 describe("CommandLine room sync", () => {
 	it("teleports to the selected room without resetting prior player output", () => {
-		render(<CommandLine world={initialWorld} selectedRoomId="guardroom" />);
+		render(<CommandLine world={initialWorld} selectedRoomId="stockroom" />);
 
-		expect(screen.getByText(/Dungeon Entrance/)).toBeInTheDocument();
-		expect(screen.queryByText(/^Guardroom/)).not.toBeInTheDocument();
+		expect(screen.getByText(/Shop Floor/)).toBeInTheDocument();
+		expect(screen.queryByText(/^Stockroom/)).not.toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", {name: "Sync Room"}));
 
-		expect(screen.getByText(/Dungeon Entrance/)).toBeInTheDocument();
-		expect(screen.getByText(/^Guardroom/)).toBeInTheDocument();
+		expect(screen.getByText(/Shop Floor/)).toBeInTheDocument();
+		expect(screen.getByText(/^Stockroom/)).toBeInTheDocument();
 	});
 });

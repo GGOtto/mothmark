@@ -190,8 +190,9 @@ describe("resolveConditionBranchWithResult", () => {
 						{
 							type: "flag",
 							"flag-type": "normal",
-							operation: "true",
+							operation: "is",
 							flag: "ready",
+							value: true,
 						},
 					],
 				},

@@ -165,7 +165,7 @@ describe("EventEditor", () => {
 		expect(scrollTo).toHaveBeenCalledWith({top: 0, behavior: "smooth"});
 	});
 
-	it("adds a saved one-effect group and stores its reference in the branch group", () => {
+	it("adds a saved one-effect group and opens its editor directly", () => {
 		let world = createWorld((draft) => {
 			draft.effects = [];
 			draft.events = [
@@ -196,14 +196,16 @@ describe("EventEditor", () => {
 		const onSelectionChange = jest.fn();
 
 		render(
-			<EventEditor
-				world={world}
-				updateWorld={updateWorld}
-				selectedEventId="test-event"
-				onSelectedEventIdChange={jest.fn()}
-				selection={null}
-				onSelectionChange={onSelectionChange}
-			/>,
+			<PopupProvider>
+				<EventEditor
+					world={world}
+					updateWorld={updateWorld}
+					selectedEventId="test-event"
+					onSelectedEventIdChange={jest.fn()}
+					selection={null}
+					onSelectionChange={onSelectionChange}
+				/>
+			</PopupProvider>,
 		);
 
 		fireEvent.click(screen.getByRole("button", {name: "Add an effect"}));
@@ -213,11 +215,38 @@ describe("EventEditor", () => {
 		expect(world.events?.[0].branch.always?.effects).toEqual([
 			{type: "effect-ref", effectId: toID("effect", idValue(world.effects[0].id))},
 		]);
-		expect(onSelectionChange).toHaveBeenCalledWith({
-			kind: "effect-group",
-			eventId: "test-event",
-			effectId: idValue(world.effects[0].id),
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeInTheDocument();
+		expect(onSelectionChange).not.toHaveBeenCalled();
+	});
+
+	it("opens a branch condition directly without changing the inspector selection", () => {
+		const event = produce(createTestEvent(), (draft) => {
+			draft.branch.if = createTestConditionalBranch("if");
 		});
+		const world = createWorld((draft) => {
+			draft.events = [event];
+		});
+		const onSelectionChange = jest.fn();
+
+		const view = render(
+			<PopupProvider>
+				<EventEditor
+					world={world}
+					updateWorld={jest.fn()}
+					selectedEventId="test-event"
+					onSelectedEventIdChange={jest.fn()}
+					selection={null}
+					onSelectionChange={onSelectionChange}
+				/>
+			</PopupProvider>,
+		);
+
+		fireEvent.click(view.container.querySelector<HTMLButtonElement>(".logicBranch__condition")!);
+
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "Edit condition"})).toBeInTheDocument();
+		expect(onSelectionChange).not.toHaveBeenCalled();
 	});
 
 	it("reorders branch effect-group references while dragging over another effect", () => {

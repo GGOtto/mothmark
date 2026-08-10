@@ -1,0 +1,140 @@
+{
+	"id": {
+		"type": "command",
+		"id": "put-on"
+	},
+	"name": "Put on",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-on-verb"
+					},
+					"type": "phrase",
+					"matches": ["put", "place"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-on-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["takeable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-on-relation"
+					},
+					"type": "relation",
+					"relation": "on",
+					"aliasMode": "defaults",
+					"aliases": [],
+					"role": "placement"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-on-target"
+					},
+					"type": "target",
+					"role": "indirect-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["surface"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 1,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "put-on-item"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-on-item-fallback"},
+				"always": {
+					"name": "Cannot resolve held item",
+					"id": {"type": "effect", "id": "put-on-item-fallback-effects"},
+					"type": "group",
+					"effects": [
+						{"type": "message", "operation": "show", "message": "You can't put that anywhere."}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {"type": "command-block", "id": "put-on-target"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-on-target-fallback"},
+				"always": {
+					"name": "Cannot resolve surface",
+					"id": {"type": "effect", "id": "put-on-target-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't put it on that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "put-on-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "put-on-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "put-on",
+					"itemId": {
+						"type": "item",
+						"id": "put-on-item-fallback"
+					},
+					"surfaceId": {
+						"type": "item",
+						"id": "put-on-target-fallback"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "put-on-item"
+							},
+							"field": "itemId"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "put-on-target"
+							},
+							"field": "surfaceId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

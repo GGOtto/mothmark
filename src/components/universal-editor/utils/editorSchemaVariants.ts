@@ -106,13 +106,20 @@ export function schemaVariantValue(variant: EditorSchemaVariant, field: string) 
 	return variant.shape[field] ? getSchemaFieldValues(variant.shape[field])[0] : undefined;
 }
 
+function schemaVariantSupportsValue(variant: EditorSchemaVariant, field: string, selected: string) {
+	return variant.shape[field]
+		? getSchemaFieldValues(variant.shape[field]).includes(selected)
+		: false;
+}
+
 export function findEditorSchemaVariant(
 	schema: z.ZodTypeAny,
 	selection: Record<string, string | undefined>,
 ) {
 	return getEditorSchemaVariants(schema).find((variant) =>
 		Object.entries(selection).every(
-			([field, selected]) => selected === undefined || schemaVariantValue(variant, field) === selected,
+			([field, selected]) =>
+				selected === undefined || schemaVariantSupportsValue(variant, field, selected),
 		),
 	);
 }
@@ -127,7 +134,7 @@ export function schemaFieldOptions(
 		if (
 			!Object.entries(selection).every(
 				([key, selected]) =>
-					selected === undefined || key === field || schemaVariantValue(variant, key) === selected,
+					selected === undefined || key === field || schemaVariantSupportsValue(variant, key, selected),
 			)
 		)
 			continue;

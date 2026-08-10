@@ -5,7 +5,11 @@ import type {EditorControlMetadata, EditorControlProps} from "@/types/universalE
 import {resolveEditorControlAppearance} from "@/types/universalEditorTypes";
 import {FieldShell} from "@/components/universal-editor/FieldShell";
 import {compareIds} from "@/utils/idUtils";
-import {inlineVariableOptions, type CommandVariableEditorContext} from "./model";
+import {
+	inlineVariableOptions,
+	type CommandVariableEditorContext,
+	unavailableVariableMessage,
+} from "./model";
 import {parseVariableText, serializeVariableReference} from "./syntax";
 import {VariableMenu} from "./VariableMenu";
 import "./variableEditor.scss";
@@ -241,7 +245,17 @@ export function VariableTextEditor({
 					}}
 				/>
 				<div className="variableTextEditor__toolbar">
-					<VariableMenu options={options} onSelect={insertVariable} disabled={!canEdit} />
+					<VariableMenu
+						options={options}
+						onSelect={insertVariable}
+						disabled={!canEdit}
+						disabledReason={unavailableVariableMessage("string")}
+					/>
+					{options.length === 0 ? (
+						<span className="variableTextEditor__unavailable">
+							{unavailableVariableMessage("string")}
+						</span>
+					) : null}
 				</div>
 			</div>
 		</FieldShell>

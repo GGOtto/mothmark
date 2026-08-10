@@ -28,9 +28,9 @@ describe("resolveTurn", () => {
 		const game = createInitialGameState(world, world.startRoomId);
 		const nextGame = resolveTurn(world, game, "east");
 
-		expect(idValue(nextGame.player.currentRoom)).toBe("guardroom");
+		expect(idValue(nextGame.player.currentRoom)).toBe("stockroom");
 		expect(
-			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
+			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "stockroom")?.flags.visited,
 		).toBe(true);
 		expect(nextGame.messages.at(-1)).toMatchObject({type: "room"});
 	});

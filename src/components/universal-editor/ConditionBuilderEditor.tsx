@@ -1341,7 +1341,7 @@ function ConditionLeafFields({
 					})
 				: null}
 			{Object.entries(variant.shape)
-				.filter(([key]) => !["type", "flag-type", "operation"].includes(key))
+				.filter(([key]) => !["type", "flag-type", "operation", "commandVariables"].includes(key))
 				.map(([key, fieldSchema]) => {
 					const fieldMetadata = resolveEditorMetadata(fieldSchema);
 					return (

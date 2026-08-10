@@ -1,0 +1,172 @@
+{
+	"id": {"type": "command", "id": "command-1"},
+	"name": "Travel",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "command-block-1"},
+					"type": "phrase",
+					"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-2"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": []
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "command-block-1"},
+					"type": "phrase",
+					"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-3"},
+					"type": "relation",
+					"relation": "to",
+					"aliasMode": "defaults",
+					"aliases": []
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-2"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": []
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "command-block-1"},
+					"type": "phrase",
+					"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-3"},
+					"type": "relation",
+					"relation": "to",
+					"aliasMode": "defaults",
+					"aliases": []
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-4"},
+					"type": "phrase",
+					"matches": ["the"]
+				},
+				{
+					"id": {"type": "command-block", "id": "command-block-2"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": []
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "command-block-2"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": []
+				}
+			]
+		}
+	],
+	"scope": {"scope": "global"},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "command-block-2"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "command-block-2-fallback"},
+				"always": {
+					"name": "Always",
+					"id": {"type": "effect", "id": "command-1-always"},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"commandVariables": [],
+							"message": "That's not a direction you can go."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		}
+	],
+	"behavior": {
+		"id": {"type": "condition-branch", "id": "command-1-branch"},
+		"if": {
+			"condition": {
+				"type": "group",
+				"operation": "all",
+				"conditions": [
+					{
+						"type": "current-room",
+						"operation": "is-exit-open",
+						"commandVariables": [
+							{
+								"blockId": {"type": "command-block", "id": "command-block-2"},
+								"field": "direction"
+							}
+						],
+						"direction": "n",
+						"id": {"type": "condition", "id": "flag-1"},
+						"name": "Flag 1"
+					}
+				]
+			},
+			"effect": {
+				"name": "If",
+				"id": {"type": "effect", "id": "command-1-if"},
+				"type": "group",
+				"effects": [
+					{
+						"type": "player",
+						"operation": "move-in-direction",
+						"commandVariables": [
+							{
+								"blockId": {"type": "command-block", "id": "command-block-2"},
+								"field": "direction"
+							}
+						],
+						"direction": "n"
+					},
+					{
+						"type": "message",
+						"operation": "current-room-description",
+						"allowShorten": true,
+						"commandVariables": []
+					}
+				],
+				"allowMultipleUsesInWorld": true
+			},
+			"delayTurns": 0,
+			"cancelIfConditionFails": true
+		},
+		"elifs": [],
+		"else": {
+			"name": "Else",
+			"id": {"type": "effect", "id": "command-1-else"},
+			"type": "group",
+			"effects": [
+				{
+					"type": "message",
+					"operation": "show",
+					"commandVariables": [],
+					"message": "You can't go that way."
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

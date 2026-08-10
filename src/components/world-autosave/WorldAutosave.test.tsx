@@ -2,24 +2,43 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import type {World} from "@/schemas/world/worldSchema";
+import {deleteWorldDraft, writeWorldDraft} from "./worldDraftStorage";
 
 import {
 	WorldAutosaveIndicator,
 	WorldAutosaveProvider,
 	WorldResetButton,
+	WorldSwitcher,
 	useWorldAutosaveRegistration,
 } from "./WorldAutosave";
 
+jest.mock("./worldDraftStorage", () => ({
+	deleteWorldDraft: jest.fn().mockResolvedValue(undefined),
+	writeWorldDraft: jest.fn().mockResolvedValue(true),
+}));
+
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
+const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const handlePersisted = jest.fn();
 const handleReset = jest.fn();
 
-function AutosaveHarness({world, revision = 1}: {world: World; revision?: number}) {
+function AutosaveHarness({
+	world,
+	revision = 1,
+	restoredFromLocalDraft = false,
+}: {
+	world: World;
+	revision?: number;
+	restoredFromLocalDraft?: boolean;
+}) {
 	useWorldAutosaveRegistration({
 		ready: true,
 		world,
 		worldId,
+		userId,
+		worldName: "Main world",
 		revision,
+		restoredFromLocalDraft,
 		onPersisted: handlePersisted,
 		onReset: handleReset,
 	});
@@ -27,6 +46,7 @@ function AutosaveHarness({world, revision = 1}: {world: World; revision?: number
 	return (
 		<>
 			<WorldAutosaveIndicator />
+			<WorldSwitcher />
 			<WorldResetButton />
 		</>
 	);
@@ -52,8 +72,11 @@ const flushPromises = async () => {
 describe("world autosave", () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
+		document.cookie = "mothmark_editor_csrf=csrf-token; Path=/";
 		handlePersisted.mockReset();
 		handleReset.mockReset();
+		jest.mocked(deleteWorldDraft).mockClear();
+		jest.mocked(writeWorldDraft).mockClear();
 	});
 
 	afterEach(() => {
@@ -61,6 +84,7 @@ describe("world autosave", () => {
 		jest.useRealTimers();
 		jest.restoreAllMocks();
 		Reflect.deleteProperty(globalThis, "fetch");
+		document.cookie = "mothmark_editor_csrf=; Max-Age=0; Path=/";
 	});
 
 	it("saves the latest world after editing settles", async () => {
@@ -83,7 +107,7 @@ describe("world autosave", () => {
 		);
 
 		await act(async () => {
-			jest.advanceTimersByTime(1_999);
+			jest.advanceTimersByTime(9_999);
 			await flushPromises();
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -98,17 +122,123 @@ describe("world autosave", () => {
 			`/api/world/${worldId}`,
 			expect.objectContaining({
 				method: "PUT",
+				headers: {"content-type": "application/json", "x-csrf-token": "csrf-token"},
 				body: JSON.stringify({world: updatedWorld, expectedRevision: 1}),
 			}),
 		);
 		expect(handlePersisted).toHaveBeenCalledWith(worldId, 2);
+		expect(deleteWorldDraft).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("opens an accessibly named switcher, focuses a recent world, and closes with Escape", async () => {
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: true,
+			json: jest.fn().mockResolvedValue({
+				data: {
+					worlds: [
+						{editorSlug: "main-world", id: worldId, name: "Main world"},
+						{
+							editorSlug: "second-world",
+							id: "f76f909d-5c82-4b04-aec6-85c9a175e1a2",
+							name: "Second world",
+						},
+					],
+				},
+			}),
+		});
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		renderAutosaveHarness(initialWorld);
+
+		const trigger = screen.getByRole("button", {name: "Current world: Main world"});
+		fireEvent.click(trigger);
+		await act(flushPromises);
+
+		const recentWorld = screen.getByRole("menuitem", {name: "Second world"});
+		expect(recentWorld).toHaveFocus();
+		fireEvent.keyDown(recentWorld, {key: "Escape"});
+		expect(screen.queryByRole("menu", {name: "Switch worlds"})).not.toBeInTheDocument();
+		expect(trigger).toHaveFocus();
+
+		fireEvent.click(trigger);
+		await act(flushPromises);
+		expect(screen.getByRole("menu", {name: "Switch worlds"})).toBeInTheDocument();
+		fireEvent.pointerDown(document.body);
+		expect(screen.queryByRole("menu", {name: "Switch worlds"})).not.toBeInTheDocument();
+	});
+
+	it("checkpoints edits to IndexedDB before syncing them to the server", async () => {
+		const updatedWorld = {
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Local checkpoint"},
+		};
+		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		const view = renderAutosaveHarness(initialWorld);
+
+		view.rerender(
+			<WorldAutosaveProvider>
+				<AutosaveHarness world={updatedWorld} />
+			</WorldAutosaveProvider>,
+		);
+
+		await act(async () => {
+			jest.advanceTimersByTime(500);
+			await flushPromises();
+		});
+
+		expect(writeWorldDraft).toHaveBeenCalledWith({
+			userId,
+			world: updatedWorld,
+			worldId,
+			baseServerRevision: 1,
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("syncs a restored local draft back to the server", async () => {
+		const restoredWorld = {
+			...initialWorld,
+			metadata: {...initialWorld.metadata, title: "Recovered draft"},
+		};
+		const fetchMock = jest.fn().mockResolvedValue(successfulSave(2));
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+
+		render(
+			<WorldAutosaveProvider>
+				<AutosaveHarness world={restoredWorld} restoredFromLocalDraft />
+			</WorldAutosaveProvider>,
+		);
+
+		await act(async () => {
+			jest.advanceTimersByTime(10_000);
+			await flushPromises();
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			`/api/world/${worldId}`,
+			expect.objectContaining({
+				body: JSON.stringify({world: restoredWorld, expectedRevision: 1}),
+			}),
+		);
 	});
 
 	it("resets a registered world after confirmation even when it has no edits", () => {
 		jest.spyOn(window, "confirm").mockReturnValue(true);
 		renderAutosaveHarness(initialWorld);
 
-		fireEvent.click(screen.getByRole("button", {name: "Reset example"}));
+		fireEvent.click(screen.getByRole("button", {name: "Reset to starter world"}));
 
 		expect(handleReset).toHaveBeenCalledTimes(1);
 	});
@@ -143,7 +273,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -192,7 +322,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		expect(screen.getByText("Saving...")).toBeInTheDocument();
@@ -242,7 +372,7 @@ describe("world autosave", () => {
 		expect(queuedUnload.defaultPrevented).toBe(true);
 
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 		const savedUnload = new Event("beforeunload", {cancelable: true});
@@ -280,7 +410,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 
@@ -316,7 +446,7 @@ describe("world autosave", () => {
 			</WorldAutosaveProvider>,
 		);
 		await act(async () => {
-			jest.advanceTimersByTime(2_000);
+			jest.advanceTimersByTime(10_000);
 			await flushPromises();
 		});
 

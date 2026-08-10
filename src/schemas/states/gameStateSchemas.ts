@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
-import {RoomStateSchema} from "./entityStateSchemas";
+import {ItemStateSchema, RoomStateSchema} from "./entityStateSchemas";
 import {PlayerStateSchemas} from "./playerStateSchemas";
 import {EventSchema} from "../world/eventSchema";
 import {DirectionSchema} from "../world/roomSchema";
@@ -17,6 +17,8 @@ export const GameMessageSchema = z.object({
 export const FlagSchema = z.record(z.string(), z.boolean());
 
 export const CounterSchema = z.record(z.string(), z.number().int());
+
+export const TextVariableSchema = z.record(z.string(), z.string());
 
 const CommandBlockIdSchema = editor.id("command-block");
 
@@ -97,6 +99,7 @@ export const CommandVariableRepositorySchema = z
 export const VariableRepositorySchema = z.object({
 	flags: z.array(FlagSchema),
 	counters: z.array(CounterSchema),
+	texts: z.array(TextVariableSchema).default([]),
 	command: CommandVariableRepositorySchema,
 });
 
@@ -104,6 +107,7 @@ export const GameStateSchema = z.object({
 	player: PlayerStateSchemas,
 	variables: VariableRepositorySchema,
 	roomStates: z.array(RoomStateSchema),
+	itemStates: z.array(ItemStateSchema),
 	messages: z.array(GameMessageSchema),
 	events: z.array(EventSchema),
 });
@@ -112,6 +116,7 @@ export type GameMessageType = z.infer<typeof GameMessageTypeSchema>;
 export type GameMessage = z.infer<typeof GameMessageSchema>;
 export type Flag = z.infer<typeof FlagSchema>;
 export type Counter = z.infer<typeof CounterSchema>;
+export type TextVariable = z.infer<typeof TextVariableSchema>;
 export type CommandVariable = z.infer<typeof CommandVariableSchema>;
 export type VariableRepository = z.infer<typeof VariableRepositorySchema>;
 export type GameState = z.infer<typeof GameStateSchema>;

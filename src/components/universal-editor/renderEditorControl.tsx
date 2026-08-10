@@ -1,6 +1,7 @@
 import {ArrayEditor, type ArrayEditorProps} from "./ArrayEditor";
 import {CodePreviewEditor, type CodePreviewEditorProps} from "./CodePreviewEditor";
 import {ConditionBuilderEditor, type ConditionBuilderEditorProps} from "./ConditionBuilderEditor";
+import {CounterPickerEditor, type CounterPickerEditorProps} from "./CounterPickerEditor";
 import {
 	DiscriminatedUnionEditor,
 	type DiscriminatedUnionEditorProps,
@@ -12,6 +13,7 @@ import {FlagPickerEditor, type FlagPickerEditorProps} from "./FlagPickerEditor";
 import {HiddenEditor, type HiddenEditorProps} from "./HiddenEditor";
 import {LinkListEditor, type LinkListEditorProps} from "./LinkListEditor";
 import {MessageEditor, type MessageEditorProps} from "./MessageEditor";
+import {LogicControlPopup} from "./LogicControlPopup";
 import {MultiSelectEditor, type MultiSelectEditorProps} from "./MultiSelectEditor";
 import {NumberFieldEditor, type NumberFieldProps} from "./NumberFieldEditor";
 import {ObjectEditor, type ObjectEditorProps} from "./ObjectEditor";
@@ -48,6 +50,7 @@ import {
 import {TagListEditor, type TagListEditorProps} from "./TagListEditor";
 import {TextField, type TextFieldProps} from "./TextFieldEditor";
 import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
+import {TextPickerEditor, type TextPickerEditorProps} from "./TextPickerEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../types/universalEditorTypes";
 import {FieldShellDisclosureProvider} from "./FieldShell";
@@ -151,12 +154,21 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 			return <ConditionalTextEditor {...(props as SpecializedEditorProps)} />;
 
 		case "condition-builder":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as ConditionBuilderEditorProps)} />;
+			}
 			return <ConditionBuilderEditor {...(props as ConditionBuilderEditorProps)} />;
 
 		case "effect":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as EffectEditorProps)} />;
+			}
 			return <EffectEditor {...(props as EffectEditorProps)} />;
 
 		case "effect-list":
+			if (props.context.logicEditorPresentation !== "inline") {
+				return <LogicControlPopup {...(props as EffectListEditorProps)} />;
+			}
 			return <EffectListEditor {...(props as EffectListEditorProps)} />;
 
 		case "logic-branch-list":
@@ -179,6 +191,12 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 
 		case "flag-picker":
 			return <FlagPickerEditor {...(props as FlagPickerEditorProps)} />;
+
+		case "counter-picker":
+			return <CounterPickerEditor {...(props as CounterPickerEditorProps)} />;
+
+		case "text-picker":
+			return <TextPickerEditor {...(props as TextPickerEditorProps)} />;
 
 		case "flag-editor":
 			return <FlagEditor {...(props as SpecializedEditorProps)} />;

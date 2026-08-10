@@ -8,7 +8,7 @@ import {EntityPickerEditor, type EntityPickerControlMetadata} from "./EntityPick
 
 const registry: EntityRegistry = {
 	getEntities: (type) =>
-		type === "feature"
+		type === "item"
 			? [
 					{id: "table", label: "Kitchen table", parentId: "kitchen"},
 					{id: "table", label: "Library table", parentId: "library"},
@@ -21,7 +21,7 @@ const registry: EntityRegistry = {
 const metadata: EntityPickerControlMetadata = {
 	type: "entity-picker",
 	title: "Feature",
-	features: {entityType: "feature", scope: "sibling-room"},
+	features: {entityType: "item", scope: "sibling-room"},
 };
 
 describe("EntityPickerEditor", () => {
@@ -39,10 +39,10 @@ describe("EntityPickerEditor", () => {
 		render(
 			<PopupProvider>
 				<EntityPickerEditor
-					value={toID("feature", "")}
+					value={toID("item", "")}
 					onChange={onChange}
 					metadata={metadata}
-					path={["effects", 0, "featureId"]}
+					path={["effects", 0, "itemId"]}
 					context={context}
 				/>
 			</PopupProvider>,
@@ -52,6 +52,6 @@ describe("EntityPickerEditor", () => {
 		expect(screen.getByRole("option", {name: /Kitchen table/})).toBeInTheDocument();
 		expect(screen.queryByRole("option", {name: /Library table/})).not.toBeInTheDocument();
 		await user.click(screen.getByRole("option", {name: /Kitchen table/}));
-		expect(onChange).toHaveBeenCalledWith(toID("feature", "table"));
+		expect(onChange).toHaveBeenCalledWith(toID("item", "table"));
 	});
 });

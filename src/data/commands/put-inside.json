@@ -1,0 +1,140 @@
+{
+	"id": {
+		"type": "command",
+		"id": "put-inside"
+	},
+	"name": "Put inside",
+	"enabled": true,
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-inside-verb"
+					},
+					"type": "phrase",
+					"matches": ["put", "place"]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-inside-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["takeable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-inside-relation"
+					},
+					"type": "relation",
+					"relation": "in",
+					"aliasMode": "defaults",
+					"aliases": [],
+					"role": "placement"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "put-inside-target"
+					},
+					"type": "target",
+					"role": "indirect-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["container"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 1,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "put-inside-item"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-inside-item-fallback"},
+				"always": {
+					"name": "Cannot resolve held item",
+					"id": {"type": "effect", "id": "put-inside-item-fallback-effects"},
+					"type": "group",
+					"effects": [
+						{"type": "message", "operation": "show", "message": "You can't put that anywhere."}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {"type": "command-block", "id": "put-inside-target"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "put-inside-target-fallback"},
+				"always": {
+					"name": "Cannot resolve container",
+					"id": {"type": "effect", "id": "put-inside-target-fallback-effects"},
+					"type": "group",
+					"effects": [{"type": "message", "operation": "show", "message": "You can't put it in that."}],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "put-inside-branch"
+		},
+		"always": {
+			"name": "Always",
+			"id": {
+				"type": "effect",
+				"id": "put-inside-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "item-action",
+					"action": "put-inside",
+					"itemId": {
+						"type": "item",
+						"id": "put-inside-item-fallback"
+					},
+					"containerId": {
+						"type": "item",
+						"id": "put-inside-target-fallback"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "put-inside-item"
+							},
+							"field": "itemId"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "put-inside-target"
+							},
+							"field": "containerId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

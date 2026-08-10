@@ -21,77 +21,74 @@ function createWorld(recipe: (draft: Draft<World>) => void): World {
 describe("teleport", () => {
 	it("moves the player, preserves game progress, and marks the destination visited", () => {
 		const game = createGame((draft) => {
-			draft.player.currentRoom = toID("room", "guardroom");
+			draft.player.currentRoom = toID("room", "stockroom");
 			draft.player.turns = 7;
 			draft.variables.flags = [{persisted: true}];
 		});
 
-		const nextGame = teleport(initialWorld, game, toID("room", "guardroom"));
+		const nextGame = teleport(initialWorld, game, toID("room", "stockroom"));
 
-		expect(idValue(nextGame.player.currentRoom)).toBe("guardroom");
+		expect(idValue(nextGame.player.currentRoom)).toBe("stockroom");
 		expect(nextGame.player.turns).toBe(7);
 		expect(nextGame.variables.flags).toEqual([{persisted: true}]);
 		expect(
-			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "guardroom")?.flags.visited,
+			nextGame.roomStates.find((roomState) => idValue(roomState.id) === "stockroom")?.flags.visited,
 		).toBe(true);
 		expect(nextGame.messages.at(-1)).toMatchObject({
 			type: "room",
-			roomId: toID("room", "guardroom"),
+			roomId: toID("room", "stockroom"),
 		});
 	});
 
-	it("reconciles missing destination and feature state from the authored world", () => {
+	it("reconciles missing destination state without rebuilding global item state", () => {
 		const game = createGame((draft) => {
-			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "guardroom");
+			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "stockroom");
 		});
 
-		const nextGame = teleport(initialWorld, game, toID("room", "guardroom"));
-		const roomState = nextGame.roomStates.find((state) => idValue(state.id) === "guardroom");
-		const authoredRoom = initialWorld.rooms.find((room) => idValue(room.id) === "guardroom");
+		const nextGame = teleport(initialWorld, game, toID("room", "stockroom"));
+		const roomState = nextGame.roomStates.find((state) => idValue(state.id) === "stockroom");
 
 		expect(roomState).toMatchObject({type: "room", flags: {visited: true}});
-		expect(roomState?.featureStates.map((state) => idValue(state.id))).toEqual(
-			authoredRoom?.features.map((feature) => idValue(feature.id)),
-		);
+		expect(nextGame.itemStates).toEqual(game.itemStates);
 	});
 
 	it("blocks passage-based movement when the runtime active flag is false", () => {
 		const world = createWorld((draft) => {
-			const guardroom = draft.rooms.find((room) => idValue(room.id) === "guardroom");
+			const guardroom = draft.rooms.find((room) => idValue(room.id) === "stockroom");
 			if (guardroom) guardroom.flags.active = true;
 		});
 		const initialGame = createInitialGameState(world, world.startRoomId);
 		const configuredGame = produce(initialGame, (draft) => {
-			const guardroom = draft.roomStates.find((state) => idValue(state.id) === "guardroom");
+			const guardroom = draft.roomStates.find((state) => idValue(state.id) === "stockroom");
 			if (guardroom) guardroom.flags.active = false;
 		});
 		const game = {...createDefaultFieldObject(GameStateSchema), ...configuredGame};
 
-		const blockedGame = teleport(world, game, toID("room", "guardroom"), {
+		const blockedGame = teleport(world, game, toID("room", "stockroom"), {
 			respectActiveFlag: true,
 		});
-		const teleportedGame = teleport(world, game, toID("room", "guardroom"));
+		const teleportedGame = teleport(world, game, toID("room", "stockroom"));
 
 		expect(idValue(blockedGame.player.currentRoom)).toBe(idValue(game.player.currentRoom));
 		expect(blockedGame.messages.at(-1)).toMatchObject({
 			type: "system",
 			text: "You can't go that way.",
 		});
-		expect(idValue(teleportedGame.player.currentRoom)).toBe("guardroom");
+		expect(idValue(teleportedGame.player.currentRoom)).toBe("stockroom");
 	});
 
 	it("falls back to the authored active flag when runtime room state is missing", () => {
 		const world = createWorld((draft) => {
-			const guardroom = draft.rooms.find((room) => idValue(room.id) === "guardroom");
+			const guardroom = draft.rooms.find((room) => idValue(room.id) === "stockroom");
 			if (guardroom) guardroom.flags.active = false;
 		});
 		const initialGame = createInitialGameState(world, world.startRoomId);
 		const configuredGame = produce(initialGame, (draft) => {
-			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "guardroom");
+			draft.roomStates = draft.roomStates.filter((state) => idValue(state.id) !== "stockroom");
 		});
 		const game = {...createDefaultFieldObject(GameStateSchema), ...configuredGame};
 
-		const result = teleport(world, game, toID("room", "guardroom"), {
+		const result = teleport(world, game, toID("room", "stockroom"), {
 			respectActiveFlag: true,
 		});
 

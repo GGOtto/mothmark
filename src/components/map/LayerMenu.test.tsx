@@ -80,13 +80,13 @@ describe("LayerMenu", () => {
 
 	it("zooms the preview without changing the displayed layer", () => {
 		const {container} = renderLayerMenu();
-		const preview = screen.getByLabelText("Ground Level preview");
+		const preview = screen.getByLabelText("Main floor preview");
 		const viewport = container.querySelector<HTMLElement>(".layerPreviewViewport")!;
 		const initialTransform = viewport.style.transform;
 
 		fireEvent.wheel(preview, {clientX: 100, clientY: 100, deltaY: -100});
 
-		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		expect(screen.getByLabelText("Main floor preview")).toBeInTheDocument();
 		expect(viewport.style.transform).not.toBe(initialTransform);
 	});
 
@@ -97,9 +97,9 @@ describe("LayerMenu", () => {
 
 		expect(buttons).toHaveLength(101);
 		expect(buttons[0]).toHaveTextContent("Upper 50");
-		expect(buttons[49]).toHaveTextContent("Upper Works");
-		expect(buttons[50]).toHaveTextContent("Ground Level");
-		expect(buttons[51]).toHaveTextContent("Lower Crypts");
+		expect(buttons[49]).toHaveTextContent("Upstairs");
+		expect(buttons[50]).toHaveTextContent("Main floor");
+		expect(buttons[51]).toHaveTextContent("Basement");
 		expect(buttons[100]).toHaveTextContent("Lower 50");
 	});
 
@@ -130,26 +130,24 @@ describe("LayerMenu", () => {
 			jest.spyOn(button, "getBoundingClientRect").mockReturnValue(domRect(1000, 44));
 		}
 		jest
-			.spyOn(screen.getByRole("button", {name: "Upper Works"}), "getBoundingClientRect")
+			.spyOn(screen.getByRole("button", {name: "Upstairs"}), "getBoundingClientRect")
 			.mockReturnValue(domRect(128, 44));
 
 		fireEvent.scroll(layerList);
 
-		expect(screen.getByLabelText("Upper Works preview")).toBeInTheDocument();
-		expect(screen.getByRole("button", {name: "Upper Works"})).toHaveClass(
-			"layerMenu--left__selected",
-		);
+		expect(screen.getByLabelText("Upstairs preview")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Upstairs"})).toHaveClass("layerMenu--left__selected");
 	});
 
 	it("smoothly centers a clicked layer instead of selecting it off-center", () => {
 		renderLayerMenu();
-		const upperLayerButton = screen.getByRole("button", {name: "Upper Works"});
+		const upperLayerButton = screen.getByRole("button", {name: "Upstairs"});
 		const scrollIntoView = jest.fn();
 		Object.defineProperty(upperLayerButton, "scrollIntoView", {value: scrollIntoView});
 
 		fireEvent.click(upperLayerButton);
 
-		expect(screen.getByLabelText("Ground Level preview")).toBeInTheDocument();
+		expect(screen.getByLabelText("Main floor preview")).toBeInTheDocument();
 		expect(scrollIntoView).toHaveBeenCalledWith({
 			behavior: "smooth",
 			block: "center",
