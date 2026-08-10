@@ -31,6 +31,20 @@ export type StorageContract = {
 
 const hashText = (value: string): string => createHash("sha256").update(value).digest("hex");
 
+const canonicalJsonValue = (value: unknown): unknown => {
+	if (Array.isArray(value)) return value.map(canonicalJsonValue);
+	if (value && typeof value === "object")
+		return Object.fromEntries(
+			Object.entries(value as Record<string, unknown>)
+				.sort(([left], [right]) => left.localeCompare(right))
+				.map(([key, child]) => [key, canonicalJsonValue(child)]),
+		);
+	return value;
+};
+
+const canonicalJson = (value: unknown): string | undefined =>
+	JSON.stringify(canonicalJsonValue(value));
+
 function serializable(value: unknown, seen = new WeakSet<object>()): unknown {
 	if (
 		value === null ||
@@ -173,7 +187,7 @@ export function serializeStorageContract(contract: StorageContract): string {
 }
 
 export function storageContractDigest(contract: StorageContract): string {
-	return hashText(JSON.stringify(contract));
+	return hashText(canonicalJson(contract) ?? "");
 }
 
 function acceptsMissing(node: StorageContractNode): boolean {
@@ -185,7 +199,7 @@ function compatibleNode(
 	candidate: StorageContractNode,
 	path: string,
 ): string[] {
-	if (JSON.stringify(previous) === JSON.stringify(candidate)) return [];
+	if (canonicalJson(previous) === canonicalJson(candidate)) return [];
 
 	if (candidate.kind === "optional") return compatibleNode(previous, candidate.input!, path);
 	if (candidate.kind === "default" || candidate.kind === "prefault") {
@@ -198,14 +212,14 @@ function compatibleNode(
 	if (previous.kind === "default" || previous.kind === "prefault") {
 		if (
 			candidate.kind !== previous.kind ||
-			JSON.stringify(candidate.defaultValue) !== JSON.stringify(previous.defaultValue)
+			canonicalJson(candidate.defaultValue) !== canonicalJson(previous.defaultValue)
 		)
 			return [`${path} changed its stored default.`];
 		return compatibleNode(previous.input!, candidate.input!, path);
 	}
 	if (previous.kind !== candidate.kind)
 		return [`${path} changed from ${previous.kind} to ${candidate.kind}.`];
-	if (JSON.stringify(previous.checks) !== JSON.stringify(candidate.checks))
+	if (canonicalJson(previous.checks) !== canonicalJson(candidate.checks))
 		return [`${path} changed its validation checks.`];
 
 	if (previous.kind === "object") {
@@ -244,9 +258,9 @@ function compatibleNode(
 			.map((entry) => `${path} no longer accepts enum value ${JSON.stringify(entry)}.`);
 	}
 	if (previous.kind === "literal") {
-		const nextValues = new Set((candidate.values ?? []).map((value) => JSON.stringify(value)));
+		const nextValues = new Set((candidate.values ?? []).map(canonicalJson));
 		return (previous.values ?? [])
-			.filter((value) => !nextValues.has(JSON.stringify(value)))
+			.filter((value) => !nextValues.has(canonicalJson(value)))
 			.map((value) => `${path} no longer accepts ${JSON.stringify(value)}.`);
 	}
 	if (previous.kind === "pipe") {
@@ -271,8 +285,8 @@ export function compareStorageContracts(
 	if (
 		structuralIssues.length === 0 &&
 		previous.schemaSourceDigest !== candidate.schemaSourceDigest &&
-		JSON.stringify({...previous, schemaSourceDigest: ""}) ===
-			JSON.stringify({...candidate, schemaSourceDigest: ""})
+		canonicalJson({...previous, schemaSourceDigest: ""}) ===
+			canonicalJson({...candidate, schemaSourceDigest: ""})
 	)
 		return [
 			"Persisted schema source changed without a detectable additive contract change; use a migration.",

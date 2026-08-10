@@ -7,8 +7,20 @@ import {
 	compareStorageContracts,
 	createStorageContract,
 	serializeStorageContract,
+	storageContractDigest,
 	type StorageContract,
 } from "./storageContract";
+
+const reorderObjectKeys = (value: unknown): unknown => {
+	if (Array.isArray(value)) return value.map(reorderObjectKeys);
+	if (value && typeof value === "object")
+		return Object.fromEntries(
+			Object.entries(value as Record<string, unknown>)
+				.reverse()
+				.map(([key, child]) => [key, reorderObjectKeys(child)]),
+		);
+	return value;
+};
 
 describe("persisted storage contract", () => {
 	it("matches the reviewed root snapshot", () => {
@@ -27,6 +39,15 @@ describe("persisted storage contract", () => {
 		};
 		candidate.gameMessage.properties!.type.entries!.push("notice");
 		expect(compareStorageContracts(previous, candidate)).toEqual([]);
+	});
+
+	it("treats PostgreSQL jsonb key reordering as the same reviewed contract", () => {
+		const contract = createStorageContract();
+		const reordered = reorderObjectKeys(contract) as StorageContract;
+
+		expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(contract));
+		expect(compareStorageContracts(reordered, contract)).toEqual([]);
+		expect(storageContractDigest(reordered)).toBe(storageContractDigest(contract));
 	});
 
 	it("rejects removed fields and new required fields", () => {
