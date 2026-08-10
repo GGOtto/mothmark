@@ -45,13 +45,35 @@ async function useHomePublications(page: Page) {
 					publications: [
 						{
 							authorUsername: "archivekeeper",
-							id: "publication-id",
+							id: "publication-id-1",
 							slug: "quiet-archive",
 							title: "Quiet archive",
 							summary: "A compact world for testing hosted play.",
 							release: {
 								number: 1,
 								publishedAt: "2026-08-09T12:00:00.000Z",
+							},
+						},
+						{
+							authorUsername: "Mothmark",
+							id: "publication-id-2",
+							slug: "corner-shop",
+							title: "Corner Shop",
+							summary: "A small example world with a few useful directions.",
+							release: {
+								number: 2,
+								publishedAt: "2026-08-10T12:00:00.000Z",
+							},
+						},
+						{
+							authorUsername: "mapmaker",
+							id: "publication-id-3",
+							slug: "signal-room",
+							title: "Signal room",
+							summary: "A radio room at the edge of a quiet coast.",
+							release: {
+								number: 1,
+								publishedAt: "2026-08-10T14:00:00.000Z",
 							},
 						},
 					],
@@ -435,6 +457,18 @@ test("the home page example plays through the real command path", async ({page})
 	await page.getByRole("textbox", {name: "Game command"}).press("Enter");
 	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
+	const publicationStack = page.getByLabel("Featured publication stack");
+	await expect(publicationStack).toBeVisible();
+	const firstPublication = page
+		.getByRole("heading", {name: "Quiet archive"})
+		.locator("..")
+		.locator("..")
+		.locator("..");
+	await expect(firstPublication).toHaveAttribute("aria-current", "true");
+	await page.getByRole("button", {name: "Next featured publication"}).click();
+	await expect(
+		page.getByRole("heading", {name: "Corner Shop"}).locator("..").locator("..").locator(".."),
+	).toHaveAttribute("aria-current", "true");
 	const videoButtons = page.getByRole("button", {name: "Watch video"});
 	await expect(videoButtons).toHaveCount(2);
 	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
@@ -455,8 +489,22 @@ test("the home tutorial and videos share a desktop row and stack on mobile", asy
 		videos.boundingBox(),
 	]);
 	expect(Math.abs((desktopTutorial?.y ?? 0) - (desktopVideos?.y ?? 0))).toBeLessThan(2);
+	const desktopPublication = await page.locator(".homeFeaturedCard").first().boundingBox();
+	expect(desktopPublication?.width ?? 0).toBeLessThanOrEqual(900);
+	await expect(page.getByRole("contentinfo").getByText("Notes from Mothmark")).toBeVisible();
 
 	await page.setViewportSize({width: 390, height: 844});
+	await page.locator(".homePage").evaluate((element) => {
+		element.scrollTop = 640;
+	});
+	await page.reload();
+	await expect
+		.poll(() => page.locator(".homePage").evaluate((element) => element.scrollTop))
+		.toBe(0);
+	const commandInputFontSize = await page
+		.getByRole("textbox", {name: "Game command"})
+		.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+	expect(commandInputFontSize).toBeGreaterThanOrEqual(16);
 	const [mobileTutorial, mobileVideos] = await Promise.all([
 		tutorial.boundingBox(),
 		videos.boundingBox(),

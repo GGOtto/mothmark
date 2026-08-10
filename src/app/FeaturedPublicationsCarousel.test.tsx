@@ -10,7 +10,7 @@ describe("FeaturedPublicationsCarousel", () => {
 		global.fetch = originalFetch;
 	});
 
-	it("shows one real publication at a time and advances on request", async () => {
+	it("renders a scrollable publication stack and advances its current card", async () => {
 		const user = userEvent.setup();
 		global.fetch = jest.fn().mockResolvedValue({
 			ok: true,
@@ -41,12 +41,17 @@ describe("FeaturedPublicationsCarousel", () => {
 		render(<FeaturedPublicationsCarousel />);
 
 		await waitFor(() => expect(screen.getByRole("heading", {name: "Quiet archive"})).toBeVisible());
-		expect(screen.queryByRole("heading", {name: "Corner Shop"})).not.toBeInTheDocument();
+		expect(screen.getByLabelText("Featured publication stack")).toHaveClass("homeFeaturedRail");
+		expect(
+			screen.getByRole("heading", {name: "Quiet archive"}).closest(".homeFeaturedSlide"),
+		).toHaveAttribute("aria-current", "true");
 
 		await user.click(screen.getByRole("button", {name: "Next featured publication"}));
 
-		expect(screen.getByRole("heading", {name: "Corner Shop"})).toBeVisible();
-		expect(screen.queryByRole("heading", {name: "Quiet archive"})).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", {name: "Corner Shop"}).closest(".homeFeaturedSlide"),
+		).toHaveAttribute("aria-current", "true");
+		expect(screen.getByText("2 / 2")).toBeVisible();
 		expect(screen.getByRole("link", {name: "Play Corner Shop"})).toHaveAttribute(
 			"href",
 			"/play/corner-shop",
