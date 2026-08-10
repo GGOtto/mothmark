@@ -177,10 +177,10 @@ Vercel creates previews for non-`prod` branches and production deployments for `
 deployment may not have working database access until Phase is synced; that is safe because the
 database migrations were already applied.
 
-The committed `vercel.json` disables Vercel's automatic deployment only for the long-lived
-`staging` branch. That branch is deployed by GitHub Actions after its database gate passes. Leave
-automatic Git deployments enabled for `prod` so the production Deployment Check can gate domain
-promotion, and for ordinary feature-preview branches that do not add shared migrations.
+The committed `vercel.json` disables Vercel's automatic deployment for the long-lived `staging`
+and `prod` branches. GitHub Actions deploys each branch only after its database gate passes. Leave
+automatic Git deployments enabled for ordinary feature-preview branches that do not add shared
+migrations.
 
 ### 6. Protect the deployment
 
@@ -237,10 +237,10 @@ environment before relying on the canonical staging deployment:
 5. Push or merge a commit to `staging` and confirm **Deploy staging / Migrate, validate, and deploy
    staging** succeeds. Do not manually deploy that branch around a failed gate.
 
-The workflow applies migrations before it builds or deploys the exact staging commit. The production
-Deployment Check resolves the direct `production` branch connection through the same Neon integration,
-then follows the gate described in
-`DEPLOYMENT_STORAGE_GATE_README.md`.
+The workflow applies migrations before it builds or deploys the exact staging commit. Configure the
+same Vercel secret and variables in GitHub's `Production` environment. The production workflow
+resolves the direct `production` branch connection, runs the same gate, and only then builds and
+deploys the exact `prod` commit.
 
 ### Configure authentication email and the administrator
 
@@ -477,9 +477,9 @@ preview schema.
 
 Merge the feature into `main`, then promote the reviewed integration candidate to `staging`. After
 the controlled staging workflow succeeds and the canonical staging smoke test passes, promote that
-same commit to `prod`. Vercel builds the production candidate automatically, and its required
-storage compatibility check applies migrations before the production domains move. Repeat the
-production smoke test and check logs after promotion.
+same commit to `prod`. The controlled production workflow applies migrations and validates retained
+content before it builds or assigns the production domains. Repeat the production smoke test and
+check logs after promotion.
 
 ## Weekly preview database refresh
 
@@ -507,7 +507,7 @@ workflow**. Check the workflow result before relying on preview for testing.
 
 Follow the root-level `BREAKING_SCHEMA_MIGRATIONS_README.md` and
 `DEPLOYMENT_STORAGE_GATE_README.md`. The commands below are retained for isolated staging and
-initial setup; routine production migration is performed by the required deployment check.
+initial setup; routine production migration is performed by the controlled production workflow.
 
 Create a migration with a descriptive snake-case name:
 
@@ -595,12 +595,11 @@ URL. Keep `DATABASE_POOL_MIN=0` and begin with `DATABASE_POOL_MAX=1` for Vercel 
 
 ## Automated migration gates
 
-Staging and production migration automation is now active. Staging migrates and validates before
-its GitHub Actions-controlled deployment; production builds first and then migrates and validates
-before Vercel assigns production domains. Both paths run `pnpm release:migrate`, use direct database
-connections, serialize migrations, and retain the previously current deployment when their gate
-fails.
+Staging and production migration automation is now active. Both branches migrate and validate before
+their GitHub Actions-controlled deployments. Both paths run `pnpm release:migrate`, use direct
+database connections, serialize migrations, and retain the previously current deployment when their
+gate fails.
 
-Do not re-enable uncontrolled Vercel Git auto-deployments for `staging`, prepend migrations to the
-Vercel build command, or bypass the production Deployment Check. Keep migrations backward-compatible
+Do not re-enable uncontrolled Vercel Git auto-deployments for `staging` or `prod`, prepend migrations
+to the Vercel build command, or bypass either controlled workflow. Keep migrations backward-compatible
 across the old and candidate application versions.
