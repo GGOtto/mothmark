@@ -883,6 +883,17 @@ test("the world library creates, switches, isolates, and limits private worlds",
 	await page.goto("/worlds");
 	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 	await expect(page.getByText("1 of 3 worlds")).toBeVisible();
+	const initialWorldLink = page.getByRole("link", {name: /Private test world/});
+	await expect(
+		initialWorldLink.getByRole("group", {
+			name: `${initialWorld.metadata.layers.length} map layers`,
+		}),
+	).toBeVisible();
+	await initialWorldLink.hover();
+	await expect(initialWorldLink.locator(".worldFolioSheet--active .worldFolioLabel")).toHaveCSS(
+		"opacity",
+		"1",
+	);
 
 	const createWorld = async (
 		name: string,
@@ -951,6 +962,14 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			Math.abs(triggerBox.y + triggerBox.height / 2 - (iconBox.y + iconBox.height / 2)),
 		).toBeLessThan(1);
 	}
+
+	const libraryScroll = page.locator(".worldLibraryScroll");
+	await libraryScroll.evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
+	});
+	const footer = page.getByRole("contentinfo");
+	await expect(footer.getByRole("heading", {name: "Notes from Mothmark"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 
 	const apiLimitStatus = await page.evaluate(async () => {
 		const response = await fetch("/api/world", {

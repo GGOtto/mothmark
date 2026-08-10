@@ -1,13 +1,16 @@
 "use client";
 
-import {BookOpen, Ellipsis, FilePlus2, Trash2} from "lucide-react";
+import {ArrowUpRight, Ellipsis, FilePlus2, Trash2} from "lucide-react";
 import {useCallback, useEffect, useRef, useState} from "react";
 
+import {SiteFooter} from "@/components/footer/SiteFooter";
 import {
 	deleteWorldDraft,
 	deleteWorldDraftsExceptUser,
 } from "@/components/world-autosave/worldDraftStorage";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+
+import {WorldFolioPreview} from "./WorldFolioPreview";
 
 import "./page.scss";
 
@@ -21,7 +24,7 @@ type LibraryWorld = {
 	revision: number;
 	trashPurgeAfter: string | null;
 	updatedAt: string;
-	world: Pick<World, "items" | "rooms">;
+	world: World;
 	publication: {
 		status: "published" | "unpublished" | "suspended";
 		visibility: "listed" | "unlisted";
@@ -71,6 +74,7 @@ export default function WorldsPage() {
 	const [actionError, setActionError] = useState("");
 	const loadStarted = useRef(false);
 	const lastActionTrigger = useRef<HTMLElement | null>(null);
+	const libraryScroll = useRef<HTMLDivElement | null>(null);
 
 	const loadWorlds = useCallback(
 		async (nextView: "active" | "trash" = view) => {
@@ -109,6 +113,11 @@ export default function WorldsPage() {
 			setLoadingError(error instanceof Error ? error.message : "Worlds could not be loaded.");
 		});
 	}, [loadLibrary]);
+
+	useEffect(() => {
+		libraryScroll.current?.scrollTo({top: 0});
+		window.scrollTo({left: 0, top: 0});
+	}, [view]);
 
 	const atLimit = Boolean(library && library.usage.count >= library.usage.max);
 	const closeDialog = () => {
@@ -234,7 +243,7 @@ export default function WorldsPage() {
 
 	const openDialog = (nextDialog: NonNullable<DialogState>, trigger: HTMLElement) => {
 		lastActionTrigger.current =
-			(trigger.closest(".worldListActions")?.querySelector(".worldActionsTrigger") as HTMLElement) ??
+			(trigger.closest(".worldCardActions")?.querySelector(".worldActionsTrigger") as HTMLElement) ??
 			trigger;
 		setMenuWorldId(null);
 		setActionError("");
@@ -251,9 +260,9 @@ export default function WorldsPage() {
 	const visibleWorlds = view === "active" ? (library?.worlds ?? []) : trash;
 
 	return (
-		<main className="worldsPage">
-			<section className="worldLibrary" aria-labelledby="world-library-title">
-				<header className="worldLibraryHeader">
+		<div className="worldsPage">
+			<header className="worldLibraryHeader">
+				<div className="worldLibraryHeading">
 					<div>
 						<h1 id="world-library-title">{view === "active" ? "My worlds" : "Trash"}</h1>
 						<p>
@@ -272,169 +281,187 @@ export default function WorldsPage() {
 							<FilePlus2 size={15} aria-hidden="true" /> New world
 						</button>
 					) : null}
-				</header>
+				</div>
+				<div className="worldLibraryControls">
+					<nav className="worldLibraryViews" aria-label="World library views">
+						<button
+							type="button"
+							aria-current={view === "active" ? "page" : undefined}
+							onClick={() => {
+								setView("active");
+								void loadWorlds("active");
+							}}
+						>
+							Worlds
+						</button>
+						<button
+							type="button"
+							aria-current={view === "trash" ? "page" : undefined}
+							onClick={() => {
+								setView("trash");
+								void loadWorlds("trash");
+							}}
+						>
+							Trash{trash.length ? ` (${trash.length})` : ""}
+						</button>
+					</nav>
+					{view === "active" && library ? (
+						<div className="worldLibraryUsage">
+							<strong>
+								{library.usage.count} of {library.usage.max} worlds
+							</strong>
+							{atLimit ? <span>Move a world to trash before creating or restoring another.</span> : null}
+						</div>
+					) : null}
+				</div>
+			</header>
 
-				<nav className="worldLibraryViews" aria-label="World library views">
-					<button
-						type="button"
-						aria-current={view === "active" ? "page" : undefined}
-						onClick={() => {
-							setView("active");
-							void loadWorlds("active");
-						}}
-					>
-						Worlds
-					</button>
-					<button
-						type="button"
-						aria-current={view === "trash" ? "page" : undefined}
-						onClick={() => {
-							setView("trash");
-							void loadWorlds("trash");
-						}}
-					>
-						Trash{trash.length ? ` (${trash.length})` : ""}
-					</button>
-				</nav>
+			<div className="worldLibraryScroll" ref={libraryScroll}>
+				<main className="worldLibrary" aria-labelledby="world-library-title">
+					{loadingError || actionError ? (
+						<p className="worldLibraryError" role="alert">
+							{loadingError || actionError}
+						</p>
+					) : null}
 
-				{loadingError || actionError ? (
-					<p className="worldLibraryError" role="alert">
-						{loadingError || actionError}
-					</p>
-				) : null}
-				{view === "active" && library ? (
-					<div className="worldLibraryUsage">
-						<strong>
-							{library.usage.count} of {library.usage.max} worlds
-						</strong>
-						{atLimit ? <span>Move a world to trash before creating or restoring another.</span> : null}
-					</div>
-				) : null}
-
-				{library ? (
-					visibleWorlds.length ? (
-						<ul className="worldList">
-							{visibleWorlds.map((world) => (
-								<li key={world.id}>
-									{view === "active" ? (
-										<a href={`/worlds/${world.editorSlug ?? world.id}`} className="worldListMain">
-											<span className="worldListIcon" aria-hidden="true">
-												<BookOpen size={16} />
-											</span>
-											<span className="worldListIdentity">
-												<strong>{world.name}</strong>
-												<span>Edited {formatActivity(world.updatedAt)}</span>
-											</span>
-											<span className="worldListActivity">
-												<span className="worldListCounts">
-													{formatCount(world.world.rooms.length, "room")} ·{" "}
-													{formatCount(world.world.items.length, "item")}
-												</span>
-												{world.publication ? (
-													<span className="worldListPublication">
-														Release {world.publication.releaseNumber} · {world.publication.status}
-														{world.publication.unpublishedChanges ? " · unpublished changes" : ""}
-													</span>
-												) : null}
-												<small>Opened {formatActivity(world.lastOpenedAt)}</small>
-											</span>
-										</a>
-									) : (
-										<div className="worldListMain worldListTrashIdentity">
-											<span className="worldListIcon" aria-hidden="true">
-												<Trash2 size={16} />
-											</span>
-											<span className="worldListIdentity">
-												<strong>{world.name}</strong>
-												<span>Deleted {formatActivity(world.deletedAt)}</span>
-											</span>
-										</div>
-									)}
-									<div className="worldListActions">
-										{view === "trash" ? (
-											<>
-												<button type="button" onClick={() => void restore(world)}>
-													Restore
-												</button>
-												<button
-													className="worldDangerAction"
-													type="button"
-													onClick={(event) => openDialog({kind: "permanent", world}, event.currentTarget)}
-												>
-													Delete permanently
-												</button>
-											</>
-										) : (
-											<>
-												<button
-													type="button"
-													className="worldActionsTrigger"
-													aria-label={`Actions for ${world.name}`}
-													aria-haspopup="menu"
-													aria-expanded={menuWorldId === world.id}
-													onClick={(event) => {
-														lastActionTrigger.current = event.currentTarget;
-														setMenuWorldId((current) => (current === world.id ? null : world.id));
-													}}
-												>
-													<Ellipsis size={17} aria-hidden="true" />
-												</button>
-												{menuWorldId === world.id ? (
-													<div
-														className="worldActionsMenu"
-														role="menu"
-														onKeyDown={(event) => {
-															if (event.key === "Escape") {
-																setMenuWorldId(null);
-																queueMicrotask(() => lastActionTrigger.current?.focus());
-															}
-														}}
-													>
-														<button
-															role="menuitem"
-															type="button"
-															autoFocus
-															onClick={(event) => openDialog({kind: "rename", world}, event.currentTarget)}
-														>
-															Rename
+					{library ? (
+						visibleWorlds.length ? (
+							<ul className="worldGrid">
+								{visibleWorlds.map((world) => (
+									<li
+										className={view === "trash" ? "worldCard worldCard--trash" : "worldCard"}
+										key={world.id}
+									>
+										<article>
+											{view === "active" ? (
+												<a href={`/worlds/${world.editorSlug ?? world.id}`} className="worldCardLink">
+													<WorldFolioPreview world={world.world} />
+													<div className="worldCardContent">
+														<h2>{world.name}</h2>
+														<p>Edited {formatActivity(world.updatedAt)}</p>
+														<div className="worldCardMeta">
+															<span>
+																{formatCount(world.world.rooms.length, "room")} ·{" "}
+																{formatCount(world.world.items.length, "item")}
+															</span>
+															<small>Opened {formatActivity(world.lastOpenedAt)}</small>
+														</div>
+														{world.publication ? (
+															<span className="worldCardPublication">
+																Release {world.publication.releaseNumber} · {world.publication.status}
+																{world.publication.unpublishedChanges ? " · unpublished changes" : ""}
+															</span>
+														) : null}
+														<span className="worldCardOpen">
+															Open editor <ArrowUpRight size={14} aria-hidden="true" />
+														</span>
+													</div>
+												</a>
+											) : (
+												<div className="worldCardStatic">
+													<WorldFolioPreview world={world.world} />
+													<div className="worldCardContent">
+														<h2>{world.name}</h2>
+														<p className="worldCardDeleted">
+															<Trash2 size={13} aria-hidden="true" /> Deleted {formatActivity(world.deletedAt)}
+														</p>
+														<div className="worldCardMeta">
+															<span>
+																{formatCount(world.world.rooms.length, "room")} ·{" "}
+																{formatCount(world.world.items.length, "item")}
+															</span>
+														</div>
+													</div>
+												</div>
+											)}
+											<div className="worldCardActions">
+												{view === "trash" ? (
+													<>
+														<button type="button" onClick={() => void restore(world)}>
+															Restore
 														</button>
-														<button role="menuitem" type="button" onClick={() => void duplicate(world)}>
-															Duplicate
-														</button>
-														<a
-															role="menuitem"
-															href={`/api/world/${world.id}/export`}
-															onClick={() => setMenuWorldId(null)}
-														>
-															Export
-														</a>
 														<button
-															role="menuitem"
 															className="worldDangerAction"
 															type="button"
-															onClick={(event) => openDialog({kind: "delete", world}, event.currentTarget)}
+															onClick={(event) => openDialog({kind: "permanent", world}, event.currentTarget)}
 														>
-															Move to trash
+															Delete permanently
 														</button>
-													</div>
-												) : null}
-											</>
-										)}
-									</div>
-								</li>
-							))}
-						</ul>
-					) : (
-						<p className="worldLibraryEmpty">
-							{view === "trash" ? "Trash is empty." : "No active worlds. Create one when you are ready."}
+													</>
+												) : (
+													<>
+														<button
+															type="button"
+															className="worldActionsTrigger"
+															aria-label={`Actions for ${world.name}`}
+															aria-haspopup="menu"
+															aria-expanded={menuWorldId === world.id}
+															onClick={(event) => {
+																lastActionTrigger.current = event.currentTarget;
+																setMenuWorldId((current) => (current === world.id ? null : world.id));
+															}}
+														>
+															<Ellipsis size={17} aria-hidden="true" />
+														</button>
+														{menuWorldId === world.id ? (
+															<div
+																className="worldActionsMenu"
+																role="menu"
+																onKeyDown={(event) => {
+																	if (event.key === "Escape") {
+																		setMenuWorldId(null);
+																		queueMicrotask(() => lastActionTrigger.current?.focus());
+																	}
+																}}
+															>
+																<button
+																	role="menuitem"
+																	type="button"
+																	autoFocus
+																	onClick={(event) => openDialog({kind: "rename", world}, event.currentTarget)}
+																>
+																	Rename
+																</button>
+																<button role="menuitem" type="button" onClick={() => void duplicate(world)}>
+																	Duplicate
+																</button>
+																<a
+																	role="menuitem"
+																	href={`/api/world/${world.id}/export`}
+																	onClick={() => setMenuWorldId(null)}
+																>
+																	Export
+																</a>
+																<button
+																	role="menuitem"
+																	className="worldDangerAction"
+																	type="button"
+																	onClick={(event) => openDialog({kind: "delete", world}, event.currentTarget)}
+																>
+																	Move to trash
+																</button>
+															</div>
+														) : null}
+													</>
+												)}
+											</div>
+										</article>
+									</li>
+								))}
+							</ul>
+						) : (
+							<p className="worldLibraryEmpty">
+								{view === "trash" ? "Trash is empty." : "No active worlds. Create one when you are ready."}
+							</p>
+						)
+					) : loadingError ? null : (
+						<p className="worldLibraryLoading" role="status">
+							Loading worlds…
 						</p>
-					)
-				) : loadingError ? null : (
-					<p className="worldLibraryLoading" role="status">
-						Loading worlds…
-					</p>
-				)}
-			</section>
+					)}
+				</main>
+				<SiteFooter />
+			</div>
 
 			{dialog ? (
 				<div className="worldDialogBackdrop" role="presentation">
@@ -567,6 +594,6 @@ export default function WorldsPage() {
 					</section>
 				</div>
 			) : null}
-		</main>
+		</div>
 	);
 }
