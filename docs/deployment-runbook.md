@@ -226,8 +226,10 @@ variables synced by Phase take precedence and duplicate definitions make trouble
 The repository includes `.github/workflows/deploy-staging.yml`. Configure the GitHub `Preview`
 environment before relying on the canonical staging deployment:
 
-1. Use Phase's GitHub Actions integration to sync Staging `DATABASE_MIGRATION_URL` to the GitHub
-   `Preview` environment. It must remain the direct Neon `preview` connection.
+1. Install Neon's GitHub integration so the repository has the `NEON_API_KEY` secret and
+   `NEON_PROJECT_ID` variable. The workflow resolves a fresh, direct connection URI for the exact
+   `preview` branch and masks it before exporting it to later steps; no migration URL is copied into
+   GitHub.
 2. Add a narrowly scoped `VERCEL_TOKEN` secret to that GitHub environment.
 3. Add `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` as GitHub environment variables.
 4. In Vercel, assign the canonical staging domain to the `staging` Git branch and keep its
@@ -235,8 +237,9 @@ environment before relying on the canonical staging deployment:
 5. Push or merge a commit to `staging` and confirm **Deploy staging / Migrate, validate, and deploy
    staging** succeeds. Do not manually deploy that branch around a failed gate.
 
-The workflow applies migrations before it builds or deploys the exact staging commit. Production
-continues to use the separate post-build Deployment Check described in
+The workflow applies migrations before it builds or deploys the exact staging commit. The production
+Deployment Check resolves the direct `production` branch connection through the same Neon integration,
+then follows the gate described in
 `DEPLOYMENT_STORAGE_GATE_README.md`.
 
 ### Configure authentication email and the administrator

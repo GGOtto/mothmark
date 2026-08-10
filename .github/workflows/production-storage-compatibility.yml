@@ -22,10 +22,11 @@ jobs:
       contents: read
       statuses: write
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
       DATABASE_SSL: "true"
       DATABASE_POOL_MIN: "0"
       DATABASE_POOL_MAX: "1"
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
       VERCEL_GIT_COMMIT_SHA: ${{ github.event.client_payload.git.sha || github.sha }}
     steps:
       - name: Check out candidate commit
@@ -46,6 +47,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Resolve the Neon production migration connection
+        env:
+          NEON_BRANCH_NAME: production
+        run: node --import tsx scripts/exportNeonConnectionUri.ts
 
       - name: Apply migrations and validate retained content
         run: pnpm release:migrate
