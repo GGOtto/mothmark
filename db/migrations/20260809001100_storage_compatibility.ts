@@ -1,13 +1,21 @@
 import type {Knex} from "knex";
 
+export function addSchemaVersionColumn(
+	table: Knex.CreateTableBuilder,
+	constraintName: string,
+): void {
+	table.integer("schema_version").notNullable().defaultTo(1);
+	// Knex 3.3 generates invalid PostgreSQL for unnamed checks in alterTable:
+	// `"table_name"_1`. Keep the constraint name explicit and stable.
+	table.check("schema_version > 0", {}, constraintName);
+}
+
 export async function up(knex: Knex): Promise<void> {
 	await knex.schema.alterTable("playthroughs", (table) => {
-		table.integer("schema_version").notNullable().defaultTo(1);
-		table.check("schema_version > 0");
+		addSchemaVersionColumn(table, "playthroughs_schema_version_check");
 	});
 	await knex.schema.alterTable("playthrough_turns", (table) => {
-		table.integer("schema_version").notNullable().defaultTo(1);
-		table.check("schema_version > 0");
+		addSchemaVersionColumn(table, "playthrough_turns_schema_version_check");
 	});
 
 	await knex.schema.createTable("storage_contract_state", (table) => {

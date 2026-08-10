@@ -57,6 +57,7 @@ describe("public publication routes", () => {
 
 	it("does not expose playable world data from the metadata endpoint", async () => {
 		jest.mocked(getPublicPublication).mockResolvedValue({
+			authorUsername: "archivekeeper",
 			id: "publication-id",
 			slug: "quiet-archive",
 			title: "Quiet archive",

@@ -15,6 +15,7 @@ export type AdminPublication = {
 	worldId: string;
 	ownerUserId: string;
 	ownerName: string | null;
+	ownerUsername: string;
 	release: {id: string; number: number; publishedAt: string};
 };
 export type AdminPlaythrough = {
@@ -40,7 +41,12 @@ export type AdminWorld = {
 	id: string;
 	lifecycle: "active" | "trashed";
 	name: string;
-	owner: {accountType: "anonymous" | "registered"; displayName: string | null; id: string};
+	owner: {
+		accountType: "anonymous" | "registered";
+		displayName: string | null;
+		id: string;
+		username: string | null;
+	};
 	revision: number;
 	schemaVersion: number;
 	trashPurgeAfter: string | null;
@@ -62,6 +68,7 @@ export type AdminUser = {
 	suspendedAt: string | null;
 	suspensionReason: string | null;
 	trashedWorldCount: number;
+	username: string | null;
 	worldCount: number;
 };
 export type AdminUserDetail = AdminUser & {

@@ -17,6 +17,7 @@ export async function GET(_: Request, context: Context): Promise<NextResponse> {
 			);
 		}
 		const metadata = {
+			authorUsername: publication.authorUsername,
 			id: publication.id,
 			slug: publication.slug,
 			title: publication.title,

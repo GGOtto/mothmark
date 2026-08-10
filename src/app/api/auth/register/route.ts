@@ -5,7 +5,8 @@ import {authenticationEmailIsConfigured, sendAuthenticationEmail} from "@/auth/e
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {mutationSecurityError} from "@/auth/requestSecurity";
 import {PasswordValidationError} from "@/auth/passwords";
-import {beginRegistration} from "@/db/dbal/registeredAccountRepository";
+import {UsernameSchema} from "@/auth/usernames";
+import {UsernameUnavailableError, beginRegistration} from "@/db/dbal/registeredAccountRepository";
 import {
 	EmailSchema,
 	PasswordSchema,
@@ -16,7 +17,11 @@ import {
 } from "../_shared";
 
 export const runtime = "nodejs";
-const InputSchema = z.object({email: EmailSchema, password: PasswordSchema});
+const InputSchema = z.object({
+	email: EmailSchema,
+	password: PasswordSchema,
+	username: UsernameSchema,
+});
 
 export async function POST(request: Request): Promise<NextResponse> {
 	const securityError = mutationSecurityError(request);
@@ -30,6 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 			email: input.email,
 			network: requestNetwork(request),
 			password: input.password,
+			username: input.username,
 			...(actor?.accountType === "anonymous" && {userId: actor.userId}),
 		});
 		if (dispatch) await sendAuthenticationEmail({...dispatch, kind: "verify_email"});
@@ -38,6 +44,12 @@ export async function POST(request: Request): Promise<NextResponse> {
 			{status: 202},
 		);
 	} catch (error) {
+		if (error instanceof UsernameUnavailableError) {
+			return NextResponse.json(
+				{error: {code: "USERNAME_UNAVAILABLE", message: error.message}},
+				{status: 409},
+			);
+		}
 		if (error instanceof PasswordValidationError) {
 			return NextResponse.json({error: {code: error.code, message: error.message}}, {status: 400});
 		}

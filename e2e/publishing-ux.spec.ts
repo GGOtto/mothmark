@@ -10,6 +10,7 @@ function collectBrowserErrors(page: Page) {
 }
 
 const publication = {
+	authorUsername: "archivekeeper",
 	id: "publication-id",
 	slug: "quiet-archive",
 	title: "Quiet archive",
@@ -36,6 +37,7 @@ test("the public catalog lists world cards without creating a play account", asy
 	await page.goto("/play");
 	await expect(page.getByRole("heading", {name: "Published worlds"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
+	await expect(page.getByText("by archivekeeper")).toBeVisible();
 	await expect(page.getByRole("link", {name: "Play Quiet archive"})).toHaveAttribute(
 		"href",
 		"/play/quiet-archive",
@@ -108,6 +110,7 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	});
 
 	await page.goto("/play/quiet-archive");
+	await expect(page.getByText("Quiet archive · by archivekeeper")).toBeVisible();
 	await expect(page.getByText("A quiet archive waits.")).toBeVisible();
 	await page.getByLabel("Game command").fill('<img src=x onerror="alert(1)">');
 	await page.getByLabel("Game command").press("Enter");

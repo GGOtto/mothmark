@@ -55,7 +55,7 @@ export default function AdminWorldsPage() {
 									</td>
 									<td>
 										<Link href={`/admin/users/${world.owner.id}`}>
-											{world.owner.displayName || `Anonymous ${world.owner.id.slice(0, 8)}`}
+											{world.owner.username || `Anonymous ${world.owner.id.slice(0, 8)}`}
 										</Link>
 										<small>{world.owner.accountType}</small>
 									</td>

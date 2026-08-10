@@ -15,6 +15,7 @@ import {
 	createOpaqueToken,
 	hashSessionToken,
 } from "@/auth/sessionTokens";
+import {normalizeUsername} from "@/auth/usernames";
 
 import {getDb} from "./knex";
 import {DEFAULT_MAX_WORLDS} from "./worldsRepository";
@@ -44,6 +45,13 @@ type RegisteredIdentityRow = PasswordCredentialRow & {
 };
 
 export type EmailDispatch = {email: string; token: string};
+
+export class UsernameUnavailableError extends Error {
+	constructor() {
+		super("That username is already in use.");
+		this.name = "UsernameUnavailableError";
+	}
+}
 
 export type EditorSignIn = {
 	expiresAt: Date;
@@ -184,10 +192,13 @@ export async function beginRegistration(input: {
 	email: string;
 	network: string;
 	password: string;
+	username: string;
 	userId?: string;
 }): Promise<EmailDispatch | undefined> {
 	const email = input.email.trim();
 	const normalizedEmail = normalizeEmail(email);
+	const username = input.username.trim();
+	const normalizedUsername = normalizeUsername(username);
 	const password = await hashPassword(input.password);
 	return database.transaction(async (transaction) => {
 		if (
@@ -195,9 +206,12 @@ export async function beginRegistration(input: {
 		) {
 			return undefined;
 		}
-		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
-			`mothmark-registration:${normalizedEmail}`,
-		]);
+		for (const lock of [
+			`mothmark-registration-email:${normalizedEmail}`,
+			`mothmark-registration-username:${normalizedUsername}`,
+		].sort()) {
+			await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [lock]);
+		}
 		if (input.userId) {
 			const user = await transaction("users")
 				.where({id: input.userId, account_type: "anonymous", site_role: "user", status: "active"})
@@ -223,12 +237,29 @@ export async function beginRegistration(input: {
 				.whereNull("superseded_at")
 				.update({superseded_at: transaction.fn.now()});
 		}
+		await transaction("account_registrations")
+			.whereRaw("lower(username) = ?", [normalizedUsername])
+			.whereNull("completed_at")
+			.whereNull("superseded_at")
+			.where("expires_at", "<=", transaction.fn.now())
+			.update({superseded_at: transaction.fn.now()});
+		const [registeredUsername, pendingUsername] = await Promise.all([
+			transaction("users").whereRaw("lower(username) = ?", [normalizedUsername]).first("id"),
+			transaction("account_registrations")
+				.whereRaw("lower(username) = ?", [normalizedUsername])
+				.whereNull("completed_at")
+				.whereNull("superseded_at")
+				.where("expires_at", ">", transaction.fn.now())
+				.first("id"),
+		]);
+		if (registeredUsername || pendingUsername) throw new UsernameUnavailableError();
 		const [registration] = await transaction("account_registrations")
 			.insert({
 				...passwordColumns(password),
 				email,
 				expires_at: new Date(Date.now() + VERIFICATION_DURATION_MS),
 				normalized_email: normalizedEmail,
+				username,
 				user_id: input.userId ?? null,
 			})
 			.returning<{id: string}[]>("id");
@@ -240,6 +271,20 @@ export async function beginRegistration(input: {
 		});
 		return {email, token: token.token};
 	});
+}
+
+export async function isUsernameAvailable(value: string): Promise<boolean> {
+	const username = normalizeUsername(value);
+	const [registeredUsername, pendingUsername] = await Promise.all([
+		database("users").whereRaw("lower(username) = ?", [username]).first("id"),
+		database("account_registrations")
+			.whereRaw("lower(username) = ?", [username])
+			.whereNull("completed_at")
+			.whereNull("superseded_at")
+			.where("expires_at", ">", database.fn.now())
+			.first("id"),
+	]);
+	return !registeredUsername && !pendingUsername;
 }
 
 export async function resendVerification(
@@ -314,6 +359,7 @@ export async function completeRegistration(
 				password_hash: string;
 				hash_version: number;
 				hash_parameters: Record<string, number>;
+				username: string;
 			}>();
 		if (
 			!row ||
@@ -326,9 +372,12 @@ export async function completeRegistration(
 		) {
 			return {status: "expired"};
 		}
-		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
-			`mothmark-registration:${row.normalized_email}`,
-		]);
+		for (const lock of [
+			`mothmark-registration-email:${row.normalized_email}`,
+			`mothmark-registration-username:${normalizeUsername(row.username)}`,
+		].sort()) {
+			await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [lock]);
+		}
 		if (await transaction("user_emails").where({normalized_email: row.normalized_email}).first()) {
 			await transaction("account_tokens").where({id: row.token_id}).update({consumed_at: now});
 			return {status: "expired"};
@@ -350,6 +399,7 @@ export async function completeRegistration(
 				cleanup_scheduled_at: null,
 				display_name: row.email,
 				registered_at: now,
+				username: row.username,
 				updated_at: now,
 			});
 		} else {
@@ -360,6 +410,7 @@ export async function completeRegistration(
 					registered_at: now,
 					site_role: "user",
 					status: "active",
+					username: row.username,
 				})
 				.returning<{id: string}[]>("id");
 			if (!user) throw new Error("The registered account could not be created.");

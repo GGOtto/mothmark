@@ -437,6 +437,15 @@ test("registered account forms preserve generic responses, autofill semantics, a
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/auth/username-availability?*", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {available: true, message: "Username is available.", valid: true},
+			}),
+		}),
+	);
 	await page.route("**/api/auth/csrf", (route) =>
 		route.fulfill({
 			status: 200,
@@ -504,11 +513,13 @@ test("registered account forms preserve generic responses, autofill semantics, a
 
 	await page.setViewportSize({width: 390, height: 844});
 	await page.goto("/register");
+	await expect(page.getByLabel("Username")).toHaveAttribute("autocomplete", "username");
 	await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
 	await expect(page.getByLabel("Password", {exact: true})).toHaveAttribute(
 		"autocomplete",
 		"new-password",
 	);
+	await page.getByLabel("Username").fill("archivekeeper");
 	await page.getByLabel("Email").fill("author@example.com");
 	await page.getByLabel("Password", {exact: true}).fill("a durable registration password");
 	await page.getByLabel("Confirm password").fill("a durable registration password");
@@ -1095,7 +1106,7 @@ test("administrator sign-in and granular controls support deep links and back na
 		id: worldId,
 		lifecycle: "active",
 		name: "Private test world",
-		owner: {accountType: "anonymous", displayName: null, id: userId},
+		owner: {accountType: "anonymous", displayName: null, id: userId, username: null},
 		revision: 3,
 		schemaVersion: PERSISTED_SCHEMA_VERSION,
 		trashPurgeAfter: null,
@@ -1117,7 +1128,15 @@ test("administrator sign-in and granular controls support deep links and back na
 		suspendedAt: null,
 		suspensionReason: null,
 		trashedWorldCount: 0,
+		username: null,
 		worldCount: 1,
+	};
+	const registeredUser = {
+		...user,
+		accountType: "registered",
+		displayName: "author@example.com",
+		id: "6f56ddaf-a999-49d7-a4b2-5b0281ccce3f",
+		username: "archivekeeper",
 	};
 	let permissionState: "deny" | "inherited" = "inherited";
 	let permissionMutation: unknown;
@@ -1139,7 +1158,7 @@ test("administrator sign-in and granular controls support deep links and back na
 		route.fulfill({
 			status: 200,
 			contentType: "application/json",
-			body: JSON.stringify({data: {users: [user]}}),
+			body: JSON.stringify({data: {users: [user, registeredUser]}}),
 		}),
 	);
 	await page.route(new RegExp(`/api/admin/users/${userId}$`), (route) =>
@@ -1224,6 +1243,7 @@ test("administrator sign-in and granular controls support deep links and back na
 	await page.getByRole("button", {name: "Sign in"}).click();
 	await expect(page).toHaveURL(/\/admin\/users$/);
 	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
+	await expect(page.getByRole("link", {name: "archivekeeper"})).toBeVisible();
 
 	await page.getByRole("link", {name: `Anonymous ${userId.slice(0, 8)}`}).click();
 	await expect(page.getByRole("heading", {name: `Anonymous ${userId.slice(0, 8)}`})).toBeVisible();

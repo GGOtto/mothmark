@@ -119,7 +119,7 @@ export default function AdminWorldDetailPage() {
 								<dt>Owner</dt>
 								<dd>
 									<Link href={`/admin/users/${world.owner.id}`}>
-										{world.owner.displayName || world.owner.id}
+										{world.owner.username || world.owner.id}
 									</Link>
 								</dd>
 							</div>

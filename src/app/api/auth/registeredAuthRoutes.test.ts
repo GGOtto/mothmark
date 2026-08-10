@@ -7,6 +7,7 @@ import {
 	beginPasswordReset,
 	beginRegistration,
 	completeRegistration,
+	UsernameUnavailableError,
 } from "@/db/dbal/registeredAccountRepository";
 
 import {POST as forgotPassword} from "./forgot-password/route";
@@ -20,6 +21,11 @@ jest.mock("@/auth/email", () => ({
 	sendAuthenticationEmail: jest.fn(),
 }));
 jest.mock("@/db/dbal/registeredAccountRepository", () => ({
+	UsernameUnavailableError: class UsernameUnavailableError extends Error {
+		constructor() {
+			super("That username is already in use.");
+		}
+	},
 	authenticateEditor: jest.fn(),
 	beginPasswordReset: jest.fn(),
 	beginRegistration: jest.fn(),
@@ -49,6 +55,7 @@ describe("registered account routes", () => {
 			request("/api/auth/register", {
 				email: "author@example.com",
 				password: "a durable registration password",
+				username: "ArchiveKeeper",
 			}),
 		);
 		expect(response.status).toBe(503);
@@ -76,6 +83,7 @@ describe("registered account routes", () => {
 				email: "author@example.com",
 				password: "a durable registration password",
 				siteRole: "admin",
+				username: "ArchiveKeeper",
 			}),
 		);
 		expect(response.status).toBe(202);
@@ -83,6 +91,7 @@ describe("registered account routes", () => {
 			email: "author@example.com",
 			network: "192.0.2.5",
 			password: "a durable registration password",
+			username: "ArchiveKeeper",
 			userId,
 		});
 		expect(sendAuthenticationEmail).toHaveBeenCalledWith({
@@ -91,6 +100,22 @@ describe("registered account routes", () => {
 			token: "secret-token",
 		});
 		expect(JSON.stringify(await response.json())).not.toContain("secret-token");
+	});
+
+	it("reports a public username conflict without starting email delivery", async () => {
+		jest.mocked(beginRegistration).mockRejectedValue(new UsernameUnavailableError());
+		const response = await register(
+			request("/api/auth/register", {
+				email: "author@example.com",
+				password: "a durable registration password",
+				username: "archivekeeper",
+			}),
+		);
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({
+			error: {code: "USERNAME_UNAVAILABLE", message: "That username is already in use."},
+		});
+		expect(sendAuthenticationEmail).not.toHaveBeenCalled();
 	});
 
 	it("uses the same recovery response for an unknown address", async () => {

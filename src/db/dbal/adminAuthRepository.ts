@@ -47,6 +47,8 @@ export type AdministratorSignInResult =
 	| {status: "authenticated"; sessionToken: string; expiresAt: Date; userId: string};
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const provisionedAdministratorUsername = (normalizedEmail: string) =>
+	`admin-${createHash("sha256").update(normalizedEmail).digest("hex").slice(0, 24)}`;
 const recoveryCodeHash = (code: string) =>
 	createHash("sha256")
 		.update(code.replace(/[^a-z0-9]/giu, "").toLowerCase())
@@ -121,6 +123,7 @@ export async function provisionAdministrator(input: {
 }): Promise<AdministratorProvisioning> {
 	const email = input.email.trim();
 	const normalizedEmail = normalizeEmail(email);
+	const username = provisionedAdministratorUsername(normalizedEmail);
 	const password = await hashPassword(input.password);
 	const totpSecret = input.totpSecret;
 	if (verifyTotp(totpSecret, input.totpCode) === undefined) {
@@ -168,6 +171,7 @@ export async function provisionAdministrator(input: {
 					registered_at: user.registered_at ?? now,
 					site_role: "admin",
 					updated_at: now,
+					username: user.username ?? username,
 				});
 			await transaction("password_credentials")
 				.insert({...passwordColumns(password), user_id: userId})
@@ -185,6 +189,7 @@ export async function provisionAdministrator(input: {
 					registered_at: now,
 					site_role: "admin",
 					status: "active",
+					username,
 				})
 				.returning<{id: string}[]>("id");
 			if (!user) throw new Error("The administrator could not be created.");
