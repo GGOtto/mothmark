@@ -110,13 +110,12 @@ describe("the initial v1 to v2 storage migration", () => {
 		expect(result).toEqual({applied: true, schemaVersion: 2, value});
 	});
 
-	it("is the only registered adjacent step to the current storage version", () => {
+	it("remains the immutable first registered migration", () => {
 		expect(migrationFrom(1)).toBe(v1ToV2);
-		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();
 		expect(v1ToV2).toMatchObject({
 			id: "v1-to-v2-reset-worlds-to-blank",
 			fromVersion: 1,
-			toVersion: PERSISTED_SCHEMA_VERSION,
+			toVersion: 2,
 		});
 	});
 
