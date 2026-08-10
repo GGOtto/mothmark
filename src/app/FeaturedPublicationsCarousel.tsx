@@ -2,7 +2,7 @@
 
 import {ArrowLeft, ArrowRight} from "lucide-react";
 import Link from "next/link";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 type FeaturedPublication = {
 	authorUsername: string;
@@ -26,6 +26,7 @@ export function FeaturedPublicationsCarousel() {
 	const [publications, setPublications] = useState<FeaturedPublication[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+	const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -44,12 +45,31 @@ export function FeaturedPublicationsCarousel() {
 		return () => controller.abort();
 	}, []);
 
-	const publication = publications[currentIndex];
 	const canMove = publications.length > 1;
 
 	function move(amount: number) {
 		if (!canMove) return;
-		setCurrentIndex((current) => (current + amount + publications.length) % publications.length);
+		const nextIndex = (currentIndex + amount + publications.length) % publications.length;
+		setCurrentIndex(nextIndex);
+		slideRefs.current[nextIndex]?.scrollIntoView?.({
+			behavior: "smooth",
+			block: "nearest",
+			inline: "center",
+		});
+	}
+
+	function updateCurrentSlide(event: React.UIEvent<HTMLDivElement>) {
+		const rail = event.currentTarget;
+		const nextIndex = slideRefs.current.reduce(
+			(closest, slide, index) => {
+				const distance = slide
+					? Math.abs(slide.offsetLeft + slide.offsetWidth / 2 - rail.scrollLeft - rail.clientWidth / 2)
+					: Number.POSITIVE_INFINITY;
+				return slide && distance < closest.distance ? {index, distance} : closest;
+			},
+			{index: 0, distance: Number.POSITIVE_INFINITY},
+		).index;
+		setCurrentIndex(nextIndex);
 	}
 
 	return (
@@ -88,28 +108,46 @@ export function FeaturedPublicationsCarousel() {
 				<div className="homeFeaturedStatus" role="status">
 					Loading featured worlds…
 				</div>
-			) : publication ? (
-				<article className="homeFeaturedCard">
-					<div className="homeFeaturedIdentity" aria-hidden="true">
-						<span>{String(currentIndex + 1).padStart(2, "0")}</span>
-						<div>
-							<i />
-							<i />
-							<i />
+			) : publications.length ? (
+				<div
+					className="homeFeaturedRail"
+					aria-label="Featured publication stack"
+					tabIndex={0}
+					onScroll={updateCurrentSlide}
+				>
+					{publications.map((publication, index) => (
+						<div
+							key={publication.id}
+							ref={(slide) => {
+								slideRefs.current[index] = slide;
+							}}
+							className="homeFeaturedSlide"
+							aria-current={index === currentIndex ? "true" : undefined}
+						>
+							<article className="homeFeaturedCard">
+								<div className="homeFeaturedIdentity" aria-hidden="true">
+									<span>{String(index + 1).padStart(2, "0")}</span>
+									<div>
+										<i />
+										<i />
+										<i />
+									</div>
+								</div>
+								<div className="homeFeaturedCopy">
+									<span>Featured publication</span>
+									<h3>{publication.title}</h3>
+									<p>{publication.summary}</p>
+									<small>
+										By {publication.authorUsername} · Release {publication.release.number}
+									</small>
+									<Link href={`/play/${publication.slug}`}>
+										{playLabel(publication)} {publication.title}
+									</Link>
+								</div>
+							</article>
 						</div>
-					</div>
-					<div className="homeFeaturedCopy">
-						<span>Featured publication</span>
-						<h3>{publication.title}</h3>
-						<p>{publication.summary}</p>
-						<small>
-							By {publication.authorUsername} · Release {publication.release.number}
-						</small>
-						<Link href={`/play/${publication.slug}`}>
-							{playLabel(publication)} {publication.title}
-						</Link>
-					</div>
-				</article>
+					))}
+				</div>
 			) : (
 				<div className="homeFeaturedStatus">
 					<p>

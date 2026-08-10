@@ -12,7 +12,9 @@ jest.mock("./FeaturedPublicationsCarousel", () => ({
 	FeaturedPublicationsCarousel: () => <div>Featured publications</div>,
 }));
 jest.mock("./HomeExample", () => ({HomeExample: () => <div>Corner Shop example</div>}));
-jest.mock("./HomeFooter", () => ({HomeFooter: () => <footer>Mothmark footer</footer>}));
+jest.mock("@/components/footer/SiteFooter", () => ({
+	SiteFooter: () => <footer>Mothmark footer</footer>,
+}));
 jest.mock("next/navigation", () => ({
 	redirect: jest.fn(() => {
 		throw new Error("NEXT_REDIRECT");

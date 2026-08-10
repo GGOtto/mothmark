@@ -92,6 +92,13 @@ type PanState = {
 	startViewport: Point;
 };
 
+type PinchState = {
+	pointerIds: [number, number];
+	startDistance: number;
+	startMapPoint: Point;
+	startViewport: Viewport;
+};
+
 const ROOM_DRAG_THRESHOLD = 2;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
@@ -120,6 +127,8 @@ export function Map({
 	const initialLayer = useRef(getLayer(world, 0));
 	const [viewport, setViewport] = useState<Viewport>(initialLayer.current.viewport);
 	const [panState, setPanState] = useState<PanState | null>(null);
+	const pinchStateRef = useRef<PinchState | null>(null);
+	const activePointersRef = useRef(new globalThis.Map<number, Point>());
 	const [isSpaceToolActive, setIsSpaceToolActive] = useState(false);
 	const isSpaceToolActiveRef = useRef(false);
 	const isMapPointerDownRef = useRef(false);
@@ -521,6 +530,38 @@ export function Map({
 	}
 
 	function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+		if (activePointersRef.current.has(event.pointerId)) {
+			activePointersRef.current.set(event.pointerId, {x: event.clientX, y: event.clientY});
+		}
+
+		const pinchState = pinchStateRef.current;
+		if (pinchState && pinchState.pointerIds.includes(event.pointerId)) {
+			const [first, second] = pinchState.pointerIds.map((pointerId) =>
+				activePointersRef.current.get(pointerId),
+			);
+			const mapElement = mapRef.current;
+			if (!first || !second || !mapElement) return;
+
+			const bounds = mapElement.getBoundingClientRect();
+			const center = {
+				x: (first.x + second.x) / 2 - bounds.left,
+				y: (first.y + second.y) / 2 - bounds.top,
+			};
+			const zoom = Math.min(
+				MAX_ZOOM,
+				Math.max(
+					MIN_ZOOM,
+					pinchState.startViewport.zoom * (getDistance(first, second) / pinchState.startDistance),
+				),
+			);
+			updateViewport({
+				x: center.x - pinchState.startMapPoint.x * zoom,
+				y: center.y - pinchState.startMapPoint.y * zoom,
+				zoom,
+			});
+			return;
+		}
+
 		if (panState && panState.pointerId === event.pointerId) {
 			updateViewport({
 				...viewportRef.current,
@@ -553,6 +594,22 @@ export function Map({
 	}
 
 	function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
+		activePointersRef.current.delete(event.pointerId);
+		if (pinchStateRef.current?.pointerIds.includes(event.pointerId)) {
+			pinchStateRef.current = null;
+			const remainingPointer = activePointersRef.current.entries().next().value as
+				[number, Point] | undefined;
+			setPanState(
+				remainingPointer
+					? {
+							pointerId: remainingPointer[0],
+							startPointer: remainingPointer[1],
+							startViewport: {x: viewportRef.current.x, y: viewportRef.current.y},
+						}
+					: null,
+			);
+			return;
+		}
 		if (panState && panState.pointerId === event.pointerId) {
 			setPanState(null);
 			return;
@@ -572,6 +629,8 @@ export function Map({
 	}
 
 	function handlePointerCancel() {
+		activePointersRef.current.clear();
+		pinchStateRef.current = null;
 		setDragState(null);
 		setPanState(null);
 	}
@@ -579,6 +638,30 @@ export function Map({
 	function handleMapPointerDown(event: React.PointerEvent<HTMLDivElement>) {
 		if (event.button !== 0 || effectiveTool !== "pan") return;
 		event.currentTarget.setPointerCapture(event.pointerId);
+		activePointersRef.current.set(event.pointerId, {x: event.clientX, y: event.clientY});
+
+		const pointers = Array.from(activePointersRef.current.entries());
+		if (pointers.length >= 2) {
+			const [[firstId, first], [secondId, second]] = pointers;
+			const bounds = event.currentTarget.getBoundingClientRect();
+			const center = {
+				x: (first.x + second.x) / 2 - bounds.left,
+				y: (first.y + second.y) / 2 - bounds.top,
+			};
+			const current = viewportRef.current;
+			pinchStateRef.current = {
+				pointerIds: [firstId, secondId],
+				startDistance: Math.max(1, getDistance(first, second)),
+				startMapPoint: {
+					x: (center.x - current.x) / current.zoom,
+					y: (center.y - current.y) / current.zoom,
+				},
+				startViewport: current,
+			};
+			setPanState(null);
+			return;
+		}
+
 		setPanState({
 			pointerId: event.pointerId,
 			startPointer: {x: event.clientX, y: event.clientY},
