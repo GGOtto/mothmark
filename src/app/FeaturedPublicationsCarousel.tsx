@@ -2,7 +2,7 @@
 
 import {ArrowLeft, ArrowRight} from "lucide-react";
 import Link from "next/link";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 
 type FeaturedPublication = {
 	authorUsername: string;
@@ -14,6 +14,8 @@ type FeaturedPublication = {
 	playAction?: "play" | "continue" | "play_again";
 };
 
+type PublicationPosition = "current" | "hidden" | "next" | "previous";
+
 function playLabel(publication: FeaturedPublication) {
 	return publication.playAction === "continue"
 		? "Continue"
@@ -22,11 +24,26 @@ function playLabel(publication: FeaturedPublication) {
 			: "Play";
 }
 
+function publicationPosition(index: number, currentIndex: number, publicationCount: number) {
+	if (index === currentIndex) return "current" satisfies PublicationPosition;
+	if (publicationCount === 2) {
+		return index < currentIndex
+			? ("previous" satisfies PublicationPosition)
+			: ("next" satisfies PublicationPosition);
+	}
+	if (index === (currentIndex - 1 + publicationCount) % publicationCount) {
+		return "previous" satisfies PublicationPosition;
+	}
+	if (index === (currentIndex + 1) % publicationCount) {
+		return "next" satisfies PublicationPosition;
+	}
+	return "hidden" satisfies PublicationPosition;
+}
+
 export function FeaturedPublicationsCarousel() {
 	const [publications, setPublications] = useState<FeaturedPublication[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-	const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -36,7 +53,9 @@ export function FeaturedPublicationsCarousel() {
 					data?: {publications?: FeaturedPublication[]};
 				};
 				if (!response.ok) throw new Error("Published worlds could not be loaded.");
-				setPublications((body.data?.publications ?? []).slice(0, 8));
+				const featuredPublications = (body.data?.publications ?? []).slice(0, 8);
+				setPublications(featuredPublications);
+				setCurrentIndex(featuredPublications.length >= 3 ? 1 : 0);
 				setStatus("ready");
 			})
 			.catch((error: unknown) => {
@@ -49,27 +68,7 @@ export function FeaturedPublicationsCarousel() {
 
 	function move(amount: number) {
 		if (!canMove) return;
-		const nextIndex = (currentIndex + amount + publications.length) % publications.length;
-		setCurrentIndex(nextIndex);
-		slideRefs.current[nextIndex]?.scrollIntoView?.({
-			behavior: "smooth",
-			block: "nearest",
-			inline: "center",
-		});
-	}
-
-	function updateCurrentSlide(event: React.UIEvent<HTMLDivElement>) {
-		const rail = event.currentTarget;
-		const nextIndex = slideRefs.current.reduce(
-			(closest, slide, index) => {
-				const distance = slide
-					? Math.abs(slide.offsetLeft + slide.offsetWidth / 2 - rail.scrollLeft - rail.clientWidth / 2)
-					: Number.POSITIVE_INFINITY;
-				return slide && distance < closest.distance ? {index, distance} : closest;
-			},
-			{index: 0, distance: Number.POSITIVE_INFINITY},
-		).index;
-		setCurrentIndex(nextIndex);
+		setCurrentIndex((current) => (current + amount + publications.length) % publications.length);
 	}
 
 	return (
@@ -79,29 +78,11 @@ export function FeaturedPublicationsCarousel() {
 					<h2 id="featured-title">Featured publications</h2>
 					<p>Published worlds ready to play in the browser.</p>
 				</div>
-				<div className="homeCarouselControls" aria-label="Featured publication controls">
-					{publications.length ? (
-						<span aria-live="polite">
-							{currentIndex + 1} / {publications.length}
-						</span>
-					) : null}
-					<button
-						type="button"
-						disabled={!canMove}
-						onClick={() => move(-1)}
-						aria-label="Previous featured publication"
-					>
-						<ArrowLeft size={17} aria-hidden="true" />
-					</button>
-					<button
-						type="button"
-						disabled={!canMove}
-						onClick={() => move(1)}
-						aria-label="Next featured publication"
-					>
-						<ArrowRight size={17} aria-hidden="true" />
-					</button>
-				</div>
+				{publications.length ? (
+					<span className="homeCarouselCount" aria-live="polite">
+						{currentIndex + 1} / {publications.length}
+					</span>
+				) : null}
 			</header>
 
 			{status === "loading" ? (
@@ -110,43 +91,62 @@ export function FeaturedPublicationsCarousel() {
 				</div>
 			) : publications.length ? (
 				<div
-					className="homeFeaturedRail"
-					aria-label="Featured publication stack"
-					tabIndex={0}
-					onScroll={updateCurrentSlide}
+					className="homeFeaturedDeck"
+					role="group"
+					aria-roledescription="carousel"
+					aria-label="Featured publication carousel"
 				>
-					{publications.map((publication, index) => (
-						<div
-							key={publication.id}
-							ref={(slide) => {
-								slideRefs.current[index] = slide;
-							}}
-							className="homeFeaturedSlide"
-							aria-current={index === currentIndex ? "true" : undefined}
-						>
-							<article className="homeFeaturedCard">
-								<div className="homeFeaturedIdentity" aria-hidden="true">
-									<span>{String(index + 1).padStart(2, "0")}</span>
-									<div>
-										<i />
-										<i />
-										<i />
+					<button
+						className="homeCarouselArrow homeCarouselArrow--previous"
+						type="button"
+						disabled={!canMove}
+						onClick={() => move(-1)}
+						aria-label="Previous featured publication"
+					>
+						<ArrowLeft size={18} aria-hidden="true" />
+					</button>
+
+					<div className={`homeFeaturedPages homeFeaturedPages--${Math.min(publications.length, 3)}`}>
+						{publications.map((publication, index) => {
+							const position = publicationPosition(index, currentIndex, publications.length);
+							const isCurrent = position === "current";
+							return (
+								<article
+									key={publication.id}
+									className={`homeFeaturedPage homeFeaturedPage--${position}`}
+									aria-current={isCurrent ? "true" : undefined}
+									aria-hidden={position !== "current" ? "true" : undefined}
+									hidden={position === "hidden"}
+								>
+									<header className="homeFeaturedPageHeader">
+										<h3>{publication.title}</h3>
+										<span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+									</header>
+									<div className="homeFeaturedPageBody">
+										<p>{publication.summary}</p>
+										<small>
+											By {publication.authorUsername} · Release {publication.release.number}
+										</small>
+										{isCurrent ? (
+											<Link href={`/play/${publication.slug}`}>
+												{playLabel(publication)} {publication.title}
+											</Link>
+										) : null}
 									</div>
-								</div>
-								<div className="homeFeaturedCopy">
-									<span>Featured publication</span>
-									<h3>{publication.title}</h3>
-									<p>{publication.summary}</p>
-									<small>
-										By {publication.authorUsername} · Release {publication.release.number}
-									</small>
-									<Link href={`/play/${publication.slug}`}>
-										{playLabel(publication)} {publication.title}
-									</Link>
-								</div>
-							</article>
-						</div>
-					))}
+								</article>
+							);
+						})}
+					</div>
+
+					<button
+						className="homeCarouselArrow homeCarouselArrow--next"
+						type="button"
+						disabled={!canMove}
+						onClick={() => move(1)}
+						aria-label="Next featured publication"
+					>
+						<ArrowRight size={18} aria-hidden="true" />
+					</button>
 				</div>
 			) : (
 				<div className="homeFeaturedStatus">
