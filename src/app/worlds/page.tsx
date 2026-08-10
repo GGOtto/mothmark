@@ -255,7 +255,7 @@ export default function WorldsPage() {
 			<section className="worldLibrary" aria-labelledby="world-library-title">
 				<header className="worldLibraryHeader">
 					<div>
-						<h1 id="world-library-title">{view === "active" ? "Your worlds" : "Trash"}</h1>
+						<h1 id="world-library-title">{view === "active" ? "My worlds" : "Trash"}</h1>
 						<p>
 							{view === "active"
 								? "Private work kept with this browser."

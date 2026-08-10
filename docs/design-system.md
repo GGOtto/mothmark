@@ -24,12 +24,12 @@ tokens live in `src/app/globals.css`.
 | `--color-text`            | `#f0e9da` | Primary text                           |
 | `--color-text-muted`      | `#b6ac99` | Supporting text                        |
 | `--color-text-faint`      | `#8c8272` | IDs and passive metadata               |
-| `--color-frame`           | `#171612` | Header and activity rail               |
-| `--color-frame-raised`    | `#211f1a` | Controls inside the frame              |
-| `--color-frame-strong`    | `#2b2821` | Frame hover and pressed states         |
-| `--color-frame-border`    | `#383329` | Frame divisions                        |
-| `--color-frame-text`      | `#f0e9da` | Primary frame text                     |
-| `--color-frame-muted`     | `#b6ac99` | Supporting frame text                  |
+| `--color-frame`           | `#090909` | Header and activity rail               |
+| `--color-frame-raised`    | `#161616` | Controls inside the frame              |
+| `--color-frame-strong`    | `#242424` | Frame hover and pressed states         |
+| `--color-frame-border`    | `#414141` | Frame divisions                        |
+| `--color-frame-text`      | `#f7f7f5` | Primary frame text                     |
+| `--color-frame-muted`     | `#c5c5c1` | Supporting frame text                  |
 | `--color-action`          | `#8fb8ce` | Primary actions and active navigation  |
 | `--color-action-hover`    | `#a5cade` | Primary-action hover                   |
 | `--color-action-contrast` | `#10202a` | Text on action-colored surfaces        |
@@ -50,12 +50,12 @@ tokens live in `src/app/globals.css`.
 | `--color-text`            | `#211e19` | Primary text                           |
 | `--color-text-muted`      | `#5c5347` | Supporting text                        |
 | `--color-text-faint`      | `#756a5a` | IDs and passive metadata               |
-| `--color-frame`           | `#ede4d5` | Header and activity rail               |
-| `--color-frame-raised`    | `#f6eee0` | Controls inside the frame              |
-| `--color-frame-strong`    | `#ddd0bd` | Frame hover and pressed states         |
-| `--color-frame-border`    | `#b7a992` | Frame divisions                        |
-| `--color-frame-text`      | `#211e19` | Primary frame text                     |
-| `--color-frame-muted`     | `#62594d` | Supporting frame text                  |
+| `--color-frame`           | `#090909` | Header and activity rail               |
+| `--color-frame-raised`    | `#161616` | Controls inside the frame              |
+| `--color-frame-strong`    | `#242424` | Frame hover and pressed states         |
+| `--color-frame-border`    | `#414141` | Frame divisions                        |
+| `--color-frame-text`      | `#f7f7f5` | Primary frame text                     |
+| `--color-frame-muted`     | `#c5c5c1` | Supporting frame text                  |
 | `--color-action`          | `#285a75` | Primary actions and active navigation  |
 | `--color-action-hover`    | `#1f4961` | Primary-action hover                   |
 | `--color-action-contrast` | `#fff9ee` | Text on action-colored surfaces        |

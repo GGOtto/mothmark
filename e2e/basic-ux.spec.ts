@@ -361,14 +361,16 @@ test("the home page continues without an account into the world library", async 
 	const editor = await useDeterministicEditorWorld(page);
 
 	await page.goto("/");
-	await expect(
-		page.getByRole("navigation", {name: "Primary navigation"}).getByRole("link", {name: "Play"}),
-	).toHaveAttribute("href", "/play");
+	const pageSelector = page
+		.getByRole("navigation", {name: "Primary navigation"})
+		.getByRole("button", {name: "Choose page, current: Home"});
+	await pageSelector.click();
+	await expect(page.getByRole("menuitem", {name: "Play"})).toHaveAttribute("href", "/play");
 	expect(editor.bootstrapCount()).toBe(0);
 	await expect(
 		page.getByRole("heading", {name: "Build and play text based adventure games."}),
 	).toBeVisible();
-	await expect(page.getByRole("link", {name: "Home", exact: true})).toHaveAttribute(
+	await expect(page.getByRole("link", {name: "Mothmark home"})).toHaveAttribute(
 		"aria-current",
 		"page",
 	);
@@ -376,7 +378,7 @@ test("the home page continues without an account into the world library", async 
 	await page.getByRole("link", {name: "Continue without an account"}).click();
 
 	await expect(page).toHaveURL(/\/worlds$/);
-	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 	await expect(page.getByRole("link", {name: /Private test world/})).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(1);
 	expect(editor.bootstrapRequests()).toEqual([
@@ -428,7 +430,7 @@ test("temporary account guidance does not create an account until editor entry",
 
 	await page.getByRole("link", {name: "Open your worlds"}).click();
 	await expect(page).toHaveURL(/\/worlds$/);
-	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 	expect(editor.bootstrapCount()).toBe(1);
 	expect(browserErrors).toEqual([]);
 });
@@ -774,7 +776,7 @@ test("the world library creates, switches, isolates, and limits private worlds",
 	const editor = await useDeterministicEditorWorld(page, undefined, 3);
 
 	await page.goto("/worlds");
-	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 	await expect(page.getByText("1 of 3 worlds")).toBeVisible();
 
 	const createWorld = async (
@@ -821,7 +823,7 @@ test("the world library creates, switches, isolates, and limits private worlds",
 
 	await page.goto("/worlds");
 	await page.setViewportSize({width: 390, height: 844});
-	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "My worlds"})).toBeVisible();
 	const privateWorldRow = page.getByRole("link", {name: /Private test world/});
 	await expect(privateWorldRow).toBeVisible();
 	await expect(
@@ -1060,21 +1062,13 @@ test("a registered owner publishes the current saved world from world settings",
 	expect(browserErrors).toEqual([]);
 });
 
-test("the theme control communicates and applies its state", async ({page}) => {
+test("a stored theme applies without adding another signed-out header control", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await page.addInitScript(() => window.localStorage.setItem("mothmark-theme", "light"));
 	await page.goto("/");
 
-	const themeToggle = page.getByRole("button", {name: "Switch to dark theme"});
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-	await expect(themeToggle).toHaveAttribute("aria-pressed", "false");
-	await themeToggle.click();
-
-	await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-	await expect(page.getByRole("button", {name: "Switch to light theme"})).toHaveAttribute(
-		"aria-pressed",
-		"true",
-	);
+	await expect(page.getByRole("button", {name: /Switch to (dark|light) theme/})).toHaveCount(0);
 	expect(browserErrors).toEqual([]);
 });
 
