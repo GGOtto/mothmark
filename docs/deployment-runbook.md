@@ -24,11 +24,14 @@ git push origin <branch>
 
 1. Open the Vercel preview created for the branch.
 2. Test loading, editing, autosaving, and refreshing the `main` world.
-3. Merge the branch into `main`.
-4. Let Vercel's `vercel.deployment.ready` event start the required production storage compatibility
+3. For a database change, push the reviewed candidate to the long-lived `staging` branch. The
+   staging workflow applies migrations and validates retained data before building and deploying
+   that exact commit; test its canonical staging URL.
+4. Promote the validated `staging` commit to `prod`.
+5. Let Vercel's `vercel.deployment.ready` event start the required production storage compatibility
    check, which applies migrations and validates all retained content before Vercel promotes the
    candidate.
-5. Verify the production deployment and its logs.
+6. Verify the production deployment and its logs.
 
 Never run migrations from `next build` or application startup.
 
@@ -38,15 +41,17 @@ The authoritative schema and release-gate procedures live in the root-level
 
 ## Environment map
 
-| Purpose           | Git branch               | Vercel environment | Phase environment | Neon branch      |
-| ----------------- | ------------------------ | ------------------ | ----------------- | ---------------- |
-| Local development | Any                      | Development        | Development       | Local PostgreSQL |
-| Hosted testing    | Any branch except `main` | Preview            | Staging           | `preview`        |
-| Live application  | `main`                   | Production         | Production        | `production`     |
+| Purpose           | Git branch                 | Vercel environment | Phase environment | Neon branch      |
+| ----------------- | -------------------------- | ------------------ | ----------------- | ---------------- |
+| Local development | Any                        | Development        | Development       | Local PostgreSQL |
+| Integration       | `main`                     | Preview            | Staging           | `preview`        |
+| Hosted staging    | `staging`                  | Preview            | Staging           | `preview`        |
+| Feature preview   | Other branch except `prod` | Preview            | Staging           | `preview`        |
+| Live application  | `prod`                     | Production         | Production        | `production`     |
 
 The long-lived Neon `preview` branch is reset from its `production` parent every Monday at 12:00
-UTC. This replaces all preview-only schema and data with the current production state while keeping
-the preview connection configuration stable.
+UTC. The reset workflow then reapplies the current `staging` branch's migrations and validates its
+retained content while keeping the preview connection configuration stable.
 
 Use these variables in Phase `Staging` and `Production`:
 
@@ -77,7 +82,8 @@ The Git remote should be:
 git@github.com:GGOtto/mothmark.git
 ```
 
-The production branch is `main`. Before the first deployment, run:
+The repository default/integration branch is `main`; Vercel's production branch is `prod`. Before
+the first deployment, run:
 
 ```bash
 pnpm lint
@@ -92,7 +98,7 @@ Review and commit only the intended files, then push them:
 ```bash
 git add <files>
 git commit -m "Prepare Mothmark for deployment"
-git push origin main
+git push origin <branch>
 ```
 
 ### 2. Create Neon production and preview databases
@@ -162,14 +168,19 @@ Expected output either lists an applied migration batch or says the database is 
 4. Use:
    - Framework preset: **Next.js**
    - Root directory: `./`
-   - Production branch: `main`
+   - Production branch: `prod`
    - Install command: Vercel default
    - Build command: Vercel default
 5. Deploy the project.
 
-Vercel creates previews for non-`main` branches and production deployments for `main`. The first
+Vercel creates previews for non-`prod` branches and production deployments for `prod`. The first
 deployment may not have working database access until Phase is synced; that is safe because the
 database migrations were already applied.
+
+The committed `vercel.json` disables Vercel's automatic deployment only for the long-lived
+`staging` branch. That branch is deployed by GitHub Actions after its database gate passes. Leave
+automatic Git deployments enabled for `prod` so the production Deployment Check can gate domain
+promotion, and for ordinary feature-preview branches that do not add shared migrations.
 
 ### 6. Protect the deployment
 
@@ -209,6 +220,24 @@ Create the Vercel project before this step so Phase can select it as a destinati
 
 Avoid creating duplicate variables scoped to Vercel **All Environments**. Environment-specific
 variables synced by Phase take precedence and duplicate definitions make troubleshooting harder.
+
+### 8. Configure the staging deployment workflow
+
+The repository includes `.github/workflows/deploy-staging.yml`. Configure the GitHub `Preview`
+environment before relying on the canonical staging deployment:
+
+1. Use Phase's GitHub Actions integration to sync Staging `DATABASE_MIGRATION_URL` to the GitHub
+   `Preview` environment. It must remain the direct Neon `preview` connection.
+2. Add a narrowly scoped `VERCEL_TOKEN` secret to that GitHub environment.
+3. Add `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` as GitHub environment variables.
+4. In Vercel, assign the canonical staging domain to the `staging` Git branch and keep its
+   branch-specific Preview variables configured.
+5. Push or merge a commit to `staging` and confirm **Deploy staging / Migrate, validate, and deploy
+   staging** succeeds. Do not manually deploy that branch around a failed gate.
+
+The workflow applies migrations before it builds or deploys the exact staging commit. Production
+continues to use the separate post-build Deployment Check described in
+`DEPLOYMENT_STORAGE_GATE_README.md`.
 
 ### Configure authentication email and the administrator
 
@@ -265,7 +294,7 @@ codes offline before ending the maintenance window. Replacement additionally req
 to name a different existing verified account; it transfers the sole role, enrolls fresh MFA,
 revokes both users' sessions, and demotes the former administrator to an ordinary registered user.
 
-### 8. Redeploy with the synced environment
+### 9. Redeploy with the synced environment
 
 Vercel environment changes affect only new deployments.
 
@@ -275,7 +304,7 @@ Vercel environment changes affect only new deployments.
 4. For this first database-enabled deployment, do not reuse the previous build cache.
 5. Wait for the deployment state to become **Ready**.
 
-### 9. Verify production
+### 10. Verify production
 
 Open the protected production URL and verify:
 
@@ -297,7 +326,7 @@ Entering `/worlds` is intentional account creation. It atomically creates the an
 editor-audience session, and first owned world. Browsing `/`, `/starter`, `/sign-in`, `/register`, or
 `/account` does not.
 
-### 10. Verify preview isolation
+### 11. Verify preview isolation
 
 Create a test branch:
 
@@ -312,7 +341,7 @@ continuing.
 
 Delete the test Git branch after verification using the team's normal Git workflow.
 
-### 11. Enable the weekly preview refresh
+### 12. Enable the weekly preview refresh
 
 The repository includes
 [`.github/workflows/refresh-preview-database.yml`](../.github/workflows/refresh-preview-database.yml).
@@ -336,9 +365,10 @@ Neon's reset operation makes a child branch match the latest state of its parent
 child's changes. The workflow uses Neon's official [Reset Branch
 Action](https://github.com/neondatabase/reset-branch-action).
 
-The reset does not require a Vercel redeployment or a Phase resync. The existing preview connection
-continues to target the same Neon branch. Any editor tab open during the reset may hold a stale world
-revision and should be refreshed.
+The reset does not require a Vercel redeployment or a Phase resync. After resetting, the same job
+reapplies every migration from `staging` and runs exhaustive retained-content validation. The
+existing preview connection continues to target the same Neon branch. Any editor tab open during
+the reset may hold a stale world revision and should be refreshed.
 
 ## Public launch and operational gate
 
@@ -435,10 +465,18 @@ Use the Vercel preview link to test at minimum:
 - the specific feature being released;
 - Vercel runtime logs.
 
+An ordinary feature preview uses the schema already installed on the shared Neon `preview` branch.
+If the change includes a migration, promote the reviewed commit to the long-lived `staging` branch
+and test the canonical staging deployment instead. The staging workflow owns changes to the shared
+preview schema.
+
 ### 4. Release
 
-Merge the branch into `main`. Vercel deploys the merge automatically. After the deployment becomes
-Ready, repeat the production smoke test and check logs.
+Merge the feature into `main`, then promote the reviewed integration candidate to `staging`. After
+the controlled staging workflow succeeds and the canonical staging smoke test passes, promote that
+same commit to `prod`. Vercel builds the production candidate automatically, and its required
+storage compatibility check applies migrations before the production domains move. Repeat the
+production smoke test and check logs after promotion.
 
 ## Weekly preview database refresh
 
@@ -485,14 +523,16 @@ Prefer backward-compatible, expand-and-contract changes:
 4. Deploy code that uses the new shape exclusively.
 5. **Contract:** remove old columns or constraints in a later release.
 
-Apply and test preview:
+Apply and test staging by pushing the reviewed commit to the long-lived branch:
 
 ```bash
-phase run --env staging 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm release:migrate'
+git push origin HEAD:staging
 ```
 
-Once preview passes, merge into `main`. The required production compatibility check applies the
-same migration and blocks Vercel promotion if any retained content fails parsing or replay.
+The staging workflow applies the migration, validates retained content, and only then builds and
+deploys that exact commit. Once staging passes, promote the same candidate to `prod`. The required
+production compatibility check applies the same migration and blocks Vercel promotion if any
+retained content fails parsing or replay.
 
 ## Rollback and recovery
 
@@ -529,8 +569,11 @@ Check:
 
 ### The API says the `revision` column does not exist
 
-The Neon branch is missing migrations. Apply them to the affected Phase environment using the
-commands in [Apply the initial migrations](#4-apply-the-initial-migrations).
+The Neon branch is missing migrations. For staging, rerun **Deploy staging** or **Refresh preview
+database** and inspect the first failing migration/validation step. For production, rerun the
+required production storage compatibility check after correcting its environment. Use the manual
+commands in [Apply the initial migrations](#4-apply-the-initial-migrations) only for initial setup or
+operator recovery.
 
 ### Preview edits production data
 
@@ -547,17 +590,14 @@ revision check.
 Confirm the application uses the pooled `-pooler` URL and migrations are being run with the direct
 URL. Keep `DATABASE_POOL_MIN=0` and begin with `DATABASE_POOL_MAX=1` for Vercel functions.
 
-## Later automation
+## Automated migration gates
 
-The first releases intentionally keep production migrations explicit. When releases become
-frequent, add a GitHub Actions workflow that:
+Staging and production migration automation is now active. Staging migrates and validates before
+its GitHub Actions-controlled deployment; production builds first and then migrates and validates
+before Vercel assigns production domains. Both paths run `pnpm release:migrate`, use direct database
+connections, serialize migrations, and retain the previously current deployment when their gate
+fails.
 
-1. runs lint, type-check, tests, and build;
-2. migrates the Neon preview branch before preview integration tests;
-3. requires approval for the production environment;
-4. migrates Neon production with the direct connection;
-5. triggers or promotes the Vercel production deployment only after migration succeeds.
-
-Do not combine uncontrolled Vercel Git auto-deploys with destructive migrations. Keep migrations
-backward-compatible or change production deployment to a gated workflow before automating this
-sequence.
+Do not re-enable uncontrolled Vercel Git auto-deployments for `staging`, prepend migrations to the
+Vercel build command, or bypass the production Deployment Check. Keep migrations backward-compatible
+across the old and candidate application versions.

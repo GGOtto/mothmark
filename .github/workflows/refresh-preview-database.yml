@@ -5,16 +5,24 @@ on:
     - cron: "0 12 * * 1"
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
 
 concurrency:
-  group: neon-preview-refresh
+  group: staging-storage-release
   cancel-in-progress: false
 
 jobs:
   reset-preview:
-    name: Reset preview from production
+    name: Reset and migrate preview storage
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: Preview
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+      DATABASE_SSL: "true"
+      DATABASE_POOL_MIN: "0"
+      DATABASE_POOL_MAX: "1"
     steps:
       - name: Reset Neon preview branch to its parent
         uses: neondatabase/reset-branch-action@v1.3.2
@@ -24,5 +32,30 @@ jobs:
           parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
 
+      - name: Check out the deployed staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Record the staging commit
+        run: echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Reapply staging migrations and validate retained content
+        run: VERCEL_GIT_COMMIT_SHA="$DEPLOY_SHA" pnpm release:migrate
+
       - name: Record the refresh
-        run: echo "Neon preview was reset from production." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Neon preview was reset from production, migrated, and validated for staging." >> "$GITHUB_STEP_SUMMARY"
