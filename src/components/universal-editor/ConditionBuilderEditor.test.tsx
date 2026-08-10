@@ -21,8 +21,9 @@ function StatefulConditionEditor() {
 			{
 				type: "flag",
 				"flag-type": "normal",
-				operation: "true",
+				operation: "is",
 				flag: "door-open",
+				value: true,
 			},
 		],
 	});

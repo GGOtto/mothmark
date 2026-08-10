@@ -9,6 +9,7 @@ import {
 	handleWorldRouteError,
 	validationErrorResponse,
 	worldNotFoundResponse,
+	worldPermissionError,
 } from "../../_shared";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function POST(
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.create");
+		if (permissionError) return permissionError;
 		const world = await restoreOwnedWorld(actor.userId, parsedId.data);
 		return world ? NextResponse.json({data: world}) : worldNotFoundResponse();
 	} catch (error) {

@@ -34,16 +34,16 @@ function evaluateFlag(
 	if (condition["flag-type"] === "room") {
 		const room = findStateById(game.roomStates, condition.roomId);
 		if (!room || room.type !== "room") return false;
-		return evaluateFlagValue(room.flags, condition.flag, condition.operation);
+		return evaluateFlagValue(room.flags, condition);
 	}
 	if (condition["flag-type"] === "item") {
 		const item = findStateById(game.itemStates, condition.itemId);
 		if (!item || item.type !== "item") return false;
-		return evaluateFlagValue(item.flags, condition.flag, condition.operation);
+		return evaluateFlagValue(item.flags, condition);
 	}
 
 	const flag = findVariable(game.variables.flags, condition.flag);
-	return evaluateFlagResult(flag.exists, flag.value, condition.operation);
+	return evaluateFlagResult(flag.exists, flag.value, condition);
 }
 
 function expected(actual: boolean, value: boolean): boolean {
@@ -134,13 +134,11 @@ function evaluateItem(
 function evaluateFlagResult(
 	exists: boolean,
 	value: boolean | undefined,
-	operation: "true" | "false" | "exists" | "missing",
+	condition: Extract<SingleCondition, {type: "flag"}>,
 ): boolean {
-	switch (operation) {
-		case "true":
-			return exists && Boolean(value);
-		case "false":
-			return exists && !value;
+	switch (condition.operation) {
+		case "is":
+			return exists && value === condition.value;
 		case "exists":
 			return exists;
 		case "missing":
@@ -150,10 +148,43 @@ function evaluateFlagResult(
 
 function evaluateFlagValue(
 	flags: Record<string, boolean>,
-	flag: string,
-	operation: "true" | "false" | "exists" | "missing",
+	condition: Extract<SingleCondition, {type: "flag"}>,
 ): boolean {
-	return evaluateFlagResult(Object.hasOwn(flags, flag), flags[flag], operation);
+	return evaluateFlagResult(Object.hasOwn(flags, condition.flag), flags[condition.flag], condition);
+}
+
+function evaluateText(
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "text"}>,
+): boolean {
+	const text = findVariable(game.variables.texts, condition.text);
+
+	switch (condition.operation) {
+		case "is":
+			return text.exists && text.value === condition.value;
+		case "is-not":
+			return text.exists && text.value !== condition.value;
+		case "starts-with":
+			return text.exists && text.value.startsWith(condition.value);
+		case "does-not-start-with":
+			return text.exists && !text.value.startsWith(condition.value);
+		case "ends-with":
+			return text.exists && text.value.endsWith(condition.value);
+		case "does-not-end-with":
+			return text.exists && !text.value.endsWith(condition.value);
+		case "contains":
+			return text.exists && text.value.includes(condition.value);
+		case "does-not-contain":
+			return text.exists && !text.value.includes(condition.value);
+		case "is-empty":
+			return text.exists && text.value.length === 0;
+		case "is-not-empty":
+			return text.exists && text.value.length > 0;
+		case "exists":
+			return text.exists;
+		case "missing":
+			return !text.exists;
+	}
 }
 
 function compareCounter(left: number, operator: string, right: number): boolean {
@@ -231,6 +262,8 @@ export function evaluateSingleCondition(
 			return evaluateFlag(game, condition);
 		case "counter":
 			return evaluateCounter(game, condition);
+		case "text":
+			return evaluateText(game, condition);
 		case "current-room":
 			return evaluateCurrentRoom(world, game, condition);
 		case "item":

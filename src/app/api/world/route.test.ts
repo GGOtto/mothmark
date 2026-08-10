@@ -1,7 +1,9 @@
 /** @jest-environment node */
 
 import {resolveCurrentActor} from "@/auth/currentActor";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {
 	createOwnedWorld,
 	deleteOwnedWorld,
@@ -27,6 +29,7 @@ import {GET as list, POST as create} from "./route";
 import {GET as getBySlug} from "./slug/[slug]/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
+jest.mock("@/db/dbal/permissionRepository", () => ({userHasPermission: jest.fn()}));
 jest.mock("@/db/dbal/worldsRepository", () => ({
 	deleteOwnedWorld: jest.fn(),
 	duplicateOwnedWorld: jest.fn(),
@@ -52,7 +55,7 @@ const storedWorld: WorldRecord = {
 	slug: null,
 	world: initialWorld,
 	revision: 1,
-	schemaVersion: 1,
+	schemaVersion: PERSISTED_SCHEMA_VERSION,
 	ownerUserId: userId,
 	kind: "editor",
 	updatedByUserId: userId,
@@ -77,7 +80,19 @@ const request = (path: string, method = "GET", body?: unknown): Request =>
 	});
 
 describe("private world API", () => {
-	beforeEach(() => jest.mocked(resolveCurrentActor).mockResolvedValue(actor));
+	beforeEach(() => {
+		jest.mocked(resolveCurrentActor).mockResolvedValue(actor);
+		jest.mocked(userHasPermission).mockResolvedValue(true);
+	});
+
+	it("keeps ownership authorization separate from capability denial", async () => {
+		jest.mocked(userHasPermission).mockResolvedValue(false);
+		const response = await PUT(request(`/api/world/${worldId}`, "PUT", {name: "Denied"}), {
+			params: Promise.resolve({id: worldId}),
+		});
+		expect(response.status).toBe(403);
+		expect(updateOwnedWorld).not.toHaveBeenCalled();
+	});
 
 	it("requires an active editor session", async () => {
 		jest.mocked(resolveCurrentActor).mockResolvedValue(undefined);
@@ -279,7 +294,7 @@ describe("private world API", () => {
 			editorSlug: "main-world",
 			exportedAt: new Date().toISOString(),
 			format: "mothmark-world",
-			schemaVersion: 1,
+			schemaVersion: PERSISTED_SCHEMA_VERSION,
 			world: initialWorld,
 			worldId,
 			worldName: storedWorld.name,

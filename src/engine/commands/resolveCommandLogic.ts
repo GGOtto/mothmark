@@ -86,14 +86,120 @@ function compareNumbers(left: number, operator: string, right: number): boolean 
 	}
 }
 
+function conditionBinding(
+	condition: CommandCondition,
+	field: string,
+): CommandVariableBinding | undefined {
+	if (!("commandVariables" in condition) || !Array.isArray(condition.commandVariables)) {
+		return undefined;
+	}
+	return condition.commandVariables.find((binding) => binding.field === field);
+}
+
+function compareText(left: string, operation: string, right: unknown): boolean {
+	switch (operation) {
+		case "is-empty":
+			return left.length === 0;
+		case "is-not-empty":
+			return left.length > 0;
+		case "exists":
+			return true;
+		case "missing":
+			return false;
+	}
+
+	if (typeof right !== "string") return false;
+
+	switch (operation) {
+		case "is":
+			return left === right;
+		case "is-not":
+			return left !== right;
+		case "starts-with":
+			return left.startsWith(right);
+		case "does-not-start-with":
+			return !left.startsWith(right);
+		case "ends-with":
+			return left.endsWith(right);
+		case "does-not-end-with":
+			return !left.endsWith(right);
+		case "contains":
+			return left.includes(right);
+		case "does-not-contain":
+			return !left.includes(right);
+		default:
+			return false;
+	}
+}
+
+function resolveBoundSubjectCondition(
+	game: GameState,
+	condition: Exclude<CommandCondition, {type: "group" | "comparison"}>,
+): Condition | undefined {
+	const subjectField =
+		condition.type === "counter" ? "counter" : condition.type === "flag" ? "flag" : "text";
+	if (condition.type !== "counter" && condition.type !== "flag" && condition.type !== "text") {
+		return undefined;
+	}
+	const binding = conditionBinding(condition, subjectField);
+	if (!binding) return undefined;
+
+	const subject = resolvedVariableValue(game, binding);
+	const resolved = applyCommandVariables(game, condition as Record<string, unknown>);
+	const operation = String(resolved.operation);
+	let passes = false;
+
+	if (condition.type === "counter") {
+		if (operation === "exists" || operation === "missing") {
+			passes = operation === "exists" ? subject !== undefined : subject === undefined;
+		} else if (typeof subject === "number" && Number.isFinite(subject)) {
+			if (operation === "compare") {
+				passes =
+					typeof resolved.value === "number" &&
+					compareNumbers(subject, String(resolved.operator), resolved.value);
+			} else if (operation === "between") {
+				passes =
+					typeof resolved.min === "number" &&
+					typeof resolved.max === "number" &&
+					(resolved.inclusive
+						? subject >= resolved.min && subject <= resolved.max
+						: subject > resolved.min && subject < resolved.max);
+			}
+		}
+	} else if (condition.type === "flag") {
+		if (operation === "exists" || operation === "missing") {
+			passes = operation === "exists" ? subject !== undefined : subject === undefined;
+		} else {
+			passes =
+				operation === "is" &&
+				typeof subject === "boolean" &&
+				typeof resolved.value === "boolean" &&
+				subject === resolved.value;
+		}
+	} else if (typeof subject === "string") {
+		passes = compareText(subject, operation, resolved.value);
+	} else {
+		passes = operation === "missing";
+	}
+
+	return passes ? passingCondition : failingCondition;
+}
+
 function resolveNumberOperand(game: GameState, operand: unknown): number | undefined {
 	if (typeof operand === "number" && Number.isFinite(operand)) return operand;
 	if (!operand || typeof operand !== "object" || Array.isArray(operand)) return undefined;
 
 	const record = operand as Record<string, unknown>;
-	if (record.source !== "counter" || typeof record.counter !== "string") return undefined;
-	const counter = findVariable(game.variables.counters, record.counter);
-	return counter.exists ? counter.value : undefined;
+	if (record.source === "literal") {
+		return typeof record.value === "number" && Number.isFinite(record.value)
+			? record.value
+			: undefined;
+	}
+	if (record.source === "counter" && typeof record.counter === "string") {
+		const counter = findVariable(game.variables.counters, record.counter);
+		return counter.exists ? counter.value : undefined;
+	}
+	return undefined;
 }
 
 function resolveComparisonCondition(
@@ -129,6 +235,9 @@ function tryResolveCommandCondition(
 			conditions: conditions as Condition[],
 		};
 	}
+
+	const boundSubject = resolveBoundSubjectCondition(game, condition);
+	if (boundSubject) return boundSubject;
 
 	return resolveCommandTemplate(game, condition as CommandLogicTemplate, ConditionSchema);
 }

@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {
 	createBlankWorldDocument,
@@ -27,6 +28,10 @@ describe("blank world creation", () => {
 		expect(world.metadata.layers).toEqual([]);
 		expect(world.items).toEqual([]);
 		expect(world.connections).toEqual([]);
+		expect(world.conditions).toEqual([]);
+		expect(world.effects).toEqual([]);
+		expect(world.events).toEqual([]);
+		expect(world.initialState).toEqual({flags: [], counters: [], texts: []});
 	});
 });
 
@@ -39,7 +44,7 @@ describe("world export", () => {
 				id: "8ebc3f3f-b9ca-4f75-898f-e196bae50be4",
 				name: "Quiet beginning",
 				revision: 4,
-				schemaVersion: 1,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
 				world: createBlankWorldDocument("Quiet beginning"),
 			},
 			exportedAt,

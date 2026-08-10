@@ -1,4 +1,38 @@
-export type AdminPermission = {allowed: boolean; permission: string; source: string};
+export type AdminPermission = {
+	allowed: boolean;
+	expiresAt: string | null;
+	override: "allow" | "deny" | "inherited";
+	permission: string;
+	source: string;
+};
+export type AdminPublication = {
+	id: string;
+	slug: string;
+	status: "published" | "unpublished" | "suspended";
+	visibility: "listed" | "unlisted";
+	title: string;
+	summary: string;
+	worldId: string;
+	ownerUserId: string;
+	ownerName: string | null;
+	release: {id: string; number: number; publishedAt: string};
+};
+export type AdminPlaythrough = {
+	id: string;
+	publicationId: string;
+	publicationTitle: string;
+	publicationSlug: string;
+	releaseId: string;
+	releaseNumber: number;
+	playerReference: string;
+	status: "active" | "completed" | "abandoned" | "errored";
+	commandCount: number;
+	startedAt: string;
+	lastActivityAt: string;
+	endedAt: string | null;
+	anonymizedAt: string | null;
+	purgeAfter: string | null;
+};
 export type AdminWorld = {
 	createdAt: string;
 	deletedAt: string | null;
@@ -25,11 +59,19 @@ export type AdminUser = {
 	maxWorlds: number;
 	siteRole: "admin" | "user";
 	status: "active" | "deleted" | "suspended";
+	suspendedAt: string | null;
+	suspensionReason: string | null;
 	trashedWorldCount: number;
 	worldCount: number;
 };
 export type AdminUserDetail = AdminUser & {
+	credentialChangedAt: string | null;
+	email: string | null;
+	emailVerifiedAt: string | null;
+	mfaEnrolled: boolean;
 	permissions: AdminPermission[];
+	registeredAt: string | null;
+	verificationPending: boolean;
 	sessions: Array<{
 		audience: "admin" | "editor" | "play";
 		createdAt: string;

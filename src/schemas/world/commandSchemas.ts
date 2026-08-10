@@ -606,6 +606,11 @@ export const CommandSchema = editor
 
 		function acceptedFieldType(record: Record<string, unknown>, field: string) {
 			const fallback = record[field];
+			if (record.type === "comparison" && (field === "left" || field === "right")) {
+				return "number" as const;
+			}
+			if (record.type === "counter" && field === "counter") return "number" as const;
+			if (record.type === "flag" && field === "flag") return "boolean" as const;
 			if (field === "direction") return "direction" as const;
 			if (typeof fallback === "number") return "number" as const;
 			if (typeof fallback === "boolean") return "boolean" as const;

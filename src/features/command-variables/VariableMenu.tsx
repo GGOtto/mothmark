@@ -53,14 +53,16 @@ function useMenuPosition(open: boolean, triggerRef: React.RefObject<HTMLButtonEl
 
 export function VariableMenu({
 	options,
-	label = "Insert variable",
+	label = "Insert command value",
 	onSelect,
 	disabled,
+	disabledReason,
 }: {
 	options: CommandVariableOption[];
 	label?: string;
 	onSelect: (option: CommandVariableOption) => void;
 	disabled?: boolean;
+	disabledReason?: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -96,7 +98,7 @@ export function VariableMenu({
 				className="variableMenu__trigger"
 				aria-label={label}
 				aria-expanded={open}
-				title={label}
+				title={options.length === 0 && disabledReason ? disabledReason : label}
 				disabled={disabled || options.length === 0}
 				onMouseDown={(event) => event.preventDefault()}
 				onClick={() => setOpen((current) => !current)}

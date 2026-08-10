@@ -19,20 +19,27 @@ export const InitialCounterSchema = editor.object({
 	value: editor.number({title: "Value"}),
 });
 
+export const InitialTextSchema = editor.object({
+	text: editor.textKey({title: "Text variable"}),
+	value: editor.textarea({title: "Value"}),
+});
+
 export const WorldInitialStateSchema = editor.object(
 	{
 		flags: editor.array(InitialFlagSchema, {title: "Initial Flags"}),
 		counters: editor.array(InitialCounterSchema, {title: "Initial Counters"}),
+		texts: editor.array(InitialTextSchema, {title: "Initial text"}).default([]),
 	},
 	{
 		title: "Initial State",
-		description: "Flag and counter values used when a room exploration session starts.",
+		description: "Flag, counter, and text values used when a room exploration session starts.",
 	},
 );
 
 export const DefaultWorldInitialState = {
 	flags: [],
 	counters: [],
+	texts: [],
 } satisfies z.infer<typeof WorldInitialStateSchema>;
 
 export const DefaultViewport = {x: 0, y: 0, zoom: 1};

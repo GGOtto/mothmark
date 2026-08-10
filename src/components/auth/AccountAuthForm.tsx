@@ -65,7 +65,11 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 	const [busy, setBusy] = useState(mode === "verify" && Boolean(token));
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState(
-		mode === "verify" && !token ? "This verification link is incomplete." : "",
+		mode === "verify" && !token
+			? "This verification link is incomplete."
+			: mode === "reset" && !token
+				? "This password reset link is incomplete. Request a new recovery email."
+				: "",
 	);
 	const [verified, setVerified] = useState(false);
 
@@ -231,6 +235,9 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 					<p className="authError" role="alert">
 						{error}
 					</p>
+				) : null}
+				{mode === "reset" && !token ? (
+					<Link href="/forgot-password">Request a new recovery email</Link>
 				) : null}
 				<button type="submit" disabled={busy || (mode === "reset" && !token)}>
 					{busy ? "Working…" : copy.submit}

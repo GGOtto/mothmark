@@ -1,5 +1,9 @@
 import {produce} from "immer";
-import {CurrentRoomConditionSchema, type Condition} from "@/schemas/world/conditionSchema";
+import {
+	CurrentRoomConditionSchema,
+	TextConditionSchema,
+	type Condition,
+} from "@/schemas/world/conditionSchema";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
@@ -73,8 +77,9 @@ describe("conditions through the player path", () => {
 							{
 								type: "flag",
 								"flag-type": "normal",
-								operation: "true",
+								operation: "is",
 								flag: "blocked",
+								value: true,
 							},
 						],
 					},
@@ -164,6 +169,44 @@ describe("conditions through the player path", () => {
 		expect(nextGame.messages.at(-1)).toMatchObject({
 			type: "system",
 			text: "The condition did not pass.",
+		});
+	});
+
+	it.each([
+		["is", "title", "Mothmark Archive"],
+		["is-not", "title", "Another title"],
+		["starts-with", "title", "Mothmark"],
+		["does-not-start-with", "title", "Archive"],
+		["ends-with", "title", "Archive"],
+		["does-not-end-with", "title", "Mothmark"],
+		["contains", "title", "mark Arc"],
+		["does-not-contain", "title", "spider"],
+		["is-empty", "empty", undefined],
+		["is-not-empty", "title", undefined],
+		["exists", "empty", undefined],
+		["missing", "unknown", undefined],
+	] as const)("evaluates saved text operation %s through resolveTurn", (operation, text, value) => {
+		const scenario = createPlayerTestScenario("navigation");
+		const condition = TextConditionSchema.parse({
+			...createDefaultFieldObject(TextConditionSchema),
+			type: "text",
+			operation,
+			text,
+			...(value === undefined ? {} : {value}),
+		});
+		const event = conditionalEvent(`text-${operation}`, condition, [
+			{type: "message", operation: "show", message: "The text condition passed."},
+		]);
+		const world = produce(scenario.world, (draft) => {
+			draft.events = [event];
+		});
+		const game = produce({...scenario.game, events: [event]}, (draft) => {
+			draft.variables.texts = [{title: "Mothmark Archive"}, {empty: ""}];
+		});
+
+		expect(resolveTurn(world, game, "help").messages.at(-1)).toMatchObject({
+			type: "system",
+			text: "The text condition passed.",
 		});
 	});
 });

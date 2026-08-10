@@ -1,5 +1,6 @@
 import {expect, test, type Page} from "@playwright/test";
 
+import {PERSISTED_SCHEMA_VERSION} from "../src/compat/migrations";
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
 import {createUniqueWorldSlug} from "../src/utils/worldSlug";
 
@@ -17,6 +18,7 @@ type DeterministicWorld = {
 	ownerUserId: string;
 	world: typeof initialWorld;
 	revision: number;
+	schemaVersion: number;
 	updatedAt: string;
 	lastOpenedAt: string;
 	trashPurgeAfter?: string | null;
@@ -61,6 +63,7 @@ async function useDeterministicEditorWorld(
 			ownerUserId,
 			world: initialWorld,
 			revision: 1,
+			schemaVersion: PERSISTED_SCHEMA_VERSION,
 			updatedAt: new Date().toISOString(),
 			lastOpenedAt: new Date().toISOString(),
 		});
@@ -141,6 +144,7 @@ async function useDeterministicEditorWorld(
 				ownerUserId,
 				world: createdWorld,
 				revision: 1,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
 				updatedAt: new Date().toISOString(),
 				lastOpenedAt: new Date().toISOString(),
 			};
@@ -232,7 +236,11 @@ async function useDeterministicEditorWorld(
 				headers: {
 					"content-disposition": `attachment; filename="${stored.editorSlug}.mothmark.json"`,
 				},
-				body: JSON.stringify({format: "mothmark-world", world: stored.world}),
+				body: JSON.stringify({
+					format: "mothmark-world",
+					schemaVersion: PERSISTED_SCHEMA_VERSION,
+					world: stored.world,
+				}),
 			});
 			return;
 		}
@@ -348,11 +356,14 @@ async function writeLocalWorldDraft(
 	);
 }
 
-test("the home page opens the world library without choosing a world", async ({page}) => {
+test("the home page continues without an account into the world library", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 
 	await page.goto("/");
+	await expect(
+		page.getByRole("navigation", {name: "Primary navigation"}).getByRole("link", {name: "Play"}),
+	).toHaveAttribute("href", "/play");
 	expect(editor.bootstrapCount()).toBe(0);
 	await expect(
 		page.getByRole("heading", {name: "Build and play text based adventure games."}),
@@ -362,7 +373,7 @@ test("the home page opens the world library without choosing a world", async ({p
 		"page",
 	);
 
-	await page.getByRole("link", {name: "Start building"}).click();
+	await page.getByRole("link", {name: "Continue without an account"}).click();
 
 	await expect(page).toHaveURL(/\/worlds$/);
 	await expect(page.getByRole("heading", {name: "Your worlds"})).toBeVisible();
@@ -375,6 +386,30 @@ test("the home page opens the world library without choosing a world", async ({p
 			method: "POST",
 		},
 	]);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the home page offers sign-in without creating a temporary account", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+
+	await page.goto("/");
+	const signInLink = page.getByRole("link", {name: "Sign in", exact: true});
+	const continueLink = page.getByRole("link", {name: "Continue without an account"});
+	const [signInBox, continueBox] = await Promise.all([
+		signInLink.boundingBox(),
+		continueLink.boundingBox(),
+	]);
+	expect(signInBox?.width).toBeCloseTo(continueBox?.width ?? 0, 0);
+
+	await signInLink.click();
+	await expect(page).toHaveURL(/\/sign-in$/);
+	await expect(page.getByRole("heading", {name: "Sign in", exact: true})).toBeVisible();
+	await expect(page.getByRole("link", {name: "Create an account"})).toHaveAttribute(
+		"href",
+		"/register",
+	);
+	expect(editor.bootstrapCount()).toBe(0);
 	expect(browserErrors).toEqual([]);
 });
 
@@ -828,7 +863,12 @@ test("a new world can start from an exported JSON file", async ({page}) => {
 		name: "imported-archive.mothmark.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(
-			JSON.stringify({format: "mothmark-world", worldName: "Imported archive", world: importedWorld}),
+			JSON.stringify({
+				format: "mothmark-world",
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
+				worldName: "Imported archive",
+				world: importedWorld,
+			}),
 		),
 	});
 	await expect(dialog.getByRole("textbox", {name: "World name"})).toHaveValue("Imported archive");
@@ -944,6 +984,71 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	expect(browserErrors).toEqual([]);
 });
 
+test("a registered owner publishes the current saved world from world settings", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const environment = await useDeterministicEditorWorld(page);
+	let publishRequest: unknown;
+
+	await page.route("**/api/account", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {accountType: "registered"}}),
+		}),
+	);
+	await page.route(`**/api/world/${environment.worldId}/publication`, async (route) => {
+		if (route.request().method() === "GET") {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: null}),
+			});
+			return;
+		}
+		publishRequest = route.request().postDataJSON();
+		await route.fulfill({
+			status: 201,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					id: "publication-id",
+					slug: "quiet-archive",
+					title: "Quiet archive",
+					summary: "A compact public world.",
+					visibility: "listed",
+					status: "published",
+					release: {number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
+					worldRevision: 1,
+					currentWorldRevision: 1,
+					unpublishedChanges: false,
+				},
+			}),
+		});
+	});
+
+	await page.goto(`/worlds/${environment.worldSlug}`);
+	await page.getByRole("button", {name: "World settings"}).click();
+	await expect(page.getByRole("heading", {name: "Publishing"})).toBeVisible();
+	await page.getByLabel("Public title").fill("Quiet archive");
+	await page.getByLabel("Stable public slug").fill("quiet-archive");
+	await page.getByLabel("Short summary").fill("A compact public world.");
+	await page.getByRole("button", {name: "Publish current version"}).click();
+
+	await expect(page.getByText("Release 1 uses saved revision 1.", {exact: false})).toBeVisible();
+	await expect(page.getByRole("link", {name: "Open published world"})).toHaveAttribute(
+		"href",
+		"/play/quiet-archive",
+	);
+	expect(publishRequest).toEqual({
+		expectedRevision: 1,
+		title: "Quiet archive",
+		slug: "quiet-archive",
+		summary: "A compact public world.",
+		visibility: "listed",
+	});
+	expect(browserErrors).toEqual([]);
+});
+
 test("the theme control communicates and applies its state", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await page.addInitScript(() => window.localStorage.setItem("mothmark-theme", "light"));
@@ -976,7 +1081,7 @@ test("the starter world copy action provides immediate confirmation", async ({pa
 	expect(browserErrors).toEqual([]);
 });
 
-test("administrator sign-in and read-only oversight support deep links and back navigation", async ({
+test("administrator sign-in and granular controls support deep links and back navigation", async ({
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
@@ -992,7 +1097,7 @@ test("administrator sign-in and read-only oversight support deep links and back 
 		name: "Private test world",
 		owner: {accountType: "anonymous", displayName: null, id: userId},
 		revision: 3,
-		schemaVersion: 1,
+		schemaVersion: PERSISTED_SCHEMA_VERSION,
 		trashPurgeAfter: null,
 		updatedAt: now,
 		worldSizeBytes: 4096,
@@ -1009,9 +1114,13 @@ test("administrator sign-in and read-only oversight support deep links and back 
 		maxWorlds: 5,
 		siteRole: "user",
 		status: "active",
+		suspendedAt: null,
+		suspensionReason: null,
 		trashedWorldCount: 0,
 		worldCount: 1,
 	};
+	let permissionState: "deny" | "inherited" = "inherited";
+	let permissionMutation: unknown;
 	await page.route("**/api/admin/auth/password", (route) =>
 		route.fulfill({
 			status: 200,
@@ -1040,13 +1149,35 @@ test("administrator sign-in and read-only oversight support deep links and back 
 			body: JSON.stringify({
 				data: {
 					...user,
-					permissions: [{allowed: true, permission: "editor.access", source: "account default"}],
+					credentialChangedAt: null,
+					email: null,
+					emailVerifiedAt: null,
+					mfaEnrolled: false,
+					permissions: [
+						{
+							allowed: permissionState !== "deny",
+							expiresAt: null,
+							override: permissionState,
+							permission: "editor.access",
+							source: permissionState === "deny" ? "explicit deny" : "account default",
+						},
+					],
+					registeredAt: null,
 					sessions: [],
 					worlds: [world],
 				},
 			}),
 		}),
 	);
+	await page.route(new RegExp(`/api/admin/users/${userId}/permissions$`), async (route) => {
+		permissionMutation = route.request().postDataJSON();
+		permissionState = "deny";
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {permissions: []}}),
+		});
+	});
 	await page.route(/\/api\/admin\/worlds$/, (route) =>
 		route.fulfill({
 			status: 200,
@@ -1059,6 +1190,13 @@ test("administrator sign-in and read-only oversight support deep links and back 
 			status: 200,
 			contentType: "application/json",
 			body: JSON.stringify({data: {...world, world: initialWorld}}),
+		}),
+	);
+	await page.route(new RegExp(`/api/admin/worlds/${worldId}/edit$`), (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {revision: 4}}),
 		}),
 	);
 	await page.route("**/api/auth/csrf?audience=admin", (route) =>
@@ -1089,12 +1227,25 @@ test("administrator sign-in and read-only oversight support deep links and back 
 
 	await page.getByRole("link", {name: `Anonymous ${userId.slice(0, 8)}`}).click();
 	await expect(page.getByRole("heading", {name: `Anonymous ${userId.slice(0, 8)}`})).toBeVisible();
-	await page.goBack();
+	await expect(page.getByText("Effective: allowed · account default")).toBeVisible();
+	await page.getByLabel("Override for editor.access").selectOption("deny");
+	await expect(page.getByText("Permission update completed.")).toBeVisible();
+	expect(permissionMutation).toEqual({permission: "editor.access", state: "deny"});
+	await expect(page.getByText("Effective: denied · explicit deny")).toBeVisible();
+	await page.getByRole("link", {name: "← Users"}).click();
 	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
 
 	await page.goto(`/admin/worlds/${worldId}`);
 	await expect(page.getByRole("heading", {name: "Private test world"})).toBeVisible();
+	await page.goBack();
+	await expect(page.getByRole("heading", {name: "Users"})).toBeVisible();
+	await page.goto(`/admin/worlds/${worldId}`);
 	await expect(page.getByText("Inspection only")).toBeVisible();
+	await page.getByRole("button", {name: "Enter administrative edit mode"}).click();
+	await expect(page.getByRole("status")).toContainText("Administrative editing");
+	await expect(page.getByRole("button", {name: "Save administrative edit"})).toBeDisabled();
+	await page.getByLabel("Administrative reason").fill("Repair a malformed maintained document");
+	await expect(page.getByRole("button", {name: "Save administrative edit"})).toBeEnabled();
 	await page.setViewportSize({width: 390, height: 844});
 	expect(
 		await page.evaluate(

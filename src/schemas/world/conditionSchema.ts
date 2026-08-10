@@ -28,34 +28,75 @@ export const ConditionReferenceSchema = editor.object(
 
 export const FlagConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("flag-type", [
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("normal").default("normal"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.literal("is"),
+				flag: editor.flagKey({title: "Flag", commandVariableType: "boolean"}),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
-			flag: editor.flagKey({title: "Flag"}),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("room"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("normal").default("normal"),
+				operation: z.enum(["exists", "missing"]),
+				flag: editor.flagKey({title: "Flag"}),
 			}),
-			roomId: editor.reference("room", {title: "Room"}),
-			flag: editor.string({title: "Flag"}).min(1),
-		}),
-		z.object({
-			type: z.literal("flag"),
-			"flag-type": z.literal("item"),
-			operation: editor.select(z.enum(["true", "false", "exists", "missing"]), {
-				title: "Operation",
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.literal("is"),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
-			itemId: editor.reference("item", {title: "Item"}),
-			flag: editor.string({title: "Flag"}).min(1),
-		}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("room"),
+				operation: z.enum(["exists", "missing"]),
+				roomId: editor.reference("room", {title: "Room"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
+		z.discriminatedUnion("operation", [
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("item"),
+				operation: z.literal("is"),
+				itemId: editor.reference("item", {title: "Item"}),
+				flag: editor.string({title: "Flag"}).min(1),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
+			}),
+			z.object({
+				type: z.literal("flag"),
+				"flag-type": z.literal("item"),
+				operation: z.enum(["exists", "missing"]),
+				itemId: editor.reference("item", {title: "Item"}),
+				flag: editor.string({title: "Flag"}).min(1),
+			}),
+		]),
 	]),
-	{title: "Flag Condition", description: "Checks a boolean world, room, or item flag."},
+	{title: "Flag condition", description: "Checks a boolean world, room, or item flag."},
 );
 
 export const ItemStatePredicateSchema = editor.object(
@@ -235,30 +276,56 @@ export const CounterConditionSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("compare"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 			operator: ComparisonOperatorSchema,
-			value: editor.number({title: "Value"}),
+			value: editor.number({title: "Value", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("between"),
-			counter: editor.input({title: "Counter"}),
-			min: editor.number({title: "Minimum"}),
-			max: editor.number({title: "Maximum"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
+			min: editor.number({title: "Minimum", commandVariableType: "number"}),
+			max: editor.number({title: "Maximum", commandVariableType: "number"}),
 			inclusive: editor.boolean({title: "Inclusive"}).default(true),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("exists"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("missing"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter", commandVariableType: "number"}),
 		}),
 	]),
 	{title: "Counter Condition", description: "Checks a numeric world counter."},
+);
+
+export const TextConditionSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("text"),
+			operation: z.enum([
+				"is",
+				"is-not",
+				"starts-with",
+				"does-not-start-with",
+				"ends-with",
+				"does-not-end-with",
+				"contains",
+				"does-not-contain",
+			]),
+			text: editor.textKey({title: "Text variable", commandVariableType: "string"}),
+			value: editor.input({title: "Value", commandVariableType: "string"}),
+		}),
+		z.object({
+			type: z.literal("text"),
+			operation: z.enum(["is-empty", "is-not-empty", "exists", "missing"]),
+			text: editor.textKey({title: "Text variable", commandVariableType: "string"}),
+		}),
+	]),
+	{title: "Text condition", description: "Checks a saved text value."},
 );
 
 export const CurrentRoomConditionSchema = editor.discriminatedUnion(
@@ -299,6 +366,7 @@ export const SingleConditionSchema = editor.discriminatedUnion(
 	z.discriminatedUnion("type", [
 		FlagConditionSchema,
 		CounterConditionSchema,
+		TextConditionSchema,
 		CurrentRoomConditionSchema,
 		ItemConditionSchema,
 	]),

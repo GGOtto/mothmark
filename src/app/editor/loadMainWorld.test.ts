@@ -1,8 +1,9 @@
 /** @jest-environment node */
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 
-import {loadEditorWorld, migrateRoomFeaturesToItems} from "./loadMainWorld";
+import {loadEditorWorld} from "./loadMainWorld";
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
 const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
@@ -15,6 +16,7 @@ const stored = (id = worldId) => ({
 		name: "My world",
 		ownerUserId: userId,
 		revision: 4,
+		schemaVersion: PERSISTED_SCHEMA_VERSION,
 		world: initialWorld,
 	},
 });
@@ -87,29 +89,18 @@ describe("loadEditorWorld", () => {
 		);
 	});
 
-	it("migrates room-local features into non-takeable global items", () => {
-		const legacyWorld = JSON.parse(JSON.stringify(initialWorld)) as Record<string, unknown>;
-		delete legacyWorld.items;
-		const rooms = legacyWorld.rooms as Array<Record<string, unknown>>;
-		rooms[0].features = [
-			{
-				id: {type: "feature", id: "old-table"},
-				name: "Old table",
-				aliases: ["table"],
-				tags: ["wooden"],
-				kind: "surface",
-				description: "Its boards are scarred.",
-				listedInRoom: true,
-				flags: {examined: false},
-			},
-		];
+	it("loads a version-1 editor world through the one-time blanking migration", async () => {
+		const legacyResponse = stored();
+		legacyResponse.data.schemaVersion = 1;
+		const fetchWorld = jest
+			.fn()
+			.mockResolvedValueOnce(jsonResponse({data: {csrfToken: "csrf"}}))
+			.mockResolvedValueOnce(jsonResponse(legacyResponse, 201));
 
-		const migrated = migrateRoomFeaturesToItems(legacyWorld) as typeof initialWorld;
-		expect((migrated.rooms[0] as unknown as {features?: unknown}).features).toBeUndefined();
-		expect(migrated.items[0]).toMatchObject({
-			id: {type: "item", id: "old-table"},
-			name: "Old table",
-			behaviors: [{type: "surface"}],
-		});
+		const result = await loadEditorWorld(fetchWorld);
+		expect(result.world.metadata.title).toBe("My world");
+		expect(result.world.rooms).toEqual([]);
+		expect(result.world.items).toEqual([]);
+		expect(result.world.connections).toEqual([]);
 	});
 });

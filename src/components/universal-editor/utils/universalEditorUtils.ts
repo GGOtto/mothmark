@@ -1,9 +1,11 @@
 import {TextFieldControlMetadata} from "../TextFieldEditor";
+import {parseVariableText} from "@/features/command-variables/syntax";
 import type {EditorSummaryMetadata} from "@/types/universalEditorTypes";
 import {idValue, isID} from "@/utils/idUtils";
 import type {z} from "zod";
 import {
-	findEditorSchemaVariant,
+	getEditorSchemaVariants,
+	getSchemaFieldValues,
 	schemaFieldOptions,
 	schemaTypeOptions,
 } from "./editorSchemaVariants";
@@ -59,13 +61,53 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stringifySummaryValue(value: unknown): string {
+function summarizeText(value: string) {
+	const nodes = parseVariableText(value);
+	if (!nodes.some((node) => node.type === "variable")) return value.length ? value : "(empty)";
+	return nodes
+		.map((node) => (node.type === "text" ? node.value : "command input"))
+		.join("")
+		.trim();
+}
+
+function findSummaryVariant(schema: z.ZodTypeAny, value: Record<string, unknown>) {
+	return getEditorSchemaVariants(schema).find((variant) =>
+		Object.entries(variant.shape).every(([field, fieldSchema]) => {
+			const allowedValues = getSchemaFieldValues(fieldSchema);
+			if (allowedValues.length === 0 || value[field] === undefined) return true;
+			return allowedValues.includes(String(value[field]));
+		}),
+	);
+}
+
+function stringifySummaryValue(value: unknown, schema?: z.ZodTypeAny): string {
 	if (value === undefined) return "";
 	if (isID(value)) return idValue(value) || "(empty)";
 	if (Array.isArray(value))
-		return value.length ? value.map(stringifySummaryValue).join(", ") : "(none)";
-	if (typeof value === "string") return value.length ? value : "(empty)";
+		return value.length ? value.map((child) => stringifySummaryValue(child)).join(", ") : "(none)";
+	if (typeof value === "string") return summarizeText(value);
+	if (isRecord(value)) {
+		const nestedSummary = schema ? generateNestedSchemaSummary(value, schema) : "";
+		if (nestedSummary) return nestedSummary;
+		return Object.values(value)
+			.map((child) => stringifySummaryValue(child))
+			.filter(Boolean)
+			.join(" ");
+	}
 	return String(value);
+}
+
+function commandBoundFields(value: Record<string, unknown>) {
+	if (!Array.isArray(value.commandVariables)) return new Set<string>();
+	return new Set(
+		value.commandVariables.flatMap((binding) =>
+			isRecord(binding) && typeof binding.field === "string" ? [binding.field] : [],
+		),
+	);
+}
+
+function generateNestedSchemaSummary(value: Record<string, unknown>, schema: z.ZodTypeAny) {
+	return generateSchemaVariantSummary(value, schema, "nested");
 }
 
 function getTemplateValue(value: unknown, path: string) {
@@ -113,7 +155,7 @@ export function generateEditorSummary(
 		}
 		if (summary?.mode === "deterministic" || summary?.enabled) {
 			const label = value.name ?? value.title ?? value.label ?? value.id;
-			if (label != null) return String(label);
+			if (label != null) return stringifySummaryValue(label);
 		}
 	}
 
@@ -123,9 +165,10 @@ export function generateEditorSummary(
 }
 
 export function createStableId(value: unknown, prefix = "copy") {
-	const source = isRecord(value)
-		? String(value.id ?? value.key ?? value.name ?? value.title ?? prefix)
-		: prefix;
+	const candidate = isRecord(value)
+		? (value.id ?? value.key ?? value.name ?? value.title)
+		: undefined;
+	const source = candidate === undefined ? prefix : stringifySummaryValue(candidate);
 	const base = applyTextTransform(source, "id") || prefix;
 	return `${base}-copy`;
 }
@@ -170,13 +213,13 @@ export function generateEffectSummary(effect: unknown, schema: z.ZodTypeAny): st
 function generateSchemaVariantSummary(
 	value: Record<string, unknown>,
 	schema: z.ZodTypeAny,
-	kind: "condition" | "effect",
+	kind: "condition" | "effect" | "nested",
 ) {
 	const type = String(value.type ?? "");
 	const flagType = typeof value["flag-type"] === "string" ? value["flag-type"] : undefined;
 	const operation = typeof value.operation === "string" ? value.operation : undefined;
-	const variant = findEditorSchemaVariant(schema, {type, "flag-type": flagType, operation});
-	if (!variant) return `Unknown ${kind}`;
+	const variant = findSummaryVariant(schema, value);
+	if (!variant) return kind === "nested" ? "" : `Unknown ${kind}`;
 
 	const typeLabel = schemaTypeOptions(schema).find((option) => option.value === type)?.label ?? type;
 	const operationLabel = operation
@@ -184,9 +227,16 @@ function generateSchemaVariantSummary(
 				(option) => option.value === operation,
 			)?.label
 		: undefined;
+	const boundFields = commandBoundFields(value);
 	const details = Object.keys(variant.shape)
-		.filter((key) => !["type", "operation"].includes(key) && value[key] !== undefined)
-		.map((key) => stringifySummaryValue(value[key]))
+		.filter(
+			(key) =>
+				!["type", "operation", "commandVariables"].includes(key) &&
+				(value[key] !== undefined || boundFields.has(key)),
+		)
+		.map((key) =>
+			boundFields.has(key) ? "command input" : stringifySummaryValue(value[key], variant.shape[key]),
+		)
 		.filter(Boolean);
 	const effectTypeLabel = operationLabel
 		? `${typeLabel.charAt(0).toLowerCase()}${typeLabel.slice(1)}`

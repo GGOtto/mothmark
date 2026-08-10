@@ -2,6 +2,8 @@ import "server-only";
 
 import type {Knex} from "knex";
 
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
 	EDITOR_SESSION_DURATION_MS,
@@ -107,6 +109,18 @@ export async function findBootstrapEditorActor(token: string): Promise<Bootstrap
 	});
 }
 
+export async function findBootstrapPlayActor(token: string): Promise<BootstrapEditorActor> {
+	return database.transaction(async (transaction) => {
+		const now = new Date();
+		const row = await findSessionActorRow(token, transaction, true);
+		if (!row) return undefined;
+		if (row.user_status === "suspended") return "blocked";
+		const actor = activeActorFromSession(row, "play", now);
+		if (!actor) return undefined;
+		return refreshActorActivity(transaction, row, actor, now);
+	});
+}
+
 export async function findCurrentActor(
 	token: string,
 	audience: SessionAudience,
@@ -194,7 +208,7 @@ async function ensureFirstOwnedWorld(
 				name: initialWorld.metadata.title || "Main world",
 				slug: "main",
 				world: initialWorld,
-				schema_version: 1,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				kind: "template",
 				owner_user_id: null,
 			})
@@ -210,8 +224,11 @@ async function ensureFirstOwnedWorld(
 			editor_slug: editorSlug,
 			name: template.name,
 			slug: null,
-			world: template.world,
-			schema_version: template.schema_version,
+			world: parseStoredWorld(template.world, template.schema_version, {
+				id: template.id,
+				storage: "template",
+			}),
+			schema_version: PERSISTED_SCHEMA_VERSION,
 			kind: "editor",
 			owner_user_id: userId,
 			updated_by_user_id: userId,

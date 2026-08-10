@@ -6,7 +6,7 @@ import {
 	adminNotFoundResponse,
 	adminRouteError,
 	isResponse,
-	requireAdministrator,
+	requireAdminPermission,
 } from "../../_shared";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function GET(
 	request: Request,
 	context: {params: Promise<{id: string}>},
 ): Promise<NextResponse> {
-	const actor = await requireAdministrator(request);
+	const actor = await requireAdminPermission(request, "admin.users.view");
 	if (isResponse(actor)) return actor;
 	const parsedId = z.uuid().safeParse((await context.params).id);
 	if (!parsedId.success) return adminNotFoundResponse();

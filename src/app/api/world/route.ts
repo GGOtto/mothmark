@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {readBoundedJson, WORLD_REQUEST_MAX_BYTES} from "@/auth/requestBody";
 import {
 	createOwnedWorld,
 	getOwnedWorldLibrary,
@@ -11,8 +12,9 @@ import {
 import {
 	CreateWorldRequestSchema,
 	handleWorldRouteError,
-	invalidJsonResponse,
+	requestBodyErrorResponse,
 	validationErrorResponse,
+	worldPermissionError,
 } from "./_shared";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "editor.access");
+		if (permissionError) return permissionError;
 		if (new URL(request.url).searchParams.get("view") === "trash") {
 			return NextResponse.json({data: {worlds: await listOwnedTrashedWorlds(actor.userId)}});
 		}
@@ -37,9 +41,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 	let body: unknown;
 	try {
-		body = await request.json();
-	} catch {
-		return invalidJsonResponse();
+		body = await readBoundedJson(request, WORLD_REQUEST_MAX_BYTES);
+	} catch (error) {
+		return requestBodyErrorResponse(error);
 	}
 	const parsed = CreateWorldRequestSchema.safeParse(body);
 	if (!parsed.success) return validationErrorResponse(parsed.error.issues);
@@ -47,6 +51,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 	try {
 		const actor = await resolveCurrentActor(request, "editor");
 		if (!actor) return authRequiredResponse();
+		const permissionError = await worldPermissionError(actor, "world.create");
+		if (permissionError) return permissionError;
 		return NextResponse.json(
 			{data: await createOwnedWorld(actor.userId, parsed.data)},
 			{status: 201},

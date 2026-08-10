@@ -282,6 +282,7 @@ function buildFeatures(
 		type === "connection-picker" ||
 		type === "flag-picker" ||
 		type === "counter-picker" ||
+		type === "text-picker" ||
 		type === "tag-list" ||
 		type === "id"
 	) {

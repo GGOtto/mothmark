@@ -324,6 +324,37 @@ describe("CommandSchema", () => {
 		expect(CommandSchema.safeParse(command).success).toBe(false);
 	});
 
+	it("rejects non-number variables bound to number comparison operands", () => {
+		const object = target("object");
+		const command = {
+			...commandWithBlocks([phrase(["compare"]), object]),
+			behavior: {
+				...createDefaultFieldObject(CommandConditionBranchSchema),
+				if: {
+					condition: {
+						type: "comparison",
+						valueType: "number",
+						operator: "eq",
+						left: {source: "literal", value: 1},
+						right: {source: "literal", value: 1},
+						commandVariables: [{blockId: object.id, field: "right"}],
+					},
+					effect: {
+						name: "Compared",
+						id: toID("effect", "compared"),
+						type: "group",
+						effects: [],
+						allowMultipleUsesInWorld: true,
+					},
+					delayTurns: 0,
+					cancelIfConditionFails: true,
+				},
+			},
+		};
+
+		expect(CommandSchema.safeParse(command).success).toBe(false);
+	});
+
 	it("requires a failed block to use its entered-text projection", () => {
 		const object = target("object");
 		const command = CommandSchema.parse(commandWithBlocks([phrase(["touch"]), object]));

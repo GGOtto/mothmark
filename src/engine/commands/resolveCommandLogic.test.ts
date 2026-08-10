@@ -22,6 +22,8 @@ import {
 const amountBlockId = toID("command-block", "amount-block");
 const otherAmountBlockId = toID("command-block", "other-amount-block");
 const messageBlockId = toID("command-block", "message-block");
+const booleanBlockId = toID("command-block", "boolean-block");
+const choiceBlockId = toID("command-block", "choice-block");
 
 function gameWithCommandVariables() {
 	return produce(createDefaultFieldObject(GameStateSchema), (draft) => {
@@ -30,6 +32,8 @@ function gameWithCommandVariables() {
 			{blockId: amountBlockId, type: "number", value: 3},
 			{blockId: otherAmountBlockId, type: "number", value: 7},
 			{blockId: messageBlockId, type: "text", value: "Resolved message"},
+			{blockId: booleanBlockId, type: "boolean", value: false, rawText: "no"},
+			{blockId: choiceBlockId, type: "choice", value: "formal", rawText: "properly"},
 		];
 	});
 }
@@ -150,6 +154,94 @@ describe("resolveCommandCondition", () => {
 			type: "group",
 			operation: "all",
 			conditions: [],
+		});
+	});
+
+	it("fills a flag expectation from a boolean command variable", () => {
+		const condition = CommandConditionSchema.parse({
+			type: "flag",
+			"flag-type": "normal",
+			operation: "is",
+			flag: "ready",
+			value: true,
+			commandVariables: [{blockId: booleanBlockId, field: "value"}],
+		});
+		const game = produce(gameWithCommandVariables(), (draft) => {
+			draft.variables.flags = [{ready: false}];
+		});
+
+		expect(resolveCommandCondition(game, condition)).toEqual({
+			type: "flag",
+			"flag-type": "normal",
+			operation: "is",
+			flag: "ready",
+			value: false,
+		});
+	});
+
+	it("compares a number command value where a saved counter can be selected", () => {
+		const condition = CommandConditionSchema.parse({
+			type: "counter",
+			operation: "compare",
+			counter: "count",
+			operator: "eq",
+			value: 3,
+			commandVariables: [{blockId: amountBlockId, field: "counter"}],
+		});
+
+		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
+			type: "group",
+			operation: "all",
+			conditions: [],
+		});
+	});
+
+	it("compares a boolean command value where a saved flag can be selected", () => {
+		const condition = CommandConditionSchema.parse({
+			type: "flag",
+			"flag-type": "normal",
+			operation: "is",
+			flag: "ready",
+			value: false,
+			commandVariables: [{blockId: booleanBlockId, field: "flag"}],
+		});
+
+		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
+			type: "group",
+			operation: "all",
+			conditions: [],
+		});
+	});
+
+	it("compares a text command value where saved text can be selected", () => {
+		const condition = CommandConditionSchema.parse({
+			type: "text",
+			operation: "contains",
+			text: "saved-text",
+			value: "message",
+			commandVariables: [{blockId: messageBlockId, field: "text"}],
+		});
+
+		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
+			type: "group",
+			operation: "all",
+			conditions: [],
+		});
+	});
+
+	it("interpolates a choice block's raw text into a text condition", () => {
+		const condition = CommandConditionSchema.parse({
+			type: "text",
+			operation: "is",
+			text: "tone",
+			value: `{variable ${choiceBlockId.id} text}`,
+		});
+
+		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
+			type: "text",
+			operation: "is",
+			text: "tone",
+			value: "properly",
 		});
 	});
 

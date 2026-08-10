@@ -12,7 +12,7 @@ export function Header() {
 	const {theme, toggleTheme} = useTheme();
 	const isDark = theme === "dark";
 	const pathname = usePathname();
-	if (pathname.startsWith("/admin")) return null;
+	if (pathname.startsWith("/admin") || pathname.startsWith("/play")) return null;
 
 	return (
 		<header className="header">
@@ -37,6 +37,10 @@ export function Header() {
 					aria-current={pathname === "/" ? "page" : undefined}
 				>
 					Home
+				</Link>
+
+				<Link href="/play" className="headerLink">
+					Play
 				</Link>
 
 				<Link

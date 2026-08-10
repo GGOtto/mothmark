@@ -299,3 +299,33 @@
 :root[data-theme="dark"] .headerThemeToggleThumb {
 	transform: translateX(16px);
 }
+
+@media (max-width: 560px) {
+	.header {
+		padding: 0 8px;
+		.headerTitle {
+			display: none;
+		}
+		.headerIdentity {
+			gap: 6px;
+		}
+		.headerLink {
+			padding: 0 7px;
+			font-size: 12px;
+		}
+		.headerLinkActive::after {
+			right: 7px;
+			left: 7px;
+		}
+		.headerThemeToggle {
+			margin-left: 4px;
+		}
+		.worldSwitcher {
+			max-width: 112px;
+			padding-left: 6px;
+		}
+		.worldSwitcherTrigger {
+			max-width: 104px;
+		}
+	}
+}

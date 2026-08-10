@@ -3,6 +3,7 @@ import {z} from "zod";
 
 import {EDITOR_SESSION_COOKIE} from "@/auth/cookieNames";
 import {EDITOR_SESSION_DURATION_MS} from "@/auth/sessionTokens";
+import {AUTH_REQUEST_MAX_BYTES, RequestBodyError, readBoundedJson} from "@/auth/requestBody";
 
 export const EmailSchema = z
 	.email()
@@ -26,7 +27,7 @@ export async function readJson<T>(
 	schema: z.ZodType<T>,
 ): Promise<T | NextResponse> {
 	try {
-		const result = schema.safeParse(await request.json());
+		const result = schema.safeParse(await readBoundedJson(request, AUTH_REQUEST_MAX_BYTES));
 		if (result.success) return result.data;
 		return NextResponse.json(
 			{
@@ -38,7 +39,9 @@ export async function readJson<T>(
 			},
 			{status: 400},
 		);
-	} catch {
+	} catch (error) {
+		if (error instanceof RequestBodyError && error.code === "REQUEST_TOO_LARGE")
+			return NextResponse.json({error: {code: error.code, message: error.message}}, {status: 413});
 		return NextResponse.json(
 			{error: {code: "INVALID_JSON", message: "The request body must contain valid JSON."}},
 			{status: 400},

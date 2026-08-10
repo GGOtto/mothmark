@@ -2,6 +2,10 @@
 
 ## Horizontal slice implementation plan
 
+**Implementation status (2026-08-09):** Slices 1–10 are implemented. The launch runbook retains the
+preview migration, production-like retention drill, and operator approval steps that must be
+performed against the target deployment rather than simulated in repository tests.
+
 This document is the implementation plan for moving Mothmark from one shared editable world to:
 
 - browser-bound anonymous user accounts;
@@ -11,8 +15,8 @@ This document is the implementation plan for moving Mothmark from one shared edi
 - one strongly authenticated administrator account;
 - administrator-controlled permissions, limits, users, and worlds;
 - publishing for eligible registered world owners;
-- a public catalog at `play.mothmark.app`;
-- a command-line player at `play.mothmark.app/[world]`; and
+- a public catalog at `mothmark.app/play`;
+- a command-line player at `mothmark.app/play/[world]`; and
 - durable hosted playthroughs recorded as exact command strings.
 
 Each slice must deliver a coherent path that a person can exercise through the interface. Database
@@ -39,14 +43,14 @@ These decisions are authoritative for this plan.
    Transferring or duplicating it to the administrator is an explicit, audited ownership action.
 7. A mutable editor world is never served directly to players. A publication points to an immutable
    release, and a release points to an immutable world version.
-8. `play.mothmark.app` lists published, listed worlds. Selecting a world opens its command-line
-   player directly at `play.mothmark.app/[world]`.
+8. `mothmark.app/play` lists published, listed worlds. Selecting a world opens its command-line
+   player directly at `mothmark.app/play/[world]`.
 9. Each anonymous play user has at most one active playthrough per publication. Returning to the
    same world loads that playthrough.
 10. A playthrough stores exact newline-delimited player commands, the visible transcript, the
     current game state, and an immutable result record for each accepted turn. It remains pinned to
     the release on which it began.
-11. Only hosted play at `play.mothmark.app` creates these playthrough records. The embedded editor
+11. Only hosted play under `mothmark.app/play` creates these playthrough records. The embedded editor
     player is out of scope and must not write to them.
 12. Editor session recording is out of scope. Do not add PostHog, Clarity, OpenReplay, or an editor
     recording table in these slices.
@@ -73,7 +77,7 @@ Use these terms consistently in code, schema, APIs, tests, and interface copy.
   an anonymous account preserves its user ID, worlds, activity, limits, and drafts.
 
 Do not call editor worlds “games” in one surface and “projects” in another. “World” is the product
-term. “Player” refers to a user while interacting with `play.mothmark.app`; it is not a separate user
+term. “Player” refers to a user while interacting under `mothmark.app/play`; it is not a separate user
 table.
 
 ## Application surfaces
@@ -90,6 +94,8 @@ mothmark.app
 ├── /reset-password
 ├── /worlds
 ├── /worlds/[editorSlug]
+├── /play
+│   └── /[world]
 ├── /account
 └── /admin
     ├── /users
@@ -101,13 +107,9 @@ mothmark.app
     ├── /playthroughs
     ├── /playthroughs/[playthroughId]
     └── /audit
-
-play.mothmark.app
-├── /
-└── /[world]
 ```
 
-`play.mothmark.app/[world]` uses the publication slug. It must never expose an editor-world UUID as
+`mothmark.app/play/[world]` uses the publication slug. It must never expose an editor-world UUID as
 the public identifier.
 
 Private editor URLs use a separate stable, owner-scoped `editor_slug` derived from the world name.
@@ -115,8 +117,9 @@ It is readable but not public or authoritative: the owner session still gates ev
 UUIDs remain internal mutation identifiers, and old UUID URLs canonicalize to the editor slug. A
 rename does not change an existing editor slug. Publication slugs remain a distinct later concept.
 
-The two hosts may share one Next.js codebase and database. Host-aware routing must keep their public
-route surfaces distinct. Do not expose editor or administrator endpoints through the play host.
+The play and authoring surfaces share one Next.js application and database. Route-aware authorization
+must keep their public surfaces distinct. Public play routes must not expose editor or administrator
+data or operations.
 
 ## Security and authorization invariants
 
@@ -214,7 +217,7 @@ authoritative database state each time; do not permanently label an account with
 - Site-role administration alone does not make an anonymous-owned world publishable.
 - Releases and world versions are immutable.
 - Editor saves never change a live release.
-- Only published publications resolve on the play host.
+- Only published publications resolve under the public `/play` routes.
 - Listed publications appear in the catalog. Unlisted publications resolve only by exact slug.
 - Suspension immediately prevents catalog visibility, new playthroughs, and continued play.
 - Publication and release mutations are audited.
@@ -606,7 +609,7 @@ All new application UI follows `docs/design-system.md` and the semantic tokens i
 ### Shared player components
 
 Reuse the command-line player by extracting its terminal surface, not by mounting the complete
-editor `CommandLine` on the play host. Keep these responsibilities separate:
+editor `CommandLine` under the public `/play` routes. Keep these responsibilities separate:
 
 ```text
 PlayerTerminal
@@ -968,7 +971,7 @@ OIDC is no longer part of Mothmark.
 - Verification and recovery email, throttling, credential storage, and operational recovery are
   documented and exercised before any public signup is enabled in production.
 
-## Slice 6: Administrator permissions, limits, and world control
+## [x] Slice 6: Administrator permissions, limits, and world control
 
 **Outcome:** The administrator can change a user's effective capabilities and limits, suspend access,
 revoke sessions, and manage exceptional world situations with a complete audit trail.
@@ -1026,10 +1029,17 @@ revoke sessions, and manage exceptional world situations with a complete audit t
 - Administrative authority is granular, visible, and auditable.
 - No administrator UI action depends on manually editing PostgreSQL.
 
-## Slice 7: Registered-owner publishing and first hosted play
+## [x] Slice 7: Registered-owner publishing and first hosted play
+
+Slice 7 uses a 30-day inactivity window for play-only anonymous accounts, followed by the shared
+7-day cleanup grace period. Anonymized playthrough diagnostics remain for 90 additional days. The
+first hosted release limits a world snapshot to 1 MiB, a command line to 500 characters, and each
+aggregate command/transcript representation to 1 MiB. Public titles are 1–80 characters and summaries
+1–280 characters. The catalog orders by most recently published, and immutable records use the
+`mothmark-engine-0.1.0` engine identifier.
 
 **Outcome:** An eligible registered owner can publish an owned world, a visitor can find it on
-`play.mothmark.app`, and selecting it opens a durable command-line playthrough that accepts and
+`mothmark.app/play`, and selecting it opens a durable command-line playthrough that accepts and
 saves commands. Administrators oversee publications without becoming the owner or publisher of
 someone else's private world.
 
@@ -1056,7 +1066,8 @@ together; do not ship a catalog of worlds that cannot be played.
 - Append the immutable turn result and update the exact aggregate command string, visible transcript,
   current state, command count, timestamps, and revision atomically.
 - Pin the playthrough to release 1 and its world version.
-- Add host-aware routing and ensure the play host cannot resolve editor/admin routes.
+- Add route-aware authorization and ensure public play routes cannot resolve editor/admin data or
+  operations.
 
 ### Owner and administrator UI
 
@@ -1069,14 +1080,14 @@ together; do not ship a catalog of worlds that cannot be played.
 
 ### Play UI
 
-- Build `play.mothmark.app` as a polished catalog of listed publications with search and direct
+- Build `mothmark.app/play` as a polished catalog of listed publications with search and direct
   `Play` actions.
 - Present publications as a responsive grid of restrained world cards rather than rows. A card shows
   title, short summary, last published date, and `Play`; the entire card may be clickable when the
   named action remains visible and accessible.
 - Keep the catalog focused on actual title, summary, and update information; do not invent ratings,
   popularity, categories, or author prestige.
-- Build `play.mothmark.app/[world]` as the command-line player.
+- Build `mothmark.app/play/[world]` as the command-line player.
 - Let the terminal occupy almost the entire viewport and preserve monospace output flow with the
   integrated prompt. Do not place it inside a promotional page, decorative game frame, or generic
   app card.
@@ -1149,7 +1160,7 @@ administrators retain separate suspension oversight.
 ### UI
 
 - Show `Play`, `Continue`, or `Play again` on world cards when a play session already exists.
-- Load the active playthrough immediately at `play.mothmark.app/[world]`.
+- Load the active playthrough immediately at `mothmark.app/play/[world]`.
 - Add restart confirmation and make clear when restart selects a newer release.
 - Show a restrained `New version available` choice while allowing the old playthrough to continue.
 - Show published release and `unpublished changes` state in the eligible owner's world library and
@@ -1410,9 +1421,19 @@ slice and record the decision in this document.
 - **Before Slice 7:** confirm play-only account and diagnostic playthrough retention values; maximum
   world/command/transcript sizes; default catalog ordering; engine-version identifier; and initial
   public title/summary validation limits.
-- **Before Slice 8:** whether ordinary unpublishing permits existing playthroughs to continue and for
-  how long.
-- **Before Slice 9:** historical engine-runner support window and the operational policy for a
-  recorded engine version whose compatible runner is unavailable.
-- **Before Slice 10:** adjust retention from observed cleanup volume, set production rate limits, and
-  finalize privacy/cookie language.
+- **Before Slice 8 (resolved):** ordinary unpublishing prevents new playthroughs but permits an
+  existing active playthrough to continue indefinitely on its pinned release. Restart is unavailable
+  until the owner republishes. Administrative suspension blocks both resume and commands immediately;
+  lifting a suspension leaves the publication unpublished for an explicit owner republish.
+- **Before Slice 9 (resolved):** `mothmark-engine-0.1.0` is the only installed faithful historical
+  runner. A recorded version without a compatible runner reports `Original-engine replay
+unavailable`; administrators may choose a separately labeled current-engine comparison, which is
+  never represented as the original experience.
+- **Before Slice 10 (resolved for initial launch):** retain the measured-policy starting points: 1
+  day for empty anonymous accounts, 7 days for untouched editor accounts, 30 days for play-only
+  accounts, 180 days for authored editor accounts, a shared 7-day cleanup grace period, 30 days for
+  trashed worlds, and 90 additional days for anonymized play diagnostics. Hosted play limits are 30
+  bootstraps per network per 15 minutes, 120 commands per player and 240 per network per minute, 20
+  restarts per player and 40 per network per 15 minutes, and 10 progress deletions per player and 20
+  per network per 15 minutes. Only necessary editor, play, administrator, and matching CSRF cookies
+  are active; raw player commands are disclosed as administrator-visible diagnostic data.

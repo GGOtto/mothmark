@@ -4,15 +4,18 @@ import {getDb} from "./knex";
 
 const database = getDb();
 
-export type AnonymousCleanupClass = "authored_editor" | "empty" | "untouched_editor";
+export type AnonymousCleanupClass = "authored_editor" | "empty" | "play_only" | "untouched_editor";
 
 export const ANONYMOUS_RETENTION_MS: Record<AnonymousCleanupClass, number> = {
 	empty: 24 * 60 * 60 * 1_000,
 	untouched_editor: 7 * 24 * 60 * 60 * 1_000,
+	play_only: 30 * 24 * 60 * 60 * 1_000,
 	authored_editor: 180 * 24 * 60 * 60 * 1_000,
 };
 export const ANONYMOUS_CLEANUP_GRACE_MS = 7 * 24 * 60 * 60 * 1_000;
+export const PLAYTHROUGH_DIAGNOSTIC_RETENTION_MS = 90 * 24 * 60 * 60 * 1_000;
 export const DEFAULT_CLEANUP_BATCH_SIZE = 100;
+export const EXPIRED_SESSION_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 
 type CleanupUserRow = {
 	id: string;
@@ -34,6 +37,7 @@ export type CleanupSnapshot = {
 	siteRole: CleanupUserRow["site_role"];
 	status: CleanupUserRow["status"];
 	worldRevisions: number[];
+	playthroughCount?: number;
 };
 
 export type CleanupEligibility =
@@ -56,9 +60,14 @@ export type CleanupBatchResult = {
 	wouldSchedule: number;
 };
 
-export function deriveCleanupClass(worldRevisions: number[]): AnonymousCleanupClass {
-	if (worldRevisions.length === 0) return "empty";
-	return worldRevisions.every((revision) => revision === 1) ? "untouched_editor" : "authored_editor";
+export function deriveCleanupClass(
+	worldRevisions: number[],
+	playthroughCount = 0,
+): AnonymousCleanupClass {
+	if (worldRevisions.length === 0) return playthroughCount > 0 ? "play_only" : "empty";
+	return worldRevisions.every((revision) => revision === 1) && playthroughCount === 0
+		? "untouched_editor"
+		: "authored_editor";
 }
 
 const newestDate = (values: Array<Date | string | null>): Date =>
@@ -71,7 +80,7 @@ export function evaluateCleanupEligibility(
 	now: Date,
 	options?: {ignoreNonexpiredSessions?: boolean},
 ): CleanupEligibility {
-	const retentionClass = deriveCleanupClass(snapshot.worldRevisions);
+	const retentionClass = deriveCleanupClass(snapshot.worldRevisions, snapshot.playthroughCount);
 	if (snapshot.accountType !== "anonymous" || snapshot.siteRole !== "user") {
 		return {eligible: false, reason: "protected_account", retentionClass};
 	}
@@ -97,7 +106,7 @@ async function readCleanupSnapshot(
 	user: CleanupUserRow,
 	now: Date,
 ): Promise<CleanupSnapshot> {
-	const [sessions, worlds, latestActivity] = await Promise.all([
+	const [sessions, worlds, latestActivity, playthroughs] = await Promise.all([
 		transaction("sessions")
 			.select<{expires_at: Date | string}[]>("expires_at")
 			.where({user_id: user.id})
@@ -110,13 +119,20 @@ async function readCleanupSnapshot(
 			.where({user_id: user.id})
 			.max<{latest: Date | string | null}>("last_opened_at as latest")
 			.first(),
+		transaction("playthroughs")
+			.where({player_user_id: user.id})
+			.select(
+				transaction.raw("count(id)::text as count"),
+				transaction.raw("max(updated_at) as latest"),
+			)
+			.first() as Promise<{count: string; latest: Date | string | null} | undefined>,
 	]);
 	const latestWorldUpdate = worlds.length
 		? newestDate(worlds.map((world) => world.updated_at))
 		: null;
 	const latestWorldActivityAt =
-		latestActivity?.latest || latestWorldUpdate
-			? newestDate([latestActivity?.latest ?? null, latestWorldUpdate])
+		latestActivity?.latest || latestWorldUpdate || playthroughs?.latest
+			? newestDate([latestActivity?.latest ?? null, latestWorldUpdate, playthroughs?.latest ?? null])
 			: null;
 	return {
 		accountType: user.account_type,
@@ -127,6 +143,7 @@ async function readCleanupSnapshot(
 		siteRole: user.site_role,
 		status: user.status,
 		worldRevisions: worlds.map((world) => world.revision),
+		playthroughCount: Number(playthroughs?.count ?? 0),
 	};
 }
 
@@ -146,6 +163,42 @@ async function recordBatchEvent(
 	details: CleanupBatchResult & {dryRun: boolean},
 ): Promise<void> {
 	await database("operational_events").insert({event_type: eventType, details});
+}
+
+export async function runOperationalHousekeeping(options?: {
+	dryRun?: boolean;
+	now?: Date;
+}): Promise<{expiredSessions: number; expiredRateLimitEvents: number; dryRun: boolean}> {
+	const now = options?.now ?? new Date();
+	const dryRun = options?.dryRun ?? false;
+	const sessionCutoff = new Date(now.getTime() - EXPIRED_SESSION_RETENTION_MS);
+	const rateLimitCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1_000);
+	const [sessionCount, rateLimitCount] = await Promise.all([
+		database("sessions")
+			.where("expires_at", "<", sessionCutoff)
+			.count<{count: string}[]>("id as count")
+			.first(),
+		database("request_rate_limit_events")
+			.where("attempted_at", "<", rateLimitCutoff)
+			.count<{count: string}[]>("id as count")
+			.first(),
+	]);
+	const result = {
+		expiredSessions: Number(sessionCount?.count ?? 0),
+		expiredRateLimitEvents: Number(rateLimitCount?.count ?? 0),
+		dryRun,
+	};
+	if (!dryRun) {
+		await Promise.all([
+			database("sessions").where("expires_at", "<", sessionCutoff).delete(),
+			database("request_rate_limit_events").where("attempted_at", "<", rateLimitCutoff).delete(),
+		]);
+	}
+	await database("operational_events").insert({
+		event_type: "operational_housekeeping_batch",
+		details: result,
+	});
+	return result;
 }
 
 export async function scheduleAnonymousCleanup(options?: {
@@ -199,6 +252,7 @@ export async function scheduleAnonymousCleanup(options?: {
 			result.failed += 1;
 		}
 	}
+	await runOperationalHousekeeping({dryRun, now});
 	await recordBatchEvent("anonymous_cleanup_scheduling_batch", {...result, dryRun});
 	return result;
 }
@@ -276,6 +330,14 @@ export async function purgeScheduledAnonymousAccounts(options?: {
 					result.wouldPurge += 1;
 					return;
 				}
+				await transaction("playthroughs")
+					.where({player_user_id: user.id})
+					.update({
+						player_user_id: null,
+						anonymized_at: now,
+						purge_after: new Date(now.getTime() + PLAYTHROUGH_DIAGNOSTIC_RETENTION_MS),
+						updated_at: now,
+					});
 				await transaction("users").where({id: user.id}).delete();
 				result.purged += 1;
 			});
@@ -284,5 +346,39 @@ export async function purgeScheduledAnonymousAccounts(options?: {
 		}
 	}
 	await recordBatchEvent("anonymous_cleanup_purge_batch", {...result, dryRun});
+	return result;
+}
+
+export async function purgeExpiredDiagnosticPlaythroughs(options?: {
+	batchSize?: number;
+	dryRun?: boolean;
+	now?: Date;
+}): Promise<{deleted: number; wouldDelete: number}> {
+	const now = options?.now ?? new Date();
+	const batchSize = Math.max(1, Math.min(options?.batchSize ?? DEFAULT_CLEANUP_BATCH_SIZE, 1_000));
+	const ids = await database("playthroughs")
+		.select<{id: string}[]>("id")
+		.whereNull("player_user_id")
+		.whereNotNull("anonymized_at")
+		.andWhere("purge_after", "<=", now)
+		.orderBy("purge_after", "asc")
+		.limit(batchSize);
+	const result = options?.dryRun
+		? {deleted: 0, wouldDelete: ids.length}
+		: ids.length
+			? {
+					deleted: await database("playthroughs")
+						.whereIn(
+							"id",
+							ids.map(({id}) => id),
+						)
+						.delete(),
+					wouldDelete: 0,
+				}
+			: {deleted: 0, wouldDelete: 0};
+	await database("operational_events").insert({
+		event_type: "playthrough_diagnostic_purge_batch",
+		details: {...result, dryRun: options?.dryRun ?? false},
+	});
 	return result;
 }

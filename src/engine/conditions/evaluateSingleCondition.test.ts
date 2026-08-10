@@ -14,6 +14,7 @@ const game: GameState = produce(createDefaultFieldObject(GameStateSchema), (draf
 	draft.player.currentRoom = currentRoom;
 	draft.variables.flags = [{"gate.open": true}, {"lamp.lit": false}];
 	draft.variables.counters = [{steps: 3}, {score: 10}];
+	draft.variables.texts = [{answer: "moth"}, {title: "Mothmark Archive"}, {empty: ""}];
 	draft.roomStates = [
 		{
 			...createDefaultFieldObject(RoomStateSchema),
@@ -71,14 +72,14 @@ describe("evaluateSingleCondition", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "true", flag: "gate.open"}),
+				condition({type: "flag", operation: "is", flag: "gate.open", value: true}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "false", flag: "lamp.lit"}),
+				condition({type: "flag", operation: "is", flag: "lamp.lit", value: false}),
 			),
 		).toBe(true);
 		expect(
@@ -125,6 +126,39 @@ describe("evaluateSingleCondition", () => {
 				condition({type: "counter", operation: "missing", counter: "turns"}),
 			),
 		).toBe(true);
+	});
+
+	it.each([
+		["is", "answer", "moth"],
+		["is-not", "answer", "mark"],
+		["starts-with", "title", "Moth"],
+		["does-not-start-with", "title", "Archive"],
+		["ends-with", "title", "Archive"],
+		["does-not-end-with", "title", "Mothmark"],
+		["contains", "title", "mark Arc"],
+		["does-not-contain", "title", "spider"],
+	] as const)("evaluates the saved text %s operation", (operation, text, value) => {
+		expect(
+			evaluateSingleCondition(world, game, condition({type: "text", operation, text, value})),
+		).toBe(true);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "text", operation, text: "unknown", value}),
+			),
+		).toBe(false);
+	});
+
+	it.each([
+		["is-empty", "empty"],
+		["is-not-empty", "answer"],
+		["exists", "empty"],
+		["missing", "unknown"],
+	] as const)("evaluates the saved text %s operation", (operation, text) => {
+		expect(evaluateSingleCondition(world, game, condition({type: "text", operation, text}))).toBe(
+			true,
+		);
 	});
 
 	it("honors inclusive and exclusive counter ranges", () => {
@@ -211,9 +245,10 @@ describe("evaluateSingleCondition", () => {
 				condition({
 					type: "flag",
 					"flag-type": "room",
-					operation: "true",
+					operation: "is",
 					roomId: currentRoom,
 					flag: "visited",
+					value: true,
 				}),
 			),
 		).toBe(true);
@@ -240,9 +275,10 @@ describe("evaluateSingleCondition", () => {
 				condition({
 					type: "flag",
 					"flag-type": "item",
-					operation: "false",
+					operation: "is",
 					itemId: toID("item", "statue"),
 					flag: "examined",
+					value: false,
 				}),
 			),
 		).toBe(true);
@@ -253,9 +289,10 @@ describe("evaluateSingleCondition", () => {
 				condition({
 					type: "flag",
 					"flag-type": "item",
-					operation: "true",
+					operation: "is",
 					itemId: toID("item", "statue"),
 					flag: "glowing",
+					value: true,
 				}),
 			),
 		).toBe(true);

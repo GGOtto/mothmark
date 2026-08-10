@@ -1,7 +1,11 @@
 import {fireEvent, render, screen, within} from "@testing-library/react";
 import {useState} from "react";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {CounterConditionSchema} from "@/schemas/world/conditionSchema";
+import {
+	CounterConditionSchema,
+	FlagConditionSchema,
+	TextConditionSchema,
+} from "@/schemas/world/conditionSchema";
 import {ItemActionEffectSchema} from "@/schemas/world/effectSchema";
 import {
 	CommandConditionSchema,
@@ -11,6 +15,8 @@ import type {CommandVariableCatalog} from "./model";
 import {UniversalEditor} from "@/components/universal-editor/UniversalEditor";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import {WorldSchema} from "@/schemas/world/worldSchema";
+import {produce} from "immer";
 import {z} from "zod";
 
 beforeEach(() => {
@@ -52,6 +58,12 @@ const catalog: CommandVariableCatalog = {
 			blockType: "direction",
 			label: "route",
 			valueType: "direction",
+		},
+		{
+			blockId: toID("command-block", "text-block"),
+			blockType: "text",
+			label: "note",
+			valueType: "string",
 		},
 	],
 };
@@ -101,6 +113,29 @@ function TypedHarness() {
 			/>
 			<output data-testid="value">{JSON.stringify(value)}</output>
 		</>
+	);
+}
+
+function UnavailableTypedHarness() {
+	const schema = editor.object({
+		type: z.literal("values"),
+		flagValue: editor.boolean({title: "Flag value", commandVariableType: "boolean"}),
+		counterValue: editor.number({title: "Counter value", commandVariableType: "number"}),
+		textValue: editor.textarea({title: "Text value", commandVariableType: "string"}),
+	});
+	const [value, setValue] = useState(() => ({
+		...createDefaultFieldObject(schema),
+		flagValue: true,
+		counterValue: 1,
+		textValue: "",
+	}));
+	return (
+		<UniversalEditor
+			schema={schema}
+			value={value}
+			onChange={setValue}
+			commandVariableCatalog={{options: []}}
+		/>
 	);
 }
 
@@ -181,6 +216,103 @@ function DirectionConditionHarness() {
 	);
 }
 
+function ComparisonHarness() {
+	const schema = editor.conditionControl(CommandConditionSchema, {
+		title: "Condition",
+		features: {navigateChildEditors: false, reuseWorldConditions: false},
+	});
+	const [value, setValue] = useState({
+		type: "group" as const,
+		operation: "all" as const,
+		conditions: [
+			{
+				type: "comparison" as const,
+				valueType: "number" as const,
+				operator: "eq" as const,
+				left: {source: "counter" as const, counter: "turns"},
+				right: {source: "literal" as const, value: 1},
+			},
+		],
+	});
+	return (
+		<>
+			<UniversalEditor
+				schema={schema}
+				value={value}
+				onChange={setValue}
+				commandVariableCatalog={catalog}
+			/>
+			<output data-testid="comparison-value">{JSON.stringify(value)}</output>
+		</>
+	);
+}
+
+function FlagConditionHarness() {
+	const schema = editor.conditionControl(CommandConditionSchema, {
+		title: "Condition",
+		features: {navigateChildEditors: false, reuseWorldConditions: false},
+	});
+	const [value, setValue] = useState(() => ({
+		type: "group" as const,
+		operation: "all" as const,
+		conditions: [
+			CommandConditionSchema.parse({
+				...createDefaultFieldObject(FlagConditionSchema),
+				type: "flag",
+				operation: "is",
+				flag: "ready",
+				value: true,
+			}),
+		],
+	}));
+	return (
+		<>
+			<UniversalEditor
+				schema={schema}
+				value={value}
+				onChange={setValue}
+				commandVariableCatalog={catalog}
+			/>
+			<output data-testid="flag-condition-value">{JSON.stringify(value)}</output>
+		</>
+	);
+}
+
+function TextConditionHarness() {
+	const schema = editor.conditionControl(CommandConditionSchema, {
+		title: "Condition",
+		features: {navigateChildEditors: false, reuseWorldConditions: false},
+	});
+	const [value, setValue] = useState(() => ({
+		type: "group" as const,
+		operation: "all" as const,
+		conditions: [
+			CommandConditionSchema.parse({
+				...createDefaultFieldObject(TextConditionSchema),
+				type: "text",
+				operation: "contains",
+				text: "answer",
+				value: "moth",
+			}),
+		],
+	}));
+	const world = produce(createDefaultFieldObject(WorldSchema), (draft) => {
+		draft.initialState.texts = [{text: "answer", value: "moth"}];
+	});
+	return (
+		<>
+			<UniversalEditor
+				schema={schema}
+				value={value}
+				onChange={setValue}
+				world={world}
+				commandVariableCatalog={catalog}
+			/>
+			<output data-testid="text-condition-value">{JSON.stringify(value)}</output>
+		</>
+	);
+}
+
 function DirectionEffectHarness() {
 	const [value, setValue] = useState(() => ({
 		...createDefaultFieldObject(CommandEffectGroupSchema),
@@ -228,7 +360,7 @@ describe("variable-aware editors", () => {
 		render(<TextHarness />);
 		const editor = screen.getByRole("textbox", {name: "Message"});
 		fireEvent.focus(editor);
-		fireEvent.click(screen.getByRole("button", {name: "Insert variable"}));
+		fireEvent.click(screen.getByRole("button", {name: "Insert command value"}));
 		fireEvent.click(screen.getByRole("menuitem", {name: "object name"}));
 
 		expect(screen.getByTestId("value")).toHaveTextContent("Hello {variable target-block name}");
@@ -246,7 +378,7 @@ describe("variable-aware editors", () => {
 
 	it("renders the variable menu in a viewport-positioned portal", () => {
 		render(<TextHarness />);
-		const trigger = screen.getByRole("button", {name: "Insert variable"});
+		const trigger = screen.getByRole("button", {name: "Insert command value"});
 		jest.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
 			x: 300,
 			y: 370,
@@ -264,7 +396,7 @@ describe("variable-aware editors", () => {
 		Object.defineProperty(window, "innerHeight", {configurable: true, value: 400});
 
 		fireEvent.click(trigger);
-		const menu = screen.getByRole("menu", {name: "Insert variable"});
+		const menu = screen.getByRole("menu", {name: "Insert command value"});
 
 		expect(menu.parentElement).toBe(document.body);
 		expect(trigger.parentElement).not.toContainElement(menu);
@@ -310,7 +442,9 @@ describe("variable-aware editors", () => {
 		render(<TypedHarness />);
 		const enabledField = screen.getByText("Enabled").closest(".objectEditor__field");
 		expect(enabledField).not.toBeNull();
-		fireEvent.click(within(enabledField as HTMLElement).getByRole("button", {name: "Use variable"}));
+		fireEvent.click(
+			within(enabledField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
 
 		expect(screen.getByRole("menuitem", {name: "enabled"})).toBeVisible();
 		expect(screen.queryByRole("menuitem", {name: "amount"})).toBeNull();
@@ -329,12 +463,38 @@ describe("variable-aware editors", () => {
 		expect(screen.getByTestId("value")).not.toHaveTextContent("commandVariables");
 	});
 
+	it("explains which command block unlocks flag, counter, and text values", () => {
+		render(<UnavailableTypedHarness />);
+
+		const flagField = screen.getByText("Flag value").closest(".objectEditor__field");
+		const counterField = screen.getByText("Counter value").closest(".objectEditor__field");
+		const textField = screen.getByText("Text value").closest(".objectEditor__field");
+		expect(flagField).not.toBeNull();
+		expect(counterField).not.toBeNull();
+		expect(textField).not.toBeNull();
+
+		expect(
+			within(flagField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		).toBeDisabled();
+		expect(flagField).toHaveTextContent("Add a Boolean block to this command to use its value.");
+		expect(
+			within(counterField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		).toBeDisabled();
+		expect(counterField).toHaveTextContent("Add a Number block to this command to use its value.");
+		expect(
+			within(textField as HTMLElement).getByRole("button", {name: "Insert command value"}),
+		).toBeDisabled();
+		expect(textField).toHaveTextContent("Add a command block to insert its raw text.");
+	});
+
 	it("keeps a bound entity picker in the normal field flow", () => {
 		render(<EntityHarness />);
 		const itemField = screen.getByText("Item").closest(".objectEditor__field");
 		expect(itemField).not.toBeNull();
 
-		fireEvent.click(within(itemField as HTMLElement).getByRole("button", {name: "Use variable"}));
+		fireEvent.click(
+			within(itemField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
 		fireEvent.click(screen.getByRole("menuitem", {name: "object entity"}));
 
 		expect(itemField?.querySelector(".variableFieldEditor--bound")).toBeInTheDocument();
@@ -355,13 +515,15 @@ describe("variable-aware editors", () => {
 		render(<ConditionHarness />);
 		expect(screen.queryByRole("combobox", {name: "Reusable world condition"})).toBeNull();
 		expect(screen.getByRole("combobox", {name: "Operation"})).toBeVisible();
-		expect(screen.getByRole("textbox", {name: "Counter"})).toBeVisible();
+		expect(screen.getByRole("combobox", {name: "Counter"})).toBeVisible();
 		const valueField = screen
 			.getByRole("spinbutton", {name: "Value"})
 			.closest(".variableFieldEditor");
 		expect(valueField).not.toBeNull();
 
-		fireEvent.click(within(valueField as HTMLElement).getByRole("button", {name: "Use variable"}));
+		fireEvent.click(
+			within(valueField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
 
 		expect(screen.getByRole("menuitem", {name: "amount"})).toBeVisible();
 		expect(screen.queryByRole("menuitem", {name: "enabled"})).toBeNull();
@@ -377,6 +539,90 @@ describe("variable-aware editors", () => {
 		).toBeVisible();
 	});
 
+	it("offers a number command value beside the saved counter picker", () => {
+		render(<ConditionHarness />);
+		const counterField = screen
+			.getByRole("combobox", {name: "Counter"})
+			.closest(".variableFieldEditor");
+		expect(counterField).not.toBeNull();
+
+		fireEvent.click(
+			within(counterField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
+		fireEvent.click(screen.getByRole("menuitem", {name: "amount"}));
+
+		expect(screen.getByTestId("condition-value")).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"number-block"},"field":"counter"}]',
+		);
+	});
+
+	it("offers saved counters and command numbers as comparison operands", () => {
+		render(<ComparisonHarness />);
+		expect(screen.getByRole("combobox", {name: "Left value"})).toHaveValue("counter");
+		expect(screen.getByRole("combobox", {name: "Saved counter"})).toBeVisible();
+		const rightField = screen
+			.getByRole("combobox", {name: "Right value"})
+			.closest(".variableFieldEditor");
+		expect(rightField).not.toBeNull();
+
+		fireEvent.click(
+			within(rightField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
+		fireEvent.click(screen.getByRole("menuitem", {name: "amount"}));
+
+		expect(screen.getByTestId("comparison-value")).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"number-block"},"field":"right"}]',
+		);
+	});
+
+	it("binds a boolean command value to an is flag condition", () => {
+		render(<FlagConditionHarness />);
+		const valueField = screen.getByRole("switch", {name: "True"}).closest(".variableFieldEditor");
+		expect(valueField).not.toBeNull();
+
+		fireEvent.click(
+			within(valueField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
+		fireEvent.click(screen.getByRole("menuitem", {name: "enabled"}));
+
+		expect(screen.getByTestId("flag-condition-value")).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"boolean-block"},"field":"value"}]',
+		);
+	});
+
+	it("offers a boolean command value beside the saved flag picker", () => {
+		render(<FlagConditionHarness />);
+		const flagField = screen.getByRole("combobox", {name: "Flag"}).closest(".variableFieldEditor");
+		expect(flagField).not.toBeNull();
+
+		fireEvent.click(
+			within(flagField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
+		fireEvent.click(screen.getByRole("menuitem", {name: "enabled"}));
+
+		expect(screen.getByTestId("flag-condition-value")).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"boolean-block"},"field":"flag"}]',
+		);
+	});
+
+	it("offers saved text and a text command value in the text condition subject", () => {
+		render(<TextConditionHarness />);
+		const picker = screen.getByRole("combobox", {name: "Text variable"});
+		expect(picker).toHaveValue("answer");
+		expect(within(picker).getByRole("option", {name: "answer"})).toBeInTheDocument();
+		const textField = picker.closest(".variableFieldEditor");
+		expect(textField).not.toBeNull();
+
+		fireEvent.click(
+			within(textField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
+		fireEvent.click(screen.getByRole("menuitem", {name: "note"}));
+
+		expect(screen.getByTestId("text-condition-value")).toHaveTextContent(
+			'"commandVariables":[{"blockId":{"type":"command-block","id":"text-block"},"field":"text"}]',
+		);
+	});
+
 	it.each([
 		["condition", DirectionConditionHarness, "direction-condition-value"],
 		["effect", DirectionEffectHarness, "direction-effect-value"],
@@ -388,7 +634,7 @@ describe("variable-aware editors", () => {
 		expect(directionField).not.toBeNull();
 
 		fireEvent.click(
-			within(directionField as HTMLElement).getByRole("button", {name: "Use variable"}),
+			within(directionField as HTMLElement).getByRole("button", {name: "Use command value"}),
 		);
 		expect(screen.getByRole("menuitem", {name: "route"})).toBeVisible();
 		expect(screen.queryByRole("menuitem", {name: "amount"})).toBeNull();

@@ -126,6 +126,15 @@
 	gap: 5px;
 }
 
+.variableTextEditor__unavailable,
+.variableFieldEditor__unavailable {
+	min-width: 0;
+	color: var(--color-text-muted);
+	font-size: 10px;
+	line-height: 1.35;
+	overflow-wrap: anywhere;
+}
+
 .variableMenu {
 	position: relative;
 	display: inline-flex;
@@ -323,7 +332,15 @@
 .variableFieldEditor__add {
 	display: flex;
 	min-width: 0;
+	align-items: center;
 	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.variableFieldEditor__unavailable {
+	flex: 1 1 150px;
+	text-align: right;
 }
 
 /* Inline editor fields can be as narrow as one effect-grid column. Keeping the

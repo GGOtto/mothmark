@@ -5,8 +5,10 @@ import {getCondition} from "./lookupUtils";
 
 const gateOpen = {
 	type: "flag",
-	operation: "true",
+	"flag-type": "normal",
+	operation: "is",
 	flag: "gate.open",
+	value: true,
 } as ConditionDefinition;
 
 const world = {

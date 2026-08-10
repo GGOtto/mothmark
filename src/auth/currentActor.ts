@@ -1,6 +1,11 @@
 import "server-only";
 
-import {ADMIN_SESSION_COOKIE, EDITOR_SESSION_COOKIE, readCookie} from "./sessionTokens";
+import {
+	ADMIN_SESSION_COOKIE,
+	EDITOR_SESSION_COOKIE,
+	PLAY_SESSION_COOKIE,
+	readCookie,
+} from "./sessionTokens";
 import {
 	findCurrentActor,
 	type CurrentActor,
@@ -16,7 +21,7 @@ export async function resolveCurrentActor(
 			? EDITOR_SESSION_COOKIE
 			: audience === "admin"
 				? ADMIN_SESSION_COOKIE
-				: undefined;
+				: PLAY_SESSION_COOKIE;
 	const token = cookieName ? readCookie(request, cookieName) : undefined;
 	if (!token) return undefined;
 	return findCurrentActor(token, audience);

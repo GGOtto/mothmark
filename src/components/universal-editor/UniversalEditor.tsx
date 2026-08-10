@@ -771,6 +771,13 @@ export function UniversalEditor<TValue>({
 					}));
 				}
 
+				if (source === "texts") {
+					return registries.texts.map((entry: EditorKeyOption) => ({
+						label: entry.label,
+						value: entry.key,
+					}));
+				}
+
 				return undefined;
 			},
 			registerEntityPicker: {

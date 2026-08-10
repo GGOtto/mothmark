@@ -28,7 +28,7 @@ export type FlagPickerControlMetadata = EditorControlMetadata & {
 export type FlagPickerEditorProps = EditorControlProps<string, FlagPickerControlMetadata>;
 
 export function FlagPickerEditor({
-	value,
+	value = "",
 	onChange,
 	metadata,
 	error,
@@ -75,6 +75,7 @@ export function FlagPickerEditor({
 				<div className="flagPickerEditor__row">
 					<select
 						className="flagPickerEditor__select"
+						aria-label={metadata.title ?? "Flag"}
 						value={selectedOption ? value : ""}
 						disabled={isDisabled || isReadonly}
 						autoFocus={autoFocus}

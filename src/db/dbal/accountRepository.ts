@@ -1,6 +1,8 @@
 import "server-only";
 
-import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
+import type {World} from "@/schemas/world/worldSchema";
 import {worldSlugBase} from "@/utils/worldSlug";
 
 import {getDb} from "./knex";
@@ -127,9 +129,12 @@ export async function exportOwnedAccount(userId: string): Promise<AccountExport 
 			editorSlug: row.editor_slug ?? worldSlugBase(row.name),
 			name: row.name,
 			revision: row.revision,
-			schemaVersion: row.schema_version,
+			schemaVersion: PERSISTED_SCHEMA_VERSION,
 			updatedAt: new Date(row.updated_at).toISOString(),
-			world: WorldSchema.parse(row.world),
+			world: parseStoredWorld(row.world, row.schema_version, {
+				id: row.id,
+				storage: "editor",
+			}),
 			worldId: row.id,
 		})),
 	};

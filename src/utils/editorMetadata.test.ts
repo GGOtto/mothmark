@@ -56,8 +56,9 @@ describe("editor schema defaultFieldValue", () => {
 		expect(createDefaultFieldObject(FlagConditionSchema)).toEqual({
 			type: "flag",
 			"flag-type": "normal",
-			operation: "true",
+			operation: "is",
 			flag: "",
+			value: true,
 		});
 		expect(createDefaultFieldObject(FlagEffectSchema)).toEqual({
 			type: "flag",

@@ -17,6 +17,7 @@ import {
 	resolveFlagEffect,
 	resolveMessageEffect,
 	resolveRoomEffect,
+	resolveTextEffect,
 } from "./resolveEffects";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
@@ -851,6 +852,42 @@ describe("resolveCounterEffect", () => {
 		expect(result.variables.counters).not.toBe(game.variables.counters);
 		expect(result.variables.counters).toEqual([{health: 15}]);
 		expect(game.variables.counters).toEqual([{health: 10}]);
+	});
+});
+
+describe("resolveTextEffect", () => {
+	it.each(["create", "set"] as const)("%s creates or replaces saved text", (operation) => {
+		const game = createGameState({variables: {texts: [{note: "old"}]}});
+
+		const result = resolveTextEffect(game, {
+			type: "text",
+			operation,
+			text: "note",
+			value: "new",
+		});
+
+		expect(result.variables.texts).toEqual([{note: "new"}]);
+		expect(game.variables.texts).toEqual([{note: "old"}]);
+	});
+
+	it("creates a missing saved text value", () => {
+		const result = resolveTextEffect(createGameState(), {
+			type: "text",
+			operation: "set",
+			text: "note",
+			value: "new",
+		});
+
+		expect(result.variables.texts).toEqual([{note: "new"}]);
+	});
+
+	it("deletes only the requested saved text value", () => {
+		const result = resolveTextEffect(
+			createGameState({variables: {texts: [{note: "old", other: "kept"}]}}),
+			{type: "text", operation: "delete", text: "note"},
+		);
+
+		expect(result.variables.texts).toEqual([{other: "kept"}]);
 	});
 });
 

@@ -66,7 +66,7 @@ export function DiscriminatedUnionEditor({
 						onChange({...(firstOption.defaultValue ?? {}), [discriminator]: firstOption.value})
 					}
 				>
-					Add condition
+					{metadata.emptyState?.emptyActionLabel ?? "Add condition"}
 				</button>
 			</FieldShell>
 		);
@@ -98,6 +98,7 @@ export function DiscriminatedUnionEditor({
 			<div className="discriminatedUnionEditor">
 				<select
 					className="discriminatedUnionEditor__select"
+					aria-label={metadata.title}
 					value={selectedValue}
 					disabled={isDisabled || isReadonly}
 					onChange={(event) => changeBranch(event.target.value)}
