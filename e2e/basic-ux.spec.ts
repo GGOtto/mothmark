@@ -456,19 +456,23 @@ test("the home page example plays through the real command path", async ({page})
 	await page.getByRole("textbox", {name: "Game command"}).fill("east");
 	await page.getByRole("textbox", {name: "Game command"}).press("Enter");
 	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
-	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
-	const publicationStack = page.getByLabel("Featured publication stack");
-	await expect(publicationStack).toBeVisible();
-	const firstPublication = page
-		.getByRole("heading", {name: "Quiet archive"})
-		.locator("..")
-		.locator("..")
-		.locator("..");
-	await expect(firstPublication).toHaveAttribute("aria-current", "true");
+	const publicationCarousel = page.getByLabel("Featured publication carousel");
+	await expect(publicationCarousel).toBeVisible();
+	await expect(
+		publicationCarousel.locator(".homeFeaturedPage--current").getByRole("heading", {
+			name: "Corner Shop",
+		}),
+	).toBeVisible();
+	await expect(publicationCarousel.locator(".homeFeaturedPage--previous")).toContainText(
+		"Quiet archive",
+	);
+	await expect(publicationCarousel.locator(".homeFeaturedPage--next")).toContainText("Signal room");
 	await page.getByRole("button", {name: "Next featured publication"}).click();
 	await expect(
-		page.getByRole("heading", {name: "Corner Shop"}).locator("..").locator("..").locator(".."),
-	).toHaveAttribute("aria-current", "true");
+		publicationCarousel.locator(".homeFeaturedPage--current").getByRole("heading", {
+			name: "Signal room",
+		}),
+	).toBeVisible();
 	const videoButtons = page.getByRole("button", {name: "Watch video"});
 	await expect(videoButtons).toHaveCount(2);
 	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
@@ -489,7 +493,7 @@ test("the home tutorial and videos share a desktop row and stack on mobile", asy
 		videos.boundingBox(),
 	]);
 	expect(Math.abs((desktopTutorial?.y ?? 0) - (desktopVideos?.y ?? 0))).toBeLessThan(2);
-	const desktopPublication = await page.locator(".homeFeaturedCard").first().boundingBox();
+	const desktopPublication = await page.locator(".homeFeaturedPage--current").boundingBox();
 	expect(desktopPublication?.width ?? 0).toBeLessThanOrEqual(900);
 	await expect(page.getByRole("contentinfo").getByText("Notes from Mothmark")).toBeVisible();
 
