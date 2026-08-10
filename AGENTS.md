@@ -12,6 +12,7 @@
 - Do not hand-write complete schema-backed fixtures or cast partial object literals to schema-inferred types. Tests should remain valid when unrelated schema fields are added.
 - Small helpers may wrap `createDefaultFieldObject`, merge targeted overrides, and handle nested overrides when that makes tests clearer.
 - Hand-written values are still appropriate for primitives, narrow non-schema types, and deliberately invalid inputs used to test validation failures.
+- Keep migration tests outside `db/migrations`; Knex imports every module in that directory as an executable migration. Put them in `db/migrationTests` instead.
 
 ## Persisted schema compatibility
 
