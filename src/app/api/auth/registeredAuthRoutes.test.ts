@@ -148,16 +148,25 @@ describe("registered account routes", () => {
 		expect(cookies).not.toContain("mothmark_admin_session");
 	});
 
-	it("reports expired and successful verification without issuing a new session", async () => {
+	it("reports expired verification and signs in a successfully verified account", async () => {
 		jest.mocked(completeRegistration).mockResolvedValue({status: "expired"});
 		expect(
 			(await verifyEmail(request("/api/auth/verify-email", {token: "expired-token"}))).status,
 		).toBe(410);
-		jest
-			.mocked(completeRegistration)
-			.mockResolvedValue({status: "verified", upgradedAnonymous: true, userId});
+		jest.mocked(completeRegistration).mockResolvedValue({
+			status: "verified",
+			signIn: {
+				expiresAt: new Date("2027-02-04T12:00:00.000Z"),
+				sessionToken: "verified-editor-session",
+				userId,
+			},
+			upgradedAnonymous: true,
+			userId,
+		});
 		const response = await verifyEmail(request("/api/auth/verify-email", {token: "valid-token"}));
 		expect(response.status).toBe(200);
-		expect(response.headers.getSetCookie()).toEqual([]);
+		expect(response.headers.getSetCookie().join("\n")).toContain(
+			"mothmark_editor_session=verified-editor-session",
+		);
 	});
 });

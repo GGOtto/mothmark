@@ -263,8 +263,8 @@ After applying the registered-account migration, set `ADMIN_EMAIL` in the Phase 
 for the command and run:
 
 ```bash
-phase run --env staging 'pnpm admin:create'
-phase run --env production 'pnpm admin:create'
+phase run --env staging 'node --conditions=react-server --import tsx scripts/adminCreate.ts'
+pnpm admin:create:prod
 ```
 
 The command reads the password from a non-echoing terminal prompt, displays a TOTP enrollment URI,

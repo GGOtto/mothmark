@@ -529,7 +529,7 @@ test("registered account forms preserve generic responses, autofill semantics, a
 	await expect(page.getByText(/If a verification is pending/)).toBeVisible();
 
 	await page.goto("/verify-email?token=one-time-token");
-	await expect(page.getByText("Your email is verified. Sign in to open your worlds.")).toBeVisible();
+	await expect(page).toHaveURL(/\/$/);
 	await page.goto("/forgot-password");
 	await page.getByLabel("Email").fill("unknown@example.com");
 	await page.getByRole("button", {name: "Send recovery email"}).click();
