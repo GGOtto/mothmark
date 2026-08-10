@@ -16,12 +16,12 @@
 	--color-text-muted: #b6ac99;
 	--color-text-faint: #8c8272;
 
-	--color-frame: #171612;
-	--color-frame-raised: #211f1a;
-	--color-frame-strong: #2b2821;
-	--color-frame-border: #383329;
-	--color-frame-text: #f0e9da;
-	--color-frame-muted: #b6ac99;
+	--color-frame: #090909;
+	--color-frame-raised: #161616;
+	--color-frame-strong: #242424;
+	--color-frame-border: #414141;
+	--color-frame-text: #f7f7f5;
+	--color-frame-muted: #c5c5c1;
 	--color-terminal: #0f0e0c;
 	--color-terminal-raised: #191713;
 	--color-terminal-border: #746a58;
@@ -84,12 +84,12 @@
 	--color-text-muted: #5c5347;
 	--color-text-faint: #756a5a;
 
-	--color-frame: #ede4d5;
-	--color-frame-raised: #f6eee0;
-	--color-frame-strong: #ddd0bd;
-	--color-frame-border: #b7a992;
-	--color-frame-text: #211e19;
-	--color-frame-muted: #62594d;
+	--color-frame: #090909;
+	--color-frame-raised: #161616;
+	--color-frame-strong: #242424;
+	--color-frame-border: #414141;
+	--color-frame-text: #f7f7f5;
+	--color-frame-muted: #c5c5c1;
 
 	--color-terminal: #f3eee5;
 	--color-terminal-raised: #e5ddd1;

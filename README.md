@@ -45,8 +45,10 @@ To create a migration, run:
 pnpm db:make initial_schema
 ```
 
-The `db:up`, `db:down`, and `db:create` scripts remain available for explicitly requested local
-PostgreSQL work, but they are not part of the normal development path.
+The `db:up`, `db:down`, `db:create`, and `db:reset` scripts remain available for explicitly requested
+local PostgreSQL work, but they are not part of the normal development path. `pnpm db:reset` forcibly
+disconnects clients, drops only the local database named `mothmark`, recreates it, and applies all
+migrations so the local app has a clean schema with no account or world data.
 
 Migration files live in `db/migrations`. Application database access should go through the DBAL in
 `src/db/dbal`; call `getDb()` to get the shared Knex client.

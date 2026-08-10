@@ -60,7 +60,8 @@ export type EditorSignIn = {
 };
 
 export type RegistrationCompletion =
-	{status: "expired"} | {status: "verified"; upgradedAnonymous: boolean; userId: string};
+	| {status: "expired"}
+	| {status: "verified"; upgradedAnonymous: boolean; signIn: EditorSignIn; userId: string};
 
 export type AuthenticationResult =
 	| {status: "invalid" | "throttled"}
@@ -81,6 +82,22 @@ const passwordColumns = (password: StoredPassword) => ({
 	hash_parameters: password.hashParameters,
 	hash_version: password.hashVersion,
 });
+
+async function createEditorSession(
+	transaction: Knex.Transaction,
+	userId: string,
+	now: Date,
+): Promise<EditorSignIn> {
+	const sessionToken = createOpaqueToken();
+	const expiresAt = new Date(now.getTime() + EDITOR_SESSION_DURATION_MS);
+	await transaction("sessions").insert({
+		audience: "editor",
+		expires_at: expiresAt,
+		token_hash: hashSessionToken(sessionToken),
+		user_id: userId,
+	});
+	return {expiresAt, sessionToken, userId};
+}
 
 const dimensionHash = (kind: "identifier" | "network", value: string) =>
 	createHash("sha256").update(`${kind}:${value}`).digest("hex");
@@ -438,8 +455,9 @@ export async function completeRegistration(
 			details: {upgradedAnonymous, userId},
 			event_type: "account_email_verified",
 		});
+		const signIn = await createEditorSession(transaction, userId, now);
 		await clearAuthenticationAttempts(transaction, "verify_email", token, network);
-		return {status: "verified", upgradedAnonymous, userId};
+		return {status: "verified", upgradedAnonymous, signIn, userId};
 	});
 }
 
@@ -472,21 +490,14 @@ export async function authenticateEditor(input: {
 				.where({user_id: identity.user_id})
 				.update({...passwordColumns(password.upgraded), updated_at: now});
 		}
-		const sessionToken = createOpaqueToken();
-		const expiresAt = new Date(now.getTime() + EDITOR_SESSION_DURATION_MS);
 		await transaction("password_credentials")
 			.where({user_id: identity.user_id})
 			.update({authenticated_at: now});
-		await transaction("sessions").insert({
-			audience: "editor",
-			expires_at: expiresAt,
-			token_hash: hashSessionToken(sessionToken),
-			user_id: identity.user_id,
-		});
+		const signIn = await createEditorSession(transaction, identity.user_id, now);
 		await clearAuthenticationAttempts(transaction, "sign_in", input.email, input.network);
 		return {
 			status: "authenticated",
-			signIn: {expiresAt, sessionToken, userId: identity.user_id},
+			signIn,
 			siteRole: identity.site_role,
 		};
 	});
