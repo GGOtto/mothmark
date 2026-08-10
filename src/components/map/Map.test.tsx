@@ -22,6 +22,7 @@ function MapHarness({
 	initialSelectedId = null,
 	initialIsConnectionSelected = false,
 	replacementWorld,
+	readOnly = false,
 }: {
 	initialWorld: World;
 	onZoomChange: jest.Mock;
@@ -29,6 +30,7 @@ function MapHarness({
 	initialSelectedId?: string | null;
 	initialIsConnectionSelected?: boolean;
 	replacementWorld?: World;
+	readOnly?: boolean;
 }) {
 	const [world, setWorld] = useState(initialWorld);
 	const [activeTool, setActiveTool] = useState(tool);
@@ -55,6 +57,7 @@ function MapHarness({
 			) : null}
 			<Map
 				world={world}
+				readOnly={readOnly}
 				tool={activeTool}
 				onToolChange={setActiveTool}
 				onTemporaryToolChange={setTemporaryTool}
@@ -74,6 +77,25 @@ function MapHarness({
 }
 
 describe("Map layer viewports", () => {
+	it("locks a preview map to pan and zoom without editor controls", () => {
+		const {container} = render(
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" readOnly />,
+		);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
+		const initialTransform = viewport.style.transform;
+
+		expect(map).toHaveClass("map--tool-pan", "map--read-only");
+		expect(screen.queryByRole("button", {name: "Clear Main floor layer"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Layers · Main floor"})).not.toBeInTheDocument();
+
+		fireEvent.wheel(map, {clientX: 100, clientY: 100, deltaY: -200});
+		expect(viewport.style.transform).not.toBe(initialTransform);
+
+		fireEvent.keyDown(window, {key: "ArrowLeft"});
+		expect(map).toHaveClass("map--tool-pan");
+	});
+
 	it("restores each layer's viewport after switching layers", () => {
 		const groundLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 0)!;
 		const upperLayer = initialWorld.metadata.layers.find((layer) => layer.layer === 1)!;
