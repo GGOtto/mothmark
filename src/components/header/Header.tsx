@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {MapPinned, Moon, Sun} from "lucide-react";
+import {Moon, Sun} from "lucide-react";
+import {MothmarkMark} from "../brand/MothmarkMark";
 import {useTheme} from "../theme/ThemeProvider";
 import {WorldAutosaveIndicator, WorldSwitcher} from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
@@ -18,9 +19,7 @@ export function Header() {
 		<header className="header">
 			<div className="headerIdentity">
 				<Link href="/" className="headerLogo" aria-label="Mothmark home">
-					<span className="headerLogoMark" aria-hidden="true">
-						<MapPinned size={15} strokeWidth={1.8} />
-					</span>
+					<MothmarkMark className="headerLogoMark" />
 
 					<span className="headerTitle">Mothmark</span>
 				</Link>
