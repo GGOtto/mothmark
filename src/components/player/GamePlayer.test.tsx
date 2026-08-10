@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {toID} from "@/utils/idUtils";
 import {GamePlayer} from "./GamePlayer";
@@ -41,6 +41,24 @@ describe("GamePlayer focus", () => {
 			screen.getByText("No rooms available. Add a room to begin exploring."),
 		).toBeInTheDocument();
 		expect(screen.getByRole("textbox", {name: "Game command"})).toBeDisabled();
+	});
+
+	it("reports the current room as commands move the player", async () => {
+		const onCurrentRoomChange = jest.fn();
+		render(
+			<GamePlayer
+				world={initialWorld}
+				startingRoomId={initialWorld.startRoomId}
+				onCurrentRoomChange={onCurrentRoomChange}
+			/>,
+		);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+
+		await waitFor(() => expect(onCurrentRoomChange).toHaveBeenCalledWith(initialWorld.startRoomId));
+		fireEvent.change(input, {target: {value: "east"}});
+		fireEvent.submit(input.closest("form")!);
+
+		await waitFor(() => expect(onCurrentRoomChange).toHaveBeenCalledWith(toID("room", "stockroom")));
 	});
 });
 

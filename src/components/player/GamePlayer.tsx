@@ -14,6 +14,7 @@ type GamePlayerProps = {
 	world: World;
 	startingRoomId: ID<"room">;
 	teleportRequest?: GamePlayerTeleportRequest | null;
+	onCurrentRoomChange?: (roomId: ID<"room">) => void;
 };
 
 export type GamePlayerTeleportRequest = {
@@ -26,6 +27,7 @@ export function GamePlayer({
 	world,
 	startingRoomId,
 	teleportRequest,
+	onCurrentRoomChange,
 }: GamePlayerProps) {
 	const resolvedStartingRoomId = world.rooms.some((room) => compareIds(room.id, startingRoomId))
 		? startingRoomId
@@ -41,6 +43,7 @@ export function GamePlayer({
 			world={world}
 			startingRoomId={resolvedStartingRoomId}
 			teleportRequest={teleportRequest}
+			onCurrentRoomChange={onCurrentRoomChange}
 		/>
 	) : (
 		<EmptyGamePlayer />
@@ -77,11 +80,16 @@ function ActiveGamePlayer({
 	world,
 	startingRoomId,
 	teleportRequest,
+	onCurrentRoomChange,
 }: Omit<GamePlayerProps, "isLoading">) {
 	const handledTeleportRequestRef = useRef<number | null>(null);
 	const [gameState, setGameState] = useState(() => createInitialGameState(world, startingRoomId));
 	const [commandList, setCommandList] = useState<string[]>([]);
 	const [command, setCommand] = useState("");
+
+	useEffect(() => {
+		onCurrentRoomChange?.(gameState.player.currentRoom);
+	}, [gameState.player.currentRoom, onCurrentRoomChange]);
 
 	useEffect(() => {
 		if (!teleportRequest || handledTeleportRequestRef.current === teleportRequest.id) return;
