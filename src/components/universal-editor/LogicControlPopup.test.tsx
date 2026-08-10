@@ -108,7 +108,9 @@ describe("LogicControlPopup", () => {
 			.closest(".variableFieldEditor");
 		expect(valueField).not.toBeNull();
 
-		fireEvent.click(within(valueField as HTMLElement).getByRole("button", {name: "Use variable"}));
+		fireEvent.click(
+			within(valueField as HTMLElement).getByRole("button", {name: "Use command value"}),
+		);
 		fireEvent.click(screen.getByRole("menuitem", {name: "amount"}));
 
 		expect(screen.getByTestId("condition-value")).toHaveTextContent(
@@ -132,7 +134,7 @@ describe("LogicControlPopup", () => {
 			.closest(".variableFieldEditor");
 		expect(directionField).not.toBeNull();
 		fireEvent.click(
-			within(directionField as HTMLElement).getByRole("button", {name: "Use variable"}),
+			within(directionField as HTMLElement).getByRole("button", {name: "Use command value"}),
 		);
 		fireEvent.click(screen.getByRole("menuitem", {name: "direction"}));
 

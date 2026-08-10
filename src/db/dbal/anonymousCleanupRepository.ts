@@ -15,6 +15,7 @@ export const ANONYMOUS_RETENTION_MS: Record<AnonymousCleanupClass, number> = {
 export const ANONYMOUS_CLEANUP_GRACE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const PLAYTHROUGH_DIAGNOSTIC_RETENTION_MS = 90 * 24 * 60 * 60 * 1_000;
 export const DEFAULT_CLEANUP_BATCH_SIZE = 100;
+export const EXPIRED_SESSION_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 
 type CleanupUserRow = {
 	id: string;
@@ -164,6 +165,42 @@ async function recordBatchEvent(
 	await database("operational_events").insert({event_type: eventType, details});
 }
 
+export async function runOperationalHousekeeping(options?: {
+	dryRun?: boolean;
+	now?: Date;
+}): Promise<{expiredSessions: number; expiredRateLimitEvents: number; dryRun: boolean}> {
+	const now = options?.now ?? new Date();
+	const dryRun = options?.dryRun ?? false;
+	const sessionCutoff = new Date(now.getTime() - EXPIRED_SESSION_RETENTION_MS);
+	const rateLimitCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1_000);
+	const [sessionCount, rateLimitCount] = await Promise.all([
+		database("sessions")
+			.where("expires_at", "<", sessionCutoff)
+			.count<{count: string}[]>("id as count")
+			.first(),
+		database("request_rate_limit_events")
+			.where("attempted_at", "<", rateLimitCutoff)
+			.count<{count: string}[]>("id as count")
+			.first(),
+	]);
+	const result = {
+		expiredSessions: Number(sessionCount?.count ?? 0),
+		expiredRateLimitEvents: Number(rateLimitCount?.count ?? 0),
+		dryRun,
+	};
+	if (!dryRun) {
+		await Promise.all([
+			database("sessions").where("expires_at", "<", sessionCutoff).delete(),
+			database("request_rate_limit_events").where("attempted_at", "<", rateLimitCutoff).delete(),
+		]);
+	}
+	await database("operational_events").insert({
+		event_type: "operational_housekeeping_batch",
+		details: result,
+	});
+	return result;
+}
+
 export async function scheduleAnonymousCleanup(options?: {
 	batchSize?: number;
 	dryRun?: boolean;
@@ -215,6 +252,7 @@ export async function scheduleAnonymousCleanup(options?: {
 			result.failed += 1;
 		}
 	}
+	await runOperationalHousekeeping({dryRun, now});
 	await recordBatchEvent("anonymous_cleanup_scheduling_batch", {...result, dryRun});
 	return result;
 }
@@ -325,13 +363,22 @@ export async function purgeExpiredDiagnosticPlaythroughs(options?: {
 		.andWhere("purge_after", "<=", now)
 		.orderBy("purge_after", "asc")
 		.limit(batchSize);
-	if (options?.dryRun) return {deleted: 0, wouldDelete: ids.length};
-	if (!ids.length) return {deleted: 0, wouldDelete: 0};
-	const deleted = await database("playthroughs")
-		.whereIn(
-			"id",
-			ids.map(({id}) => id),
-		)
-		.delete();
-	return {deleted, wouldDelete: 0};
+	const result = options?.dryRun
+		? {deleted: 0, wouldDelete: ids.length}
+		: ids.length
+			? {
+					deleted: await database("playthroughs")
+						.whereIn(
+							"id",
+							ids.map(({id}) => id),
+						)
+						.delete(),
+					wouldDelete: 0,
+				}
+			: {deleted: 0, wouldDelete: 0};
+	await database("operational_events").insert({
+		event_type: "playthrough_diagnostic_purge_batch",
+		details: {...result, dryRun: options?.dryRun ?? false},
+	});
+	return result;
 }

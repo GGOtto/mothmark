@@ -3,8 +3,10 @@
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {
 	bootstrapHostedPlay,
+	deleteHostedPlaythrough,
 	getPublicPublication,
 	listPublications,
+	restartHostedPlay,
 	submitHostedCommand,
 } from "@/db/dbal/publicationRepository";
 import {findBootstrapPlayActor} from "@/db/dbal/sessionsRepository";
@@ -13,6 +15,8 @@ import {GET as catalog} from "./publications/route";
 import {GET as publication} from "./publications/[slug]/route";
 import {POST as bootstrap} from "./publications/[slug]/bootstrap/route";
 import {POST as command} from "./publications/[slug]/command/route";
+import {POST as restart} from "./publications/[slug]/restart/route";
+import {DELETE as deletePlaythrough} from "./publications/[slug]/playthrough/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/sessionsRepository", () => ({findBootstrapPlayActor: jest.fn()}));
@@ -20,8 +24,10 @@ jest.mock("@/db/dbal/publicationRepository", () => ({
 	HOSTED_COMMAND_MAX_LENGTH: 500,
 	PublicationError: class PublicationError extends Error {},
 	bootstrapHostedPlay: jest.fn(),
+	deleteHostedPlaythrough: jest.fn(),
 	getPublicPublication: jest.fn(),
 	listPublications: jest.fn(),
+	restartHostedPlay: jest.fn(),
 	submitHostedCommand: jest.fn(),
 }));
 
@@ -73,6 +79,7 @@ describe("public publication routes", () => {
 		jest.mocked(bootstrapHostedPlay).mockResolvedValue({
 			publication: {id: "publication-id"} as never,
 			playthrough: {id: "playthrough-id"} as never,
+			newerReleaseAvailable: false,
 			session: {token: "opaque-token", expiresAt: new Date("2026-09-01T00:00:00.000Z")},
 		});
 		const response = await bootstrap(
@@ -80,7 +87,7 @@ describe("public publication routes", () => {
 			context,
 		);
 		expect(response.status).toBe(201);
-		expect(bootstrapHostedPlay).toHaveBeenCalledWith("quiet-archive", undefined);
+		expect(bootstrapHostedPlay).toHaveBeenCalledWith("quiet-archive", undefined, "unavailable");
 		expect(response.headers.get("set-cookie")).toContain("mothmark_play_session=opaque-token");
 	});
 
@@ -99,6 +106,20 @@ describe("public publication routes", () => {
 		);
 		expect(response.status).toBe(403);
 		expect(bootstrapHostedPlay).not.toHaveBeenCalled();
+	});
+
+	it("personalizes the catalog from an existing play session without bootstrapping", async () => {
+		jest.mocked(findBootstrapPlayActor).mockResolvedValue({userId} as never);
+		jest.mocked(listPublications).mockResolvedValue([]);
+		const response = await catalog(
+			new Request("http://localhost/api/play/publications", {
+				headers: {cookie: "mothmark_play_session=existing-token"},
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(listPublications).toHaveBeenCalledWith("", userId);
+		expect(bootstrapHostedPlay).not.toHaveBeenCalled();
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
 	});
 
 	it("requires a play-audience actor and optimistic revision for commands", async () => {
@@ -122,6 +143,7 @@ describe("public publication routes", () => {
 			slug: "quiet-archive",
 			command: "look",
 			expectedRevision: 2,
+			network: "unavailable",
 		});
 	});
 
@@ -138,5 +160,50 @@ describe("public publication routes", () => {
 		);
 		expect(response.status).toBe(400);
 		expect(submitHostedCommand).not.toHaveBeenCalled();
+	});
+
+	it("restarts through the play actor and returns the newly pinned release", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "anonymous", siteRole: "user", audience: "play"});
+		jest.mocked(restartHostedPlay).mockResolvedValue({
+			publication: {id: "publication-id"} as never,
+			playthrough: {id: "new-playthrough"} as never,
+			newerReleaseAvailable: false,
+		});
+		const response = await restart(
+			playRequest("/api/play/publications/quiet-archive/restart"),
+			context,
+		);
+		expect(response.status).toBe(200);
+		expect(restartHostedPlay).toHaveBeenCalledWith({
+			playerUserId: userId,
+			slug: "quiet-archive",
+			network: "unavailable",
+		});
+	});
+
+	it("deletes only the current play actor's saved playthrough", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "anonymous", siteRole: "user", audience: "play"});
+		jest.mocked(deleteHostedPlaythrough).mockResolvedValue(true);
+		const response = await deletePlaythrough(
+			new Request("http://localhost/api/play/publications/quiet-archive/playthrough", {
+				method: "DELETE",
+				headers: {
+					origin: "http://localhost",
+					cookie: `mothmark_play_csrf=${csrf}`,
+					"x-csrf-token": csrf,
+				},
+			}),
+			context,
+		);
+		expect(response.status).toBe(204);
+		expect(deleteHostedPlaythrough).toHaveBeenCalledWith({
+			playerUserId: userId,
+			slug: "quiet-archive",
+			network: "unavailable",
+		});
 	});
 });

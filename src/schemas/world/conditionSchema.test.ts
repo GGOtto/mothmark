@@ -22,7 +22,7 @@ describe("editor.condition", () => {
 	it.each([
 		{
 			name: "a single condition",
-			value: {type: "flag", operation: "true", flag: "gate.open"},
+			value: {type: "flag", operation: "is", flag: "gate.open", value: true},
 		},
 		{
 			name: "a condition reference",
@@ -34,7 +34,7 @@ describe("editor.condition", () => {
 				type: "group",
 				operation: "all",
 				conditions: [
-					{type: "flag", operation: "true", flag: "gate.open"},
+					{type: "flag", operation: "is", flag: "gate.open", value: true},
 					{
 						type: "group",
 						operation: "none",
@@ -64,19 +64,21 @@ describe("editor.condition", () => {
 			schema.safeParse({
 				type: "flag",
 				"flag-type": "room",
-				operation: "true",
+				operation: "is",
 				roomId: toID("room", "foyer"),
 				flag: "visited",
+				value: true,
 			}).success,
 		).toBe(true);
 		expect(
 			schema.safeParse({
 				type: "flag",
 				"flag-type": "item",
-				operation: "false",
+				operation: "is",
 				roomId: toID("room", "foyer"),
 				itemId: toID("item", "door"),
 				flag: "examined",
+				value: false,
 			}).success,
 		).toBe(true);
 	});
@@ -89,6 +91,35 @@ describe("editor.condition", () => {
 				direction: "e",
 			}).success,
 		).toBe(true);
+	});
+
+	it("accepts saved text comparisons and rejects the old flag truth operations", () => {
+		for (const operation of [
+			"is",
+			"is-not",
+			"starts-with",
+			"does-not-start-with",
+			"ends-with",
+			"does-not-end-with",
+			"contains",
+			"does-not-contain",
+		] as const) {
+			expect(
+				ConditionSchema.safeParse({type: "text", operation, text: "answer", value: "moth"}).success,
+			).toBe(true);
+		}
+		for (const operation of ["is-empty", "is-not-empty", "exists", "missing"] as const) {
+			expect(ConditionSchema.safeParse({type: "text", operation, text: "answer"}).success).toBe(true);
+		}
+		expect(
+			ConditionSchema.safeParse({type: "text", operation: "contains", text: "answer"}).success,
+		).toBe(false);
+		expect(
+			ConditionSchema.safeParse({type: "flag", operation: "true", flag: "gate.open"}).success,
+		).toBe(false);
+		expect(
+			ConditionSchema.safeParse({type: "flag", operation: "false", flag: "gate.open"}).success,
+		).toBe(false);
 	});
 
 	it.each([
@@ -125,19 +156,21 @@ describe("editor.condition", () => {
 			ConditionSchema.parse({
 				type: "flag",
 				"flag-type": "item",
-				operation: "true",
+				operation: "is",
 				itemId: toID("item", "door"),
 				flag: "glowing",
+				value: true,
 			}),
 		).toMatchObject({itemId: toID("item", "door")});
 	});
 
-	it("defaults legacy flag conditions to normal flags", () => {
-		expect(schema.parse({type: "flag", operation: "true", flag: "gate.open"})).toEqual({
+	it("defaults flag conditions without an entity type to normal flags", () => {
+		expect(schema.parse({type: "flag", operation: "is", flag: "gate.open", value: true})).toEqual({
 			type: "flag",
 			"flag-type": "normal",
-			operation: "true",
+			operation: "is",
 			flag: "gate.open",
+			value: true,
 		});
 	});
 
@@ -169,10 +202,14 @@ describe("editor.conditionControl", () => {
 	});
 
 	it("migrates a legacy condition list to an all group", () => {
-		expect(controlSchema.parse([{type: "flag", operation: "true", flag: "gate.open"}])).toEqual({
+		expect(
+			controlSchema.parse([{type: "flag", operation: "is", flag: "gate.open", value: true}]),
+		).toEqual({
 			type: "group",
 			operation: "all",
-			conditions: [{type: "flag", "flag-type": "normal", operation: "true", flag: "gate.open"}],
+			conditions: [
+				{type: "flag", "flag-type": "normal", operation: "is", flag: "gate.open", value: true},
+			],
 		});
 	});
 
@@ -181,7 +218,7 @@ describe("editor.conditionControl", () => {
 			type: "group",
 			operation: "any",
 			conditions: [
-				{type: "flag", operation: "true", flag: "gate.open"},
+				{type: "flag", operation: "is", flag: "gate.open", value: true},
 				{type: "condition-ref", conditionId: toID("condition", "gate-open")},
 				{type: "group", operation: "none", conditions: []},
 			],
@@ -199,12 +236,19 @@ describe("WorldConditionSchema", () => {
 				name: "Gate open",
 				allowMultipleUsesInWorld: true,
 				type: "flag",
-				operation: "true",
+				operation: "is",
 				flag: "gate.open",
+				value: true,
 			}),
 		).toEqual({
 			identity: toID("condition", "gate-open"),
-			condition: {type: "flag", "flag-type": "normal", operation: "true", flag: "gate.open"},
+			condition: {
+				type: "flag",
+				"flag-type": "normal",
+				operation: "is",
+				flag: "gate.open",
+				value: true,
+			},
 		});
 	});
 });

@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {readBoundedJson, WORLD_REQUEST_MAX_BYTES} from "@/auth/requestBody";
 import {
 	createOwnedWorld,
 	getOwnedWorldLibrary,
@@ -11,7 +12,7 @@ import {
 import {
 	CreateWorldRequestSchema,
 	handleWorldRouteError,
-	invalidJsonResponse,
+	requestBodyErrorResponse,
 	validationErrorResponse,
 	worldPermissionError,
 } from "./_shared";
@@ -40,9 +41,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 	let body: unknown;
 	try {
-		body = await request.json();
-	} catch {
-		return invalidJsonResponse();
+		body = await readBoundedJson(request, WORLD_REQUEST_MAX_BYTES);
+	} catch (error) {
+		return requestBodyErrorResponse(error);
 	}
 	const parsed = CreateWorldRequestSchema.safeParse(body);
 	if (!parsed.success) return validationErrorResponse(parsed.error.issues);

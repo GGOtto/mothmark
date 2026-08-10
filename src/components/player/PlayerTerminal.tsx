@@ -26,13 +26,16 @@ export function PlayerTerminal({
 	commandHistory = [],
 }: PlayerTerminalProps) {
 	const playerRef = useRef<HTMLElement | null>(null);
+	const commandInputRef = useRef<HTMLInputElement | null>(null);
+	const restoreFocusAfterSubmitRef = useRef(false);
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState(0);
 
 	useEffect(() => {
 		function blurCommandInputOutsidePlayer(event: PointerEvent) {
 			const player = playerRef.current;
 			if (!player || !(event.target instanceof Node) || player.contains(event.target)) return;
-			const input = player.querySelector<HTMLInputElement>(".command-input__field");
+			restoreFocusAfterSubmitRef.current = false;
+			const input = commandInputRef.current;
 			if (input && document.activeElement === input) input.blur();
 		}
 		document.addEventListener("pointerdown", blurCommandInputOutsidePlayer, true);
@@ -52,6 +55,7 @@ export function PlayerTerminal({
 				<OutputLog messages={messages} />
 			</div>
 			<CommandInput
+				inputRef={commandInputRef}
 				disabled={disabled}
 				command={command}
 				setCommand={onCommandChange}
@@ -59,7 +63,19 @@ export function PlayerTerminal({
 					event.preventDefault();
 					if (!command.trim() || disabled) return;
 					setCurrentCommandInHistory(0);
-					void onSubmit(command);
+					restoreFocusAfterSubmitRef.current = document.activeElement === commandInputRef.current;
+					const restoreSubmittedCommandFocus = () => {
+						window.requestAnimationFrame(() => {
+							if (restoreFocusAfterSubmitRef.current && !commandInputRef.current?.disabled) {
+								commandInputRef.current?.focus({preventScroll: true});
+							}
+							restoreFocusAfterSubmitRef.current = false;
+						});
+					};
+					void Promise.resolve(onSubmit(command)).then(
+						restoreSubmittedCommandFocus,
+						restoreSubmittedCommandFocus,
+					);
 				}}
 				commandList={commandHistory}
 				currentCommandInHistory={currentCommandInHistory}

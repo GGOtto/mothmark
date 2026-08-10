@@ -3,12 +3,15 @@ import {z} from "zod";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {PUBLICATION_REQUEST_MAX_BYTES, readBoundedJson} from "@/auth/requestBody";
 import {
 	PUBLICATION_SUMMARY_MAX_LENGTH,
 	PUBLICATION_TITLE_MAX_LENGTH,
 	PublicationError,
 	getOwnedPublication,
 	publishOwnedWorld,
+	publishOwnedWorldUpdate,
+	updateOwnedPublication,
 } from "@/db/dbal/publicationRepository";
 import {worldPermissionError} from "../../_shared";
 
@@ -22,6 +25,18 @@ const PublishRequestSchema = z.object({
 	slug: z.string().trim().min(1).max(100),
 	visibility: z.enum(["listed", "unlisted"]),
 });
+
+const PublishUpdateRequestSchema = PublishRequestSchema.pick({
+	expectedRevision: true,
+	title: true,
+	summary: true,
+});
+
+const LifecycleRequestSchema = z.discriminatedUnion("action", [
+	z.object({action: z.literal("set_visibility"), visibility: z.enum(["listed", "unlisted"])}),
+	z.object({action: z.literal("unpublish")}),
+	z.object({action: z.literal("republish")}),
+]);
 
 type Context = {params: Promise<{id: string}>};
 
@@ -78,7 +93,7 @@ export async function POST(request: Request, context: Context): Promise<NextResp
 	if (permissionError) return permissionError;
 	let body: unknown;
 	try {
-		body = await request.json();
+		body = await readBoundedJson(request, PUBLICATION_REQUEST_MAX_BYTES);
 	} catch {
 		return NextResponse.json(
 			{error: {code: "INVALID_JSON", message: "The request body must contain valid JSON."}},
@@ -104,6 +119,70 @@ export async function POST(request: Request, context: Context): Promise<NextResp
 			{data: await publishOwnedWorld({ownerUserId: actor.userId, worldId: id, ...parsed.data})},
 			{status: 201},
 		);
+	} catch (error) {
+		return publicationErrorResponse(error);
+	}
+}
+
+async function registeredOwner(request: Request) {
+	const actor = await resolveCurrentActor(request, "editor");
+	if (!actor) return authRequiredResponse();
+	if (actor.accountType !== "registered")
+		return NextResponse.json(
+			{error: {code: "FORBIDDEN", message: "Only a registered owner can manage publishing."}},
+			{status: 403},
+		);
+	const permissionError = await worldPermissionError(actor, "world.publish_owned");
+	return permissionError ?? actor;
+}
+
+export async function PUT(request: Request, context: Context): Promise<NextResponse> {
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
+	const actor = await registeredOwner(request);
+	if (actor instanceof NextResponse) return actor;
+	const parsed = PublishUpdateRequestSchema.safeParse(
+		await readBoundedJson(request, PUBLICATION_REQUEST_MAX_BYTES).catch(() => undefined),
+	);
+	if (!parsed.success)
+		return NextResponse.json(
+			{error: {code: "VALIDATION_ERROR", message: "Check the release details and try again."}},
+			{status: 400},
+		);
+	try {
+		return NextResponse.json({
+			data: await publishOwnedWorldUpdate({
+				ownerUserId: actor.userId,
+				worldId: (await context.params).id,
+				...parsed.data,
+			}),
+		});
+	} catch (error) {
+		return publicationErrorResponse(error);
+	}
+}
+
+export async function PATCH(request: Request, context: Context): Promise<NextResponse> {
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
+	const actor = await registeredOwner(request);
+	if (actor instanceof NextResponse) return actor;
+	const parsed = LifecycleRequestSchema.safeParse(
+		await readBoundedJson(request, PUBLICATION_REQUEST_MAX_BYTES).catch(() => undefined),
+	);
+	if (!parsed.success)
+		return NextResponse.json(
+			{error: {code: "VALIDATION_ERROR", message: "Choose a valid publication action."}},
+			{status: 400},
+		);
+	try {
+		return NextResponse.json({
+			data: await updateOwnedPublication({
+				ownerUserId: actor.userId,
+				worldId: (await context.params).id,
+				...parsed.data,
+			}),
+		});
 	} catch (error) {
 		return publicationErrorResponse(error);
 	}

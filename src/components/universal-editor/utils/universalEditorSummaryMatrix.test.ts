@@ -142,9 +142,9 @@ describe("condition summary schema coverage", () => {
 	});
 
 	it.each([
-		["literal and literal", 3, 7],
-		["counter and literal", {source: "counter", counter: "score"}, 7],
-		["literal and counter", 3, {source: "counter", counter: "score"}],
+		["literal and literal", {source: "literal", value: 3}, {source: "literal", value: 7}],
+		["counter and literal", {source: "counter", counter: "score"}, {source: "literal", value: 7}],
+		["literal and counter", {source: "literal", value: 3}, {source: "counter", counter: "score"}],
 		[
 			"counter and counter",
 			{source: "counter", counter: "score"},
@@ -298,11 +298,11 @@ const boundSummaryCases: Array<{
 			type: "comparison",
 			valueType: "number",
 			operator: "lt",
-			left: 93,
-			right: 94,
+			left: {source: "literal", value: 93},
+			right: {source: "literal", value: 94},
 			commandVariables: [
 				{blockId: commandBlockIds.number, field: "left"},
-				{blockId: commandBlockIds.target, field: "right"},
+				{blockId: commandBlockIds.number, field: "right"},
 			],
 		},
 	},

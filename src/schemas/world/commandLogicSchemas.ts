@@ -72,17 +72,39 @@ const CommandConditionLeafSchema = withEditorVariants(
 	ConditionSchema,
 );
 
-const CommandNumberOperandSchema = z.union([
-	z.number(),
-	z.object({source: z.literal("counter"), counter: z.string().trim().min(1)}),
-]);
+function commandNumberOperand(title: string) {
+	return editor.discriminatedUnion(
+		z.discriminatedUnion("source", [
+			editor.object(
+				{
+					source: z.literal("literal"),
+					value: editor.number({title: "Number"}),
+				},
+				{title: "Number"},
+			),
+			editor.object(
+				{
+					source: z.literal("counter"),
+					counter: editor.counterKey({title: "Saved counter"}),
+				},
+				{title: "Saved counter"},
+			),
+		]),
+		{
+			title,
+			description: "Use a number, a saved counter, or a number captured by this command.",
+			commandVariableType: "number",
+			emptyState: {emptyActionLabel: `Add ${title.toLocaleLowerCase()}`},
+		},
+	);
+}
 
 export const CommandComparisonConditionSchema = z.object({
 	type: z.literal("comparison"),
 	valueType: z.literal("number"),
 	operator: ComparisonOperatorSchema,
-	left: CommandNumberOperandSchema.optional(),
-	right: CommandNumberOperandSchema.optional(),
+	left: commandNumberOperand("Left value").optional(),
+	right: commandNumberOperand("Right value").optional(),
 	commandVariables: commandVariablesField,
 });
 

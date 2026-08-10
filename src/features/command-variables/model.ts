@@ -79,7 +79,6 @@ function option(
 }
 
 function optionsForBlock(block: CommandBlock, failed: boolean): CommandVariableOption[] {
-	if (block.type === "phrase" || block.type === "relation") return [];
 	if (failed) return [option(block, "text", "string", "entered text")];
 
 	if (block.type === "target") {
@@ -89,6 +88,9 @@ function optionsForBlock(block: CommandBlock, failed: boolean): CommandVariableO
 			option(block, "description", "string", "description"),
 			option(block, "text", "string", "entered text"),
 		];
+	}
+	if (block.type === "phrase" || block.type === "relation") {
+		return [option(block, "text", "string", "entered text")];
 	}
 
 	return [
@@ -132,6 +134,21 @@ export function acceptedVariableType(
 		return "string";
 	}
 	return undefined;
+}
+
+export function unavailableVariableMessage(valueType: CommandVariableValueType) {
+	switch (valueType) {
+		case "boolean":
+			return "Add a Boolean block to this command to use its value.";
+		case "number":
+			return "Add a Number block to this command to use its value.";
+		case "direction":
+			return "Add a Direction block to this command to use its value.";
+		case "entity":
+			return "Add a Target block to this command to use its value.";
+		case "string":
+			return "Add a command block to insert its raw text.";
+	}
 }
 
 export function compatibleVariableOptions(

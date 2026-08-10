@@ -70,8 +70,11 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 						revision,
 						commandCount: commands ? commands.split("\n").length : 0,
 						commands,
+						status: "active",
+						release: {id: "release-id", number: 1},
 						state: {messages},
 					},
+					newerReleaseAvailable: false,
 				},
 			}),
 		}),
@@ -95,6 +98,8 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 					revision,
 					commandCount: 1,
 					commands,
+					status: "active",
+					release: {id: "release-id", number: 1},
 					state: {messages},
 					outputMessages: messages.slice(-2),
 				},
@@ -110,9 +115,72 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	await expect(page.locator(".output-log img")).toHaveCount(0);
 	await expect(page.getByText("The archive remains still.")).toBeVisible();
 	await expect(page.getByText("Saved", {exact: true})).toBeVisible();
+	await expect(page.getByLabel("Game command")).toBeFocused();
 
 	await page.reload();
 	await expect(page.getByText('<img src=x onerror="alert(1)">')).toBeVisible();
 	await expect(page.getByText("The archive remains still.")).toBeVisible();
+	expect(browserErrors).toEqual([]);
+});
+
+test("a returning player sees an update choice and restarts into the current release", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/auth/csrf?audience=play", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/bootstrap", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					publication,
+					playthrough: {
+						id: "old-playthrough",
+						revision: 2,
+						commandCount: 1,
+						commands: "look",
+						status: "active",
+						release: {id: "release-id", number: 1},
+						state: {messages: [{id: "old", type: "room", text: "The old release."}]},
+					},
+					newerReleaseAvailable: true,
+				},
+			}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/restart", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					publication: {...publication, release: {...publication.release, number: 2}},
+					playthrough: {
+						id: "new-playthrough",
+						revision: 1,
+						commandCount: 0,
+						commands: "",
+						status: "active",
+						release: {id: "release-2", number: 2},
+						state: {messages: [{id: "new", type: "room", text: "The new release."}]},
+					},
+					newerReleaseAvailable: false,
+				},
+			}),
+		}),
+	);
+	page.on("dialog", (dialog) => dialog.accept());
+	await page.goto("/play/quiet-archive");
+	await expect(page.getByText("A new version is available.", {exact: false})).toBeVisible();
+	await page.getByRole("button", {name: "Restart with new version"}).click();
+	await expect(page.getByText("The new release.")).toBeVisible();
+	await expect(page.getByText("A new version is available.", {exact: false})).toHaveCount(0);
 	expect(browserErrors).toEqual([]);
 });

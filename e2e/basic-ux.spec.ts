@@ -353,6 +353,9 @@ test("the home page continues without an account into the world library", async 
 	const editor = await useDeterministicEditorWorld(page);
 
 	await page.goto("/");
+	await expect(
+		page.getByRole("navigation", {name: "Primary navigation"}).getByRole("link", {name: "Play"}),
+	).toHaveAttribute("href", "/play");
 	expect(editor.bootstrapCount()).toBe(0);
 	await expect(
 		page.getByRole("heading", {name: "Build and play text based adventure games."}),
@@ -1000,8 +1003,11 @@ test("a registered owner publishes the current saved world from world settings",
 					title: "Quiet archive",
 					summary: "A compact public world.",
 					visibility: "listed",
+					status: "published",
 					release: {number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
 					worldRevision: 1,
+					currentWorldRevision: 1,
+					unpublishedChanges: false,
 				},
 			}),
 		});
@@ -1015,7 +1021,7 @@ test("a registered owner publishes the current saved world from world settings",
 	await page.getByLabel("Short summary").fill("A compact public world.");
 	await page.getByRole("button", {name: "Publish current version"}).click();
 
-	await expect(page.getByText("Release 1 is live from saved revision 1.")).toBeVisible();
+	await expect(page.getByText("Release 1 uses saved revision 1.", {exact: false})).toBeVisible();
 	await expect(page.getByRole("link", {name: "Open published world"})).toHaveAttribute(
 		"href",
 		"/play/quiet-archive",

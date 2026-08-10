@@ -3,6 +3,7 @@ import "./CommandInput.scss";
 type CommandInputProps = {
 	command: string;
 	disabled?: boolean;
+	inputRef?: React.Ref<HTMLInputElement>;
 	commandList: string[];
 	currentCommandInHistory: number;
 	setCurrentCommandInHistory: (currentCommand: number) => void;
@@ -13,6 +14,7 @@ type CommandInputProps = {
 export function CommandInput({
 	command,
 	disabled = false,
+	inputRef,
 	commandList,
 	currentCommandInHistory,
 	setCurrentCommandInHistory,
@@ -52,6 +54,7 @@ export function CommandInput({
 			<span className="command-input__prompt">&gt;&gt;</span>
 
 			<input
+				ref={inputRef}
 				disabled={disabled}
 				aria-label="Game command"
 				value={command}

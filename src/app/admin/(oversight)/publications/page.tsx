@@ -23,7 +23,7 @@ export default function AdminPublicationsPage() {
 			<header className="adminPageHeader">
 				<div>
 					<h1>Publications</h1>
-					<p>Published world metadata and the selected immutable release.</p>
+					<p>Publication lifecycle and the selected immutable release.</p>
 				</div>
 				<span>{publications.length} publications</span>
 			</header>
@@ -41,6 +41,7 @@ export default function AdminPublicationsPage() {
 								<th>Publication</th>
 								<th>Owner</th>
 								<th>Release</th>
+								<th>Status</th>
 								<th>Visibility</th>
 								<th>Published</th>
 							</tr>
@@ -58,6 +59,7 @@ export default function AdminPublicationsPage() {
 										</Link>
 									</td>
 									<td>{publication.release.number}</td>
+									<td>{publication.status}</td>
 									<td>{publication.visibility}</td>
 									<td>{formatAdminDate(publication.release.publishedAt)}</td>
 								</tr>

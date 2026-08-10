@@ -33,6 +33,14 @@ export type WorldRecord = {
 	createdAt: Date;
 	updatedAt: Date;
 	lastOpenedAt: Date | null;
+	publication?: {
+		status: "published" | "unpublished" | "suspended";
+		visibility: "listed" | "unlisted";
+		slug: string;
+		releaseNumber: number;
+		worldRevision: number;
+		unpublishedChanges: boolean;
+	} | null;
 };
 
 export type WorldRow = {
@@ -51,6 +59,11 @@ export type WorldRow = {
 	created_at: Date | string;
 	updated_at: Date | string;
 	last_opened_at?: Date | string | null;
+	publication_status?: "published" | "unpublished" | "suspended" | null;
+	publication_visibility?: "listed" | "unlisted" | null;
+	publication_slug?: string | null;
+	publication_release_number?: number | null;
+	publication_world_revision?: number | null;
 };
 
 export type UpdateWorldInput = {
@@ -75,6 +88,21 @@ export function mapWorldRow(row: WorldRow): WorldRecord {
 		createdAt: new Date(row.created_at),
 		updatedAt: new Date(row.updated_at),
 		lastOpenedAt: row.last_opened_at ? new Date(row.last_opened_at) : null,
+		publication:
+			row.publication_status &&
+			row.publication_visibility &&
+			row.publication_slug &&
+			row.publication_release_number &&
+			row.publication_world_revision
+				? {
+						status: row.publication_status,
+						visibility: row.publication_visibility,
+						slug: row.publication_slug,
+						releaseNumber: Number(row.publication_release_number),
+						worldRevision: Number(row.publication_world_revision),
+						unpublishedChanges: row.revision !== Number(row.publication_world_revision),
+					}
+				: null,
 	};
 }
 
@@ -191,7 +219,18 @@ export async function listOwnedWorlds(ownerUserId: string): Promise<WorldRecord[
 		.leftJoin("user_world_activity as a", function () {
 			this.on("a.world_id", "=", "w.id").andOn("a.user_id", "=", "w.owner_user_id");
 		})
-		.select("w.*", "a.last_opened_at")
+		.leftJoin("world_publications as p", "p.world_id", "w.id")
+		.leftJoin("world_releases as r", "r.id", "p.current_release_id")
+		.leftJoin("world_versions as v", "v.id", "r.world_version_id")
+		.select(
+			"w.*",
+			"a.last_opened_at",
+			"p.status as publication_status",
+			"p.visibility as publication_visibility",
+			"p.slug as publication_slug",
+			"r.release_number as publication_release_number",
+			"v.revision as publication_world_revision",
+		)
 		.where({"w.owner_user_id": ownerUserId, "w.kind": "editor"})
 		.whereNull("w.deleted_at")
 		.orderByRaw("a.last_opened_at desc nulls last")

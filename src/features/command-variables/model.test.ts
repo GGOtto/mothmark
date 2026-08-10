@@ -73,10 +73,16 @@ describe("command variable catalog", () => {
 		]);
 	});
 
-	it("does not expose phrase or relation structure blocks as variables", () => {
-		expect(commandCatalog().options.map((option) => option.blockId.id)).not.toEqual(
-			expect.arrayContaining(["phrase-block", "relation-block"]),
-		);
+	it("exposes raw entered text from phrase and relation structure blocks", () => {
+		for (const blockId of ["phrase-block", "relation-block"]) {
+			expect(commandCatalog().options).toContainEqual(
+				expect.objectContaining({
+					blockId: toID("command-block", blockId),
+					projection: "text",
+					valueType: "string",
+				}),
+			);
+		}
 	});
 
 	it("only exposes entered text for the block whose fallback is running", () => {

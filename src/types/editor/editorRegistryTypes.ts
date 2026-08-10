@@ -111,6 +111,7 @@ export type EditorRegistries = {
 
 	flags: EditorKeyOption[];
 	counters: EditorKeyOption[];
+	texts: EditorKeyOption[];
 
 	tags: EditorTagRegistry;
 };

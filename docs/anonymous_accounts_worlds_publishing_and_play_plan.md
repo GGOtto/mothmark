@@ -2,6 +2,10 @@
 
 ## Horizontal slice implementation plan
 
+**Implementation status (2026-08-09):** Slices 1–10 are implemented. The launch runbook retains the
+preview migration, production-like retention drill, and operator approval steps that must be
+performed against the target deployment rather than simulated in repository tests.
+
 This document is the implementation plan for moving Mothmark from one shared editable world to:
 
 - browser-bound anonymous user accounts;
@@ -1417,9 +1421,19 @@ slice and record the decision in this document.
 - **Before Slice 7:** confirm play-only account and diagnostic playthrough retention values; maximum
   world/command/transcript sizes; default catalog ordering; engine-version identifier; and initial
   public title/summary validation limits.
-- **Before Slice 8:** whether ordinary unpublishing permits existing playthroughs to continue and for
-  how long.
-- **Before Slice 9:** historical engine-runner support window and the operational policy for a
-  recorded engine version whose compatible runner is unavailable.
-- **Before Slice 10:** adjust retention from observed cleanup volume, set production rate limits, and
-  finalize privacy/cookie language.
+- **Before Slice 8 (resolved):** ordinary unpublishing prevents new playthroughs but permits an
+  existing active playthrough to continue indefinitely on its pinned release. Restart is unavailable
+  until the owner republishes. Administrative suspension blocks both resume and commands immediately;
+  lifting a suspension leaves the publication unpublished for an explicit owner republish.
+- **Before Slice 9 (resolved):** `mothmark-engine-0.1.0` is the only installed faithful historical
+  runner. A recorded version without a compatible runner reports `Original-engine replay
+unavailable`; administrators may choose a separately labeled current-engine comparison, which is
+  never represented as the original experience.
+- **Before Slice 10 (resolved for initial launch):** retain the measured-policy starting points: 1
+  day for empty anonymous accounts, 7 days for untouched editor accounts, 30 days for play-only
+  accounts, 180 days for authored editor accounts, a shared 7-day cleanup grace period, 30 days for
+  trashed worlds, and 90 additional days for anonymized play diagnostics. Hosted play limits are 30
+  bootstraps per network per 15 minutes, 120 commands per player and 240 per network per minute, 20
+  restarts per player and 40 per network per 15 minutes, and 10 progress deletions per player and 20
+  per network per 15 minutes. Only necessary editor, play, administrator, and matching CSRF cookies
+  are active; raw player commands are disclosed as administrator-visible diagnostic data.

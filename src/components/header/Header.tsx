@@ -39,6 +39,10 @@ export function Header() {
 					Home
 				</Link>
 
+				<Link href="/play" className="headerLink">
+					Play
+				</Link>
+
 				<Link
 					href="/worlds"
 					className={`headerLink ${pathname.startsWith("/worlds") ? "headerLinkActive" : ""}`}

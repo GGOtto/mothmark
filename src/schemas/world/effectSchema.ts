@@ -57,14 +57,26 @@ const FlagEffectValueSchema = z
 					title: "Flag",
 					description: "The name of the new flag. Will overwrite the flag if it already exists.",
 				}),
-				value: editor.boolean({title: "Start Value"}).default(true),
+				value: editor
+					.boolean({
+						title: "Start value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
 			z.object({
 				type: z.literal("flag"),
 				"flag-type": z.literal("normal").default("normal"),
 				operation: z.literal("set"),
 				flag: editor.flagKey({title: "Flag"}),
-				value: editor.boolean({title: "Value"}).default(true),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
 			z.object({
 				type: z.literal("flag"),
@@ -86,7 +98,13 @@ const FlagEffectValueSchema = z
 				operation: z.literal("set"),
 				roomId: editor.reference("room", {title: "Room"}),
 				flag: editor.string({title: "Flag"}).min(1),
-				value: editor.boolean({title: "Value"}).default(true),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
 			z.object({
 				type: z.literal("flag"),
@@ -110,7 +128,13 @@ const FlagEffectValueSchema = z
 				operation: z.literal("set"),
 				itemId: editor.reference("item", {title: "Item"}),
 				flag: editor.string({title: "Flag"}).min(1),
-				value: editor.boolean({title: "Value"}).default(true),
+				value: editor
+					.boolean({
+						title: "Value",
+						commandVariableType: "boolean",
+						features: {labels: {on: "True", off: "False"}},
+					})
+					.default(true),
 			}),
 			z.object({
 				type: z.literal("flag"),
@@ -148,34 +172,57 @@ export const CounterEffectSchema = editor.discriminatedUnion(
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("create"),
-			counter: editor.input({title: "Counter"}),
-			value: editor.number({title: "Start Value"}),
+			counter: editor.counterKey({title: "Counter"}),
+			value: editor.number({title: "Start value", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("set"),
-			counter: editor.input({title: "Counter"}),
-			value: editor.number({title: "Value"}),
+			counter: editor.counterKey({title: "Counter"}),
+			value: editor.number({title: "Value", commandVariableType: "number"}),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("increase"),
-			counter: editor.input({title: "Counter"}),
-			amount: editor.number({title: "Amount"}).default(1),
+			counter: editor.counterKey({title: "Counter"}),
+			amount: editor.number({title: "Amount", commandVariableType: "number"}).default(1),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("decrease"),
-			counter: editor.input({title: "Counter"}),
-			amount: editor.number({title: "Amount"}).default(1),
+			counter: editor.counterKey({title: "Counter"}),
+			amount: editor.number({title: "Amount", commandVariableType: "number"}).default(1),
 		}),
 		z.object({
 			type: z.literal("counter"),
 			operation: z.literal("delete"),
-			counter: editor.input({title: "Counter"}),
+			counter: editor.counterKey({title: "Counter"}),
 		}),
 	]),
 	{title: "Counter Effect", description: "Changes a numeric world counter."},
+);
+
+export const TextEffectSchema = editor.discriminatedUnion(
+	z.discriminatedUnion("operation", [
+		z.object({
+			type: z.literal("text"),
+			operation: z.literal("create"),
+			text: editor.textKey({title: "Text variable"}),
+			value: editor.textarea({title: "Start value", commandVariableType: "string"}),
+		}),
+		z.object({
+			type: z.literal("text"),
+			operation: z.literal("set"),
+			text: editor.textKey({title: "Text variable"}),
+			value: editor.textarea({title: "Value", commandVariableType: "string"}),
+		}),
+		z.object({
+			type: z.literal("text"),
+			operation: z.literal("delete"),
+			text: editor.textKey({title: "Text variable"}),
+		}),
+	]),
+	{title: "Text effect", description: "Creates, changes, or deletes a saved text value."},
 );
 
 export const ItemEffectSchema = editor.discriminatedUnion(
@@ -520,6 +567,7 @@ export const GameEffectSchema = editor.discriminatedUnion(
 export type MessageEffect = z.infer<typeof MessageEffectSchema>;
 export type FlagEffect = z.infer<typeof FlagEffectSchema>;
 export type CounterEffect = z.infer<typeof CounterEffectSchema>;
+export type TextEffect = z.infer<typeof TextEffectSchema>;
 export type ItemEffect = z.infer<typeof ItemEffectSchema>;
 export type ItemActionEffect = z.infer<typeof ItemActionEffectSchema>;
 export type RoomEffect = z.infer<typeof RoomEffectSchema>;
@@ -530,6 +578,7 @@ export type Effect =
 	| MessageEffect
 	| FlagEffect
 	| CounterEffect
+	| TextEffect
 	| ItemEffect
 	| ItemActionEffect
 	| RoomEffect
@@ -581,6 +630,7 @@ export const EffectSchema: z.ZodType<Effect> = z.lazy(() =>
 			MessageEffectSchema,
 			FlagEffectSchema,
 			CounterEffectSchema,
+			TextEffectSchema,
 			ItemEffectSchema,
 			ItemActionEffectSchema,
 			RoomEffectSchema,

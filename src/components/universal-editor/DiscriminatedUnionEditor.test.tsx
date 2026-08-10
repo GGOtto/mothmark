@@ -10,7 +10,7 @@ const metadata: DiscriminatedUnionControlMetadata = {
 	title: "Take when",
 	features: {
 		discriminator: "type",
-		options: [{label: "Flag", value: "flag", defaultValue: {operation: "true"}, fields: []}],
+		options: [{label: "Flag", value: "flag", defaultValue: {operation: "is"}, fields: []}],
 	},
 };
 

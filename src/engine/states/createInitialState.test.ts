@@ -2,6 +2,7 @@ import {GameStateSchema} from "@/schemas/states/gameStateSchemas";
 import {idValue} from "@/utils/idUtils";
 import {produce} from "immer";
 import {createPlayerTestScenario} from "../utils/testUtils";
+import {createInitialGameState} from "./createInitialState";
 
 describe("createInitialGameState", () => {
 	it("loads complete room and item snapshots from the world", () => {
@@ -44,5 +45,22 @@ describe("createInitialGameState", () => {
 		expect(world.rooms[0].tags).not.toContain("runtime room");
 		expect(world.items[0].aliases).not.toContain("runtime bell");
 		expect(world.items[0].tags).not.toContain("runtime item");
+	});
+
+	it("loads initial flags, counters, and text values into runtime variables", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const world = produce(scenario.world, (draft) => {
+			draft.initialState.flags = [{flag: "ready", value: true}];
+			draft.initialState.counters = [{counter: "score", value: 7}];
+			draft.initialState.texts = [{text: "answer", value: "moth"}];
+		});
+
+		const game = createInitialGameState(world, world.startRoomId);
+
+		expect(game.variables).toMatchObject({
+			flags: [{ready: true}],
+			counters: [{score: 7}],
+			texts: [{answer: "moth"}],
+		});
 	});
 });

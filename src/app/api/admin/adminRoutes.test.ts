@@ -9,7 +9,7 @@ import {
 	recordAdministratorRead,
 	administratorHasPermission,
 } from "@/db/dbal/adminRepository";
-import {listAdminPublications} from "@/db/dbal/publicationRepository";
+import {listAdminPublications, setPublicationSuspension} from "@/db/dbal/publicationRepository";
 
 import {GET as getSession} from "./session/route";
 import {GET as listUsers} from "./users/route";
@@ -17,7 +17,7 @@ import {GET as getUser} from "./users/[id]/route";
 import {GET as listWorlds} from "./worlds/route";
 import {GET as getWorld} from "./worlds/[id]/route";
 import {GET as listPublications} from "./publications/route";
-import {GET as getPublication} from "./publications/[id]/route";
+import {GET as getPublication, PUT as setPublicationStatus} from "./publications/[id]/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/adminRepository", () => ({
@@ -28,7 +28,11 @@ jest.mock("@/db/dbal/adminRepository", () => ({
 	recordAdministratorRead: jest.fn(),
 	administratorHasPermission: jest.fn(),
 }));
-jest.mock("@/db/dbal/publicationRepository", () => ({listAdminPublications: jest.fn()}));
+jest.mock("@/db/dbal/publicationRepository", () => ({
+	PublicationError: class PublicationError extends Error {},
+	listAdminPublications: jest.fn(),
+	setPublicationSuspension: jest.fn(),
+}));
 
 const adminId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const targetId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
@@ -39,6 +43,17 @@ const admin = {
 	audience: "admin",
 } as const;
 const request = (path: string) => new Request(`http://localhost${path}`);
+const mutationRequest = (path: string, body: unknown) =>
+	new Request(`http://localhost${path}`, {
+		method: "PUT",
+		headers: {
+			origin: "http://localhost",
+			cookie: "mothmark_admin_csrf=admin-csrf",
+			"x-csrf-token": "admin-csrf",
+			"content-type": "application/json",
+		},
+		body: JSON.stringify(body),
+	});
 
 describe("read-only administrator routes", () => {
 	beforeEach(() => {
@@ -113,5 +128,23 @@ describe("read-only administrator routes", () => {
 		expect(malformed.status).toBe(404);
 		expect(missing.status).toBe(404);
 		expect(recordAdministratorRead).not.toHaveBeenCalled();
+	});
+
+	it("suspends a publication only through administrator oversight", async () => {
+		jest.mocked(setPublicationSuspension).mockResolvedValue({id: targetId} as never);
+		const response = await setPublicationStatus(
+			mutationRequest(`/api/admin/publications/${targetId}`, {
+				status: "suspended",
+				reason: "Unsafe content pending review",
+			}),
+			{params: Promise.resolve({id: targetId})},
+		);
+		expect(response.status).toBe(200);
+		expect(setPublicationSuspension).toHaveBeenCalledWith({
+			actorUserId: adminId,
+			publicationId: targetId,
+			suspended: true,
+			reason: "Unsafe content pending review",
+		});
 	});
 });

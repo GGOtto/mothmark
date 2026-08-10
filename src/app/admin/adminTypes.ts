@@ -17,6 +17,22 @@ export type AdminPublication = {
 	ownerName: string | null;
 	release: {id: string; number: number; publishedAt: string};
 };
+export type AdminPlaythrough = {
+	id: string;
+	publicationId: string;
+	publicationTitle: string;
+	publicationSlug: string;
+	releaseId: string;
+	releaseNumber: number;
+	playerReference: string;
+	status: "active" | "completed" | "abandoned" | "errored";
+	commandCount: number;
+	startedAt: string;
+	lastActivityAt: string;
+	endedAt: string | null;
+	anonymizedAt: string | null;
+	purgeAfter: string | null;
+};
 export type AdminWorld = {
 	createdAt: string;
 	deletedAt: string | null;

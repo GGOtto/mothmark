@@ -176,6 +176,10 @@
 		font: inherit;
 		cursor: pointer;
 	}
+	.hostedDeleteProgress {
+		border-color: var(--color-danger);
+		color: var(--color-danger);
+	}
 }
 .hostedPlayerHeaderActions {
 	display: flex;
@@ -215,6 +219,36 @@
 	a {
 		color: var(--color-action);
 		font-size: 12px;
+	}
+	button {
+		width: fit-content;
+		padding: 6px 9px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 12px;
+		cursor: pointer;
+	}
+}
+.hostedReleaseNotice {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 8px 14px;
+	border-bottom: 1px solid var(--color-terminal-border);
+	background: var(--color-terminal-raised);
+	color: var(--color-terminal-muted);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	button {
+		border: 0;
+		background: transparent;
+		color: var(--color-action);
+		font: inherit;
+		cursor: pointer;
 	}
 }
 .hostedTerminal {

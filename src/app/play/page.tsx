@@ -12,6 +12,7 @@ type Publication = {
 	title: string;
 	summary: string;
 	release: {number: number; publishedAt: string};
+	playAction?: "play" | "continue" | "play_again";
 };
 
 export default function PlayCatalogPage() {
@@ -77,25 +78,33 @@ export default function PlayCatalogPage() {
 				</p>
 			) : publications.length ? (
 				<ul className="playCatalogGrid">
-					{publications.map((publication) => (
-						<li key={publication.id}>
-							<Link href={`/play/${publication.slug}`} aria-label={`Play ${publication.title}`}>
-								<div>
-									<h2>{publication.title}</h2>
-									<p>{publication.summary}</p>
-								</div>
-								<footer>
-									<small>
-										Published{" "}
-										{new Intl.DateTimeFormat(undefined, {dateStyle: "medium"}).format(
-											new Date(publication.release.publishedAt),
-										)}
-									</small>
-									<strong>Play</strong>
-								</footer>
-							</Link>
-						</li>
-					))}
+					{publications.map((publication) => {
+						const action =
+							publication.playAction === "continue"
+								? "Continue"
+								: publication.playAction === "play_again"
+									? "Play again"
+									: "Play";
+						return (
+							<li key={publication.id}>
+								<Link href={`/play/${publication.slug}`} aria-label={`${action} ${publication.title}`}>
+									<div>
+										<h2>{publication.title}</h2>
+										<p>{publication.summary}</p>
+									</div>
+									<footer>
+										<small>
+											Published{" "}
+											{new Intl.DateTimeFormat(undefined, {dateStyle: "medium"}).format(
+												new Date(publication.release.publishedAt),
+											)}
+										</small>
+										<strong>{action}</strong>
+									</footer>
+								</Link>
+							</li>
+						);
+					})}
 				</ul>
 			) : (
 				<p className="playCatalogStatus">No published worlds match this search.</p>

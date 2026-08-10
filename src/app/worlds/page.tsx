@@ -22,6 +22,14 @@ type LibraryWorld = {
 	trashPurgeAfter: string | null;
 	updatedAt: string;
 	world: Pick<World, "items" | "rooms">;
+	publication: {
+		status: "published" | "unpublished" | "suspended";
+		visibility: "listed" | "unlisted";
+		slug: string;
+		releaseNumber: number;
+		worldRevision: number;
+		unpublishedChanges: boolean;
+	} | null;
 };
 
 type WorldLibrary = {worlds: LibraryWorld[]; usage: {count: number; max: number}};
@@ -322,6 +330,12 @@ export default function WorldsPage() {
 													{formatCount(world.world.rooms.length, "room")} ·{" "}
 													{formatCount(world.world.items.length, "item")}
 												</span>
+												{world.publication ? (
+													<span className="worldListPublication">
+														Release {world.publication.releaseNumber} · {world.publication.status}
+														{world.publication.unpublishedChanges ? " · unpublished changes" : ""}
+													</span>
+												) : null}
 												<small>Opened {formatActivity(world.lastOpenedAt)}</small>
 											</span>
 										</a>

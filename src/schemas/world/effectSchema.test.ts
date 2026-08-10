@@ -32,6 +32,16 @@ describe("effect storage schemas", () => {
 		).toBe(true);
 	});
 
+	it("accepts saved text create, set, and delete effects", () => {
+		for (const effect of [
+			{type: "text", operation: "create", text: "answer", value: "moth"},
+			{type: "text", operation: "set", text: "answer", value: "mark"},
+			{type: "text", operation: "delete", text: "answer"},
+		]) {
+			expect(EffectSchema.safeParse(effect).success).toBe(true);
+		}
+	});
+
 	it("uses a complete EffectGroup for effect controls and world storage", () => {
 		const group = {
 			id: "open-gate-sequence",

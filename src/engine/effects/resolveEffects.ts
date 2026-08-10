@@ -199,6 +199,32 @@ export function resolveCounterEffect(game: GameState, effect: Effect): GameState
 	});
 }
 
+export function resolveTextEffect(game: GameState, effect: Effect): GameState {
+	if (effect.type !== "text") return game;
+
+	return produce(game, (draft) => {
+		const textRecordIndex = draft.variables.texts.findIndex((record) =>
+			Object.hasOwn(record, effect.text),
+		);
+		const textRecord = textRecordIndex >= 0 ? draft.variables.texts[textRecordIndex] : undefined;
+
+		switch (effect.operation) {
+			case "create":
+			case "set":
+				if (textRecord) textRecord[effect.text] = effect.value;
+				else draft.variables.texts.push({[effect.text]: effect.value});
+				break;
+			case "delete":
+				if (!textRecord) break;
+				delete textRecord[effect.text];
+				if (Object.keys(textRecord).length === 0) {
+					draft.variables.texts.splice(textRecordIndex, 1);
+				}
+				break;
+		}
+	});
+}
+
 export function resolveItemEffect(game: GameState, effect: Effect): GameState;
 export function resolveItemEffect(world: World, game: GameState, effect: Effect): GameState;
 export function resolveItemEffect(
@@ -703,6 +729,8 @@ export function resolveEffect(
 				return resolveMessageEffect(world, draft, effect);
 			case "counter":
 				return resolveCounterEffect(draft, effect);
+			case "text":
+				return resolveTextEffect(draft, effect);
 			case "item":
 				return resolveItemEffect(world, draft, effect);
 			case "item-action":

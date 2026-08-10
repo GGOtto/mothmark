@@ -104,6 +104,7 @@ export default function AdminWorldDetailPage() {
 			{!world && !error ? <p role="status">Loading world…</p> : null}
 			{world ? (
 				<>
+					<Link href={`/admin/playthroughs?worldId=${world.id}`}>View world playthroughs</Link>
 					<header className="adminPageHeader">
 						<div>
 							<h1>{world.name}</h1>

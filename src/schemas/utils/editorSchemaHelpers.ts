@@ -576,6 +576,21 @@ export function editorOptionalCounterKey(metadata: EditorMetadataWithoutControl 
 	});
 }
 
+export function editorTextKey(metadata: EditorMetadataWithoutControl = {}) {
+	return withEditorMetadata(z.string().min(1), {
+		control: "text-picker",
+		required: true,
+		picker: {
+			searchable: true,
+			allowCreate: true,
+			showDescriptions: false,
+			clearable: false,
+			...metadata.picker,
+		},
+		...metadata,
+	});
+}
+
 export function editorDirection(metadata: EditorMetadataWithoutControl = {}) {
 	return withEditorMetadata(z.string().min(1), {
 		control: "direction-picker",
@@ -1032,6 +1047,7 @@ export const editor = {
 	conditionControl: editorConditionControl,
 	conditionalText: editorConditionalText,
 	counterKey: editorCounterKey,
+	textKey: editorTextKey,
 	diffPreview: editorDiffPreview,
 	direction: editorDirection,
 	discriminatedUnion: editorDiscriminatedUnion,

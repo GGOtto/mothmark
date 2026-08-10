@@ -39,6 +39,7 @@ export type EditorControlType =
 	| "connection-picker"
 	| "flag-picker"
 	| "counter-picker"
+	| "text-picker"
 	| "flag-editor"
 	| "object-flag-editor"
 	| "direction-picker"

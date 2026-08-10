@@ -1,4 +1,5 @@
 import {world} from "@/data/worlds/initialWorld";
+import {produce} from "immer";
 import {buildEditorRegistries} from "./buildEditorRegistries";
 
 describe("buildEditorRegistries", () => {
@@ -26,6 +27,20 @@ describe("buildEditorRegistries", () => {
 				{kind: "layer", key: "0", label: "Main floor"},
 				{kind: "room", key: "shop-floor", label: "Shop Floor"},
 			],
+		});
+	});
+
+	it("builds saved flag, counter, and text options from the world's initial state", () => {
+		const worldWithVariables = produce(world, (draft) => {
+			draft.initialState.flags = [{flag: "ready", value: true}];
+			draft.initialState.counters = [{counter: "score", value: 3}];
+			draft.initialState.texts = [{text: "answer", value: "moth"}];
+		});
+
+		expect(buildEditorRegistries(worldWithVariables)).toMatchObject({
+			flags: [expect.objectContaining({key: "ready"})],
+			counters: [expect.objectContaining({key: "score"})],
+			texts: [expect.objectContaining({key: "answer"})],
 		});
 	});
 });

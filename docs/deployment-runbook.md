@@ -342,25 +342,63 @@ The reset does not require a Vercel redeployment or a Phase resync. The existing
 continues to target the same Neon branch. Any editor tab open during the reset may hold a stale world
 revision and should be refreshed.
 
-## Public launch gate
+## Public launch and operational gate
 
-Vercel Authentication protects the entire app, so it remains appropriate during private
-development. The application-level private-editing gate is now implemented: session secrets are
-opaque and hashed at rest, cookies are host-only and hardened, world operations are owner-scoped,
-mutations require origin and CSRF validation, and generic creation, slug lookup, and schema-version
-routes are closed.
+Production serves private editor accounts, public publication metadata, immutable playable
+releases, and a separately authenticated administrator surface. Preview deployments remain behind
+Vercel Authentication. Production protection may be disabled only after the checks below pass
+against the production database and canonical public host.
 
-Before disabling Production Vercel Authentication, verify registration, email delivery, recovery,
-MFA, account deletion, and the private-world browser workflow against the production database. Add
-the intended request body-size limit and configure Vercel WAF rate limiting. Keep previews
-authenticated.
+- Verify registration, verification, sign-in, recovery, MFA, account deletion, private-world
+  isolation, publication, two independent play sessions, progress deletion, and suspension.
+- Confirm request-size enforcement, application authentication/hosted-play throttles, and a coarser
+  Vercel WAF limit. Start the WAF above application limits and tune it from observed traffic so it
+  absorbs floods without becoming an inexpensive account lockout mechanism.
+- Confirm `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+  origin checks, CSRF enforcement, private `no-store` responses, and disabled browser source maps.
+- Inspect logs for passwords, hashes, MFA material, email addresses, tokens, authored worlds,
+  commands, transcripts, and provider payloads. None belong in structured logs.
+- Verify the privacy page describes hosted command inspection and the only active cookies are the
+  necessary editor, play, administrator, and audience-matched CSRF cookies.
 
-The application applies bounded account and network throttles to authentication attempts. Add a
-coarser Vercel WAF limit around the public authentication and editor endpoints, then adjust from
-observed traffic. Vercel's [WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
-is available on all plans.
+The application bounds auth bodies at 8 KiB, publication-management bodies at 4 KiB, command API
+bodies at 2 KiB, commands at 500 characters, and editor world bodies slightly above the 1 MiB world
+limit. Hosted throttles are recorded as hashed principal/network dimensions. Vercel's
+[WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) remains the
+outer abuse-control layer.
 
-Only after those operational checks should Production Vercel Authentication be disabled.
+### Backup and restore
+
+Before migrations or destructive cleanup, create or confirm a Neon point-in-time restore point and
+record the branch, migration batch, and operator in the release record. Restore into a new Neon
+branch first, run migrations and integrity checks there, then change the Phase `DATABASE_URL` only
+after approval. Never test recovery by overwriting the production branch.
+
+### Cleanup and retention operations
+
+Run `phase run --env production 'pnpm cleanup:anonymous --dry-run'` and review scheduled, cancelled,
+deferred, failed, and unexpectedly large counts before scheduling. Run bounded purge batches only
+after the grace window. Purge expired diagnostic rows separately with
+`pnpm cleanup:anonymous --purge-playthroughs --batch=100`. Alert on any failed batch, a result over
+the reviewed batch bound, or a sustained rise in scheduled/purged counts. Trashed worlds remain
+recoverable for 30 days; playthrough identity is anonymized before its separate 90-day diagnostic
+retention expires.
+
+### Suspended publications
+
+Suspension immediately blocks bootstrap, resume, restart, and command submission. Record a concise
+moderation reason in the administrator action. After review, lifting suspension leaves the
+publication unpublished; the owner explicitly republishes. Do not edit or delete immutable releases
+to enforce a suspension.
+
+### Email and credential operations
+
+Monitor Resend delivery, bounce, complaint, and provider failures using message identifiers and
+event types only; never log recipient addresses or verification/reset links. Rotate the Resend key
+in the matching Phase environment, sync it to Vercel, deploy, verify a synthetic delivery, then
+revoke the former key. Rotate `CREDENTIAL_ENCRYPTION_KEY` only with a reviewed re-encryption plan and
+a verified backup; replacing it directly makes existing TOTP seeds unreadable. Administrator
+password and MFA recovery continue to use the operator-only commands documented above.
 
 ## Deploying a routine change
 

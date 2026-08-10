@@ -6,6 +6,7 @@ import type {CurrentActor} from "@/db/dbal/sessionsRepository";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {WORLD_EDITOR_SLUG_MAX_LENGTH, isWorldEditorSlug} from "@/utils/worldSlug";
+import {RequestBodyError} from "@/auth/requestBody";
 
 export const WorldIdSchema = z.uuid();
 export const WorldLocatorSchema = z
@@ -51,6 +52,11 @@ export const invalidJsonResponse = (): NextResponse =>
 		},
 		{status: 400},
 	);
+
+export const requestBodyErrorResponse = (error: unknown): NextResponse =>
+	error instanceof RequestBodyError && error.code === "REQUEST_TOO_LARGE"
+		? NextResponse.json({error: {code: error.code, message: error.message}}, {status: 413})
+		: invalidJsonResponse();
 
 export const validationErrorResponse = (issues: z.core.$ZodIssue[]): NextResponse =>
 	NextResponse.json(

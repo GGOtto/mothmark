@@ -14,6 +14,7 @@ describe("editor schema variants", () => {
 			"message",
 			"flag",
 			"counter",
+			"text",
 			"item",
 			"item-action",
 			"room",
@@ -58,6 +59,7 @@ describe("editor schema variants", () => {
 		expect(schemaTypeOptions(ConditionSchema).map((option) => option.value)).toEqual([
 			"flag",
 			"counter",
+			"text",
 			"current-room",
 			"item",
 			"group",
@@ -82,6 +84,7 @@ describe("editor schema variants", () => {
 			"group",
 			"flag",
 			"counter",
+			"text",
 			"current-room",
 			"item",
 			"condition-ref",

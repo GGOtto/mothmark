@@ -110,6 +110,13 @@ function emptyTags(): EditorTagRegistry {
 
 export function buildEditorRegistries(world: World): EditorRegistries {
 	const worldRecord = world as unknown as Record<string, WorldEntity[] | unknown>;
+	const initialState =
+		worldRecord.initialState && typeof worldRecord.initialState === "object"
+			? (worldRecord.initialState as Record<string, unknown>)
+			: {};
+	const initialFlags = Array.isArray(initialState.flags) ? initialState.flags : [];
+	const initialCounters = Array.isArray(initialState.counters) ? initialState.counters : [];
+	const initialTexts = Array.isArray(initialState.texts) ? initialState.texts : [];
 	const rooms = world.rooms.map((room, index) => {
 		const option = entityOption(room, ["rooms", index]);
 		const layer = roomLayer(world, option.id);
@@ -337,11 +344,20 @@ export function buildEditorRegistries(world: World): EditorRegistries {
 		containers,
 		surfaces,
 		objects,
-		flags: ((worldRecord.flags as string[] | undefined) ?? []).map((flag) =>
-			keyOption(flag, "world"),
+		flags: initialFlags.flatMap((entry) =>
+			entry && typeof entry === "object" && "flag" in entry && typeof entry.flag === "string"
+				? [keyOption(entry.flag, "world")]
+				: [],
 		),
-		counters: ((worldRecord.counters as string[] | undefined) ?? []).map((counter) =>
-			keyOption(counter, "world"),
+		counters: initialCounters.flatMap((entry) =>
+			entry && typeof entry === "object" && "counter" in entry && typeof entry.counter === "string"
+				? [keyOption(entry.counter, "world")]
+				: [],
+		),
+		texts: initialTexts.flatMap((entry) =>
+			entry && typeof entry === "object" && "text" in entry && typeof entry.text === "string"
+				? [keyOption(entry.text, "world")]
+				: [],
 		),
 		tags,
 	};

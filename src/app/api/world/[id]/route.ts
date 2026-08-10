@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {readBoundedJson, WORLD_REQUEST_MAX_BYTES} from "@/auth/requestBody";
 import {
 	deleteOwnedWorld,
 	getOwnedWorld,
@@ -14,7 +15,7 @@ import {
 	WorldIdSchema,
 	WorldLocatorSchema,
 	handleWorldRouteError,
-	invalidJsonResponse,
+	requestBodyErrorResponse,
 	UpdateWorldRequestSchema,
 	validationErrorResponse,
 	worldNotFoundResponse,
@@ -72,9 +73,9 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 	let body: unknown;
 
 	try {
-		body = await request.json();
-	} catch {
-		return invalidJsonResponse();
+		body = await readBoundedJson(request, WORLD_REQUEST_MAX_BYTES);
+	} catch (error) {
+		return requestBodyErrorResponse(error);
 	}
 
 	const bodyResult = UpdateWorldRequestSchema.safeParse(body);

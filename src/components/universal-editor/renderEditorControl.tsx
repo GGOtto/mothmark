@@ -1,6 +1,7 @@
 import {ArrayEditor, type ArrayEditorProps} from "./ArrayEditor";
 import {CodePreviewEditor, type CodePreviewEditorProps} from "./CodePreviewEditor";
 import {ConditionBuilderEditor, type ConditionBuilderEditorProps} from "./ConditionBuilderEditor";
+import {CounterPickerEditor, type CounterPickerEditorProps} from "./CounterPickerEditor";
 import {
 	DiscriminatedUnionEditor,
 	type DiscriminatedUnionEditorProps,
@@ -49,6 +50,7 @@ import {
 import {TagListEditor, type TagListEditorProps} from "./TagListEditor";
 import {TextField, type TextFieldProps} from "./TextFieldEditor";
 import {TextareaEditor, type TextareaProps} from "./TextareaEditor";
+import {TextPickerEditor, type TextPickerEditorProps} from "./TextPickerEditor";
 import {ToggleEditor, type ToggleEditorProps} from "./ToggleEditor";
 import type {EditorControlProps, EditorControlMetadata} from "../../types/universalEditorTypes";
 import {FieldShellDisclosureProvider} from "./FieldShell";
@@ -189,6 +191,12 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 
 		case "flag-picker":
 			return <FlagPickerEditor {...(props as FlagPickerEditorProps)} />;
+
+		case "counter-picker":
+			return <CounterPickerEditor {...(props as CounterPickerEditorProps)} />;
+
+		case "text-picker":
+			return <TextPickerEditor {...(props as TextPickerEditorProps)} />;
 
 		case "flag-editor":
 			return <FlagEditor {...(props as SpecializedEditorProps)} />;

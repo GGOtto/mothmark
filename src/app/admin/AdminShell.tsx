@@ -56,6 +56,12 @@ export function AdminShell({children}: {children: ReactNode}) {
 						Publications
 					</Link>
 					<Link
+						href="/admin/playthroughs"
+						aria-current={pathname.startsWith("/admin/playthroughs") ? "page" : undefined}
+					>
+						Playthroughs
+					</Link>
+					<Link
 						href="/admin/audit"
 						aria-current={pathname.startsWith("/admin/audit") ? "page" : undefined}
 					>

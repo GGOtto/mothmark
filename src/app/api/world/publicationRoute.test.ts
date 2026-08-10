@@ -2,9 +2,14 @@
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
-import {getOwnedPublication, publishOwnedWorld} from "@/db/dbal/publicationRepository";
+import {
+	getOwnedPublication,
+	publishOwnedWorld,
+	publishOwnedWorldUpdate,
+	updateOwnedPublication,
+} from "@/db/dbal/publicationRepository";
 
-import {GET, POST} from "./[id]/publication/route";
+import {GET, PATCH, POST, PUT} from "./[id]/publication/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/permissionRepository", () => ({userHasPermission: jest.fn()}));
@@ -14,6 +19,8 @@ jest.mock("@/db/dbal/publicationRepository", () => ({
 	PublicationError: class PublicationError extends Error {},
 	getOwnedPublication: jest.fn(),
 	publishOwnedWorld: jest.fn(),
+	publishOwnedWorldUpdate: jest.fn(),
+	updateOwnedPublication: jest.fn(),
 }));
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
@@ -95,5 +102,38 @@ describe("owner publication route", () => {
 		const response = await GET(request(), context);
 		expect(response.status).toBe(200);
 		expect(getOwnedPublication).toHaveBeenCalledWith(userId, worldId);
+	});
+
+	it("publishes a newer saved revision without changing the slug", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "registered", siteRole: "user", audience: "editor"});
+		jest.mocked(publishOwnedWorldUpdate).mockResolvedValue({id: "publication-id"} as never);
+		const response = await PUT(
+			request("PUT", {expectedRevision: 5, title: "Second release", summary: "Updated."}),
+			context,
+		);
+		expect(response.status).toBe(200);
+		expect(publishOwnedWorldUpdate).toHaveBeenCalledWith({
+			ownerUserId: userId,
+			worldId,
+			expectedRevision: 5,
+			title: "Second release",
+			summary: "Updated.",
+		});
+	});
+
+	it("keeps owner lifecycle changes scoped to the owned publication", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "registered", siteRole: "user", audience: "editor"});
+		jest.mocked(updateOwnedPublication).mockResolvedValue({id: "publication-id"} as never);
+		const response = await PATCH(request("PATCH", {action: "unpublish"}), context);
+		expect(response.status).toBe(200);
+		expect(updateOwnedPublication).toHaveBeenCalledWith({
+			ownerUserId: userId,
+			worldId,
+			action: "unpublish",
+		});
 	});
 });

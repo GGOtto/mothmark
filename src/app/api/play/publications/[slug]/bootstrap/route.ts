@@ -4,6 +4,7 @@ import {mutationSecurityError} from "@/auth/requestSecurity";
 import {PLAY_SESSION_COOKIE, PLAY_SESSION_DURATION_MS, readCookie} from "@/auth/sessionTokens";
 import {PublicationError, bootstrapHostedPlay} from "@/db/dbal/publicationRepository";
 import {findBootstrapPlayActor} from "@/db/dbal/sessionsRepository";
+import {requestNetwork} from "@/app/api/auth/_shared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,9 +23,19 @@ export async function POST(request: Request, context: Context): Promise<NextResp
 				{status: 403},
 			);
 		}
-		const result = await bootstrapHostedPlay((await context.params).slug, actor?.userId);
+		const result = await bootstrapHostedPlay(
+			(await context.params).slug,
+			actor?.userId,
+			requestNetwork(request),
+		);
 		const response = NextResponse.json(
-			{data: {publication: result.publication, playthrough: result.playthrough}},
+			{
+				data: {
+					publication: result.publication,
+					playthrough: result.playthrough,
+					newerReleaseAvailable: result.newerReleaseAvailable,
+				},
+			},
 			{status: result.session ? 201 : 200},
 		);
 		if (result.session) {
@@ -42,7 +53,14 @@ export async function POST(request: Request, context: Context): Promise<NextResp
 		if (error instanceof PublicationError) {
 			return NextResponse.json(
 				{error: {code: error.code, message: error.message}},
-				{status: error.code === "FORBIDDEN" ? 403 : 404},
+				{
+					status:
+						error.code === "RATE_LIMITED"
+							? 429
+							: ["FORBIDDEN", "SUSPENDED"].includes(error.code)
+								? 403
+								: 404,
+				},
 			);
 		}
 		console.error("Hosted-play bootstrap failed", error);

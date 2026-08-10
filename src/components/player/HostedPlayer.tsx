@@ -21,6 +21,14 @@ type Playthrough = {
 	commandCount: number;
 	commands: string;
 	state: GameState;
+	status: "active" | "completed" | "abandoned" | "errored";
+	release: {id: string; number: number};
+};
+
+type BootstrapData = {
+	publication: Publication;
+	playthrough: Playthrough;
+	newerReleaseAvailable: boolean;
 };
 
 async function responseJson<T>(response: Response): Promise<T> {
@@ -37,6 +45,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 	const [status, setStatus] = useState<"loading" | "saving" | "saved" | "failed">("loading");
 	const [error, setError] = useState("");
 	const [aboutOpen, setAboutOpen] = useState(false);
+	const [newerReleaseAvailable, setNewerReleaseAvailable] = useState(false);
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -46,7 +55,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 					await fetch("/api/auth/csrf?audience=play", {signal: controller.signal}),
 				);
 				setCsrf(csrfBody.data.csrfToken);
-				const body = await responseJson<{data: {publication: Publication; playthrough: Playthrough}}>(
+				const body = await responseJson<{data: BootstrapData}>(
 					await fetch(`/api/play/publications/${encodeURIComponent(slug)}/bootstrap`, {
 						method: "POST",
 						headers: {"x-csrf-token": csrfBody.data.csrfToken},
@@ -55,6 +64,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 				);
 				setPublication(body.data.publication);
 				setPlaythrough(body.data.playthrough);
+				setNewerReleaseAvailable(body.data.newerReleaseAvailable);
 				setStatus("saved");
 			} catch (caught) {
 				if ((caught as {name?: string}).name === "AbortError") return;
@@ -84,6 +94,55 @@ export function HostedPlayer({slug}: {slug: string}) {
 			setStatus("saved");
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "The command could not be saved.");
+			setStatus("failed");
+		}
+	};
+
+	const restart = async () => {
+		if (!csrf || !playthrough) return;
+		const releaseMessage = newerReleaseAvailable
+			? " Restarting will abandon this playthrough and begin the newer published release."
+			: " Restarting will abandon this playthrough and begin again from the start.";
+		if (!window.confirm(releaseMessage.trim())) return;
+		setStatus("saving");
+		setError("");
+		try {
+			const body = await responseJson<{data: BootstrapData}>(
+				await fetch(`/api/play/publications/${encodeURIComponent(slug)}/restart`, {
+					method: "POST",
+					headers: {"x-csrf-token": csrf},
+				}),
+			);
+			setPublication(body.data.publication);
+			setPlaythrough(body.data.playthrough);
+			setNewerReleaseAvailable(false);
+			setAboutOpen(false);
+			setCommand("");
+			setStatus("saved");
+		} catch (caught) {
+			setError(caught instanceof Error ? caught.message : "The playthrough could not be restarted.");
+			setStatus("failed");
+		}
+	};
+
+	const deleteProgress = async () => {
+		if (!csrf || !playthrough) return;
+		if (
+			!window.confirm("Delete this saved playthrough and its command history? This cannot be undone.")
+		)
+			return;
+		setStatus("saving");
+		try {
+			const response = await fetch(`/api/play/publications/${encodeURIComponent(slug)}/playthrough`, {
+				method: "DELETE",
+				headers: {"x-csrf-token": csrf},
+			});
+			if (!response.ok) throw new Error("The saved playthrough could not be deleted.");
+			window.location.assign("/play");
+		} catch (caught) {
+			setError(
+				caught instanceof Error ? caught.message : "The saved playthrough could not be deleted.",
+			);
 			setStatus("failed");
 		}
 	};
@@ -120,7 +179,32 @@ export function HostedPlayer({slug}: {slug: string}) {
 						)}
 					</small>
 					<Link href="/privacy">Privacy</Link>
+					<button
+						type="button"
+						onClick={() => void restart()}
+						disabled={!playthrough || status === "saving"}
+					>
+						{playthrough?.status === "completed" ? "Play again" : "Restart playthrough"}
+					</button>
+					<button
+						type="button"
+						className="hostedDeleteProgress"
+						onClick={() => void deleteProgress()}
+						disabled={!playthrough || status === "saving"}
+					>
+						Delete saved playthrough
+					</button>
 				</aside>
+			) : null}
+			{newerReleaseAvailable ? (
+				<div className="hostedReleaseNotice" role="status">
+					<span>
+						A new version is available. You can keep playing this release or restart into the new one.
+					</span>
+					<button type="button" onClick={() => void restart()}>
+						Restart with new version
+					</button>
+				</div>
 			) : null}
 			{error ? (
 				<p className="hostedPlayerError" role="alert">
@@ -129,7 +213,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			) : null}
 			<div className="hostedTerminal">
 				<PlayerTerminal
-					disabled={!playthrough || status === "saving"}
+					disabled={!playthrough || playthrough.status !== "active" || status === "saving"}
 					command={command}
 					messages={playthrough?.state.messages ?? []}
 					onCommandChange={setCommand}
