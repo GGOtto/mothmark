@@ -60,6 +60,7 @@ describe("temporary account API", () => {
 			status: "active",
 			usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
 			userId,
+			username: null,
 		});
 		const response = await GET(request());
 		expect(response.status).toBe(200);
@@ -73,6 +74,7 @@ describe("temporary account API", () => {
 				createdAt: "2026-08-08T12:00:00.000Z",
 				email: null,
 				userId,
+				username: null,
 			},
 			exportedAt: "2026-08-08T12:00:00.000Z",
 			format: "mothmark-account",

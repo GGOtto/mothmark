@@ -86,9 +86,7 @@ export default function AdminPublicationDetailPage() {
 						<div>
 							<dt>Owner</dt>
 							<dd>
-								<Link href={`/admin/users/${publication.ownerUserId}`}>
-									{publication.ownerName || publication.ownerUserId}
-								</Link>
+								<Link href={`/admin/users/${publication.ownerUserId}`}>{publication.ownerUsername}</Link>
 							</dd>
 						</div>
 						<div>

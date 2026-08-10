@@ -8,6 +8,7 @@ import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
 import {PlayerTerminal} from "./PlayerTerminal";
 
 type Publication = {
+	authorUsername: string;
 	slug: string;
 	title: string;
 	summary: string;
@@ -151,7 +152,9 @@ export function HostedPlayer({slug}: {slug: string}) {
 		<main className="hostedPlayerPage">
 			<header className="hostedPlayerHeader">
 				<Link href="/play">Published worlds</Link>
-				<strong>{publication?.title ?? "Loading world…"}</strong>
+				<strong>
+					{publication ? `${publication.title} · by ${publication.authorUsername}` : "Loading world…"}
+				</strong>
 				<div className="hostedPlayerHeaderActions">
 					<span className={`hostedSaveState hostedSaveState-${status}`} role="status">
 						{status === "loading"
@@ -171,6 +174,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			</header>
 			{aboutOpen && publication ? (
 				<aside className="hostedAbout" aria-label="About this published world">
+					<small>By {publication.authorUsername}</small>
 					<p>{publication.summary}</p>
 					<small>
 						Release {publication.release.number} · Published{" "}

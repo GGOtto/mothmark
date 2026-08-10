@@ -18,6 +18,7 @@ type AccountSummary = {
 	siteRole: "admin" | "user";
 	usage: {activeWorlds: number; maxWorlds: number; trashedWorlds: number};
 	userId: string;
+	username: string | null;
 };
 
 const retentionCopy: Record<AccountSummary["retentionClass"], string> = {
@@ -188,6 +189,9 @@ export default function AccountPage() {
 						</dl>
 						{registered ? (
 							<>
+								<p>
+									<strong>Username:</strong> {account.username}
+								</p>
 								<p>
 									<strong>Verified email:</strong> {account.email}
 								</p>

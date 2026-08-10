@@ -3,9 +3,20 @@
 import Link from "next/link";
 import {FormEvent, useEffect, useState} from "react";
 
+import {
+	USERNAME_MAX_LENGTH,
+	USERNAME_MIN_LENGTH,
+	USERNAME_PATTERN,
+	usernameValidationMessage,
+} from "@/auth/usernames";
+
 import "./AccountAuthForm.scss";
 
 type AuthMode = "forgot" | "register" | "reset" | "sign-in" | "verify";
+type UsernameCheck = {
+	message: string;
+	status: "available" | "checking" | "error" | "idle" | "invalid" | "unavailable";
+};
 
 const content: Record<
 	Exclude<AuthMode, "verify">,
@@ -59,6 +70,8 @@ async function post(path: string, body: object): Promise<{data?: Record<string, 
 }
 
 export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: string}) {
+	const [username, setUsername] = useState("");
+	const [usernameCheck, setUsernameCheck] = useState<UsernameCheck>({message: "", status: "idle"});
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmation, setConfirmation] = useState("");
@@ -72,6 +85,64 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				: "",
 	);
 	const [verified, setVerified] = useState(false);
+
+	useEffect(() => {
+		if (mode !== "register" || !username) return;
+		const validationMessage = usernameValidationMessage(username);
+		if (validationMessage) return;
+		const controller = new AbortController();
+		const timeout = window.setTimeout(() => {
+			fetch(`/api/auth/username-availability?username=${encodeURIComponent(username)}`, {
+				signal: controller.signal,
+			})
+				.then(async (response) => {
+					const body = (await response.json()) as {
+						data?: {available?: boolean; message?: string; valid?: boolean};
+						error?: {message?: string};
+					};
+					if (!response.ok)
+						throw new Error(body.error?.message || "Username availability could not be checked.");
+					if (!body.data?.valid) {
+						setUsernameCheck({
+							message: body.data?.message || "Enter a valid username.",
+							status: "invalid",
+						});
+						return;
+					}
+					setUsernameCheck({
+						message:
+							body.data.message ||
+							(body.data.available ? "Username is available." : "That username is already in use."),
+						status: body.data.available ? "available" : "unavailable",
+					});
+				})
+				.catch((caught: unknown) => {
+					if ((caught as {name?: string}).name === "AbortError") return;
+					setUsernameCheck({
+						message:
+							caught instanceof Error ? caught.message : "Username availability could not be checked.",
+						status: "error",
+					});
+				});
+		}, 250);
+		return () => {
+			window.clearTimeout(timeout);
+			controller.abort();
+		};
+	}, [mode, username]);
+
+	const changeUsername = (value: string) => {
+		const nextUsername = value;
+		setUsername(nextUsername);
+		const validationMessage = usernameValidationMessage(nextUsername);
+		setUsernameCheck(
+			!nextUsername
+				? {message: "", status: "idle"}
+				: validationMessage
+					? {message: validationMessage, status: "invalid"}
+					: {message: "Checking username…", status: "checking"},
+		);
+	};
 
 	useEffect(() => {
 		if (mode !== "verify" || !token) return;
@@ -128,7 +199,7 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 		}
 		try {
 			if (mode === "register") {
-				const result = await post("/api/auth/register", {email, password});
+				const result = await post("/api/auth/register", {email, password, username});
 				setMessage(String(result.data?.message ?? "Check your email for a verification link."));
 			} else if (mode === "sign-in") {
 				await post("/api/auth/sign-in", {email, password});
@@ -143,6 +214,13 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				setConfirmation("");
 			}
 		} catch (caught) {
+			if (
+				mode === "register" &&
+				caught instanceof Error &&
+				caught.message === "That username is already in use."
+			) {
+				setUsernameCheck({message: caught.message, status: "unavailable"});
+			}
 			setError(caught instanceof Error ? caught.message : "The request could not be completed.");
 		} finally {
 			setBusy(false);
@@ -169,6 +247,35 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 		<AuthShell title={copy.title}>
 			<p>{copy.intro}</p>
 			<form className="authForm" onSubmit={onSubmit}>
+				{mode === "register" ? (
+					<>
+						<label htmlFor="account-username">Username</label>
+						<input
+							id="account-username"
+							name="username"
+							type="text"
+							autoComplete="username"
+							autoCapitalize="none"
+							spellCheck={false}
+							minLength={USERNAME_MIN_LENGTH}
+							maxLength={USERNAME_MAX_LENGTH}
+							pattern={USERNAME_PATTERN}
+							aria-describedby="account-username-feedback"
+							aria-invalid={usernameCheck.status === "invalid" || usernameCheck.status === "unavailable"}
+							required
+							value={username}
+							onChange={(event) => changeUsername(event.target.value)}
+						/>
+						<p
+							id="account-username-feedback"
+							className={`authHint authUsernameStatus authUsernameStatus-${usernameCheck.status}`}
+							aria-live="polite"
+						>
+							{usernameCheck.message ||
+								"Use 3–30 letters, numbers, periods, underscores, or hyphens. Capitalization will appear publicly."}
+						</p>
+					</>
+				) : null}
 				{mode !== "reset" ? (
 					<>
 						<label htmlFor="account-email">Email</label>
@@ -239,7 +346,14 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				{mode === "reset" && !token ? (
 					<Link href="/forgot-password">Request a new recovery email</Link>
 				) : null}
-				<button type="submit" disabled={busy || (mode === "reset" && !token)}>
+				<button
+					type="submit"
+					disabled={
+						busy ||
+						(mode === "reset" && !token) ||
+						(mode === "register" && usernameCheck.status !== "available")
+					}
+				>
 					{busy ? "Working…" : copy.submit}
 				</button>
 			</form>

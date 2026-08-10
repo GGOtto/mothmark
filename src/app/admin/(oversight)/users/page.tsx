@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
 								<tr key={user.id}>
 									<td>
 										<Link href={`/admin/users/${user.id}`}>
-											{user.displayName || `Anonymous ${user.id.slice(0, 8)}`}
+											{user.username || `Anonymous ${user.id.slice(0, 8)}`}
 										</Link>
 										<small>
 											{user.accountType}

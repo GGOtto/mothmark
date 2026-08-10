@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 import "./play.scss";
 
 type Publication = {
+	authorUsername: string;
 	id: string;
 	slug: string;
 	title: string;
@@ -90,6 +91,7 @@ export default function PlayCatalogPage() {
 								<Link href={`/play/${publication.slug}`} aria-label={`${action} ${publication.title}`}>
 									<div>
 										<h2>{publication.title}</h2>
+										<small className="playCatalogAuthor">by {publication.authorUsername}</small>
 										<p>{publication.summary}</p>
 									</div>
 									<footer>

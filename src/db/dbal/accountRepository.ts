@@ -16,6 +16,7 @@ type AccountRow = {
 	account_type: "anonymous" | "registered";
 	site_role: "admin" | "user";
 	status: "active" | "deleted" | "suspended";
+	username: string | null;
 	created_at: Date | string;
 	cleanup_scheduled_at: Date | string | null;
 	cleanup_after: Date | string | null;
@@ -36,10 +37,11 @@ export type AccountSummary = {
 	status: AccountRow["status"];
 	usage: {activeWorlds: number; maxWorlds: number; trashedWorlds: number};
 	userId: string;
+	username: string | null;
 };
 
 export type AccountExport = {
-	account: Pick<AccountSummary, "accountType" | "createdAt" | "email" | "userId">;
+	account: Pick<AccountSummary, "accountType" | "createdAt" | "email" | "userId" | "username">;
 	exportedAt: string;
 	format: "mothmark-account";
 	worlds: Array<{
@@ -103,6 +105,7 @@ export async function getOwnedAccountSummary(userId: string): Promise<AccountSum
 			trashedWorlds: worlds.filter((world) => world.deleted_at !== null).length,
 		},
 		userId: user.id,
+		username: user.username,
 	};
 }
 
@@ -120,6 +123,7 @@ export async function exportOwnedAccount(userId: string): Promise<AccountExport 
 			createdAt: summary.createdAt,
 			email: summary.email,
 			userId: summary.userId,
+			username: summary.username,
 		},
 		exportedAt: new Date().toISOString(),
 		format: "mothmark-account",

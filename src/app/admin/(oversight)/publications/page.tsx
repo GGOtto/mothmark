@@ -54,9 +54,7 @@ export default function AdminPublicationsPage() {
 										<small>/play/{publication.slug}</small>
 									</td>
 									<td>
-										<Link href={`/admin/users/${publication.ownerUserId}`}>
-											{publication.ownerName || publication.ownerUserId.slice(0, 8)}
-										</Link>
+										<Link href={`/admin/users/${publication.ownerUserId}`}>{publication.ownerUsername}</Link>
 									</td>
 									<td>{publication.release.number}</td>
 									<td>{publication.status}</td>

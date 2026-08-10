@@ -9,8 +9,21 @@ function collectBrowserErrors(page: Page) {
 	return errors;
 }
 
+async function routeAvailableUsername(page: Page) {
+	await page.route("**/api/auth/username-availability?*", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {available: true, message: "Username is available.", valid: true},
+			}),
+		}),
+	);
+}
+
 test("registration catches a password mismatch before making a request", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
+	await routeAvailableUsername(page);
 	let securityRequests = 0;
 	let registrationRequests = 0;
 	await page.route("**/api/auth/csrf", async (route) => {
@@ -23,6 +36,7 @@ test("registration catches a password mismatch before making a request", async (
 	});
 
 	await page.goto("/register");
+	await page.getByLabel("Username").fill("archivekeeper");
 	await page.getByLabel("Email").fill("author@example.com");
 	await page.getByLabel("Password", {exact: true}).fill("a durable password");
 	await page.getByLabel("Confirm password").fill("a different password");
@@ -30,6 +44,7 @@ test("registration catches a password mismatch before making a request", async (
 
 	await expect(page.locator("main").getByRole("alert")).toHaveText("The passwords do not match.");
 	await expect(page.getByLabel("Email")).toHaveValue("author@example.com");
+	await expect(page.getByLabel("Username")).toHaveValue("archivekeeper");
 	await expect(page.getByLabel("Password", {exact: true})).toHaveValue("a durable password");
 	expect(securityRequests).toBe(0);
 	expect(registrationRequests).toBe(0);
@@ -73,6 +88,7 @@ test("a rejected account request preserves entered values and restores the submi
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
+	await routeAvailableUsername(page);
 	await page.route("**/api/auth/csrf", (route) =>
 		route.fulfill({
 			status: 200,
@@ -90,6 +106,7 @@ test("a rejected account request preserves entered values and restores the submi
 	);
 
 	await page.goto("/register");
+	await page.getByLabel("Username").fill("archivekeeper");
 	await page.getByLabel("Email").fill("author@example.com");
 	await page.getByLabel("Password", {exact: true}).fill("a durable password");
 	await page.getByLabel("Confirm password").fill("a durable password");
@@ -99,9 +116,84 @@ test("a rejected account request preserves entered values and restores the submi
 		"Registration is temporarily unavailable.",
 	);
 	await expect(page.getByLabel("Email")).toHaveValue("author@example.com");
+	await expect(page.getByLabel("Username")).toHaveValue("archivekeeper");
 	await expect(page.getByLabel("Password", {exact: true})).toHaveValue("a durable password");
 	await expect(page.getByRole("button", {name: "Send verification email"})).toBeEnabled();
 	expect(browserErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
+});
+
+test("registration explains invalid and unavailable usernames while typing", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const checked: string[] = [];
+	await page.route("**/api/auth/username-availability?*", (route) => {
+		const username = new URL(route.request().url()).searchParams.get("username") || "";
+		checked.push(username);
+		const available = username.toLowerCase() === "open.archive";
+		return route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					available,
+					message: available ? "Username is available." : "That username is already in use.",
+					valid: true,
+				},
+			}),
+		});
+	});
+
+	await page.goto("/register");
+	const username = page.getByLabel("Username");
+	const submit = page.getByRole("button", {name: "Send verification email"});
+	await username.fill("archive keeper$");
+	await expect(page.getByText(/no spaces or other special characters/)).toBeVisible();
+	await expect(username).toHaveAttribute("aria-invalid", "true");
+	await expect(submit).toBeDisabled();
+	await page.waitForTimeout(300);
+	expect(checked).toEqual([]);
+
+	await username.fill("UsedArchive");
+	await expect(page.getByText("That username is already in use.")).toBeVisible();
+	await expect(submit).toBeDisabled();
+	await username.fill("Open.Archive");
+	await expect(page.getByText("Username is available.")).toBeVisible();
+	await expect(username).toHaveValue("Open.Archive");
+	await expect(username).toHaveAttribute("aria-invalid", "false");
+	await expect(submit).toBeEnabled();
+	expect(checked).toEqual(["UsedArchive", "Open.Archive"]);
+	expect(browserErrors).toEqual([]);
+});
+
+test("a registered account shows its public username without an edit control", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/account", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					accountType: "registered",
+					cleanupAfter: null,
+					cleanupWasRecentlyCancelled: false,
+					createdAt: "2026-08-09T12:00:00.000Z",
+					email: "author@example.com",
+					retentionClass: "authored_editor",
+					sessions: [],
+					siteRole: "user",
+					usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
+					userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+					username: "archivekeeper",
+				},
+			}),
+		}),
+	);
+
+	await page.goto("/account");
+	await expect(page.getByText("Username:", {exact: true}).locator("..")).toContainText(
+		"archivekeeper",
+	);
+	await expect(page.getByLabel("Username")).toHaveCount(0);
+	expect(browserErrors).toEqual([]);
 });
 
 test("privacy guidance remains readable at the minimum narrow layout", async ({page}) => {

@@ -177,6 +177,7 @@ type PermissionUserRow = {
 	account_type: "anonymous" | "registered";
 	site_role: "admin" | "user";
 	status: "active" | "deleted" | "suspended";
+	username: string | null;
 };
 
 async function hasPermission(
@@ -200,6 +201,7 @@ async function hasPermission(
 }
 
 type PublicationRow = {
+	author_username: string;
 	id: string;
 	world_id: string;
 	slug: string;
@@ -223,6 +225,7 @@ type PublicationRow = {
 };
 
 export type PublicPublication = {
+	authorUsername: string;
 	id: string;
 	slug: string;
 	title: string;
@@ -266,6 +269,7 @@ const publicationBaseSelect = (connection: Knex | Knex.Transaction = database) =
 			"w.revision as current_world_revision",
 			"owner.status as owner_status",
 			"owner.account_type as owner_account_type",
+			"owner.username as author_username",
 		)
 		.whereNull("w.deleted_at");
 
@@ -275,6 +279,7 @@ const publicationSelect = (connection: Knex | Knex.Transaction = database) =>
 		.whereNotNull("p.current_release_id");
 
 const mapPublicPublication = (row: PublicationRow): PublicPublication => ({
+	authorUsername: row.author_username,
 	id: row.id,
 	slug: row.slug,
 	title: row.title,
@@ -375,7 +380,7 @@ export async function getOwnedPublication(
 async function requireEligibleOwner(
 	transaction: Knex.Transaction,
 	ownerUserId: string,
-): Promise<void> {
+): Promise<string> {
 	const owner = await transaction<PermissionUserRow>("users")
 		.where({id: ownerUserId})
 		.forUpdate()
@@ -391,6 +396,9 @@ async function requireEligibleOwner(
 			"Only an eligible registered owner can publish this world.",
 		);
 	}
+	if (!owner.username)
+		throw new PublicationError("FORBIDDEN", "The owner needs a username to publish.");
+	return owner.username;
 }
 
 function validatePlayableWorld(world: World): void {
@@ -449,7 +457,7 @@ export async function publishOwnedWorld(input: {
 }): Promise<OwnerPublication> {
 	const slug = validatePublicationSlug(input.slug);
 	return database.transaction(async (transaction) => {
-		await requireEligibleOwner(transaction, input.ownerUserId);
+		const authorUsername = await requireEligibleOwner(transaction, input.ownerUserId);
 
 		const worldRow = await transaction("worlds")
 			.where({id: input.worldId, owner_user_id: input.ownerUserId, kind: "editor"})
@@ -503,6 +511,7 @@ export async function publishOwnedWorld(input: {
 		});
 
 		return {
+			authorUsername,
 			id: publication.id,
 			slug,
 			title: release.title,
@@ -530,7 +539,7 @@ export async function publishOwnedWorldUpdate(input: {
 	summary: string;
 }): Promise<OwnerPublication> {
 	return database.transaction(async (transaction) => {
-		await requireEligibleOwner(transaction, input.ownerUserId);
+		const authorUsername = await requireEligibleOwner(transaction, input.ownerUserId);
 		const worldRow = await transaction("worlds")
 			.where({id: input.worldId, owner_user_id: input.ownerUserId, kind: "editor"})
 			.whereNull("deleted_at")
@@ -585,6 +594,7 @@ export async function publishOwnedWorldUpdate(input: {
 			details: {releaseId: release.id, releaseNumber, worldId: input.worldId},
 		});
 		return {
+			authorUsername,
 			id: publication.id,
 			slug: publication.slug,
 			title: release.title,
@@ -1019,6 +1029,7 @@ export type AdminPublication = PublicPublication & {
 	worldId: string;
 	ownerUserId: string;
 	ownerName: string | null;
+	ownerUsername: string;
 };
 
 export async function listAdminPublications(): Promise<AdminPublication[]> {
@@ -1039,6 +1050,7 @@ export async function listAdminPublications(): Promise<AdminPublication[]> {
 			"r.published_at as release_published_at",
 			"owner.id as owner_user_id",
 			"owner.display_name as owner_name",
+			"owner.username as author_username",
 		)
 		.orderBy("r.published_at", "desc");
 	return rows.map((row) => ({
@@ -1047,6 +1059,7 @@ export async function listAdminPublications(): Promise<AdminPublication[]> {
 		worldId: row.world_id,
 		ownerUserId: row.owner_user_id,
 		ownerName: row.owner_name,
+		ownerUsername: row.author_username,
 	}));
 }
 

@@ -97,6 +97,16 @@
 	font-size: 12px !important;
 }
 
+.authUsernameStatus-available {
+	color: var(--color-success) !important;
+}
+
+.authUsernameStatus-invalid,
+.authUsernameStatus-unavailable,
+.authUsernameStatus-error {
+	color: var(--color-danger) !important;
+}
+
 .authNotice,
 .authError {
 	padding: 10px 12px;

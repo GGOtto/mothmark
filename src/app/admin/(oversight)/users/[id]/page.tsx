@@ -71,7 +71,7 @@ export default function AdminUserDetailPage() {
 					<header className="adminPageHeader">
 						<div>
 							<h1>
-								{user.displayName ||
+								{user.username ||
 									`${user.accountType === "anonymous" ? "Anonymous" : "User"} ${user.id.slice(0, 8)}`}
 							</h1>
 							<p>{user.id}</p>
@@ -81,6 +81,10 @@ export default function AdminUserDetailPage() {
 					<section className="adminSection">
 						<h2>Account and security metadata</h2>
 						<dl className="adminDefinitionGrid">
+							<div>
+								<dt>Username</dt>
+								<dd>{user.username || "—"}</dd>
+							</div>
 							<div>
 								<dt>Account type</dt>
 								<dd>{user.accountType}</dd>

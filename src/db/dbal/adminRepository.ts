@@ -47,6 +47,7 @@ type AdminUserRow = {
 	suspended_at: Date | string | null;
 	suspension_reason: string | null;
 	trashed_world_count: string | number;
+	username: string | null;
 };
 
 export type AdminUserSummary = {
@@ -65,6 +66,7 @@ export type AdminUserSummary = {
 	suspensionReason: string | null;
 	worldCount: number;
 	trashedWorldCount: number;
+	username: string | null;
 };
 
 const iso = (value: Date | string | null): string | null =>
@@ -86,6 +88,7 @@ const mapUser = (row: AdminUserRow): AdminUserSummary => ({
 	suspensionReason: row.suspension_reason,
 	worldCount: Number(row.active_world_count),
 	trashedWorldCount: Number(row.trashed_world_count),
+	username: row.username,
 });
 
 const userSummaryQuery = () =>
@@ -100,6 +103,7 @@ const userSummaryQuery = () =>
 			"u.site_role",
 			"u.status",
 			"u.display_name",
+			"u.username",
 			"u.created_at",
 			"u.last_seen_at",
 			"u.cleanup_scheduled_at",
@@ -206,6 +210,7 @@ type AdminWorldRow = {
 	name: string;
 	owner_account_type: AccountType;
 	owner_display_name: string | null;
+	owner_username: string | null;
 	owner_user_id: string;
 	revision: number;
 	schema_version: number;
@@ -221,7 +226,7 @@ export type AdminWorldSummary = {
 	id: string;
 	lifecycle: "active" | "trashed";
 	name: string;
-	owner: {accountType: AccountType; displayName: string | null; id: string};
+	owner: {accountType: AccountType; displayName: string | null; id: string; username: string | null};
 	revision: number;
 	schemaVersion: number;
 	trashPurgeAfter: string | null;
@@ -240,6 +245,7 @@ const mapWorld = (row: AdminWorldRow): AdminWorldSummary => ({
 		accountType: row.owner_account_type,
 		displayName: row.owner_display_name,
 		id: row.owner_user_id,
+		username: row.owner_username,
 	},
 	revision: row.revision,
 	schemaVersion: row.schema_version,
@@ -263,6 +269,7 @@ const worldSummaryQuery = () =>
 			"w.trash_purge_after",
 			"u.id as owner_user_id",
 			"u.display_name as owner_display_name",
+			"u.username as owner_username",
 			"u.account_type as owner_account_type",
 			database.raw("pg_column_size(w.world) as world_size_bytes"),
 		)
