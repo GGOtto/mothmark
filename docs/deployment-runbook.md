@@ -64,6 +64,7 @@ Use these variables in Phase `Staging` and `Production`:
 | `DATABASE_POOL_MAX`         | `1`                                                | Yes               |
 | `PUBLIC_APP_ORIGIN`         | Exact public origin without a trailing slash       | Yes               |
 | `AUTH_EMAIL_FROM`           | Verified Resend sender address                     | Yes               |
+| `FEEDBACK_EMAIL_TO`         | Recipient address for product feedback             | Yes               |
 | `RESEND_API_KEY`            | Resend transactional-email API key                 | Yes               |
 | `CREDENTIAL_ENCRYPTION_KEY` | 32 random bytes encoded as base64                  | Yes               |
 | `ADMIN_EMAIL`               | Sole administrator's verified email                | No                |
@@ -128,9 +129,9 @@ Git history.
 4. Add the variables from [Environment map](#environment-map) to `Staging`, using the Neon
    `preview` URLs.
 5. Add the same variables to `Production`, using the Neon `production` URLs.
-6. For local registration testing, add `PUBLIC_APP_ORIGIN=http://localhost:3000`,
-   `AUTH_EMAIL_FROM`, and `RESEND_API_KEY` to Phase `Development`. Keep them in Phase; do not copy
-   them into `.env` files.
+6. For local registration and feedback testing, add `PUBLIC_APP_ORIGIN=http://localhost:3000`,
+   `AUTH_EMAIL_FROM`, `FEEDBACK_EMAIL_TO`, and `RESEND_API_KEY` to Phase `Development`. Keep them in
+   Phase; do not copy them into `.env` files.
 7. Authenticate and initialize the repository locally:
 
 ```bash
@@ -214,6 +215,7 @@ Create the Vercel project before this step so Phase can select it as a destinati
    - `DATABASE_POOL_MAX`
    - `PUBLIC_APP_ORIGIN`
    - `AUTH_EMAIL_FROM`
+   - `FEEDBACK_EMAIL_TO`
    - `RESEND_API_KEY`
    - `CREDENTIAL_ENCRYPTION_KEY`
 7. Confirm that `DATABASE_MIGRATION_URL` is excluded from both Vercel syncs.
@@ -263,8 +265,8 @@ After applying the registered-account migration, set `ADMIN_EMAIL` in the Phase 
 for the command and run:
 
 ```bash
-phase run --env staging 'pnpm admin:create'
-phase run --env production 'pnpm admin:create'
+phase run --env staging 'node --conditions=react-server --import tsx scripts/adminCreate.ts'
+pnpm admin:create:prod
 ```
 
 The command reads the password from a non-echoing terminal prompt, displays a TOTP enrollment URI,

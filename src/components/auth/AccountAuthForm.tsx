@@ -84,7 +84,6 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				? "This password reset link is incomplete. Request a new recovery email."
 				: "",
 	);
-	const [verified, setVerified] = useState(false);
 
 	useEffect(() => {
 		if (mode !== "register" || !username) return;
@@ -147,13 +146,8 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 	useEffect(() => {
 		if (mode !== "verify" || !token) return;
 		post("/api/auth/verify-email", {token})
-			.then((result) => {
-				setVerified(true);
-				setMessage(
-					result.data?.upgradedAnonymous
-						? "Your temporary account is now registered. Your worlds and this editor session are unchanged."
-						: "Your email is verified. Sign in to open your worlds.",
-				);
+			.then(() => {
+				window.location.assign("/");
 			})
 			.catch((caught: unknown) =>
 				setError(caught instanceof Error ? caught.message : "Verification failed."),
@@ -165,23 +159,12 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 		return (
 			<AuthShell title="Verify your email">
 				{busy ? <p role="status">Checking this link…</p> : null}
-				{message ? (
-					<p className="authNotice" role="status">
-						{message}
-					</p>
-				) : null}
 				{error ? (
 					<p className="authError" role="alert">
 						{error}
 					</p>
 				) : null}
-				{verified ? (
-					<Link className="authPrimaryLink" href="/account">
-						Continue to your account
-					</Link>
-				) : (
-					<Link href="/register">Request another verification email</Link>
-				)}
+				{error ? <Link href="/register">Request another verification email</Link> : null}
 			</AuthShell>
 		);
 	}

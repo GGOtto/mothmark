@@ -3,7 +3,7 @@ import {z} from "zod";
 
 import {mutationSecurityError} from "@/auth/requestSecurity";
 import {completeRegistration} from "@/db/dbal/registeredAccountRepository";
-import {isResponse, readJson, requestNetwork} from "../_shared";
+import {isResponse, readJson, requestNetwork, setEditorSessionCookie} from "../_shared";
 
 export const runtime = "nodejs";
 
@@ -19,5 +19,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 			{status: 410},
 		);
 	}
-	return NextResponse.json({data: result});
+	const response = NextResponse.json({
+		data: {
+			status: result.status,
+			upgradedAnonymous: result.upgradedAnonymous,
+			userId: result.userId,
+		},
+	});
+	setEditorSessionCookie(response, result.signIn);
+	return response;
 }
