@@ -14,8 +14,6 @@ previews behind Vercel Authentication; production protection remains a launch de
 
 ## The short version for every release after setup
 
-If the release has no database migration:
-
 ```bash
 pnpm lint
 pnpm ts-check
@@ -27,16 +25,16 @@ git push origin <branch>
 1. Open the Vercel preview created for the branch.
 2. Test loading, editing, autosaving, and refreshing the `main` world.
 3. Merge the branch into `main`.
-4. Verify the production deployment and its logs.
-
-If the release includes a database migration:
-
-1. Apply the migration to Neon `preview`.
-2. Deploy and test the Vercel preview.
-3. Apply the same migration to Neon `production`.
-4. Merge into `main` so Vercel deploys the compatible application code.
+4. Let Vercel's `vercel.deployment.ready` event start the required production storage compatibility
+   check, which applies migrations and validates all retained content before Vercel promotes the
+   candidate.
+5. Verify the production deployment and its logs.
 
 Never run migrations from `next build` or application startup.
+
+The authoritative schema and release-gate procedures live in the root-level
+`SCHEMA_COMPATIBILITY_README.md`, `BREAKING_SCHEMA_MIGRATIONS_README.md`, and
+`DEPLOYMENT_STORAGE_GATE_README.md` files.
 
 ## Environment map
 
@@ -466,6 +464,10 @@ workflow**. Check the workflow result before relying on preview for testing.
 
 ## Deploying a database migration
 
+Follow the root-level `BREAKING_SCHEMA_MIGRATIONS_README.md` and
+`DEPLOYMENT_STORAGE_GATE_README.md`. The commands below are retained for isolated staging and
+initial setup; routine production migration is performed by the required deployment check.
+
 Create a migration with a descriptive snake-case name:
 
 ```bash
@@ -486,17 +488,11 @@ Prefer backward-compatible, expand-and-contract changes:
 Apply and test preview:
 
 ```bash
-phase run --env staging 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm migrate'
+phase run --env staging 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm release:migrate'
 ```
 
-Once preview passes, apply production before merging the compatible application code:
-
-```bash
-phase run --env production 'DATABASE_URL="$DATABASE_MIGRATION_URL" pnpm migrate'
-```
-
-Then merge into `main`. Do not automatically run a destructive migration merely because an
-application deployment started.
+Once preview passes, merge into `main`. The required production compatibility check applies the
+same migration and blocks Vercel promotion if any retained content fails parsing or replay.
 
 ## Rollback and recovery
 

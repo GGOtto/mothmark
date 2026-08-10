@@ -6,10 +6,12 @@ import type {Knex} from "knex";
 
 import {resolvePermissions, type Permission} from "@/auth/permissions";
 import {createOpaqueToken, hashSessionToken, PLAY_SESSION_DURATION_MS} from "@/auth/sessionTokens";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredGameState, parseStoredWorld} from "@/compat/storageCodec";
 import {resolveTurn} from "@/engine/player/resolveTurn";
 import {createInitialGameState} from "@/engine/states/createInitialState";
-import {GameStateSchema, type GameMessage, type GameState} from "@/schemas/states/gameStateSchemas";
-import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
+import type {World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
 
 import {getDb} from "./knex";
@@ -212,7 +214,7 @@ type PublicationRow = {
 	summary: string;
 	release_published_at: Date | string;
 	world_version_id: string;
-	world: World;
+	world: unknown;
 	schema_version: number;
 	engine_version: string;
 	current_world_revision: number;
@@ -287,7 +289,10 @@ const mapPublicPublication = (row: PublicationRow): PublicPublication => ({
 
 const mapPlayablePublication = (row: PublicationRow): PlayablePublication => ({
 	...mapPublicPublication(row),
-	world: WorldSchema.parse(row.world),
+	world: parseStoredWorld(row.world, Number(row.schema_version), {
+		id: row.world_version_id,
+		storage: "publication",
+	}),
 	worldVersionId: row.world_version_id,
 	engineVersion: row.engine_version,
 });
@@ -410,7 +415,10 @@ async function createWorldVersion(
 	},
 	ownerUserId: string,
 ) {
-	const world = WorldSchema.parse(worldRow.world);
+	const world = parseStoredWorld(worldRow.world, worldRow.schema_version, {
+		id: worldRow.id,
+		storage: "editor",
+	});
 	validatePlayableWorld(world);
 	let version = await transaction("world_versions")
 		.where({world_id: worldRow.id, revision: worldRow.revision})
@@ -421,7 +429,7 @@ async function createWorldVersion(
 				world_id: worldRow.id,
 				revision: worldRow.revision,
 				world,
-				schema_version: worldRow.schema_version,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				engine_version: HOSTED_ENGINE_VERSION,
 				created_by_user_id: ownerUserId,
 			})
@@ -677,7 +685,11 @@ const mapPlaythrough = (row: Record<string, unknown>): HostedPlaythrough => ({
 	revision: Number(row.revision),
 	commandCount: Number(row.command_count),
 	commands: String(row.commands ?? ""),
-	state: GameStateSchema.parse(row.current_state),
+	state: parseStoredGameState(row.current_state, Number(row.schema_version), {
+		playthroughId: String(row.id),
+		sequence: null,
+		storage: "current",
+	}),
 	status: row.status as HostedPlaythrough["status"],
 	release: {id: String(row.release_id), number: Number(row.release_number)},
 });
@@ -697,6 +709,7 @@ async function loadPinnedRelease(
 			"r.published_at as release_published_at",
 			"v.id as world_version_id",
 			"v.world",
+			"v.schema_version",
 			"v.engine_version",
 		)
 		.where({"r.id": releaseId, "r.publication_id": publicationRow.id})
@@ -721,6 +734,7 @@ async function insertPlaythrough(
 			world_version_id: publication.worldVersionId,
 			transcript: JSON.stringify(state.messages),
 			current_state: state,
+			schema_version: PERSISTED_SCHEMA_VERSION,
 		})
 		.returning("*");
 	return playthrough;
@@ -925,7 +939,16 @@ export async function submitHostedCommand(input: {
 
 		const pinned = await loadPinnedRelease(transaction, publicationRow, playthrough.release_id);
 		const world = pinned.world;
-		const previousState = GameStateSchema.parse(playthrough.current_state);
+		const previousState = parseStoredGameState(
+			playthrough.current_state,
+			Number(playthrough.schema_version),
+			{
+				playthroughId: String(playthrough.id),
+				sequence: null,
+				storage: "current",
+				world,
+			},
+		);
 		let resolution: ReturnType<typeof resolveHostedCommand>;
 		try {
 			resolution = resolveHostedCommand(world, previousState, playthrough.commands, input.command);
@@ -958,6 +981,7 @@ export async function submitHostedCommand(input: {
 			output_messages: serializeHostedOutputMessages(outputMessages),
 			resulting_state: nextState,
 			engine_version: pinned.engineVersion,
+			schema_version: PERSISTED_SCHEMA_VERSION,
 		});
 		const completed = nextState.player.isDead === true;
 		const [updated] = await transaction("playthroughs")
@@ -966,6 +990,7 @@ export async function submitHostedCommand(input: {
 				commands,
 				transcript,
 				current_state: nextState,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				command_count: sequence,
 				revision: transaction.raw("?? + 1", ["revision"]),
 				last_command_at: transaction.fn.now(),

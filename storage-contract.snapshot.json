@@ -1,0 +1,6724 @@
+{
+	"gameMessage": {
+		"kind": "object",
+		"properties": {
+			"id": {
+				"kind": "string"
+			},
+			"text": {
+				"kind": "string"
+			},
+			"type": {
+				"kind": "enum",
+				"entries": ["command", "death", "error", "room", "system"]
+			}
+		}
+	},
+	"gameState": {
+		"kind": "object",
+		"properties": {
+			"events": {
+				"kind": "array",
+				"element": {
+					"kind": "object",
+					"properties": {
+						"branch": {
+							"kind": "object",
+							"properties": {
+								"always": {
+									"kind": "optional",
+									"input": {
+										"kind": "object",
+										"checks": [
+											{
+												"check": "custom"
+											}
+										],
+										"properties": {
+											"allowMultipleUsesInWorld": {
+												"kind": "default",
+												"input": {
+													"kind": "literal",
+													"values": [true]
+												},
+												"defaultValue": true
+											},
+											"effects": {
+												"kind": "default",
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "lazy",
+														"input": {
+															"kind": "pipe",
+															"input": {
+																"kind": "transform",
+																"outputFingerprint": "transform"
+															},
+															"outputFingerprint": "union"
+														}
+													}
+												},
+												"defaultValue": []
+											},
+											"id": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"name": {
+												"kind": "string"
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["group"]
+											}
+										}
+									}
+								},
+								"elifs": {
+									"kind": "optional",
+									"input": {
+										"kind": "default",
+										"input": {
+											"kind": "array",
+											"element": {
+												"kind": "object",
+												"properties": {
+													"cancelIfConditionFails": {
+														"kind": "default",
+														"input": {
+															"kind": "boolean"
+														},
+														"defaultValue": true
+													},
+													"condition": {
+														"kind": "pipe",
+														"input": {
+															"kind": "transform",
+															"outputFingerprint": "transform"
+														},
+														"outputFingerprint": "default"
+													},
+													"delayTurns": {
+														"kind": "default",
+														"input": {
+															"kind": "number"
+														},
+														"defaultValue": 0
+													},
+													"effect": {
+														"kind": "object",
+														"checks": [
+															{
+																"check": "custom"
+															}
+														],
+														"properties": {
+															"allowMultipleUsesInWorld": {
+																"kind": "default",
+																"input": {
+																	"kind": "literal",
+																	"values": [true]
+																},
+																"defaultValue": true
+															},
+															"effects": {
+																"kind": "default",
+																"input": {
+																	"kind": "array",
+																	"element": {
+																		"kind": "lazy",
+																		"input": {
+																			"kind": "pipe",
+																			"input": {
+																				"kind": "transform",
+																				"outputFingerprint": "transform"
+																			},
+																			"outputFingerprint": "union"
+																		}
+																	}
+																},
+																"defaultValue": []
+															},
+															"id": {
+																"kind": "pipe",
+																"input": {
+																	"kind": "union",
+																	"options": [
+																		{
+																			"kind": "custom",
+																			"outputFingerprint": "custom"
+																		},
+																		{
+																			"kind": "string",
+																			"checks": [
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			]
+																		}
+																	]
+																},
+																"outputFingerprint": "transform"
+															},
+															"name": {
+																"kind": "string"
+															},
+															"type": {
+																"kind": "literal",
+																"values": ["group"]
+															}
+														}
+													}
+												}
+											}
+										},
+										"defaultValue": []
+									}
+								},
+								"else": {
+									"kind": "optional",
+									"input": {
+										"kind": "object",
+										"checks": [
+											{
+												"check": "custom"
+											}
+										],
+										"properties": {
+											"allowMultipleUsesInWorld": {
+												"kind": "default",
+												"input": {
+													"kind": "literal",
+													"values": [true]
+												},
+												"defaultValue": true
+											},
+											"effects": {
+												"kind": "default",
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "lazy",
+														"input": {
+															"kind": "pipe",
+															"input": {
+																"kind": "transform",
+																"outputFingerprint": "transform"
+															},
+															"outputFingerprint": "union"
+														}
+													}
+												},
+												"defaultValue": []
+											},
+											"id": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"name": {
+												"kind": "string"
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["group"]
+											}
+										}
+									}
+								},
+								"id": {
+									"kind": "pipe",
+									"input": {
+										"kind": "union",
+										"options": [
+											{
+												"kind": "custom",
+												"outputFingerprint": "custom"
+											},
+											{
+												"kind": "string",
+												"checks": [
+													{
+														"check": "min_length",
+														"minimum": 1,
+														"when": {
+															"function": true
+														}
+													}
+												]
+											}
+										]
+									},
+									"outputFingerprint": "transform"
+								},
+								"if": {
+									"kind": "optional",
+									"input": {
+										"kind": "object",
+										"properties": {
+											"cancelIfConditionFails": {
+												"kind": "default",
+												"input": {
+													"kind": "boolean"
+												},
+												"defaultValue": true
+											},
+											"condition": {
+												"kind": "pipe",
+												"input": {
+													"kind": "transform",
+													"outputFingerprint": "transform"
+												},
+												"outputFingerprint": "default"
+											},
+											"delayTurns": {
+												"kind": "default",
+												"input": {
+													"kind": "number"
+												},
+												"defaultValue": 0
+											},
+											"effect": {
+												"kind": "object",
+												"checks": [
+													{
+														"check": "custom"
+													}
+												],
+												"properties": {
+													"allowMultipleUsesInWorld": {
+														"kind": "default",
+														"input": {
+															"kind": "literal",
+															"values": [true]
+														},
+														"defaultValue": true
+													},
+													"effects": {
+														"kind": "default",
+														"input": {
+															"kind": "array",
+															"element": {
+																"kind": "lazy",
+																"input": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "transform",
+																		"outputFingerprint": "transform"
+																	},
+																	"outputFingerprint": "union"
+																}
+															}
+														},
+														"defaultValue": []
+													},
+													"id": {
+														"kind": "pipe",
+														"input": {
+															"kind": "union",
+															"options": [
+																{
+																	"kind": "custom",
+																	"outputFingerprint": "custom"
+																},
+																{
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															]
+														},
+														"outputFingerprint": "transform"
+													},
+													"name": {
+														"kind": "string"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["group"]
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						},
+						"disposable": {
+							"kind": "default",
+							"input": {
+								"kind": "boolean"
+							},
+							"defaultValue": false
+						},
+						"enabled": {
+							"kind": "default",
+							"input": {
+								"kind": "boolean"
+							},
+							"defaultValue": true
+						},
+						"id": {
+							"kind": "pipe",
+							"input": {
+								"kind": "union",
+								"options": [
+									{
+										"kind": "custom",
+										"outputFingerprint": "custom"
+									},
+									{
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									}
+								]
+							},
+							"outputFingerprint": "transform"
+						},
+						"lastSuccess": {
+							"kind": "default",
+							"input": {
+								"kind": "number",
+								"checks": [
+									{
+										"abort": false,
+										"check": "number_format",
+										"format": "safeint",
+										"type": "number"
+									}
+								]
+							},
+							"defaultValue": 0
+						},
+						"name": {
+							"kind": "string"
+						},
+						"priority": {
+							"kind": "default",
+							"input": {
+								"kind": "number",
+								"checks": [
+									{
+										"abort": false,
+										"check": "number_format",
+										"format": "safeint",
+										"type": "number"
+									}
+								]
+							},
+							"defaultValue": 0
+						},
+						"wait": {
+							"kind": "default",
+							"input": {
+								"kind": "number",
+								"checks": [
+									{
+										"abort": false,
+										"check": "number_format",
+										"format": "safeint",
+										"type": "number"
+									},
+									{
+										"check": "greater_than",
+										"inclusive": true,
+										"value": 0
+									}
+								]
+							},
+							"defaultValue": 0
+						}
+					}
+				}
+			},
+			"itemStates": {
+				"kind": "array",
+				"element": {
+					"kind": "object",
+					"properties": {
+						"aliases": {
+							"kind": "array",
+							"element": {
+								"kind": "string"
+							}
+						},
+						"behaviorTags": {
+							"kind": "array",
+							"element": {
+								"kind": "enum",
+								"entries": ["container", "door", "lockable", "openable", "surface", "takeable", "usable"]
+							}
+						},
+						"description": {
+							"kind": "string"
+						},
+						"flags": {
+							"kind": "record",
+							"key": {
+								"kind": "string"
+							},
+							"value": {
+								"kind": "boolean"
+							}
+						},
+						"id": {
+							"kind": "pipe",
+							"input": {
+								"kind": "object",
+								"properties": {
+									"id": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									},
+									"type": {
+										"kind": "literal",
+										"values": ["item"]
+									}
+								}
+							},
+							"outputFingerprint": "transform"
+						},
+						"listedInRoom": {
+							"kind": "boolean"
+						},
+						"listingText": {
+							"kind": "string"
+						},
+						"location": {
+							"kind": "union",
+							"options": [
+								{
+									"kind": "object",
+									"properties": {
+										"roomId": {
+											"kind": "pipe",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"id": {
+														"kind": "string",
+														"checks": [
+															{
+																"check": "min_length",
+																"minimum": 1,
+																"when": {
+																	"function": true
+																}
+															}
+														]
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["room"]
+													}
+												}
+											},
+											"outputFingerprint": "transform"
+										},
+										"type": {
+											"kind": "literal",
+											"values": ["room"]
+										}
+									}
+								},
+								{
+									"kind": "object",
+									"properties": {
+										"type": {
+											"kind": "literal",
+											"values": ["inventory"]
+										}
+									}
+								},
+								{
+									"kind": "object",
+									"properties": {
+										"itemId": {
+											"kind": "pipe",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"id": {
+														"kind": "string",
+														"checks": [
+															{
+																"check": "min_length",
+																"minimum": 1,
+																"when": {
+																	"function": true
+																}
+															}
+														]
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["item"]
+													}
+												}
+											},
+											"outputFingerprint": "transform"
+										},
+										"placement": {
+											"kind": "enum",
+											"entries": ["inside", "on"]
+										},
+										"type": {
+											"kind": "literal",
+											"values": ["item"]
+										}
+									}
+								},
+								{
+									"kind": "object",
+									"properties": {
+										"roomId": {
+											"kind": "optional",
+											"input": {
+												"kind": "pipe",
+												"input": {
+													"kind": "object",
+													"properties": {
+														"id": {
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														},
+														"type": {
+															"kind": "literal",
+															"values": ["room"]
+														}
+													}
+												},
+												"outputFingerprint": "transform"
+											}
+										},
+										"type": {
+											"kind": "literal",
+											"values": ["hidden"]
+										}
+									}
+								},
+								{
+									"kind": "object",
+									"properties": {
+										"type": {
+											"kind": "literal",
+											"values": ["destroyed"]
+										}
+									}
+								}
+							]
+						},
+						"locked": {
+							"kind": "boolean"
+						},
+						"name": {
+							"kind": "string"
+						},
+						"open": {
+							"kind": "boolean"
+						},
+						"tags": {
+							"kind": "array",
+							"element": {
+								"kind": "string"
+							}
+						},
+						"type": {
+							"kind": "literal",
+							"values": ["item"]
+						}
+					}
+				}
+			},
+			"messages": {
+				"kind": "array",
+				"element": {
+					"kind": "object",
+					"properties": {
+						"id": {
+							"kind": "string"
+						},
+						"text": {
+							"kind": "string"
+						},
+						"type": {
+							"kind": "enum",
+							"entries": ["command", "death", "error", "room", "system"]
+						}
+					}
+				}
+			},
+			"player": {
+				"kind": "object",
+				"properties": {
+					"currentRoom": {
+						"kind": "pipe",
+						"input": {
+							"kind": "union",
+							"options": [
+								{
+									"kind": "custom",
+									"outputFingerprint": "custom"
+								},
+								{
+									"kind": "string",
+									"checks": [
+										{
+											"check": "min_length",
+											"minimum": 1,
+											"when": {
+												"function": true
+											}
+										}
+									]
+								}
+							]
+						},
+						"outputFingerprint": "transform"
+					},
+					"customDeathMessage": {
+						"kind": "optional",
+						"input": {
+							"kind": "string"
+						}
+					},
+					"freezeState": {
+						"kind": "object",
+						"properties": {
+							"frozen": {
+								"kind": "optional",
+								"input": {
+									"kind": "boolean"
+								}
+							},
+							"message": {
+								"kind": "optional",
+								"input": {
+									"kind": "string"
+								}
+							},
+							"startOfFreeze": {
+								"kind": "optional",
+								"input": {
+									"kind": "number",
+									"checks": [
+										{
+											"abort": false,
+											"check": "number_format",
+											"format": "safeint",
+											"type": "number"
+										}
+									]
+								}
+							},
+							"turns": {
+								"kind": "optional",
+								"input": {
+									"kind": "number",
+									"checks": [
+										{
+											"abort": false,
+											"check": "number_format",
+											"format": "safeint",
+											"type": "number"
+										}
+									]
+								}
+							}
+						}
+					},
+					"isDead": {
+						"kind": "optional",
+						"input": {
+							"kind": "boolean"
+						}
+					},
+					"turns": {
+						"kind": "default",
+						"input": {
+							"kind": "number",
+							"checks": [
+								{
+									"abort": false,
+									"check": "number_format",
+									"format": "safeint",
+									"type": "number"
+								}
+							]
+						},
+						"defaultValue": 0
+					}
+				}
+			},
+			"roomStates": {
+				"kind": "array",
+				"element": {
+					"kind": "object",
+					"properties": {
+						"aliases": {
+							"kind": "array",
+							"element": {
+								"kind": "string"
+							}
+						},
+						"description": {
+							"kind": "string"
+						},
+						"flags": {
+							"kind": "record",
+							"key": {
+								"kind": "string"
+							},
+							"value": {
+								"kind": "boolean"
+							}
+						},
+						"id": {
+							"kind": "pipe",
+							"input": {
+								"kind": "object",
+								"properties": {
+									"id": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									},
+									"type": {
+										"kind": "literal",
+										"values": ["room"]
+									}
+								}
+							},
+							"outputFingerprint": "transform"
+						},
+						"lockedExits": {
+							"kind": "array",
+							"element": {
+								"kind": "enum",
+								"entries": ["down", "e", "in", "n", "ne", "nw", "out", "s", "se", "sw", "up", "w"]
+							}
+						},
+						"name": {
+							"kind": "string"
+						},
+						"shortDescription": {
+							"kind": "string"
+						},
+						"tags": {
+							"kind": "array",
+							"element": {
+								"kind": "string"
+							}
+						},
+						"type": {
+							"kind": "literal",
+							"values": ["room"]
+						}
+					}
+				}
+			},
+			"variables": {
+				"kind": "object",
+				"properties": {
+					"command": {
+						"kind": "default",
+						"checks": [
+							{
+								"check": "custom"
+							}
+						],
+						"input": {
+							"kind": "array",
+							"element": {
+								"kind": "union",
+								"options": [
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["phrase"]
+											},
+											"value": {
+												"kind": "string"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["relation"]
+											},
+											"value": {
+												"kind": "enum",
+												"entries": [
+													"about",
+													"across",
+													"against",
+													"as",
+													"at",
+													"before",
+													"behind",
+													"beside",
+													"between",
+													"for",
+													"from",
+													"in",
+													"off",
+													"on",
+													"over",
+													"through",
+													"to",
+													"under",
+													"with"
+												]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["target"]
+											},
+											"value": {
+												"kind": "union",
+												"options": [
+													{
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["room"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													},
+													{
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["item"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													}
+												]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["number"]
+											},
+											"value": {
+												"kind": "number"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["boolean"]
+											},
+											"value": {
+												"kind": "boolean"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["direction"]
+											},
+											"value": {
+												"kind": "enum",
+												"entries": ["down", "e", "in", "n", "ne", "nw", "out", "s", "se", "sw", "up", "w"]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["choice"]
+											},
+											"value": {
+												"kind": "string"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "optional",
+												"input": {
+													"kind": "string"
+												}
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["text"]
+											},
+											"value": {
+												"kind": "string"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											},
+											"rawText": {
+												"kind": "string"
+											},
+											"type": {
+												"kind": "literal",
+												"values": ["failed"]
+											}
+										}
+									}
+								]
+							}
+						},
+						"defaultValue": []
+					},
+					"counters": {
+						"kind": "array",
+						"element": {
+							"kind": "record",
+							"key": {
+								"kind": "string"
+							},
+							"value": {
+								"kind": "number",
+								"checks": [
+									{
+										"abort": false,
+										"check": "number_format",
+										"format": "safeint",
+										"type": "number"
+									}
+								]
+							}
+						}
+					},
+					"flags": {
+						"kind": "array",
+						"element": {
+							"kind": "record",
+							"key": {
+								"kind": "string"
+							},
+							"value": {
+								"kind": "boolean"
+							}
+						}
+					},
+					"texts": {
+						"kind": "default",
+						"input": {
+							"kind": "array",
+							"element": {
+								"kind": "record",
+								"key": {
+									"kind": "string"
+								},
+								"value": {
+									"kind": "string"
+								}
+							}
+						},
+						"defaultValue": []
+					}
+				}
+			}
+		}
+	},
+	"schemaSourceDigest": "ca8e5fba9d5ccd460c8243a1a8c37f735a36792dddbefe86baf6be9d833fd659",
+	"world": {
+		"kind": "object",
+		"checks": [
+			{
+				"check": "custom"
+			}
+		],
+		"properties": {
+			"commands": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "object",
+						"checks": [
+							{
+								"check": "custom"
+							}
+						],
+						"properties": {
+							"behavior": {
+								"kind": "object",
+								"properties": {
+									"always": {
+										"kind": "optional",
+										"input": {
+											"kind": "object",
+											"properties": {
+												"allowMultipleUsesInWorld": {
+													"kind": "default",
+													"input": {
+														"kind": "literal",
+														"values": [true]
+													},
+													"defaultValue": true
+												},
+												"effects": {
+													"kind": "default",
+													"input": {
+														"kind": "array",
+														"element": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom",
+																	"error": {
+																		"function": true
+																	},
+																	"fn": {
+																		"function": true
+																	},
+																	"path": ["type"],
+																	"type": "custom"
+																}
+															],
+															"properties": {
+																"commandVariables": {
+																	"kind": "optional",
+																	"input": {
+																		"kind": "default",
+																		"checks": [
+																			{
+																				"check": "custom"
+																			}
+																		],
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "object",
+																				"properties": {
+																					"blockId": {
+																						"kind": "pipe",
+																						"input": {
+																							"kind": "union",
+																							"options": [
+																								{
+																									"kind": "custom",
+																									"outputFingerprint": "custom"
+																								},
+																								{
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								}
+																							]
+																						},
+																						"outputFingerprint": "transform"
+																					},
+																					"field": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "custom",
+																								"error": {
+																									"function": true
+																								},
+																								"fn": {
+																									"function": true
+																								},
+																								"type": "custom"
+																							}
+																						]
+																					},
+																					"projection": {
+																						"kind": "optional",
+																						"input": {
+																							"kind": "enum",
+																							"entries": ["description", "name", "text"]
+																						}
+																					}
+																				}
+																			}
+																		},
+																		"defaultValue": []
+																	}
+																},
+																"operation": {
+																	"kind": "optional",
+																	"input": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	}
+																},
+																"type": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "overwrite",
+																			"tx": {
+																				"function": true
+																			}
+																		},
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															}
+														}
+													},
+													"defaultValue": []
+												},
+												"id": {
+													"kind": "pipe",
+													"input": {
+														"kind": "union",
+														"options": [
+															{
+																"kind": "custom",
+																"outputFingerprint": "custom"
+															},
+															{
+																"kind": "string",
+																"checks": [
+																	{
+																		"check": "min_length",
+																		"minimum": 1,
+																		"when": {
+																			"function": true
+																		}
+																	}
+																]
+															}
+														]
+													},
+													"outputFingerprint": "transform"
+												},
+												"name": {
+													"kind": "string"
+												},
+												"type": {
+													"kind": "literal",
+													"values": ["group"]
+												}
+											}
+										}
+									},
+									"elifs": {
+										"kind": "optional",
+										"input": {
+											"kind": "default",
+											"input": {
+												"kind": "array",
+												"element": {
+													"kind": "object",
+													"properties": {
+														"cancelIfConditionFails": {
+															"kind": "default",
+															"input": {
+																"kind": "boolean"
+															},
+															"defaultValue": true
+														},
+														"condition": {
+															"kind": "pipe",
+															"input": {
+																"kind": "transform",
+																"outputFingerprint": "transform"
+															},
+															"outputFingerprint": "default"
+														},
+														"delayTurns": {
+															"kind": "default",
+															"input": {
+																"kind": "number"
+															},
+															"defaultValue": 0
+														},
+														"effect": {
+															"kind": "object",
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "object",
+																			"checks": [
+																				{
+																					"check": "custom",
+																					"error": {
+																						"function": true
+																					},
+																					"fn": {
+																						"function": true
+																					},
+																					"path": ["type"],
+																					"type": "custom"
+																				}
+																			],
+																			"properties": {
+																				"commandVariables": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "default",
+																						"checks": [
+																							{
+																								"check": "custom"
+																							}
+																						],
+																						"input": {
+																							"kind": "array",
+																							"element": {
+																								"kind": "object",
+																								"properties": {
+																									"blockId": {
+																										"kind": "pipe",
+																										"input": {
+																											"kind": "union",
+																											"options": [
+																												{
+																													"kind": "custom",
+																													"outputFingerprint": "custom"
+																												},
+																												{
+																													"kind": "string",
+																													"checks": [
+																														{
+																															"check": "min_length",
+																															"minimum": 1,
+																															"when": {
+																																"function": true
+																															}
+																														}
+																													]
+																												}
+																											]
+																										},
+																										"outputFingerprint": "transform"
+																									},
+																									"field": {
+																										"kind": "string",
+																										"checks": [
+																											{
+																												"check": "overwrite",
+																												"tx": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "min_length",
+																												"minimum": 1,
+																												"when": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "custom",
+																												"error": {
+																													"function": true
+																												},
+																												"fn": {
+																													"function": true
+																												},
+																												"type": "custom"
+																											}
+																										]
+																									},
+																									"projection": {
+																										"kind": "optional",
+																										"input": {
+																											"kind": "enum",
+																											"entries": ["description", "name", "text"]
+																										}
+																									}
+																								}
+																							}
+																						},
+																						"defaultValue": []
+																					}
+																				},
+																				"operation": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					}
+																				},
+																				"type": {
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "overwrite",
+																							"tx": {
+																								"function": true
+																							}
+																						},
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													}
+												}
+											},
+											"defaultValue": []
+										}
+									},
+									"else": {
+										"kind": "optional",
+										"input": {
+											"kind": "object",
+											"properties": {
+												"allowMultipleUsesInWorld": {
+													"kind": "default",
+													"input": {
+														"kind": "literal",
+														"values": [true]
+													},
+													"defaultValue": true
+												},
+												"effects": {
+													"kind": "default",
+													"input": {
+														"kind": "array",
+														"element": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom",
+																	"error": {
+																		"function": true
+																	},
+																	"fn": {
+																		"function": true
+																	},
+																	"path": ["type"],
+																	"type": "custom"
+																}
+															],
+															"properties": {
+																"commandVariables": {
+																	"kind": "optional",
+																	"input": {
+																		"kind": "default",
+																		"checks": [
+																			{
+																				"check": "custom"
+																			}
+																		],
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "object",
+																				"properties": {
+																					"blockId": {
+																						"kind": "pipe",
+																						"input": {
+																							"kind": "union",
+																							"options": [
+																								{
+																									"kind": "custom",
+																									"outputFingerprint": "custom"
+																								},
+																								{
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								}
+																							]
+																						},
+																						"outputFingerprint": "transform"
+																					},
+																					"field": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "custom",
+																								"error": {
+																									"function": true
+																								},
+																								"fn": {
+																									"function": true
+																								},
+																								"type": "custom"
+																							}
+																						]
+																					},
+																					"projection": {
+																						"kind": "optional",
+																						"input": {
+																							"kind": "enum",
+																							"entries": ["description", "name", "text"]
+																						}
+																					}
+																				}
+																			}
+																		},
+																		"defaultValue": []
+																	}
+																},
+																"operation": {
+																	"kind": "optional",
+																	"input": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	}
+																},
+																"type": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "overwrite",
+																			"tx": {
+																				"function": true
+																			}
+																		},
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															}
+														}
+													},
+													"defaultValue": []
+												},
+												"id": {
+													"kind": "pipe",
+													"input": {
+														"kind": "union",
+														"options": [
+															{
+																"kind": "custom",
+																"outputFingerprint": "custom"
+															},
+															{
+																"kind": "string",
+																"checks": [
+																	{
+																		"check": "min_length",
+																		"minimum": 1,
+																		"when": {
+																			"function": true
+																		}
+																	}
+																]
+															}
+														]
+													},
+													"outputFingerprint": "transform"
+												},
+												"name": {
+													"kind": "string"
+												},
+												"type": {
+													"kind": "literal",
+													"values": ["group"]
+												}
+											}
+										}
+									},
+									"id": {
+										"kind": "pipe",
+										"input": {
+											"kind": "union",
+											"options": [
+												{
+													"kind": "custom",
+													"outputFingerprint": "custom"
+												},
+												{
+													"kind": "string",
+													"checks": [
+														{
+															"check": "min_length",
+															"minimum": 1,
+															"when": {
+																"function": true
+															}
+														}
+													]
+												}
+											]
+										},
+										"outputFingerprint": "transform"
+									},
+									"if": {
+										"kind": "optional",
+										"input": {
+											"kind": "object",
+											"properties": {
+												"cancelIfConditionFails": {
+													"kind": "default",
+													"input": {
+														"kind": "boolean"
+													},
+													"defaultValue": true
+												},
+												"condition": {
+													"kind": "pipe",
+													"input": {
+														"kind": "transform",
+														"outputFingerprint": "transform"
+													},
+													"outputFingerprint": "default"
+												},
+												"delayTurns": {
+													"kind": "default",
+													"input": {
+														"kind": "number"
+													},
+													"defaultValue": 0
+												},
+												"effect": {
+													"kind": "object",
+													"properties": {
+														"allowMultipleUsesInWorld": {
+															"kind": "default",
+															"input": {
+																"kind": "literal",
+																"values": [true]
+															},
+															"defaultValue": true
+														},
+														"effects": {
+															"kind": "default",
+															"input": {
+																"kind": "array",
+																"element": {
+																	"kind": "object",
+																	"checks": [
+																		{
+																			"check": "custom",
+																			"error": {
+																				"function": true
+																			},
+																			"fn": {
+																				"function": true
+																			},
+																			"path": ["type"],
+																			"type": "custom"
+																		}
+																	],
+																	"properties": {
+																		"commandVariables": {
+																			"kind": "optional",
+																			"input": {
+																				"kind": "default",
+																				"checks": [
+																					{
+																						"check": "custom"
+																					}
+																				],
+																				"input": {
+																					"kind": "array",
+																					"element": {
+																						"kind": "object",
+																						"properties": {
+																							"blockId": {
+																								"kind": "pipe",
+																								"input": {
+																									"kind": "union",
+																									"options": [
+																										{
+																											"kind": "custom",
+																											"outputFingerprint": "custom"
+																										},
+																										{
+																											"kind": "string",
+																											"checks": [
+																												{
+																													"check": "min_length",
+																													"minimum": 1,
+																													"when": {
+																														"function": true
+																													}
+																												}
+																											]
+																										}
+																									]
+																								},
+																								"outputFingerprint": "transform"
+																							},
+																							"field": {
+																								"kind": "string",
+																								"checks": [
+																									{
+																										"check": "overwrite",
+																										"tx": {
+																											"function": true
+																										}
+																									},
+																									{
+																										"check": "min_length",
+																										"minimum": 1,
+																										"when": {
+																											"function": true
+																										}
+																									},
+																									{
+																										"check": "custom",
+																										"error": {
+																											"function": true
+																										},
+																										"fn": {
+																											"function": true
+																										},
+																										"type": "custom"
+																									}
+																								]
+																							},
+																							"projection": {
+																								"kind": "optional",
+																								"input": {
+																									"kind": "enum",
+																									"entries": ["description", "name", "text"]
+																								}
+																							}
+																						}
+																					}
+																				},
+																				"defaultValue": []
+																			}
+																		},
+																		"operation": {
+																			"kind": "optional",
+																			"input": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "overwrite",
+																						"tx": {
+																							"function": true
+																						}
+																					},
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"type": {
+																			"kind": "string",
+																			"checks": [
+																				{
+																					"check": "overwrite",
+																					"tx": {
+																						"function": true
+																					}
+																				},
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			]
+																		}
+																	}
+																}
+															},
+															"defaultValue": []
+														},
+														"id": {
+															"kind": "pipe",
+															"input": {
+																"kind": "union",
+																"options": [
+																	{
+																		"kind": "custom",
+																		"outputFingerprint": "custom"
+																	},
+																	{
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	}
+																]
+															},
+															"outputFingerprint": "transform"
+														},
+														"name": {
+															"kind": "string"
+														},
+														"type": {
+															"kind": "literal",
+															"values": ["group"]
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							},
+							"enabled": {
+								"kind": "default",
+								"input": {
+									"kind": "boolean"
+								},
+								"defaultValue": true
+							},
+							"fallbacks": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "object",
+										"properties": {
+											"behavior": {
+												"kind": "object",
+												"properties": {
+													"always": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "object",
+																			"checks": [
+																				{
+																					"check": "custom",
+																					"error": {
+																						"function": true
+																					},
+																					"fn": {
+																						"function": true
+																					},
+																					"path": ["type"],
+																					"type": "custom"
+																				}
+																			],
+																			"properties": {
+																				"commandVariables": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "default",
+																						"checks": [
+																							{
+																								"check": "custom"
+																							}
+																						],
+																						"input": {
+																							"kind": "array",
+																							"element": {
+																								"kind": "object",
+																								"properties": {
+																									"blockId": {
+																										"kind": "pipe",
+																										"input": {
+																											"kind": "union",
+																											"options": [
+																												{
+																													"kind": "custom",
+																													"outputFingerprint": "custom"
+																												},
+																												{
+																													"kind": "string",
+																													"checks": [
+																														{
+																															"check": "min_length",
+																															"minimum": 1,
+																															"when": {
+																																"function": true
+																															}
+																														}
+																													]
+																												}
+																											]
+																										},
+																										"outputFingerprint": "transform"
+																									},
+																									"field": {
+																										"kind": "string",
+																										"checks": [
+																											{
+																												"check": "overwrite",
+																												"tx": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "min_length",
+																												"minimum": 1,
+																												"when": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "custom",
+																												"error": {
+																													"function": true
+																												},
+																												"fn": {
+																													"function": true
+																												},
+																												"type": "custom"
+																											}
+																										]
+																									},
+																									"projection": {
+																										"kind": "optional",
+																										"input": {
+																											"kind": "enum",
+																											"entries": ["description", "name", "text"]
+																										}
+																									}
+																								}
+																							}
+																						},
+																						"defaultValue": []
+																					}
+																				},
+																				"operation": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					}
+																				},
+																				"type": {
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "overwrite",
+																							"tx": {
+																								"function": true
+																							}
+																						},
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"elifs": {
+														"kind": "optional",
+														"input": {
+															"kind": "default",
+															"input": {
+																"kind": "array",
+																"element": {
+																	"kind": "object",
+																	"properties": {
+																		"cancelIfConditionFails": {
+																			"kind": "default",
+																			"input": {
+																				"kind": "boolean"
+																			},
+																			"defaultValue": true
+																		},
+																		"condition": {
+																			"kind": "pipe",
+																			"input": {
+																				"kind": "transform",
+																				"outputFingerprint": "transform"
+																			},
+																			"outputFingerprint": "default"
+																		},
+																		"delayTurns": {
+																			"kind": "default",
+																			"input": {
+																				"kind": "number"
+																			},
+																			"defaultValue": 0
+																		},
+																		"effect": {
+																			"kind": "object",
+																			"properties": {
+																				"allowMultipleUsesInWorld": {
+																					"kind": "default",
+																					"input": {
+																						"kind": "literal",
+																						"values": [true]
+																					},
+																					"defaultValue": true
+																				},
+																				"effects": {
+																					"kind": "default",
+																					"input": {
+																						"kind": "array",
+																						"element": {
+																							"kind": "object",
+																							"checks": [
+																								{
+																									"check": "custom",
+																									"error": {
+																										"function": true
+																									},
+																									"fn": {
+																										"function": true
+																									},
+																									"path": ["type"],
+																									"type": "custom"
+																								}
+																							],
+																							"properties": {
+																								"commandVariables": {
+																									"kind": "optional",
+																									"input": {
+																										"kind": "default",
+																										"checks": [
+																											{
+																												"check": "custom"
+																											}
+																										],
+																										"input": {
+																											"kind": "array",
+																											"element": {
+																												"kind": "object",
+																												"properties": {
+																													"blockId": {
+																														"kind": "pipe",
+																														"input": {
+																															"kind": "union",
+																															"options": [
+																																{
+																																	"kind": "custom",
+																																	"outputFingerprint": "custom"
+																																},
+																																{
+																																	"kind": "string",
+																																	"checks": [
+																																		{
+																																			"check": "min_length",
+																																			"minimum": 1,
+																																			"when": {
+																																				"function": true
+																																			}
+																																		}
+																																	]
+																																}
+																															]
+																														},
+																														"outputFingerprint": "transform"
+																													},
+																													"field": {
+																														"kind": "string",
+																														"checks": [
+																															{
+																																"check": "overwrite",
+																																"tx": {
+																																	"function": true
+																																}
+																															},
+																															{
+																																"check": "min_length",
+																																"minimum": 1,
+																																"when": {
+																																	"function": true
+																																}
+																															},
+																															{
+																																"check": "custom",
+																																"error": {
+																																	"function": true
+																																},
+																																"fn": {
+																																	"function": true
+																																},
+																																"type": "custom"
+																															}
+																														]
+																													},
+																													"projection": {
+																														"kind": "optional",
+																														"input": {
+																															"kind": "enum",
+																															"entries": ["description", "name", "text"]
+																														}
+																													}
+																												}
+																											}
+																										},
+																										"defaultValue": []
+																									}
+																								},
+																								"operation": {
+																									"kind": "optional",
+																									"input": {
+																										"kind": "string",
+																										"checks": [
+																											{
+																												"check": "overwrite",
+																												"tx": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "min_length",
+																												"minimum": 1,
+																												"when": {
+																													"function": true
+																												}
+																											}
+																										]
+																									}
+																								},
+																								"type": {
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "overwrite",
+																											"tx": {
+																												"function": true
+																											}
+																										},
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								}
+																							}
+																						}
+																					},
+																					"defaultValue": []
+																				},
+																				"id": {
+																					"kind": "pipe",
+																					"input": {
+																						"kind": "union",
+																						"options": [
+																							{
+																								"kind": "custom",
+																								"outputFingerprint": "custom"
+																							},
+																							{
+																								"kind": "string",
+																								"checks": [
+																									{
+																										"check": "min_length",
+																										"minimum": 1,
+																										"when": {
+																											"function": true
+																										}
+																									}
+																								]
+																							}
+																						]
+																					},
+																					"outputFingerprint": "transform"
+																				},
+																				"name": {
+																					"kind": "string"
+																				},
+																				"type": {
+																					"kind": "literal",
+																					"values": ["group"]
+																				}
+																			}
+																		}
+																	}
+																}
+															},
+															"defaultValue": []
+														}
+													},
+													"else": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "object",
+																			"checks": [
+																				{
+																					"check": "custom",
+																					"error": {
+																						"function": true
+																					},
+																					"fn": {
+																						"function": true
+																					},
+																					"path": ["type"],
+																					"type": "custom"
+																				}
+																			],
+																			"properties": {
+																				"commandVariables": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "default",
+																						"checks": [
+																							{
+																								"check": "custom"
+																							}
+																						],
+																						"input": {
+																							"kind": "array",
+																							"element": {
+																								"kind": "object",
+																								"properties": {
+																									"blockId": {
+																										"kind": "pipe",
+																										"input": {
+																											"kind": "union",
+																											"options": [
+																												{
+																													"kind": "custom",
+																													"outputFingerprint": "custom"
+																												},
+																												{
+																													"kind": "string",
+																													"checks": [
+																														{
+																															"check": "min_length",
+																															"minimum": 1,
+																															"when": {
+																																"function": true
+																															}
+																														}
+																													]
+																												}
+																											]
+																										},
+																										"outputFingerprint": "transform"
+																									},
+																									"field": {
+																										"kind": "string",
+																										"checks": [
+																											{
+																												"check": "overwrite",
+																												"tx": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "min_length",
+																												"minimum": 1,
+																												"when": {
+																													"function": true
+																												}
+																											},
+																											{
+																												"check": "custom",
+																												"error": {
+																													"function": true
+																												},
+																												"fn": {
+																													"function": true
+																												},
+																												"type": "custom"
+																											}
+																										]
+																									},
+																									"projection": {
+																										"kind": "optional",
+																										"input": {
+																											"kind": "enum",
+																											"entries": ["description", "name", "text"]
+																										}
+																									}
+																								}
+																							}
+																						},
+																						"defaultValue": []
+																					}
+																				},
+																				"operation": {
+																					"kind": "optional",
+																					"input": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					}
+																				},
+																				"type": {
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "overwrite",
+																							"tx": {
+																								"function": true
+																							}
+																						},
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"id": {
+														"kind": "pipe",
+														"input": {
+															"kind": "union",
+															"options": [
+																{
+																	"kind": "custom",
+																	"outputFingerprint": "custom"
+																},
+																{
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															]
+														},
+														"outputFingerprint": "transform"
+													},
+													"if": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"cancelIfConditionFails": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "boolean"
+																	},
+																	"defaultValue": true
+																},
+																"condition": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "transform",
+																		"outputFingerprint": "transform"
+																	},
+																	"outputFingerprint": "default"
+																},
+																"delayTurns": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "number"
+																	},
+																	"defaultValue": 0
+																},
+																"effect": {
+																	"kind": "object",
+																	"properties": {
+																		"allowMultipleUsesInWorld": {
+																			"kind": "default",
+																			"input": {
+																				"kind": "literal",
+																				"values": [true]
+																			},
+																			"defaultValue": true
+																		},
+																		"effects": {
+																			"kind": "default",
+																			"input": {
+																				"kind": "array",
+																				"element": {
+																					"kind": "object",
+																					"checks": [
+																						{
+																							"check": "custom",
+																							"error": {
+																								"function": true
+																							},
+																							"fn": {
+																								"function": true
+																							},
+																							"path": ["type"],
+																							"type": "custom"
+																						}
+																					],
+																					"properties": {
+																						"commandVariables": {
+																							"kind": "optional",
+																							"input": {
+																								"kind": "default",
+																								"checks": [
+																									{
+																										"check": "custom"
+																									}
+																								],
+																								"input": {
+																									"kind": "array",
+																									"element": {
+																										"kind": "object",
+																										"properties": {
+																											"blockId": {
+																												"kind": "pipe",
+																												"input": {
+																													"kind": "union",
+																													"options": [
+																														{
+																															"kind": "custom",
+																															"outputFingerprint": "custom"
+																														},
+																														{
+																															"kind": "string",
+																															"checks": [
+																																{
+																																	"check": "min_length",
+																																	"minimum": 1,
+																																	"when": {
+																																		"function": true
+																																	}
+																																}
+																															]
+																														}
+																													]
+																												},
+																												"outputFingerprint": "transform"
+																											},
+																											"field": {
+																												"kind": "string",
+																												"checks": [
+																													{
+																														"check": "overwrite",
+																														"tx": {
+																															"function": true
+																														}
+																													},
+																													{
+																														"check": "min_length",
+																														"minimum": 1,
+																														"when": {
+																															"function": true
+																														}
+																													},
+																													{
+																														"check": "custom",
+																														"error": {
+																															"function": true
+																														},
+																														"fn": {
+																															"function": true
+																														},
+																														"type": "custom"
+																													}
+																												]
+																											},
+																											"projection": {
+																												"kind": "optional",
+																												"input": {
+																													"kind": "enum",
+																													"entries": ["description", "name", "text"]
+																												}
+																											}
+																										}
+																									}
+																								},
+																								"defaultValue": []
+																							}
+																						},
+																						"operation": {
+																							"kind": "optional",
+																							"input": {
+																								"kind": "string",
+																								"checks": [
+																									{
+																										"check": "overwrite",
+																										"tx": {
+																											"function": true
+																										}
+																									},
+																									{
+																										"check": "min_length",
+																										"minimum": 1,
+																										"when": {
+																											"function": true
+																										}
+																									}
+																								]
+																							}
+																						},
+																						"type": {
+																							"kind": "string",
+																							"checks": [
+																								{
+																									"check": "overwrite",
+																									"tx": {
+																										"function": true
+																									}
+																								},
+																								{
+																									"check": "min_length",
+																									"minimum": 1,
+																									"when": {
+																										"function": true
+																									}
+																								}
+																							]
+																						}
+																					}
+																				}
+																			},
+																			"defaultValue": []
+																		},
+																		"id": {
+																			"kind": "pipe",
+																			"input": {
+																				"kind": "union",
+																				"options": [
+																					{
+																						"kind": "custom",
+																						"outputFingerprint": "custom"
+																					},
+																					{
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					}
+																				]
+																			},
+																			"outputFingerprint": "transform"
+																		},
+																		"name": {
+																			"kind": "string"
+																		},
+																		"type": {
+																			"kind": "literal",
+																			"values": ["group"]
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}
+											},
+											"blockId": {
+												"kind": "pipe",
+												"input": {
+													"kind": "union",
+													"options": [
+														{
+															"kind": "custom",
+															"outputFingerprint": "custom"
+														},
+														{
+															"kind": "string",
+															"checks": [
+																{
+																	"check": "min_length",
+																	"minimum": 1,
+																	"when": {
+																		"function": true
+																	}
+																}
+															]
+														}
+													]
+												},
+												"outputFingerprint": "transform"
+											}
+										}
+									}
+								},
+								"defaultValue": []
+							},
+							"id": {
+								"kind": "pipe",
+								"input": {
+									"kind": "union",
+									"options": [
+										{
+											"kind": "custom",
+											"outputFingerprint": "custom"
+										},
+										{
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										}
+									]
+								},
+								"outputFingerprint": "transform"
+							},
+							"name": {
+								"kind": "string",
+								"checks": [
+									{
+										"check": "min_length",
+										"minimum": 1,
+										"when": {
+											"function": true
+										}
+									}
+								]
+							},
+							"patterns": {
+								"kind": "default",
+								"checks": [
+									{
+										"check": "custom",
+										"error": {
+											"function": true
+										},
+										"fn": {
+											"function": true
+										},
+										"type": "custom"
+									}
+								],
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "object",
+										"checks": [
+											{
+												"check": "custom"
+											}
+										],
+										"properties": {
+											"blocks": {
+												"kind": "default",
+												"checks": [
+													{
+														"check": "custom",
+														"error": {
+															"function": true
+														},
+														"fn": {
+															"function": true
+														},
+														"type": "custom"
+													}
+												],
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "union",
+														"checks": [
+															{
+																"check": "custom"
+															}
+														],
+														"options": [
+															{
+																"kind": "object",
+																"properties": {
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"matches": {
+																		"kind": "array",
+																		"checks": [
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		],
+																		"element": {
+																			"kind": "string",
+																			"checks": [
+																				{
+																					"check": "overwrite",
+																					"tx": {
+																						"function": true
+																					}
+																				},
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			]
+																		}
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["phrase"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"aliases": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"aliasMode": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "enum",
+																			"entries": ["defaults", "extend", "replace"]
+																		},
+																		"defaultValue": "defaults"
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"relation": {
+																		"kind": "enum",
+																		"entries": [
+																			"about",
+																			"across",
+																			"against",
+																			"as",
+																			"at",
+																			"before",
+																			"behind",
+																			"beside",
+																			"between",
+																			"for",
+																			"from",
+																			"in",
+																			"off",
+																			"on",
+																			"over",
+																			"through",
+																			"to",
+																			"under",
+																			"with"
+																		]
+																	},
+																	"role": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "string",
+																			"checks": [
+																				{
+																					"check": "overwrite",
+																					"tx": {
+																						"function": true
+																					}
+																				},
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			]
+																		}
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["relation"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"entityIds": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "union",
+																				"options": [
+																					{
+																						"kind": "pipe",
+																						"input": {
+																							"kind": "object",
+																							"properties": {
+																								"id": {
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								},
+																								"type": {
+																									"kind": "literal",
+																									"values": ["room"]
+																								}
+																							}
+																						},
+																						"outputFingerprint": "transform"
+																					},
+																					{
+																						"kind": "pipe",
+																						"input": {
+																							"kind": "object",
+																							"properties": {
+																								"id": {
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								},
+																								"type": {
+																									"kind": "literal",
+																									"values": ["item"]
+																								}
+																							}
+																						},
+																						"outputFingerprint": "transform"
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"entityTypes": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "enum",
+																				"entries": ["item", "room"]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"extraAliases": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"source": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "enum",
+																			"entries": ["any", "current-room", "known", "reachable", "visible"]
+																		},
+																		"defaultValue": "visible"
+																	},
+																	"tagMode": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "enum",
+																			"entries": ["all", "any"]
+																		},
+																		"defaultValue": "all"
+																	},
+																	"tags": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["target"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"allowWords": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "boolean"
+																		},
+																		"defaultValue": true
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"max": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "number"
+																		}
+																	},
+																	"min": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "number"
+																		}
+																	},
+																	"numberType": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "enum",
+																			"entries": ["decimal", "integer"]
+																		},
+																		"defaultValue": "integer"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["number"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"falseMatches": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"checks": [
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			],
+																			"element": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "overwrite",
+																						"tx": {
+																							"function": true
+																						}
+																					},
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": ["no", "nope", "nah"]
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"trueMatches": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"checks": [
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			],
+																			"element": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "overwrite",
+																						"tx": {
+																							"function": true
+																						}
+																					},
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		},
+																		"defaultValue": ["yes", "yep", "yeah", "okay", "ok"]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["boolean"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"allowed": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "enum",
+																				"entries": [
+																					"down",
+																					"e",
+																					"in",
+																					"n",
+																					"ne",
+																					"nw",
+																					"out",
+																					"s",
+																					"se",
+																					"sw",
+																					"up",
+																					"w"
+																				]
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["direction"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"choices": {
+																		"kind": "default",
+																		"checks": [
+																			{
+																				"check": "custom",
+																				"error": {
+																					"function": true
+																				},
+																				"fn": {
+																					"function": true
+																				},
+																				"type": "custom"
+																			}
+																		],
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "object",
+																				"properties": {
+																					"label": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					},
+																					"matches": {
+																						"kind": "array",
+																						"checks": [
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						],
+																						"element": {
+																							"kind": "string",
+																							"checks": [
+																								{
+																									"check": "overwrite",
+																									"tx": {
+																										"function": true
+																									}
+																								},
+																								{
+																									"check": "min_length",
+																									"minimum": 1,
+																									"when": {
+																										"function": true
+																									}
+																								}
+																							]
+																						}
+																					},
+																					"value": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					}
+																				}
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["choice"]
+																	}
+																}
+															},
+															{
+																"kind": "object",
+																"properties": {
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"maxLength": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "number",
+																			"checks": [
+																				{
+																					"abort": false,
+																					"check": "number_format",
+																					"format": "safeint",
+																					"type": "number"
+																				},
+																				{
+																					"check": "greater_than",
+																					"inclusive": false,
+																					"value": 0
+																				}
+																			]
+																		}
+																	},
+																	"minLength": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "number",
+																			"checks": [
+																				{
+																					"abort": false,
+																					"check": "number_format",
+																					"format": "safeint",
+																					"type": "number"
+																				},
+																				{
+																					"check": "greater_than",
+																					"inclusive": true,
+																					"value": 0
+																				}
+																			]
+																		}
+																	},
+																	"mode": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "enum",
+																			"entries": ["phrase", "quoted", "rest", "word"]
+																		},
+																		"defaultValue": "phrase"
+																	},
+																	"role": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "overwrite",
+																				"tx": {
+																					"function": true
+																				}
+																			},
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["text"]
+																	}
+																}
+															}
+														]
+													}
+												},
+												"defaultValue": []
+											}
+										}
+									}
+								},
+								"defaultValue": []
+							},
+							"priority": {
+								"kind": "default",
+								"input": {
+									"kind": "number"
+								},
+								"defaultValue": 0
+							},
+							"scope": {
+								"kind": "union",
+								"checks": [
+									{
+										"check": "custom"
+									}
+								],
+								"options": [
+									{
+										"kind": "object",
+										"properties": {
+											"scope": {
+												"kind": "literal",
+												"values": ["global"]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"layers": {
+												"kind": "default",
+												"checks": [
+													{
+														"check": "custom",
+														"error": {
+															"function": true
+														},
+														"fn": {
+															"function": true
+														},
+														"type": "custom"
+													}
+												],
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "number",
+														"checks": [
+															{
+																"abort": false,
+																"check": "number_format",
+																"format": "safeint",
+																"type": "number"
+															}
+														]
+													}
+												},
+												"defaultValue": []
+											},
+											"scope": {
+												"kind": "literal",
+												"values": ["layers"]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"properties": {
+											"roomIds": {
+												"kind": "default",
+												"checks": [
+													{
+														"check": "custom",
+														"error": {
+															"function": true
+														},
+														"fn": {
+															"function": true
+														},
+														"type": "custom"
+													}
+												],
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["room"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													}
+												},
+												"defaultValue": []
+											},
+											"scope": {
+												"kind": "literal",
+												"values": ["rooms"]
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"defaultValue": []
+			},
+			"conditions": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "pipe",
+						"input": {
+							"kind": "transform",
+							"outputFingerprint": "transform"
+						},
+						"outputFingerprint": "object"
+					}
+				},
+				"defaultValue": []
+			},
+			"connections": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "object",
+						"properties": {
+							"direction": {
+								"kind": "enum",
+								"entries": ["down", "e", "in", "n", "ne", "nw", "out", "s", "se", "sw", "up", "w"]
+							},
+							"fromRoomId": {
+								"kind": "pipe",
+								"input": {
+									"kind": "object",
+									"properties": {
+										"id": {
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										},
+										"type": {
+											"kind": "literal",
+											"values": ["room"]
+										}
+									}
+								},
+								"outputFingerprint": "transform"
+							},
+							"id": {
+								"kind": "pipe",
+								"input": {
+									"kind": "union",
+									"options": [
+										{
+											"kind": "custom",
+											"outputFingerprint": "custom"
+										},
+										{
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										}
+									]
+								},
+								"outputFingerprint": "transform"
+							},
+							"metadata": {
+								"kind": "default",
+								"input": {
+									"kind": "object",
+									"properties": {
+										"fromLayerStubPoint": {
+											"kind": "optional",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"x": {
+														"kind": "number"
+													},
+													"y": {
+														"kind": "number"
+													}
+												}
+											}
+										},
+										"toLayerStubPoint": {
+											"kind": "optional",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"x": {
+														"kind": "number"
+													},
+													"y": {
+														"kind": "number"
+													}
+												}
+											}
+										}
+									}
+								},
+								"defaultValue": {}
+							},
+							"name": {
+								"kind": "optional",
+								"input": {
+									"kind": "string"
+								}
+							},
+							"pathway": {
+								"kind": "default",
+								"input": {
+									"kind": "enum",
+									"entries": ["backwards", "forwards", "no-way", "two-way"]
+								},
+								"defaultValue": "two-way"
+							},
+							"returnDirection": {
+								"kind": "enum",
+								"entries": ["down", "e", "in", "n", "ne", "nw", "out", "s", "se", "sw", "up", "w"]
+							},
+							"toRoomId": {
+								"kind": "pipe",
+								"input": {
+									"kind": "object",
+									"properties": {
+										"id": {
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										},
+										"type": {
+											"kind": "literal",
+											"values": ["room"]
+										}
+									}
+								},
+								"outputFingerprint": "transform"
+							}
+						}
+					}
+				},
+				"defaultValue": []
+			},
+			"deathMessage": {
+				"kind": "string"
+			},
+			"effects": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "object",
+						"checks": [
+							{
+								"check": "custom"
+							}
+						],
+						"properties": {
+							"allowMultipleUsesInWorld": {
+								"kind": "default",
+								"input": {
+									"kind": "literal",
+									"values": [true]
+								},
+								"defaultValue": true
+							},
+							"effects": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "lazy",
+										"input": {
+											"kind": "pipe",
+											"input": {
+												"kind": "transform",
+												"outputFingerprint": "transform"
+											},
+											"outputFingerprint": "union"
+										}
+									}
+								},
+								"defaultValue": []
+							},
+							"id": {
+								"kind": "pipe",
+								"input": {
+									"kind": "union",
+									"options": [
+										{
+											"kind": "custom",
+											"outputFingerprint": "custom"
+										},
+										{
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										}
+									]
+								},
+								"outputFingerprint": "transform"
+							},
+							"name": {
+								"kind": "string"
+							},
+							"type": {
+								"kind": "literal",
+								"values": ["group"]
+							}
+						}
+					}
+				},
+				"defaultValue": []
+			},
+			"events": {
+				"kind": "optional",
+				"input": {
+					"kind": "default",
+					"input": {
+						"kind": "array",
+						"element": {
+							"kind": "object",
+							"properties": {
+								"branch": {
+									"kind": "object",
+									"properties": {
+										"always": {
+											"kind": "optional",
+											"input": {
+												"kind": "object",
+												"checks": [
+													{
+														"check": "custom"
+													}
+												],
+												"properties": {
+													"allowMultipleUsesInWorld": {
+														"kind": "default",
+														"input": {
+															"kind": "literal",
+															"values": [true]
+														},
+														"defaultValue": true
+													},
+													"effects": {
+														"kind": "default",
+														"input": {
+															"kind": "array",
+															"element": {
+																"kind": "lazy",
+																"input": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "transform",
+																		"outputFingerprint": "transform"
+																	},
+																	"outputFingerprint": "union"
+																}
+															}
+														},
+														"defaultValue": []
+													},
+													"id": {
+														"kind": "pipe",
+														"input": {
+															"kind": "union",
+															"options": [
+																{
+																	"kind": "custom",
+																	"outputFingerprint": "custom"
+																},
+																{
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															]
+														},
+														"outputFingerprint": "transform"
+													},
+													"name": {
+														"kind": "string"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["group"]
+													}
+												}
+											}
+										},
+										"elifs": {
+											"kind": "optional",
+											"input": {
+												"kind": "default",
+												"input": {
+													"kind": "array",
+													"element": {
+														"kind": "object",
+														"properties": {
+															"cancelIfConditionFails": {
+																"kind": "default",
+																"input": {
+																	"kind": "boolean"
+																},
+																"defaultValue": true
+															},
+															"condition": {
+																"kind": "pipe",
+																"input": {
+																	"kind": "transform",
+																	"outputFingerprint": "transform"
+																},
+																"outputFingerprint": "default"
+															},
+															"delayTurns": {
+																"kind": "default",
+																"input": {
+																	"kind": "number"
+																},
+																"defaultValue": 0
+															},
+															"effect": {
+																"kind": "object",
+																"checks": [
+																	{
+																		"check": "custom"
+																	}
+																],
+																"properties": {
+																	"allowMultipleUsesInWorld": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "literal",
+																			"values": [true]
+																		},
+																		"defaultValue": true
+																	},
+																	"effects": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "array",
+																			"element": {
+																				"kind": "lazy",
+																				"input": {
+																					"kind": "pipe",
+																					"input": {
+																						"kind": "transform",
+																						"outputFingerprint": "transform"
+																					},
+																					"outputFingerprint": "union"
+																				}
+																			}
+																		},
+																		"defaultValue": []
+																	},
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"name": {
+																		"kind": "string"
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["group"]
+																	}
+																}
+															}
+														}
+													}
+												},
+												"defaultValue": []
+											}
+										},
+										"else": {
+											"kind": "optional",
+											"input": {
+												"kind": "object",
+												"checks": [
+													{
+														"check": "custom"
+													}
+												],
+												"properties": {
+													"allowMultipleUsesInWorld": {
+														"kind": "default",
+														"input": {
+															"kind": "literal",
+															"values": [true]
+														},
+														"defaultValue": true
+													},
+													"effects": {
+														"kind": "default",
+														"input": {
+															"kind": "array",
+															"element": {
+																"kind": "lazy",
+																"input": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "transform",
+																		"outputFingerprint": "transform"
+																	},
+																	"outputFingerprint": "union"
+																}
+															}
+														},
+														"defaultValue": []
+													},
+													"id": {
+														"kind": "pipe",
+														"input": {
+															"kind": "union",
+															"options": [
+																{
+																	"kind": "custom",
+																	"outputFingerprint": "custom"
+																},
+																{
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																}
+															]
+														},
+														"outputFingerprint": "transform"
+													},
+													"name": {
+														"kind": "string"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["group"]
+													}
+												}
+											}
+										},
+										"id": {
+											"kind": "pipe",
+											"input": {
+												"kind": "union",
+												"options": [
+													{
+														"kind": "custom",
+														"outputFingerprint": "custom"
+													},
+													{
+														"kind": "string",
+														"checks": [
+															{
+																"check": "min_length",
+																"minimum": 1,
+																"when": {
+																	"function": true
+																}
+															}
+														]
+													}
+												]
+											},
+											"outputFingerprint": "transform"
+										},
+										"if": {
+											"kind": "optional",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"cancelIfConditionFails": {
+														"kind": "default",
+														"input": {
+															"kind": "boolean"
+														},
+														"defaultValue": true
+													},
+													"condition": {
+														"kind": "pipe",
+														"input": {
+															"kind": "transform",
+															"outputFingerprint": "transform"
+														},
+														"outputFingerprint": "default"
+													},
+													"delayTurns": {
+														"kind": "default",
+														"input": {
+															"kind": "number"
+														},
+														"defaultValue": 0
+													},
+													"effect": {
+														"kind": "object",
+														"checks": [
+															{
+																"check": "custom"
+															}
+														],
+														"properties": {
+															"allowMultipleUsesInWorld": {
+																"kind": "default",
+																"input": {
+																	"kind": "literal",
+																	"values": [true]
+																},
+																"defaultValue": true
+															},
+															"effects": {
+																"kind": "default",
+																"input": {
+																	"kind": "array",
+																	"element": {
+																		"kind": "lazy",
+																		"input": {
+																			"kind": "pipe",
+																			"input": {
+																				"kind": "transform",
+																				"outputFingerprint": "transform"
+																			},
+																			"outputFingerprint": "union"
+																		}
+																	}
+																},
+																"defaultValue": []
+															},
+															"id": {
+																"kind": "pipe",
+																"input": {
+																	"kind": "union",
+																	"options": [
+																		{
+																			"kind": "custom",
+																			"outputFingerprint": "custom"
+																		},
+																		{
+																			"kind": "string",
+																			"checks": [
+																				{
+																					"check": "min_length",
+																					"minimum": 1,
+																					"when": {
+																						"function": true
+																					}
+																				}
+																			]
+																		}
+																	]
+																},
+																"outputFingerprint": "transform"
+															},
+															"name": {
+																"kind": "string"
+															},
+															"type": {
+																"kind": "literal",
+																"values": ["group"]
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								},
+								"disposable": {
+									"kind": "default",
+									"input": {
+										"kind": "boolean"
+									},
+									"defaultValue": false
+								},
+								"enabled": {
+									"kind": "default",
+									"input": {
+										"kind": "boolean"
+									},
+									"defaultValue": true
+								},
+								"id": {
+									"kind": "pipe",
+									"input": {
+										"kind": "union",
+										"options": [
+											{
+												"kind": "custom",
+												"outputFingerprint": "custom"
+											},
+											{
+												"kind": "string",
+												"checks": [
+													{
+														"check": "min_length",
+														"minimum": 1,
+														"when": {
+															"function": true
+														}
+													}
+												]
+											}
+										]
+									},
+									"outputFingerprint": "transform"
+								},
+								"lastSuccess": {
+									"kind": "default",
+									"input": {
+										"kind": "number",
+										"checks": [
+											{
+												"abort": false,
+												"check": "number_format",
+												"format": "safeint",
+												"type": "number"
+											}
+										]
+									},
+									"defaultValue": 0
+								},
+								"name": {
+									"kind": "string"
+								},
+								"priority": {
+									"kind": "default",
+									"input": {
+										"kind": "number",
+										"checks": [
+											{
+												"abort": false,
+												"check": "number_format",
+												"format": "safeint",
+												"type": "number"
+											}
+										]
+									},
+									"defaultValue": 0
+								},
+								"wait": {
+									"kind": "default",
+									"input": {
+										"kind": "number",
+										"checks": [
+											{
+												"abort": false,
+												"check": "number_format",
+												"format": "safeint",
+												"type": "number"
+											},
+											{
+												"check": "greater_than",
+												"inclusive": true,
+												"value": 0
+											}
+										]
+									},
+									"defaultValue": 0
+								}
+							}
+						}
+					},
+					"defaultValue": []
+				}
+			},
+			"initialState": {
+				"kind": "default",
+				"input": {
+					"kind": "object",
+					"properties": {
+						"counters": {
+							"kind": "default",
+							"input": {
+								"kind": "array",
+								"element": {
+									"kind": "object",
+									"properties": {
+										"counter": {
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										},
+										"value": {
+											"kind": "number"
+										}
+									}
+								}
+							},
+							"defaultValue": []
+						},
+						"flags": {
+							"kind": "default",
+							"input": {
+								"kind": "array",
+								"element": {
+									"kind": "object",
+									"properties": {
+										"flag": {
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										},
+										"value": {
+											"kind": "boolean"
+										}
+									}
+								}
+							},
+							"defaultValue": []
+						},
+						"texts": {
+							"kind": "default",
+							"input": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "object",
+										"properties": {
+											"text": {
+												"kind": "string",
+												"checks": [
+													{
+														"check": "min_length",
+														"minimum": 1,
+														"when": {
+															"function": true
+														}
+													}
+												]
+											},
+											"value": {
+												"kind": "string"
+											}
+										}
+									}
+								},
+								"defaultValue": []
+							},
+							"defaultValue": []
+						}
+					}
+				},
+				"defaultValue": {
+					"counters": [],
+					"flags": [],
+					"texts": []
+				}
+			},
+			"items": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "object",
+						"checks": [
+							{
+								"check": "custom"
+							}
+						],
+						"properties": {
+							"aliases": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									}
+								},
+								"defaultValue": []
+							},
+							"behaviors": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "union",
+										"options": [
+											{
+												"kind": "object",
+												"properties": {
+													"afterDrop": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"afterTake": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"allowedWhen": {
+														"kind": "optional",
+														"input": {
+															"kind": "pipe",
+															"input": {
+																"kind": "transform",
+																"outputFingerprint": "transform"
+															},
+															"outputFingerprint": "default"
+														}
+													},
+													"blockedMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You can't take that right now."
+													},
+													"size": {
+														"kind": "default",
+														"input": {
+															"kind": "enum",
+															"entries": ["huge", "large", "medium", "small", "tiny"]
+														},
+														"defaultValue": "small"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["takeable"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"capacity": {
+														"kind": "object",
+														"properties": {
+															"capacity": {
+																"kind": "default",
+																"input": {
+																	"kind": "number",
+																	"checks": [
+																		{
+																			"abort": false,
+																			"check": "number_format",
+																			"format": "safeint",
+																			"type": "number"
+																		},
+																		{
+																			"check": "greater_than",
+																			"inclusive": false,
+																			"value": 0
+																		}
+																	]
+																},
+																"defaultValue": 8
+															},
+															"maximumItemSize": {
+																"kind": "default",
+																"input": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "enum",
+																		"entries": ["huge", "large", "medium", "small", "tiny"]
+																	},
+																	"defaultValue": "small"
+																},
+																"defaultValue": "medium"
+															}
+														}
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["container"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"capacity": {
+														"kind": "object",
+														"properties": {
+															"capacity": {
+																"kind": "default",
+																"input": {
+																	"kind": "number",
+																	"checks": [
+																		{
+																			"abort": false,
+																			"check": "number_format",
+																			"format": "safeint",
+																			"type": "number"
+																		},
+																		{
+																			"check": "greater_than",
+																			"inclusive": false,
+																			"value": 0
+																		}
+																	]
+																},
+																"defaultValue": 8
+															},
+															"maximumItemSize": {
+																"kind": "default",
+																"input": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "enum",
+																		"entries": ["huge", "large", "medium", "small", "tiny"]
+																	},
+																	"defaultValue": "small"
+																},
+																"defaultValue": "medium"
+															}
+														}
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["surface"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"afterClose": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"afterOpen": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"blockedMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You can't open that right now."
+													},
+													"closeMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You close it."
+													},
+													"openMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You open it."
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["openable"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"afterLock": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"afterUnlock": {
+														"kind": "optional",
+														"input": {
+															"kind": "object",
+															"checks": [
+																{
+																	"check": "custom"
+																}
+															],
+															"properties": {
+																"allowMultipleUsesInWorld": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "literal",
+																		"values": [true]
+																	},
+																	"defaultValue": true
+																},
+																"effects": {
+																	"kind": "default",
+																	"input": {
+																		"kind": "array",
+																		"element": {
+																			"kind": "lazy",
+																			"input": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "transform",
+																					"outputFingerprint": "transform"
+																				},
+																				"outputFingerprint": "union"
+																			}
+																		}
+																	},
+																	"defaultValue": []
+																},
+																"id": {
+																	"kind": "pipe",
+																	"input": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "custom",
+																				"outputFingerprint": "custom"
+																			},
+																			{
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			}
+																		]
+																	},
+																	"outputFingerprint": "transform"
+																},
+																"name": {
+																	"kind": "string"
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["group"]
+																}
+															}
+														}
+													},
+													"consumesKey": {
+														"kind": "default",
+														"input": {
+															"kind": "boolean"
+														},
+														"defaultValue": false
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["lockable"]
+													},
+													"unlockMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You unlock it."
+													},
+													"unlockWith": {
+														"kind": "default",
+														"input": {
+															"kind": "array",
+															"element": {
+																"kind": "union",
+																"options": [
+																	{
+																		"kind": "object",
+																		"properties": {
+																			"itemId": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "object",
+																					"properties": {
+																						"id": {
+																							"kind": "string",
+																							"checks": [
+																								{
+																									"check": "min_length",
+																									"minimum": 1,
+																									"when": {
+																										"function": true
+																									}
+																								}
+																							]
+																						},
+																						"type": {
+																							"kind": "literal",
+																							"values": ["item"]
+																						}
+																					}
+																				},
+																				"outputFingerprint": "transform"
+																			},
+																			"type": {
+																				"kind": "literal",
+																				"values": ["item"]
+																			}
+																		}
+																	},
+																	{
+																		"kind": "object",
+																		"properties": {
+																			"tag": {
+																				"kind": "string",
+																				"checks": [
+																					{
+																						"check": "overwrite",
+																						"tx": {
+																							"function": true
+																						}
+																					},
+																					{
+																						"check": "min_length",
+																						"minimum": 1,
+																						"when": {
+																							"function": true
+																						}
+																					}
+																				]
+																			},
+																			"type": {
+																				"kind": "literal",
+																				"values": ["tag"]
+																			}
+																		}
+																	}
+																]
+															}
+														},
+														"defaultValue": []
+													},
+													"wrongKeyMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "That doesn't unlock it."
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"connectionId": {
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["connection"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													},
+													"controls": {
+														"kind": "default",
+														"input": {
+															"kind": "enum",
+															"entries": ["backward", "both-directions", "forward"]
+														},
+														"defaultValue": "both-directions"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["door"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"fallbackMessage": {
+														"kind": "default",
+														"input": {
+															"kind": "string"
+														},
+														"defaultValue": "You can't find a useful way to use that here."
+													},
+													"recipes": {
+														"kind": "default",
+														"input": {
+															"kind": "array",
+															"element": {
+																"kind": "object",
+																"properties": {
+																	"id": {
+																		"kind": "pipe",
+																		"input": {
+																			"kind": "union",
+																			"options": [
+																				{
+																					"kind": "custom",
+																					"outputFingerprint": "custom"
+																				},
+																				{
+																					"kind": "string",
+																					"checks": [
+																						{
+																							"check": "min_length",
+																							"minimum": 1,
+																							"when": {
+																								"function": true
+																							}
+																						}
+																					]
+																				}
+																			]
+																		},
+																		"outputFingerprint": "transform"
+																	},
+																	"outcome": {
+																		"kind": "object",
+																		"checks": [
+																			{
+																				"check": "custom"
+																			}
+																		],
+																		"properties": {
+																			"allowMultipleUsesInWorld": {
+																				"kind": "default",
+																				"input": {
+																					"kind": "literal",
+																					"values": [true]
+																				},
+																				"defaultValue": true
+																			},
+																			"effects": {
+																				"kind": "default",
+																				"input": {
+																					"kind": "array",
+																					"element": {
+																						"kind": "lazy",
+																						"input": {
+																							"kind": "pipe",
+																							"input": {
+																								"kind": "transform",
+																								"outputFingerprint": "transform"
+																							},
+																							"outputFingerprint": "union"
+																						}
+																					}
+																				},
+																				"defaultValue": []
+																			},
+																			"id": {
+																				"kind": "pipe",
+																				"input": {
+																					"kind": "union",
+																					"options": [
+																						{
+																							"kind": "custom",
+																							"outputFingerprint": "custom"
+																						},
+																						{
+																							"kind": "string",
+																							"checks": [
+																								{
+																									"check": "min_length",
+																									"minimum": 1,
+																									"when": {
+																										"function": true
+																									}
+																								}
+																							]
+																						}
+																					]
+																				},
+																				"outputFingerprint": "transform"
+																			},
+																			"name": {
+																				"kind": "string"
+																			},
+																			"type": {
+																				"kind": "literal",
+																				"values": ["group"]
+																			}
+																		}
+																	},
+																	"target": {
+																		"kind": "union",
+																		"options": [
+																			{
+																				"kind": "object",
+																				"properties": {
+																					"type": {
+																						"kind": "literal",
+																						"values": ["none"]
+																					}
+																				}
+																			},
+																			{
+																				"kind": "object",
+																				"properties": {
+																					"type": {
+																						"kind": "literal",
+																						"values": ["any"]
+																					}
+																				}
+																			},
+																			{
+																				"kind": "object",
+																				"properties": {
+																					"itemId": {
+																						"kind": "pipe",
+																						"input": {
+																							"kind": "object",
+																							"properties": {
+																								"id": {
+																									"kind": "string",
+																									"checks": [
+																										{
+																											"check": "min_length",
+																											"minimum": 1,
+																											"when": {
+																												"function": true
+																											}
+																										}
+																									]
+																								},
+																								"type": {
+																									"kind": "literal",
+																									"values": ["item"]
+																								}
+																							}
+																						},
+																						"outputFingerprint": "transform"
+																					},
+																					"type": {
+																						"kind": "literal",
+																						"values": ["item"]
+																					}
+																				}
+																			},
+																			{
+																				"kind": "object",
+																				"properties": {
+																					"tag": {
+																						"kind": "string",
+																						"checks": [
+																							{
+																								"check": "overwrite",
+																								"tx": {
+																									"function": true
+																								}
+																							},
+																							{
+																								"check": "min_length",
+																								"minimum": 1,
+																								"when": {
+																									"function": true
+																								}
+																							}
+																						]
+																					},
+																					"type": {
+																						"kind": "literal",
+																						"values": ["tag"]
+																					}
+																				}
+																			}
+																		]
+																	},
+																	"when": {
+																		"kind": "optional",
+																		"input": {
+																			"kind": "pipe",
+																			"input": {
+																				"kind": "transform",
+																				"outputFingerprint": "transform"
+																			},
+																			"outputFingerprint": "default"
+																		}
+																	}
+																}
+															}
+														},
+														"defaultValue": []
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["usable"]
+													}
+												}
+											}
+										]
+									}
+								},
+								"defaultValue": []
+							},
+							"examine": {
+								"kind": "object",
+								"properties": {
+									"afterExamine": {
+										"kind": "optional",
+										"input": {
+											"kind": "object",
+											"checks": [
+												{
+													"check": "custom"
+												}
+											],
+											"properties": {
+												"allowMultipleUsesInWorld": {
+													"kind": "default",
+													"input": {
+														"kind": "literal",
+														"values": [true]
+													},
+													"defaultValue": true
+												},
+												"effects": {
+													"kind": "default",
+													"input": {
+														"kind": "array",
+														"element": {
+															"kind": "lazy",
+															"input": {
+																"kind": "pipe",
+																"input": {
+																	"kind": "transform",
+																	"outputFingerprint": "transform"
+																},
+																"outputFingerprint": "union"
+															}
+														}
+													},
+													"defaultValue": []
+												},
+												"id": {
+													"kind": "pipe",
+													"input": {
+														"kind": "union",
+														"options": [
+															{
+																"kind": "custom",
+																"outputFingerprint": "custom"
+															},
+															{
+																"kind": "string",
+																"checks": [
+																	{
+																		"check": "min_length",
+																		"minimum": 1,
+																		"when": {
+																			"function": true
+																		}
+																	}
+																]
+															}
+														]
+													},
+													"outputFingerprint": "transform"
+												},
+												"name": {
+													"kind": "string"
+												},
+												"type": {
+													"kind": "literal",
+													"values": ["group"]
+												}
+											}
+										}
+									},
+									"text": {
+										"kind": "string"
+									}
+								}
+							},
+							"id": {
+								"kind": "pipe",
+								"input": {
+									"kind": "union",
+									"options": [
+										{
+											"kind": "custom",
+											"outputFingerprint": "custom"
+										},
+										{
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										}
+									]
+								},
+								"outputFingerprint": "transform"
+							},
+							"initialState": {
+								"kind": "object",
+								"properties": {
+									"flags": {
+										"kind": "default",
+										"input": {
+											"kind": "pipe",
+											"input": {
+												"kind": "record",
+												"key": {
+													"kind": "string",
+													"checks": [
+														{
+															"check": "min_length",
+															"minimum": 1,
+															"when": {
+																"function": true
+															}
+														}
+													]
+												},
+												"value": {
+													"kind": "boolean"
+												}
+											},
+											"outputFingerprint": "transform"
+										},
+										"defaultValue": {
+											"examined": false
+										}
+									},
+									"location": {
+										"kind": "union",
+										"options": [
+											{
+												"kind": "object",
+												"properties": {
+													"roomId": {
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["room"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["room"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"type": {
+														"kind": "literal",
+														"values": ["inventory"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"itemId": {
+														"kind": "pipe",
+														"input": {
+															"kind": "object",
+															"properties": {
+																"id": {
+																	"kind": "string",
+																	"checks": [
+																		{
+																			"check": "min_length",
+																			"minimum": 1,
+																			"when": {
+																				"function": true
+																			}
+																		}
+																	]
+																},
+																"type": {
+																	"kind": "literal",
+																	"values": ["item"]
+																}
+															}
+														},
+														"outputFingerprint": "transform"
+													},
+													"placement": {
+														"kind": "enum",
+														"entries": ["inside", "on"]
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["item"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"roomId": {
+														"kind": "optional",
+														"input": {
+															"kind": "pipe",
+															"input": {
+																"kind": "object",
+																"properties": {
+																	"id": {
+																		"kind": "string",
+																		"checks": [
+																			{
+																				"check": "min_length",
+																				"minimum": 1,
+																				"when": {
+																					"function": true
+																				}
+																			}
+																		]
+																	},
+																	"type": {
+																		"kind": "literal",
+																		"values": ["room"]
+																	}
+																}
+															},
+															"outputFingerprint": "transform"
+														}
+													},
+													"type": {
+														"kind": "literal",
+														"values": ["hidden"]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"properties": {
+													"type": {
+														"kind": "literal",
+														"values": ["destroyed"]
+													}
+												}
+											}
+										]
+									},
+									"locked": {
+										"kind": "default",
+										"input": {
+											"kind": "boolean"
+										},
+										"defaultValue": false
+									},
+									"open": {
+										"kind": "default",
+										"input": {
+											"kind": "boolean"
+										},
+										"defaultValue": false
+									}
+								}
+							},
+							"name": {
+								"kind": "string",
+								"checks": [
+									{
+										"check": "min_length",
+										"minimum": 1,
+										"when": {
+											"function": true
+										}
+									}
+								]
+							},
+							"presentation": {
+								"kind": "object",
+								"properties": {
+									"listedInRoom": {
+										"kind": "default",
+										"input": {
+											"kind": "boolean"
+										},
+										"defaultValue": false
+									},
+									"listingText": {
+										"kind": "default",
+										"input": {
+											"kind": "string"
+										},
+										"defaultValue": ""
+									}
+								}
+							},
+							"tags": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									}
+								},
+								"defaultValue": []
+							}
+						}
+					}
+				},
+				"defaultValue": []
+			},
+			"metadata": {
+				"kind": "default",
+				"input": {
+					"kind": "object",
+					"properties": {
+						"author": {
+							"kind": "default",
+							"input": {
+								"kind": "string"
+							},
+							"defaultValue": ""
+						},
+						"description": {
+							"kind": "default",
+							"input": {
+								"kind": "string"
+							},
+							"defaultValue": ""
+						},
+						"layers": {
+							"kind": "default",
+							"input": {
+								"kind": "array",
+								"element": {
+									"kind": "object",
+									"properties": {
+										"layer": {
+											"kind": "number"
+										},
+										"name": {
+											"kind": "string"
+										},
+										"rooms": {
+											"kind": "default",
+											"input": {
+												"kind": "array",
+												"element": {
+													"kind": "pipe",
+													"input": {
+														"kind": "union",
+														"options": [
+															{
+																"kind": "custom",
+																"outputFingerprint": "custom"
+															},
+															{
+																"kind": "string",
+																"checks": [
+																	{
+																		"check": "min_length",
+																		"minimum": 1,
+																		"when": {
+																			"function": true
+																		}
+																	}
+																]
+															}
+														]
+													},
+													"outputFingerprint": "transform"
+												}
+											},
+											"defaultValue": []
+										},
+										"viewport": {
+											"kind": "default",
+											"input": {
+												"kind": "object",
+												"properties": {
+													"x": {
+														"kind": "number"
+													},
+													"y": {
+														"kind": "number"
+													},
+													"zoom": {
+														"kind": "number"
+													}
+												}
+											},
+											"defaultValue": {
+												"x": 0,
+												"y": 0,
+												"zoom": 1
+											}
+										}
+									}
+								}
+							},
+							"defaultValue": []
+						},
+						"title": {
+							"kind": "default",
+							"input": {
+								"kind": "string"
+							},
+							"defaultValue": ""
+						},
+						"version": {
+							"kind": "default",
+							"input": {
+								"kind": "string"
+							},
+							"defaultValue": "0.1.0"
+						}
+					}
+				},
+				"defaultValue": {
+					"author": "",
+					"description": "",
+					"layers": [],
+					"title": "",
+					"version": "0.1.0"
+				}
+			},
+			"rooms": {
+				"kind": "default",
+				"input": {
+					"kind": "array",
+					"element": {
+						"kind": "object",
+						"properties": {
+							"aliases": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									}
+								},
+								"defaultValue": []
+							},
+							"description": {
+								"kind": "string"
+							},
+							"flags": {
+								"kind": "default",
+								"input": {
+									"kind": "pipe",
+									"input": {
+										"kind": "record",
+										"key": {
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										},
+										"value": {
+											"kind": "boolean"
+										}
+									},
+									"outputFingerprint": "transform"
+								},
+								"defaultValue": {
+									"active": true,
+									"visited": false
+								}
+							},
+							"id": {
+								"kind": "pipe",
+								"input": {
+									"kind": "union",
+									"options": [
+										{
+											"kind": "custom",
+											"outputFingerprint": "custom"
+										},
+										{
+											"kind": "string",
+											"checks": [
+												{
+													"check": "min_length",
+													"minimum": 1,
+													"when": {
+														"function": true
+													}
+												}
+											]
+										}
+									]
+								},
+								"outputFingerprint": "transform"
+							},
+							"metadata": {
+								"kind": "object",
+								"properties": {
+									"position": {
+										"kind": "object",
+										"properties": {
+											"x": {
+												"kind": "number"
+											},
+											"y": {
+												"kind": "number"
+											}
+										}
+									}
+								}
+							},
+							"name": {
+								"kind": "string",
+								"checks": [
+									{
+										"check": "min_length",
+										"minimum": 1,
+										"when": {
+											"function": true
+										}
+									}
+								]
+							},
+							"shortDescription": {
+								"kind": "default",
+								"input": {
+									"kind": "string"
+								},
+								"defaultValue": ""
+							},
+							"tags": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "string",
+										"checks": [
+											{
+												"check": "min_length",
+												"minimum": 1,
+												"when": {
+													"function": true
+												}
+											}
+										]
+									}
+								},
+								"defaultValue": []
+							}
+						}
+					}
+				},
+				"defaultValue": []
+			},
+			"startRoomId": {
+				"kind": "pipe",
+				"input": {
+					"kind": "object",
+					"properties": {
+						"id": {
+							"kind": "string",
+							"checks": [
+								{
+									"check": "min_length",
+									"minimum": 1,
+									"when": {
+										"function": true
+									}
+								}
+							]
+						},
+						"type": {
+							"kind": "literal",
+							"values": ["room"]
+						}
+					}
+				},
+				"outputFingerprint": "transform"
+			}
+		}
+	}
+}

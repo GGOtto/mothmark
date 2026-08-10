@@ -8,6 +8,7 @@ import {
 	type EffectivePermission,
 	type Permission,
 } from "@/auth/permissions";
+import {parseStoredWorld} from "@/compat/storageCodec";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 
 import {evaluateCleanupEligibility, type CleanupSnapshot} from "./anonymousCleanupRepository";
@@ -279,7 +280,15 @@ export type AdminWorldDetail = AdminWorldSummary & {world: World};
 export async function getAdminWorld(worldId: string): Promise<AdminWorldDetail | undefined> {
 	const row = (await worldSummaryQuery().select("w.world").where("w.id", worldId).first()) as
 		(AdminWorldRow & {world: unknown}) | undefined;
-	return row ? {...mapWorld(row), world: WorldSchema.parse(row.world)} : undefined;
+	return row
+		? {
+				...mapWorld(row),
+				world: parseStoredWorld(row.world, row.schema_version, {
+					id: row.id,
+					storage: "editor",
+				}),
+			}
+		: undefined;
 }
 
 export async function recordAdministratorRead(

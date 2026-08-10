@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {
@@ -27,7 +28,7 @@ const world: WorldRecord = {
 	slug: null,
 	world: initialWorld,
 	revision: 1,
-	schemaVersion: 1,
+	schemaVersion: PERSISTED_SCHEMA_VERSION,
 	ownerUserId: userId,
 	kind: "editor",
 	updatedByUserId: userId,

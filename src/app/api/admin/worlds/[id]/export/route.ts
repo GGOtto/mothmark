@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {getAdminWorld, recordAdministratorRead} from "@/db/dbal/adminRepository";
 
 import {
@@ -25,7 +26,7 @@ export async function GET(request: Request, context: {params: Promise<{id: strin
 				id: world.id,
 				name: world.name,
 				revision: world.revision,
-				schemaVersion: world.schemaVersion,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
 				world: world.world,
 			},
 			{

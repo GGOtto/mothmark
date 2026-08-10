@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import {resolveCurrentActor} from "@/auth/currentActor";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {
@@ -54,7 +55,7 @@ const storedWorld: WorldRecord = {
 	slug: null,
 	world: initialWorld,
 	revision: 1,
-	schemaVersion: 1,
+	schemaVersion: PERSISTED_SCHEMA_VERSION,
 	ownerUserId: userId,
 	kind: "editor",
 	updatedByUserId: userId,
@@ -293,7 +294,7 @@ describe("private world API", () => {
 			editorSlug: "main-world",
 			exportedAt: new Date().toISOString(),
 			format: "mothmark-world",
-			schemaVersion: 1,
+			schemaVersion: PERSISTED_SCHEMA_VERSION,
 			world: initialWorld,
 			worldId,
 			worldName: storedWorld.name,

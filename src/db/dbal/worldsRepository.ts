@@ -3,12 +3,15 @@ import "server-only";
 import {produce} from "immer";
 import type {Knex} from "knex";
 
-import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
+import {createBlankWorldDocument} from "@/data/worlds/createBlankWorld";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
-import {toID} from "@/utils/idUtils";
 import {createUniqueWorldSlug} from "@/utils/worldSlug";
 
 import {getDb} from "./knex";
+
+export {createBlankWorldDocument} from "@/data/worlds/createBlankWorld";
 
 const database = getDb();
 
@@ -21,7 +24,7 @@ export type WorldRecord = {
 	id: string;
 	name: string;
 	slug: string | null;
-	world: World;
+	world: unknown;
 	revision: number;
 	schemaVersion: number;
 	ownerUserId: string | null;
@@ -76,7 +79,11 @@ export function mapWorldRow(row: WorldRow): WorldRecord {
 		id: row.id,
 		name: row.name,
 		slug: row.slug,
-		world: row.world,
+		world: parseStoredWorld(row.world, row.schema_version, {
+			id: row.id,
+			name: row.name,
+			storage: row.kind === "template" ? "template" : "editor",
+		}),
 		revision: row.revision,
 		schemaVersion: row.schema_version,
 		ownerUserId: row.owner_user_id,
@@ -130,7 +137,7 @@ export function createWorldExportDocument(
 		editorSlug: world.editorSlug ?? worldSlugBaseForLegacyExport(world.name),
 		exportedAt: exportedAt.toISOString(),
 		format: "mothmark-world",
-		schemaVersion: world.schemaVersion,
+		schemaVersion: PERSISTED_SCHEMA_VERSION,
 		world: WorldSchema.parse(world.world),
 		worldId: world.id,
 		worldName: world.name,
@@ -141,7 +148,8 @@ export function createWorldExportDocument(
 const worldSlugBaseForLegacyExport = (name: string) => createUniqueWorldSlug(name, []);
 
 export type CreateOwnedWorldInput =
-	{name: string; source: "blank" | "starter"} | {name: string; source: "import"; world: World};
+	| {name: string; source: "blank" | "starter"}
+	| {name: string; source: "import"; world: World; schemaVersion?: number};
 
 export class WorldLimitReachedError extends Error {
 	readonly code = "WORLD_LIMIT_REACHED";
@@ -286,23 +294,6 @@ export async function getOwnedWorldBySlug(
 	return mapWorldRow({...row, last_opened_at: new Date()});
 }
 
-export function createBlankWorldDocument(name = "Untitled world"): World {
-	return produce(initialWorld, (draft) => {
-		draft.metadata.title = name;
-		draft.metadata.author = "";
-		draft.metadata.description = "";
-		draft.metadata.version = "0.1.0";
-		draft.metadata.layers = [];
-		draft.startRoomId = toID("room", "room-1");
-		draft.rooms = [];
-		draft.items = [];
-		draft.connections = [];
-		draft.conditions = [];
-		draft.effects = [];
-		draft.events = [];
-	});
-}
-
 export async function createOwnedWorld(
 	ownerUserId: string,
 	input: CreateOwnedWorldInput,
@@ -313,14 +304,21 @@ export async function createOwnedWorld(
 		await requireAvailableWorldCapacity(transaction, ownerUserId);
 
 		let sourceWorld = input.source === "import" ? input.world : createBlankWorldDocument(input.name);
-		let schemaVersion = 1;
+		if (input.source === "import") {
+			sourceWorld = parseStoredWorld(input.world, input.schemaVersion ?? PERSISTED_SCHEMA_VERSION, {
+				id: "import",
+				storage: "unknown",
+			});
+		}
 		if (input.source === "starter") {
 			const template = await transaction<WorldRow>("worlds")
 				.where({kind: "template", slug: "main"})
 				.first();
 			if (!template) throw new Error("The starter template could not be resolved.");
-			sourceWorld = template.world;
-			schemaVersion = template.schema_version;
+			sourceWorld = parseStoredWorld(template.world, template.schema_version, {
+				id: template.id,
+				storage: "template",
+			});
 		}
 		sourceWorld = produce(sourceWorld, (draft) => {
 			draft.metadata.title = input.name;
@@ -333,7 +331,7 @@ export async function createOwnedWorld(
 				name: input.name,
 				slug: null,
 				world: sourceWorld,
-				schema_version: schemaVersion,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				kind: "editor",
 				owner_user_id: ownerUserId,
 				updated_by_user_id: ownerUserId,
@@ -361,7 +359,10 @@ export async function updateOwnedWorld(
 	const [row] = await query
 		.update({
 			...(input.name !== undefined && {name: input.name}),
-			...(input.world !== undefined && {world: input.world}),
+			...(input.world !== undefined && {
+				world: input.world,
+				schema_version: PERSISTED_SCHEMA_VERSION,
+			}),
 			updated_by_user_id: ownerUserId,
 			revision: database.raw("?? + 1", ["revision"]),
 			updated_at: database.fn.now(),
@@ -401,9 +402,15 @@ export async function duplicateOwnedWorld(
 
 		const suffix = " copy";
 		const name = `${source.name.slice(0, 80 - suffix.length).trimEnd()}${suffix}`;
-		const world = produce(source.world, (draft) => {
-			draft.metadata.title = name;
-		});
+		const world = produce(
+			parseStoredWorld(source.world, source.schema_version, {
+				id: source.id,
+				storage: "editor",
+			}),
+			(draft) => {
+				draft.metadata.title = name;
+			},
+		);
 		const editorSlug = await createOwnedEditorSlug(transaction, ownerUserId, name);
 		const [row] = await transaction<WorldRow>("worlds")
 			.insert({
@@ -411,7 +418,7 @@ export async function duplicateOwnedWorld(
 				name,
 				slug: null,
 				world,
-				schema_version: source.schema_version,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				kind: "editor",
 				owner_user_id: ownerUserId,
 				updated_by_user_id: ownerUserId,
@@ -472,6 +479,6 @@ export async function exportOwnedWorld(
 		name: row.name,
 		revision: row.revision,
 		schemaVersion: row.schema_version,
-		world: row.world,
+		world: parseStoredWorld(row.world, row.schema_version, {id: row.id, storage: "editor"}),
 	});
 }

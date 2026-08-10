@@ -13,6 +13,21 @@
 - Small helpers may wrap `createDefaultFieldObject`, merge targeted overrides, and handle nested overrides when that makes tests clearer.
 - Hand-written values are still appropriate for primitives, narrow non-schema types, and deliberately invalid inputs used to test validation failures.
 
+## Persisted schema compatibility
+
+- Persisted world, game-state, and message schemas must remain backward compatible by default. Read `SCHEMA_COMPATIBILITY_README.md` before changing them.
+- After any persisted schema or nested schema dependency changes, run `pnpm storage:contract` and review `storage-contract.snapshot.json`; never approve the generated diff mechanically.
+- Safe changes add optional fields, neutral defaults, or accepted variants. Removing or renaming fields, narrowing validation, changing meaningful defaults or transforms, or removing variants requires a numbered migration documented in `BREAKING_SCHEMA_MIGRATIONS_README.md`.
+- A breaking change must increment `PERSISTED_SCHEMA_VERSION` exactly once, add and register the adjacent migration, and explicitly migrate or mark unchanged worlds, game states, and messages.
+- Apply a migration only to rows at its exact `fromVersion`, and couple every transform (including `unchanged`) to the adjacent `schema_version` bump. Never edit, reorder, or reuse an applied migration.
+- Treat a migration's transitive output as immutable too. Do not update the pinned v1-to-v2 output digest when shared blank-world or initial-command data changes; preserve the historical output and add the next adjacent migration.
+- Migration inputs are legacy `unknown` JSON. Do not cast them to current schema-inferred types, mutate them, query the database from a transform, or discard unrelated authored data.
+- Keep compatibility transformations in `src/compat/migrations`. Do not add them to components, page loaders, route handlers, or ordinary repositories.
+- Decode retained database and import JSON through `src/compat/storageCodec.ts`; do not parse persisted JSON directly with the current `WorldSchema`, `GameStateSchema`, or `GameMessageSchema`.
+- Add focused legacy-fixture tests for every migration and player-path replay coverage for any change that can affect play. Do not weaken schemas, fixtures, or player-facing expectations to make compatibility checks pass.
+- `pnpm release:migrate` must parse every retained draft, template, publication snapshot, playthrough, transcript, and turn and replay every command before production promotion. Never replace exhaustive validation with sampling.
+- Database migrations run through the gated release workflow described in `DEPLOYMENT_STORAGE_GATE_README.md`, never from `next build` or application startup. Do not force-promote a deployment whose storage compatibility check failed.
+
 ## Working on the engine
 
 - The engine is under rapid construction. Expect schemas, command syntax, state shapes, and runtime behavior to change frequently; verify assumptions against the current code before implementing or testing engine work.

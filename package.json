@@ -10,6 +10,8 @@
 		"db:migrate": "phase run 'DATABASE_URL=\"${DATABASE_MIGRATION_URL:-$DATABASE_URL}\" pnpm migrate'",
 		"db:make": "node --import tsx db/createMigration.ts",
 		"migrate": "node --import tsx db/migrate.ts",
+		"release:migrate": "node --import tsx scripts/releaseMigrate.ts",
+		"storage:contract": "node --import tsx scripts/updateStorageContract.ts",
 		"cleanup:anonymous": "node --conditions=react-server --import tsx scripts/anonymousCleanup.ts",
 		"admin:create": "phase run 'node --conditions=react-server --import tsx scripts/adminCreate.ts'",
 		"admin:recover": "phase run 'node --conditions=react-server --import tsx scripts/adminRecover.ts'",

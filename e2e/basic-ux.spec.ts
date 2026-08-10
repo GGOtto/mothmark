@@ -1,5 +1,6 @@
 import {expect, test, type Page} from "@playwright/test";
 
+import {PERSISTED_SCHEMA_VERSION} from "../src/compat/migrations";
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
 import {createUniqueWorldSlug} from "../src/utils/worldSlug";
 
@@ -17,6 +18,7 @@ type DeterministicWorld = {
 	ownerUserId: string;
 	world: typeof initialWorld;
 	revision: number;
+	schemaVersion: number;
 	updatedAt: string;
 	lastOpenedAt: string;
 	trashPurgeAfter?: string | null;
@@ -61,6 +63,7 @@ async function useDeterministicEditorWorld(
 			ownerUserId,
 			world: initialWorld,
 			revision: 1,
+			schemaVersion: PERSISTED_SCHEMA_VERSION,
 			updatedAt: new Date().toISOString(),
 			lastOpenedAt: new Date().toISOString(),
 		});
@@ -141,6 +144,7 @@ async function useDeterministicEditorWorld(
 				ownerUserId,
 				world: createdWorld,
 				revision: 1,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
 				updatedAt: new Date().toISOString(),
 				lastOpenedAt: new Date().toISOString(),
 			};
@@ -232,7 +236,11 @@ async function useDeterministicEditorWorld(
 				headers: {
 					"content-disposition": `attachment; filename="${stored.editorSlug}.mothmark.json"`,
 				},
-				body: JSON.stringify({format: "mothmark-world", world: stored.world}),
+				body: JSON.stringify({
+					format: "mothmark-world",
+					schemaVersion: PERSISTED_SCHEMA_VERSION,
+					world: stored.world,
+				}),
 			});
 			return;
 		}
@@ -855,7 +863,12 @@ test("a new world can start from an exported JSON file", async ({page}) => {
 		name: "imported-archive.mothmark.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(
-			JSON.stringify({format: "mothmark-world", worldName: "Imported archive", world: importedWorld}),
+			JSON.stringify({
+				format: "mothmark-world",
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
+				worldName: "Imported archive",
+				world: importedWorld,
+			}),
 		),
 	});
 	await expect(dialog.getByRole("textbox", {name: "World name"})).toHaveValue("Imported archive");
@@ -1084,7 +1097,7 @@ test("administrator sign-in and granular controls support deep links and back na
 		name: "Private test world",
 		owner: {accountType: "anonymous", displayName: null, id: userId},
 		revision: 3,
-		schemaVersion: 1,
+		schemaVersion: PERSISTED_SCHEMA_VERSION,
 		trashPurgeAfter: null,
 		updatedAt: now,
 		worldSizeBytes: 4096,

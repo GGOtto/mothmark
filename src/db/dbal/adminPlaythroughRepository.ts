@@ -4,6 +4,7 @@ import {createHash} from "node:crypto";
 
 import type {Knex} from "knex";
 
+import {parseStoredGameState, parseStoredMessages, parseStoredWorld} from "@/compat/storageCodec";
 import {resolveTurn} from "@/engine/player/resolveTurn";
 import {createInitialGameState} from "@/engine/states/createInitialState";
 import {
@@ -12,7 +13,7 @@ import {
 	type GameMessage,
 	type GameState,
 } from "@/schemas/states/gameStateSchemas";
-import {WorldSchema, type World} from "@/schemas/world/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
 import {idValue} from "@/utils/idUtils";
 
 import {HOSTED_ENGINE_VERSION} from "./publicationRepository";
@@ -195,21 +196,38 @@ export async function getAdminPlaythrough(
 	return database.transaction(async (transaction) => {
 		const row = await playthroughSelect(transaction)
 			.join("world_versions as v", "v.id", "pt.world_version_id")
-			.select("v.world", "v.engine_version")
+			.select("v.world", "v.schema_version as world_schema_version", "v.engine_version")
 			.where("pt.id", playthroughId)
 			.first();
 		if (!row) return undefined;
-		const world = WorldSchema.parse(row.world);
+		const world = parseStoredWorld(row.world, Number(row.world_schema_version), {
+			id: String(row.world_version_id),
+			storage: "publication",
+		});
 		const initialState = createInitialGameState(world, world.startRoomId);
-		const currentState = GameStateSchema.parse(row.current_state);
+		const currentState = parseStoredGameState(row.current_state, Number(row.schema_version), {
+			playthroughId,
+			sequence: null,
+			storage: "current",
+			world,
+		});
 		const turnRows = await transaction("playthrough_turns")
 			.where({playthrough_id: playthroughId})
 			.orderBy("sequence", "asc");
 		const turns = turnRows.map((turn) => ({
 			sequence: Number(turn.sequence),
 			command: String(turn.command),
-			outputMessages: GameMessageSchema.array().parse(turn.output_messages),
-			resultingState: GameStateSchema.parse(turn.resulting_state),
+			outputMessages: parseStoredMessages(turn.output_messages, Number(turn.schema_version), {
+				playthroughId,
+				sequence: Number(turn.sequence),
+				storage: "output",
+			}),
+			resultingState: parseStoredGameState(turn.resulting_state, Number(turn.schema_version), {
+				playthroughId,
+				sequence: Number(turn.sequence),
+				storage: "turn",
+				world,
+			}),
 			engineVersion: String(turn.engine_version),
 			acceptedAt: new Date(turn.accepted_at).toISOString(),
 		}));
@@ -364,7 +382,10 @@ async function loadDiagnosticWorld(
 		const world = await transaction("worlds").where({id: row.world_id}).first();
 		if (!world) throw new PlaythroughDiagnosticError("NOT_FOUND", "The editor world does not exist.");
 		return {
-			world: WorldSchema.parse(world.world),
+			world: parseStoredWorld(world.world, Number(world.schema_version), {
+				id: String(world.id),
+				storage: world.kind === "template" ? "template" : "editor",
+			}),
 			engineVersion: HOSTED_ENGINE_VERSION,
 			label: `Current engine against editor revision ${world.revision}`,
 			targetId: String(world.id),
@@ -378,13 +399,16 @@ async function loadDiagnosticWorld(
 				: target.releaseId;
 	const release = await transaction("world_releases as r")
 		.join("world_versions as v", "v.id", "r.world_version_id")
-		.select("r.id", "r.release_number", "v.world", "v.engine_version")
+		.select("r.id", "r.release_number", "v.world", "v.schema_version", "v.engine_version")
 		.where({"r.id": releaseId, "r.publication_id": row.publication_id})
 		.first();
 	if (!release)
 		throw new PlaythroughDiagnosticError("NOT_FOUND", "The comparison release does not exist.");
 	return {
-		world: WorldSchema.parse(release.world),
+		world: parseStoredWorld(release.world, Number(release.schema_version), {
+			id: String(release.id),
+			storage: "publication",
+		}),
 		engineVersion: String(release.engine_version),
 		label:
 			target.type === "original"

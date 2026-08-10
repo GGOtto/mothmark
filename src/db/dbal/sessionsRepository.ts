@@ -2,6 +2,8 @@ import "server-only";
 
 import type {Knex} from "knex";
 
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {
 	EDITOR_SESSION_DURATION_MS,
@@ -206,7 +208,7 @@ async function ensureFirstOwnedWorld(
 				name: initialWorld.metadata.title || "Main world",
 				slug: "main",
 				world: initialWorld,
-				schema_version: 1,
+				schema_version: PERSISTED_SCHEMA_VERSION,
 				kind: "template",
 				owner_user_id: null,
 			})
@@ -222,8 +224,11 @@ async function ensureFirstOwnedWorld(
 			editor_slug: editorSlug,
 			name: template.name,
 			slug: null,
-			world: template.world,
-			schema_version: template.schema_version,
+			world: parseStoredWorld(template.world, template.schema_version, {
+				id: template.id,
+				storage: "template",
+			}),
+			schema_version: PERSISTED_SCHEMA_VERSION,
 			kind: "editor",
 			owner_user_id: userId,
 			updated_by_user_id: userId,

@@ -4,6 +4,8 @@ import {z} from "zod";
 import type {Permission} from "@/auth/permissions";
 import type {CurrentActor} from "@/db/dbal/sessionsRepository";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
+import {parseStoredWorld} from "@/compat/storageCodec";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {WORLD_EDITOR_SLUG_MAX_LENGTH, isWorldEditorSlug} from "@/utils/worldSlug";
 import {RequestBodyError} from "@/auth/requestBody";
@@ -17,10 +19,33 @@ export const WorldLocatorSchema = z
 
 const WorldNameSchema = z.string().trim().min(1).max(80);
 
-export const CreateWorldRequestSchema = z.discriminatedUnion("source", [
+const RawCreateWorldRequestSchema = z.discriminatedUnion("source", [
 	z.object({name: WorldNameSchema, source: z.enum(["starter", "blank"])}),
-	z.object({name: WorldNameSchema, source: z.literal("import"), world: WorldSchema}),
+	z.object({
+		name: WorldNameSchema,
+		source: z.literal("import"),
+		world: z.unknown(),
+		schemaVersion: z.number().int().positive().optional(),
+	}),
 ]);
+
+export const CreateWorldRequestSchema = RawCreateWorldRequestSchema.transform((input, context) => {
+	if (input.source === "import") {
+		try {
+			return {
+				...input,
+				world: parseStoredWorld(input.world, input.schemaVersion ?? PERSISTED_SCHEMA_VERSION, {
+					id: "import",
+					storage: "unknown",
+				}),
+			};
+		} catch {
+			context.addIssue({code: "custom", message: "The imported world is not compatible."});
+			return z.NEVER;
+		}
+	}
+	return input;
+});
 
 export const CreateDefaultWorldRequestSchema = z.object({
 	name: z.string().trim().min(1),
