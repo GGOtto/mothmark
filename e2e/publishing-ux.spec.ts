@@ -168,6 +168,211 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	expect(browserErrors).toEqual([]);
 });
 
+test("the hosted command line stays usable on short, tall, and landscape phones", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	let revision = 3;
+	let commands = "look\nnorth";
+	let messages = Array.from({length: 48}, (_, index) => ({
+		id: `opening-${index}`,
+		type: index % 9 === 0 ? "system" : "room",
+		text:
+			index === 12
+				? `A ${"very".repeat(90)}long catalog mark crosses the page.`
+				: `Archive line ${index + 1}.`,
+	}));
+
+	await page.route("**/api/auth/csrf?audience=play", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/bootstrap", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					publication,
+					playthrough: {
+						id: "playthrough-id",
+						revision,
+						commandCount: 2,
+						commands,
+						status: "active",
+						release: {id: "release-id", number: 1},
+						state: {messages},
+					},
+					newerReleaseAvailable: false,
+				},
+			}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/command", async (route) => {
+		const body = route.request().postDataJSON() as {command: string};
+		commands = `${commands}\n${body.command}`;
+		messages = [
+			...messages,
+			{id: `command-${revision}`, type: "command", text: body.command},
+			{id: `result-${revision}`, type: "system", text: "The narrow aisle remains readable."},
+		];
+		revision += 1;
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					id: "playthrough-id",
+					revision,
+					commandCount: 3,
+					commands,
+					status: "active",
+					release: {id: "release-id", number: 1},
+					state: {messages},
+					outputMessages: messages.slice(-2),
+				},
+			}),
+		});
+	});
+
+	await page.setViewportSize({width: 320, height: 480});
+	await page.goto("/play/quiet-archive");
+	const input = page.getByRole("textbox", {name: "Game command"});
+	await expect(input).toBeEnabled();
+	await expect(input).toHaveAttribute("enterkeyhint", "send");
+	await expect(page.getByRole("log", {name: "Game transcript"})).toHaveAttribute(
+		"aria-live",
+		"polite",
+	);
+
+	for (const viewport of [
+		{width: 320, height: 480},
+		{width: 390, height: 844},
+		{width: 844, height: 390},
+	]) {
+		await page.setViewportSize(viewport);
+		const geometry = await page.evaluate(() => {
+			const header = document.querySelector<HTMLElement>(".hostedPlayerHeader")!;
+			const prompt = document.querySelector<HTMLElement>(".command-input")!;
+			return {
+				headerBottom: header.getBoundingClientRect().bottom,
+				promptBottom: prompt.getBoundingClientRect().bottom,
+				promptTop: prompt.getBoundingClientRect().top,
+				viewportHeight: window.innerHeight,
+				viewportWidth: window.innerWidth,
+				documentWidth: document.documentElement.scrollWidth,
+			};
+		});
+		expect(geometry.promptTop).toBeGreaterThanOrEqual(geometry.headerBottom);
+		expect(geometry.promptBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+	}
+
+	await page.setViewportSize({width: 320, height: 480});
+	await page.getByRole("button", {name: "Previous command"}).click();
+	await expect(input).toHaveValue("north");
+	await expect(input).toBeFocused();
+
+	await page.getByRole("button", {name: "World menu"}).click();
+	const dialog = page.getByRole("dialog", {name: "Quiet archive"});
+	await expect(dialog).toBeVisible();
+	await expect(dialog.getByRole("link", {name: "Return to published worlds"})).toHaveAttribute(
+		"href",
+		"/play",
+	);
+	const sheet = await dialog.boundingBox();
+	expect(sheet).not.toBeNull();
+	expect(sheet!.x).toBeLessThanOrEqual(1);
+	expect(sheet!.x + sheet!.width).toBeGreaterThanOrEqual(319);
+	expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(481);
+	await page.keyboard.press("Escape");
+	await expect(dialog).toHaveCount(0);
+	await expect(page.getByRole("button", {name: "World menu"})).toBeFocused();
+
+	const output = page.locator(".game-player__output");
+	await output.evaluate((element) => {
+		element.scrollTop = 0;
+		element.dispatchEvent(new Event("scroll"));
+	});
+	await input.fill("look along the narrow aisle");
+	await input.press("Enter");
+	await expect(page.getByText("The narrow aisle remains readable.")).toBeVisible();
+	expect(await output.evaluate((element) => element.scrollTop)).toBeLessThan(4);
+	await expect(input).toBeFocused();
+	expect(browserErrors).toEqual([]);
+});
+
+test("a failed hosted command remains in the prompt and can be retried", async ({page}) => {
+	let attempts = 0;
+	await page.route("**/api/auth/csrf?audience=play", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/bootstrap", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					publication,
+					playthrough: {
+						id: "playthrough-id",
+						revision: 1,
+						commandCount: 0,
+						commands: "",
+						status: "active",
+						release: {id: "release-id", number: 1},
+						state: {messages: [{id: "opening", type: "room", text: "A quiet archive waits."}]},
+					},
+					newerReleaseAvailable: false,
+				},
+			}),
+		}),
+	);
+	await page.route("**/api/play/publications/quiet-archive/command", (route) => {
+		attempts += 1;
+		if (attempts === 1) return route.fulfill({status: 503, body: "gateway unavailable"});
+		return route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					id: "playthrough-id",
+					revision: 2,
+					commandCount: 1,
+					commands: "look",
+					status: "active",
+					release: {id: "release-id", number: 1},
+					state: {
+						messages: [
+							{id: "opening", type: "room", text: "A quiet archive waits."},
+							{id: "result", type: "system", text: "The retry succeeds."},
+						],
+					},
+					outputMessages: [{id: "result", type: "system", text: "The retry succeeds."}],
+				},
+			}),
+		});
+	});
+
+	await page.goto("/play/quiet-archive");
+	const input = page.getByRole("textbox", {name: "Game command"});
+	await input.fill("look");
+	await input.press("Enter");
+	await expect(page.locator(".hostedPlayerError")).toHaveText("The command could not be saved.");
+	await expect(input).toHaveValue("look");
+	await expect(input).toBeFocused();
+	await input.press("Enter");
+	await expect(page.getByText("The retry succeeds.")).toBeVisible();
+	await expect(input).toHaveValue("");
+});
+
 test("a returning player sees an update choice and restarts into the current release", async ({
 	page,
 }) => {
@@ -221,10 +426,12 @@ test("a returning player sees an update choice and restarts into the current rel
 			}),
 		}),
 	);
-	page.on("dialog", (dialog) => dialog.accept());
 	await page.goto("/play/quiet-archive");
 	await expect(page.getByText("A new version is available.", {exact: false})).toBeVisible();
 	await page.getByRole("button", {name: "Restart with new version"}).click();
+	const restartDialog = page.getByRole("dialog", {name: "Restart playthrough?"});
+	await expect(restartDialog).toContainText("newer published release");
+	await restartDialog.getByRole("button", {name: "Restart playthrough"}).click();
 	await expect(page.getByText("The new release.")).toBeVisible();
 	await expect(page.getByText("A new version is available.", {exact: false})).toHaveCount(0);
 	expect(browserErrors).toEqual([]);

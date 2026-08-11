@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useRef} from "react";
+import {useEffect, useLayoutEffect, useRef} from "react";
 import type {GameMessage} from "../../schemas/states/gameStateSchemas";
 import "./OutputLog.scss";
 
@@ -25,8 +25,9 @@ export function OutputLog({messages}: OutputLogProps) {
 	const bottomRef = useRef<HTMLDivElement | null>(null);
 	const shouldFollowRef = useRef(true);
 
-	useEffect(() => {
-		if (shouldFollowRef.current) bottomRef.current?.scrollIntoView?.({block: "end"});
+	useLayoutEffect(() => {
+		const scroller = bottomRef.current?.closest<HTMLElement>(".game-player__output");
+		if (shouldFollowRef.current && scroller) scroller.scrollTop = scroller.scrollHeight;
 	}, [messages]);
 
 	useEffect(() => {
@@ -42,7 +43,13 @@ export function OutputLog({messages}: OutputLogProps) {
 	}, []);
 
 	return (
-		<div className="output-log">
+		<div
+			className="output-log"
+			role="log"
+			aria-label="Game transcript"
+			aria-live="polite"
+			aria-relevant="additions text"
+		>
 			{messages.map((message) => (
 				<p key={message.id} className={getMessageClassName(message.type)}>
 					{getPrefix(message.type)}
