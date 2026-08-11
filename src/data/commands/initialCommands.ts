@@ -14,6 +14,7 @@ import putInsideCommandDocument from "./put-inside.json";
 import putOnCommandDocument from "./put-on.json";
 import helpCommandDocument from "./help.json";
 import listExitsCommandDocument from "./list-exits.json";
+import faceCommandDocument from "./face.json";
 
 export const moveCommand = CommandSchema.parse(moveCommandDocument);
 export const lookCommand = CommandSchema.parse(lookCommandDocument);
@@ -30,11 +31,13 @@ export const putInsideCommand = CommandSchema.parse(putInsideCommandDocument);
 export const putOnCommand = CommandSchema.parse(putOnCommandDocument);
 export const helpCommand = CommandSchema.parse(helpCommandDocument);
 export const listExitsCommand = CommandSchema.parse(listExitsCommandDocument);
+export const faceCommand = CommandSchema.parse(faceCommandDocument);
 
 export const rawInitialCommands = [
 	helpCommand,
 	listExitsCommand,
 	moveCommand,
+	faceCommand,
 	lookCommand,
 	takeCommand,
 	dropCommand,

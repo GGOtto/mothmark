@@ -15,6 +15,7 @@ import {
 } from "@/schemas/world/commandSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
+import type {CompassDirection} from "@/schemas/world/directionSchema";
 import {
 	matchBlock,
 	matchNumber,
@@ -239,6 +240,93 @@ describe("matchBlock", () => {
 			value: "n",
 		});
 		expect(matchBlock("east", block)).toEqual(partialMatch);
+	});
+
+	it.each([
+		["n", "n", "s", "w", "e"],
+		["ne", "ne", "sw", "nw", "se"],
+		["e", "e", "w", "n", "s"],
+		["se", "se", "nw", "ne", "sw"],
+		["s", "s", "n", "e", "w"],
+		["sw", "sw", "ne", "se", "nw"],
+		["w", "w", "e", "s", "n"],
+		["nw", "nw", "se", "sw", "ne"],
+	] as const)(
+		"resolves every relative rotation while facing %s",
+		(facing, forward, back, left, right) => {
+			const block = {
+				...createDefaultFieldObject(DirectionBlockSchema),
+				id: toID("command-block", "relative-direction"),
+				role: "direction",
+			};
+
+			for (const [input, expected] of [
+				["forward", forward],
+				["back", back],
+				["left", left],
+				["right", right],
+			] as const) {
+				expectVariable(matchBlock(input, block, {facing}), {
+					blockId: block.id,
+					type: "direction",
+					value: expected,
+				});
+			}
+		},
+	);
+
+	it.each([
+		["forwards", "e"],
+		["forward", "e"],
+		["straight", "e"],
+		["ahead", "e"],
+		["backwards", "w"],
+		["backward", "w"],
+		["back", "w"],
+	] as const)("resolves the relative alias %s", (input, expected) => {
+		const block = {
+			...createDefaultFieldObject(DirectionBlockSchema),
+			id: toID("command-block", "relative-alias"),
+			role: "direction",
+		};
+
+		expectVariable(matchBlock(input, block, {facing: "e"}), {
+			blockId: block.id,
+			type: "direction",
+			value: expected,
+		});
+	});
+
+	it("can disable relative directions without affecting absolute aliases", () => {
+		const block = {
+			...createDefaultFieldObject(DirectionBlockSchema),
+			id: toID("command-block", "absolute-only"),
+			role: "direction",
+			allowRelative: false,
+		};
+
+		expect(matchBlock("left", block, {facing: "s"})).toEqual(partialMatch);
+		expectVariable(matchBlock("west", block, {facing: "s"}), {
+			blockId: block.id,
+			type: "direction",
+			value: "w",
+		});
+	});
+
+	it("applies allowed directions after resolving relative input", () => {
+		const block = {
+			...createDefaultFieldObject(DirectionBlockSchema),
+			id: toID("command-block", "east-only"),
+			role: "direction",
+			allowed: ["e"] as CompassDirection[],
+		};
+
+		expect(matchBlock("left", block, {facing: "n"})).toEqual(partialMatch);
+		expectVariable(matchBlock("right", block, {facing: "n"}), {
+			blockId: block.id,
+			type: "direction",
+			value: "e",
+		});
 	});
 
 	it("resolves relation aliases to the authored relation", () => {

@@ -35,6 +35,20 @@ function historicalV2Commands(commands: unknown[]): unknown[] {
 		delete command.showInHelp;
 		delete command.helpPattern;
 		delete command.helpDescription;
+		if (Array.isArray(command.patterns)) {
+			command.patterns = command.patterns.map((patternValue) => {
+				if (!isRecord(patternValue) || !Array.isArray(patternValue.blocks)) return patternValue;
+				return {
+					...patternValue,
+					blocks: patternValue.blocks.map((blockValue) => {
+						if (!isRecord(blockValue) || blockValue.type !== "direction") return blockValue;
+						const block = {...blockValue};
+						delete block.allowRelative;
+						return block;
+					}),
+				};
+			});
+		}
 		return [command];
 	});
 }

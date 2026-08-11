@@ -1140,6 +1140,35 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 		).toBe(true);
 	}
 
+	await page.setViewportSize({width: 447, height: 844});
+	await page.getByRole("button", {name: "Back to Commands"}).click();
+	await page
+		.getByRole("button", {name: /Travel/})
+		.first()
+		.click();
+	const directionBlock = page.getByRole("button", {name: "Direction <direction>"});
+	await directionBlock.focus();
+	await page.keyboard.press("Enter");
+	const relativeDirectionsLabel = page.getByText("Allow relative directions");
+	await expect(relativeDirectionsLabel).toBeVisible();
+	for (const width of [447, 310]) {
+		await page.setViewportSize({width, height: 844});
+		const measurements = await relativeDirectionsLabel.evaluate((element) => {
+			const field = element.closest<HTMLElement>(".universalField")!;
+			return {
+				field: [field.scrollWidth, field.clientWidth],
+				document: [document.documentElement.scrollWidth, window.innerWidth],
+			};
+		});
+		expect(measurements.document).toEqual([width, width]);
+		expect(measurements.field[0]).toBeLessThanOrEqual(measurements.field[1]);
+	}
+	await page.setViewportSize({width: 447, height: 844});
+	const relativeDirections = page.getByRole("switch", {name: "On"});
+	await expect(relativeDirections).toBeChecked();
+	await relativeDirections.click();
+	await expect(page.getByRole("switch", {name: "Off"})).not.toBeChecked();
+
 	await page.getByRole("button", {name: "World settings"}).click();
 	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
 

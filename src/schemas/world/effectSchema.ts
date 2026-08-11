@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {entityFlagMutationError} from "./entityFlagDefinitions";
-import {DirectionSchema} from "./directionSchema";
+import {CompassDirectionSchema, DirectionSchema} from "./directionSchema";
 
 export const EffectReferenceSchema = editor.object(
 	{
@@ -565,6 +565,11 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 			type: z.literal("player"),
 			operation: z.literal("move-in-direction"),
 			direction: DirectionSchema,
+		}),
+		z.object({
+			type: z.literal("player"),
+			operation: z.literal("set-facing"),
+			direction: CompassDirectionSchema,
 		}),
 	]),
 	{title: "Player Effect", description: "Perform any effect directly on the player."},

@@ -1012,6 +1012,7 @@ describe("resolveRoomEffect", () => {
 		return createGameState({
 			player: {
 				currentRoom: {type: "room", id: "hall"},
+				facing: "n",
 				turns: 0,
 				freezeState: {},
 			},

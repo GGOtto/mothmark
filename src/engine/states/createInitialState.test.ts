@@ -13,6 +13,7 @@ describe("createInitialGameState", () => {
 		const itemState = game.itemStates.find((candidate) => idValue(candidate.id) === "brass-bell")!;
 
 		expect(GameStateSchema.safeParse(game).success).toBe(true);
+		expect(game.player.facing).toBe("n");
 		expect(roomState).toMatchObject({
 			name: room.name,
 			description: room.description,

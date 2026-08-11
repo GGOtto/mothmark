@@ -17,7 +17,8 @@
 					"id": {"type": "command-block", "id": "command-block-2"},
 					"type": "direction",
 					"role": "direction",
-					"allowed": []
+					"allowed": [],
+					"allowRelative": true
 				}
 			]
 		},
@@ -39,7 +40,8 @@
 					"id": {"type": "command-block", "id": "command-block-2"},
 					"type": "direction",
 					"role": "direction",
-					"allowed": []
+					"allowed": [],
+					"allowRelative": true
 				}
 			]
 		},
@@ -66,7 +68,8 @@
 					"id": {"type": "command-block", "id": "command-block-2"},
 					"type": "direction",
 					"role": "direction",
-					"allowed": []
+					"allowed": [],
+					"allowRelative": true
 				}
 			]
 		},
@@ -76,7 +79,8 @@
 					"id": {"type": "command-block", "id": "command-block-2"},
 					"type": "direction",
 					"role": "direction",
-					"allowed": []
+					"allowed": [],
+					"allowRelative": true
 				}
 			]
 		}

@@ -1,4 +1,5 @@
 import type {CommandVariable, GameState} from "@/schemas/states/gameStateSchemas";
+import {DIRECTION_NAMES} from "@/schemas/world/directionSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import type {CommandVariableReference} from "./model";
 import {parseVariableText} from "./syntax";
@@ -27,6 +28,9 @@ export function resolveCommandVariableReference(
 	if (!variable) return undefined;
 	if (reference.projection === "text") return variable.rawText;
 	if (variable.type === "failed") return undefined;
+	if (reference.projection === "name" && variable.type === "direction") {
+		return DIRECTION_NAMES[variable.value];
+	}
 	if (reference.projection === "name" || reference.projection === "description") {
 		return variable.type === "target" ? targetText(game, variable, reference.projection) : undefined;
 	}

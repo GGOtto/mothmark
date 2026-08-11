@@ -63,12 +63,13 @@ function choice(optionCount = 2): CommandBlock {
 	};
 }
 
-function direction(allowed: Array<"n" | "s" | "e"> = []): CommandBlock {
+function direction(allowed: Array<"n" | "s" | "e"> = [], allowRelative = true): CommandBlock {
 	return {
 		...createDefaultFieldObject(DirectionBlockSchema),
 		id: toID("command-block", uniqueId("direction")),
 		role: "direction",
 		allowed,
+		allowRelative,
 	};
 }
 
@@ -245,6 +246,13 @@ describe("getHigherPriorityCommand closed value specificity", () => {
 
 		expectWinner(northOnly, northOrSouth);
 		expectWinner(northOrSouth, anyDirection);
+	});
+
+	it("prefers a direction block that rejects relative directions", () => {
+		const absoluteOnly = command([direction([], false)]);
+		const absoluteAndRelative = command([direction([], true)]);
+
+		expectWinner(absoluteOnly, absoluteAndRelative);
 	});
 
 	it("treats boolean as two semantic values", () => {

@@ -20,6 +20,7 @@ describe("move", () => {
 		const blocked = silentlyMove(world, game, "w");
 
 		expect(idValue(moved.player.currentRoom)).toBe("stockroom");
+		expect(moved.player.facing).toBe("e");
 		expect(moved.messages).toEqual(game.messages);
 		expect(blocked).toBe(game);
 	});
@@ -36,6 +37,7 @@ describe("move", () => {
 		const result = move(world, lockedGame, "e");
 
 		expect(result.player.currentRoom).toEqual(game.player.currentRoom);
+		expect(result.player.facing).toBe("n");
 		expect(result.messages.at(-1)).toMatchObject({
 			type: "system",
 			text: "You can't go that way.",
@@ -60,6 +62,7 @@ describe("move", () => {
 		const result = move(world, unlockedGame, "e");
 
 		expect(idValue(result.player.currentRoom)).toBe("stockroom");
+		expect(result.player.facing).toBe("e");
 		expect(result.messages.at(-1)).toMatchObject({type: "room"});
 	});
 
@@ -76,5 +79,13 @@ describe("move", () => {
 			expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 			expect(result.messages.at(-1)).toMatchObject({type: "system"});
 		}
+	});
+
+	it("preserves horizontal facing for successful contextual movement", () => {
+		const game = createInitialGameState(world, world.startRoomId);
+		const moved = silentlyMove(world, game, "up");
+
+		expect(moved).not.toBe(game);
+		expect(moved.player.facing).toBe("n");
 	});
 });

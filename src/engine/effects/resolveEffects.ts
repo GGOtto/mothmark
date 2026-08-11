@@ -706,6 +706,10 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 			return teleport(world, game, effect.roomId);
 		case "move-in-direction":
 			return silentlyMove(world, game, effect.direction);
+		case "set-facing":
+			return produce(game, (draft) => {
+				draft.player.facing = effect.direction;
+			});
 	}
 }
 
