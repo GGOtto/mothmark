@@ -435,6 +435,22 @@ password and MFA recovery continue to use the operator-only commands documented 
 
 ## Deploying a routine change
 
+For the usual release after the intended commit has been merged and pushed to `main`, run:
+
+```bash
+pnpm release
+```
+
+The command verifies that the worktree is clean and `HEAD` is the current `origin/main`, promotes
+through pull requests, and waits for the exact staging and production workflow runs. After staging
+succeeds, it pauses for the canonical staging smoke test before production. Use `pnpm release
+--staging-only` to stop there and resume with a later normal run. `pnpm release --yes` skips the
+smoke-test prompt and is intended only when staging has already been verified separately.
+
+The script requires an authenticated GitHub CLI (`gh auth login`). It does not receive database or
+hosting credentials and does not run migrations locally; the existing protected GitHub workflows
+continue to own migrations, retained-content validation, builds, and deployments.
+
 ### 1. Start from current `main`
 
 ```bash

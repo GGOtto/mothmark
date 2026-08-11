@@ -9,6 +9,7 @@ import {
 	USERNAME_PATTERN,
 	usernameValidationMessage,
 } from "@/auth/usernames";
+import {readOptionalJson} from "@/auth/apiResponse";
 
 import "./AccountAuthForm.scss";
 
@@ -49,8 +50,8 @@ const content: Record<
 
 async function csrfToken(): Promise<string> {
 	const response = await fetch("/api/auth/csrf");
-	const result = (await response.json()) as {data?: {csrfToken?: string}};
-	if (!response.ok || !result.data?.csrfToken)
+	const result = await readOptionalJson<{data?: {csrfToken?: string}}>(response);
+	if (!response.ok || !result?.data?.csrfToken)
 		throw new Error("Request security could not be prepared.");
 	return result.data.csrfToken;
 }
@@ -61,12 +62,12 @@ async function post(path: string, body: object): Promise<{data?: Record<string, 
 		headers: {"content-type": "application/json", "x-csrf-token": await csrfToken()},
 		body: JSON.stringify(body),
 	});
-	const result = (await response.json()) as {
+	const result = await readOptionalJson<{
 		data?: Record<string, unknown>;
 		error?: {message?: string};
-	};
-	if (!response.ok) throw new Error(result.error?.message || "The request could not be completed.");
-	return result;
+	}>(response);
+	if (!response.ok) throw new Error(result?.error?.message || "The request could not be completed.");
+	return result ?? {};
 }
 
 export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: string}) {
@@ -95,15 +96,15 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				signal: controller.signal,
 			})
 				.then(async (response) => {
-					const body = (await response.json()) as {
+					const body = await readOptionalJson<{
 						data?: {available?: boolean; message?: string; valid?: boolean};
 						error?: {message?: string};
-					};
+					}>(response);
 					if (!response.ok)
-						throw new Error(body.error?.message || "Username availability could not be checked.");
-					if (!body.data?.valid) {
+						throw new Error(body?.error?.message || "Username availability could not be checked.");
+					if (!body?.data?.valid) {
 						setUsernameCheck({
-							message: body.data?.message || "Enter a valid username.",
+							message: body?.data?.message || "Enter a valid username.",
 							status: "invalid",
 						});
 						return;

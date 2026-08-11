@@ -87,11 +87,13 @@ async function createEditorSession(
 	transaction: Knex.Transaction,
 	userId: string,
 	now: Date,
+	clientLabel: string | null,
 ): Promise<EditorSignIn> {
 	const sessionToken = createOpaqueToken();
 	const expiresAt = new Date(now.getTime() + EDITOR_SESSION_DURATION_MS);
 	await transaction("sessions").insert({
 		audience: "editor",
+		client_label: clientLabel,
 		expires_at: expiresAt,
 		token_hash: hashSessionToken(sessionToken),
 		user_id: userId,
@@ -345,6 +347,7 @@ export async function completeRegistration(
 	token: string,
 	now = new Date(),
 	network = "unavailable",
+	clientLabel: string | null = null,
 ): Promise<RegistrationCompletion> {
 	return database.transaction(async (transaction) => {
 		if (!(await recordAuthenticationAttempt(transaction, "verify_email", token, network, now))) {
@@ -414,7 +417,7 @@ export async function completeRegistration(
 				cleanup_after: null,
 				cleanup_reason: null,
 				cleanup_scheduled_at: null,
-				display_name: row.email,
+				display_name: null,
 				registered_at: now,
 				username: row.username,
 				updated_at: now,
@@ -423,7 +426,7 @@ export async function completeRegistration(
 			const [user] = await transaction("users")
 				.insert({
 					account_type: "registered",
-					display_name: row.email,
+					display_name: null,
 					registered_at: now,
 					site_role: "user",
 					status: "active",
@@ -455,13 +458,14 @@ export async function completeRegistration(
 			details: {upgradedAnonymous, userId},
 			event_type: "account_email_verified",
 		});
-		const signIn = await createEditorSession(transaction, userId, now);
+		const signIn = await createEditorSession(transaction, userId, now, clientLabel);
 		await clearAuthenticationAttempts(transaction, "verify_email", token, network);
 		return {status: "verified", upgradedAnonymous, signIn, userId};
 	});
 }
 
 export async function authenticateEditor(input: {
+	clientLabel?: string | null;
 	email: string;
 	network: string;
 	password: string;
@@ -493,7 +497,12 @@ export async function authenticateEditor(input: {
 		await transaction("password_credentials")
 			.where({user_id: identity.user_id})
 			.update({authenticated_at: now});
-		const signIn = await createEditorSession(transaction, identity.user_id, now);
+		const signIn = await createEditorSession(
+			transaction,
+			identity.user_id,
+			now,
+			input.clientLabel ?? null,
+		);
 		await clearAuthenticationAttempts(transaction, "sign_in", input.email, input.network);
 		return {
 			status: "authenticated",
@@ -605,6 +614,13 @@ export async function revokeEditorSession(token: string): Promise<boolean> {
 			.whereNull("revoked_at")
 			.update({revoked_at: database.fn.now()})) > 0
 	);
+}
+
+export async function revokeAllEditorSessions(userId: string): Promise<number> {
+	return database("sessions")
+		.where({audience: "editor", user_id: userId})
+		.whereNull("revoked_at")
+		.update({revoked_at: database.fn.now()});
 }
 
 export async function registeredEmailForUser(userId: string): Promise<string | undefined> {

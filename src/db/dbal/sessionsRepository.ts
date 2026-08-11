@@ -274,6 +274,7 @@ export type AnonymousEditorBootstrap = {
 
 export async function createAnonymousEditorBootstrap(
 	recordOpened = true,
+	clientLabel: string | null = null,
 ): Promise<AnonymousEditorBootstrap> {
 	const sessionToken = createOpaqueToken();
 	const expiresAt = new Date(Date.now() + EDITOR_SESSION_DURATION_MS);
@@ -287,6 +288,7 @@ export async function createAnonymousEditorBootstrap(
 		await transaction("sessions").insert({
 			user_id: user.id,
 			audience: "editor",
+			client_label: clientLabel,
 			token_hash: hashSessionToken(sessionToken),
 			expires_at: expiresAt,
 		});

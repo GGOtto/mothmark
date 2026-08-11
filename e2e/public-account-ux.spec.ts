@@ -122,6 +122,30 @@ test("a rejected account request preserves entered values and restores the submi
 	expect(browserErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
 });
 
+test("sign-in accepts an empty successful response", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/auth/csrf", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			headers: {"set-cookie": "mothmark_editor_csrf=csrf; Path=/; SameSite=Lax"},
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
+		}),
+	);
+	await page.route("**/api/auth/sign-in", (route) => route.fulfill({status: 204}));
+	await page.route("**/worlds", (route) =>
+		route.fulfill({status: 200, contentType: "text/html", body: "<main>World library</main>"}),
+	);
+
+	await page.goto("/sign-in");
+	await page.getByLabel("Email").fill("author@example.com");
+	await page.getByLabel("Password").fill("a durable password");
+	await page.getByRole("button", {name: "Sign in"}).click();
+
+	await expect(page).toHaveURL(/\/worlds$/);
+	expect(browserErrors).toEqual([]);
+});
+
 test("registration explains invalid and unavailable usernames while typing", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const checked: string[] = [];
@@ -164,35 +188,104 @@ test("registration explains invalid and unavailable usernames while typing", asy
 	expect(browserErrors).toEqual([]);
 });
 
-test("a registered account shows its public username without an edit control", async ({page}) => {
+test("a registered account keeps the username fixed and exposes public profile fields", async ({
+	page,
+}) => {
 	const browserErrors = collectBrowserErrors(page);
-	await page.route("**/api/account", (route) =>
+	let updatedProfile: Record<string, unknown> | undefined;
+	const account = {
+		accountType: "registered",
+		cleanupAfter: null,
+		cleanupWasRecentlyCancelled: false,
+		createdAt: "2026-08-09T12:00:00.000Z",
+		displayName: null,
+		email: "author@example.com",
+		profileBio: "",
+		profileWebsite: null,
+		retentionClass: "authored_editor",
+		sessions: [
+			{
+				clientLabel: "Safari on macOS",
+				createdAt: "2026-08-09T12:00:00.000Z",
+				expiresAt: "2026-09-09T12:00:00.000Z",
+				id: "session-id",
+				lastSeenAt: "2026-08-11T12:30:00.000Z",
+			},
+		],
+		siteRole: "user",
+		usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
+		userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+		username: "archivekeeper",
+	};
+	await page.route("**/api/auth/csrf", (route) =>
 		route.fulfill({
 			status: 200,
 			contentType: "application/json",
-			body: JSON.stringify({
-				data: {
-					accountType: "registered",
-					cleanupAfter: null,
-					cleanupWasRecentlyCancelled: false,
-					createdAt: "2026-08-09T12:00:00.000Z",
-					email: "author@example.com",
-					retentionClass: "authored_editor",
-					sessions: [],
-					siteRole: "user",
-					usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
-					userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
-					username: "archivekeeper",
-				},
-			}),
+			headers: {"set-cookie": "mothmark_editor_csrf=csrf; Path=/; SameSite=Lax"},
+			body: JSON.stringify({data: {csrfToken: "csrf"}}),
 		}),
 	);
+	await page.route("**/api/account", async (route) => {
+		if (route.request().method() === "PATCH") {
+			updatedProfile = route.request().postDataJSON() as Record<string, unknown>;
+			return route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({
+					data: {
+						...account,
+						displayName: updatedProfile.displayName,
+						profileBio: updatedProfile.bio,
+						profileWebsite: updatedProfile.website,
+					},
+				}),
+			});
+		}
+		return route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: account}),
+		});
+	});
 
 	await page.goto("/account");
-	await expect(page.getByText("Username:", {exact: true}).locator("..")).toContainText(
+	await expect(page.getByText("Username", {exact: true}).locator("..")).toContainText(
 		"archivekeeper",
 	);
 	await expect(page.getByLabel("Username")).toHaveCount(0);
+	await expect(page.getByLabel("Display name")).toHaveValue("");
+	await expect(
+		page.getByText("Leave this blank to display your username, archivekeeper."),
+	).toBeVisible();
+	await expect(page.getByRole("link", {name: "View public profile"})).toHaveAttribute(
+		"href",
+		"/users/archivekeeper",
+	);
+	await expect(page.getByText("Safari on macOS")).toBeVisible();
+	await expect(page.getByRole("button", {name: "Sign out all devices"})).toBeEnabled();
+	await expect(page.getByText("This signs out this browser too.")).toBeVisible();
+	const exportActionBounds = await page.getByRole("link", {name: "Export all data"}).boundingBox();
+	const worldsActionBounds = await page
+		.getByRole("link", {name: "Return to your worlds"})
+		.boundingBox();
+	expect(exportActionBounds?.height).toBeLessThanOrEqual(32);
+	expect(worldsActionBounds?.height).toBeLessThanOrEqual(32);
+	await page.getByLabel("Display name").fill("Archive Keeper");
+	await page.getByLabel("Bio").fill("Makes quiet worlds.");
+	await page.getByLabel("Website").fill("github.com/archivekeeper");
+	await page.getByRole("button", {name: "Save profile"}).click();
+	await expect(page.getByText("Public profile saved.")).toBeVisible();
+	expect(updatedProfile).toEqual({
+		bio: "Makes quiet worlds.",
+		displayName: "Archive Keeper",
+		website: "github.com/archivekeeper",
+	});
+	await page.setViewportSize({width: 310, height: 844});
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
 	expect(browserErrors).toEqual([]);
 });
 

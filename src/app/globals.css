@@ -84,12 +84,12 @@
 	--color-text-muted: #5c5347;
 	--color-text-faint: #756a5a;
 
-	--color-frame: #090909;
-	--color-frame-raised: #161616;
-	--color-frame-strong: #242424;
-	--color-frame-border: #414141;
-	--color-frame-text: #f7f7f5;
-	--color-frame-muted: #c5c5c1;
+	--color-frame: #ede4d5;
+	--color-frame-raised: #f6eee0;
+	--color-frame-strong: #ddd0bd;
+	--color-frame-border: #b7a992;
+	--color-frame-text: #211e19;
+	--color-frame-muted: #62594d;
 
 	--color-terminal: #f3eee5;
 	--color-terminal-raised: #e5ddd1;

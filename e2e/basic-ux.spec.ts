@@ -448,6 +448,12 @@ test("the home page example plays through the real command path", async ({page})
 	await page.goto("/");
 	const exampleMap = page.getByLabel("Pan and zoom map of the Corner Shop example world");
 	await expect(exampleMap).toBeVisible();
+	await expect
+		.poll(() => exampleMap.evaluate((map) => getComputedStyle(map).backgroundColor))
+		.toBe("rgb(167, 156, 134)");
+	await expect
+		.poll(() => exampleMap.evaluate((map) => getComputedStyle(map).colorScheme))
+		.toBe("light");
 	const mapViewport = exampleMap.locator(".mapViewport");
 	const initialMapTransform = await mapViewport.getAttribute("style");
 	await exampleMap.hover();
@@ -889,6 +895,11 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			name: `${initialWorld.metadata.layers.length} map layers`,
 		}),
 	).toBeVisible();
+	const layerPreview = initialWorldLink.locator("[data-layer-preview]").first();
+	await expect(layerPreview).toBeVisible();
+	await expect
+		.poll(() => layerPreview.evaluate((map) => getComputedStyle(map).backgroundColor))
+		.toBe("rgb(167, 156, 134)");
 	await initialWorldLink.hover();
 	await expect(initialWorldLink.locator(".worldFolioSheet--active .worldFolioLabel")).toHaveCSS(
 		"opacity",
@@ -1192,6 +1203,11 @@ test("a stored theme applies without adding another signed-out header control", 
 	await page.goto("/");
 
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+	await expect
+		.poll(() =>
+			page.locator(".header").evaluate((header) => getComputedStyle(header).backgroundColor),
+		)
+		.toBe("rgb(237, 228, 213)");
 	await expect(page.getByRole("button", {name: /Switch to (dark|light) theme/})).toHaveCount(0);
 	expect(browserErrors).toEqual([]);
 });
