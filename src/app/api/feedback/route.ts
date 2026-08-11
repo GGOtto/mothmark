@@ -12,6 +12,7 @@ import {
 	listActiveAdministratorEmails,
 	markCustomerFeedbackReceipt,
 	markFeedbackNotification,
+	recordFeedbackAdminSentMessages,
 } from "@/db/dbal/feedbackRepository";
 import {
 	feedbackEmailIsConfigured,
@@ -132,6 +133,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 	}
 
 	let customerReceiptDelivered = false;
+	let receiptMessageId: string | undefined;
 	let receiptEmailId: string | undefined;
 	try {
 		const receipt = await sendCustomerFeedbackReceipt({
@@ -142,6 +144,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 			to: replyEmail,
 		});
 		receiptEmailId = receipt.resendEmailId;
+		receiptMessageId = receipt.messageId;
 		customerReceiptDelivered = true;
 	} catch {
 		console.error("Feedback customer receipt could not be delivered.");
@@ -149,6 +152,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 	try {
 		await markCustomerFeedbackReceipt({
 			feedbackId: feedback.id,
+			messageId: receiptMessageId,
 			resendEmailId: receiptEmailId,
 			status: customerReceiptDelivered ? "delivered" : "failed",
 		});
@@ -158,7 +162,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 	let notificationDelivered = false;
 	try {
-		await sendFeedbackEmail({
+		const notifications = await sendFeedbackEmail({
 			accountEmail: account?.email,
 			accountType: account?.accountType,
 			category: input.category,
@@ -170,6 +174,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 			subject: feedback.subject,
 			username: account?.username,
 		});
+		await recordFeedbackAdminSentMessages(
+			notifications.map((notification) => ({
+				...notification,
+				feedbackId: feedback.id,
+				messageKind: "admin_notification" as const,
+			})),
+		);
 		notificationDelivered = true;
 	} catch {
 		console.error("Feedback administrator notification could not be delivered.");

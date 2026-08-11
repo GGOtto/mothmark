@@ -4,14 +4,16 @@ import {
 	claimResendWebhookEvent,
 	createInboundFeedbackReply,
 	finishResendWebhookEvent,
+	getFeedbackAdminEmailThreads,
 	listActiveAdministratorEmails,
 	markFeedbackReplyAdminNotification,
+	recordFeedbackAdminSentMessages,
 	recordResendSentMessage,
 	setFeedbackReplyDelivery,
 } from "@/db/dbal/feedbackRepository";
 import {
 	retrieveReceivedFeedbackEmail,
-	sendCustomerReplyAdminNotifications,
+	sendFeedbackAdminConversationCopies,
 	sendFeedbackReplyEmail,
 } from "@/feedback/feedbackEmail";
 
@@ -29,8 +31,10 @@ jest.mock("@/db/dbal/feedbackRepository", () => ({
 	claimResendWebhookEvent: jest.fn(),
 	createInboundFeedbackReply: jest.fn(),
 	finishResendWebhookEvent: jest.fn(),
+	getFeedbackAdminEmailThreads: jest.fn(),
 	listActiveAdministratorEmails: jest.fn(),
 	markFeedbackReplyAdminNotification: jest.fn(),
+	recordFeedbackAdminSentMessages: jest.fn(),
 	recordResendSentMessage: jest.fn(),
 	setFeedbackReplyDelivery: jest.fn(),
 }));
@@ -42,7 +46,7 @@ jest.mock("@/feedback/feedbackEmail", () => ({
 		return (match?.[1] ?? value).trim().toLowerCase();
 	}),
 	retrieveReceivedFeedbackEmail: jest.fn(),
-	sendCustomerReplyAdminNotifications: jest.fn(),
+	sendFeedbackAdminConversationCopies: jest.fn(),
 	sendFeedbackReplyEmail: jest.fn(),
 }));
 
@@ -90,9 +94,25 @@ describe("Resend feedback webhook", () => {
 			.mocked(listActiveAdministratorEmails)
 			.mockResolvedValue(["admin@example.test", "second-admin@example.test"]);
 		jest.mocked(markFeedbackReplyAdminNotification).mockResolvedValue(undefined);
+		jest.mocked(recordFeedbackAdminSentMessages).mockResolvedValue(undefined);
 		jest.mocked(setFeedbackReplyDelivery).mockResolvedValue(undefined);
-		jest.mocked(sendCustomerReplyAdminNotifications).mockResolvedValue(undefined);
-		jest.mocked(sendFeedbackReplyEmail).mockResolvedValue({resendEmailId: "relayed-email-id"});
+		jest.mocked(getFeedbackAdminEmailThreads).mockImplementation(async (_feedbackId, recipients) =>
+			recipients.map((recipient) => ({
+				messageIds: [`<${recipient}-notification>`],
+				recipient,
+			})),
+		);
+		jest.mocked(sendFeedbackAdminConversationCopies).mockImplementation(async ({recipients}) =>
+			recipients.map(({recipient}) => ({
+				messageId: `<${recipient}-copy>`,
+				recipient,
+				resendEmailId: `${recipient}-copy-id`,
+			})),
+		);
+		jest.mocked(sendFeedbackReplyEmail).mockResolvedValue({
+			messageId: "<relayed@example.test>",
+			resendEmailId: "relayed-email-id",
+		});
 	});
 
 	afterAll(() => {
@@ -139,12 +159,21 @@ describe("Resend feedback webhook", () => {
 			resendEmailId: "received-email-id",
 			senderEmail: "reader@example.test",
 		});
-		expect(sendCustomerReplyAdminNotifications).toHaveBeenCalledWith({
+		expect(sendFeedbackAdminConversationCopies).toHaveBeenCalledWith({
 			adminUrl: `https://mothmark.test/admin/feedback/${feedbackId}`,
 			feedbackId,
+			label: "Customer reply",
 			message: "Here is more detail.",
-			messageId: "<received@example.test>",
-			recipients: ["admin@example.test", "second-admin@example.test"],
+			recipients: [
+				{
+					messageIds: ["<admin@example.test-notification>"],
+					recipient: "admin@example.test",
+				},
+				{
+					messageIds: ["<second-admin@example.test-notification>"],
+					recipient: "second-admin@example.test",
+				},
+			],
 			replyId,
 			subject: "Mothmark support: idea",
 		});
@@ -152,6 +181,20 @@ describe("Resend feedback webhook", () => {
 			replyId,
 			status: "delivered",
 		});
+		expect(recordFeedbackAdminSentMessages).toHaveBeenCalledWith([
+			expect.objectContaining({
+				feedbackId,
+				messageKind: "admin_conversation_copy",
+				recipient: "admin@example.test",
+				replyId,
+			}),
+			expect.objectContaining({
+				feedbackId,
+				messageKind: "admin_conversation_copy",
+				recipient: "second-admin@example.test",
+				replyId,
+			}),
+		]);
 	});
 
 	it("relays an administrator inbox reply to the customer from support", async () => {
@@ -181,7 +224,6 @@ describe("Resend feedback webhook", () => {
 
 		expect(response.status).toBe(200);
 		expect(sendFeedbackReplyEmail).toHaveBeenCalledWith({
-			adminRecipients: ["admin@example.test", "second-admin@example.test"],
 			feedbackId,
 			message: "Thanks for the extra detail.",
 			messageIds: ["<receipt@example.test>"],
@@ -189,7 +231,25 @@ describe("Resend feedback webhook", () => {
 			subject: "Mothmark support: idea",
 			to: "reader@example.test",
 		});
+		expect(getFeedbackAdminEmailThreads).toHaveBeenCalledWith(feedbackId, [
+			"second-admin@example.test",
+		]);
+		expect(sendFeedbackAdminConversationCopies).toHaveBeenCalledWith({
+			adminUrl: `https://mothmark.test/admin/feedback/${feedbackId}`,
+			feedbackId,
+			label: "Administrator reply",
+			message: "Thanks for the extra detail.",
+			recipients: [
+				{
+					messageIds: ["<second-admin@example.test-notification>"],
+					recipient: "second-admin@example.test",
+				},
+			],
+			replyId,
+			subject: "Mothmark support: idea",
+		});
 		expect(setFeedbackReplyDelivery).toHaveBeenCalledWith({
+			messageId: "<relayed@example.test>",
 			replyId,
 			resendEmailId: "relayed-email-id",
 			status: "delivered",
@@ -206,6 +266,7 @@ describe("Resend feedback webhook", () => {
 						feedback_id: feedbackId,
 						message_kind: "customer_receipt",
 					},
+					to: ["admin@example.test"],
 				},
 				type: "email.sent",
 			}),
@@ -216,8 +277,36 @@ describe("Resend feedback webhook", () => {
 			feedbackId,
 			messageId: "<sent@example.test>",
 			messageKind: "customer_receipt",
+			recipients: ["admin@example.test"],
 			replyId: undefined,
 			resendEmailId: "sent-email-id",
+		});
+	});
+
+	it("records each administrator's notification Message-ID from the sent webhook fallback", async () => {
+		const response = await POST(
+			webhookRequest({
+				data: {
+					email_id: "admin-notification-email-id",
+					message_id: "<admin-notification@example.test>",
+					tags: {
+						feedback_id: feedbackId,
+						message_kind: "admin_notification",
+					},
+					to: ["Admin <admin@example.test>"],
+				},
+				type: "email.sent",
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		expect(recordResendSentMessage).toHaveBeenCalledWith({
+			feedbackId,
+			messageId: "<admin-notification@example.test>",
+			messageKind: "admin_notification",
+			recipients: ["Admin <admin@example.test>"],
+			replyId: undefined,
+			resendEmailId: "admin-notification-email-id",
 		});
 	});
 

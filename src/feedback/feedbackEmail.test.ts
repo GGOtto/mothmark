@@ -5,6 +5,7 @@ import {
 	feedbackReceivingIsConfigured,
 	retrieveReceivedFeedbackEmail,
 	sendCustomerFeedbackReceipt,
+	sendFeedbackAdminConversationCopies,
 	sendFeedbackEmail,
 	sendFeedbackReplyEmail,
 } from "./feedbackEmail";
@@ -24,6 +25,20 @@ describe("feedback email", () => {
 		process.env = originalEnvironment;
 	});
 
+	const mockResendDelivery = () => {
+		let sequence = 0;
+		return jest.spyOn(global, "fetch").mockImplementation(async (input, init) => {
+			if (init?.method === "POST") {
+				sequence += 1;
+				return new Response(JSON.stringify({id: `sent-email-${sequence}`}), {status: 200});
+			}
+			const resendEmailId = String(input).split("/").at(-1);
+			return new Response(JSON.stringify({message_id: `<${resendEmailId}@resend.test>`}), {
+				status: 200,
+			});
+		});
+	};
+
 	it("uses one full-access key and separately requires webhook verification", () => {
 		expect(feedbackEmailIsConfigured()).toBe(true);
 		expect(feedbackReceivingIsConfigured()).toBe(true);
@@ -36,9 +51,7 @@ describe("feedback email", () => {
 	});
 
 	it("sends the customer a receipt in the support conversation", async () => {
-		const request = jest
-			.spyOn(global, "fetch")
-			.mockResolvedValue(new Response(JSON.stringify({id: "receipt-email-id"}), {status: 200}));
+		const request = mockResendDelivery();
 
 		await expect(
 			sendCustomerFeedbackReceipt({
@@ -48,7 +61,10 @@ describe("feedback email", () => {
 				subject: "Mothmark support: idea",
 				to: "reader@example.test",
 			}),
-		).resolves.toEqual({resendEmailId: "receipt-email-id"});
+		).resolves.toEqual({
+			messageId: "<sent-email-1@resend.test>",
+			resendEmailId: "sent-email-1",
+		});
 		const options = request.mock.calls[0][1] as RequestInit;
 		expect(JSON.parse(String(options.body))).toMatchObject({
 			from: "Mothmark Support <support@mothmark.app>",
@@ -59,7 +75,7 @@ describe("feedback email", () => {
 	});
 
 	it("sends the message and account context separately to every administrator", async () => {
-		const request = jest.spyOn(global, "fetch").mockResolvedValue(new Response(null, {status: 202}));
+		const request = mockResendDelivery();
 
 		await sendFeedbackEmail({
 			accountEmail: "author@example.test",
@@ -74,10 +90,10 @@ describe("feedback email", () => {
 			username: "archivekeeper",
 		});
 
-		expect(request).toHaveBeenCalledTimes(2);
-		const bodies = request.mock.calls.map(([, options]) =>
-			JSON.parse(String((options as RequestInit).body)),
-		);
+		expect(request).toHaveBeenCalledTimes(4);
+		const bodies = request.mock.calls
+			.filter(([, options]) => (options as RequestInit | undefined)?.method === "POST")
+			.map(([, options]) => JSON.parse(String((options as RequestInit).body)));
 		expect(bodies.map(({to}) => to)).toEqual([
 			["first-admin@example.test"],
 			["second-admin@example.test"],
@@ -93,14 +109,11 @@ describe("feedback email", () => {
 		}
 	});
 
-	it("delivers a threaded support reply to the customer and every admin inbox", async () => {
-		const request = jest
-			.spyOn(global, "fetch")
-			.mockResolvedValue(new Response(JSON.stringify({id: "reply-email-id"}), {status: 200}));
+	it("delivers the support reply only to the customer using the customer thread", async () => {
+		const request = mockResendDelivery();
 
 		await expect(
 			sendFeedbackReplyEmail({
-				adminRecipients: ["first-admin@example.test", "second-admin@example.test"],
 				feedbackId,
 				message: "Thanks. We have added this to the plan.",
 				messageIds: ["<receipt@example.test>", "<customer-reply@example.test>"],
@@ -108,7 +121,10 @@ describe("feedback email", () => {
 				subject: "Mothmark support: idea",
 				to: "reader@example.test",
 			}),
-		).resolves.toEqual({resendEmailId: "reply-email-id"});
+		).resolves.toEqual({
+			messageId: "<sent-email-1@resend.test>",
+			resendEmailId: "sent-email-1",
+		});
 
 		const options = request.mock.calls[0][1] as RequestInit;
 		expect(options.headers).toMatchObject({
@@ -116,7 +132,6 @@ describe("feedback email", () => {
 			"idempotency-key": "feedback-reply/8ebc3f3f-b9ca-4f75-898f-e196bae50be4",
 		});
 		expect(JSON.parse(String(options.body))).toMatchObject({
-			bcc: ["first-admin@example.test", "second-admin@example.test"],
 			from: "Mothmark Support <support@mothmark.app>",
 			headers: {
 				"In-Reply-To": "<customer-reply@example.test>",
@@ -126,6 +141,61 @@ describe("feedback email", () => {
 			subject: "Re: Mothmark support: idea",
 			to: ["reader@example.test"],
 		});
+		expect(JSON.parse(String(options.body))).not.toHaveProperty("bcc");
+	});
+
+	it("threads individualized conversation copies into each administrator's mailbox", async () => {
+		const request = mockResendDelivery();
+
+		await expect(
+			sendFeedbackAdminConversationCopies({
+				adminUrl: `https://mothmark.test/admin/feedback/${feedbackId}`,
+				feedbackId,
+				label: "Customer reply",
+				message: "One more detail.",
+				recipients: [
+					{messageIds: ["<first-notification@example.test>"], recipient: "first@example.test"},
+					{
+						messageIds: ["<second-notification@example.test>", "<second-copy@example.test>"],
+						recipient: "second@example.test",
+					},
+				],
+				replyId: "8ebc3f3f-b9ca-4f75-898f-e196bae50be4",
+				subject: "Mothmark support: idea [3e816c4d]",
+			}),
+		).resolves.toEqual([
+			{
+				messageId: "<sent-email-1@resend.test>",
+				recipient: "first@example.test",
+				resendEmailId: "sent-email-1",
+			},
+			{
+				messageId: "<sent-email-2@resend.test>",
+				recipient: "second@example.test",
+				resendEmailId: "sent-email-2",
+			},
+		]);
+
+		const bodies = request.mock.calls
+			.filter(([, options]) => (options as RequestInit | undefined)?.method === "POST")
+			.map(([, options]) => JSON.parse(String((options as RequestInit).body)));
+		expect(bodies).toEqual([
+			expect.objectContaining({
+				headers: {
+					"In-Reply-To": "<first-notification@example.test>",
+					References: "<first-notification@example.test>",
+				},
+				subject: "Re: Mothmark support: idea [3e816c4d]",
+				to: ["first@example.test"],
+			}),
+			expect.objectContaining({
+				headers: {
+					"In-Reply-To": "<second-copy@example.test>",
+					References: "<second-notification@example.test> <second-copy@example.test>",
+				},
+				to: ["second@example.test"],
+			}),
+		]);
 	});
 
 	it("uses the same full-access key when retrieving a received message", async () => {
