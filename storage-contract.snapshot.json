@@ -759,6 +759,14 @@
 							"kind": "string"
 						}
 					},
+					"facing": {
+						"kind": "default",
+						"input": {
+							"kind": "enum",
+							"entries": ["e", "n", "ne", "nw", "s", "se", "sw", "w"]
+						},
+						"defaultValue": "n"
+					},
 					"freezeState": {
 						"kind": "object",
 						"properties": {
@@ -1428,7 +1436,7 @@
 			}
 		}
 	},
-	"schemaSourceDigest": "aed136cab11e1c5d4f92ee6f484cc0aec6fbf9bbc5f7c2fbc75e3a1a3ed42cb1",
+	"schemaSourceDigest": "0d1cbcdf40af14ec43fca19dbed2ca401dd06670995e128c0c50f02887024206",
 	"world": {
 		"kind": "object",
 		"checks": [
@@ -3884,6 +3892,13 @@
 																			}
 																		},
 																		"defaultValue": []
+																	},
+																	"allowRelative": {
+																		"kind": "default",
+																		"input": {
+																			"kind": "boolean"
+																		},
+																		"defaultValue": true
 																	},
 																	"id": {
 																		"kind": "pipe",

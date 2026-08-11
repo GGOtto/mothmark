@@ -16,6 +16,8 @@ export type GameStateMigrationContext = {
 	sequence: number | null;
 	storage: "current" | "turn" | "unknown";
 	world?: World;
+	command?: string;
+	previousState?: unknown;
 };
 
 export type MessageMigrationContext = {

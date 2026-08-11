@@ -111,5 +111,5 @@ export function resolveTargetMatchContext(world: World, game: GameState): MatchB
 		});
 	}
 
-	return {targets};
+	return {targets, facing: game.player.facing};
 }

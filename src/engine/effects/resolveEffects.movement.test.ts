@@ -42,4 +42,19 @@ describe("movement-related effects", () => {
 		expect(moved.messages).toEqual(game.messages);
 		expect(blocked).toBe(game);
 	});
+
+	it("sets facing without moving the player", () => {
+		const {world, game} = createPlayerTestScenario("navigation");
+		const effect = PlayerEffectSchema.parse({
+			...createDefaultFieldObject(PlayerEffectSchema),
+			operation: "set-facing",
+			direction: "sw",
+		});
+
+		const result = resolvePlayerEffect(world, game, effect);
+
+		expect(result.player.currentRoom).toEqual(game.player.currentRoom);
+		expect(result.player.facing).toBe("sw");
+		expect(result.messages).toEqual(game.messages);
+	});
 });

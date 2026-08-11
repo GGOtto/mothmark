@@ -55,6 +55,19 @@ describe("command variables", () => {
 	});
 });
 
+describe("player facing", () => {
+	it("uses north as the neutral default for retained game state", () => {
+		const game = createDefaultFieldObject(GameStateSchema);
+		const retained = {
+			...game,
+			player: {...game.player, currentRoom: toID("room", "foyer")},
+		} as unknown as Record<string, unknown>;
+		delete (retained.player as Record<string, unknown>).facing;
+
+		expect(GameStateSchema.parse(retained).player.facing).toBe("n");
+	});
+});
+
 describe("entity state snapshots", () => {
 	it("requires all player-facing room fields", () => {
 		expect(

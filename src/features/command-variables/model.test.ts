@@ -1,6 +1,7 @@
 import {
 	BooleanBlockSchema,
 	CommandSchema,
+	DirectionBlockSchema,
 	NumberBlockSchema,
 	PatternSchema,
 	PhraseBlockSchema,
@@ -52,6 +53,11 @@ function commandCatalog(failedTarget = false) {
 						id: toID("command-block", "number-block"),
 						role: "amount",
 					},
+					{
+						...createDefaultFieldObject(DirectionBlockSchema),
+						id: toID("command-block", "direction-block"),
+						role: "direction",
+					},
 				],
 			},
 		],
@@ -83,6 +89,18 @@ describe("command variable catalog", () => {
 				}),
 			);
 		}
+	});
+
+	it("exposes canonical names and entered text for direction blocks", () => {
+		const directionOptions = commandCatalog().options.filter(
+			(option) => option.blockId.id === "direction-block",
+		);
+
+		expect(directionOptions.map((option) => [option.projection, option.valueType])).toEqual([
+			[undefined, "direction"],
+			["name", "string"],
+			["text", "string"],
+		]);
 	});
 
 	it("only exposes entered text for the block whose fallback is running", () => {

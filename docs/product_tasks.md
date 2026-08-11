@@ -635,7 +635,7 @@ the full task definitions but do not imply a different sequence.
 
 ## Workstream — Commands, engine behavior, and NPCs
 
-- [ ] **G01 — Add player-relative directions and facing state.**
+- [x] **G01 — Add player-relative directions and facing state.**
 
   **Outcome:** Players may use `forward`, `back`, `left`, and `right` relative to the direction they
   last faced while cardinal/ordinal short commands remain canonical.
@@ -643,11 +643,15 @@ the full task definitions but do not imply a different sequence.
   **Scope and acceptance:**
 
   - Add typed game-state facing with a neutral backward-compatible default of north.
-  - Add `face <direction>` for supported cardinal/ordinal directions; facing does not move the player.
-  - Resolve `forward`/`straight`, `back`/`backward`, `left`, and `right` from current facing. Define
-    diagonal rotation explicitly and test every supported facing.
-  - Successful absolute movement updates facing to that direction. Failed or unresolved movement and
-    `look` do not silently change it.
+  - Add `face`/`turn <direction>` with the Travel command's optional `to`/`to the` pattern shapes;
+    facing does not move the player and accepts absolute or relative compass directions.
+  - Resolve `forwards`/`forward`/`straight`/`ahead`, `backwards`/`backward`/`back`, `left`, and
+    `right` from current facing inside the generic direction block. Define diagonal rotation
+    explicitly and test every supported facing.
+  - Let authors disable relative matching on a direction block. Absolute-only blocks outrank otherwise
+    equivalent relative-enabled blocks during command selection.
+  - Successful compass movement updates facing to that direction. Failed or unresolved movement and
+    `look` do not silently change it; `up`, `down`, `in`, and `out` preserve horizontal facing.
   - Preserve `n`, `s`, `e`, `w`, and other existing canonical direction aliases and saved commands.
   - If game-state persistence changes, complete the storage contract/migration work and replay legacy
     playthroughs.

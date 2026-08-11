@@ -17,6 +17,25 @@ export const DIRECTIONS = [
 	"out",
 ] as const;
 
+export const COMPASS_DIRECTIONS = ["n", "ne", "e", "se", "s", "sw", "w", "nw"] as const;
+
+export const CompassDirectionSchema = z.enum(COMPASS_DIRECTIONS);
+
+export const DIRECTION_NAMES: Record<(typeof DIRECTIONS)[number], string> = {
+	n: "north",
+	ne: "northeast",
+	e: "east",
+	se: "southeast",
+	s: "south",
+	sw: "southwest",
+	w: "west",
+	nw: "northwest",
+	up: "up",
+	down: "down",
+	in: "in",
+	out: "out",
+};
+
 export const DirectionSchema = editor.select(z.enum(DIRECTIONS), {
 	title: "Direction",
 	commandVariableType: "direction",
@@ -43,3 +62,4 @@ export const DirectionSchema = editor.select(z.enum(DIRECTIONS), {
 });
 
 export type Direction = z.infer<typeof DirectionSchema>;
+export type CompassDirection = z.infer<typeof CompassDirectionSchema>;

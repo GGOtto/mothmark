@@ -1,22 +1,8 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
-import type {Direction, World} from "@/schemas/world/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
+import {DIRECTION_NAMES} from "@/schemas/world/directionSchema";
 import {commandIsInScope} from "../commands/parse";
 import {getAvailableExits} from "./move";
-
-const DIRECTION_NAMES: Record<Direction, string> = {
-	n: "north",
-	ne: "northeast",
-	e: "east",
-	se: "southeast",
-	s: "south",
-	sw: "southwest",
-	w: "west",
-	nw: "northwest",
-	up: "up",
-	down: "down",
-	in: "in",
-	out: "out",
-};
 
 const HELP_GROUP_SIZE = 6;
 

@@ -92,6 +92,13 @@ function optionsForBlock(block: CommandBlock, failed: boolean): CommandVariableO
 	if (block.type === "phrase" || block.type === "relation") {
 		return [option(block, "text", "string", "entered text")];
 	}
+	if (block.type === "direction") {
+		return [
+			option(block, undefined, "direction", undefined),
+			option(block, "name", "string", "direction name"),
+			option(block, "text", "string", "entered text"),
+		];
+	}
 
 	return [
 		option(block, undefined, SCALAR_TYPES[block.type], undefined),

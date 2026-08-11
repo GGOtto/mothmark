@@ -73,15 +73,16 @@ describe("the v3 to v4 command-help contract migration", () => {
 		expect(result).toEqual({applied: true, schemaVersion: 4, value});
 	});
 
-	it("is the final registered adjacent migration and cannot run twice", () => {
+	it("remains registered as an adjacent migration and cannot run at a later version", () => {
 		const value = {retained: true};
 		const result = applyVersionedTransform(v3ToV4, PERSISTED_SCHEMA_VERSION, v3ToV4.world, value, {
 			id: "world-1",
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(4);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(5);
 		expect(migrationFrom(3)).toBe(v3ToV4);
+		expect(migrationFrom(4)).toBeDefined();
 		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();
 		expect(result).toEqual({
 			applied: false,

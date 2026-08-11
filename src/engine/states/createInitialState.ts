@@ -10,6 +10,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 	const game: GameState = {
 		player: {
 			currentRoom: startingRoomId,
+			facing: "n",
 			turns: 0,
 			freezeState: {},
 		},
