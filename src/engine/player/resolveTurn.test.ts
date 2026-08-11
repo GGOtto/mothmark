@@ -11,13 +11,13 @@ import {resolveTurn} from "./resolveTurn";
 describe("resolveTurn", () => {
 	it("reports an unknown command without mutating the initial game", () => {
 		const game = createInitialGameState(world, world.startRoomId);
-		const nextGame = resolveTurn(world, game, "help");
+		const nextGame = resolveTurn(world, game, "abracadabra");
 
 		expect(game.player.turns).toBe(0);
 		expect(game.messages).toHaveLength(1);
 		expect(game.messages[0]).toMatchObject({type: "room"});
 		expect(nextGame.player.turns).toBe(1);
-		expect(nextGame.messages.at(-2)).toMatchObject({type: "command", text: "help"});
+		expect(nextGame.messages.at(-2)).toMatchObject({type: "command", text: "abracadabra"});
 		expect(nextGame.messages.at(-1)).toMatchObject({
 			type: "error",
 			text: "I don't know what that means.",
@@ -60,10 +60,10 @@ describe("resolveTurn", () => {
 		};
 		const game = createInitialGameState(worldWithEvent, worldWithEvent.startRoomId);
 
-		const nextGame = resolveTurn(worldWithEvent, game, "help");
+		const nextGame = resolveTurn(worldWithEvent, game, "abracadabra");
 
 		expect(nextGame.messages.slice(1)).toEqual([
-			expect.objectContaining({type: "command", text: "help"}),
+			expect.objectContaining({type: "command", text: "abracadabra"}),
 			expect.objectContaining({type: "error", text: "I don't know what that means."}),
 			expect.objectContaining({type: "system", text: "The event resolves."}),
 		]);

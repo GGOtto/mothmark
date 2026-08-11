@@ -5,6 +5,9 @@
 	},
 	"name": "Unlock",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "unlock <item>",
+	"helpDescription": "Unlock a visible item.",
 	"patterns": [
 		{
 			"blocks": [

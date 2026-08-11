@@ -2,6 +2,9 @@
 	"id": {"type": "command", "id": "command-2"},
 	"name": "Look",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "look",
+	"helpDescription": "Describe your current surroundings.",
 	"patterns": [
 		{
 			"blocks": [

@@ -183,6 +183,26 @@ describe("HostedPlayer", () => {
 		expect(screen.getByRole("status")).toHaveTextContent("Saved");
 	});
 
+	it("keeps grouped help output in one wrapping terminal message", async () => {
+		const helpText =
+			"Useful commands:\nlist exits — Show directions you can currently travel.\ngo <direction> — Travel through an available exit.\n\nMore commands:\nexamine <item> — Inspect a visible item.";
+		global.fetch = jest.fn((input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/api/auth/csrf")) return json({data: {csrfToken: "csrf"}});
+			if (url.endsWith("/bootstrap")) {
+				return json(bootstrapResponse({messages: [message("opening", helpText, "system")]}));
+			}
+			throw new Error(`Unexpected request: ${url}`);
+		}) as jest.MockedFunction<typeof fetch>;
+
+		render(<HostedPlayer slug="quiet-archive" />);
+		const helpMessage = await screen.findByText(/Useful commands:/);
+
+		expect(helpMessage).toHaveClass("output-log__message--system");
+		expect(helpMessage.textContent).toBe(helpText);
+		expect(helpMessage.closest('[role="log"]')).toHaveAccessibleName("Game transcript");
+	});
+
 	it("reconciles after an empty successful command response", async () => {
 		let bootstrapCount = 0;
 		global.fetch = jest.fn((input: RequestInfo | URL) => {

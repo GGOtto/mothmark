@@ -5,6 +5,9 @@
 	},
 	"name": "Lock",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "lock <item>",
+	"helpDescription": "Lock a visible item.",
 	"patterns": [
 		{
 			"blocks": [

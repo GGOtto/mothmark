@@ -5,6 +5,9 @@
 	},
 	"name": "Close",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "close <item>",
+	"helpDescription": "Close a visible item.",
 	"patterns": [
 		{
 			"blocks": [

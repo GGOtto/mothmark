@@ -5,6 +5,9 @@
 	},
 	"name": "Drop",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "drop <item>",
+	"helpDescription": "Put down an item you are carrying.",
 	"patterns": [
 		{
 			"blocks": [

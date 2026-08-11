@@ -172,15 +172,14 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
+	const helpText =
+		"Useful commands:\nhelp — Show useful commands.\nlist exits — Show directions you can currently travel.\ngo <direction> — Travel through an available exit.\nlook — Describe your current surroundings.\ntake <item> — Pick up a reachable item.\ndrop <item> — Put down an item you are carrying.\n\nMore commands:\nexamine <item> — Inspect a visible item.\nput <item> in <container> — Place a carried item inside a container.";
 	let revision = 3;
 	let commands = "look\nnorth";
 	let messages = Array.from({length: 48}, (_, index) => ({
 		id: `opening-${index}`,
 		type: index % 9 === 0 ? "system" : "room",
-		text:
-			index === 12
-				? `A ${"very".repeat(90)}long catalog mark crosses the page.`
-				: `Archive line ${index + 1}.`,
+		text: index === 12 ? helpText : `Archive line ${index + 1}.`,
 	}));
 
 	await page.route("**/api/auth/csrf?audience=play", (route) =>
@@ -247,6 +246,17 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 		"aria-live",
 		"polite",
 	);
+	const helpMessage = page.locator(".output-log__message", {hasText: "Useful commands:"});
+	await expect(helpMessage).toHaveCount(1);
+	const helpWrapping = await helpMessage.evaluate((element) => {
+		const style = getComputedStyle(element);
+		return {
+			fitsWidth: element.scrollWidth <= element.clientWidth + 1,
+			overflowWrap: style.overflowWrap,
+			whiteSpace: style.whiteSpace,
+		};
+	});
+	expect(helpWrapping).toEqual({fitsWidth: true, overflowWrap: "anywhere", whiteSpace: "pre-wrap"});
 
 	for (const viewport of [
 		{width: 320, height: 480},

@@ -5,6 +5,9 @@
 	},
 	"name": "Put inside",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "put <item> in <container>",
+	"helpDescription": "Place a carried item inside a container.",
 	"patterns": [
 		{
 			"blocks": [

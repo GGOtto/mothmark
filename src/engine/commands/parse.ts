@@ -118,6 +118,7 @@ export function findMatchingCommands(
 
 	for (const partition of partitions) {
 		for (const command of world.commands) {
+			if (!command.enabled) continue;
 			if (!commandIsInScope(command, world, game)) continue;
 
 			const result = matchCommandToPartition(partition, command, context);

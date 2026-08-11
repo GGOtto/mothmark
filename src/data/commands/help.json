@@ -1,0 +1,42 @@
+{
+	"id": {"type": "command", "id": "help"},
+	"name": "Help",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "help",
+	"helpDescription": "Show useful commands.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "help-phrase"},
+					"type": "phrase",
+					"matches": [
+						"help",
+						"commands",
+						"list commands",
+						"show commands",
+						"instructions",
+						"how do I play",
+						"what can I do",
+						"?"
+					]
+				}
+			]
+		}
+	],
+	"scope": {"scope": "global"},
+	"priority": 0,
+	"fallbacks": [],
+	"behavior": {
+		"id": {"type": "condition-branch", "id": "help-branch"},
+		"always": {
+			"id": {"type": "effect", "id": "help-effect"},
+			"name": "Show help",
+			"type": "group",
+			"effects": [{"type": "message", "operation": "show-command-help"}],
+			"allowMultipleUsesInWorld": true
+		},
+		"elifs": []
+	}
+}

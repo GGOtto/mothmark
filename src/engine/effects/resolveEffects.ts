@@ -15,6 +15,7 @@ import {getEffect} from "../utils/lookupUtils";
 import {teleport} from "../player/teleport";
 import {kill} from "../player/kill";
 import {silentlyMove} from "../player/move";
+import {availableExitsMessage, commandHelpMessage} from "../player/playerGuidance";
 import {lookAtRoom} from "../messages/createRoomMessage";
 import {evaluateCondition} from "../conditions/evaluateCondition";
 import {
@@ -44,6 +45,12 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 			return appendLastMessage(game, effect.message, effect.format);
 		case "current-room-description":
 			return lookAtRoom(world, game, !effect.allowShorten);
+		case "list-available-exits":
+			message = createGameMessage(availableExitsMessage(world, game), "system");
+			break;
+		case "show-command-help":
+			message = createGameMessage(commandHelpMessage(world, game), "system");
+			break;
 		default:
 			return game;
 	}

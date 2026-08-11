@@ -5,6 +5,9 @@
 	},
 	"name": "Take",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "take <item>",
+	"helpDescription": "Pick up a reachable item.",
 	"patterns": [
 		{
 			"blocks": [

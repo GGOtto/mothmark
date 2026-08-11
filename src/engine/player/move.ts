@@ -1,5 +1,6 @@
 import {produce} from "immer";
 import type {Connection, Direction, World} from "@/schemas/world/worldSchema";
+import {DIRECTIONS} from "@/schemas/world/directionSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
@@ -62,6 +63,11 @@ export function isConnectionBlockedByDoor(
 	});
 }
 
+export type AvailableExit = {
+	direction: Direction;
+	destinationRoomId: ID<"room">;
+};
+
 function openExitDestination(
 	world: World,
 	game: GameState,
@@ -86,6 +92,18 @@ function openExitDestination(
 		destinationRoomState?.flags.active ?? destinationRoom.flags.active ?? true;
 
 	return destinationIsActive ? destinationRoomId : undefined;
+}
+
+/**
+ * Returns the exact exits movement can currently traverse. Consumers must use
+ * this instead of inspecting connection topology so blocked and inactive
+ * destinations remain behind the same privacy boundary as movement.
+ */
+export function getAvailableExits(world: World, game: GameState): AvailableExit[] {
+	return DIRECTIONS.flatMap((direction) => {
+		const destinationRoomId = openExitDestination(world, game, direction);
+		return destinationRoomId ? [{direction, destinationRoomId}] : [];
+	});
 }
 
 export function isExitOpen(world: World, game: GameState, direction: Direction): boolean {
