@@ -5,6 +5,9 @@
 	},
 	"name": "Open",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "open <item>",
+	"helpDescription": "Open a visible item.",
 	"patterns": [
 		{
 			"blocks": [

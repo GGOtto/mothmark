@@ -500,6 +500,25 @@ export const CommandSchema = editor
 				.input({title: "Name", description: "The author-facing name of this command."})
 				.min(1),
 			enabled: editor.boolean({title: "Enabled"}).default(true),
+			showInHelp: editor
+				.boolean({
+					title: "Show in help",
+					description: "Include this command in player help while it is enabled and in scope.",
+				})
+				.default(false),
+			helpPattern: editor
+				.input({
+					title: "Player command",
+					description:
+						"A spoiler-safe example such as read <document>. Alternative patterns stay hidden.",
+				})
+				.default(""),
+			helpDescription: editor
+				.input({
+					title: "Help description",
+					description: "A short, player-facing explanation that does not reveal hidden content.",
+				})
+				.default(""),
 			patterns: editor
 				.array(PatternSchema, {
 					title: "Patterns",
@@ -523,6 +542,14 @@ export const CommandSchema = editor
 		},
 	)
 	.superRefine((command, ctx) => {
+		if (command.showInHelp && !command.helpPattern.trim()) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Commands shown in help need a player-facing command example.",
+				path: ["helpPattern"],
+			});
+		}
+
 		const blockIds = new Set<string>();
 		const blocksById = new Map<string, CommandBlock>();
 		const blockDefinitions = new Map<string, string>();

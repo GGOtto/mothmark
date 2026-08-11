@@ -2,6 +2,9 @@
 	"id": {"type": "command", "id": "command-1"},
 	"name": "Travel",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "go <direction>",
+	"helpDescription": "Travel through an available exit.",
 	"patterns": [
 		{
 			"blocks": [

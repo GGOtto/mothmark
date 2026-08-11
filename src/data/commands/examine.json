@@ -5,6 +5,9 @@
 	},
 	"name": "Examine",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "examine <item>",
+	"helpDescription": "Inspect a visible item.",
 	"patterns": [
 		{
 			"blocks": [

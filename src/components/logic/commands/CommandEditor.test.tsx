@@ -458,6 +458,66 @@ describe("command presentation", () => {
 });
 
 describe("CommandInspector", () => {
+	it("suggests a safe player pattern when help is enabled", () => {
+		let latestWorld = initialWorld;
+		const updateWorld = (update: WorldUpdate) => {
+			latestWorld = typeof update === "function" ? produce(latestWorld, update) : update;
+		};
+
+		render(
+			<ThemeProvider>
+				<CommandInspector
+					world={latestWorld}
+					updateWorld={updateWorld}
+					selection={{kind: "command", commandId: "say"}}
+					onSelectionChange={jest.fn()}
+				/>
+			</ThemeProvider>,
+		);
+
+		fireEvent.click(screen.getByRole("checkbox", {name: "Show this command in help"}));
+
+		expect(latestWorld.commands.find((command) => idValue(command.id) === "say")).toMatchObject({
+			showInHelp: true,
+			helpPattern: "say <text>",
+		});
+	});
+
+	it("edits and toggles spoiler-safe player help", () => {
+		let latestWorld = produce(initialWorld, (draft) => {
+			const command = draft.commands.find((candidate) => idValue(candidate.id) === "say")!;
+			command.showInHelp = true;
+		});
+		const updateWorld = (update: WorldUpdate) => {
+			latestWorld = typeof update === "function" ? produce(latestWorld, update) : update;
+		};
+
+		render(
+			<ThemeProvider>
+				<CommandInspector
+					world={latestWorld}
+					updateWorld={updateWorld}
+					selection={{kind: "command", commandId: "say"}}
+					onSelectionChange={jest.fn()}
+				/>
+			</ThemeProvider>,
+		);
+
+		fireEvent.change(screen.getByRole("textbox", {name: "Player command"}), {
+			target: {value: "say <message>"},
+		});
+		fireEvent.change(screen.getByRole("textbox", {name: "Help description"}), {
+			target: {value: "Speak a message aloud."},
+		});
+		fireEvent.click(screen.getByRole("checkbox", {name: "Show this command in help"}));
+
+		expect(latestWorld.commands.find((command) => idValue(command.id) === "say")).toMatchObject({
+			showInHelp: false,
+			helpPattern: "say <message>",
+			helpDescription: "Speak a message aloud.",
+		});
+	});
+
 	it("updates every pattern occurrence of a shared block", () => {
 		let latestWorld = produce(initialWorld, (draft) => {
 			const command = draft.commands.find((candidate) => idValue(candidate.id) === "wait-turns")!;

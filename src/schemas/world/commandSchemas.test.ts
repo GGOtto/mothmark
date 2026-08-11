@@ -65,6 +65,29 @@ function commandWithBlocks(blocks: CommandBlock[]) {
 }
 
 describe("CommandSchema", () => {
+	it("keeps help hidden with neutral player-facing copy for older command documents", () => {
+		const legacyCommand = commandWithBlocks([phrase(["listen"])]);
+		delete (legacyCommand as Partial<typeof legacyCommand>).showInHelp;
+		delete (legacyCommand as Partial<typeof legacyCommand>).helpPattern;
+		delete (legacyCommand as Partial<typeof legacyCommand>).helpDescription;
+
+		expect(CommandSchema.parse(legacyCommand)).toMatchObject({
+			showInHelp: false,
+			helpPattern: "",
+			helpDescription: "",
+		});
+	});
+
+	it("requires player-facing syntax when a command is shown in help", () => {
+		const command = commandWithBlocks([phrase(["listen"])]);
+		expect(CommandSchema.safeParse({...command, showInHelp: true, helpPattern: ""}).success).toBe(
+			false,
+		);
+		expect(
+			CommandSchema.safeParse({...command, showInHelp: true, helpPattern: "listen"}).success,
+		).toBe(true);
+	});
+
 	it("parses ordered blocks with condition-branch behavior", () => {
 		const command = commandWithBlocks([
 			phrase(["put", "place"]),

@@ -1123,6 +1123,22 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 
 	await page.getByRole("button", {name: /Commands/}).click();
 	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
+	await page.getByRole("button", {name: /Help/}).first().click();
+	const playerHelp = page.getByRole("region", {name: "Player help"});
+	await expect(playerHelp).toBeVisible();
+	await expect(playerHelp.getByRole("checkbox", {name: "Show this command in help"})).toBeChecked();
+	await expect(playerHelp.getByRole("textbox", {name: "Player command"})).toHaveValue("help");
+
+	for (const width of [447, 310]) {
+		await page.setViewportSize({width, height: 844});
+		expect(
+			await playerHelp.evaluate(
+				(element) =>
+					element.scrollWidth <= element.clientWidth &&
+					document.documentElement.scrollWidth <= window.innerWidth,
+			),
+		).toBe(true);
+	}
 
 	await page.getByRole("button", {name: "World settings"}).click();
 	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();

@@ -652,7 +652,7 @@ the full task definitions but do not imply a different sequence.
   - If game-state persistence changes, complete the storage contract/migration work and replay legacy
     playthroughs.
 
-- [ ] **G02 — Add `list exits` and discoverable `help`.**
+- [x] **G02 — Add `list exits` and discoverable `help`.**
 
   **Outcome:** Players can ask what exits and commands are currently useful without revealing hidden
   content.

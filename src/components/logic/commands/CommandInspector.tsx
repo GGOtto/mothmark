@@ -82,6 +82,30 @@ function schemaForBlock(block: CommandBlock) {
 	}
 }
 
+function suggestedHelpPattern(command: Command): string {
+	return command.patterns[0].blocks
+		.map((block) => {
+			switch (block.type) {
+				case "phrase":
+					return block.matches[0] ?? "command";
+				case "relation":
+					return block.relation;
+				case "target":
+					return `<${block.role || "target"}>`;
+				case "direction":
+					return "<direction>";
+				case "number":
+					return "<number>";
+				case "boolean":
+				case "choice":
+					return "<choice>";
+				case "text":
+					return "<text>";
+			}
+		})
+		.join(" ");
+}
+
 function selectedBehavior(command: Command, selection: CommandSelection) {
 	if (selection.kind !== "behavior-condition" && selection.kind !== "behavior-effect") return;
 	if (selection.behavior === "command") return command.behavior;
@@ -139,6 +163,55 @@ export function CommandInspector({
 					<p>Command</p>
 					<h2>{command.name}</h2>
 				</header>
+				<section className="commandInspector__help" aria-labelledby="command-help-heading">
+					<h3 id="command-help-heading">Player help</h3>
+					<label className="commandInspector__helpToggle">
+						<input
+							type="checkbox"
+							checked={command.showInHelp}
+							onChange={(event) => {
+								const checked = event.target.checked;
+								updateCommand((target) => {
+									target.showInHelp = checked;
+									if (checked && !target.helpPattern.trim()) {
+										target.helpPattern = suggestedHelpPattern(target);
+									}
+								});
+							}}
+						/>
+						<span>Show this command in help</span>
+					</label>
+					<p>
+						Help appears only while the command is enabled and available in the current scope. Use wording
+						that does not reveal hidden targets or alternate patterns.
+					</p>
+					{command.showInHelp ? (
+						<div className="commandInspector__helpFields">
+							<label>
+								<span>Player command</span>
+								<input
+									type="text"
+									placeholder="read <document>"
+									value={command.helpPattern}
+									onChange={(event) =>
+										updateCommand((target) => void (target.helpPattern = event.target.value))
+									}
+								/>
+							</label>
+							<label>
+								<span>Help description</span>
+								<input
+									type="text"
+									placeholder="Read a visible document."
+									value={command.helpDescription}
+									onChange={(event) =>
+										updateCommand((target) => void (target.helpDescription = event.target.value))
+									}
+								/>
+							</label>
+						</div>
+					) : null}
+				</section>
 				<div className="commandInspector__scope">
 					<label>
 						<span>Available in</span>
