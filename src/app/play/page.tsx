@@ -88,10 +88,17 @@ export default function PlayCatalogPage() {
 									: "Play";
 						return (
 							<li key={publication.id}>
-								<Link href={`/play/${publication.slug}`} aria-label={`${action} ${publication.title}`}>
+								<article>
 									<div>
-										<h2>{publication.title}</h2>
-										<small className="playCatalogAuthor">by {publication.authorUsername}</small>
+										<Link className="playCatalogWorldLink" href={`/play/${publication.slug}`}>
+											<h2>{publication.title}</h2>
+										</Link>
+										<small className="playCatalogAuthor">
+											by{" "}
+											<Link href={`/users/${encodeURIComponent(publication.authorUsername)}`}>
+												{publication.authorUsername}
+											</Link>
+										</small>
 										<p>{publication.summary}</p>
 									</div>
 									<footer>
@@ -101,9 +108,15 @@ export default function PlayCatalogPage() {
 												new Date(publication.release.publishedAt),
 											)}
 										</small>
-										<strong>{action}</strong>
+										<Link
+											className="playCatalogAction"
+											href={`/play/${publication.slug}`}
+											aria-label={`${action} ${publication.title}`}
+										>
+											{action}
+										</Link>
 									</footer>
-								</Link>
+								</article>
 							</li>
 						);
 					})}

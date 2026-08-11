@@ -342,6 +342,16 @@ export async function listPublications(
 	}));
 }
 
+export async function listPublicationsByOwnerUserId(
+	ownerUserId: string,
+): Promise<PublicPublication[]> {
+	const rows = await publicationSelect()
+		.where({"p.visibility": "listed", "w.owner_user_id": ownerUserId})
+		.orderBy("r.published_at", "desc")
+		.limit(100);
+	return rows.map(mapPublicPublication);
+}
+
 export async function getPublicPublication(slug: string): Promise<PlayablePublication | undefined> {
 	const normalized = normalizePublicationSlug(slug);
 	if (!normalized) return undefined;

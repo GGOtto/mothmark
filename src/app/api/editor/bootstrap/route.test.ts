@@ -46,6 +46,8 @@ const bootstrapRequest = (csrfHeader = "csrf") =>
 		headers: {
 			"content-type": "application/json",
 			origin: "http://localhost",
+			"user-agent":
+				"Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126.0.0.0 Mobile Safari/537.36",
 			cookie: "mothmark_editor_csrf=csrf",
 			"x-csrf-token": csrfHeader,
 		},
@@ -70,7 +72,7 @@ describe("editor bootstrap", () => {
 		expect(response.headers.get("set-cookie")).toContain("HttpOnly");
 		expect(response.headers.get("set-cookie")).toContain("SameSite=lax");
 		expect(JSON.stringify(await response.json())).not.toContain("secret-session-token");
-		expect(createAnonymousEditorBootstrap).toHaveBeenCalledWith(true);
+		expect(createAnonymousEditorBootstrap).toHaveBeenCalledWith(true, "Chrome on Android");
 	});
 
 	it("returns a recent world without recreating a returning user's empty library", async () => {

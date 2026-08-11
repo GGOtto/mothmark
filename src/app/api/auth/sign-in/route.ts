@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {mutationSecurityError} from "@/auth/requestSecurity";
+import {sessionClientLabel} from "@/auth/sessionClient";
 import {authenticateEditor} from "@/db/dbal/registeredAccountRepository";
 import {
 	EmailSchema,
@@ -19,7 +20,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 	if (securityError) return securityError;
 	const input = await readJson(request, z.object({email: EmailSchema, password: PasswordSchema}));
 	if (isResponse(input)) return input;
-	const result = await authenticateEditor({...input, network: requestNetwork(request)});
+	const result = await authenticateEditor({
+		...input,
+		clientLabel: sessionClientLabel(request.headers.get("user-agent")),
+		network: requestNetwork(request),
+	});
 	if (result.status !== "authenticated") {
 		return NextResponse.json(
 			{

@@ -5,10 +5,11 @@ import {
 	exportOwnedAccount,
 	getOwnedAccountSummary,
 	permanentlyDeleteOwnedAccount,
+	updateOwnedPublicProfile,
 } from "@/db/dbal/accountRepository";
 import {deleteRegisteredAccount} from "@/db/dbal/registeredAccountRepository";
 
-import {DELETE, GET} from "./route";
+import {DELETE, GET, PATCH} from "./route";
 import {GET as exportAccount} from "./export/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
@@ -16,6 +17,7 @@ jest.mock("@/db/dbal/accountRepository", () => ({
 	exportOwnedAccount: jest.fn(),
 	getOwnedAccountSummary: jest.fn(),
 	permanentlyDeleteOwnedAccount: jest.fn(),
+	updateOwnedPublicProfile: jest.fn(),
 }));
 jest.mock("@/db/dbal/registeredAccountRepository", () => ({deleteRegisteredAccount: jest.fn()}));
 
@@ -53,7 +55,10 @@ describe("temporary account API", () => {
 			cleanupWasRecentlyCancelled: false,
 			cleanupScheduledAt: null,
 			createdAt: "2026-08-08T12:00:00.000Z",
+			displayName: null,
 			email: null,
+			profileBio: null,
+			profileWebsite: null,
 			retentionClass: "untouched_editor",
 			sessions: [],
 			siteRole: "user",
@@ -72,7 +77,10 @@ describe("temporary account API", () => {
 			account: {
 				accountType: "anonymous",
 				createdAt: "2026-08-08T12:00:00.000Z",
+				displayName: null,
 				email: null,
+				profileBio: null,
+				profileWebsite: null,
 				userId,
 				username: null,
 			},
@@ -83,6 +91,69 @@ describe("temporary account API", () => {
 		const response = await exportAccount(request());
 		expect(response.status).toBe(200);
 		expect(response.headers.get("content-disposition")).toContain("attachment");
+	});
+
+	it("updates explicit public profile fields for a registered account", async () => {
+		jest.mocked(resolveCurrentActor).mockResolvedValue({...actor, accountType: "registered"});
+		jest.mocked(updateOwnedPublicProfile).mockResolvedValue({
+			accountType: "registered",
+			cleanupAfter: null,
+			cleanupCancelledAt: null,
+			cleanupWasRecentlyCancelled: false,
+			cleanupScheduledAt: null,
+			createdAt: "2026-08-08T12:00:00.000Z",
+			displayName: null,
+			email: "author@example.com",
+			profileBio: "Makes quiet worlds.",
+			profileWebsite: "https://github.com/archivekeeper",
+			retentionClass: "authored_editor",
+			sessions: [],
+			siteRole: "user",
+			status: "active",
+			usage: {activeWorlds: 1, maxWorlds: 5, trashedWorlds: 0},
+			userId,
+			username: "archivekeeper",
+		});
+		const response = await PATCH(
+			new Request("http://localhost/api/account", {
+				method: "PATCH",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf",
+					"x-csrf-token": "csrf",
+				},
+				body: JSON.stringify({
+					bio: "Makes quiet worlds.",
+					displayName: " ",
+					website: "github.com/archivekeeper",
+				}),
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(updateOwnedPublicProfile).toHaveBeenCalledWith(userId, {
+			bio: "Makes quiet worlds.",
+			displayName: null,
+			website: "https://github.com/archivekeeper",
+		});
+	});
+
+	it("rejects unsafe public profile websites", async () => {
+		jest.mocked(resolveCurrentActor).mockResolvedValue({...actor, accountType: "registered"});
+		const response = await PATCH(
+			new Request("http://localhost/api/account", {
+				method: "PATCH",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					cookie: "mothmark_editor_csrf=csrf",
+					"x-csrf-token": "csrf",
+				},
+				body: JSON.stringify({bio: "", displayName: "", website: "javascript:alert(1)"}),
+			}),
+		);
+		expect(response.status).toBe(400);
+		expect(updateOwnedPublicProfile).not.toHaveBeenCalled();
 	});
 
 	it("requires CSRF proof, deletes cascading private data, and expires the browser session", async () => {

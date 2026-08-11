@@ -50,12 +50,12 @@ tokens live in `src/app/globals.css`.
 | `--color-text`            | `#211e19` | Primary text                           |
 | `--color-text-muted`      | `#5c5347` | Supporting text                        |
 | `--color-text-faint`      | `#756a5a` | IDs and passive metadata               |
-| `--color-frame`           | `#090909` | Header and activity rail               |
-| `--color-frame-raised`    | `#161616` | Controls inside the frame              |
-| `--color-frame-strong`    | `#242424` | Frame hover and pressed states         |
-| `--color-frame-border`    | `#414141` | Frame divisions                        |
-| `--color-frame-text`      | `#f7f7f5` | Primary frame text                     |
-| `--color-frame-muted`     | `#c5c5c1` | Supporting frame text                  |
+| `--color-frame`           | `#ede4d5` | Header and activity rail               |
+| `--color-frame-raised`    | `#f6eee0` | Controls inside the frame              |
+| `--color-frame-strong`    | `#ddd0bd` | Frame hover and pressed states         |
+| `--color-frame-border`    | `#b7a992` | Frame divisions                        |
+| `--color-frame-text`      | `#211e19` | Primary frame text                     |
+| `--color-frame-muted`     | `#62594d` | Supporting frame text                  |
 | `--color-action`          | `#285a75` | Primary actions and active navigation  |
 | `--color-action-hover`    | `#1f4961` | Primary-action hover                   |
 | `--color-action-contrast` | `#fff9ee` | Text on action-colored surfaces        |
@@ -107,9 +107,10 @@ inspector, toolbars, forms, and dialogs use the ordinary surface family.
 
 ## Map palette
 
-The map changes with the application theme, but remains a distinct authored canvas in both. It is
-not a recolored app panel: the light map resembles warm drafting paper and the dark map resembles a
-charcoal drafting board. Geometry and color meanings stay stable across themes.
+The map remains a distinct authored canvas and currently uses the warm light drafting-paper palette
+in both application themes. Keep the charcoal dark palette defined for possible future use, but do
+not select it from the application theme. Geometry and color meanings stay stable; floating map
+controls continue to follow the application surface tokens.
 
 | Map role                | Dark                | Light               |
 | ----------------------- | ------------------- | ------------------- |

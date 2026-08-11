@@ -41,13 +41,15 @@ export function Header({account}: {account: HeaderAccount}) {
 	const currentPageLabel =
 		pathname === "/"
 			? "Home"
-			: playActive
-				? "Play"
-				: createActive
-					? "Create"
-					: pathname.startsWith("/admin")
-						? "Admin"
-						: "Home";
+			: pathname.startsWith("/users/")
+				? "Profile"
+				: playActive
+					? "Play"
+					: createActive
+						? "Create"
+						: pathname.startsWith("/admin")
+							? "Admin"
+							: "Home";
 	const hidden = pathname.startsWith("/admin") || /^\/play\/[^/]+/.test(pathname);
 
 	useEffect(() => {
@@ -104,13 +106,6 @@ export function Header({account}: {account: HeaderAccount}) {
 		setNotificationsOpen(false);
 	}
 
-	const feedbackButton = (className: string) => (
-		<button type="button" className={className} onClick={() => setFeedbackOpen(true)}>
-			<MessageSquare size={18} aria-hidden="true" />
-			Send feedback
-		</button>
-	);
-
 	return (
 		<>
 			<header className="header">
@@ -130,7 +125,10 @@ export function Header({account}: {account: HeaderAccount}) {
 				<div className="headerUtilities">
 					<WorldAutosaveIndicator />
 					<CommandCopyButton />
-					{feedbackButton("headerFeedback")}
+					<button type="button" className="headerFeedback" onClick={() => setFeedbackOpen(true)}>
+						<MessageSquare size={18} aria-hidden="true" />
+						Send feedback
+					</button>
 
 					{registered ? (
 						<>
@@ -168,11 +166,20 @@ export function Header({account}: {account: HeaderAccount}) {
 								{accountMenuOpen ? (
 									<div className="headerAccountMenu" role="menu">
 										<strong>{accountName}</strong>
+										{account?.username ? (
+											<Link
+												role="menuitem"
+												href={`/users/${encodeURIComponent(account.username)}`}
+												onClick={closeMenus}
+											>
+												View public profile
+											</Link>
+										) : null}
 										<Link role="menuitem" href="/account" onClick={closeMenus}>
-											Account
+											Account settings
 										</Link>
 										<Link role="menuitem" href="/worlds" onClick={closeMenus}>
-											My worlds
+											Your worlds
 										</Link>
 										<div className="headerAppearance" role="group" aria-label="Appearance">
 											<span>Appearance</span>
@@ -269,27 +276,24 @@ export function Header({account}: {account: HeaderAccount}) {
 							) : null}
 							<button
 								type="button"
+								className="headerMobileFeedback"
 								onClick={() => {
 									closeMenus();
 									setFeedbackOpen(true);
 								}}
 							>
-								<MessageSquare size={18} aria-hidden="true" /> Send feedback
+								Send feedback
 							</button>
 							{registered ? (
 								<>
+									{account?.username ? (
+										<Link href={`/users/${encodeURIComponent(account.username)}`} onClick={closeMenus}>
+											View public profile
+										</Link>
+									) : null}
 									<Link href="/account" onClick={closeMenus}>
-										{accountName}
+										Account settings
 									</Link>
-									<div className="headerMobileAppearance" role="group" aria-label="Appearance">
-										<span>Appearance</span>
-										<button type="button" aria-pressed={theme === "light"} onClick={() => setTheme("light")}>
-											Light
-										</button>
-										<button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>
-											Dark
-										</button>
-									</div>
 									<button type="button" disabled={signingOut} onClick={() => void signOut()}>
 										{signingOut ? "Signing out…" : "Sign out"}
 									</button>

@@ -70,7 +70,7 @@
 	li {
 		min-height: 210px;
 	}
-	a {
+	> li > article {
 		display: flex;
 		height: 100%;
 		flex-direction: column;
@@ -80,26 +80,37 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-panel);
 		background: var(--color-surface);
-		color: var(--color-text);
-		text-decoration: none;
 	}
-	a:hover {
+	> li > article:hover {
 		border-color: var(--color-border-strong);
 		background: var(--color-surface-raised);
-	}
-	a:focus-visible {
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
 	}
 	h2 {
 		margin: 0;
 		font-size: 18px;
+	}
+	.playCatalogWorldLink {
+		color: var(--color-text);
+		text-decoration: none;
+
+		&:hover {
+			color: var(--color-action);
+		}
 	}
 	.playCatalogAuthor {
 		display: block;
 		margin-top: 5px;
 		color: var(--color-text-muted);
 		font-size: 12px;
+
+		a {
+			color: var(--color-action);
+			text-decoration: none;
+
+			&:hover {
+				text-decoration: underline;
+			}
+		}
 	}
 	p {
 		margin: 10px 0 0;
@@ -118,9 +129,11 @@
 		color: var(--color-text-faint);
 		font-size: 11px;
 	}
-	strong {
+	.playCatalogAction {
 		color: var(--color-action);
 		font-size: 13px;
+		font-weight: 700;
+		text-decoration: none;
 	}
 }
 

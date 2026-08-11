@@ -1,8 +1,13 @@
 import {NextResponse} from "next/server";
 
+import {PublicProfileInputSchema, normalizePublicProfileInput} from "@/auth/publicProfile";
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
-import {getOwnedAccountSummary, permanentlyDeleteOwnedAccount} from "@/db/dbal/accountRepository";
+import {
+	getOwnedAccountSummary,
+	permanentlyDeleteOwnedAccount,
+	updateOwnedPublicProfile,
+} from "@/db/dbal/accountRepository";
 import {deleteRegisteredAccount} from "@/db/dbal/registeredAccountRepository";
 import {EDITOR_SESSION_COOKIE} from "@/auth/sessionTokens";
 
@@ -17,6 +22,32 @@ export async function GET(request: Request): Promise<NextResponse> {
 		{data: account ?? null},
 		{headers: {"cache-control": "private, no-store"}},
 	);
+}
+
+export async function PATCH(request: Request): Promise<NextResponse> {
+	const securityError = mutationSecurityError(request);
+	if (securityError) return securityError;
+	const actor = await resolveCurrentActor(request, "editor");
+	if (!actor) return authRequiredResponse();
+	if (actor.accountType !== "registered") {
+		return NextResponse.json(
+			{error: {code: "REGISTERED_ACCOUNT_REQUIRED", message: "Create an account first."}},
+			{status: 403},
+		);
+	}
+	const parsed = PublicProfileInputSchema.safeParse(await request.json().catch(() => undefined));
+	if (!parsed.success) {
+		return NextResponse.json(
+			{error: {code: "INVALID_PROFILE", message: "Check the public profile fields and try again."}},
+			{status: 400},
+		);
+	}
+	const account = await updateOwnedPublicProfile(
+		actor.userId,
+		normalizePublicProfileInput(parsed.data),
+	);
+	if (!account) return authRequiredResponse();
+	return NextResponse.json({data: account}, {headers: {"cache-control": "private, no-store"}});
 }
 
 export async function DELETE(request: Request): Promise<NextResponse> {

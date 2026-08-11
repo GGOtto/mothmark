@@ -14,6 +14,9 @@ const database = getDb();
 type AccountRow = {
 	id: string;
 	account_type: "anonymous" | "registered";
+	display_name: string | null;
+	profile_bio: string | null;
+	profile_website: string | null;
 	site_role: "admin" | "user";
 	status: "active" | "deleted" | "suspended";
 	username: string | null;
@@ -30,9 +33,18 @@ export type AccountSummary = {
 	cleanupWasRecentlyCancelled: boolean;
 	cleanupScheduledAt: string | null;
 	createdAt: string;
+	displayName: string | null;
 	email: string | null;
+	profileBio: string | null;
+	profileWebsite: string | null;
 	retentionClass: AnonymousCleanupClass;
-	sessions: Array<{createdAt: string; expiresAt: string; id: string; lastSeenAt: string}>;
+	sessions: Array<{
+		clientLabel: string | null;
+		createdAt: string;
+		expiresAt: string;
+		id: string;
+		lastSeenAt: string;
+	}>;
 	siteRole: AccountRow["site_role"];
 	status: AccountRow["status"];
 	usage: {activeWorlds: number; maxWorlds: number; trashedWorlds: number};
@@ -41,7 +53,17 @@ export type AccountSummary = {
 };
 
 export type AccountExport = {
-	account: Pick<AccountSummary, "accountType" | "createdAt" | "email" | "userId" | "username">;
+	account: Pick<
+		AccountSummary,
+		| "accountType"
+		| "createdAt"
+		| "displayName"
+		| "email"
+		| "profileBio"
+		| "profileWebsite"
+		| "userId"
+		| "username"
+	>;
 	exportedAt: string;
 	format: "mothmark-account";
 	worlds: Array<{
@@ -89,9 +111,13 @@ export async function getOwnedAccountSummary(userId: string): Promise<AccountSum
 		),
 		cleanupScheduledAt: toIso(user.cleanup_scheduled_at),
 		createdAt: new Date(user.created_at).toISOString(),
+		displayName: user.display_name,
 		email: email?.email ?? null,
+		profileBio: user.profile_bio,
+		profileWebsite: user.profile_website,
 		retentionClass: deriveCleanupClass(worlds.map((world) => world.revision)),
 		sessions: sessions.map((session) => ({
+			clientLabel: session.client_label ?? null,
 			createdAt: new Date(session.created_at).toISOString(),
 			expiresAt: new Date(session.expires_at).toISOString(),
 			id: session.id,
@@ -121,7 +147,10 @@ export async function exportOwnedAccount(userId: string): Promise<AccountExport 
 		account: {
 			accountType: summary.accountType,
 			createdAt: summary.createdAt,
+			displayName: summary.displayName,
 			email: summary.email,
+			profileBio: summary.profileBio,
+			profileWebsite: summary.profileWebsite,
 			userId: summary.userId,
 			username: summary.username,
 		},
@@ -142,6 +171,21 @@ export async function exportOwnedAccount(userId: string): Promise<AccountExport 
 			worldId: row.id,
 		})),
 	};
+}
+
+export async function updateOwnedPublicProfile(
+	userId: string,
+	input: {bio: string | null; displayName: string | null; website: string | null},
+): Promise<AccountSummary | undefined> {
+	const updated = await database("users")
+		.where({id: userId, account_type: "registered", status: "active"})
+		.update({
+			display_name: input.displayName,
+			profile_bio: input.bio,
+			profile_website: input.website,
+			updated_at: database.fn.now(),
+		});
+	return updated ? getOwnedAccountSummary(userId) : undefined;
 }
 
 /** User-requested deletion is immediate: the user row and all cascading private data are removed. */

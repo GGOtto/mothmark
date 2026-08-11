@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {authRequiredResponse, mutationSecurityError} from "@/auth/requestSecurity";
+import {sessionClientLabel} from "@/auth/sessionClient";
 import {EDITOR_SESSION_COOKIE, EDITOR_SESSION_DURATION_MS, readCookie} from "@/auth/sessionTokens";
 import {
 	createAnonymousEditorBootstrap,
@@ -61,7 +62,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 			return NextResponse.json({data: world ?? null, meta: {userId: actor.userId}});
 		}
 
-		const bootstrap = await createAnonymousEditorBootstrap(recordOpened);
+		const bootstrap = await createAnonymousEditorBootstrap(
+			recordOpened,
+			sessionClientLabel(request.headers.get("user-agent")),
+		);
 		const response = NextResponse.json(
 			{data: bootstrap.world, meta: {userId: bootstrap.userId}},
 			{status: 201},
