@@ -10,6 +10,8 @@
 - Keep each feedback submission as one two-way support conversation mirrored in the admin inbox,
   every active administrator's email, and the customer's email thread. Send customer-facing mail as
   `Mothmark Support <support@mothmark.app>` and never expose an administrator's personal address.
+  Preserve a separate, stable Message-ID reference chain for the customer and for each administrator;
+  a new feedback form starts a new thread, while every reply to that submission stays in its thread.
 
 ## Test data
 

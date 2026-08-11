@@ -1,9 +1,10 @@
 import "server-only";
 
-import {createHash} from "node:crypto";
+import {createHash, randomUUID} from "node:crypto";
 
 import type {Knex} from "knex";
 
+import {feedbackConversationSubject} from "@/feedback/feedbackThread";
 import {getDb} from "./knex";
 
 const database = getDb();
@@ -47,6 +48,17 @@ type FeedbackReplyRow = {
 	source: "admin_page" | "email";
 	source_message_id: string | null;
 	source_resend_email_id: string | null;
+};
+
+type FeedbackAdminEmailMessageRow = {
+	created_at: Date | string;
+	feedback_message_id: string;
+	feedback_reply_id: string | null;
+	id: string;
+	message_id: string;
+	message_kind: "admin_conversation_copy" | "admin_inbound_reply" | "admin_notification";
+	recipient_email: string;
+	resend_email_id: string | null;
 };
 
 export type AdminFeedbackReply = {
@@ -168,12 +180,14 @@ export async function createFeedbackMessage(input: {
 	replyEmail: string;
 	username?: string | null;
 }): Promise<AdminFeedbackDetail> {
-	const subject = `Mothmark support: ${input.category}`;
+	const id = randomUUID();
+	const subject = feedbackConversationSubject(input.category, id);
 	const [row] = (await database("feedback_messages")
 		.insert({
 			account_type: input.accountType ?? null,
 			actor_user_id: input.actorUserId ?? null,
 			category: input.category,
+			id,
 			message: input.message,
 			page: input.page ?? null,
 			reply_email: input.replyEmail,
@@ -196,6 +210,7 @@ export async function markFeedbackNotification(
 
 export async function markCustomerFeedbackReceipt(input: {
 	feedbackId: string;
+	messageId?: string;
 	resendEmailId?: string;
 	status: Exclude<DeliveryStatus, "pending">;
 }): Promise<void> {
@@ -203,6 +218,7 @@ export async function markCustomerFeedbackReceipt(input: {
 		.where({id: input.feedbackId})
 		.update({
 			customer_receipt_email_id: input.resendEmailId ?? null,
+			customer_receipt_message_id: input.messageId ?? null,
 			customer_receipt_status: input.status,
 		});
 }
@@ -213,6 +229,69 @@ export type FeedbackEmailThread = {
 	replyEmail: string;
 	subject: string;
 };
+
+export type FeedbackAdminEmailThread = {
+	messageIds: string[];
+	recipient: string;
+};
+
+export type FeedbackAdminSentMessage = {
+	feedbackId: string;
+	messageId?: string;
+	messageKind: "admin_conversation_copy" | "admin_notification";
+	recipient: string;
+	replyId?: string;
+	resendEmailId?: string;
+};
+
+const normalizedEmails = (emails: string[]): string[] => [
+	...new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean)),
+];
+
+export async function getFeedbackAdminEmailThreads(
+	feedbackId: string,
+	recipients: string[],
+): Promise<FeedbackAdminEmailThread[]> {
+	const normalizedRecipients = normalizedEmails(recipients);
+	const rows = normalizedRecipients.length
+		? ((await database("feedback_admin_email_messages")
+				.where({feedback_message_id: feedbackId})
+				.whereIn("recipient_email", normalizedRecipients)
+				.orderBy("created_at", "asc")
+				.orderBy("id", "asc")) as FeedbackAdminEmailMessageRow[])
+		: [];
+	const messageIds = new Map<string, string[]>();
+	for (const row of rows) {
+		const ids = messageIds.get(row.recipient_email) ?? [];
+		ids.push(row.message_id);
+		messageIds.set(row.recipient_email, ids);
+	}
+	return normalizedRecipients.map((recipient) => ({
+		messageIds: messageIds.get(recipient) ?? [],
+		recipient,
+	}));
+}
+
+export async function recordFeedbackAdminSentMessages(
+	messages: FeedbackAdminSentMessage[],
+): Promise<void> {
+	const rows = messages.flatMap((message) =>
+		message.messageId
+			? [
+					{
+						feedback_message_id: message.feedbackId,
+						feedback_reply_id: message.replyId ?? null,
+						message_id: message.messageId,
+						message_kind: message.messageKind,
+						recipient_email: message.recipient.trim().toLowerCase(),
+						resend_email_id: message.resendEmailId ?? null,
+					},
+				]
+			: [],
+	);
+	if (rows.length === 0) return;
+	await database("feedback_admin_email_messages").insert(rows).onConflict("message_id").ignore();
+}
 
 export async function getFeedbackEmailThread(
 	feedbackId: string,
@@ -238,6 +317,7 @@ export async function getFeedbackEmailThread(
 }
 
 export async function setFeedbackReplyDelivery(input: {
+	messageId?: string;
 	replyId: string;
 	resendEmailId?: string;
 	status: Exclude<DeliveryStatus, "pending">;
@@ -247,6 +327,7 @@ export async function setFeedbackReplyDelivery(input: {
 		.update({
 			delivery_attempted_at: database.fn.now(),
 			delivery_status: input.status,
+			sent_message_id: input.messageId ?? null,
 			sent_resend_email_id: input.resendEmailId ?? null,
 		});
 }
@@ -255,6 +336,7 @@ export async function recordResendSentMessage(input: {
 	feedbackId?: string;
 	messageId: string;
 	messageKind?: string;
+	recipients?: string[];
 	replyId?: string;
 	resendEmailId: string;
 }): Promise<void> {
@@ -270,6 +352,22 @@ export async function recordResendSentMessage(input: {
 			sent_message_id: input.messageId,
 			sent_resend_email_id: input.resendEmailId,
 		});
+		return;
+	}
+	if (
+		(input.messageKind === "admin_notification" || input.messageKind === "admin_conversation_copy") &&
+		input.feedbackId
+	) {
+		await recordFeedbackAdminSentMessages(
+			normalizedEmails(input.recipients ?? []).map((recipient) => ({
+				feedbackId: input.feedbackId!,
+				messageId: input.messageId,
+				messageKind: input.messageKind as "admin_conversation_copy" | "admin_notification",
+				recipient,
+				replyId: input.replyId,
+				resendEmailId: input.resendEmailId,
+			})),
+		);
 	}
 }
 
@@ -359,6 +457,7 @@ export async function beginAdminFeedbackReply(input: {
 export async function finishAdminFeedbackReply(input: {
 	actorUserId: string;
 	feedbackId: string;
+	messageId?: string;
 	resendEmailId?: string;
 	replyId: string;
 	status: Exclude<DeliveryStatus, "pending">;
@@ -369,6 +468,7 @@ export async function finishAdminFeedbackReply(input: {
 			.update({
 				delivery_attempted_at: transaction.fn.now(),
 				delivery_status: input.status,
+				sent_message_id: input.messageId ?? null,
 				sent_resend_email_id: input.resendEmailId ?? null,
 			});
 		await transaction("admin_audit_log").insert({
@@ -438,6 +538,19 @@ export async function createInboundFeedbackReply(input: {
 		const allReplies = (await transaction("feedback_replies")
 			.where({feedback_message_id: input.feedbackId})
 			.orderBy("created_at", "asc")) as FeedbackReplyRow[];
+		if (authorType === "admin") {
+			await transaction("feedback_admin_email_messages")
+				.insert({
+					feedback_message_id: input.feedbackId,
+					feedback_reply_id: row.id,
+					message_id: input.messageId,
+					message_kind: "admin_inbound_reply",
+					recipient_email: normalizedSender,
+					resend_email_id: null,
+				})
+				.onConflict("message_id")
+				.ignore();
+		}
 		const messageIds = [
 			feedback.customer_receipt_message_id,
 			...allReplies.map((reply) =>

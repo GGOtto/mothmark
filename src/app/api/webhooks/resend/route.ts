@@ -6,8 +6,10 @@ import {
 	claimResendWebhookEvent,
 	createInboundFeedbackReply,
 	finishResendWebhookEvent,
+	getFeedbackAdminEmailThreads,
 	listActiveAdministratorEmails,
 	markFeedbackReplyAdminNotification,
+	recordFeedbackAdminSentMessages,
 	recordResendSentMessage,
 	setFeedbackReplyDelivery,
 } from "@/db/dbal/feedbackRepository";
@@ -16,7 +18,7 @@ import {
 	feedbackReplyDomain,
 	mailboxAddress,
 	retrieveReceivedFeedbackEmail,
-	sendCustomerReplyAdminNotifications,
+	sendFeedbackAdminConversationCopies,
 	sendFeedbackReplyEmail,
 } from "@/feedback/feedbackEmail";
 
@@ -73,6 +75,7 @@ const handleSentEvent = async (event: ResendEvent): Promise<void> => {
 		feedbackId: tags.feedback_id,
 		messageId: event.data.message_id,
 		messageKind: tags.message_kind,
+		recipients: event.data.to,
 		replyId: tags.feedback_reply_id,
 		resendEmailId: event.data.email_id,
 	});
@@ -102,15 +105,24 @@ const handleReceivedEvent = async (event: ResendEvent): Promise<void> => {
 		const origin = process.env.PUBLIC_APP_ORIGIN?.trim();
 		if (!origin) throw new Error("Feedback email is not configured.");
 		try {
-			await sendCustomerReplyAdminNotifications({
+			const adminThreads = await getFeedbackAdminEmailThreads(feedbackId, adminRecipients);
+			const copies = await sendFeedbackAdminConversationCopies({
 				adminUrl: new URL(`/admin/feedback/${feedbackId}`, origin).toString(),
 				feedbackId,
+				label: "Customer reply",
 				message: received.text,
-				messageId: received.messageId,
-				recipients: adminRecipients,
+				recipients: adminThreads,
 				replyId: inbound.reply.id,
 				subject: inbound.thread.subject,
 			});
+			await recordFeedbackAdminSentMessages(
+				copies.map((copy) => ({
+					...copy,
+					feedbackId,
+					messageKind: "admin_conversation_copy" as const,
+					replyId: inbound.reply.id,
+				})),
+			);
 			await markFeedbackReplyAdminNotification({
 				replyId: inbound.reply.id,
 				status: "delivered",
@@ -126,16 +138,41 @@ const handleReceivedEvent = async (event: ResendEvent): Promise<void> => {
 	}
 
 	try {
-		const sent = await sendFeedbackReplyEmail({
-			adminRecipients,
-			feedbackId,
-			message: received.text,
-			messageIds: inbound.thread.messageIds,
-			replyId: inbound.reply.id,
-			subject: inbound.thread.subject,
-			to: inbound.thread.replyEmail,
-		});
+		const otherAdminRecipients = adminRecipients.filter(
+			(recipient) => recipient.trim().toLowerCase() !== inbound.reply.authorEmail.toLowerCase(),
+		);
+		const adminThreads = await getFeedbackAdminEmailThreads(feedbackId, otherAdminRecipients);
+		const origin = process.env.PUBLIC_APP_ORIGIN?.trim();
+		if (!origin) throw new Error("Feedback email is not configured.");
+		const [sent, copies] = await Promise.all([
+			sendFeedbackReplyEmail({
+				feedbackId,
+				message: received.text,
+				messageIds: inbound.thread.messageIds,
+				replyId: inbound.reply.id,
+				subject: inbound.thread.subject,
+				to: inbound.thread.replyEmail,
+			}),
+			sendFeedbackAdminConversationCopies({
+				adminUrl: new URL(`/admin/feedback/${feedbackId}`, origin).toString(),
+				feedbackId,
+				label: "Administrator reply",
+				message: received.text,
+				recipients: adminThreads,
+				replyId: inbound.reply.id,
+				subject: inbound.thread.subject,
+			}),
+		]);
+		await recordFeedbackAdminSentMessages(
+			copies.map((copy) => ({
+				...copy,
+				feedbackId,
+				messageKind: "admin_conversation_copy" as const,
+				replyId: inbound.reply.id,
+			})),
+		);
 		await setFeedbackReplyDelivery({
+			messageId: sent.messageId,
 			replyId: inbound.reply.id,
 			resendEmailId: sent.resendEmailId,
 			status: "delivered",

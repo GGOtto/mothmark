@@ -8,10 +8,15 @@ import {
 	FeedbackMessageNotFoundError,
 	finishAdminFeedbackReply,
 	getAdminFeedbackMessage,
+	getFeedbackAdminEmailThreads,
 	getFeedbackEmailThread,
 	listActiveAdministratorEmails,
+	recordFeedbackAdminSentMessages,
 } from "@/db/dbal/feedbackRepository";
-import {sendFeedbackReplyEmail} from "@/feedback/feedbackEmail";
+import {
+	sendFeedbackAdminConversationCopies,
+	sendFeedbackReplyEmail,
+} from "@/feedback/feedbackEmail";
 import {
 	adminNotFoundResponse,
 	adminRouteError,
@@ -59,6 +64,7 @@ export async function POST(
 			feedbackId: id.data,
 			message: input.message,
 		});
+		let messageId: string | undefined;
 		let resendEmailId: string | undefined;
 		try {
 			const [thread, adminRecipients] = await Promise.all([
@@ -66,15 +72,35 @@ export async function POST(
 				listActiveAdministratorEmails(),
 			]);
 			if (!thread) throw new FeedbackMessageNotFoundError();
-			const sent = await sendFeedbackReplyEmail({
-				adminRecipients,
-				feedbackId: id.data,
-				message: input.message,
-				messageIds: thread.messageIds,
-				replyId: pending.reply.id,
-				subject: pending.subject,
-				to: pending.replyEmail,
-			});
+			const adminThreads = await getFeedbackAdminEmailThreads(id.data, adminRecipients);
+			const [sent, adminCopies] = await Promise.all([
+				sendFeedbackReplyEmail({
+					feedbackId: id.data,
+					message: input.message,
+					messageIds: thread.messageIds,
+					replyId: pending.reply.id,
+					subject: pending.subject,
+					to: pending.replyEmail,
+				}),
+				sendFeedbackAdminConversationCopies({
+					adminUrl: new URL(`/admin/feedback/${id.data}`, request.url).toString(),
+					feedbackId: id.data,
+					label: "Administrator reply",
+					message: input.message,
+					recipients: adminThreads,
+					replyId: pending.reply.id,
+					subject: pending.subject,
+				}),
+			]);
+			await recordFeedbackAdminSentMessages(
+				adminCopies.map((copy) => ({
+					...copy,
+					feedbackId: id.data,
+					messageKind: "admin_conversation_copy" as const,
+					replyId: pending.reply.id,
+				})),
+			);
+			messageId = sent.messageId;
 			resendEmailId = sent.resendEmailId;
 		} catch {
 			await finishAdminFeedbackReply({
@@ -91,6 +117,7 @@ export async function POST(
 		await finishAdminFeedbackReply({
 			actorUserId: actor.userId,
 			feedbackId: id.data,
+			messageId,
 			replyId: pending.reply.id,
 			resendEmailId,
 			status: "delivered",
