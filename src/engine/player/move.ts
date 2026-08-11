@@ -1,6 +1,10 @@
 import {produce} from "immer";
 import type {Connection, Direction, World} from "@/schemas/world/worldSchema";
-import {DIRECTIONS} from "@/schemas/world/directionSchema";
+import {
+	COMPASS_DIRECTIONS,
+	DIRECTIONS,
+	type CompassDirection,
+} from "@/schemas/world/directionSchema";
 import {compareIds, type ID} from "@/utils/idUtils";
 import {createGameMessage} from "../messages/createMessage";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
@@ -110,11 +114,21 @@ export function isExitOpen(world: World, game: GameState, direction: Direction):
 	return openExitDestination(world, game, direction) !== undefined;
 }
 
+function withTravelFacing(game: GameState, direction: Direction): GameState {
+	if (!(COMPASS_DIRECTIONS as readonly Direction[]).includes(direction)) return game;
+	return produce(game, (draft) => {
+		draft.player.facing = direction as CompassDirection;
+	});
+}
+
 export function silentlyMove(world: World, game: GameState, direction: Direction): GameState {
 	const destinationRoomId = openExitDestination(world, game, direction);
 	if (!destinationRoomId) return game;
 
-	return teleport(world, game, destinationRoomId, {respectActiveFlag: true, silent: true});
+	return withTravelFacing(
+		teleport(world, game, destinationRoomId, {respectActiveFlag: true, silent: true}),
+		direction,
+	);
 }
 
 export function move(world: World, game: GameState, direction: Direction): GameState {
@@ -126,8 +140,11 @@ export function move(world: World, game: GameState, direction: Direction): GameS
 		});
 	}
 
-	return teleport(world, game, destinationRoomId, {
-		respectActiveFlag: true,
-		blockedMessage: genericBlockedMessage,
-	});
+	return withTravelFacing(
+		teleport(world, game, destinationRoomId, {
+			respectActiveFlag: true,
+			blockedMessage: genericBlockedMessage,
+		}),
+		direction,
+	);
 }

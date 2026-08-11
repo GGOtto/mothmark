@@ -7,6 +7,7 @@ import {PopupProvider} from "@/components/popup/Popup";
 import {world as baseWorld} from "@/data/worlds/initialWorld";
 import {
 	CommandSchema,
+	DirectionBlockSchema,
 	NumberBlockSchema,
 	PatternSchema,
 	PhraseBlockSchema,
@@ -112,6 +113,28 @@ const commandEditorWorld = produce(baseWorld, (draft) => {
 							...createDefaultFieldObject(TargetBlockSchema),
 							id: toID("command-block", "touch-target"),
 							role: "target",
+						},
+					],
+				},
+			],
+		},
+		{
+			...createDefaultFieldObject(CommandSchema),
+			id: toID("command", "travel-direction"),
+			name: "Travel direction",
+			patterns: [
+				{
+					...createDefaultFieldObject(PatternSchema),
+					blocks: [
+						{
+							...createDefaultFieldObject(PhraseBlockSchema),
+							id: toID("command-block", "travel-verb"),
+							matches: ["travel"],
+						},
+						{
+							...createDefaultFieldObject(DirectionBlockSchema),
+							id: toID("command-block", "travel-direction-value"),
+							role: "direction",
 						},
 					],
 				},
@@ -458,6 +481,42 @@ describe("command presentation", () => {
 });
 
 describe("CommandInspector", () => {
+	it("lets authors disable relative wording for a direction block", () => {
+		let latestWorld = initialWorld;
+		const updateWorld = (update: WorldUpdate) => {
+			latestWorld = typeof update === "function" ? produce(latestWorld, update) : update;
+		};
+
+		render(
+			<ThemeProvider>
+				<CommandInspector
+					world={latestWorld}
+					updateWorld={updateWorld}
+					selection={{
+						kind: "block",
+						commandId: "travel-direction",
+						patternIndex: 0,
+						blockId: "travel-direction-value",
+					}}
+					onSelectionChange={jest.fn()}
+				/>
+			</ThemeProvider>,
+		);
+
+		expect(screen.getByText("Allow relative directions")).toBeVisible();
+		const toggle = screen.getByRole("switch", {name: "On"});
+		expect(toggle).toBeChecked();
+		fireEvent.click(toggle);
+
+		const command = latestWorld.commands.find(
+			(candidate) => idValue(candidate.id) === "travel-direction",
+		)!;
+		const block = command.patterns[0].blocks.find(
+			(candidate) => idValue(candidate.id) === "travel-direction-value",
+		);
+		expect(block).toMatchObject({type: "direction", allowRelative: false});
+	});
+
 	it("suggests a safe player pattern when help is enabled", () => {
 		let latestWorld = initialWorld;
 		const updateWorld = (update: WorldUpdate) => {

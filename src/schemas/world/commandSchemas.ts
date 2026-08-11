@@ -248,6 +248,13 @@ export const DirectionBlockSchema = editor.object(
 			title: "Allowed directions",
 			description: "Leave empty to accept every direction.",
 		}),
+		allowRelative: editor
+			.boolean({
+				title: "Allow relative directions",
+				description:
+					"Accept forward, back, left, and right relative to the direction the player faces.",
+			})
+			.default(true),
 	},
 	{title: "Direction", description: "Resolves direction names and abbreviations."},
 );
@@ -621,7 +628,10 @@ export const CommandSchema = editor
 			projection?: CommandVariableProjection,
 		): CommandVariableValueType | undefined {
 			if (projection === "text") return "string";
-			if (projection === "name" || projection === "description") {
+			if (projection === "name") {
+				return block.type === "target" || block.type === "direction" ? "string" : undefined;
+			}
+			if (projection === "description") {
 				return block.type === "target" ? "string" : undefined;
 			}
 			if (block.type === "target") return "entity";

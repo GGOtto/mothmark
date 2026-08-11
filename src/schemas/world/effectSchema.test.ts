@@ -30,6 +30,12 @@ describe("effect storage schemas", () => {
 				direction: "e",
 			}).success,
 		).toBe(true);
+		expect(
+			EffectSchema.safeParse({type: "player", operation: "set-facing", direction: "sw"}).success,
+		).toBe(true);
+		expect(
+			EffectSchema.safeParse({type: "player", operation: "set-facing", direction: "up"}).success,
+		).toBe(false);
 	});
 
 	it("accepts reusable player-guidance message effects", () => {

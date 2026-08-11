@@ -64,8 +64,9 @@ function blockRank(block: CommandBlock): PriorityRank {
 			return [5, -1];
 		case "boolean":
 		case "choice":
-		case "direction":
 			return [5, -closedValueCount(block)];
+		case "direction":
+			return [5, -closedValueCount(block), block.allowRelative ? 0 : 1];
 		case "target":
 			return targetRank(block);
 		case "number":

@@ -1,0 +1,129 @@
+{
+	"id": {"type": "command", "id": "face"},
+	"name": "Face",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "face <direction>",
+	"helpDescription": "Turn to face an absolute or relative direction without moving.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "face-verb"},
+					"type": "phrase",
+					"matches": ["face", "turn"]
+				},
+				{
+					"id": {"type": "command-block", "id": "face-direction"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
+					"allowRelative": true
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "face-verb"},
+					"type": "phrase",
+					"matches": ["face", "turn"]
+				},
+				{
+					"id": {"type": "command-block", "id": "face-to"},
+					"type": "relation",
+					"relation": "to",
+					"aliasMode": "defaults",
+					"aliases": []
+				},
+				{
+					"id": {"type": "command-block", "id": "face-direction"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
+					"allowRelative": true
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {"type": "command-block", "id": "face-verb"},
+					"type": "phrase",
+					"matches": ["face", "turn"]
+				},
+				{
+					"id": {"type": "command-block", "id": "face-to"},
+					"type": "relation",
+					"relation": "to",
+					"aliasMode": "defaults",
+					"aliases": []
+				},
+				{
+					"id": {"type": "command-block", "id": "face-the"},
+					"type": "phrase",
+					"matches": ["the"]
+				},
+				{
+					"id": {"type": "command-block", "id": "face-direction"},
+					"type": "direction",
+					"role": "direction",
+					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
+					"allowRelative": true
+				}
+			]
+		}
+	],
+	"scope": {"scope": "global"},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {"type": "command-block", "id": "face-direction"},
+			"behavior": {
+				"id": {"type": "condition-branch", "id": "face-direction-fallback"},
+				"always": {
+					"name": "Unknown direction",
+					"id": {"type": "effect", "id": "face-direction-fallback-effect"},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "That's not a direction you can face."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		}
+	],
+	"behavior": {
+		"id": {"type": "condition-branch", "id": "face-branch"},
+		"always": {
+			"name": "Face direction",
+			"id": {"type": "effect", "id": "face-effect"},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "set-facing",
+					"commandVariables": [
+						{
+							"blockId": {"type": "command-block", "id": "face-direction"},
+							"field": "direction"
+						}
+					],
+					"direction": "n"
+				},
+				{
+					"type": "message",
+					"operation": "show",
+					"message": "You turn to face the {variable face-direction name}."
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		},
+		"elifs": []
+	}
+}

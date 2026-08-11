@@ -1,5 +1,6 @@
 import type {CommandVariable} from "@/schemas/states/gameStateSchemas";
 import {RELATION_PREPOSITIONS, type CommandBlock} from "@/schemas/world/commandSchemas";
+import {COMPASS_DIRECTIONS, type CompassDirection} from "@/schemas/world/directionSchema";
 import type {ID} from "@/utils/idUtils";
 import {compareIds} from "@/utils/idUtils";
 import {normalize} from "./parse";
@@ -49,6 +50,7 @@ export type TargetMatchCandidate = {
 
 export type MatchBlockContext = {
 	targets?: TargetMatchCandidate[];
+	facing?: CompassDirection;
 };
 
 const SMALL_NUMBER_WORDS: Record<string, number> = {
@@ -342,13 +344,38 @@ const DIRECTION_ALIASES: Record<string, CommandVariableOf<"direction">["value"]>
 	exit: "out",
 };
 
+const RELATIVE_DIRECTION_ROTATIONS: Record<string, number> = {
+	forwards: 0,
+	forward: 0,
+	straight: 0,
+	ahead: 0,
+	backwards: 4,
+	backward: 4,
+	back: 4,
+	left: -2,
+	right: 2,
+};
+
+export function resolveRelativeDirection(
+	text: string,
+	facing: CompassDirection,
+): CompassDirection | undefined {
+	const rotation = RELATIVE_DIRECTION_ROTATIONS[normalize(text)];
+	if (rotation === undefined) return undefined;
+	const facingIndex = COMPASS_DIRECTIONS.indexOf(facing);
+	return COMPASS_DIRECTIONS[(facingIndex + rotation + COMPASS_DIRECTIONS.length) % 8];
+}
+
 export function matchDirection(
 	text: string,
 	block: CommandBlock,
+	context: MatchBlockContext = {},
 ): BlockMatchResponse<CommandVariableOf<"direction">> {
 	if (block.type !== "direction") return failedMatch();
 
-	const direction = DIRECTION_ALIASES[normalize(text)];
+	const direction =
+		DIRECTION_ALIASES[normalize(text)] ??
+		(block.allowRelative ? resolveRelativeDirection(text, context.facing ?? "n") : undefined);
 	if (!direction || (block.allowed.length > 0 && !block.allowed.includes(direction))) {
 		return partialMatch();
 	}
@@ -454,7 +481,7 @@ export function matchBlock(
 		case "choice":
 			return matchChoice(text, block);
 		case "direction":
-			return matchDirection(text, block);
+			return matchDirection(text, block, context);
 		case "relation":
 			return matchRelation(text, block);
 		case "target":

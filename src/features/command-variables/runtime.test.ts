@@ -6,6 +6,7 @@ import {interpolateCommandVariables, resolveCommandVariableReference} from "./ru
 
 const targetBlockId = toID("command-block", "target-variable");
 const amountBlockId = toID("command-block", "amount-variable");
+const directionBlockId = toID("command-block", "direction-variable");
 const failedBlockId = toID("command-block", "failed-variable");
 
 function gameWithVariables() {
@@ -35,6 +36,7 @@ function gameWithVariables() {
 		draft.variables.command = [
 			{blockId: targetBlockId, type: "target", value: toID("item", "bell"), rawText: "old bell"},
 			{blockId: amountBlockId, type: "number", value: 3, rawText: "three"},
+			{blockId: directionBlockId, type: "direction", value: "ne", rawText: "right"},
 			{blockId: failedBlockId, type: "failed", rawText: "silver skull"},
 		];
 	});
@@ -59,6 +61,20 @@ describe("command variable runtime", () => {
 		expect(interpolateCommandVariables(game, value)).toBe(
 			"Count 3 (typed three); missing silver skull.",
 		);
+	});
+
+	it("projects a canonical direction name independently of the entered wording", () => {
+		const game = gameWithVariables();
+
+		expect(
+			resolveCommandVariableReference(game, {blockId: directionBlockId, projection: "name"}),
+		).toBe("northeast");
+		expect(
+			interpolateCommandVariables(
+				game,
+				`Face the {variable ${directionBlockId.id} name} (entered {variable ${directionBlockId.id} text}).`,
+			),
+		).toBe("Face the northeast (entered right).");
 	});
 
 	it("does not expose a typed value for a failed block", () => {

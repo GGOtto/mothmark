@@ -6,6 +6,7 @@ import type {Knex} from "knex";
 import {migrationFrom, PERSISTED_SCHEMA_VERSION} from "./migrations";
 import {applyVersionedTransform} from "./migrations/types";
 import {parseStoredWorld} from "./storageCodec";
+import {createInitialGameState} from "@/engine/states/createInitialState";
 import {
 	compareStorageContracts,
 	createStorageContract,
@@ -126,6 +127,71 @@ async function applyMigration(
 		.select("id", "world_version_id", "current_state", "transcript", "schema_version")
 		.where({schema_version: fromVersion})
 		.forUpdate();
+
+	const turnRows = await transaction("playthrough_turns")
+		.select(
+			"id",
+			"playthrough_id",
+			"sequence",
+			"command",
+			"resulting_state",
+			"output_messages",
+			"schema_version",
+		)
+		.where({schema_version: fromVersion})
+		.orderBy(["playthrough_id", "sequence"])
+		.forUpdate();
+	const worldVersionByPlaythrough = new Map(
+		(await transaction("playthroughs").select("id", "world_version_id")).map((row) => [
+			String(row.id),
+			String(row.world_version_id),
+		]),
+	);
+	const previousStateByPlaythrough = new Map<string, unknown>();
+	for (const row of playthroughRows) {
+		const world = migratedWorlds.get(String(row.world_version_id));
+		if (world)
+			previousStateByPlaythrough.set(String(row.id), createInitialGameState(world, world.startRoomId));
+	}
+	for (const row of turnRows) {
+		const playthroughId = String(row.playthrough_id);
+		const sequence = Number(row.sequence);
+		const worldId = worldVersionByPlaythrough.get(playthroughId);
+		const state = applyVersionedTransform(
+			migration,
+			Number(row.schema_version),
+			migration.gameState,
+			row.resulting_state,
+			{
+				playthroughId,
+				sequence,
+				storage: "turn" as const,
+				world: worldId ? migratedWorlds.get(worldId) : undefined,
+				command: String(row.command),
+				previousState: previousStateByPlaythrough.get(playthroughId),
+			},
+		);
+		const messages = applyVersionedTransform(
+			migration,
+			Number(row.schema_version),
+			migration.messages,
+			row.output_messages,
+			{playthroughId, sequence, storage: "output" as const},
+		);
+		if (!state.applied || !messages.applied)
+			throw new Error(
+				`Playthrough turn ${playthroughId}:${String(sequence)} changed version while locked.`,
+			);
+		previousStateByPlaythrough.set(playthroughId, state.value);
+		await transaction("playthrough_turns")
+			.where({id: row.id})
+			.update({
+				resulting_state: state.value,
+				output_messages: JSON.stringify(messages.value),
+				schema_version: state.schemaVersion,
+			});
+	}
+
 	for (const row of playthroughRows) {
 		const playthroughId = String(row.id);
 		const world = migratedWorlds.get(String(row.world_version_id));
@@ -139,6 +205,7 @@ async function applyMigration(
 				sequence: null,
 				storage: "current" as const,
 				world,
+				previousState: previousStateByPlaythrough.get(playthroughId),
 			},
 		);
 		const transcriptValue =
@@ -157,59 +224,6 @@ async function applyMigration(
 			.update({
 				current_state: state.value,
 				transcript: JSON.stringify(transcript.value),
-				schema_version: state.schemaVersion,
-			});
-	}
-
-	const turnRows = await transaction("playthrough_turns")
-		.select(
-			"id",
-			"playthrough_id",
-			"sequence",
-			"resulting_state",
-			"output_messages",
-			"schema_version",
-		)
-		.where({schema_version: fromVersion})
-		.forUpdate();
-	const worldVersionByPlaythrough = new Map(
-		(await transaction("playthroughs").select("id", "world_version_id")).map((row) => [
-			String(row.id),
-			String(row.world_version_id),
-		]),
-	);
-	for (const row of turnRows) {
-		const playthroughId = String(row.playthrough_id);
-		const sequence = Number(row.sequence);
-		const worldId = worldVersionByPlaythrough.get(playthroughId);
-		const state = applyVersionedTransform(
-			migration,
-			Number(row.schema_version),
-			migration.gameState,
-			row.resulting_state,
-			{
-				playthroughId,
-				sequence,
-				storage: "turn" as const,
-				world: worldId ? migratedWorlds.get(worldId) : undefined,
-			},
-		);
-		const messages = applyVersionedTransform(
-			migration,
-			Number(row.schema_version),
-			migration.messages,
-			row.output_messages,
-			{playthroughId, sequence, storage: "output" as const},
-		);
-		if (!state.applied || !messages.applied)
-			throw new Error(
-				`Playthrough turn ${playthroughId}:${String(sequence)} changed version while locked.`,
-			);
-		await transaction("playthrough_turns")
-			.where({id: row.id})
-			.update({
-				resulting_state: state.value,
-				output_messages: JSON.stringify(messages.value),
 				schema_version: state.schemaVersion,
 			});
 	}

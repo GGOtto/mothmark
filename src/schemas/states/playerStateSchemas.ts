@@ -1,8 +1,10 @@
 import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
+import {CompassDirectionSchema} from "../world/directionSchema";
 
 export const PlayerStateSchemas = z.object({
 	currentRoom: editor.id("room"),
+	facing: CompassDirectionSchema.default("n"),
 	turns: z.number().int().default(0),
 	isDead: z.boolean().optional(),
 	customDeathMessage: z.string().optional(),
