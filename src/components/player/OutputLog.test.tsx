@@ -1,4 +1,4 @@
-import {render, screen} from "@testing-library/react";
+import {fireEvent, render, screen} from "@testing-library/react";
 import {GameMessageSchema} from "@/schemas/states/gameStateSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {OutputLog} from "./OutputLog";
@@ -41,16 +41,45 @@ describe("OutputLog", () => {
 	});
 
 	it("scrolls the newest transcript content into view after messages change", () => {
-		const scrollIntoView = jest.fn();
-		Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
-			configurable: true,
-			value: scrollIntoView,
+		const {container, rerender} = render(
+			<div className="game-player__output">
+				<OutputLog messages={[]} />
+			</div>,
+		);
+		const scroller = container.querySelector<HTMLElement>(".game-player__output")!;
+		Object.defineProperty(scroller, "scrollHeight", {configurable: true, value: 640});
+
+		rerender(
+			<div className="game-player__output">
+				<OutputLog messages={[message("new", "New output", "room")]} />
+			</div>,
+		);
+
+		expect(scroller.scrollTop).toBe(640);
+	});
+
+	it("does not move a transcript that the player has scrolled back to read", () => {
+		const {container, rerender} = render(
+			<div className="game-player__output">
+				<OutputLog messages={[message("old", "Old output", "room")]} />
+			</div>,
+		);
+		const scroller = container.querySelector<HTMLElement>(".game-player__output")!;
+		Object.defineProperties(scroller, {
+			clientHeight: {configurable: true, value: 100},
+			scrollHeight: {configurable: true, value: 800},
 		});
-		const {rerender} = render(<OutputLog messages={[]} />);
-		scrollIntoView.mockClear();
+		scroller.scrollTop = 120;
+		fireEvent.scroll(scroller);
 
-		rerender(<OutputLog messages={[message("new", "New output", "room")]} />);
+		rerender(
+			<div className="game-player__output">
+				<OutputLog
+					messages={[message("old", "Old output", "room"), message("new", "New output", "room")]}
+				/>
+			</div>,
+		);
 
-		expect(scrollIntoView).toHaveBeenCalledWith({block: "end"});
+		expect(scroller.scrollTop).toBe(120);
 	});
 });

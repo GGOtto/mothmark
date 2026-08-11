@@ -825,7 +825,7 @@ the full task definitions but do not imply a different sequence.
 
 ## Workstream — Player, administration, learning, and remaining routes
 
-- [ ] **R01 — Make the hosted play page and command line mobile-first.**
+- [x] **R01 — Make the hosted play page and command line mobile-first.**
 
   **Outcome:** A player can comfortably read, type, submit, recall, and restart commands on a phone.
 

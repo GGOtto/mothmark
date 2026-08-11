@@ -1,17 +1,26 @@
 import {fireEvent, render, screen} from "@testing-library/react";
-import {useState} from "react";
+import {useRef, useState} from "react";
 import {CommandInput} from "./CommandInput";
 
-function CommandInputHarness({commandList = []}: {commandList?: string[]}) {
+function CommandInputHarness({
+	busy = false,
+	commandList = [],
+}: {
+	busy?: boolean;
+	commandList?: string[];
+}) {
 	const [command, setCommand] = useState("");
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState(0);
+	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	return (
 		<>
 			<CommandInput
+				busy={busy}
 				command={command}
 				commandList={commandList}
 				currentCommandInHistory={currentCommandInHistory}
+				inputRef={inputRef}
 				setCurrentCommandInHistory={setCurrentCommandInHistory}
 				setCommand={setCommand}
 				submitCommand={jest.fn()}
@@ -47,6 +56,35 @@ describe("CommandInput", () => {
 		fireEvent.keyDown(input, {key: "ArrowDown"});
 		expect(input).toHaveValue("");
 		expect(screen.getByTestId("history-position")).toHaveTextContent("0");
+	});
+
+	it("offers touch-accessible command history controls and returns focus to the prompt", () => {
+		render(<CommandInputHarness commandList={["look", "north"]} />);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+
+		fireEvent.click(screen.getByRole("button", {name: "Previous command"}));
+
+		expect(input).toHaveValue("north");
+		expect(input).toHaveFocus();
+		fireEvent.click(screen.getByRole("button", {name: "Next command"}));
+		expect(input).toHaveValue("");
+	});
+
+	it("stays focusable and keeps its value while a command is being saved", () => {
+		const {rerender} = render(<CommandInputHarness />);
+		const input = screen.getByRole("textbox", {name: "Game command"}) as HTMLInputElement;
+		fireEvent.change(input, {target: {value: "open archive"}});
+		input.focus();
+		input.setSelectionRange(5, 12);
+
+		rerender(<CommandInputHarness busy />);
+
+		expect(input).toHaveValue("open archive");
+		expect(input).toHaveFocus();
+		expect(input).toHaveAttribute("readonly");
+		expect(input).not.toBeDisabled();
+		expect(input.selectionStart).toBe(5);
+		expect(input.selectionEnd).toBe(12);
 	});
 
 	it("stops at the oldest command instead of wrapping", () => {
