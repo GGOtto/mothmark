@@ -40,6 +40,8 @@ const request = (path: string, body: object) =>
 			"content-type": "application/json",
 			cookie: "mothmark_editor_csrf=csrf; mothmark_editor_session=editor-session",
 			origin: "http://localhost",
+			"user-agent":
+				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15",
 			"x-csrf-token": "csrf",
 			"x-forwarded-for": "192.0.2.5",
 		},
@@ -144,6 +146,12 @@ describe("registered account routes", () => {
 			request("/api/auth/sign-in", {email: "admin@example.com", password: "a durable admin password"}),
 		);
 		const cookies = response.headers.getSetCookie().join("\n");
+		expect(authenticateEditor).toHaveBeenCalledWith({
+			clientLabel: "Safari on macOS",
+			email: "admin@example.com",
+			network: "192.0.2.5",
+			password: "a durable admin password",
+		});
 		expect(cookies).toContain("mothmark_editor_session=opaque-editor-session");
 		expect(cookies).not.toContain("mothmark_admin_session");
 	});
@@ -165,6 +173,12 @@ describe("registered account routes", () => {
 		});
 		const response = await verifyEmail(request("/api/auth/verify-email", {token: "valid-token"}));
 		expect(response.status).toBe(200);
+		expect(completeRegistration).toHaveBeenLastCalledWith(
+			"valid-token",
+			expect.any(Date),
+			"192.0.2.5",
+			"Safari on macOS",
+		);
 		expect(response.headers.getSetCookie().join("\n")).toContain(
 			"mothmark_editor_session=verified-editor-session",
 		);

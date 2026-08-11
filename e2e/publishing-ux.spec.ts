@@ -38,11 +38,53 @@ test("the public catalog lists world cards without creating a play account", asy
 	await expect(page.getByRole("heading", {name: "Published worlds"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
 	await expect(page.getByText("by archivekeeper")).toBeVisible();
+	await expect(page.getByRole("link", {name: "archivekeeper"})).toHaveAttribute(
+		"href",
+		"/users/archivekeeper",
+	);
 	await expect(page.getByRole("link", {name: "Play Quiet archive"})).toHaveAttribute(
 		"href",
 		"/play/quiet-archive",
 	);
 	expect(bootstrapRequests).toBe(0);
+	expect(browserErrors).toEqual([]);
+});
+
+test("a public user profile falls back to the username and lists published worlds", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.route("**/api/users/archivekeeper", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					bio: "Makes quiet worlds.",
+					createdAt: "2026-08-08T12:00:00.000Z",
+					displayName: null,
+					publications: [publication],
+					username: "archivekeeper",
+					website: null,
+				},
+			}),
+		}),
+	);
+
+	await page.goto("/users/archivekeeper");
+	await expect(page.getByRole("heading", {name: "archivekeeper", level: 1})).toBeVisible();
+	await expect(page.getByText("@archivekeeper")).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
+	await expect(page.getByRole("link", {name: "Play"})).toHaveAttribute(
+		"href",
+		"/play/quiet-archive",
+	);
+	await page.setViewportSize({width: 310, height: 844});
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
 	expect(browserErrors).toEqual([]);
 });
 

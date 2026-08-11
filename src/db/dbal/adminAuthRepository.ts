@@ -185,7 +185,7 @@ export async function provisionAdministrator(input: {
 			const [user] = await transaction("users")
 				.insert({
 					account_type: "registered",
-					display_name: email,
+					display_name: null,
 					registered_at: now,
 					site_role: "admin",
 					status: "active",

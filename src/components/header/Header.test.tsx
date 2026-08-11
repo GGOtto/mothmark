@@ -51,7 +51,14 @@ describe("Header", () => {
 
 		await user.click(screen.getByRole("button", {name: /archivekeeper/}));
 		const menu = screen.getByRole("menu");
-		expect(within(menu).getByRole("menuitem", {name: "Account"})).toHaveAttribute("href", "/account");
+		expect(within(menu).getByRole("menuitem", {name: "View public profile"})).toHaveAttribute(
+			"href",
+			"/users/archivekeeper",
+		);
+		expect(within(menu).getByRole("menuitem", {name: "Account settings"})).toHaveAttribute(
+			"href",
+			"/account",
+		);
 		expect(within(menu).getByRole("group", {name: "Appearance"})).toBeInTheDocument();
 		expect(within(menu).getByRole("menuitem", {name: "Sign out"})).toBeInTheDocument();
 

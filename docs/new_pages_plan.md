@@ -1,7 +1,7 @@
 # Constrained card and scrolling page audit
 
-Status: inventory and page-by-page design dispositions complete. No layout changes have been
-implemented.
+Status: inventory and page-by-page design dispositions complete. The Account redesign is
+implemented; the remaining page dispositions have not been implemented.
 
 Last audited: 2026-08-09.
 
@@ -232,6 +232,9 @@ design detail rather than a content requirement.
 motion. None is a direct visual template for Mothmark.
 
 ### Account (`/account`)
+
+**Implementation status (2026-08-11):** Implemented with the full-width account ledger, editable
+public-profile fields, and public profiles at `/users/[username]`.
 
 **Direction:** Present the account as an archival ownership record rather than a narrow settings
 card. The page should clearly answer which account holds the author's worlds, how that account is

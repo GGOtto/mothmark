@@ -5,6 +5,8 @@
 - Treat exploratory product and interface ideas as design discussion until the user explicitly asks to build them. Do not turn an open design conversation into implementation prematurely.
 - Keep application secrets in the matching Phase environment, including local Development; do not
   add secrets to local `.env` files.
+- Do not assume API responses always contain JSON. Client request helpers must accept empty successful
+  responses and surface a stable application error for empty or malformed error responses.
 
 ## Test data
 
@@ -111,12 +113,17 @@
 - Preserve the established left activity-rail button geometry, spacing, compact typography, and
   label-reveal behavior when changing site styling. Color migrations may retheme it but must not
   redesign its controls.
-- Give the authored map deliberate light and dark palettes. Preserve its geometry and semantic color
-  roles across themes; floating map controls follow the application surface tokens.
+- Render the authored map and all map previews with the light map palette in both application themes.
+  Keep the dark map palette defined but inactive, preserve geometry and semantic color roles, and let
+  floating map controls follow the application surface tokens.
 - Keep the embedded player terminal monospace and theme-aware. Preserve its command prompt and
   uninterrupted output flow; do not style it as a form, chat, or card list.
 - Preserve a property inspector's scroll position when editing the current selection. Scroll to the
   top only when the user navigates to a different entity or editor view.
+- Present active account sessions as structured records rather than plain bullet text, and keep a
+  self-service action for signing out every device. Derive a short browser-and-device label when the
+  session is created; do not retain the raw user-agent string or add fingerprinting data just to make
+  the session list more detailed.
 - Open condition and effect editors directly from their workspace buttons; do not require selecting
   them in the right inspector before their popup can open.
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
@@ -136,6 +143,11 @@
   filenames while keeping the world UUID internal. Editor slugs are distinct from future publication
   slugs and do not grant or broaden access. Treat old UUID and `/editor` URLs as redirects, not the
   primary route family.
+- Keep public user profiles under `/users/[username]`. Display the username as the public name unless
+  the user explicitly supplies a display name; never derive a public name from email or expose the
+  email on a public profile. Link author usernames on published-world cards to that profile. Accept
+  bare website domains in profile settings and normalize them to HTTPS instead of requiring users to
+  type the scheme.
 - A blank-world choice must contain no authored rooms, items, connections, layers, conditions,
   effects, or events. The first room a user adds becomes its starting room.
 - Keep the bundled starter world small, plainspoken, and clearly instructional. Avoid sprawling
