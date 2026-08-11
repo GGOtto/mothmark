@@ -2,6 +2,7 @@
 	display: flex;
 	align-items: center;
 	flex-shrink: 0;
+	gap: 8px;
 
 	padding: 12px;
 
@@ -11,7 +12,6 @@
 }
 
 .command-input__prompt {
-	margin-right: 8px;
 	color: var(--color-terminal-prompt);
 	user-select: none;
 }
@@ -38,4 +38,56 @@
 .command-input__field:disabled {
 	cursor: wait;
 	opacity: 0.45;
+}
+
+.command-input__field[readonly] {
+	cursor: progress;
+	opacity: 0.72;
+}
+
+.command-input__history {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 2px;
+
+	button {
+		display: inline-flex;
+		width: 32px;
+		height: 32px;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		border: 1px solid transparent;
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--color-terminal-muted);
+		cursor: pointer;
+	}
+
+	button:hover:not(:disabled),
+	button:focus-visible {
+		border-color: var(--color-terminal-border);
+		color: var(--color-terminal-text);
+	}
+
+	button:focus-visible {
+		outline: 2px solid var(--color-terminal-prompt);
+		outline-offset: -2px;
+	}
+
+	button:disabled {
+		cursor: default;
+		opacity: 0.3;
+	}
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+	.command-input__history {
+		gap: 4px;
+
+		button {
+			width: 40px;
+			height: 40px;
+		}
+	}
 }

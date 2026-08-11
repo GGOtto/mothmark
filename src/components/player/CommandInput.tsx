@@ -1,7 +1,10 @@
+import {ChevronDown, ChevronUp} from "lucide-react";
+
 import "./CommandInput.scss";
 
 type CommandInputProps = {
 	command: string;
+	busy?: boolean;
 	disabled?: boolean;
 	inputRef?: React.Ref<HTMLInputElement>;
 	commandList: string[];
@@ -13,6 +16,7 @@ type CommandInputProps = {
 
 export function CommandInput({
 	command,
+	busy = false,
 	disabled = false,
 	inputRef,
 	commandList,
@@ -46,6 +50,7 @@ export function CommandInput({
 		<form
 			onSubmit={submitCommand}
 			className="command-input"
+			aria-busy={busy}
 			onPointerDown={(event) => {
 				if (event.target instanceof HTMLInputElement) return;
 				event.currentTarget.querySelector<HTMLInputElement>(".command-input__field")?.focus();
@@ -56,9 +61,14 @@ export function CommandInput({
 			<input
 				ref={inputRef}
 				disabled={disabled}
+				readOnly={busy}
 				aria-label="Game command"
+				aria-disabled={disabled}
 				value={command}
-				onChange={(event) => setCommand(event.target.value)}
+				onChange={(event) => {
+					setCurrentCommandInHistory(0);
+					setCommand(event.target.value);
+				}}
 				onKeyDown={(event) => {
 					if (event.key === "ArrowUp") {
 						event.preventDefault();
@@ -74,8 +84,41 @@ export function CommandInput({
 				autoComplete="off"
 				autoCorrect="off"
 				autoCapitalize="off"
+				enterKeyHint="send"
 				spellCheck={false}
 			/>
+			<div className="command-input__history" aria-label="Command history">
+				<button
+					type="button"
+					onClick={() => {
+						loadLastCommand();
+						if (!disabled) {
+							(inputRef as React.RefObject<HTMLInputElement | null> | undefined)?.current?.focus({
+								preventScroll: true,
+							});
+						}
+					}}
+					disabled={disabled || busy || currentCommandInHistory >= commandList.length}
+					aria-label="Previous command"
+				>
+					<ChevronUp size={17} aria-hidden="true" />
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						loadNextCommand();
+						if (!disabled) {
+							(inputRef as React.RefObject<HTMLInputElement | null> | undefined)?.current?.focus({
+								preventScroll: true,
+							});
+						}
+					}}
+					disabled={disabled || busy || currentCommandInHistory === 0}
+					aria-label="Next command"
+				>
+					<ChevronDown size={17} aria-hidden="true" />
+				</button>
+			</div>
 		</form>
 	);
 }

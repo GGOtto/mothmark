@@ -10,6 +10,7 @@ import "./GamePlayer.scss";
 
 type PlayerTerminalProps = {
 	command: string;
+	busy?: boolean;
 	disabled?: boolean;
 	messages: GameMessage[];
 	onCommandChange: React.Dispatch<React.SetStateAction<string>>;
@@ -19,6 +20,7 @@ type PlayerTerminalProps = {
 
 export function PlayerTerminal({
 	command,
+	busy = false,
 	disabled = false,
 	messages,
 	onCommandChange,
@@ -46,6 +48,7 @@ export function PlayerTerminal({
 		<section
 			ref={playerRef}
 			className="game-player"
+			aria-busy={busy}
 			onPointerDown={(event) => {
 				if (event.target !== event.currentTarget) return;
 				event.currentTarget.querySelector<HTMLInputElement>(".command-input__field")?.focus();
@@ -56,12 +59,13 @@ export function PlayerTerminal({
 			</div>
 			<CommandInput
 				inputRef={commandInputRef}
+				busy={busy}
 				disabled={disabled}
 				command={command}
 				setCommand={onCommandChange}
 				submitCommand={(event) => {
 					event.preventDefault();
-					if (!command.trim() || disabled) return;
+					if (!command.trim() || disabled || busy) return;
 					setCurrentCommandInHistory(0);
 					restoreFocusAfterSubmitRef.current = document.activeElement === commandInputRef.current;
 					const restoreSubmittedCommandFocus = () => {
