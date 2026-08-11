@@ -9,6 +9,7 @@ import {
 	listActiveAdministratorEmails,
 	markCustomerFeedbackReceipt,
 	markFeedbackNotification,
+	recordFeedbackAdminSentMessages,
 } from "@/db/dbal/feedbackRepository";
 import {
 	feedbackEmailIsConfigured,
@@ -32,6 +33,7 @@ jest.mock("@/db/dbal/feedbackRepository", () => ({
 	listActiveAdministratorEmails: jest.fn(),
 	markCustomerFeedbackReceipt: jest.fn(),
 	markFeedbackNotification: jest.fn(),
+	recordFeedbackAdminSentMessages: jest.fn(),
 }));
 jest.mock("@/feedback/feedbackEmail", () => ({
 	feedbackEmailIsConfigured: jest.fn(),
@@ -125,8 +127,23 @@ describe("feedback API", () => {
 		jest.mocked(createFeedbackMessage).mockResolvedValue(storedFeedback);
 		jest.mocked(markCustomerFeedbackReceipt).mockResolvedValue(undefined);
 		jest.mocked(markFeedbackNotification).mockResolvedValue(undefined);
-		jest.mocked(sendCustomerFeedbackReceipt).mockResolvedValue({resendEmailId: "receipt-email-id"});
-		jest.mocked(sendFeedbackEmail).mockResolvedValue(undefined);
+		jest.mocked(recordFeedbackAdminSentMessages).mockResolvedValue(undefined);
+		jest.mocked(sendCustomerFeedbackReceipt).mockResolvedValue({
+			messageId: "<receipt@example.test>",
+			resendEmailId: "receipt-email-id",
+		});
+		jest.mocked(sendFeedbackEmail).mockResolvedValue([
+			{
+				messageId: "<first-admin@example.test>",
+				recipient: "first-admin@example.test",
+				resendEmailId: "first-admin-email-id",
+			},
+			{
+				messageId: "<second-admin@example.test>",
+				recipient: "second-admin@example.test",
+				resendEmailId: "second-admin-email-id",
+			},
+		]);
 	});
 
 	it("rate limits and delivers valid signed-out feedback", async () => {
@@ -176,9 +193,26 @@ describe("feedback API", () => {
 		});
 		expect(markCustomerFeedbackReceipt).toHaveBeenCalledWith({
 			feedbackId,
+			messageId: "<receipt@example.test>",
 			resendEmailId: "receipt-email-id",
 			status: "delivered",
 		});
+		expect(recordFeedbackAdminSentMessages).toHaveBeenCalledWith([
+			{
+				feedbackId,
+				messageId: "<first-admin@example.test>",
+				messageKind: "admin_notification",
+				recipient: "first-admin@example.test",
+				resendEmailId: "first-admin-email-id",
+			},
+			{
+				feedbackId,
+				messageId: "<second-admin@example.test>",
+				messageKind: "admin_notification",
+				recipient: "second-admin@example.test",
+				resendEmailId: "second-admin-email-id",
+			},
+		]);
 		expect(markFeedbackNotification).toHaveBeenCalledWith(feedbackId, "delivered");
 		expect(getOwnedAccountSummary).not.toHaveBeenCalled();
 	});
@@ -328,6 +362,7 @@ describe("feedback API", () => {
 		expect(response.status).toBe(201);
 		expect(markCustomerFeedbackReceipt).toHaveBeenCalledWith({
 			feedbackId,
+			messageId: undefined,
 			resendEmailId: undefined,
 			status: "failed",
 		});

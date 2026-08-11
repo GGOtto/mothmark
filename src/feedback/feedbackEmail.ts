@@ -15,7 +15,9 @@ export type FeedbackEmail = {
 	username?: string | null;
 };
 
-export type SentFeedbackEmail = {resendEmailId?: string};
+export type SentFeedbackEmail = {messageId?: string; resendEmailId?: string};
+
+export type SentAdminFeedbackEmail = SentFeedbackEmail & {recipient: string};
 
 export type ReceivedFeedbackEmail = {
 	from: string;
@@ -80,7 +82,20 @@ const sendEmail = async (
 	});
 	const result = await parseJsonObject(response);
 	if (!response.ok) throw new Error(`Feedback email delivery failed (${response.status}).`);
-	return {resendEmailId: typeof result?.id === "string" ? result.id : undefined};
+	const resendEmailId = typeof result?.id === "string" ? result.id : undefined;
+	let messageId = typeof result?.message_id === "string" ? result.message_id : undefined;
+	if (!messageId && resendEmailId) {
+		try {
+			const sentResponse = await fetch(`${RESEND_EMAILS_URL}/${encodeURIComponent(resendEmailId)}`, {
+				headers: {authorization: `Bearer ${apiKey}`},
+			});
+			const sent = await parseJsonObject(sentResponse);
+			if (sentResponse.ok && typeof sent?.message_id === "string") messageId = sent.message_id;
+		} catch {
+			// The email.sent webhook records the Message-ID if immediate retrieval is not yet available.
+		}
+	}
+	return {messageId, resendEmailId};
 };
 
 const threadHeaders = (messageIds: string[]): Record<string, string> | undefined => {
@@ -121,7 +136,7 @@ export async function sendCustomerFeedbackReceipt(message: {
 	);
 }
 
-export async function sendFeedbackEmail(message: FeedbackEmail): Promise<void> {
+export async function sendFeedbackEmail(message: FeedbackEmail): Promise<SentAdminFeedbackEmail[]> {
 	const origin = process.env.PUBLIC_APP_ORIGIN?.trim();
 	if (!origin || message.recipients.length === 0) {
 		throw new Error("Feedback email is not configured.");
@@ -140,7 +155,7 @@ export async function sendFeedbackEmail(message: FeedbackEmail): Promise<void> {
 		"Reply to this email or open the conversation in Mothmark:",
 		adminUrl,
 	].join("\n");
-	await Promise.all(
+	return Promise.all(
 		message.recipients.map((recipient) =>
 			sendEmail(
 				{
@@ -155,13 +170,12 @@ export async function sendFeedbackEmail(message: FeedbackEmail): Promise<void> {
 					to: [recipient],
 				},
 				`feedback-admin-notification/${message.feedbackId}/${recipient.toLowerCase()}`,
-			),
+			).then((sent) => ({...sent, recipient})),
 		),
 	);
 }
 
 export async function sendFeedbackReplyEmail(message: {
-	adminRecipients: string[];
 	feedbackId: string;
 	message: string;
 	messageIds: string[];
@@ -171,7 +185,6 @@ export async function sendFeedbackReplyEmail(message: {
 }): Promise<SentFeedbackEmail> {
 	return sendEmail(
 		{
-			bcc: message.adminRecipients,
 			from: SUPPORT_FROM,
 			headers: threadHeaders(message.messageIds),
 			reply_to: feedbackReplyAddress(message.feedbackId),
@@ -188,31 +201,30 @@ export async function sendFeedbackReplyEmail(message: {
 	);
 }
 
-export async function sendCustomerReplyAdminNotifications(message: {
+export async function sendFeedbackAdminConversationCopies(message: {
 	adminUrl: string;
 	feedbackId: string;
+	label: "Administrator reply" | "Customer reply";
 	message: string;
-	messageId: string;
-	recipients: string[];
+	recipients: Array<{messageIds: string[]; recipient: string}>;
 	replyId: string;
 	subject: string;
-}): Promise<void> {
-	if (message.recipients.length === 0) throw new Error("No feedback administrators are configured.");
-	await Promise.all(
-		message.recipients.map((recipient) =>
+}): Promise<SentAdminFeedbackEmail[]> {
+	return Promise.all(
+		message.recipients.map(({messageIds, recipient}) =>
 			sendEmail(
 				{
 					from: SUPPORT_FROM,
-					headers: threadHeaders([message.messageId]),
+					headers: threadHeaders(messageIds),
 					reply_to: feedbackReplyAddress(message.feedbackId),
 					subject: threadSubject(message.subject),
 					tags: [
 						{name: "feedback_id", value: message.feedbackId},
 						{name: "feedback_reply_id", value: message.replyId},
-						{name: "message_kind", value: "customer_admin_notification"},
+						{name: "message_kind", value: "admin_conversation_copy"},
 					],
 					text: [
-						"Customer reply:",
+						`${message.label}:`,
 						"",
 						message.message,
 						"",
@@ -221,8 +233,8 @@ export async function sendCustomerReplyAdminNotifications(message: {
 					].join("\n"),
 					to: [recipient],
 				},
-				`feedback-customer-reply/${message.replyId}/${recipient.toLowerCase()}`,
-			),
+				`feedback-admin-copy/${message.replyId}/${recipient.toLowerCase()}`,
+			).then((sent) => ({...sent, recipient})),
 		),
 	);
 }

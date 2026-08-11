@@ -6,11 +6,16 @@ import {
 	beginAdminFeedbackReply,
 	finishAdminFeedbackReply,
 	getAdminFeedbackMessage,
+	getFeedbackAdminEmailThreads,
 	getFeedbackEmailThread,
 	listActiveAdministratorEmails,
 	listAdminFeedbackMessages,
+	recordFeedbackAdminSentMessages,
 } from "@/db/dbal/feedbackRepository";
-import {sendFeedbackReplyEmail} from "@/feedback/feedbackEmail";
+import {
+	sendFeedbackAdminConversationCopies,
+	sendFeedbackReplyEmail,
+} from "@/feedback/feedbackEmail";
 
 import {GET as listFeedback} from "./feedback/route";
 import {GET as getFeedback} from "./feedback/[id]/route";
@@ -27,11 +32,16 @@ jest.mock("@/db/dbal/feedbackRepository", () => ({
 	beginAdminFeedbackReply: jest.fn(),
 	finishAdminFeedbackReply: jest.fn(),
 	getAdminFeedbackMessage: jest.fn(),
+	getFeedbackAdminEmailThreads: jest.fn(),
 	getFeedbackEmailThread: jest.fn(),
 	listActiveAdministratorEmails: jest.fn(),
 	listAdminFeedbackMessages: jest.fn(),
+	recordFeedbackAdminSentMessages: jest.fn(),
 }));
-jest.mock("@/feedback/feedbackEmail", () => ({sendFeedbackReplyEmail: jest.fn()}));
+jest.mock("@/feedback/feedbackEmail", () => ({
+	sendFeedbackAdminConversationCopies: jest.fn(),
+	sendFeedbackReplyEmail: jest.fn(),
+}));
 
 const actorId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const feedbackId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
@@ -105,8 +115,31 @@ describe("administrator feedback routes", () => {
 		jest
 			.mocked(listActiveAdministratorEmails)
 			.mockResolvedValue(["admin@example.test", "second-admin@example.test"]);
+		jest.mocked(getFeedbackAdminEmailThreads).mockResolvedValue([
+			{messageIds: ["<admin-notification@example.test>"], recipient: "admin@example.test"},
+			{
+				messageIds: ["<second-notification@example.test>"],
+				recipient: "second-admin@example.test",
+			},
+		]);
 		jest.mocked(finishAdminFeedbackReply).mockResolvedValue(undefined);
-		jest.mocked(sendFeedbackReplyEmail).mockResolvedValue({resendEmailId: "sent-email-id"});
+		jest.mocked(recordFeedbackAdminSentMessages).mockResolvedValue(undefined);
+		jest.mocked(sendFeedbackReplyEmail).mockResolvedValue({
+			messageId: "<customer-copy@example.test>",
+			resendEmailId: "sent-email-id",
+		});
+		jest.mocked(sendFeedbackAdminConversationCopies).mockResolvedValue([
+			{
+				messageId: "<admin-copy@example.test>",
+				recipient: "admin@example.test",
+				resendEmailId: "admin-copy-id",
+			},
+			{
+				messageId: "<second-copy@example.test>",
+				recipient: "second-admin@example.test",
+				resendEmailId: "second-copy-id",
+			},
+		]);
 	});
 
 	it("requires an administrator session for the inbox, detail, and reply", async () => {
@@ -149,7 +182,6 @@ describe("administrator feedback routes", () => {
 			message: "Thanks for the suggestion.",
 		});
 		expect(sendFeedbackReplyEmail).toHaveBeenCalledWith({
-			adminRecipients: ["admin@example.test", "second-admin@example.test"],
 			feedbackId,
 			message: "Thanks for the suggestion.",
 			messageIds: ["<receipt@example.test>"],
@@ -157,9 +189,43 @@ describe("administrator feedback routes", () => {
 			subject: "Mothmark support: idea",
 			to: "reader@example.test",
 		});
+		expect(sendFeedbackAdminConversationCopies).toHaveBeenCalledWith({
+			adminUrl: `http://localhost/admin/feedback/${feedbackId}`,
+			feedbackId,
+			label: "Administrator reply",
+			message: "Thanks for the suggestion.",
+			recipients: [
+				{messageIds: ["<admin-notification@example.test>"], recipient: "admin@example.test"},
+				{
+					messageIds: ["<second-notification@example.test>"],
+					recipient: "second-admin@example.test",
+				},
+			],
+			replyId,
+			subject: "Mothmark support: idea",
+		});
+		expect(recordFeedbackAdminSentMessages).toHaveBeenCalledWith([
+			{
+				feedbackId,
+				messageId: "<admin-copy@example.test>",
+				messageKind: "admin_conversation_copy",
+				recipient: "admin@example.test",
+				replyId,
+				resendEmailId: "admin-copy-id",
+			},
+			{
+				feedbackId,
+				messageId: "<second-copy@example.test>",
+				messageKind: "admin_conversation_copy",
+				recipient: "second-admin@example.test",
+				replyId,
+				resendEmailId: "second-copy-id",
+			},
+		]);
 		expect(finishAdminFeedbackReply).toHaveBeenCalledWith({
 			actorUserId: actorId,
 			feedbackId,
+			messageId: "<customer-copy@example.test>",
 			replyId,
 			resendEmailId: "sent-email-id",
 			status: "delivered",
