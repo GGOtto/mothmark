@@ -307,7 +307,9 @@ export function Header({account}: {account: HeaderAccount}) {
 					) : null}
 				</div>
 			</header>
-			{feedbackOpen ? <FeedbackDialog onClose={() => setFeedbackOpen(false)} /> : null}
+			{feedbackOpen ? (
+				<FeedbackDialog onClose={() => setFeedbackOpen(false)} requiresReplyEmail={!registered} />
+			) : null}
 		</>
 	);
 }

@@ -7,6 +7,9 @@
   add secrets to local `.env` files.
 - Do not assume API responses always contain JSON. Client request helpers must accept empty successful
   responses and surface a stable application error for empty or malformed error responses.
+- Keep each feedback submission as one two-way support conversation mirrored in the admin inbox,
+  every active administrator's email, and the customer's email thread. Send customer-facing mail as
+  `Mothmark Support <support@mothmark.app>` and never expose an administrator's personal address.
 
 ## Test data
 

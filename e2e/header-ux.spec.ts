@@ -52,6 +52,7 @@ test("the signed-out desktop header uses a left page selector and sends feedback
 
 	await page.getByRole("button", {name: "Send feedback"}).click();
 	await page.getByLabel("About").selectOption("idea");
+	await page.getByLabel("Your email").fill("reader@example.test");
 	await page.getByLabel("Message").fill("Make browsing the easiest place to start.");
 	await page.getByRole("dialog").getByRole("button", {name: "Send feedback"}).click();
 	await expect(page.getByText("Feedback sent.")).toBeVisible();
@@ -59,6 +60,7 @@ test("the signed-out desktop header uses a left page selector and sends feedback
 		category: "idea",
 		includePage: true,
 		message: "Make browsing the easiest place to start.",
+		replyEmail: "reader@example.test",
 	});
 	expect(browserErrors).toEqual([]);
 });

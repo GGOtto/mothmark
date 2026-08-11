@@ -1,5 +1,19 @@
 "use client";
 
+export function adminNextPath(search: string): string {
+	const candidate = new URLSearchParams(search).get("next");
+	if (!candidate) return "/admin/users";
+	try {
+		const destination = new URL(candidate, "https://mothmark.invalid");
+		return destination.origin === "https://mothmark.invalid" &&
+			destination.pathname.startsWith("/admin/")
+			? `${destination.pathname}${destination.search}${destination.hash}`
+			: "/admin/users";
+	} catch {
+		return "/admin/users";
+	}
+}
+
 export async function readAdminJson<T>(path: string): Promise<T> {
 	const response = await fetch(path, {cache: "no-store"});
 	if (response.status === 401) {
