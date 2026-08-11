@@ -64,10 +64,19 @@ Use these variables in Phase `Staging` and `Production`:
 | `DATABASE_POOL_MAX`         | `1`                                                | Yes               |
 | `PUBLIC_APP_ORIGIN`         | Exact public origin without a trailing slash       | Yes               |
 | `AUTH_EMAIL_FROM`           | Verified Resend sender address                     | Yes               |
-| `FEEDBACK_EMAIL_TO`         | Recipient address for product feedback             | Yes               |
-| `RESEND_API_KEY`            | Resend transactional-email API key                 | Yes               |
+| `RESEND_API_KEY`            | Resend full-access API key                         | Yes               |
+| `RESEND_WEBHOOK_SECRET`     | Resend webhook signing secret                      | Yes               |
+| `FEEDBACK_REPLY_DOMAIN`     | Receiving subdomain for feedback replies           | Yes               |
 | `CREDENTIAL_ENCRYPTION_KEY` | 32 random bytes encoded as base64                  | Yes               |
-| `ADMIN_EMAIL`               | Sole administrator's verified email                | No                |
+| `ADMIN_EMAIL`               | Initial or replacement administrator email         | No                |
+
+Feedback conversations always use `Mothmark Support <support@mothmark.app>` as their visible sender.
+The initial message and every customer reply are delivered separately to every active registered
+administrator email and stored in Mothmark administration. Administrators can reply from the admin
+page or directly to a notification email. Mothmark relays either reply to the customer from
+`support@mothmark.app` and blind-copies every administrator, so no personal administrator address is
+shown to the customer. The customer receives an immediate copy of the original message and can
+continue the same conversation by replying in their inbox.
 
 The application uses the pooled URL. Knex migrations use the direct URL through the Phase command
 shown below. Neon recommends direct connections for schema migration tools and pooled connections
@@ -130,8 +139,8 @@ Git history.
    `preview` URLs.
 5. Add the same variables to `Production`, using the Neon `production` URLs.
 6. For local registration and feedback testing, add `PUBLIC_APP_ORIGIN=http://localhost:3000`,
-   `AUTH_EMAIL_FROM`, `FEEDBACK_EMAIL_TO`, and `RESEND_API_KEY` to Phase `Development`. Keep them in
-   Phase; do not copy them into `.env` files.
+   `AUTH_EMAIL_FROM`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, and `FEEDBACK_REPLY_DOMAIN` to Phase
+   `Development`. Keep them in Phase; do not copy them into `.env` files.
 7. Authenticate and initialize the repository locally:
 
 ```bash
@@ -215,8 +224,9 @@ Create the Vercel project before this step so Phase can select it as a destinati
    - `DATABASE_POOL_MAX`
    - `PUBLIC_APP_ORIGIN`
    - `AUTH_EMAIL_FROM`
-   - `FEEDBACK_EMAIL_TO`
    - `RESEND_API_KEY`
+   - `RESEND_WEBHOOK_SECRET`
+   - `FEEDBACK_REPLY_DOMAIN`
    - `CREDENTIAL_ENCRYPTION_KEY`
 7. Confirm that `DATABASE_MIGRATION_URL` is excluded from both Vercel syncs.
 
@@ -250,6 +260,31 @@ Create separate Resend API keys and verified senders for Staging and Production.
 `PUBLIC_APP_ORIGIN` to each environment's canonical HTTPS origin. Authentication messages contain
 only a short-lived, single-use verification or recovery token. Never log those URLs.
 
+### Configure two-way support email
+
+Set `RESEND_API_KEY` to **Full access**. The application uses the same server-only key both to send
+mail and to retrieve the body of a verified inbound message. Keep this key only in Phase and the
+deployed server environment; never expose it to browser code.
+
+1. Verify `mothmark.app` for sending and make sure `support@mothmark.app` is an allowed sender.
+2. Enable receiving on the existing `mothmark.app` Resend domain and add Resend's root MX record in
+   Cloudflare. Mothmark does not use another inbox provider, so Resend can safely receive root-domain
+   mail.
+3. Set `FEEDBACK_REPLY_DOMAIN=mothmark.app` in each environment.
+4. Create a webhook for each deployed environment at
+   `https://<environment-origin>/api/webhooks/resend` and subscribe it to `email.received` and
+   `email.sent`.
+5. If Vercel Deployment Protection covers that origin, create a dedicated Protection Bypass for
+   Automation secret and register the webhook URL as
+   `https://<environment-origin>/api/webhooks/resend?x-vercel-protection-bypass=<secret>`. Treat the
+   complete URL as a secret and rotate the bypass independently from other automation.
+6. Copy that webhook's signing secret into the matching Phase environment as
+   `RESEND_WEBHOOK_SECRET`, then sync it and the full-access `RESEND_API_KEY` to Vercel.
+
+Create a separate webhook and signing secret for every deployed environment. Resend may deliver the
+same account-level event to each endpoint; only the environment whose database contains the opaque
+feedback conversation ID will process the message.
+
 Generate the credential-encryption key locally and place it directly into the matching Phase
 environment:
 
@@ -275,6 +310,20 @@ codes. Store those codes offline and remove `ADMIN_EMAIL` after provisioning. Th
 or upgrades exactly that verified address, refuses to replace another administrator, revokes old
 sessions, and records no credential material.
 
+To promote another existing active account with a verified email, run the interactive command in
+the matching Phase environment:
+
+```bash
+phase run --env staging 'node --conditions=react-server --import tsx scripts/adminAdd.ts'
+pnpm admin:add:prod
+```
+
+Enter the account email when prompted. The command keeps the account's current password, enrolls a
+separate administrator authenticator, displays ten one-time recovery codes, raises the account's
+world limit to at least the administrator default, revokes its existing sessions, and records a
+credential-free operational event. Store the recovery codes offline. Public registration never
+grants administrator authority; this Phase-authenticated operator command is the only way to add it.
+
 Before enabling public registration in each deployed runtime, run `pnpm auth:benchmark` there and
 record the three Argon2id timings in the release record. The versioned defaults use 64 MiB, four
 passes, and one lane. Review them if the average falls outside the team's 50–250 ms operational
@@ -292,12 +341,14 @@ phase run --env production 'pnpm admin:recover mfa'
 phase run --env production 'pnpm admin:recover replace'
 ```
 
-The command requires typing an operation-specific confirmation. Password input remains non-echoing.
-Either operation revokes all administrator sessions and records a credential-free operational
-event. MFA recovery replaces the authenticator and every recovery code, so store the newly printed
-codes offline before ending the maintenance window. Replacement additionally requires `ADMIN_EMAIL`
-to name a different existing verified account; it transfers the sole role, enrolls fresh MFA,
-revokes both users' sessions, and demotes the former administrator to an ordinary registered user.
+Password and MFA recovery prompt for the target administrator email and then require typing an
+operation-specific confirmation. Password input remains non-echoing. Either operation revokes that
+administrator's sessions and records a credential-free operational event. MFA recovery replaces the
+authenticator and every recovery code, so store the newly printed codes offline before ending the
+maintenance window. Replacement additionally requires `ADMIN_EMAIL` to name a different existing
+verified account and is available only while exactly one active administrator exists; it transfers
+the role, enrolls fresh MFA, revokes both users' sessions, and demotes the former administrator to an
+ordinary registered user.
 
 ### 9. Redeploy with the synced environment
 

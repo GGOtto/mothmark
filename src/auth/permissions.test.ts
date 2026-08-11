@@ -30,6 +30,7 @@ describe("effective permissions", () => {
 			true,
 		);
 		expect(admin.find(({permission}) => permission === "admin.users.manage")?.allowed).toBe(true);
+		expect(admin.find(({permission}) => permission === "admin.feedback.reply")?.allowed).toBe(true);
 	});
 
 	it("applies active allow and deny overrides before defaults", () => {

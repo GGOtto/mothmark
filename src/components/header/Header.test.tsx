@@ -76,6 +76,15 @@ describe("Header", () => {
 		expect(screen.getByRole("menuitem", {name: "Admin"})).toHaveAttribute("href", "/admin");
 	});
 
+	it("asks temporary anonymous accounts for a feedback reply email", async () => {
+		const user = userEvent.setup();
+		render(<Header account={{accountType: "anonymous", siteRole: "user", username: null}} />);
+
+		await user.click(screen.getByRole("button", {name: "Send feedback"}));
+
+		expect(screen.getByLabelText("Your email")).toBeRequired();
+	});
+
 	it("keeps feedback in the mobile menu and hides the shell on hosted game routes", async () => {
 		const user = userEvent.setup();
 		const {rerender} = render(<Header account={null} />);

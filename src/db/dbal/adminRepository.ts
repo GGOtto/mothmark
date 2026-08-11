@@ -300,7 +300,7 @@ export async function getAdminWorld(worldId: string): Promise<AdminWorldDetail |
 
 export async function recordAdministratorRead(
 	actorUserId: string,
-	targetType: "user" | "world",
+	targetType: "feedback" | "user" | "world",
 	targetId: string,
 ): Promise<void> {
 	await database("operational_events").insert({

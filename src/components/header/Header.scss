@@ -514,17 +514,31 @@
 		}
 
 		select,
+		input[type="email"],
 		textarea {
 			width: 100%;
+			min-width: 0;
 			box-sizing: border-box;
 			border: 1px solid var(--color-control-border);
 			border-radius: var(--radius-control);
 			background: var(--color-surface);
 			color: var(--color-text);
 			font: inherit;
+
+			&::placeholder {
+				color: var(--color-text-muted);
+				opacity: 1;
+			}
 		}
 
 		select {
+			height: 40px;
+			padding: 0 10px;
+		}
+
+		input[type="email"] {
+			-webkit-appearance: none;
+			appearance: none;
 			height: 40px;
 			padding: 0 10px;
 		}
@@ -582,11 +596,13 @@
 }
 
 .feedbackDialogLimit,
+.feedbackDialogFieldNote,
 .feedbackDialogError {
 	margin: 2px 0 0;
 	font-size: 12px;
 }
 
+.feedbackDialogFieldNote,
 .feedbackDialogLimit {
 	color: var(--color-text-muted);
 }

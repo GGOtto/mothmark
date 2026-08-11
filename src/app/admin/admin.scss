@@ -207,6 +207,18 @@
 	background: var(--color-success);
 	color: var(--color-success);
 }
+.adminStatus-new::before {
+	background: var(--color-action);
+	color: var(--color-action);
+}
+.adminStatus-open::before {
+	background: var(--color-warning);
+	color: var(--color-warning);
+}
+.adminStatus-replied::before {
+	background: var(--color-success);
+	color: var(--color-success);
+}
 .adminSection {
 	margin-top: 18px;
 	padding: 20px;
@@ -448,6 +460,52 @@
 	color: var(--color-terminal-text);
 	font-size: 12px;
 	line-height: 1.5;
+}
+
+.adminFeedbackExcerpt {
+	max-width: 520px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap !important;
+}
+.adminFeedbackMessage {
+	margin-bottom: 0;
+	color: var(--color-text) !important;
+	font-size: 14px !important;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.adminFeedbackReplies {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	li {
+		padding: 14px 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+	li:first-child {
+		padding-top: 0;
+	}
+	li:last-child {
+		padding-bottom: 0;
+		border-bottom: 0;
+	}
+	header {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		color: var(--color-text-faint);
+		font-size: 11px;
+		text-transform: capitalize;
+	}
+	p {
+		margin-bottom: 0;
+		color: var(--color-text) !important;
+		font-size: 13px !important;
+		line-height: 1.55;
+		white-space: pre-wrap;
+	}
 }
 
 .adminPlaythroughFilters {

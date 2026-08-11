@@ -12,4 +12,17 @@ describe("administrator operator commands", () => {
 		);
 		expect(packageJson.scripts["admin:create:prod"]).not.toContain("pnpm admin:create");
 	});
+
+	it("runs administrator promotion through the selected Phase environment", () => {
+		const packageJson = JSON.parse(
+			readFileSync(path.join(process.cwd(), "package.json"), "utf8"),
+		) as {scripts: Record<string, string>};
+
+		expect(packageJson.scripts["admin:add"]).toBe(
+			"phase run 'node --conditions=react-server --import tsx scripts/adminAdd.ts'",
+		);
+		expect(packageJson.scripts["admin:add:prod"]).toBe(
+			"phase run --env production 'node --conditions=react-server --import tsx scripts/adminAdd.ts'",
+		);
+	});
 });

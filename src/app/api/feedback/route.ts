@@ -5,18 +5,35 @@ import {resolveCurrentActor} from "@/auth/currentActor";
 import {mutationSecurityError} from "@/auth/requestSecurity";
 import {RequestBodyError, readBoundedJson} from "@/auth/requestBody";
 import {getOwnedAccountSummary} from "@/db/dbal/accountRepository";
-import {enforceFeedbackRateLimit, FeedbackRateLimitError} from "@/db/dbal/feedbackRepository";
-import {feedbackEmailIsConfigured, sendFeedbackEmail} from "@/feedback/feedbackEmail";
+import {
+	createFeedbackMessage,
+	enforceFeedbackRateLimit,
+	FeedbackRateLimitError,
+	listActiveAdministratorEmails,
+	markCustomerFeedbackReceipt,
+	markFeedbackNotification,
+} from "@/db/dbal/feedbackRepository";
+import {
+	feedbackEmailIsConfigured,
+	sendCustomerFeedbackReceipt,
+	sendFeedbackEmail,
+} from "@/feedback/feedbackEmail";
 import {requestNetwork} from "../auth/_shared";
 
 export const runtime = "nodejs";
 
 const FEEDBACK_REQUEST_MAX_BYTES = 8 * 1024;
+const ReplyEmailSchema = z.string().trim().pipe(z.email().max(254));
+const FeedbackPageSchema = z
+	.url()
+	.max(2_048)
+	.refine((value) => ["http:", "https:"].includes(new URL(value).protocol));
 const FeedbackSchema = z.object({
 	category: z.enum(["bug", "general", "idea"]),
 	includePage: z.boolean().optional().default(false),
 	message: z.string().trim().min(1).max(4_000),
-	page: z.string().trim().max(2_048).optional(),
+	page: FeedbackPageSchema.optional(),
+	replyEmail: ReplyEmailSchema.optional(),
 	website: z.string().max(0).optional(),
 });
 
@@ -53,6 +70,36 @@ export async function POST(request: Request): Promise<NextResponse> {
 	}
 
 	const actor = await resolveCurrentActor(request, "editor");
+	const account = actor ? await getOwnedAccountSummary(actor.userId) : undefined;
+	const replyEmail = account?.email ?? input.replyEmail;
+	if (!replyEmail) {
+		return NextResponse.json(
+			{
+				error: {
+					code: "VALIDATION_ERROR",
+					message: "Enter an email address so we can reply to your feedback.",
+				},
+			},
+			{status: 400},
+		);
+	}
+	let recipients: string[];
+	try {
+		recipients = await listActiveAdministratorEmails();
+	} catch {
+		console.error("Feedback administrator recipients could not be loaded.");
+		return NextResponse.json(
+			{error: {code: "EMAIL_UNAVAILABLE", message: "Feedback delivery is not configured."}},
+			{status: 503},
+		);
+	}
+	if (recipients.length === 0) {
+		return NextResponse.json(
+			{error: {code: "EMAIL_UNAVAILABLE", message: "Feedback delivery is not configured."}},
+			{status: 503},
+		);
+	}
+
 	try {
 		await enforceFeedbackRateLimit({actorUserId: actor?.userId, network: requestNetwork(request)});
 	} catch (error) {
@@ -65,23 +112,76 @@ export async function POST(request: Request): Promise<NextResponse> {
 		throw error;
 	}
 
-	const account = actor ? await getOwnedAccountSummary(actor.userId) : undefined;
+	let feedback: Awaited<ReturnType<typeof createFeedbackMessage>>;
+	try {
+		feedback = await createFeedbackMessage({
+			accountType: account?.accountType,
+			actorUserId: actor?.userId,
+			category: input.category,
+			message: input.message,
+			page: input.includePage ? input.page : undefined,
+			replyEmail,
+			username: account?.username,
+		});
+	} catch {
+		console.error("Feedback message could not be saved.");
+		return NextResponse.json(
+			{error: {code: "SAVE_FAILED", message: "Feedback could not be sent. Try again later."}},
+			{status: 500},
+		);
+	}
+
+	let customerReceiptDelivered = false;
+	let receiptEmailId: string | undefined;
+	try {
+		const receipt = await sendCustomerFeedbackReceipt({
+			category: input.category,
+			feedbackId: feedback.id,
+			message: input.message,
+			subject: feedback.subject,
+			to: replyEmail,
+		});
+		receiptEmailId = receipt.resendEmailId;
+		customerReceiptDelivered = true;
+	} catch {
+		console.error("Feedback customer receipt could not be delivered.");
+	}
+	try {
+		await markCustomerFeedbackReceipt({
+			feedbackId: feedback.id,
+			resendEmailId: receiptEmailId,
+			status: customerReceiptDelivered ? "delivered" : "failed",
+		});
+	} catch {
+		console.error("Feedback customer receipt status could not be recorded.");
+	}
+
+	let notificationDelivered = false;
 	try {
 		await sendFeedbackEmail({
 			accountEmail: account?.email,
 			accountType: account?.accountType,
 			category: input.category,
+			feedbackId: feedback.id,
 			message: input.message,
 			page: input.includePage ? input.page : undefined,
+			recipients,
+			replyEmail,
+			subject: feedback.subject,
 			username: account?.username,
 		});
+		notificationDelivered = true;
 	} catch {
-		console.error("Feedback email could not be delivered.");
-		return NextResponse.json(
-			{error: {code: "DELIVERY_FAILED", message: "Feedback could not be sent. Try again later."}},
-			{status: 502},
-		);
+		console.error("Feedback administrator notification could not be delivered.");
+	}
+	try {
+		await markFeedbackNotification(feedback.id, notificationDelivered ? "delivered" : "failed");
+	} catch {
+		console.error("Feedback notification status could not be recorded.");
 	}
 
-	return NextResponse.json({data: {sent: true}}, {status: 201});
+	return NextResponse.json(
+		{data: {customerReceiptDelivered, id: feedback.id, notificationDelivered, sent: true}},
+		{status: 201},
+	);
 }

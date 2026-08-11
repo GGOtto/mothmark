@@ -15,6 +15,8 @@ export const PERMISSIONS = [
 	"admin.worlds.transfer",
 	"admin.publications.manage",
 	"admin.playthroughs.view",
+	"admin.feedback.view",
+	"admin.feedback.reply",
 	"admin.audit.view",
 ] as const;
 
