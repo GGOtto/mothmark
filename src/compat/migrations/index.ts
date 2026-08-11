@@ -1,10 +1,11 @@
 import {v1ToV2} from "./v1ToV2";
 import {v2ToV3} from "./v2ToV3";
+import {v3ToV4} from "./v3ToV4";
 import type {StorageMigration} from "./types";
 
-export const PERSISTED_SCHEMA_VERSION = 3;
+export const PERSISTED_SCHEMA_VERSION = 4;
 
-export const storageMigrations: readonly StorageMigration[] = [v1ToV2, v2ToV3];
+export const storageMigrations: readonly StorageMigration[] = [v1ToV2, v2ToV3, v3ToV4];
 
 export function validateStorageMigrationRegistry(
 	migrations: readonly StorageMigration[],

@@ -86,3 +86,7 @@ conditions, events, or turn resolution that still satisfy the Zod schemas.
 
 See [BREAKING_SCHEMA_MIGRATIONS_README.md](BREAKING_SCHEMA_MIGRATIONS_README.md) when the proposed
 change cannot remain backward compatible.
+
+The v3-to-v4 migration records the reviewed command-help contract without rewriting retained
+documents. Existing playthroughs therefore preserve their historical command results; newly
+created worlds receive the expanded initial command set.
