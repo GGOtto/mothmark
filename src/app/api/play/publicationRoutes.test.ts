@@ -6,6 +6,7 @@ import {
 	deleteHostedPlaythrough,
 	getPublicPublication,
 	listPublications,
+	PublicationError,
 	restartHostedPlay,
 	submitHostedCommand,
 } from "@/db/dbal/publicationRepository";
@@ -22,7 +23,14 @@ jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/sessionsRepository", () => ({findBootstrapPlayActor: jest.fn()}));
 jest.mock("@/db/dbal/publicationRepository", () => ({
 	HOSTED_COMMAND_MAX_LENGTH: 500,
-	PublicationError: class PublicationError extends Error {},
+	PublicationError: class PublicationError extends Error {
+		constructor(
+			readonly code: string,
+			message: string,
+		) {
+			super(message);
+		}
+	},
 	bootstrapHostedPlay: jest.fn(),
 	deleteHostedPlaythrough: jest.fn(),
 	getPublicPublication: jest.fn(),
@@ -32,6 +40,9 @@ jest.mock("@/db/dbal/publicationRepository", () => ({
 }));
 
 const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
+const sourcePlaythroughId = "0fd07c45-9c37-44b7-b197-dc2e0fcdcb9d";
+const targetReleaseId = "66d79031-600d-49cf-b7b0-85bc7bbf1fb2";
+const restartRequestId = "ad5aa7cd-af4d-46df-bbcd-2e7daed47fd9";
 const csrf = "play-csrf";
 const context = {params: Promise.resolve({slug: "quiet-archive"})};
 const playRequest = (path: string, body?: unknown) =>
@@ -81,6 +92,7 @@ describe("public publication routes", () => {
 			publication: {id: "publication-id"} as never,
 			playthrough: {id: "playthrough-id"} as never,
 			newerReleaseAvailable: false,
+			restartAvailability: {allowed: true, targetRelease: {id: targetReleaseId, number: 1}},
 			session: {token: "opaque-token", expiresAt: new Date("2026-09-01T00:00:00.000Z")},
 		});
 		const response = await bootstrap(
@@ -171,17 +183,63 @@ describe("public publication routes", () => {
 			publication: {id: "publication-id"} as never,
 			playthrough: {id: "new-playthrough"} as never,
 			newerReleaseAvailable: false,
+			restartAvailability: {allowed: true, targetRelease: {id: targetReleaseId, number: 2}},
 		});
 		const response = await restart(
-			playRequest("/api/play/publications/quiet-archive/restart"),
+			playRequest("/api/play/publications/quiet-archive/restart", {
+				sourcePlaythroughId,
+				expectedTargetReleaseId: targetReleaseId,
+				restartRequestId,
+				source: "release_notice",
+			}),
 			context,
 		);
 		expect(response.status).toBe(200);
 		expect(restartHostedPlay).toHaveBeenCalledWith({
 			playerUserId: userId,
 			slug: "quiet-archive",
+			sourcePlaythroughId,
+			expectedTargetReleaseId: targetReleaseId,
+			restartRequestId,
+			source: "release_notice",
 			network: "unavailable",
 		});
+	});
+
+	it("rejects incomplete restart lineage before calling the repository", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "anonymous", siteRole: "user", audience: "play"});
+		const response = await restart(
+			playRequest("/api/play/publications/quiet-archive/restart", {
+				sourcePlaythroughId,
+			}),
+			context,
+		);
+		expect(response.status).toBe(400);
+		expect(restartHostedPlay).not.toHaveBeenCalled();
+	});
+
+	it("surfaces a changed restart target as a conflict", async () => {
+		jest
+			.mocked(resolveCurrentActor)
+			.mockResolvedValue({userId, accountType: "anonymous", siteRole: "user", audience: "play"});
+		jest
+			.mocked(restartHostedPlay)
+			.mockRejectedValue(
+				new PublicationError("RESTART_CONFLICT", "A different release is now available."),
+			);
+		const response = await restart(
+			playRequest("/api/play/publications/quiet-archive/restart", {
+				sourcePlaythroughId,
+				expectedTargetReleaseId: targetReleaseId,
+				restartRequestId,
+				source: "release_notice",
+			}),
+			context,
+		);
+		expect(response.status).toBe(409);
+		expect((await response.json()).error.message).toBe("A different release is now available.");
 	});
 
 	it("deletes only the current play actor's saved playthrough", async () => {

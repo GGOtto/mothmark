@@ -34,6 +34,7 @@ export async function POST(request: Request, context: Context): Promise<NextResp
 					publication: result.publication,
 					playthrough: result.playthrough,
 					newerReleaseAvailable: result.newerReleaseAvailable,
+					restartAvailability: result.restartAvailability,
 				},
 			},
 			{status: result.session ? 201 : 200},

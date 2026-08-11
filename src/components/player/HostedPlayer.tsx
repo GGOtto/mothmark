@@ -15,7 +15,7 @@ type Publication = {
 	title: string;
 	summary: string;
 	visibility: "listed" | "unlisted";
-	release: {number: number; publishedAt: string};
+	release: {id: string; number: number; publishedAt: string};
 };
 
 type Playthrough = {
@@ -32,7 +32,14 @@ type BootstrapData = {
 	publication: Publication;
 	playthrough: Playthrough;
 	newerReleaseAvailable: boolean;
+	restartAvailability: {
+		allowed: boolean;
+		targetRelease: {id: string; number: number};
+		unavailableReason?: string;
+	};
 };
+
+type RestartSource = "player_menu" | "release_notice" | "play_again";
 
 function responseErrorMessage(body: unknown): string | undefined {
 	if (!body || typeof body !== "object" || !("error" in body)) return undefined;
@@ -88,6 +95,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 	const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 	const menuRef = useRef<HTMLElement | null>(null);
 	const menuTitleRef = useRef<HTMLHeadingElement | null>(null);
+	const restartRequestIdRef = useRef<string | null>(null);
 	const [publication, setPublication] = useState<Publication | null>(null);
 	const [playthrough, setPlaythrough] = useState<Playthrough | null>(null);
 	const [csrf, setCsrf] = useState("");
@@ -97,12 +105,17 @@ export function HostedPlayer({slug}: {slug: string}) {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [menuView, setMenuView] = useState<"about" | "restart" | "delete">("about");
 	const [newerReleaseAvailable, setNewerReleaseAvailable] = useState(false);
+	const [restartAvailability, setRestartAvailability] = useState<
+		BootstrapData["restartAvailability"] | null
+	>(null);
+	const [restartSource, setRestartSource] = useState<RestartSource>("player_menu");
 	const online = useSyncExternalStore(subscribeToConnection, readConnection, readServerConnection);
 
 	const applyBootstrap = useCallback((data: BootstrapData) => {
 		setPublication(data.publication);
 		setPlaythrough(data.playthrough);
 		setNewerReleaseAvailable(data.newerReleaseAvailable);
+		setRestartAvailability(data.restartAvailability);
 	}, []);
 
 	const bootstrap = useCallback(
@@ -244,14 +257,22 @@ export function HostedPlayer({slug}: {slug: string}) {
 	};
 
 	const restart = async () => {
-		if (!csrf || !playthrough) return;
+		if (!csrf || !playthrough || !restartAvailability?.allowed) return;
+		const restartRequestId = restartRequestIdRef.current ?? crypto.randomUUID();
+		restartRequestIdRef.current = restartRequestId;
 		setStatus("saving");
 		setError("");
 		try {
 			const body = await hostedResponseJson<{data?: BootstrapData}>(
 				await fetch(`/api/play/publications/${encodeURIComponent(slug)}/restart`, {
 					method: "POST",
-					headers: {"x-csrf-token": csrf},
+					headers: {"content-type": "application/json", "x-csrf-token": csrf},
+					body: JSON.stringify({
+						sourcePlaythroughId: playthrough.id,
+						expectedTargetReleaseId: restartAvailability.targetRelease.id,
+						restartRequestId,
+						source: restartSource,
+					}),
 				}),
 				"The playthrough could not be restarted.",
 			);
@@ -262,6 +283,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			setMenuView("about");
 			setCommand("");
 			setStatus("saved");
+			restartRequestIdRef.current = null;
 		} catch (caught) {
 			setError(requestError(caught, "The playthrough could not be restarted."));
 			setStatus("failed");
@@ -285,7 +307,11 @@ export function HostedPlayer({slug}: {slug: string}) {
 		}
 	};
 
-	const openMenu = (view: typeof menuView = "about") => {
+	const openMenu = (view: typeof menuView = "about", source: RestartSource = "player_menu") => {
+		if (view === "restart") {
+			setRestartSource(source);
+			restartRequestIdRef.current = crypto.randomUUID();
+		}
 		setMenuView(view);
 		setMenuOpen(true);
 	};
@@ -388,11 +414,16 @@ export function HostedPlayer({slug}: {slug: string}) {
 								<div className="hostedMenuActions">
 									<button
 										type="button"
-										onClick={() => setMenuView("restart")}
-										disabled={!playthrough || status === "saving"}
+										onClick={() =>
+											openMenu("restart", playthrough?.status === "completed" ? "play_again" : "player_menu")
+										}
+										disabled={!playthrough || !restartAvailability?.allowed || status === "saving"}
 									>
 										{playthrough?.status === "completed" ? "Play again" : "Restart playthrough"}
 									</button>
+									{restartAvailability && !restartAvailability.allowed ? (
+										<small>{restartAvailability.unavailableReason}</small>
+									) : null}
 									<button
 										type="button"
 										className="hostedDeleteProgress"
@@ -408,9 +439,13 @@ export function HostedPlayer({slug}: {slug: string}) {
 								<p>
 									{menuView === "delete"
 										? "This permanently removes this playthrough and its command history. This cannot be undone."
-										: newerReleaseAvailable
-											? "This playthrough will be abandoned and a new one will begin on the newer published release."
-											: "This playthrough will be abandoned and a new one will begin from the start."}
+										: !restartAvailability?.allowed
+											? (restartAvailability?.unavailableReason ?? "This playthrough cannot be restarted.")
+											: playthrough?.status === "completed"
+												? `This completed playthrough will remain in history. A new playthrough will begin on release ${restartAvailability.targetRelease.number} from the start.`
+												: playthrough
+													? `Your progress in release ${playthrough.release.number} will remain in an abandoned playthrough. A new playthrough will begin on release ${restartAvailability.targetRelease.number} from the start.`
+													: "A new playthrough will begin from the start."}
 								</p>
 								<div className="hostedMenuConfirmationActions">
 									<button type="button" onClick={() => setMenuView("about")} disabled={status === "saving"}>
@@ -420,7 +455,9 @@ export function HostedPlayer({slug}: {slug: string}) {
 										type="button"
 										className={menuView === "delete" ? "hostedDeleteProgress" : "hostedPrimaryAction"}
 										onClick={() => void (menuView === "delete" ? deleteProgress() : restart())}
-										disabled={status === "saving"}
+										disabled={
+											status === "saving" || (menuView === "restart" && !restartAvailability?.allowed)
+										}
 									>
 										{status === "saving"
 											? "Working…"
@@ -441,7 +478,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 					<span>
 						A new version is available. You can keep playing this release or restart into the new one.
 					</span>
-					<button type="button" onClick={() => openMenu("restart")}>
+					<button type="button" onClick={() => openMenu("restart", "release_notice")}>
 						Restart with new version
 					</button>
 				</div>

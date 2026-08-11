@@ -6,9 +6,11 @@ import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {
 	HOSTED_COMMAND_MAX_LENGTH,
 	PublicationError,
+	planHostedRestart,
 	normalizePublicationSlug,
 	publicationAllowsPlay,
 	resolveCatalogPlayAction,
+	restartReasonFor,
 	serializeHostedOutputMessages,
 	validatePublicationSlug,
 } from "./publicationRepository";
@@ -73,5 +75,27 @@ describe("publication lifecycle policy", () => {
 	it("makes administrative suspension an immediate play block", () => {
 		expect(publicationAllowsPlay("suspended", "resume", true)).toBe(false);
 		expect(publicationAllowsPlay("suspended", "command", true)).toBe(false);
+		expect(publicationAllowsPlay("suspended", "restart", true)).toBe(false);
+	});
+});
+
+describe("hosted restart lineage", () => {
+	it("derives a reviewed reason from the recorded transition", () => {
+		expect(restartReasonFor("active", "release-1", "release-1")).toBe("manual_restart");
+		expect(restartReasonFor("active", "release-1", "release-2")).toBe("new_release");
+		expect(restartReasonFor("completed", "release-1", "release-2")).toBe("replay_completed");
+	});
+
+	it("abandons active runs but preserves completed runs", () => {
+		expect(planHostedRestart("active", "release-1", "release-1")).toEqual({
+			abandonSource: true,
+			reason: "manual_restart",
+		});
+		expect(planHostedRestart("completed", "release-1", "release-2")).toEqual({
+			abandonSource: false,
+			reason: "replay_completed",
+		});
+		expect(planHostedRestart("abandoned", "release-1", "release-2")).toBeUndefined();
+		expect(planHostedRestart("errored", "release-1", "release-2")).toBeUndefined();
 	});
 });

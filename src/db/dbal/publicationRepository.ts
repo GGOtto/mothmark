@@ -98,6 +98,7 @@ export class PublicationError extends Error {
 			| "PLAYTHROUGH_ERRORED"
 			| "PUBLICATION_EXISTS"
 			| "RATE_LIMITED"
+			| "RESTART_CONFLICT"
 			| "REVISION_CONFLICT"
 			| "SLUG_CONFLICT"
 			| "SLUG_INVALID"
@@ -678,6 +679,53 @@ export type HostedPlaythrough = {
 	release: {id: string; number: number};
 };
 
+export type HostedRestartSource = "player_menu" | "release_notice" | "play_again";
+
+export type HostedRestartAvailability = {
+	allowed: boolean;
+	targetRelease: {id: string; number: number};
+	unavailableReason?: string;
+};
+
+export function restartReasonFor(
+	status: HostedPlaythrough["status"],
+	fromReleaseId: string,
+	toReleaseId: string,
+): "manual_restart" | "new_release" | "replay_completed" {
+	if (status === "completed") return "replay_completed";
+	return fromReleaseId === toReleaseId ? "manual_restart" : "new_release";
+}
+
+export function planHostedRestart(
+	status: HostedPlaythrough["status"],
+	fromReleaseId: string,
+	toReleaseId: string,
+):
+	| {abandonSource: boolean; reason: "manual_restart" | "new_release" | "replay_completed"}
+	| undefined {
+	if (status !== "active" && status !== "completed") return undefined;
+	return {
+		abandonSource: status === "active",
+		reason: restartReasonFor(status, fromReleaseId, toReleaseId),
+	};
+}
+
+function restartAvailabilityFor(
+	status: PublicationStatus,
+	publication: PlayablePublication,
+): HostedRestartAvailability {
+	const targetRelease = {id: publication.release.id, number: publication.release.number};
+	if (status === "published") return {allowed: true, targetRelease};
+	return {
+		allowed: false,
+		targetRelease,
+		unavailableReason:
+			status === "suspended"
+				? "This world is unavailable because its publication is suspended."
+				: "This world is no longer published, so it cannot be restarted.",
+	};
+}
+
 export function resolveHostedCommand(
 	world: World,
 	previousState: GameState,
@@ -697,6 +745,7 @@ export type HostedPlayBootstrap = {
 	publication: PublicPublication;
 	playthrough: HostedPlaythrough;
 	newerReleaseAvailable: boolean;
+	restartAvailability: HostedRestartAvailability;
 	session?: {token: string; expiresAt: Date};
 };
 
@@ -743,6 +792,13 @@ async function insertPlaythrough(
 	playerUserId: string,
 	publicationRow: PublicationRow,
 	publication: PlayablePublication,
+	restart?: {
+		fromPlaythroughId: string;
+		fromReleaseId: string;
+		requestId: string;
+		source: HostedRestartSource;
+		reason: "manual_restart" | "new_release" | "replay_completed";
+	},
 ) {
 	const state = createInitialGameState(publication.world, publication.world.startRoomId);
 	const [playthrough] = await transaction("playthroughs")
@@ -755,6 +811,15 @@ async function insertPlaythrough(
 			transcript: JSON.stringify(state.messages),
 			current_state: state,
 			schema_version: PERSISTED_SCHEMA_VERSION,
+			...(restart && {
+				restarted_from_playthrough_id: restart.fromPlaythroughId,
+				restart_initiated_by_user_id: playerUserId,
+				restart_request_id: restart.requestId,
+				restart_source: restart.source,
+				restart_reason: restart.reason,
+				restart_from_release_id: restart.fromReleaseId,
+				restarted_at: transaction.fn.now(),
+			}),
 		})
 		.returning("*");
 	return playthrough;
@@ -818,6 +883,7 @@ export async function bootstrapHostedPlay(
 			Boolean(playthrough),
 		);
 		let publication = currentPublication;
+		const restartAvailability = restartAvailabilityFor(publicationRow.status, currentPublication);
 		if (!playthrough) {
 			playthrough = await insertPlaythrough(transaction, playerUserId, publicationRow, publication);
 		} else if (playthrough.release_id !== currentPublication.release.id) {
@@ -828,6 +894,7 @@ export async function bootstrapHostedPlay(
 			publication,
 			playthrough: mapPlaythrough(playthrough),
 			newerReleaseAvailable: playthrough.release_id !== currentPublication.release.id,
+			restartAvailability,
 			...(session && {session}),
 		};
 	});
@@ -836,6 +903,10 @@ export async function bootstrapHostedPlay(
 export async function restartHostedPlay(input: {
 	playerUserId: string;
 	slug: string;
+	sourcePlaythroughId: string;
+	expectedTargetReleaseId: string;
+	restartRequestId: string;
+	source: HostedRestartSource;
 	network?: string;
 }): Promise<HostedPlayBootstrap> {
 	await enforceHostedRateLimit(
@@ -855,22 +926,126 @@ export async function restartHostedPlay(input: {
 		if (!publicationRow)
 			throw new PublicationError("NOT_FOUND", "The published world does not exist.");
 		requireAvailablePublicationOwner(publicationRow);
-		requirePublicationPlayAccess(publicationRow.status, "restart", false);
+		if (publicationRow.status === "suspended")
+			requirePublicationPlayAccess(publicationRow.status, "restart", false);
 		const publication = mapPlayablePublication(publicationRow);
 		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
 			`hosted-play:${input.playerUserId}:${publication.id}`,
 		]);
-		await transaction("playthroughs")
-			.where({player_user_id: input.playerUserId, publication_id: publication.id, status: "active"})
-			.update({status: "abandoned", ended_at: transaction.fn.now(), updated_at: transaction.fn.now()});
+		const existingRequest = await transaction("playthroughs")
+			.where({
+				player_user_id: input.playerUserId,
+				publication_id: publication.id,
+				restart_request_id: input.restartRequestId,
+			})
+			.first();
+		if (existingRequest) {
+			if (existingRequest.restarted_from_playthrough_id !== input.sourcePlaythroughId)
+				throw new PublicationError(
+					"RESTART_CONFLICT",
+					"That restart request belongs to a different playthrough. Refresh and try again.",
+				);
+			const existingPublication =
+				existingRequest.release_id === publication.release.id
+					? publication
+					: await loadPinnedRelease(transaction, publicationRow, existingRequest.release_id);
+			existingRequest.release_number = existingPublication.release.number;
+			return {
+				publication: existingPublication,
+				playthrough: mapPlaythrough(existingRequest),
+				newerReleaseAvailable: existingRequest.release_id !== publication.release.id,
+				restartAvailability: restartAvailabilityFor(publicationRow.status, publication),
+			};
+		}
+		const existingSuccessor = await transaction("playthroughs")
+			.where({
+				player_user_id: input.playerUserId,
+				publication_id: publication.id,
+				restarted_from_playthrough_id: input.sourcePlaythroughId,
+			})
+			.first();
+		if (existingSuccessor) {
+			const existingPublication =
+				existingSuccessor.release_id === publication.release.id
+					? publication
+					: await loadPinnedRelease(transaction, publicationRow, existingSuccessor.release_id);
+			existingSuccessor.release_number = existingPublication.release.number;
+			return {
+				publication: existingPublication,
+				playthrough: mapPlaythrough(existingSuccessor),
+				newerReleaseAvailable: existingSuccessor.release_id !== publication.release.id,
+				restartAvailability: restartAvailabilityFor(publicationRow.status, publication),
+			};
+		}
+		requirePublicationPlayAccess(publicationRow.status, "restart", false);
+		if (publication.release.id !== input.expectedTargetReleaseId)
+			throw new PublicationError(
+				"RESTART_CONFLICT",
+				"A different release is now available. Review the restart details and try again.",
+			);
+		const sourcePlaythrough = await transaction("playthroughs")
+			.where({
+				id: input.sourcePlaythroughId,
+				player_user_id: input.playerUserId,
+				publication_id: publication.id,
+			})
+			.first();
+		const transition = sourcePlaythrough
+			? planHostedRestart(
+					sourcePlaythrough.status,
+					sourcePlaythrough.release_id,
+					publication.release.id,
+				)
+			: undefined;
+		if (!sourcePlaythrough || !transition)
+			throw new PublicationError(
+				"RESTART_CONFLICT",
+				"This playthrough can no longer be restarted. Refresh to see the current playthrough.",
+			);
+		if (!transition.abandonSource) {
+			const otherActive = await transaction("playthroughs")
+				.where({
+					player_user_id: input.playerUserId,
+					publication_id: publication.id,
+					status: "active",
+				})
+				.whereNot({id: sourcePlaythrough.id})
+				.first();
+			if (otherActive)
+				throw new PublicationError(
+					"RESTART_CONFLICT",
+					"A newer playthrough is already active. Refresh to continue it.",
+				);
+		} else {
+			await transaction("playthroughs").where({id: sourcePlaythrough.id, status: "active"}).update({
+				status: "abandoned",
+				ended_at: transaction.fn.now(),
+				updated_at: transaction.fn.now(),
+			});
+		}
 		const playthrough = await insertPlaythrough(
 			transaction,
 			input.playerUserId,
 			publicationRow,
 			publication,
+			{
+				fromPlaythroughId: sourcePlaythrough.id,
+				fromReleaseId: sourcePlaythrough.release_id,
+				requestId: input.restartRequestId,
+				source: input.source,
+				reason: transition.reason,
+			},
 		);
 		playthrough.release_number = publication.release.number;
-		return {publication, playthrough: mapPlaythrough(playthrough), newerReleaseAvailable: false};
+		return {
+			publication,
+			playthrough: mapPlaythrough(playthrough),
+			newerReleaseAvailable: false,
+			restartAvailability: {
+				allowed: true,
+				targetRelease: {id: publication.release.id, number: publication.release.number},
+			},
+		};
 	});
 }
 
