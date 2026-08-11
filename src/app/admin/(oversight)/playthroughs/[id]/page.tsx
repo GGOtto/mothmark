@@ -18,6 +18,13 @@ type Detail = AdminPlaythrough & {
 	engineVersion: string;
 	worldId: string;
 	worldVersionId: string;
+	restartedFromPlaythroughId: string | null;
+	restartedToPlaythroughId: string | null;
+	restartInitiatedByUserId: string | null;
+	restartSource: string | null;
+	restartReason: string | null;
+	restartFromReleaseId: string | null;
+	restartedAt: string | null;
 	stateSummary: {
 		currentRoom: string;
 		turns: number;
@@ -169,6 +176,61 @@ export default function AdminPlaythroughDetailPage() {
 							</details>
 						</aside>
 					</div>
+					<section className="adminSection">
+						<h2>Restart lineage</h2>
+						{playthrough.restartedFromPlaythroughId || playthrough.restartedToPlaythroughId ? (
+							<dl className="adminDefinitionGrid">
+								<div>
+									<dt>Previous run</dt>
+									<dd>
+										{playthrough.restartedFromPlaythroughId ? (
+											<Link href={`/admin/playthroughs/${playthrough.restartedFromPlaythroughId}`}>
+												Open transcript
+											</Link>
+										) : (
+											"Original run"
+										)}
+									</dd>
+								</div>
+								<div>
+									<dt>Next run</dt>
+									<dd>
+										{playthrough.restartedToPlaythroughId ? (
+											<Link href={`/admin/playthroughs/${playthrough.restartedToPlaythroughId}`}>
+												Open transcript
+											</Link>
+										) : (
+											"No later restart"
+										)}
+									</dd>
+								</div>
+								<div>
+									<dt>Reason</dt>
+									<dd>{playthrough.restartReason?.replaceAll("_", " ") || "—"}</dd>
+								</div>
+								<div>
+									<dt>Source</dt>
+									<dd>{playthrough.restartSource?.replaceAll("_", " ") || "—"}</dd>
+								</div>
+								<div>
+									<dt>Initiated by</dt>
+									<dd>
+										{playthrough.restartInitiatedByUserId ? (
+											<Link href={`/admin/users/${playthrough.restartInitiatedByUserId}`}>Open user</Link>
+										) : (
+											"Anonymized user"
+										)}
+									</dd>
+								</div>
+								<div>
+									<dt>Restarted</dt>
+									<dd>{formatAdminDate(playthrough.restartedAt)}</dd>
+								</div>
+							</dl>
+						) : (
+							<p>This playthrough has no recorded restart lineage.</p>
+						)}
+					</section>
 					<section className="adminSection">
 						<h2>Recorded commands</h2>
 						<div className="adminButtonRow">

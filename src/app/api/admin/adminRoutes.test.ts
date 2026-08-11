@@ -10,6 +10,7 @@ import {
 	administratorHasPermission,
 } from "@/db/dbal/adminRepository";
 import {listAdminPublications, setPublicationSuspension} from "@/db/dbal/publicationRepository";
+import {listAdminPlaythroughs} from "@/db/dbal/adminPlaythroughRepository";
 
 import {GET as getSession} from "./session/route";
 import {GET as listUsers} from "./users/route";
@@ -33,6 +34,7 @@ jest.mock("@/db/dbal/publicationRepository", () => ({
 	listAdminPublications: jest.fn(),
 	setPublicationSuspension: jest.fn(),
 }));
+jest.mock("@/db/dbal/adminPlaythroughRepository", () => ({listAdminPlaythroughs: jest.fn()}));
 
 const adminId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const targetId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
@@ -59,6 +61,7 @@ describe("read-only administrator routes", () => {
 	beforeEach(() => {
 		jest.mocked(resolveCurrentActor).mockResolvedValue(admin);
 		jest.mocked(administratorHasPermission).mockResolvedValue(true);
+		jest.mocked(listAdminPlaythroughs).mockResolvedValue([]);
 	});
 
 	it.each([
@@ -115,6 +118,8 @@ describe("read-only administrator routes", () => {
 		).toBe(200);
 		expect(recordAdministratorRead).toHaveBeenNthCalledWith(1, adminId, "user", targetId);
 		expect(recordAdministratorRead).toHaveBeenNthCalledWith(2, adminId, "world", targetId);
+		expect(listAdminPlaythroughs).toHaveBeenNthCalledWith(1, {playerUserId: targetId});
+		expect(listAdminPlaythroughs).toHaveBeenNthCalledWith(2, {worldId: targetId});
 	});
 
 	it("returns the same not-found response for malformed and missing records", async () => {

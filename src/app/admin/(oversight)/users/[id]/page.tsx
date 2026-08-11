@@ -6,6 +6,7 @@ import {useCallback, useEffect, useState} from "react";
 
 import {formatAdminDate, mutateAdminJson, readAdminJson} from "../../../adminClient";
 import type {AdminUserDetail} from "../../../adminTypes";
+import {AdminPlaythroughSummaryList} from "../../../AdminPlaythroughSummaryList";
 
 export default function AdminUserDetailPage() {
 	const {id} = useParams<{id: string}>();
@@ -129,6 +130,8 @@ export default function AdminUserDetailPage() {
 							administrators cannot view or set credential material.
 						</p>
 					</section>
+
+					<AdminPlaythroughSummaryList playthroughs={user.playthroughs ?? []} />
 
 					<section className="adminSection">
 						<h2>Account controls</h2>

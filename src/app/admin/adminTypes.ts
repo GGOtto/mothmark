@@ -65,6 +65,13 @@ export type AdminPlaythrough = {
 	endedAt: string | null;
 	anonymizedAt: string | null;
 	purgeAfter: string | null;
+	restartedFromPlaythroughId: string | null;
+	restartedToPlaythroughId: string | null;
+	restartInitiatedByUserId: string | null;
+	restartSource: "player_menu" | "release_notice" | "play_again" | null;
+	restartReason: "manual_restart" | "new_release" | "replay_completed" | null;
+	restartFromReleaseId: string | null;
+	restartedAt: string | null;
 };
 export type AdminWorld = {
 	createdAt: string;
@@ -109,6 +116,7 @@ export type AdminUserDetail = AdminUser & {
 	emailVerifiedAt: string | null;
 	mfaEnrolled: boolean;
 	permissions: AdminPermission[];
+	playthroughs: AdminPlaythrough[];
 	registeredAt: string | null;
 	verificationPending: boolean;
 	sessions: Array<{
