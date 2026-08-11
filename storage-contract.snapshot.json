@@ -1428,7 +1428,7 @@
 			}
 		}
 	},
-	"schemaSourceDigest": "ca8e5fba9d5ccd460c8243a1a8c37f735a36792dddbefe86baf6be9d833fd659",
+	"schemaSourceDigest": "aed136cab11e1c5d4f92ee6f484cc0aec6fbf9bbc5f7c2fbc75e3a1a3ed42cb1",
 	"world": {
 		"kind": "object",
 		"checks": [
@@ -3211,6 +3211,20 @@
 								},
 								"defaultValue": []
 							},
+							"helpDescription": {
+								"kind": "default",
+								"input": {
+									"kind": "string"
+								},
+								"defaultValue": ""
+							},
+							"helpPattern": {
+								"kind": "default",
+								"input": {
+									"kind": "string"
+								},
+								"defaultValue": ""
+							},
 							"id": {
 								"kind": "pipe",
 								"input": {
@@ -4287,6 +4301,13 @@
 										}
 									}
 								]
+							},
+							"showInHelp": {
+								"kind": "default",
+								"input": {
+									"kind": "boolean"
+								},
+								"defaultValue": false
 							}
 						}
 					}

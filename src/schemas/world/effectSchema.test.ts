@@ -32,6 +32,15 @@ describe("effect storage schemas", () => {
 		).toBe(true);
 	});
 
+	it("accepts reusable player-guidance message effects", () => {
+		expect(EffectSchema.safeParse({type: "message", operation: "list-available-exits"}).success).toBe(
+			true,
+		);
+		expect(EffectSchema.safeParse({type: "message", operation: "show-command-help"}).success).toBe(
+			true,
+		);
+	});
+
 	it("accepts saved text create, set, and delete effects", () => {
 		for (const effect of [
 			{type: "text", operation: "create", text: "answer", value: "moth"},

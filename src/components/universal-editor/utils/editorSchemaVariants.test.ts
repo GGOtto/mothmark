@@ -23,7 +23,13 @@ describe("editor schema variants", () => {
 		]);
 		expect(
 			schemaFieldOptions(EffectSchema, "operation", {type: "message"}).map((option) => option.value),
-		).toContain("current-room-description");
+		).toEqual(
+			expect.arrayContaining([
+				"current-room-description",
+				"list-available-exits",
+				"show-command-help",
+			]),
+		);
 		expect(
 			schemaFieldOptions(EffectSchema, "operation", {type: "player"}).map((option) => option.value),
 		).toContain("move-in-direction");

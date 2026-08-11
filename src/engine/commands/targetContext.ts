@@ -1,16 +1,8 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
-import type {Connection, Direction, World} from "@/schemas/world/worldSchema";
+import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import type {MatchBlockContext, TargetMatchCandidate} from "./blocks";
-import {isConnectionBlockedByDoor} from "../player/move";
-
-function canTravelForward(connection: Connection) {
-	return connection.pathway === "two-way" || connection.pathway === "forwards";
-}
-
-function canTravelBackward(connection: Connection) {
-	return connection.pathway === "two-way" || connection.pathway === "backwards";
-}
+import {getAvailableExits} from "../player/move";
 
 function reachableRoomIds(world: World, game: GameState): Set<string> {
 	const reachable = new Set<string>([idValue(game.player.currentRoom)]);
@@ -19,31 +11,8 @@ function reachableRoomIds(world: World, game: GameState): Set<string> {
 	);
 	if (!currentRoomState) return reachable;
 
-	for (const connection of world.connections) {
-		let direction: Direction | undefined;
-		let destinationId: ID<"room"> | undefined;
-
-		if (compareIds(connection.fromRoomId, game.player.currentRoom) && canTravelForward(connection)) {
-			direction = connection.direction;
-			destinationId = connection.toRoomId;
-		} else if (
-			compareIds(connection.toRoomId, game.player.currentRoom) &&
-			canTravelBackward(connection)
-		) {
-			direction = connection.returnDirection;
-			destinationId = connection.fromRoomId;
-		}
-
-		if (
-			!direction ||
-			!destinationId ||
-			currentRoomState.lockedExits.includes(direction) ||
-			isConnectionBlockedByDoor(world, game, connection, game.player.currentRoom)
-		) {
-			continue;
-		}
-		const destination = game.roomStates.find((room) => compareIds(room.id, destinationId));
-		if (destination?.flags.active ?? false) reachable.add(idValue(destinationId));
+	for (const exit of getAvailableExits(world, game)) {
+		reachable.add(idValue(exit.destinationRoomId));
 	}
 
 	return reachable;

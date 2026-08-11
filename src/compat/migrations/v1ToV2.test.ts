@@ -4,6 +4,7 @@ import {createHash} from "node:crypto";
 
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {WorldSchema} from "@/schemas/world/worldSchema";
+import {idValue} from "@/utils/idUtils";
 
 import {PERSISTED_SCHEMA_VERSION, migrationFrom, validateStorageMigrationRegistry} from ".";
 import {applyVersionedTransform, defineStorageMigration, unchanged} from "./types";
@@ -35,7 +36,22 @@ describe("the initial v1 to v2 storage migration", () => {
 			events: [],
 			initialState: {flags: [], counters: [], texts: []},
 		});
-		expect(parsed.commands).toEqual(initialWorld.commands);
+		expect(parsed.commands.map((command) => idValue(command.id))).toEqual([
+			"command-1",
+			"command-2",
+			"take",
+			"drop",
+			"examine",
+			"open",
+			"close",
+			"lock",
+			"unlock",
+			"use",
+			"use-targeted",
+			"put-inside",
+			"put-on",
+		]);
+		expect(parsed.commands.every((command) => command.showInHelp === false)).toBe(true);
 		expect(legacyWorld).toEqual(initialWorld);
 	});
 

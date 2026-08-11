@@ -42,8 +42,19 @@ export const MessageEffectSchema = editor.discriminatedUnion(
 				})
 				.default(true),
 		}),
+		z.object({
+			type: z.literal("message"),
+			operation: z.literal("list-available-exits"),
+		}),
+		z.object({
+			type: z.literal("message"),
+			operation: z.literal("show-command-help"),
+		}),
 	]),
-	{title: "Message Effect", description: "Shows text or augments the current room description."},
+	{
+		title: "Message Effect",
+		description: "Shows text, player guidance, or the current room description.",
+	},
 );
 
 const FlagEffectValueSchema = z

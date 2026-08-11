@@ -5,6 +5,9 @@
 	},
 	"name": "Put on",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "put <item> on <surface>",
+	"helpDescription": "Place a carried item on a surface.",
 	"patterns": [
 		{
 			"blocks": [

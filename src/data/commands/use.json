@@ -5,6 +5,9 @@
 	},
 	"name": "Use",
 	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "use <item>",
+	"helpDescription": "Use an accessible item.",
 	"patterns": [
 		{
 			"blocks": [

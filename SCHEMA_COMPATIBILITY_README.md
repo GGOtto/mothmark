@@ -70,7 +70,8 @@ It replaces every version-1 editor world, template, and publication snapshot wit
 blank-world document while retaining its title (using the database world name when available).
 Author, description, rooms, items, connections, map layers, conditions, effects, events, and initial
 variables are cleared, and the authored version returns to `0.1.0`. The built-in saved command
-documents remain available, exactly matching a newly created blank world.
+documents from the time this migration shipped remain available as a frozen historical set. Newer
+built-ins and metadata belong only to newly created worlds or later adjacent migrations.
 
 This reset is coupled to the version advance from 1 to 2. The runner selects only rows whose
 `schema_version` is exactly 1 and writes both the transformed JSON and `schema_version = 2` in the
@@ -85,3 +86,7 @@ conditions, events, or turn resolution that still satisfy the Zod schemas.
 
 See [BREAKING_SCHEMA_MIGRATIONS_README.md](BREAKING_SCHEMA_MIGRATIONS_README.md) when the proposed
 change cannot remain backward compatible.
+
+The v3-to-v4 migration records the reviewed command-help contract without rewriting retained
+documents. Existing playthroughs therefore preserve their historical command results; newly
+created worlds receive the expanded initial command set.

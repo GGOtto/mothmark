@@ -284,6 +284,14 @@ describe("findMatchingCommands", () => {
 		expect(findMatchingCommands("whisper", worldWithCommand, galleryGame)).toEqual([]);
 	});
 
+	it("does not consider disabled commands", () => {
+		const disabled = produce(command("disabled", [[phrase("disabled-verb", ["wait"])]]), (draft) => {
+			draft.enabled = false;
+		});
+
+		expect(commandIds("wait", [disabled])).toEqual([]);
+	});
+
 	it("only considers layer-scoped commands while the current room is on an authored layer", () => {
 		const layerCommand = command("lower-layer-only", [[phrase("lower-layer-verb", ["chant"])]], {
 			scope: "layers",
