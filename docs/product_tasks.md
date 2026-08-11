@@ -91,18 +91,18 @@ the full task definitions but do not imply a different sequence.
 | 1        | R01  | The hosted player, transcript, prompt, and software-keyboard behavior are the center of phone play.             |
 | 2        | G02  | New players will immediately look for Help and a way to list available exits.                                   |
 | 3        | G01  | Players will naturally try `forward`, `straight`, `left`, `right`, and `face`.                                  |
-| 4        | G03  | Common verbs such as eat, drink, read, wear, play, light, open, unlock, and use are likely player attempts.     |
-| 5        | R02  | Guests need a reliable way to restart without corrupting or overwriting the previous playthrough.               |
-| 6        | Q01  | A focused real-device audit proves that the complete guest phone-play path works before authoring work expands. |
-| 7        | F02  | Mobile-safe dialogs, menus, and popups support the rest of phone play and mobile authoring.                     |
-| 8        | F01  | Smooth saving makes the authoring demonstration safe and keeps publication on the correct revision.             |
-| 9        | F04  | Refresh and navigation must preserve the demonstrated editor view and selection.                                |
-| 10       | F03  | Shared responsive shells make the editor and remaining pages workable on mobile.                                |
-| 11       | E03  | Explicit Add room mode removes a surprising map interaction that is likely to appear during the demo.           |
-| 12       | E02  | Layers should be understandable and visually finished when the Map workspace is shown.                          |
-| 13       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.            |
-| 14       | E04  | Audit the remaining editors before polishing individual complex workflows.                                      |
-| 15       | E05  | Finish the Items surface, alias suggestions, tag suggestions, and access to the commands added by G03.          |
+| 4        | R02  | Guests need a reliable way to restart without corrupting or overwriting the previous playthrough.               |
+| 5        | Q01  | A focused real-device audit proves that the complete guest phone-play path works before authoring work expands. |
+| 6        | F02  | Mobile-safe dialogs, menus, and popups support the rest of phone play and mobile authoring.                     |
+| 7        | F01  | Smooth saving makes the authoring demonstration safe and keeps publication on the correct revision.             |
+| 8        | F04  | Refresh and navigation must preserve the demonstrated editor view and selection.                                |
+| 9        | F03  | Shared responsive shells make the editor and remaining pages workable on mobile.                                |
+| 10       | E03  | Explicit Add room mode removes a surprising map interaction that is likely to appear during the demo.           |
+| 11       | E02  | Layers should be understandable and visually finished when the Map workspace is shown.                          |
+| 12       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.            |
+| 13       | E04  | Audit the remaining editors before polishing individual complex workflows.                                      |
+| 14       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.         |
+| 15       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.               |
 | 16       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                             |
 | 17       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.                 |
 | 18       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.            |
@@ -550,8 +550,8 @@ the full task definitions but do not imply a different sequence.
     collisions, and require author acceptance.
   - Tag suggestions come from the supported taxonomy and real schema capabilities, explain what each
     suggestion enables, and require author acceptance.
-  - Expose relevant built-in command templates from G03 beside tags/behaviors, with preview and
-    one-step explicit attachment.
+  - Provide a dedicated Commands section that preserves existing attached commands and can later
+    host G03 recommendations; do not add placeholder templates before G03.
   - Handle unplaced items, nested items, similar names, large collections, and no-icon fallback.
 
 - [ ] **E06 — Rebuild condition and effect selection/editing.**
@@ -679,8 +679,8 @@ the full task definitions but do not imply a different sequence.
   **Outcome:** Every maintained item category has an understandable presentation effect and a useful
   set of optional built-in command templates; no supported tag is inert or magical.
 
-  **Depends on:** G02. Add the attachment/recommendation control to the current item editor; E05 must
-  preserve and improve it rather than delaying the player-facing commands.
+  **Depends on:** G02, E05. Add the attachment/recommendation control to the dedicated item page
+  delivered by E05.
 
   **Scope and acceptance:**
 
@@ -849,7 +849,7 @@ the full task definitions but do not imply a different sequence.
   - Test short/tall phones, landscape, long transcripts, long commands, errors, connection changes,
     and screen-reader command submission.
 
-- [ ] **R02 — Make player reset create a new playthrough and expose lineage to administrators.**
+- [x] **R02 — Make player reset create a new playthrough and expose lineage to administrators.**
 
   **Outcome:** Restart is understandable to players and auditable from the administrator's point of
   view without rewriting prior history.

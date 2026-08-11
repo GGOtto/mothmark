@@ -1,4 +1,5 @@
 import {NextResponse} from "next/server";
+import {z} from "zod";
 
 import {resolveCurrentActor} from "@/auth/currentActor";
 import {mutationSecurityError} from "@/auth/requestSecurity";
@@ -7,6 +8,13 @@ import {requestNetwork} from "@/app/api/auth/_shared";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const RestartRequestSchema = z.object({
+	sourcePlaythroughId: z.uuid(),
+	expectedTargetReleaseId: z.uuid(),
+	restartRequestId: z.uuid(),
+	source: z.enum(["player_menu", "release_notice", "play_again"]),
+});
 
 export async function POST(
 	request: Request,
@@ -21,9 +29,21 @@ export async function POST(
 			{status: 401},
 		);
 	try {
+		const parsed = RestartRequestSchema.safeParse(await request.json().catch(() => undefined));
+		if (!parsed.success)
+			return NextResponse.json(
+				{
+					error: {
+						code: "INVALID_REQUEST",
+						message: "The restart request is invalid. Refresh and try again.",
+					},
+				},
+				{status: 400},
+			);
 		const result = await restartHostedPlay({
 			playerUserId: actor.userId,
 			slug: (await context.params).slug,
+			...parsed.data,
 			network: requestNetwork(request),
 		});
 		return NextResponse.json({data: result});
@@ -35,9 +55,11 @@ export async function POST(
 					status:
 						error.code === "RATE_LIMITED"
 							? 429
-							: error.code === "NOT_FOUND" || error.code === "UNPUBLISHED"
-								? 404
-								: 403,
+							: error.code === "RESTART_CONFLICT"
+								? 409
+								: error.code === "NOT_FOUND" || error.code === "UNPUBLISHED"
+									? 404
+									: 403,
 				},
 			);
 		console.error("Hosted-play restart failed", error);

@@ -42,6 +42,13 @@ export type AdminPlaythroughSummary = {
 	endedAt: string | null;
 	anonymizedAt: string | null;
 	purgeAfter: string | null;
+	restartedFromPlaythroughId: string | null;
+	restartedToPlaythroughId: string | null;
+	restartInitiatedByUserId: string | null;
+	restartSource: "player_menu" | "release_notice" | "play_again" | null;
+	restartReason: "manual_restart" | "new_release" | "replay_completed" | null;
+	restartFromReleaseId: string | null;
+	restartedAt: string | null;
 };
 
 export type AdminPlaythroughTurn = {
@@ -104,17 +111,38 @@ const mapSummary = (row: Record<string, unknown>): AdminPlaythroughSummary => ({
 	endedAt: iso(row.ended_at as Date | string | null),
 	anonymizedAt: iso(row.anonymized_at as Date | string | null),
 	purgeAfter: iso(row.purge_after as Date | string | null),
+	restartedFromPlaythroughId: row.restarted_from_playthrough_id
+		? String(row.restarted_from_playthrough_id)
+		: null,
+	restartedToPlaythroughId: row.restarted_to_playthrough_id
+		? String(row.restarted_to_playthrough_id)
+		: null,
+	restartInitiatedByUserId: row.restart_initiated_by_user_id
+		? String(row.restart_initiated_by_user_id)
+		: null,
+	restartSource: (row.restart_source as AdminPlaythroughSummary["restartSource"]) ?? null,
+	restartReason: (row.restart_reason as AdminPlaythroughSummary["restartReason"]) ?? null,
+	restartFromReleaseId: row.restart_from_release_id ? String(row.restart_from_release_id) : null,
+	restartedAt: iso(row.restarted_at as Date | string | null),
 });
 
 const playthroughSelect = (connection: Knex | Knex.Transaction = database) =>
 	connection("playthroughs as pt")
 		.join("world_publications as p", "p.id", "pt.publication_id")
 		.join("world_releases as r", "r.id", "pt.release_id")
-		.select("pt.*", "p.slug as publication_slug", "r.title as publication_title", "r.release_number");
+		.leftJoin("playthroughs as restarted_to", "restarted_to.restarted_from_playthrough_id", "pt.id")
+		.select(
+			"pt.*",
+			"p.slug as publication_slug",
+			"r.title as publication_title",
+			"r.release_number",
+			"restarted_to.id as restarted_to_playthrough_id",
+		);
 
 export async function listAdminPlaythroughs(input: {
 	publicationId?: string;
 	worldId?: string;
+	playerUserId?: string;
 	releaseId?: string;
 	status?: PlaythroughStatus;
 	from?: Date;
@@ -125,6 +153,7 @@ export async function listAdminPlaythroughs(input: {
 	const query = playthroughSelect().orderBy("pt.updated_at", "desc").limit(200);
 	if (input.publicationId) query.where("pt.publication_id", input.publicationId);
 	if (input.worldId) query.where("pt.world_id", input.worldId);
+	if (input.playerUserId) query.where("pt.player_user_id", input.playerUserId);
 	if (input.releaseId) query.where("pt.release_id", input.releaseId);
 	if (input.status) query.where("pt.status", input.status);
 	if (input.errorsOnly) query.where("pt.status", "errored");

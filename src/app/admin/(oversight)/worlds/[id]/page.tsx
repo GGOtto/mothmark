@@ -5,9 +5,10 @@ import {useParams} from "next/navigation";
 import {useCallback, useEffect, useState} from "react";
 
 import {formatAdminDate, formatBytes, mutateAdminJson, readAdminJson} from "../../../adminClient";
-import type {AdminWorld} from "../../../adminTypes";
+import type {AdminPlaythrough, AdminWorld} from "../../../adminTypes";
+import {AdminPlaythroughSummaryList} from "../../../AdminPlaythroughSummaryList";
 
-type AdminWorldDetail = AdminWorld & {world: unknown};
+type AdminWorldDetail = AdminWorld & {world: unknown; playthroughs: AdminPlaythrough[]};
 
 export default function AdminWorldDetailPage() {
 	const {id} = useParams<{id: string}>();
@@ -153,6 +154,7 @@ export default function AdminWorldDetailPage() {
 							</div>
 						</dl>
 					</section>
+					<AdminPlaythroughSummaryList playthroughs={world.playthroughs ?? []} />
 					<section className="adminSection">
 						<h2>World controls</h2>
 						<label htmlFor="world-reason">Administrative reason</label>

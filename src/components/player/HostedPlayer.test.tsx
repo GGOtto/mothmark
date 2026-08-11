@@ -12,7 +12,11 @@ const publication = {
 	title: "Quiet archive",
 	summary: "A compact world for testing hosted play.",
 	visibility: "listed" as const,
-	release: {number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
+	release: {
+		id: "66d79031-600d-49cf-b7b0-85bc7bbf1fb2",
+		number: 1,
+		publishedAt: "2026-08-09T12:00:00.000Z",
+	},
 };
 
 function message(id: string, text: string, type: "command" | "room" | "system" = "room") {
@@ -20,7 +24,12 @@ function message(id: string, text: string, type: "command" | "room" | "system" =
 }
 
 function playthrough(
-	overrides: {commands?: string; messages?: ReturnType<typeof message>[]; revision?: number} = {},
+	overrides: {
+		commands?: string;
+		messages?: ReturnType<typeof message>[];
+		revision?: number;
+		status?: "active" | "completed";
+	} = {},
 ) {
 	const commands = overrides.commands ?? "";
 	return {
@@ -32,7 +41,7 @@ function playthrough(
 			...createDefaultFieldObject(GameStateSchema),
 			messages: overrides.messages ?? [message("opening", "A quiet archive waits.")],
 		},
-		status: "active" as const,
+		status: overrides.status ?? ("active" as const),
 		release: {id: "release-id", number: 1},
 	};
 }
@@ -59,6 +68,10 @@ function bootstrapResponse(overrides?: Parameters<typeof playthrough>[0]) {
 			publication,
 			playthrough: playthrough(overrides),
 			newerReleaseAvailable: false,
+			restartAvailability: {
+				allowed: true,
+				targetRelease: {id: publication.release.id, number: publication.release.number},
+			},
 		},
 	};
 }
@@ -101,7 +114,7 @@ describe("HostedPlayer", () => {
 		await waitFor(() =>
 			expect(within(dialog).getByRole("heading", {name: "Restart playthrough?"})).toHaveFocus(),
 		);
-		expect(within(dialog).getByText(/will be abandoned/)).toBeVisible();
+		expect(within(dialog).getByText(/will remain in an abandoned playthrough/)).toBeVisible();
 
 		await user.keyboard("{Escape}");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -148,6 +161,73 @@ describe("HostedPlayer", () => {
 		await waitFor(() => expect(input).not.toHaveAttribute("readonly"));
 		expect(input).toHaveValue("");
 		expect(input).toHaveFocus();
+	});
+
+	it("explains when an unpublished world cannot be restarted", async () => {
+		const available = bootstrapResponse();
+		const unavailable = {
+			data: {
+				...available.data,
+				restartAvailability: {
+					allowed: false,
+					targetRelease: {id: publication.release.id, number: 1},
+					unavailableReason: "This world is no longer published, so it cannot be restarted.",
+				},
+			},
+		};
+		global.fetch = jest.fn((input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/api/auth/csrf")) return json({data: {csrfToken: "csrf"}});
+			if (url.endsWith("/bootstrap")) return json(unavailable);
+			throw new Error(`Unexpected request: ${url}`);
+		}) as jest.MockedFunction<typeof fetch>;
+		const user = userEvent.setup();
+		render(<HostedPlayer slug="quiet-archive" />);
+		await user.click(await screen.findByRole("button", {name: "World menu"}));
+		const dialog = screen.getByRole("dialog", {name: "Quiet archive"});
+		expect(within(dialog).getByRole("button", {name: "Restart playthrough"})).toBeDisabled();
+		expect(
+			within(dialog).getByText("This world is no longer published, so it cannot be restarted."),
+		).toBeVisible();
+	});
+
+	it("reuses one restart request id after a connection failure", async () => {
+		const restartBodies: Array<Record<string, string>> = [];
+		let restartAttempts = 0;
+		global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			if (url.includes("/api/auth/csrf")) return json({data: {csrfToken: "csrf"}});
+			if (url.endsWith("/bootstrap")) return json(bootstrapResponse());
+			if (url.endsWith("/restart")) {
+				restartAttempts += 1;
+				restartBodies.push(JSON.parse(String(init?.body)) as Record<string, string>);
+				if (restartAttempts === 1) return Promise.reject(new TypeError("Failed to fetch"));
+				return json({
+					data: {
+						...bootstrapResponse().data,
+						playthrough: {...playthrough(), id: "new-playthrough-id"},
+					},
+				});
+			}
+			throw new Error(`Unexpected request: ${url}`);
+		}) as jest.MockedFunction<typeof fetch>;
+		const user = userEvent.setup();
+		render(<HostedPlayer slug="quiet-archive" />);
+		await user.click(await screen.findByRole("button", {name: "World menu"}));
+		const dialog = screen.getByRole("dialog", {name: "Quiet archive"});
+		await user.click(within(dialog).getByRole("button", {name: "Restart playthrough"}));
+		const confirm = within(dialog).getByRole("button", {name: "Restart playthrough"});
+		await user.click(confirm);
+		expect(await screen.findByRole("alert")).toHaveTextContent("Connection lost");
+		await user.click(confirm);
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		expect(restartBodies).toHaveLength(2);
+		expect(restartBodies[0]).toMatchObject({
+			sourcePlaythroughId: "playthrough-id",
+			expectedTargetReleaseId: publication.release.id,
+			source: "player_menu",
+		});
+		expect(restartBodies[1]?.restartRequestId).toBe(restartBodies[0]?.restartRequestId);
 	});
 
 	it("keeps a command available for retry after a connection failure", async () => {

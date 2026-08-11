@@ -119,6 +119,10 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 						state: {messages},
 					},
 					newerReleaseAvailable: false,
+					restartAvailability: {
+						allowed: true,
+						targetRelease: {id: "release-id", number: 1},
+					},
 				},
 			}),
 		}),
@@ -206,6 +210,10 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 						state: {messages},
 					},
 					newerReleaseAvailable: false,
+					restartAvailability: {
+						allowed: true,
+						targetRelease: {id: "release-id", number: 1},
+					},
 				},
 			}),
 		}),
@@ -341,6 +349,10 @@ test("a failed hosted command remains in the prompt and can be retried", async (
 						state: {messages: [{id: "opening", type: "room", text: "A quiet archive waits."}]},
 					},
 					newerReleaseAvailable: false,
+					restartAvailability: {
+						allowed: true,
+						targetRelease: {id: "release-id", number: 1},
+					},
 				},
 			}),
 		}),
@@ -411,12 +423,28 @@ test("a returning player sees an update choice and restarts into the current rel
 						state: {messages: [{id: "old", type: "room", text: "The old release."}]},
 					},
 					newerReleaseAvailable: true,
+					restartAvailability: {
+						allowed: true,
+						targetRelease: {id: "release-2", number: 2},
+					},
 				},
 			}),
 		}),
 	);
-	await page.route("**/api/play/publications/quiet-archive/restart", (route) =>
-		route.fulfill({
+	await page.route("**/api/play/publications/quiet-archive/restart", (route) => {
+		const request = route.request().postDataJSON() as {
+			sourcePlaythroughId: string;
+			expectedTargetReleaseId: string;
+			restartRequestId: string;
+			source: string;
+		};
+		expect(request).toMatchObject({
+			sourcePlaythroughId: "old-playthrough",
+			expectedTargetReleaseId: "release-2",
+			source: "release_notice",
+		});
+		expect(request.restartRequestId).toMatch(/^[0-9a-f-]{36}$/);
+		return route.fulfill({
 			status: 200,
 			contentType: "application/json",
 			body: JSON.stringify({
@@ -432,15 +460,20 @@ test("a returning player sees an update choice and restarts into the current rel
 						state: {messages: [{id: "new", type: "room", text: "The new release."}]},
 					},
 					newerReleaseAvailable: false,
+					restartAvailability: {
+						allowed: true,
+						targetRelease: {id: "release-2", number: 2},
+					},
 				},
 			}),
-		}),
-	);
+		});
+	});
 	await page.goto("/play/quiet-archive");
 	await expect(page.getByText("A new version is available.", {exact: false})).toBeVisible();
 	await page.getByRole("button", {name: "Restart with new version"}).click();
 	const restartDialog = page.getByRole("dialog", {name: "Restart playthrough?"});
-	await expect(restartDialog).toContainText("newer published release");
+	await expect(restartDialog).toContainText("release 1");
+	await expect(restartDialog).toContainText("release 2");
 	await restartDialog.getByRole("button", {name: "Restart playthrough"}).click();
 	await expect(page.getByText("The new release.")).toBeVisible();
 	await expect(page.getByText("A new version is available.", {exact: false})).toHaveCount(0);

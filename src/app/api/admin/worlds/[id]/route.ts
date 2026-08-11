@@ -1,7 +1,12 @@
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
-import {getAdminWorld, recordAdministratorRead} from "@/db/dbal/adminRepository";
+import {
+	administratorHasPermission,
+	getAdminWorld,
+	recordAdministratorRead,
+} from "@/db/dbal/adminRepository";
+import {listAdminPlaythroughs} from "@/db/dbal/adminPlaythroughRepository";
 import {
 	adminNotFoundResponse,
 	adminRouteError,
@@ -23,8 +28,11 @@ export async function GET(
 	try {
 		const world = await getAdminWorld(parsedId.data);
 		if (!world) return adminNotFoundResponse();
+		const playthroughs = (await administratorHasPermission(actor.userId, "admin.playthroughs.view"))
+			? await listAdminPlaythroughs({worldId: world.id})
+			: [];
 		await recordAdministratorRead(actor.userId, "world", world.id);
-		return NextResponse.json({data: world});
+		return NextResponse.json({data: {...world, playthroughs}});
 	} catch (error) {
 		return adminRouteError(error);
 	}
