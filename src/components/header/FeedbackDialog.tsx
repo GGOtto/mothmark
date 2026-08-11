@@ -7,36 +7,61 @@ import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 
 type FeedbackDialogProps = {
 	onClose: () => void;
+	requiresReplyEmail: boolean;
 };
+
+async function responseJson(response: Response): Promise<unknown> {
+	try {
+		return await response.json();
+	} catch {
+		return undefined;
+	}
+}
+
+function responseErrorMessage(body: unknown): string | undefined {
+	if (!body || typeof body !== "object" || !("error" in body)) return undefined;
+	const error = body.error;
+	if (!error || typeof error !== "object" || !("message" in error)) return undefined;
+	return typeof error.message === "string" ? error.message : undefined;
+}
 
 async function csrfToken(): Promise<string> {
 	const existing = readBrowserCsrfToken();
 	if (existing) return existing;
 	const response = await fetch("/api/auth/csrf");
-	const body = (await response.json()) as {data?: {csrfToken?: unknown}};
-	if (!response.ok || typeof body.data?.csrfToken !== "string") {
+	const body = await responseJson(response);
+	const token =
+		body && typeof body === "object" && "data" in body && body.data && typeof body.data === "object"
+			? "csrfToken" in body.data
+				? body.data.csrfToken
+				: undefined
+			: undefined;
+	if (!response.ok || typeof token !== "string") {
 		throw new Error("The feedback form could not be verified.");
 	}
-	return body.data.csrfToken;
+	return token;
 }
 
-export function FeedbackDialog({onClose}: FeedbackDialogProps) {
+export function FeedbackDialog({onClose, requiresReplyEmail}: FeedbackDialogProps) {
 	const [category, setCategory] = useState<"bug" | "general" | "idea">("general");
+	const [replyEmail, setReplyEmail] = useState("");
 	const [message, setMessage] = useState("");
 	const [includePage, setIncludePage] = useState(true);
 	const [website, setWebsite] = useState("");
 	const [status, setStatus] = useState<"editing" | "sending" | "sent">("editing");
 	const [error, setError] = useState("");
+	const emailRef = useRef<HTMLInputElement | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
 	useEffect(() => {
-		textareaRef.current?.focus();
+		if (requiresReplyEmail) emailRef.current?.focus();
+		else textareaRef.current?.focus();
 		const closeOnEscape = (event: KeyboardEvent) => {
 			if (event.key === "Escape" && status !== "sending") onClose();
 		};
 		document.addEventListener("keydown", closeOnEscape);
 		return () => document.removeEventListener("keydown", closeOnEscape);
-	}, [onClose, status]);
+	}, [onClose, requiresReplyEmail, status]);
 
 	async function submit(event: React.FormEvent) {
 		event.preventDefault();
@@ -52,11 +77,14 @@ export function FeedbackDialog({onClose}: FeedbackDialogProps) {
 					includePage,
 					message,
 					page: includePage ? window.location.href : undefined,
+					replyEmail: requiresReplyEmail ? replyEmail : undefined,
 					website,
 				}),
 			});
-			const body = (await response.json()) as {error?: {message?: string}};
-			if (!response.ok) throw new Error(body.error?.message || "Feedback could not be sent.");
+			const body = await responseJson(response);
+			if (!response.ok) {
+				throw new Error(responseErrorMessage(body) || "Feedback could not be sent. Try again later.");
+			}
 			setStatus("sent");
 		} catch (submitError) {
 			setError(submitError instanceof Error ? submitError.message : "Feedback could not be sent.");
@@ -109,6 +137,27 @@ export function FeedbackDialog({onClose}: FeedbackDialogProps) {
 							<option value="idea">An idea or request</option>
 						</select>
 
+						{requiresReplyEmail ? (
+							<>
+								<label htmlFor="feedback-email">Your email</label>
+								<input
+									ref={emailRef}
+									id="feedback-email"
+									type="email"
+									autoComplete="email"
+									placeholder="you@example.com"
+									value={replyEmail}
+									onChange={(event) => setReplyEmail(event.target.value)}
+									aria-describedby="feedback-email-note"
+									maxLength={254}
+									required
+								/>
+								<p id="feedback-email-note" className="feedbackDialogFieldNote">
+									We will only use this address to reply to your feedback.
+								</p>
+							</>
+						) : null}
+
 						<label htmlFor="feedback-message">Message</label>
 						<textarea
 							ref={textareaRef}
@@ -149,7 +198,12 @@ export function FeedbackDialog({onClose}: FeedbackDialogProps) {
 							<button type="button" onClick={onClose} disabled={status === "sending"}>
 								Cancel
 							</button>
-							<button type="submit" disabled={status === "sending" || !message.trim()}>
+							<button
+								type="submit"
+								disabled={
+									status === "sending" || !message.trim() || (requiresReplyEmail && !replyEmail.trim())
+								}
+							>
 								{status === "sending" ? "Sending…" : "Send feedback"}
 							</button>
 						</footer>

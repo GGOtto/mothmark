@@ -5,6 +5,38 @@ export type AdminPermission = {
 	permission: string;
 	source: string;
 };
+export type AdminFeedbackReply = {
+	actorUserId: string | null;
+	authorEmail: string;
+	authorType: "admin" | "customer";
+	createdAt: string;
+	deliveryAttemptedAt: string | null;
+	deliveryStatus: "delivered" | "failed" | "pending";
+	id: string;
+	message: string;
+	source: "admin_page" | "email";
+};
+export type AdminFeedback = {
+	accountType: "anonymous" | "registered" | null;
+	category: "bug" | "general" | "idea";
+	createdAt: string;
+	customerReceiptStatus: "delivered" | "failed" | "pending";
+	id: string;
+	message: string;
+	notificationStatus: "delivered" | "failed" | "pending";
+	replyCount: number;
+	replyEmail: string;
+	status: "new" | "open" | "replied";
+	subject: string;
+	username: string | null;
+};
+export type AdminFeedbackDetail = AdminFeedback & {
+	actorUserId: string | null;
+	notificationAttemptedAt: string | null;
+	page: string | null;
+	replies: AdminFeedbackReply[];
+	viewedAt: string | null;
+};
 export type AdminPublication = {
 	id: string;
 	slug: string;

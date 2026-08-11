@@ -4,6 +4,8 @@ import {MapPinned} from "lucide-react";
 import Link from "next/link";
 import {FormEvent, useState} from "react";
 
+import {adminNextPath} from "../adminClient";
+
 async function csrfToken(): Promise<string> {
 	const response = await fetch("/api/auth/csrf?audience=admin");
 	const body = (await response.json()) as {data?: {csrfToken?: string}};
@@ -41,7 +43,7 @@ export default function AdminSignInPage() {
 				setPhase("second-factor");
 			} else {
 				await submit("/api/admin/auth/second-factor", {secondFactor});
-				window.location.assign("/admin/users");
+				window.location.assign(adminNextPath(window.location.search));
 			}
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Administrator sign-in failed.");

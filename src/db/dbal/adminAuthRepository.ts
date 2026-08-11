@@ -232,6 +232,92 @@ export async function provisionAdministrator(input: {
 	});
 }
 
+export async function addAdministrator(input: {
+	email: string;
+	totpCode: string;
+	totpSecret: string;
+}): Promise<AdministratorProvisioning> {
+	if (verifyTotp(input.totpSecret, input.totpCode) === undefined) {
+		throw new AdministratorIdentityError(
+			"The TOTP confirmation code is invalid.",
+			"ADMIN_IDENTITY_INVALID",
+		);
+	}
+	const recoveryCodes = createRecoveryCodes();
+	return database.transaction(async (transaction) => {
+		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
+			"mothmark-password-administrator-provisioning",
+		]);
+		const account = await transaction("user_emails as e")
+			.join("users as u", "u.id", "e.user_id")
+			.select("u.id", "u.site_role")
+			.where({
+				"e.normalized_email": normalizeEmail(input.email),
+				"u.account_type": "registered",
+				"u.status": "active",
+			})
+			.whereNotNull("e.verified_at")
+			.whereNull("u.deleted_at")
+			.forUpdate("u")
+			.first<{id: string; site_role: "admin" | "user"}>();
+		if (!account) {
+			throw new AdministratorIdentityError(
+				"The email must belong to an active registered account with a verified address.",
+				"ADMIN_IDENTITY_INVALID",
+			);
+		}
+		if (account.site_role === "admin") {
+			throw new AdministratorIdentityError(
+				"The account is already an administrator.",
+				"ADMIN_IDENTITY_INVALID",
+			);
+		}
+
+		const now = new Date();
+		const existingLimit = await transaction("user_limits")
+			.select("max_worlds")
+			.where({user_id: account.id})
+			.forUpdate()
+			.first<{max_worlds: number}>();
+		await transaction("users").where({id: account.id}).update({site_role: "admin", updated_at: now});
+		await transaction("user_permission_overrides")
+			.where({user_id: account.id})
+			.whereLike("permission", "admin.%")
+			.delete();
+		await transaction("totp_authenticators").where({user_id: account.id}).delete();
+		await transaction("administrator_recovery_codes").where({user_id: account.id}).delete();
+		await transaction("totp_authenticators").insert({
+			confirmed_at: now,
+			encrypted_secret: encryptTotpSecret(input.totpSecret),
+			user_id: account.id,
+		});
+		await transaction("administrator_recovery_codes").insert(
+			recoveryCodes.map((code) => ({code_hash: recoveryCodeHash(code), user_id: account.id})),
+		);
+		await transaction("user_limits")
+			.insert({max_worlds: ADMIN_MAX_WORLDS, user_id: account.id})
+			.onConflict("user_id")
+			.merge({
+				max_worlds: Math.max(existingLimit?.max_worlds ?? DEFAULT_MAX_WORLDS, ADMIN_MAX_WORLDS),
+				updated_at: now,
+			});
+		await transaction("sessions")
+			.where({user_id: account.id})
+			.whereNull("revoked_at")
+			.update({revoked_at: now});
+		await transaction("operational_events").insert({
+			details: {userId: account.id},
+			event_type: "administrator_added",
+		});
+		return {
+			recoveryCodes,
+			totpSecret: input.totpSecret,
+			totpUri: totpEnrollmentUri(input.email.trim(), input.totpSecret),
+			userId: account.id,
+		};
+	});
+}
+
 export async function beginAdministratorSignIn(input: {
 	email: string;
 	network: string;
@@ -453,6 +539,7 @@ export async function revokeAdministratorSession(token: string): Promise<boolean
 }
 
 export async function recoverAdministrator(input: {
+	email: string;
 	password?: string;
 	resetMfa: boolean;
 }): Promise<AdministratorProvisioning | {userId: string}> {
@@ -463,7 +550,14 @@ export async function recoverAdministrator(input: {
 		const admin = await transaction("users as u")
 			.join("user_emails as e", "e.user_id", "u.id")
 			.select("u.id", "e.email")
-			.where({"u.site_role": "admin", "u.account_type": "registered", "u.status": "active"})
+			.where({
+				"e.normalized_email": normalizeEmail(input.email),
+				"u.site_role": "admin",
+				"u.account_type": "registered",
+				"u.status": "active",
+			})
+			.whereNotNull("e.verified_at")
+			.whereNull("u.deleted_at")
 			.forUpdate("u")
 			.first<{id: string; email: string}>();
 		if (!admin)
@@ -525,10 +619,12 @@ export async function replaceAdministrator(input: {
 		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
 			"mothmark-password-administrator-provisioning",
 		]);
-		const current = await transaction("users")
+		const current: {id: string}[] = await transaction("users")
+			.select("id")
 			.where({account_type: "registered", site_role: "admin", status: "active"})
+			.whereNull("deleted_at")
 			.forUpdate()
-			.first<{id: string}>();
+			.limit(2);
 		const replacement = await transaction("user_emails as e")
 			.join("users as u", "u.id", "e.user_id")
 			.select("u.id", "e.email")
@@ -542,22 +638,31 @@ export async function replaceAdministrator(input: {
 			.whereNull("u.deleted_at")
 			.forUpdate("u")
 			.first<{email: string; id: string}>();
-		if (!current || !replacement) {
+		if (current.length !== 1) {
+			throw new AdministratorIdentityError(
+				"Replacement is available only when exactly one active administrator exists.",
+				"ADMIN_IDENTITY_INVALID",
+			);
+		}
+		const [currentAdministrator] = current;
+		if (!currentAdministrator || !replacement) {
 			throw new AdministratorIdentityError(
 				"The replacement must be a different active account with a verified email.",
 				"ADMIN_IDENTITY_INVALID",
 			);
 		}
 		const now = new Date();
-		await transaction("users").where({id: current.id}).update({site_role: "user", updated_at: now});
+		await transaction("users")
+			.where({id: currentAdministrator.id})
+			.update({site_role: "user", updated_at: now});
 		await transaction("users")
 			.where({id: replacement.id})
 			.update({site_role: "admin", updated_at: now});
 		await transaction("totp_authenticators")
-			.whereIn("user_id", [current.id, replacement.id])
+			.whereIn("user_id", [currentAdministrator.id, replacement.id])
 			.delete();
 		await transaction("administrator_recovery_codes")
-			.whereIn("user_id", [current.id, replacement.id])
+			.whereIn("user_id", [currentAdministrator.id, replacement.id])
 			.delete();
 		await transaction("totp_authenticators").insert({
 			confirmed_at: now,
@@ -571,11 +676,11 @@ export async function replaceAdministrator(input: {
 			.where({user_id: replacement.id})
 			.update({max_worlds: ADMIN_MAX_WORLDS, updated_at: now});
 		await transaction("sessions")
-			.whereIn("user_id", [current.id, replacement.id])
+			.whereIn("user_id", [currentAdministrator.id, replacement.id])
 			.whereNull("revoked_at")
 			.update({revoked_at: now});
 		await transaction("operational_events").insert({
-			details: {previousUserId: current.id, replacementUserId: replacement.id},
+			details: {previousUserId: currentAdministrator.id, replacementUserId: replacement.id},
 			event_type: "administrator_replaced",
 		});
 		return {

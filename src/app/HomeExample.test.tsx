@@ -2,9 +2,19 @@ import {fireEvent, render, screen, waitFor, within} from "@testing-library/react
 
 import {PopupProvider} from "@/components/popup/Popup";
 
-import {HomeExample} from "./HomeExample";
+import {createHomeExampleWorld, HomeExample} from "./HomeExample";
 
 describe("HomeExample", () => {
+	it("uses a deliberately small, one-layer world", () => {
+		const world = createHomeExampleWorld();
+
+		expect(world.metadata.layers).toHaveLength(1);
+		expect(world.metadata.layers[0]?.rooms).toEqual(world.rooms.map((room) => room.id));
+		expect(world.rooms.map((room) => room.name)).toEqual(["Shop Floor", "Stockroom"]);
+		expect(world.items.map((item) => item.name)).toEqual(["Shop Counter"]);
+		expect(world.connections).toHaveLength(1);
+	});
+
 	it("plays through the real command path and keeps the map read-only", async () => {
 		const {container} = render(
 			<PopupProvider>
