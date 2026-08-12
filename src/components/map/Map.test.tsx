@@ -18,7 +18,8 @@ function createInitialWorld(recipe: (draft: Draft<World>) => void): World {
 function MapHarness({
 	initialWorld,
 	onZoomChange,
-	tool = "edit",
+	initialAddingRoom = false,
+	initialConnectionDraft = {state: "idle"},
 	initialSelectedId = null,
 	initialIsConnectionSelected = false,
 	replacementWorld,
@@ -26,18 +27,18 @@ function MapHarness({
 }: {
 	initialWorld: World;
 	onZoomChange: jest.Mock;
-	tool?: "edit" | "pan";
+	initialAddingRoom?: boolean;
+	initialConnectionDraft?: ConnectionDraft;
 	initialSelectedId?: string | null;
 	initialIsConnectionSelected?: boolean;
 	replacementWorld?: World;
 	readOnly?: boolean;
 }) {
 	const [world, setWorld] = useState(initialWorld);
-	const [activeTool, setActiveTool] = useState(tool);
-	const [temporaryTool, setTemporaryTool] = useState<"edit" | "pan" | null>(null);
+	const [isAddingRoom, setIsAddingRoom] = useState(initialAddingRoom);
 	const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
 	const [isConnectionSelected, setIsConnectionSelected] = useState(initialIsConnectionSelected);
-	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
+	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>(initialConnectionDraft);
 
 	const updateWorld = useCallback<UpdateWorld>((update: WorldUpdate) => {
 		setWorld((current) => (typeof update === "function" ? produce(current, update) : update));
@@ -45,7 +46,12 @@ function MapHarness({
 
 	return (
 		<PopupProvider>
-			<div data-testid="effective-map-tool">{temporaryTool ?? activeTool}</div>
+			<button type="button" onClick={() => setIsAddingRoom((current) => !current)}>
+				{isAddingRoom ? "Cancel room placement" : "Add room"}
+			</button>
+			<div data-testid="adding-room">{String(isAddingRoom)}</div>
+			<div data-testid="room-count">{world.rooms.length}</div>
+			<div data-testid="connection-draft-state">{connectionDraft.state}</div>
 			<div data-testid="start-room-id">{idValue(world.startRoomId)}</div>
 			<div data-testid="connection-room-references">
 				{JSON.stringify(world.connections.map(({fromRoomId, toRoomId}) => ({fromRoomId, toRoomId})))}
@@ -58,9 +64,8 @@ function MapHarness({
 			<Map
 				world={world}
 				readOnly={readOnly}
-				tool={activeTool}
-				onToolChange={setActiveTool}
-				onTemporaryToolChange={setTemporaryTool}
+				isAddingRoom={isAddingRoom}
+				onAddingRoomChange={setIsAddingRoom}
 				onZoomChange={onZoomChange}
 				updateWorld={updateWorld}
 				selectedId={selectedId}
@@ -79,26 +84,23 @@ function MapHarness({
 describe("Map layer viewports", () => {
 	it("locks a preview map to pan and zoom without editor controls", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" readOnly />,
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} readOnly />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
 		const initialTransform = viewport.style.transform;
 
-		expect(map).toHaveClass("map--tool-pan", "map--read-only");
+		expect(map).toHaveClass("map--read-only");
 		expect(screen.queryByRole("button", {name: "Clear Main floor layer"})).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", {name: "Layers · Main floor"})).not.toBeInTheDocument();
 
 		fireEvent.wheel(map, {clientX: 100, clientY: 100, deltaY: -200});
 		expect(viewport.style.transform).not.toBe(initialTransform);
-
-		fireEvent.keyDown(window, {key: "ArrowLeft"});
-		expect(map).toHaveClass("map--tool-pan");
 	});
 
 	it("zooms a read-only map around a two-pointer pinch", () => {
 		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" readOnly />,
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} readOnly />,
 		);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
@@ -126,6 +128,50 @@ describe("Map layer viewports", () => {
 			clientY: 100,
 		});
 		Object.defineProperty(secondPointerMove, "pointerId", {value: 2});
+		fireEvent(map, secondPointerMove);
+
+		expect(viewport.style.transform).toContain("scale(1.5)");
+	});
+
+	it("pinch-zooms an editable map when the first touch starts on a room", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
+		const room = screen.getByRole("button", {name: "Shop Floor"});
+		map.setPointerCapture = jest.fn();
+		room.setPointerCapture = jest.fn();
+
+		const firstPointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 100,
+			clientY: 100,
+		});
+		Object.defineProperties(firstPointerDown, {
+			pointerId: {value: 1},
+			pointerType: {value: "touch"},
+		});
+		fireEvent(room, firstPointerDown);
+		const secondPointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 200,
+			clientY: 100,
+		});
+		Object.defineProperties(secondPointerDown, {
+			pointerId: {value: 2},
+			pointerType: {value: "touch"},
+		});
+		fireEvent(map, secondPointerDown);
+		const secondPointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 250,
+			clientY: 100,
+		});
+		Object.defineProperties(secondPointerMove, {
+			pointerId: {value: 2},
+			pointerType: {value: "touch"},
+		});
 		fireEvent(map, secondPointerMove);
 
 		expect(viewport.style.transform).toContain("scale(1.5)");
@@ -203,6 +249,166 @@ describe("Map visual layers", () => {
 		expect(container.querySelectorAll(".connection")).toHaveLength(1);
 	});
 
+	it("does not create a room from an ordinary blank-map click", () => {
+		const {container} = render(
+			<MapHarness
+				initialWorld={initialWorld}
+				onZoomChange={jest.fn()}
+				initialSelectedId={idValue(initialWorld.rooms[0].id)}
+			/>,
+		);
+		const initialRoomCount = initialWorld.rooms.length;
+
+		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
+			clientX: 100,
+			clientY: 100,
+		});
+
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(initialRoomCount));
+		expect(
+			screen.queryByRole("button", {name: `Room ${initialRoomCount + 1}`}),
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("button", {name: initialWorld.rooms[0].name})).not.toHaveClass(
+			"roomCardSelected",
+		);
+	});
+
+	it("places one room from Add room and then disarms placement", () => {
+		const {container} = render(
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} initialAddingRoom />,
+		);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const nextRoomName = `Room ${initialWorld.rooms.length + 1}`;
+
+		const pointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 100,
+			clientY: 100,
+		});
+		Object.defineProperty(pointerMove, "pointerId", {value: 1});
+		fireEvent(map, pointerMove);
+		expect(container.querySelector(".mapRoomPlacementPreview")).toBeInTheDocument();
+		fireEvent.click(map, {clientX: 100, clientY: 100});
+
+		expect(screen.getByRole("button", {name: nextRoomName})).toHaveClass("roomCardSelected");
+		expect(screen.getByTestId("adding-room")).toHaveTextContent("false");
+		fireEvent.click(map, {clientX: 220, clientY: 220});
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(initialWorld.rooms.length + 1));
+	});
+
+	it("places and connects a destination room without cancelling the active connection draft", () => {
+		const sourceRoom = initialWorld.rooms[0];
+		const configuredWorld = createInitialWorld((draft) => {
+			draft.connections = [];
+		});
+		const {container} = render(
+			<MapHarness
+				initialWorld={configuredWorld}
+				onZoomChange={jest.fn()}
+				initialAddingRoom
+				initialConnectionDraft={{
+					state: "choosing-destination",
+					fromRoomId: idValue(sourceRoom.id),
+					fromDirection: "e",
+				}}
+			/>,
+		);
+
+		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
+			clientX: 100,
+			clientY: 100,
+		});
+
+		expect(screen.getByTestId("connection-draft-state")).toHaveTextContent("choosing-return");
+		expect(screen.getByTestId("adding-room")).toHaveTextContent("false");
+		expect(
+			screen.getByRole("button", {name: `Room ${configuredWorld.rooms.length + 1}`}),
+		).toBeInTheDocument();
+
+		const destinationRoom = screen.getByRole("button", {
+			name: `Room ${configuredWorld.rooms.length + 1}`,
+		});
+		fireEvent.click(destinationRoom.querySelector<HTMLElement>('[data-direction="w"]')!);
+		expect(screen.getByTestId("connection-draft-state")).toHaveTextContent("idle");
+		expect(container.querySelectorAll(".connection")).toHaveLength(1);
+	});
+
+	it("requires Add room before a blank click can create a connection destination", () => {
+		const sourceRoom = initialWorld.rooms[0];
+		const configuredWorld = createInitialWorld((draft) => {
+			draft.connections = [];
+		});
+		const {container} = render(
+			<MapHarness
+				initialWorld={configuredWorld}
+				onZoomChange={jest.fn()}
+				initialConnectionDraft={{
+					state: "choosing-destination",
+					fromRoomId: idValue(sourceRoom.id),
+					fromDirection: "e",
+				}}
+			/>,
+		);
+
+		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
+			clientX: 100,
+			clientY: 100,
+		});
+
+		expect(screen.getByTestId("connection-draft-state")).toHaveTextContent("choosing-destination");
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(configuredWorld.rooms.length));
+	});
+
+	it("keeps Add room armed when an empty-space gesture pans instead of clicking", () => {
+		const {container} = render(
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} initialAddingRoom />,
+		);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
+		map.setPointerCapture = jest.fn();
+
+		const pointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 100,
+			clientY: 100,
+		});
+		Object.defineProperty(pointerDown, "pointerId", {value: 1});
+		fireEvent(map, pointerDown);
+		const pointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 140,
+			clientY: 125,
+		});
+		Object.defineProperty(pointerMove, "pointerId", {value: 1});
+		fireEvent(map, pointerMove);
+		const pointerUp = new MouseEvent("pointerup", {bubbles: true, clientX: 140, clientY: 125});
+		Object.defineProperty(pointerUp, "pointerId", {value: 1});
+		fireEvent(map, pointerUp);
+		fireEvent.click(map, {clientX: 140, clientY: 125});
+
+		expect(viewport).toHaveStyle({transform: "translate(40px, 25px) scale(1)"});
+		expect(screen.getByTestId("adding-room")).toHaveTextContent("true");
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(initialWorld.rooms.length));
+	});
+
+	it("cancels room placement without mutation on Escape or a layer change", () => {
+		const {container} = render(
+			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} initialAddingRoom />,
+		);
+		const initialRoomCount = initialWorld.rooms.length;
+
+		fireEvent.keyDown(window, {key: "Escape"});
+		expect(screen.getByTestId("adding-room")).toHaveTextContent("false");
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(initialRoomCount));
+
+		fireEvent.click(screen.getByRole("button", {name: "Add room"}));
+		fireEvent.click(screen.getByRole("button", {name: "Switch to Basement"}));
+		expect(screen.getByTestId("adding-room")).toHaveTextContent("false");
+		expect(screen.getByTestId("room-count")).toHaveTextContent(String(initialRoomCount));
+		expect(container.querySelector(".mapRoomPlacementPreview")).not.toBeInTheDocument();
+	});
+
 	it("makes the first room added after an empty clear the start room", async () => {
 		const onlyRoom = initialWorld.rooms[0];
 		const configuredWorld = createInitialWorld((draft) => {
@@ -225,6 +431,7 @@ describe("Map visual layers", () => {
 		await waitFor(() =>
 			expect(screen.queryByRole("button", {name: onlyRoom.name})).not.toBeInTheDocument(),
 		);
+		fireEvent.click(screen.getByRole("button", {name: "Add room"}));
 		fireEvent.click(container.querySelector<HTMLElement>("[data-map]")!, {
 			clientX: 100,
 			clientY: 100,
@@ -260,30 +467,33 @@ describe("Map visual layers", () => {
 		expect(screen.getByRole("button", {name: upperLayerRoom.name})).toBeInTheDocument();
 	});
 
-	it("switches tools with horizontal arrows", () => {
-		const {container} = render(
-			<>
-				<button type="button">Focused control</button>
-				<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />
-			</>,
-		);
+	it("pans by dragging empty map space", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
-		const focusedControl = screen.getByRole("button", {name: "Focused control"});
-		focusedControl.focus();
+		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
+		map.setPointerCapture = jest.fn();
 
-		expect(map).toHaveClass("map--tool-edit");
-		fireEvent.keyDown(focusedControl, {key: "ArrowRight"});
-		expect(map).toHaveClass("map--tool-pan");
-		expect(focusedControl).toHaveFocus();
-		fireEvent.keyDown(focusedControl, {key: "ArrowLeft"});
-		expect(map).toHaveClass("map--tool-edit");
-		expect(focusedControl).toHaveFocus();
+		const pointerDown = new MouseEvent("pointerdown", {
+			bubbles: true,
+			button: 0,
+			clientX: 100,
+			clientY: 100,
+		});
+		Object.defineProperty(pointerDown, "pointerId", {value: 1});
+		fireEvent(map, pointerDown);
+		const pointerMove = new MouseEvent("pointermove", {
+			bubbles: true,
+			clientX: 140,
+			clientY: 125,
+		});
+		Object.defineProperty(pointerMove, "pointerId", {value: 1});
+		fireEvent(map, pointerMove);
+
+		expect(viewport).toHaveStyle({transform: "translate(40px, 25px) scale(1)"});
 	});
 
 	it("ignores horizontal touchpad wheel gestures", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
 		const initialTransform = viewport.style.transform;
@@ -300,38 +510,18 @@ describe("Map visual layers", () => {
 		expect(viewport.style.transform).toBe(initialTransform);
 	});
 
-	it("temporarily toggles tools while Space is held and restores the selected tool", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
-		);
+	it("temporarily enables panning from anywhere while Space is held", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 
 		fireEvent.keyDown(window, {key: " ", code: "Space"});
-		expect(map).toHaveClass("map--tool-pan");
-		expect(screen.getByTestId("effective-map-tool")).toHaveTextContent("pan");
+		expect(map).toHaveClass("map--space-pan");
 		fireEvent.keyUp(window, {key: " ", code: "Space"});
-		expect(map).toHaveClass("map--tool-edit");
-		expect(screen.getByTestId("effective-map-tool")).toHaveTextContent("edit");
-	});
-
-	it("temporarily edits from pan mode while Space is held", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
-		);
-		const map = container.querySelector<HTMLElement>("[data-map]")!;
-
-		fireEvent.keyDown(window, {key: " ", code: "Space"});
-		expect(map).toHaveClass("map--tool-edit");
-		expect(screen.getByTestId("effective-map-tool")).toHaveTextContent("edit");
-		fireEvent.keyUp(window, {key: " ", code: "Space"});
-		expect(map).toHaveClass("map--tool-pan");
-		expect(screen.getByTestId("effective-map-tool")).toHaveTextContent("pan");
+		expect(map).not.toHaveClass("map--space-pan");
 	});
 
 	it("ends an active temporary pan when Space is released", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		map.setPointerCapture = jest.fn();
 
@@ -344,10 +534,10 @@ describe("Map visual layers", () => {
 		});
 		Object.defineProperty(pointerDown, "pointerId", {value: 1});
 		fireEvent(map, pointerDown);
-		expect(map).toHaveClass("map--panning");
+		expect(map).toHaveClass("map--space-pan");
 
 		fireEvent.keyUp(window, {key: " ", code: "Space"});
-		expect(map).toHaveClass("map--tool-edit");
+		expect(map).not.toHaveClass("map--space-pan");
 		expect(map).not.toHaveClass("map--panning");
 
 		const pointerUp = new MouseEvent("pointerup", {bubbles: true, clientX: 176, clientY: 311});
@@ -357,10 +547,8 @@ describe("Map visual layers", () => {
 		expect(screen.queryByRole("button", {name: "Room 12"})).not.toBeInTheDocument();
 	});
 
-	it("does not retain focus or select a stub when Space temporarily enables edit mode", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
-		);
+	it("does not retain focus or select a stub when Space enables panning", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const stub = container.querySelector<SVGGElement>(
 			'.mapSvgStubs .connectionStub[data-room-id="shop-floor"] .connectionLayerTag',
 		)!;
@@ -369,41 +557,23 @@ describe("Map visual layers", () => {
 		fireEvent.keyDown(stub, {key: " ", code: "Space"});
 
 		expect(stub).not.toHaveFocus();
-		expect(screen.getByTestId("effective-map-tool")).toHaveTextContent("edit");
+		expect(container.querySelector("[data-map]")).toHaveClass("map--space-pan");
 		expect(container.querySelector(".connectionSelected")).not.toBeInTheDocument();
 		fireEvent.keyUp(stub, {key: " ", code: "Space"});
 	});
 
 	it("prevents map controls from taking pointer focus while Space is held", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
 		fireEvent.keyDown(window, {key: " ", code: "Space"});
-		const room = screen.getByRole("button", {name: "Shop Floor"});
-		const pointerDown = new MouseEvent("pointerdown", {
-			bubbles: true,
-			button: 0,
-			cancelable: true,
-			clientX: 100,
-			clientY: 100,
-		});
-		Object.defineProperty(pointerDown, "pointerId", {value: 1});
-		room.setPointerCapture = jest.fn();
-
-		fireEvent(room, pointerDown);
-		room.focus();
-
-		expect(pointerDown.defaultPrevented).toBe(true);
-		expect(room).not.toHaveFocus();
-		expect(container.querySelector("[data-map]")).toHaveClass("map--tool-edit");
+		expect(screen.queryByRole("button", {name: "Shop Floor"})).not.toBeInTheDocument();
+		expect(container.querySelector(".roomCard")).toBeInTheDocument();
+		expect(container.querySelector("[data-map]")).toHaveClass("map--space-pan");
 		fireEvent.keyUp(window, {key: " ", code: "Space"});
 	});
 
-	it("pans from a stub without moving the stub in pan mode", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="pan" />,
-		);
+	it("pans from a stub without moving it while Space is held", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const viewport = container.querySelector<HTMLElement>(".mapViewport")!;
 		const stub = container.querySelector<SVGGElement>(
@@ -411,6 +581,7 @@ describe("Map visual layers", () => {
 		)!;
 		const initialStubTransform = stub.getAttribute("transform");
 		map.setPointerCapture = jest.fn();
+		fireEvent.keyDown(window, {key: " ", code: "Space"});
 
 		const pointerDown = new MouseEvent("pointerdown", {
 			bubbles: true,
@@ -419,7 +590,7 @@ describe("Map visual layers", () => {
 			clientY: 100,
 		});
 		Object.defineProperty(pointerDown, "pointerId", {value: 1});
-		fireEvent(stub, pointerDown);
+		fireEvent(map, pointerDown);
 		const pointerMove = new MouseEvent("pointermove", {
 			bubbles: true,
 			clientX: 140,
@@ -430,6 +601,7 @@ describe("Map visual layers", () => {
 
 		expect(stub).toHaveAttribute("transform", initialStubTransform);
 		expect(viewport).toHaveStyle({transform: "translate(40px, 25px) scale(1)"});
+		fireEvent.keyUp(window, {key: " ", code: "Space"});
 	});
 
 	it("steps the active map layer with arrow and page keys", () => {
@@ -480,9 +652,7 @@ describe("Map visual layers", () => {
 	});
 
 	it("leaves cross-layer stubs fixed when their room is dragged", () => {
-		const {container} = render(
-			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} tool="edit" />,
-		);
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const map = container.querySelector<HTMLElement>("[data-map]")!;
 		const room = screen.getByRole("button", {name: "Shop Floor"});
 		const getStubTransforms = () =>
@@ -525,7 +695,6 @@ describe("Map visual layers", () => {
 				initialWorld={worldWithPersistedStubs}
 				replacementWorld={initialWorld}
 				onZoomChange={jest.fn()}
-				tool="edit"
 			/>,
 		);
 		fireEvent.click(screen.getByRole("button", {name: "Replace test world"}));
@@ -564,7 +733,6 @@ describe("Map visual layers", () => {
 			<MapHarness
 				initialWorld={initialWorld}
 				onZoomChange={jest.fn()}
-				tool="edit"
 				initialSelectedId="shop-stockroom"
 				initialIsConnectionSelected
 			/>,

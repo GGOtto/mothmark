@@ -121,6 +121,9 @@
 - Render the authored map and all map previews with the light map palette in both application themes.
   Keep the dark map palette defined but inactive, preserve geometry and semantic color roles, and let
   floating map controls follow the application surface tokens.
+- Keep the authored map direct-manipulation: drag rooms to move them, drag empty space to pan, and
+  use a single-use explicit Add room action for placement. Do not reintroduce persistent Edit or Pan
+  modes, and do not move keyboard focus into a new room's fields after placement.
 - Keep the embedded player terminal monospace and theme-aware. Preserve its command prompt and
   uninterrupted output flow; do not style it as a form, chat, or card list.
 - Preserve a property inspector's scroll position when editing the current selection. Scroll to the

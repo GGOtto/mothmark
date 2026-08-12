@@ -84,7 +84,7 @@ describe("EditorPage loading", () => {
 		expect(screen.queryByRole("button", {name: "Shop Floor"})).not.toBeInTheDocument();
 	});
 
-	it("shows the temporary opposite tool while Space is held", async () => {
+	it("temporarily pans with Space without changing room placement", async () => {
 		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
 		installSuccessfulEditorFetch();
 
@@ -101,25 +101,27 @@ describe("EditorPage loading", () => {
 			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
 		);
 
-		const editButton = screen.getByRole("button", {name: "Edit"});
-		const panButton = screen.getByRole("button", {name: "Pan"});
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const addRoomButton = screen.getByRole("button", {name: "Add room"});
+		addRoomButton.focus();
 
 		fireEvent.keyDown(window, {key: " ", code: "Space"});
-		expect(editButton).toHaveAttribute("aria-pressed", "false");
-		expect(panButton).toHaveAttribute("aria-pressed", "true");
+		expect(map).toHaveClass("map--space-pan");
+		expect(addRoomButton).toHaveAttribute("aria-pressed", "false");
+		expect(addRoomButton).not.toHaveFocus();
 		fireEvent.keyUp(window, {key: " ", code: "Space"});
-		expect(editButton).toHaveAttribute("aria-pressed", "true");
+		expect(map).not.toHaveClass("map--space-pan");
 
-		fireEvent.click(panButton);
-		panButton.focus();
-		fireEvent.keyDown(panButton, {key: " ", code: "Space"});
-		expect(editButton).toHaveAttribute("aria-pressed", "true");
-		expect(panButton).toHaveAttribute("aria-pressed", "false");
-		expect(panButton).not.toHaveFocus();
-		editButton.focus();
-		expect(editButton).not.toHaveFocus();
-		fireEvent.keyUp(panButton, {key: " ", code: "Space"});
-		expect(panButton).toHaveAttribute("aria-pressed", "true");
+		fireEvent.click(addRoomButton);
+		const cancelRoomPlacement = screen.getByRole("button", {name: "Cancel room placement"});
+		fireEvent.keyDown(cancelRoomPlacement, {key: " ", code: "Space"});
+		expect(map).toHaveClass("map--space-pan");
+		expect(cancelRoomPlacement).toHaveAttribute("aria-pressed", "true");
+		fireEvent.keyUp(cancelRoomPlacement, {key: " ", code: "Space"});
+		expect(screen.getByRole("button", {name: "Cancel room placement"})).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 	});
 
 	it("does not expose fallback world data when private loading fails", async () => {

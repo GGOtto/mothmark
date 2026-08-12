@@ -8,7 +8,9 @@ export function getConnectionDraftStatus(
 	rooms: Room[],
 	hoverStatus: ToolBarStatus | null,
 	noticeStatus: ToolBarStatus | null,
+	isAddingRoom = false,
 ): ToolBarStatus {
+	if (isAddingRoom) return {kind: "placement", label: "Choose where to place the room"};
 	if (draft.state === "choosing-destination") {
 		return {kind: "destination", label: "Choose destination"};
 	}

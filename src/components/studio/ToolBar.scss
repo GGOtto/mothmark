@@ -41,6 +41,11 @@
 		outline: 2px solid var(--color-focus);
 		outline-offset: 1px;
 	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.48;
+	}
 }
 
 .toolbarToolActive {
@@ -91,7 +96,6 @@
 }
 
 .toolbarAddRoom {
-	margin-left: auto;
 	border-color: var(--panel-border);
 	color: var(--panel-text);
 }

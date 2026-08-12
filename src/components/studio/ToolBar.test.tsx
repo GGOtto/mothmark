@@ -1,5 +1,5 @@
 import {act, fireEvent, render, screen} from "@testing-library/react";
-import {useToolBarStatus} from "./ToolBar";
+import {ToolBar, useToolBarStatus} from "./ToolBar";
 
 function StatusHarness() {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
@@ -47,5 +47,37 @@ describe("useToolBarStatus", () => {
 
 		act(() => jest.advanceTimersByTime(1));
 		expect(screen.getByTestId("notice-status")).toBeEmptyDOMElement();
+	});
+});
+
+describe("ToolBar", () => {
+	it("uses one explicit control to arm and cancel room placement", () => {
+		const onAddingRoomChange = jest.fn();
+		const {rerender} = render(
+			<ToolBar
+				isAddingRoom={false}
+				onAddingRoomChange={onAddingRoomChange}
+				zoom={1}
+				onRecenter={jest.fn()}
+				status={{kind: "idle", label: "4 rooms"}}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add room"}));
+		expect(onAddingRoomChange).toHaveBeenCalledWith(true);
+		expect(screen.queryByRole("button", {name: "Edit"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Pan"})).not.toBeInTheDocument();
+
+		rerender(
+			<ToolBar
+				isAddingRoom
+				onAddingRoomChange={onAddingRoomChange}
+				zoom={1}
+				onRecenter={jest.fn()}
+				status={{kind: "placement", label: "Choose where to place the room"}}
+			/>,
+		);
+		fireEvent.click(screen.getByRole("button", {name: "Cancel room placement"}));
+		expect(onAddingRoomChange).toHaveBeenLastCalledWith(false);
 	});
 });

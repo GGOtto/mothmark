@@ -1004,11 +1004,22 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			await page.getByRole("tab", {name: "Play"}).click();
 			await expect(page.getByText("No rooms available. Add a room to begin exploring.")).toBeVisible();
 			await expect(page.getByRole("button", {name: "Shop Floor"})).not.toBeVisible();
+			await page.locator("[data-map]").click({position: {x: 140, y: 140}});
+			await expect(page.getByRole("button", {name: "Room 1"})).not.toBeVisible();
+			const mapToolbar = page.getByRole("group", {name: "Map actions"});
+			await expect(mapToolbar.getByRole("button", {name: "Edit"})).not.toBeVisible();
+			await expect(mapToolbar.getByRole("button", {name: "Pan"})).not.toBeVisible();
+			await page.getByRole("button", {name: "Add room"}).click();
+			await expect(page.getByRole("button", {name: "Cancel room placement"})).toBeVisible();
+			await page.locator("[data-map]").hover({position: {x: 180, y: 180}});
+			await expect(page.locator(".mapRoomPlacementPreview")).toBeVisible();
 			await page.locator("[data-map]").click({position: {x: 180, y: 180}});
 			await expect(page.getByRole("button", {name: "Room 1"})).toBeVisible();
+			await expect(page.getByRole("button", {name: "Add room"})).toBeVisible();
 			await page.getByRole("tab", {name: "Editor"}).click();
 		}
 		const roomNameField = page.getByRole("textbox", {name: "Name", exact: true});
+		if (source === "Blank world") await expect(roomNameField).not.toBeFocused();
 		await roomNameField.fill(roomName);
 		await page.getByRole("button", {name: new RegExp(`Current world: ${name}`)}).click();
 		await page.getByRole("menuitem", {name: "View all worlds"}).click();
@@ -1288,6 +1299,12 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	await expect
 		.poll(() => mapToolbar.evaluate((element) => element.scrollWidth <= element.clientWidth + 1))
 		.toBe(true);
+	await page.getByRole("button", {name: "Add room"}).click();
+	await expect(page.getByRole("button", {name: "Cancel room placement"})).toBeVisible();
+	await expect(page.getByText("Choose where to place the room")).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(page.getByRole("button", {name: "Add room"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Room 5"})).not.toBeVisible();
 
 	const destination = page.getByRole("button", {name: "Map", expanded: false});
 	await expect(destination).toBeVisible();
