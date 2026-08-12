@@ -267,6 +267,7 @@ type PopupHostProps = {
 
 function PopupHost({popup, onFinish}: PopupHostProps) {
 	const {options} = popup;
+	const backdropRef = useRef<HTMLDivElement>(null);
 	const surfaceRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -281,17 +282,76 @@ function PopupHost({popup, onFinish}: PopupHostProps) {
 	}, [popup.returnFocus]);
 
 	useEffect(() => {
-		if (!options.closeOnEscape) return;
+		const backdrop = backdropRef.current;
+		const visualViewport = window.visualViewport;
+		const previousBodyOverflow = document.body.style.overflow;
 
-		function closeOnEscape(event: KeyboardEvent): void {
-			if (event.key !== "Escape") return;
+		function syncToVisualViewport(): void {
+			if (!backdrop) return;
 
-			event.preventDefault();
-			onFinish(undefined);
+			backdrop.style.setProperty("--popup-viewport-left", `${visualViewport?.offsetLeft ?? 0}px`);
+			backdrop.style.setProperty("--popup-viewport-top", `${visualViewport?.offsetTop ?? 0}px`);
+			backdrop.style.setProperty(
+				"--popup-viewport-width",
+				`${visualViewport?.width ?? window.innerWidth}px`,
+			);
+			backdrop.style.setProperty(
+				"--popup-viewport-height",
+				`${visualViewport?.height ?? window.innerHeight}px`,
+			);
 		}
 
-		document.addEventListener("keydown", closeOnEscape);
-		return () => document.removeEventListener("keydown", closeOnEscape);
+		syncToVisualViewport();
+		document.body.style.overflow = "hidden";
+		visualViewport?.addEventListener("resize", syncToVisualViewport);
+		visualViewport?.addEventListener("scroll", syncToVisualViewport);
+		window.addEventListener("resize", syncToVisualViewport);
+
+		return () => {
+			document.body.style.overflow = previousBodyOverflow;
+			visualViewport?.removeEventListener("resize", syncToVisualViewport);
+			visualViewport?.removeEventListener("scroll", syncToVisualViewport);
+			window.removeEventListener("resize", syncToVisualViewport);
+		};
+	}, []);
+
+	useEffect(() => {
+		function handleKeyDown(event: KeyboardEvent): void {
+			if (event.key === "Escape" && options.closeOnEscape) {
+				event.preventDefault();
+				onFinish(undefined);
+				return;
+			}
+
+			if (event.key !== "Tab") return;
+
+			const surface = surfaceRef.current;
+			if (!surface) return;
+			const focusableElements = Array.from(
+				surface.querySelectorAll<HTMLElement>(
+					"a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+				),
+			).filter((element) => element.getAttribute("aria-hidden") !== "true");
+
+			if (focusableElements.length === 0) {
+				event.preventDefault();
+				surface.focus();
+				return;
+			}
+
+			const first = focusableElements[0];
+			const last = focusableElements[focusableElements.length - 1];
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last?.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first?.focus();
+			}
+		}
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [onFinish, options.closeOnEscape]);
 
 	function handleBackdropClick(event: React.MouseEvent<HTMLDivElement>): void {
@@ -301,7 +361,12 @@ function PopupHost({popup, onFinish}: PopupHostProps) {
 	}
 
 	return (
-		<div className="popupBackdrop" role="presentation" onMouseDown={handleBackdropClick}>
+		<div
+			ref={backdropRef}
+			className="popupBackdrop"
+			role="presentation"
+			onMouseDown={handleBackdropClick}
+		>
 			<div
 				ref={surfaceRef}
 				className={["popupSurface", options.className].filter(Boolean).join(" ")}
