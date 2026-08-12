@@ -9,12 +9,18 @@ import {toID} from "../../utils/idUtils";
 import "./CommandLine.scss";
 
 type CommandLineProps = {
+	contained?: boolean;
 	isLoading?: boolean;
 	world: World;
 	selectedRoomId?: string | null;
 };
 
-export function CommandLine({isLoading = false, world, selectedRoomId}: CommandLineProps) {
+export function CommandLine({
+	contained = false,
+	isLoading = false,
+	world,
+	selectedRoomId,
+}: CommandLineProps) {
 	const [teleportRequest, setTeleportRequest] = useState<GamePlayerTeleportRequest | null>(null);
 	const startingRoomId = world.startRoomId;
 
@@ -29,11 +35,11 @@ export function CommandLine({isLoading = false, world, selectedRoomId}: CommandL
 
 	return (
 		<AdjustableBox
-			height="40%"
-			minHeight="120px"
-			maxHeight="60%"
+			height={contained ? "100%" : "40%"}
+			minHeight={contained ? 0 : "120px"}
+			maxHeight={contained ? "100%" : "60%"}
 			className="command-line"
-			adjustableEdges={["top"]}
+			adjustableEdges={contained ? [] : ["top"]}
 		>
 			<div className="command-line__toolbar">
 				<button

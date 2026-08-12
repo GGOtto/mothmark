@@ -41,10 +41,12 @@ export default function PublicUserProfilePage() {
 	const {username} = useParams<{username: string}>();
 	const [profile, setProfile] = useState<PublicProfile | null>(null);
 	const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">("loading");
+	const [loadedUsername, setLoadedUsername] = useState<string | null>(null);
+	const currentStatus = loadedUsername === username ? status : "loading";
+	const currentProfile = loadedUsername === username ? profile : null;
 
 	useEffect(() => {
 		const controller = new AbortController();
-		setStatus("loading");
 		fetch(`/api/users/${encodeURIComponent(username)}`, {signal: controller.signal})
 			.then(async (response) => {
 				const body = (await response.json()) as {
@@ -53,28 +55,34 @@ export default function PublicUserProfilePage() {
 				};
 				if (response.status === 404) {
 					setProfile(null);
+					setLoadedUsername(username);
 					setStatus("missing");
 					return;
 				}
 				if (!response.ok || !body.data)
 					throw new Error(body.error?.message || "The public profile could not be loaded.");
 				setProfile(body.data);
+				setLoadedUsername(username);
 				setStatus("ready");
 			})
 			.catch((error: unknown) => {
-				if ((error as {name?: string}).name !== "AbortError") setStatus("error");
+				if ((error as {name?: string}).name !== "AbortError") {
+					setProfile(null);
+					setLoadedUsername(username);
+					setStatus("error");
+				}
 			});
 		return () => controller.abort();
 	}, [username]);
 
-	if (status === "loading") {
+	if (currentStatus === "loading") {
 		return (
 			<main className="publicProfilePage publicProfileState" role="status">
 				Loading profile…
 			</main>
 		);
 	}
-	if (status === "missing") {
+	if (currentStatus === "missing") {
 		return (
 			<main className="publicProfilePage publicProfileState">
 				<h1>Profile not found</h1>
@@ -83,7 +91,7 @@ export default function PublicUserProfilePage() {
 			</main>
 		);
 	}
-	if (status === "error" || !profile) {
+	if (currentStatus === "error" || !currentProfile) {
 		return (
 			<main className="publicProfilePage publicProfileState" role="alert">
 				<h1>Profile unavailable</h1>
@@ -92,7 +100,7 @@ export default function PublicUserProfilePage() {
 		);
 	}
 
-	const displayName = publicProfileDisplayName(profile);
+	const displayName = publicProfileDisplayName(currentProfile);
 	return (
 		<main className="publicProfilePage">
 			<header className="publicProfileHeader">
@@ -103,17 +111,17 @@ export default function PublicUserProfilePage() {
 					<div>
 						<div className="publicProfileName">
 							<h1>{displayName}</h1>
-							<span>@{profile.username}</span>
+							<span>@{currentProfile.username}</span>
 						</div>
-						{profile.bio ? <p className="publicProfileBio">{profile.bio}</p> : null}
+						{currentProfile.bio ? <p className="publicProfileBio">{currentProfile.bio}</p> : null}
 						<div className="publicProfileFacts">
 							<span>
-								<CalendarDays size={14} aria-hidden="true" /> Joined {formatDate(profile.createdAt)}
+								<CalendarDays size={14} aria-hidden="true" /> Joined {formatDate(currentProfile.createdAt)}
 							</span>
-							{profile.website ? (
-								<a href={profile.website} target="_blank" rel="noreferrer">
+							{currentProfile.website ? (
+								<a href={currentProfile.website} target="_blank" rel="noreferrer">
 									<ExternalLink size={14} aria-hidden="true" />
-									{new URL(profile.website).hostname.replace(/^www\./, "")}
+									{new URL(currentProfile.website).hostname.replace(/^www\./, "")}
 								</a>
 							) : null}
 						</div>
@@ -125,12 +133,13 @@ export default function PublicUserProfilePage() {
 				<header>
 					<h2 id="published-worlds-title">Published worlds</h2>
 					<span>
-						{profile.publications.length} {profile.publications.length === 1 ? "world" : "worlds"}
+						{currentProfile.publications.length}{" "}
+						{currentProfile.publications.length === 1 ? "world" : "worlds"}
 					</span>
 				</header>
-				{profile.publications.length ? (
+				{currentProfile.publications.length ? (
 					<ul>
-						{profile.publications.map((publication) => (
+						{currentProfile.publications.map((publication) => (
 							<li key={publication.id}>
 								<div className="publicProfileWorldCover" aria-hidden="true">
 									<BookOpen size={18} />

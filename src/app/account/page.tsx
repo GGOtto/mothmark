@@ -9,6 +9,7 @@ import {
 	PUBLIC_PROFILE_WEBSITE_MAX_LENGTH,
 } from "@/auth/publicProfile";
 import {deleteWorldDraftsForUser} from "@/components/world-autosave/worldDraftStorage";
+import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 
 import "./page.scss";
 
@@ -204,8 +205,8 @@ export default function AccountPage() {
 
 	const registered = account?.accountType === "registered";
 	return (
-		<main className="accountPage">
-			<header className="accountPageHeader">
+		<PageShell as="main" className="accountPage" variant="document">
+			<PageShellHeader className="accountPageHeader">
 				<div>
 					<h1>Account</h1>
 					<span>
@@ -227,9 +228,9 @@ export default function AccountPage() {
 						Create an account
 					</Link>
 				) : null}
-			</header>
+			</PageShellHeader>
 
-			<div className="accountBody">
+			<PageShellBody className="accountBody">
 				<nav className="accountSectionIndex" aria-label="Account sections">
 					<span>On this page</span>
 					<a href="#ownership">Ownership</a>
@@ -490,7 +491,7 @@ export default function AccountPage() {
 						</section>
 					) : null}
 				</div>
-			</div>
+			</PageShellBody>
 
 			{deleteOpen && account ? (
 				<div className="accountDialogBackdrop" role="presentation">
@@ -543,6 +544,6 @@ export default function AccountPage() {
 					</section>
 				</div>
 			) : null}
-		</main>
+		</PageShell>
 	);
 }

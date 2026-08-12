@@ -8,6 +8,7 @@ import {ConnectionEditor} from "./editors/ConnectionEditor";
 import "./RightSideBar.scss";
 
 type RightSideBarProps = {
+	contained?: boolean;
 	world?: World;
 	updateWorld?: UpdateWorld;
 	selectedRoom: Room | null;
@@ -20,6 +21,7 @@ type RightSideBarProps = {
 };
 
 export function RightSideBar({
+	contained = false,
 	world,
 	updateWorld,
 	selectedRoom,
@@ -32,11 +34,11 @@ export function RightSideBar({
 }: RightSideBarProps) {
 	return (
 		<AdjustableBox
-			width="35%"
+			width={contained ? "100%" : "35%"}
 			maxWidth="100%"
-			minWidth="220px"
+			minWidth={contained ? 0 : "220px"}
 			className="rightSideBar"
-			adjustableEdges={["left"]}
+			adjustableEdges={contained ? [] : ["left"]}
 		>
 			{children ? (
 				children
