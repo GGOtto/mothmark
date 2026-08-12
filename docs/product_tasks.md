@@ -158,7 +158,7 @@ the full task definitions but do not imply a different sequence.
   - Add repository tests for save ordering and recovery plus a browser workflow covering edit,
     reload, transient failure, recovery, and publish-after-save.
 
-- [ ] **F02 — Create one mobile-safe overlay system.**
+- [x] **F02 — Create one mobile-safe overlay system.**
 
   **Outcome:** Dialogs, popovers, menus, pickers, condition/effect editors, and confirmation layers
   are usable on phones instead of being clipped desktop floating panels.

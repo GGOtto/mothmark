@@ -398,9 +398,9 @@ describe("variable-aware editors", () => {
 		fireEvent.click(trigger);
 		const menu = screen.getByRole("menu", {name: "Insert command value"});
 
-		expect(menu.parentElement).toBe(document.body);
+		expect(menu.parentElement?.parentElement).toBe(document.body);
 		expect(trigger.parentElement).not.toContainElement(menu);
-		expect(menu).toHaveStyle({position: "fixed", left: "58px", bottom: "36px", width: "250px"});
+		expect(menu).toHaveStyle({position: "fixed", left: "62px", bottom: "36px", width: "250px"});
 
 		Object.defineProperty(window, "innerWidth", {configurable: true, value: originalWidth});
 		Object.defineProperty(window, "innerHeight", {configurable: true, value: originalHeight});

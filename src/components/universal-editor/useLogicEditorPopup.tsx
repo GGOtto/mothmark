@@ -76,7 +76,11 @@ export function useLogicEditorPopup() {
 		if (!popup) return Promise.resolve();
 		return popup.open<void>(
 			({resolve}) => <LiveLogicEditor request={request} onClose={() => resolve()} />,
-			{className: "popupSurfaceLogicControl", closeOnBackdropClick: false},
+			{
+				ariaLabel: request.title ?? `Edit ${request.kind}`,
+				className: "popupSurfaceLogicControl",
+				closeOnBackdropClick: false,
+			},
 		);
 	};
 }

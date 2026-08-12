@@ -807,9 +807,7 @@
 
 @media (max-width: 600px) {
 	.entityPickerSurface--popover {
-		inset: auto 8px 8px !important;
-		width: auto !important;
-		max-height: min(78dvh, 620px);
+		max-height: 100%;
 	}
 
 	.popupSurfaceEntityPicker {

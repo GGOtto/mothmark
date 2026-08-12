@@ -5,6 +5,7 @@ import Link from "next/link";
 import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from "react";
 
 import {readOptionalJson} from "@/auth/apiResponse";
+import {ModalLayer} from "@/components/overlay/Overlay";
 import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
 
 import {PlayerTerminal} from "./PlayerTerminal";
@@ -93,7 +94,6 @@ function readServerConnection() {
 export function HostedPlayer({slug}: {slug: string}) {
 	const pageRef = useRef<HTMLElement | null>(null);
 	const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-	const menuRef = useRef<HTMLElement | null>(null);
 	const menuTitleRef = useRef<HTMLHeadingElement | null>(null);
 	const restartRequestIdRef = useRef<string | null>(null);
 	const [publication, setPublication] = useState<Publication | null>(null);
@@ -174,51 +174,6 @@ export function HostedPlayer({slug}: {slug: string}) {
 			viewport.removeEventListener("scroll", updateViewport);
 		};
 	}, []);
-
-	useEffect(() => {
-		if (!menuOpen) return;
-		const previouslyFocused =
-			document.activeElement instanceof HTMLElement ? document.activeElement : null;
-		const menuButton = menuButtonRef.current;
-		const bodyOverflow = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		window.requestAnimationFrame(() => menuTitleRef.current?.focus({preventScroll: true}));
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				event.preventDefault();
-				setMenuOpen(false);
-				setMenuView("about");
-				return;
-			}
-			if (event.key !== "Tab") return;
-			const focusable = Array.from(
-				menuRef.current?.querySelectorAll<HTMLElement>(
-					'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])',
-				) ?? [],
-			);
-			if (!focusable.length) return;
-			const first = focusable[0];
-			const last = focusable[focusable.length - 1];
-			const activeElement = document.activeElement;
-			const focusIsOutsideMenu = !menuRef.current?.contains(activeElement);
-			if (
-				event.shiftKey &&
-				(activeElement === first || activeElement === menuTitleRef.current || focusIsOutsideMenu)
-			) {
-				event.preventDefault();
-				last.focus();
-			} else if (!event.shiftKey && (activeElement === last || focusIsOutsideMenu)) {
-				event.preventDefault();
-				first.focus();
-			}
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		return () => {
-			document.body.style.overflow = bodyOverflow;
-			document.removeEventListener("keydown", handleKeyDown);
-			(previouslyFocused ?? menuButton)?.focus({preventScroll: true});
-		};
-	}, [menuOpen]);
 
 	useEffect(() => {
 		if (menuOpen)
@@ -360,20 +315,18 @@ export function HostedPlayer({slug}: {slug: string}) {
 				</div>
 			</header>
 			{menuOpen && publication ? (
-				<div
-					className="hostedMenuBackdrop"
-					role="presentation"
-					onPointerDown={(event) => {
-						if (event.target === event.currentTarget) closeMenu();
-					}}
+				<ModalLayer
+					ariaLabelledBy="hosted-menu-title"
+					backdropClassName="hostedMenuBackdrop"
+					className="hostedMenu"
+					closeOnBackdropClick={status !== "saving"}
+					closeOnEscape={status !== "saving"}
+					initialFocusRef={menuTitleRef}
+					mobilePresentation="sheet"
+					onClose={closeMenu}
+					returnFocusRef={menuButtonRef}
 				>
-					<section
-						ref={menuRef}
-						className="hostedMenu"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="hosted-menu-title"
-					>
+					<>
 						<header>
 							<h2 ref={menuTitleRef} id="hosted-menu-title" tabIndex={-1}>
 								{menuView === "restart"
@@ -470,8 +423,8 @@ export function HostedPlayer({slug}: {slug: string}) {
 								</div>
 							</div>
 						)}
-					</section>
-				</div>
+					</>
+				</ModalLayer>
 			) : null}
 			{newerReleaseAvailable ? (
 				<div className="hostedReleaseNotice" role="status">

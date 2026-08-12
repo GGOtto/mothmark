@@ -82,6 +82,37 @@ test("the narrow header collapses secondary actions into one menu", async ({page
 	await expect(mobile.getByRole("link", {name: "Play"})).toHaveAttribute("href", "/play");
 	await expect(mobile.getByRole("button", {name: "Send feedback"})).toBeVisible();
 	await expect(mobile.getByRole("link", {name: "Sign up"})).toBeVisible();
+	await mobile.getByRole("button", {name: "Send feedback"}).click();
+	const feedback = page.getByRole("dialog", {name: "Send feedback"});
+	await expect(feedback).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: "[role='dialog']"});
+
+	for (const viewport of [
+		{width: 320, height: 568},
+		{width: 390, height: 360},
+		{width: 740, height: 430},
+	]) {
+		await page.setViewportSize(viewport);
+		await expect
+			.poll(async () => {
+				const currentBounds = await feedback.boundingBox();
+				return (currentBounds?.x ?? 0) + (currentBounds?.width ?? Number.POSITIVE_INFINITY);
+			})
+			.toBeLessThanOrEqual(viewport.width + 1);
+		await expect
+			.poll(async () => {
+				const currentBounds = await feedback.boundingBox();
+				return (currentBounds?.y ?? 0) + (currentBounds?.height ?? Number.POSITIVE_INFINITY);
+			})
+			.toBeLessThanOrEqual(viewport.height + 1);
+		const bounds = await feedback.boundingBox();
+		expect(bounds?.x ?? -1).toBeGreaterThanOrEqual(0);
+		expect(bounds?.y ?? -1).toBeGreaterThanOrEqual(0);
+		await expectMobileLayoutIntegrity(page, {root: "[role='dialog']"});
+	}
+
+	await feedback.getByRole("button", {name: "Close feedback"}).click();
+	await expect(page.getByRole("button", {name: "Open menu"})).toBeFocused();
 	expect(
 		await page.evaluate(
 			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,

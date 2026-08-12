@@ -24,16 +24,8 @@ import {
 	Zap,
 	type LucideIcon,
 } from "lucide-react";
-import {
-	type CSSProperties,
-	useEffect,
-	useId,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import {createPortal} from "react-dom";
+import {type CSSProperties, useEffect, useId, useMemo, useRef, useState} from "react";
+import {AnchoredLayer} from "@/components/overlay/Overlay";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import type {EntityType} from "@/types/editor/editorRegistryTypes";
 import {idValue, toID, type ID, type WorldIdEntityType} from "@/utils/idUtils";
@@ -576,48 +568,6 @@ function EntityPickerPopupContent({
 	);
 }
 
-function usePopoverPosition(open: boolean, triggerRef: React.RefObject<HTMLButtonElement | null>) {
-	const [position, setPosition] = useState<CSSProperties>({});
-
-	useLayoutEffect(() => {
-		if (!open) return;
-		function updatePosition() {
-			const trigger = triggerRef.current;
-			if (!trigger) return;
-			const rect = trigger.getBoundingClientRect();
-			const viewportPadding = 12;
-			const triggerGap = 6;
-			const preferredHeight = 520;
-			const width = Math.min(420, window.innerWidth - 24);
-			const left = Math.min(
-				Math.max(viewportPadding, rect.left),
-				window.innerWidth - width - viewportPadding,
-			);
-			const spaceBelow = window.innerHeight - rect.bottom - viewportPadding - triggerGap;
-			const spaceAbove = rect.top - viewportPadding - triggerGap;
-			const placeBelow = spaceBelow >= Math.min(300, preferredHeight) || spaceBelow >= spaceAbove;
-			const availableHeight = Math.max(0, placeBelow ? spaceBelow : spaceAbove);
-			setPosition({
-				position: "fixed",
-				width,
-				left,
-				maxHeight: Math.min(preferredHeight, availableHeight),
-				top: placeBelow ? rect.bottom + triggerGap : undefined,
-				bottom: placeBelow ? undefined : window.innerHeight - rect.top + triggerGap,
-			});
-		}
-		updatePosition();
-		window.addEventListener("resize", updatePosition);
-		window.addEventListener("scroll", updatePosition, true);
-		return () => {
-			window.removeEventListener("resize", updatePosition);
-			window.removeEventListener("scroll", updatePosition, true);
-		};
-	}, [open, triggerRef]);
-
-	return position;
-}
-
 export function EntityPicker({
 	value,
 	entries,
@@ -643,8 +593,6 @@ export function EntityPicker({
 	const popup = useOptionalPopup();
 	const [popoverOpen, setPopoverOpen] = useState(false);
 	const triggerRef = useRef<HTMLButtonElement>(null);
-	const popoverRef = useRef<HTMLDivElement>(null);
-	const popoverPosition = usePopoverPosition(popoverOpen, triggerRef);
 	const selectedEntry = entries.find(
 		(entry) => entry.ref.type === value?.type && entry.ref.id === idValue(value),
 	);
@@ -704,21 +652,14 @@ export function EntityPicker({
 					onCancel={cancel}
 				/>
 			),
-			{className: "popupSurfaceEntityPicker", closeOnBackdropClick: false},
+			{
+				ariaLabel: displayTitle,
+				className: "popupSurfaceEntityPicker",
+				closeOnBackdropClick: false,
+			},
 		);
 		if (result) chooseEntry(result);
 	}
-
-	useEffect(() => {
-		if (!popoverOpen) return;
-		function handlePointerDown(event: PointerEvent) {
-			const target = event.target as Node;
-			if (popoverRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
-			setPopoverOpen(false);
-		}
-		document.addEventListener("pointerdown", handlePointerDown);
-		return () => document.removeEventListener("pointerdown", handlePointerDown);
-	}, [popoverOpen]);
 
 	function openPicker() {
 		if (!canEdit) return;
@@ -768,48 +709,46 @@ export function EntityPicker({
 				) : null}
 			</div>
 
-			{popoverOpen && typeof document !== "undefined"
-				? createPortal(
-						<div
-							ref={popoverRef}
-							className="entityPickerSurface entityPickerSurface--popover"
-							style={{...popoverPosition, ...entityStyle(primaryType)}}
-						>
-							<div className="entityPickerPopover__header">
-								<span className="entityPickerPopover__typeIcon">
-									<EntityIcon type={primaryType} />
-								</span>
-								<strong>{displayTitle}</strong>
-								<button
-									type="button"
-									aria-label="Close entity picker"
-									onClick={() => setPopoverOpen(false)}
-								>
-									<X size={15} aria-hidden="true" />
-								</button>
-							</div>
-							<EntityPickerPanel
-								entries={entries}
-								entityTypes={entityTypes}
-								selectedId={selectedKey}
-								searchPlaceholder={
-									searchPlaceholder ?? `Search ${entityLabel(primaryType, true).toLocaleLowerCase()}…`
-								}
-								searchable={searchable}
-								allowCreate={allowCreate}
-								showDescriptions={showDescriptions}
-								showTags={showTags}
-								showBadges={showBadges}
-								resultLimit={resultLimit}
-								onChoose={chooseEntry}
-								onCreate={createEntry}
-								onCancel={() => setPopoverOpen(false)}
-								onOpenFullBrowser={popup ? () => void openPopup() : undefined}
-							/>
-						</div>,
-						document.body,
-					)
-				: null}
+			{popoverOpen ? (
+				<AnchoredLayer
+					anchorRef={triggerRef}
+					ariaLabel={displayTitle}
+					className="entityPickerSurface entityPickerSurface--popover"
+					mobilePresentation="sheet"
+					onClose={() => setPopoverOpen(false)}
+					preferredWidth={420}
+					role="dialog"
+					style={entityStyle(primaryType)}
+				>
+					<div className="entityPickerPopover__header">
+						<span className="entityPickerPopover__typeIcon">
+							<EntityIcon type={primaryType} />
+						</span>
+						<strong>{displayTitle}</strong>
+						<button type="button" aria-label="Close entity picker" onClick={() => setPopoverOpen(false)}>
+							<X size={15} aria-hidden="true" />
+						</button>
+					</div>
+					<EntityPickerPanel
+						entries={entries}
+						entityTypes={entityTypes}
+						selectedId={selectedKey}
+						searchPlaceholder={
+							searchPlaceholder ?? `Search ${entityLabel(primaryType, true).toLocaleLowerCase()}…`
+						}
+						searchable={searchable}
+						allowCreate={allowCreate}
+						showDescriptions={showDescriptions}
+						showTags={showTags}
+						showBadges={showBadges}
+						resultLimit={resultLimit}
+						onChoose={chooseEntry}
+						onCreate={createEntry}
+						onCancel={() => setPopoverOpen(false)}
+						onOpenFullBrowser={popup ? () => void openPopup() : undefined}
+					/>
+				</AnchoredLayer>
+			) : null}
 		</div>
 	);
 }

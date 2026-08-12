@@ -2,7 +2,8 @@
 
 import type {LucideIcon} from "lucide-react";
 import {Map, Key, Puzzle, Bug, ScrollText, Settings, VenetianMask, ChevronDown} from "lucide-react";
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
+import {AnchoredLayer} from "@/components/overlay/Overlay";
 import "./LeftSideBar.scss";
 
 export type EditorTab =
@@ -95,35 +96,11 @@ type LeftSideBarProps = {
 
 export function LeftSideBar({activeTab, onTabChange}: LeftSideBarProps) {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const mobileNavigationRef = useRef<HTMLElement | null>(null);
 	const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
 	const activeNavItem = [...editorNavItems, ...utilityNavItems].find(
 		(item) => item.id === activeTab,
 	)!;
 	const ActiveIcon = activeNavItem.icon;
-
-	useEffect(() => {
-		if (!mobileMenuOpen) return;
-
-		function closeOutside(event: PointerEvent) {
-			if (event.target instanceof Node && !mobileNavigationRef.current?.contains(event.target)) {
-				setMobileMenuOpen(false);
-			}
-		}
-
-		function closeOnEscape(event: KeyboardEvent) {
-			if (event.key !== "Escape") return;
-			setMobileMenuOpen(false);
-			mobileTriggerRef.current?.focus();
-		}
-
-		document.addEventListener("pointerdown", closeOutside, true);
-		document.addEventListener("keydown", closeOnEscape);
-		return () => {
-			document.removeEventListener("pointerdown", closeOutside, true);
-			document.removeEventListener("keydown", closeOnEscape);
-		};
-	}, [mobileMenuOpen]);
 
 	function chooseTab(tab: EditorTab) {
 		onTabChange(tab);
@@ -156,11 +133,7 @@ export function LeftSideBar({activeTab, onTabChange}: LeftSideBarProps) {
 				</div>
 			</aside>
 
-			<nav
-				className="mobileEditorNavigation"
-				aria-label="Editor destinations"
-				ref={mobileNavigationRef}
-			>
+			<nav className="mobileEditorNavigation" aria-label="Editor destinations">
 				<button
 					type="button"
 					className="mobileEditorNavigationTrigger"
@@ -175,7 +148,13 @@ export function LeftSideBar({activeTab, onTabChange}: LeftSideBarProps) {
 				</button>
 
 				{mobileMenuOpen ? (
-					<div className="mobileEditorNavigationMenu" role="menu">
+					<AnchoredLayer
+						anchorRef={mobileTriggerRef}
+						ariaLabel="Editor destinations"
+						className="mobileEditorNavigationMenu"
+						onClose={() => setMobileMenuOpen(false)}
+						role="menu"
+					>
 						{[...editorNavItems, ...utilityNavItems].map((item) => {
 							const Icon = item.icon;
 							return (
@@ -191,7 +170,7 @@ export function LeftSideBar({activeTab, onTabChange}: LeftSideBarProps) {
 								</button>
 							);
 						})}
-					</div>
+					</AnchoredLayer>
 				) : null}
 			</nav>
 		</>

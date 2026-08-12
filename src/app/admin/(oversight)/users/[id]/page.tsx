@@ -7,9 +7,11 @@ import {useCallback, useEffect, useState} from "react";
 import {formatAdminDate, mutateAdminJson, readAdminJson} from "../../../adminClient";
 import type {AdminUserDetail} from "../../../adminTypes";
 import {AdminPlaythroughSummaryList} from "../../../AdminPlaythroughSummaryList";
+import {usePopup} from "@/components/popup/Popup";
 
 export default function AdminUserDetailPage() {
 	const {id} = useParams<{id: string}>();
+	const popup = usePopup();
 	const [user, setUser] = useState<AdminUserDetail | null>(null);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
@@ -174,22 +176,26 @@ export default function AdminUserDetailPage() {
 									className={user.status === "suspended" ? "" : "adminDangerButton"}
 									disabled={Boolean(busy) || (user.status !== "suspended" && !reason.trim())}
 									type="button"
-									onClick={() => {
-										const next = user.status === "suspended" ? "reactivate" : "suspend";
-										if (
-											!window.confirm(
-												`${next === "suspend" ? "Suspend" : "Reactivate"} this account?${next === "suspend" ? " All active sessions will be revoked immediately." : ""}`,
-											)
-										)
-											return;
-										void mutate(next === "suspend" ? "Suspension" : "Reactivation", () =>
-											mutateAdminJson(
-												`/api/admin/users/${id}/status`,
-												"PUT",
-												next === "suspend" ? {status: "suspended", reason} : {status: "active"},
-											),
-										);
-									}}
+									onClick={() =>
+										void (async () => {
+											const next = user.status === "suspended" ? "reactivate" : "suspend";
+											const confirmed = await popup.confirm({
+												title: `${next === "suspend" ? "Suspend" : "Reactivate"} this account?`,
+												message:
+													next === "suspend" ? "All active sessions will be revoked immediately." : undefined,
+												confirmLabel: next === "suspend" ? "Suspend account" : "Reactivate account",
+												danger: next === "suspend",
+											});
+											if (!confirmed) return;
+											void mutate(next === "suspend" ? "Suspension" : "Reactivation", () =>
+												mutateAdminJson(
+													`/api/admin/users/${id}/status`,
+													"PUT",
+													next === "suspend" ? {status: "suspended", reason} : {status: "active"},
+												),
+											);
+										})()
+									}
 								>
 									{user.status === "suspended" ? "Reactivate account" : "Suspend account"}
 								</button>
@@ -262,12 +268,21 @@ export default function AdminUserDetailPage() {
 								<button
 									disabled={Boolean(busy)}
 									type="button"
-									onClick={() => {
-										if (window.confirm("Revoke every active session for this user?"))
-											void mutate("All-session revocation", () =>
-												mutateAdminJson(`/api/admin/users/${id}/sessions`, "DELETE", {}),
-											);
-									}}
+									onClick={() =>
+										void (async () => {
+											if (
+												await popup.confirm({
+													title: "Revoke every active session?",
+													message: "The user will need to sign in again on every device.",
+													confirmLabel: "Revoke sessions",
+													danger: true,
+												})
+											)
+												void mutate("All-session revocation", () =>
+													mutateAdminJson(`/api/admin/users/${id}/sessions`, "DELETE", {}),
+												);
+										})()
+									}
 								>
 									Revoke all active
 								</button>
@@ -301,14 +316,22 @@ export default function AdminUserDetailPage() {
 															<button
 																disabled={Boolean(busy)}
 																type="button"
-																onClick={() => {
-																	if (window.confirm("Revoke only this session?"))
-																		void mutate("Session revocation", () =>
-																			mutateAdminJson(`/api/admin/users/${id}/sessions`, "DELETE", {
-																				sessionId: session.id,
-																			}),
-																		);
-																}}
+																onClick={() =>
+																	void (async () => {
+																		if (
+																			await popup.confirm({
+																				title: "Revoke this session?",
+																				confirmLabel: "Revoke session",
+																				danger: true,
+																			})
+																		)
+																			void mutate("Session revocation", () =>
+																				mutateAdminJson(`/api/admin/users/${id}/sessions`, "DELETE", {
+																					sessionId: session.id,
+																				}),
+																			);
+																	})()
+																}
 															>
 																Revoke
 															</button>

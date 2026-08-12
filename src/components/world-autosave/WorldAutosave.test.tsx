@@ -235,7 +235,7 @@ describe("world autosave", () => {
 	});
 
 	it("resets a registered world after confirmation even when it has no edits", () => {
-		jest.spyOn(window, "confirm").mockReturnValue(true);
+		jest.spyOn(globalThis, "confirm").mockReturnValue(true);
 		renderAutosaveHarness(initialWorld);
 
 		fireEvent.click(screen.getByRole("button", {name: "Reset to starter world"}));
