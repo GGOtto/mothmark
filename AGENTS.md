@@ -154,6 +154,9 @@
   filenames while keeping the world UUID internal. Editor slugs are distinct from future publication
   slugs and do not grant or broaden access. Treat old UUID and `/editor` URLs as redirects, not the
   primary route family.
+- Keep the active editor workspace and its stable primary entity selection in the editor URL so
+  refresh, copied links, and browser history restore the same context. Reserve browser-local state for
+  reversible presentation preferences rather than navigational state.
 - Keep public user profiles under `/users/[username]`. Display the username as the public name unless
   the user explicitly supplies a display name; never derive a public name from email or expose the
   email on a public profile. Link author usernames on published-world cards to that profile. Accept
