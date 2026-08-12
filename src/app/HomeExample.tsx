@@ -65,8 +65,6 @@ export function HomeExample() {
 						world={world}
 						readOnly
 						ariaLabel="Pan and zoom map of the Corner Shop example world"
-						tool="pan"
-						onToolChange={() => {}}
 						updateWorld={() => {}}
 						selectedId={selectedId}
 						setSelectedId={setSelectedId}

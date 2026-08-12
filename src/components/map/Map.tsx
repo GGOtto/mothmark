@@ -60,9 +60,8 @@ type MapProps = {
 	isLoading?: boolean;
 	readOnly?: boolean;
 	ariaLabel?: string;
-	tool: MapTool;
-	onToolChange: (tool: MapTool) => void;
-	onTemporaryToolChange?: (tool: MapTool | null) => void;
+	isAddingRoom?: boolean;
+	onAddingRoomChange?: (isAddingRoom: boolean) => void;
 	onZoomChange?: (zoom: number) => void;
 	updateWorld: UpdateWorld;
 	selectedId: string | null;
@@ -75,7 +74,6 @@ type MapProps = {
 	recenterRequest: number;
 };
 
-export type MapTool = "edit" | "pan";
 export type ConnectionDraft =
 	| {state: "idle"}
 	| {state: "choosing-destination"; fromRoomId: string; fromDirection: Direction}
@@ -90,6 +88,7 @@ type PanState = {
 	pointerId: number;
 	startPointer: Point;
 	startViewport: Point;
+	hasDragged: boolean;
 };
 
 type PinchState = {
@@ -100,6 +99,7 @@ type PinchState = {
 };
 
 const ROOM_DRAG_THRESHOLD = 2;
+const MAP_PAN_THRESHOLD = 2;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 
@@ -108,9 +108,8 @@ export function Map({
 	isLoading = false,
 	readOnly = false,
 	ariaLabel = "World map",
-	tool,
-	onToolChange,
-	onTemporaryToolChange,
+	isAddingRoom = false,
+	onAddingRoomChange,
 	onZoomChange,
 	updateWorld,
 	selectedId,
@@ -129,17 +128,11 @@ export function Map({
 	const [panState, setPanState] = useState<PanState | null>(null);
 	const pinchStateRef = useRef<PinchState | null>(null);
 	const activePointersRef = useRef(new globalThis.Map<number, Point>());
-	const [isSpaceToolActive, setIsSpaceToolActive] = useState(false);
-	const isSpaceToolActiveRef = useRef(false);
+	const [isSpacePanActive, setIsSpacePanActive] = useState(false);
+	const isSpacePanActiveRef = useRef(false);
 	const isMapPointerDownRef = useRef(false);
 	const suppressNextMapClickRef = useRef(false);
-	const effectiveTool: MapTool = readOnly
-		? "pan"
-		: isSpaceToolActive
-			? tool === "edit"
-				? "pan"
-				: "edit"
-			: tool;
+	const [roomPlacementPreview, setRoomPlacementPreview] = useState<Point | null>(null);
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
@@ -166,11 +159,16 @@ export function Map({
 		[currentLayer, readOnly, updateWorld],
 	);
 
-	const changeCurrentLayer = useCallback((layer: Layer) => {
-		setCurrentLayer(layer);
-		viewportRef.current = layer.viewport;
-		setViewport(layer.viewport);
-	}, []);
+	const changeCurrentLayer = useCallback(
+		(layer: Layer) => {
+			onAddingRoomChange?.(false);
+			setRoomPlacementPreview(null);
+			setCurrentLayer(layer);
+			viewportRef.current = layer.viewport;
+			setViewport(layer.viewport);
+		},
+		[onAddingRoomChange],
+	);
 
 	useEffect(() => {
 		viewportRef.current = viewport;
@@ -184,12 +182,6 @@ export function Map({
 	}, [recenterRequest, updateViewport]);
 
 	useEffect(() => () => updateStatus(null), [updateStatus]);
-	useEffect(
-		() => () => {
-			onTemporaryToolChange?.(null);
-		},
-		[onTemporaryToolChange],
-	);
 
 	useEffect(() => {
 		if (isLoading || readOnly) return;
@@ -224,6 +216,12 @@ export function Map({
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape" && isAddingRoom) {
+				onAddingRoomChange?.(false);
+				setRoomPlacementPreview(null);
+				updateStatus({kind: "cancelled", label: "Room placement cancelled"}, {channel: "notice"});
+				return;
+			}
 			if (event.key === "Escape" && connectionDraft.state !== "idle") {
 				cancelConnectionDraft();
 				return;
@@ -232,10 +230,8 @@ export function Map({
 			if (event.code === "Space") {
 				event.preventDefault();
 				if (event.repeat) return;
-				const temporaryTool = tool === "edit" ? "pan" : "edit";
-				isSpaceToolActiveRef.current = true;
-				setIsSpaceToolActive(true);
-				onTemporaryToolChange?.(temporaryTool);
+				isSpacePanActiveRef.current = true;
+				setIsSpacePanActive(true);
 				setDragState(null);
 				setPanState(null);
 				const activeElement = document.activeElement as (Element & {blur?: () => void}) | null;
@@ -254,38 +250,28 @@ export function Map({
 					?.click();
 				return;
 			}
-			if (event.key.toLowerCase() === "v" || event.key === "ArrowLeft") {
-				event.preventDefault();
-				onToolChange("edit");
-			}
-			if (event.key.toLowerCase() === "h" || event.key === "ArrowRight") {
-				event.preventDefault();
-				onToolChange("pan");
-			}
 		}
 
 		function handleKeyUp(event: KeyboardEvent) {
 			if (event.code !== "Space") return;
 			event.preventDefault();
 			if (isMapPointerDownRef.current) suppressNextMapClickRef.current = true;
-			isSpaceToolActiveRef.current = false;
-			setIsSpaceToolActive(false);
-			onTemporaryToolChange?.(null);
+			isSpacePanActiveRef.current = false;
+			setIsSpacePanActive(false);
 			setDragState(null);
 			setPanState(null);
 		}
 
 		function handleWindowBlur() {
 			if (isMapPointerDownRef.current) suppressNextMapClickRef.current = true;
-			isSpaceToolActiveRef.current = false;
-			setIsSpaceToolActive(false);
-			onTemporaryToolChange?.(null);
+			isSpacePanActiveRef.current = false;
+			setIsSpacePanActive(false);
 			setDragState(null);
 			setPanState(null);
 		}
 
 		function handleFocusIn(event: FocusEvent) {
-			if (!isSpaceToolActiveRef.current) return;
+			if (!isSpacePanActiveRef.current) return;
 			const focusTarget = event.target as (Element & {blur?: () => void}) | null;
 			focusTarget?.blur?.();
 		}
@@ -305,18 +291,14 @@ export function Map({
 		changeCurrentLayer,
 		connectionDraft,
 		currentLayer.layer,
+		isAddingRoom,
 		isLoading,
 		isLayerMenuOpen,
-		onToolChange,
-		onTemporaryToolChange,
+		onAddingRoomChange,
 		readOnly,
-		tool,
+		updateStatus,
 		world,
 	]);
-
-	useEffect(() => {
-		if (effectiveTool !== "edit" && connectionDraft.state !== "idle") cancelConnectionDraft();
-	}, [effectiveTool, cancelConnectionDraft, connectionDraft]);
 
 	useEffect(() => {
 		const mapElement = mapRef.current;
@@ -346,10 +328,22 @@ export function Map({
 		if (!mapElement) return null;
 		const bounds = mapElement.getBoundingClientRect();
 		const currentViewport = viewportRef.current;
-		return {
+		const point = {
 			x: (clientX - bounds.left - currentViewport.x) / currentViewport.zoom,
 			y: (clientY - bounds.top - currentViewport.y) / currentViewport.zoom,
 		};
+		return Number.isFinite(point.x) && Number.isFinite(point.y) ? point : null;
+	}
+
+	function isMapEntityTarget(target: EventTarget | null) {
+		return (
+			target instanceof Element &&
+			Boolean(
+				target.closest(
+					"button, [role='button'], .roomCard, .node, .connectionClickTarget, .connectionLayerTag",
+				),
+			)
+		);
 	}
 
 	function selectRoom(room?: Room) {
@@ -514,7 +508,7 @@ export function Map({
 	}
 
 	function handleRoomPointerDown(event: React.PointerEvent<HTMLButtonElement>, room: Room) {
-		if (event.button !== 0 || effectiveTool !== "edit") return;
+		if (event.button !== 0 || readOnly || isAddingRoom || isSpacePanActiveRef.current) return;
 
 		const pointer = clientToMapPoint(event.clientX, event.clientY);
 		if (!pointer) return;
@@ -536,6 +530,8 @@ export function Map({
 
 		const pinchState = pinchStateRef.current;
 		if (pinchState && pinchState.pointerIds.includes(event.pointerId)) {
+			suppressNextMapClickRef.current = true;
+			setRoomPlacementPreview(null);
 			const [first, second] = pinchState.pointerIds.map((pointerId) =>
 				activePointersRef.current.get(pointerId),
 			);
@@ -563,6 +559,15 @@ export function Map({
 		}
 
 		if (panState && panState.pointerId === event.pointerId) {
+			const hasDragged =
+				panState.hasDragged ||
+				getDistance(panState.startPointer, {x: event.clientX, y: event.clientY}) >= MAP_PAN_THRESHOLD;
+			if (!hasDragged) return;
+			if (!panState.hasDragged) {
+				setPanState((current) => (current ? {...current, hasDragged: true} : current));
+			}
+			suppressNextMapClickRef.current = true;
+			setRoomPlacementPreview(null);
 			updateViewport({
 				...viewportRef.current,
 				x: panState.startViewport.x + event.clientX - panState.startPointer.x,
@@ -571,7 +576,14 @@ export function Map({
 			return;
 		}
 
-		if (!dragState || effectiveTool !== "edit") return;
+		if (!dragState) {
+			if (isAddingRoom) {
+				setRoomPlacementPreview(
+					isMapEntityTarget(event.target) ? null : clientToMapPoint(event.clientX, event.clientY),
+				);
+			}
+			return;
+		}
 
 		const pointer = clientToMapPoint(event.clientX, event.clientY);
 		if (!pointer) return;
@@ -605,12 +617,14 @@ export function Map({
 							pointerId: remainingPointer[0],
 							startPointer: remainingPointer[1],
 							startViewport: {x: viewportRef.current.x, y: viewportRef.current.y},
+							hasDragged: true,
 						}
 					: null,
 			);
 			return;
 		}
 		if (panState && panState.pointerId === event.pointerId) {
+			if (panState.hasDragged) suppressNextMapClickRef.current = true;
 			setPanState(null);
 			return;
 		}
@@ -636,9 +650,18 @@ export function Map({
 	}
 
 	function handleMapPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-		if (event.button !== 0 || effectiveTool !== "pan") return;
-		event.currentTarget.setPointerCapture(event.pointerId);
+		if (event.button !== 0) return;
+		const startedOnMapEntity = isMapEntityTarget(event.target);
+		const tracksTouchForPinch = event.pointerType === "touch";
+		if (!readOnly && !isSpacePanActiveRef.current && startedOnMapEntity && !tracksTouchForPinch)
+			return;
+		if (!startedOnMapEntity || readOnly || isSpacePanActiveRef.current) {
+			event.currentTarget.setPointerCapture(event.pointerId);
+		}
 		activePointersRef.current.set(event.pointerId, {x: event.clientX, y: event.clientY});
+		if (isAddingRoom && !startedOnMapEntity) {
+			setRoomPlacementPreview(clientToMapPoint(event.clientX, event.clientY));
+		}
 
 		const pointers = Array.from(activePointersRef.current.entries());
 		if (pointers.length >= 2) {
@@ -658,14 +681,17 @@ export function Map({
 				},
 				startViewport: current,
 			};
+			setDragState(null);
 			setPanState(null);
 			return;
 		}
+		if (startedOnMapEntity && tracksTouchForPinch) return;
 
 		setPanState({
 			pointerId: event.pointerId,
 			startPointer: {x: event.clientX, y: event.clientY},
 			startViewport: {x: viewport.x, y: viewport.y},
+			hasDragged: false,
 		});
 	}
 
@@ -694,24 +720,26 @@ export function Map({
 	}
 
 	function handleBlankMapClick(event: React.MouseEvent<HTMLDivElement>) {
-		if (effectiveTool !== "edit") return;
-		if (
-			event.target instanceof Element &&
-			event.target.closest(".roomCard, .node, .connectionClickTarget")
-		)
-			return;
+		if (readOnly || isMapEntityTarget(event.target)) return;
 		const position = clientToMapPoint(event.clientX, event.clientY);
-		if (!position) return;
-		if (connectionDraft.state === "choosing-return") {
-			cancelConnectionDraft();
-			addRoomAt(position);
+		if (!position) {
+			updateStatus({kind: "cancelled", label: "Choose a valid map position"}, {channel: "notice"});
 			return;
 		}
-		if (connectionDraft.state === "idle") {
-			addRoomAt(position);
+		if (!isAddingRoom) {
+			if (connectionDraft.state === "choosing-return") cancelConnectionDraft();
+			if (connectionDraft.state === "idle") selectRoom();
+			return;
+		}
+		if (connectionDraft.state === "choosing-return") {
 			return;
 		}
 		const room = addRoomAt(position);
+		onAddingRoomChange?.(false);
+		setRoomPlacementPreview(null);
+		if (connectionDraft.state === "idle") {
+			return;
+		}
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
@@ -753,7 +781,7 @@ export function Map({
 			ref={mapRef}
 			data-map
 			aria-label={ariaLabel}
-			className={`map map--tool-${effectiveTool} ${readOnly ? "map--read-only" : ""} ${panState ? "map--panning" : ""}`}
+			className={`map ${readOnly ? "map--read-only" : ""} ${isAddingRoom ? "map--placing-room" : ""} ${isSpacePanActive ? "map--space-pan" : ""} ${panState?.hasDragged ? "map--panning" : ""}`}
 			style={{
 				backgroundPosition: `${viewport.x}px ${viewport.y}px`,
 				backgroundSize: `auto, auto, ${48 * viewport.zoom}px ${48 * viewport.zoom}px, ${48 * viewport.zoom}px ${48 * viewport.zoom}px`,
@@ -761,7 +789,7 @@ export function Map({
 			onPointerDown={handleMapPointerDown}
 			onPointerDownCapture={(event) => {
 				isMapPointerDownRef.current = true;
-				if (isSpaceToolActiveRef.current) event.preventDefault();
+				if (isSpacePanActiveRef.current) event.preventDefault();
 			}}
 			onPointerUpCapture={() => {
 				isMapPointerDownRef.current = false;
@@ -777,6 +805,9 @@ export function Map({
 				event.stopPropagation();
 			}}
 			onPointerMove={handlePointerMove}
+			onPointerLeave={() => {
+				if (!isMapPointerDownRef.current) setRoomPlacementPreview(null);
+			}}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerCancel}
 			onWheel={handleWheel}
@@ -798,7 +829,7 @@ export function Map({
 						<MapLayerContent
 							world={world}
 							layer={currentLayer}
-							isInteractive={!readOnly && effectiveTool === "edit"}
+							isInteractive={!readOnly && !isAddingRoom && !isSpacePanActive}
 							selectedId={selectedId}
 							isConnectionSelected={isConnectionSelected}
 							onRoomPointerDown={handleRoomPointerDown}
@@ -806,7 +837,7 @@ export function Map({
 							selectConnection={handleConnectionSelect}
 							changePathway={handleConnectionPathwayChange}
 							onStubPointChange={handleConnectionStubPointChange}
-							canMoveStubs={effectiveTool === "edit"}
+							canMoveStubs={!isAddingRoom && !isSpacePanActive}
 							updateStatus={updateStatus}
 							isRoomDragging={(room) => dragState?.roomId === idValue(room.id) && dragState.hasDragged}
 							getArmedDirection={(room) =>
@@ -818,6 +849,20 @@ export function Map({
 								connectionDraft.state === "choosing-return" && connectionDraft.toRoomId === idValue(room.id)
 							}
 						/>
+						{isAddingRoom && roomPlacementPreview ? (
+							<div
+								className="mapRoomPlacementPreview"
+								aria-hidden="true"
+								style={{
+									left: roomPlacementPreview.x,
+									top: roomPlacementPreview.y,
+									width: MAP_ROOM_WIDTH,
+									height: MAP_ROOM_HEIGHT,
+								}}
+							>
+								New room
+							</div>
+						) : null}
 					</div>
 					{readOnly ? null : (
 						<>

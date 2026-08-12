@@ -18,7 +18,7 @@ import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {ModalLayer} from "@/components/overlay/Overlay";
-import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
+import {Map, type ConnectionDraft} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
 	CommandEditor,
@@ -148,7 +148,7 @@ export default function EditorPage() {
 		return locator === "undefined" ? undefined : locator;
 	});
 	const [activeTab, setActiveTab] = useState<EditorTab>("map");
-	const [mapTool, setMapTool] = useState<MapTool>("edit");
+	const [isAddingRoom, setIsAddingRoom] = useState(false);
 	const [mapZoom, setMapZoom] = useState(1);
 	const [mapRecenterRequest, setMapRecenterRequest] = useState(0);
 	const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft>({state: "idle"});
@@ -336,6 +336,7 @@ export default function EditorPage() {
 
 	const handleTabChange = useCallback(
 		(tab: EditorTab) => {
+			setIsAddingRoom(false);
 			setActiveTab(tab);
 			setUtilityView("editor");
 			setUtilityCollapsed(mobileEditorLayout);
@@ -503,8 +504,8 @@ export default function EditorPage() {
 					updateWorld={updateWorld}
 					selection={selection}
 					setSelection={setSelection}
-					mapTool={mapTool}
-					setMapTool={setMapTool}
+					isAddingRoom={isAddingRoom}
+					onAddingRoomChange={setIsAddingRoom}
 					mapZoom={mapZoom}
 					setMapZoom={setMapZoom}
 					mapRecenterRequest={mapRecenterRequest}
@@ -647,8 +648,8 @@ type EditorMainPanelProps = {
 	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
-	mapTool: MapTool;
-	setMapTool: (tool: MapTool) => void;
+	isAddingRoom: boolean;
+	onAddingRoomChange: (isAddingRoom: boolean) => void;
 	mapZoom: number;
 	setMapZoom: (zoom: number) => void;
 	mapRecenterRequest: number;
@@ -680,8 +681,8 @@ function EditorMainPanel({
 	updateWorld,
 	selection,
 	setSelection,
-	mapTool,
-	setMapTool,
+	isAddingRoom,
+	onAddingRoomChange,
 	mapZoom,
 	setMapZoom,
 	mapRecenterRequest,
@@ -705,7 +706,6 @@ function EditorMainPanel({
 	worldName,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
-	const [temporaryMapTool, setTemporaryMapTool] = useState<MapTool | null>(null);
 
 	return (
 		<section className="editorMainPanel">
@@ -713,8 +713,8 @@ function EditorMainPanel({
 				<EditorToolbar
 					activeTab={activeTab}
 					rooms={isLoading ? [] : rooms}
-					mapTool={temporaryMapTool ?? mapTool}
-					setMapTool={setMapTool}
+					isAddingRoom={isAddingRoom}
+					onAddingRoomChange={onAddingRoomChange}
 					mapZoom={mapZoom}
 					onMapRecenter={onMapRecenter}
 					connectionDraft={connectionDraft}
@@ -782,9 +782,8 @@ function EditorMainPanel({
 						updateWorld={updateWorld}
 						selection={selection}
 						setSelection={setSelection}
-						mapTool={mapTool}
-						setMapTool={setMapTool}
-						onTemporaryToolChange={setTemporaryMapTool}
+						isAddingRoom={isAddingRoom}
+						onAddingRoomChange={onAddingRoomChange}
 						onZoomChange={setMapZoom}
 						recenterRequest={mapRecenterRequest}
 						connectionDraft={connectionDraft}
@@ -815,8 +814,8 @@ function EditorMainPanel({
 type EditorToolbarProps = {
 	activeTab: EditorTab;
 	rooms: Room[];
-	mapTool: MapTool;
-	setMapTool: (tool: MapTool) => void;
+	isAddingRoom: boolean;
+	onAddingRoomChange: (isAddingRoom: boolean) => void;
 	mapZoom: number;
 	onMapRecenter: () => void;
 	connectionDraft: ConnectionDraft;
@@ -837,8 +836,8 @@ type EditorToolbarProps = {
 function EditorToolbar({
 	activeTab,
 	rooms,
-	mapTool,
-	setMapTool,
+	isAddingRoom,
+	onAddingRoomChange,
 	mapZoom,
 	onMapRecenter,
 	connectionDraft,
@@ -858,11 +857,18 @@ function EditorToolbar({
 	if (activeTab === "map") {
 		return (
 			<ToolBar
-				activeTool={mapTool}
-				onToolChange={setMapTool}
+				isAddingRoom={isAddingRoom}
+				onAddingRoomChange={onAddingRoomChange}
+				addRoomDisabled={connectionDraft.state === "choosing-return"}
 				zoom={mapZoom}
 				onRecenter={onMapRecenter}
-				status={getConnectionDraftStatus(connectionDraft, rooms, hoverStatus, noticeStatus)}
+				status={getConnectionDraftStatus(
+					connectionDraft,
+					rooms,
+					hoverStatus,
+					noticeStatus,
+					isAddingRoom,
+				)}
 			/>
 		);
 	}
@@ -914,9 +920,8 @@ type EditorWorkspaceProps = {
 	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
-	mapTool: MapTool;
-	setMapTool: (tool: MapTool) => void;
-	onTemporaryToolChange: (tool: MapTool | null) => void;
+	isAddingRoom: boolean;
+	onAddingRoomChange: (isAddingRoom: boolean) => void;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
@@ -946,9 +951,8 @@ function EditorWorkspace({
 	updateWorld,
 	selection,
 	setSelection,
-	mapTool,
-	setMapTool,
-	onTemporaryToolChange,
+	isAddingRoom,
+	onAddingRoomChange,
 	onZoomChange,
 	recenterRequest,
 	connectionDraft,
@@ -978,9 +982,8 @@ function EditorWorkspace({
 				updateWorld={updateWorld}
 				selection={selection}
 				setSelection={setSelection}
-				mapTool={mapTool}
-				setMapTool={setMapTool}
-				onTemporaryToolChange={onTemporaryToolChange}
+				isAddingRoom={isAddingRoom}
+				onAddingRoomChange={onAddingRoomChange}
 				onZoomChange={onZoomChange}
 				recenterRequest={recenterRequest}
 				connectionDraft={connectionDraft}
@@ -1081,9 +1084,8 @@ type MapWorkspaceProps = {
 	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
-	mapTool: MapTool;
-	setMapTool: (tool: MapTool) => void;
-	onTemporaryToolChange: (tool: MapTool | null) => void;
+	isAddingRoom: boolean;
+	onAddingRoomChange: (isAddingRoom: boolean) => void;
 	onZoomChange: (zoom: number) => void;
 	recenterRequest: number;
 	connectionDraft: ConnectionDraft;
@@ -1097,9 +1099,8 @@ function MapWorkspace({
 	updateWorld,
 	selection,
 	setSelection,
-	mapTool,
-	setMapTool,
-	onTemporaryToolChange,
+	isAddingRoom,
+	onAddingRoomChange,
 	onZoomChange,
 	recenterRequest,
 	connectionDraft,
@@ -1111,9 +1112,8 @@ function MapWorkspace({
 			key={isLoading ? "loading" : "loaded"}
 			world={world}
 			isLoading={isLoading}
-			tool={mapTool}
-			onToolChange={setMapTool}
-			onTemporaryToolChange={onTemporaryToolChange}
+			isAddingRoom={isAddingRoom}
+			onAddingRoomChange={onAddingRoomChange}
 			onZoomChange={onZoomChange}
 			updateWorld={updateWorld}
 			selectedId={selection.selectedId}
