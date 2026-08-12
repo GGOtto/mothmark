@@ -1,4 +1,5 @@
 import {expect, test, type Page} from "@playwright/test";
+import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
 function collectBrowserErrors(page: Page) {
 	const errors: string[] = [];
@@ -287,6 +288,7 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 		expect(geometry.promptTop).toBeGreaterThanOrEqual(geometry.headerBottom);
 		expect(geometry.promptBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
 		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+		await expectMobileLayoutIntegrity(page);
 	}
 
 	await page.setViewportSize({width: 320, height: 480});
@@ -306,6 +308,7 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 	expect(sheet!.x).toBeLessThanOrEqual(1);
 	expect(sheet!.x + sheet!.width).toBeGreaterThanOrEqual(319);
 	expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(481);
+	await expectMobileLayoutIntegrity(page, {root: "[role='dialog']"});
 	await page.keyboard.press("Escape");
 	await expect(dialog).toHaveCount(0);
 	await expect(page.getByRole("button", {name: "World menu"})).toBeFocused();

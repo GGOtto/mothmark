@@ -62,16 +62,12 @@ describe("GamePlayer focus", () => {
 	});
 });
 
-describe("CommandLine room sync", () => {
-	it("teleports to the selected room without resetting prior player output", () => {
-		render(<CommandLine world={initialWorld} selectedRoomId="stockroom" />);
+describe("CommandLine", () => {
+	it("renders the player directly without a separate toolbar", () => {
+		render(<CommandLine contained world={initialWorld} />);
 
+		expect(screen.queryByRole("button", {name: "Sync Room"})).not.toBeInTheDocument();
 		expect(screen.getByText(/Shop Floor/)).toBeInTheDocument();
-		expect(screen.queryByText(/^Stockroom/)).not.toBeInTheDocument();
-
-		fireEvent.click(screen.getByRole("button", {name: "Sync Room"}));
-
-		expect(screen.getByText(/Shop Floor/)).toBeInTheDocument();
-		expect(screen.getByText(/^Stockroom/)).toBeInTheDocument();
+		expect(screen.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 	});
 });

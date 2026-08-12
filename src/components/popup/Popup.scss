@@ -1,7 +1,11 @@
 .popupBackdrop {
 	position: fixed;
-	inset: 0;
+	top: var(--popup-viewport-top, 0);
+	left: var(--popup-viewport-left, 0);
 	z-index: 1000;
+	width: var(--popup-viewport-width, 100dvw);
+	height: var(--popup-viewport-height, 100dvh);
+	box-sizing: border-box;
 
 	display: flex;
 	align-items: center;
@@ -13,8 +17,10 @@
 
 .popupSurface {
 	width: min(500px, 100%);
-	max-height: calc(100dvh - 40px);
+	max-height: 100%;
+	box-sizing: border-box;
 	overflow: auto;
+	overscroll-behavior: contain;
 
 	border: 1px solid var(--chrome-border);
 	border-radius: var(--radius-dialog);
@@ -134,4 +140,33 @@
 .popupFieldError {
 	color: var(--color-danger);
 	font-size: 12px;
+}
+
+@media (max-width: 600px) {
+	.popupBackdrop {
+		padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+			max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+	}
+
+	.popupSurface {
+		width: 100%;
+	}
+
+	.popupTemplateHeader,
+	.popupTemplateContent,
+	.popupTemplateActions {
+		padding-inline: 16px;
+	}
+
+	.popupTemplateHeader {
+		padding-top: 16px;
+	}
+
+	.popupTemplateActions {
+		position: sticky;
+		bottom: 0;
+		flex-wrap: wrap;
+		margin-top: 16px;
+		background: var(--chrome-raised);
+	}
 }

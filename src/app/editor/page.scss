@@ -24,8 +24,11 @@
 	}
 
 	.editorUtilityPanel {
+		--editor-utility-body-bg: var(--panel-bg);
+
+		position: relative;
 		display: flex;
-		width: clamp(310px, 35vw, 447px);
+		width: var(--editor-utility-width, clamp(310px, 35vw, 447px));
 		height: 100%;
 		min-width: 0;
 		min-height: 0;
@@ -37,20 +40,44 @@
 		color: var(--panel-text);
 	}
 
-	.editorUtilityTabs {
+	.editorUtilityPanel--play {
+		--editor-utility-body-bg: var(--color-terminal);
+	}
+
+	.editorUtilityPanel--collapsed {
+		width: 32px;
+		background: var(--color-surface);
+		overflow: hidden;
+	}
+
+	.editorUtilityTabBar {
 		display: grid;
-		height: 44px;
+		width: 100%;
+		height: 31px;
 		flex: 0 0 auto;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		padding: 5px;
+		grid-template-columns: minmax(31px, 1fr) auto minmax(31px, 1fr);
+		align-items: end;
+		box-sizing: border-box;
 		border-bottom: 1px solid var(--panel-border);
 		background: var(--color-surface);
+	}
+
+	.editorUtilityTabs {
+		display: flex;
+		grid-column: 2;
+		align-items: flex-end;
+		align-self: end;
+		gap: 2px;
 
 		button {
 			position: relative;
-			border: 0;
-			border-radius: var(--radius-control);
-			background: transparent;
+			width: 76px;
+			height: 27px;
+			padding: 0 11px;
+			border: 1px solid var(--panel-border);
+			border-bottom: 0;
+			border-radius: var(--radius-control) var(--radius-control) 0 0;
+			background: var(--color-surface-raised);
 			color: var(--color-text-muted);
 			font: inherit;
 			font-size: 12px;
@@ -68,10 +95,98 @@
 			}
 
 			&[aria-selected="true"] {
-				background: var(--color-surface-raised);
+				background: var(--editor-utility-body-bg);
 				color: var(--color-text);
-				box-shadow: inset 0 -2px 0 var(--color-action);
+				box-shadow: 0 1px 0 var(--editor-utility-body-bg);
 			}
+		}
+	}
+
+	.editorUtilityCollapse {
+		display: grid;
+		width: 25px;
+		height: 25px;
+		grid-column: 3;
+		place-items: center;
+		justify-self: end;
+		align-self: center;
+		margin-right: 4px;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--color-text-muted);
+		cursor: pointer;
+
+		&:hover {
+			background: var(--color-surface-strong);
+			color: var(--color-text);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-focus);
+			outline-offset: -2px;
+		}
+	}
+
+	.editorUtilityPanel--collapsed .editorUtilityTabBar {
+		display: flex;
+		width: 31px;
+		height: 100%;
+		align-items: center;
+		border-bottom: 0;
+	}
+
+	.editorUtilityPanel--collapsed .editorUtilityTabs {
+		flex-direction: column;
+		align-items: stretch;
+		align-self: center;
+		gap: 2px;
+		padding: 6px 3px;
+		border-bottom: 0;
+
+		button {
+			width: 25px;
+			height: 76px;
+			min-height: 76px;
+			padding: 8px 0;
+			border: 1px solid var(--panel-border);
+			border-radius: var(--radius-control);
+			writing-mode: vertical-rl;
+			transform: rotate(180deg);
+		}
+	}
+
+	.editorUtilityResizeHandle {
+		position: absolute;
+		z-index: 8;
+		top: 0;
+		bottom: 0;
+		left: -4px;
+		width: 8px;
+		cursor: col-resize;
+		touch-action: none;
+
+		&::after {
+			content: "";
+			position: absolute;
+			top: 50%;
+			left: 3px;
+			width: 2px;
+			height: 36px;
+			border-radius: 2px;
+			background: var(--color-frame-border);
+			transform: translateY(-50%);
+		}
+
+		&:hover::after,
+		&:focus-visible::after {
+			background: var(--color-action);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-focus);
+			outline-offset: -2px;
 		}
 	}
 
@@ -385,16 +500,71 @@
 
 		.editorUtilityPanel {
 			width: 100%;
-			height: clamp(210px, 40dvh, 360px);
-			max-height: 48%;
+			height: min(var(--editor-utility-height, 280px), 72%);
+			max-height: 72%;
 			flex: 0 0 auto;
 			border-top: 1px solid var(--panel-border);
 			border-left: 0;
 			padding-bottom: env(safe-area-inset-bottom);
 		}
 
-		.editorUtilityTabs {
-			height: 42px;
+		.editorUtilityPanel--collapsed {
+			width: 100%;
+			height: 38px;
+			padding-bottom: 0;
+			border-top: 1px solid var(--panel-border);
+		}
+
+		.editorUtilityPanel--collapsed .editorUtilityTabBar {
+			display: grid;
+			width: 100%;
+			height: 37px;
+			grid-template-columns: minmax(31px, 1fr) auto minmax(31px, 1fr);
+			align-items: center;
+			border-bottom: 0;
+		}
+
+		.editorUtilityPanel--collapsed .editorUtilityTabs {
+			flex-direction: row;
+			align-items: center;
+			align-self: center;
+			gap: 2px;
+			padding: 0;
+
+			button {
+				width: 76px;
+				height: 28px;
+				min-height: 0;
+				padding: 0 11px;
+				border: 1px solid var(--panel-border);
+				border-radius: var(--radius-control) var(--radius-control) 0 0;
+				writing-mode: horizontal-tb;
+				transform: none;
+				box-shadow: none;
+
+				&[aria-selected="true"] {
+					background: var(--color-surface-strong);
+					box-shadow: none;
+				}
+			}
+		}
+
+		.editorUtilityResizeHandle {
+			top: -4px;
+			right: 0;
+			bottom: auto;
+			left: 0;
+			width: auto;
+			height: 8px;
+			cursor: row-resize;
+
+			&::after {
+				top: 3px;
+				left: 50%;
+				width: 36px;
+				height: 2px;
+				transform: translateX(-50%);
+			}
 		}
 
 		.editorToolbar {
@@ -424,8 +594,8 @@
 }
 
 @media (max-height: 560px) and (max-width: 900px) {
-	.editorPage .editorUtilityPanel {
-		height: clamp(160px, 42dvh, 220px);
+	.editorPage .editorUtilityPanel:not(.editorUtilityPanel--collapsed) {
+		height: min(var(--editor-utility-height, 220px), 62%);
 	}
 }
 

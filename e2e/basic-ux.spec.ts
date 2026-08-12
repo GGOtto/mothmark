@@ -3,6 +3,7 @@ import {expect, test, type Page} from "@playwright/test";
 import {PERSISTED_SCHEMA_VERSION} from "../src/compat/migrations";
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
 import {createUniqueWorldSlug} from "../src/utils/worldSlug";
+import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
 type BootstrapRequest = {
 	cookie: string | undefined;
@@ -1192,21 +1193,128 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	const editor = await useDeterministicEditorWorld(page);
 	await page.setViewportSize({width: 390, height: 844});
 	await page.goto(`/worlds/${editor.worldSlug}`);
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	const mapToolbar = page.locator(".toolbar");
+	await expect(mapToolbar).toBeVisible();
+	expect(
+		await mapToolbar.evaluate((element) => ({
+			clientWidth: element.clientWidth,
+			scrollWidth: element.scrollWidth,
+		})),
+	).toEqual(
+		expect.objectContaining({
+			clientWidth: expect.any(Number),
+			scrollWidth: expect.any(Number),
+		}),
+	);
+	await expect
+		.poll(() => mapToolbar.evaluate((element) => element.scrollWidth <= element.clientWidth + 1))
+		.toBe(true);
 
 	const destination = page.getByRole("button", {name: "Map", expanded: false});
 	await expect(destination).toBeVisible();
 	await destination.click();
 	await page.getByRole("menuitem", {name: "Items"}).click();
 	await expect(page.getByRole("button", {name: "Items", expanded: false})).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
 	await expect(page.getByRole("tab", {name: "Editor"})).toHaveAttribute("aria-selected", "true");
 
 	await page.getByRole("tab", {name: "Play"}).click();
 	const commandInput = page.getByRole("textbox", {name: "Game command"});
+	await expect(page.getByRole("button", {name: "Sync Room"})).toHaveCount(0);
+	const playSurfaceColors = await page
+		.getByRole("complementary", {name: "Editor utility panel"})
+		.evaluate((panel) => ({
+			body: getComputedStyle(panel.querySelector<HTMLElement>(".command-line")!).backgroundColor,
+			tab: getComputedStyle(panel.querySelector<HTMLElement>("[role='tab'][aria-selected='true']")!)
+				.backgroundColor,
+		}));
+	expect(playSurfaceColors.tab).toBe(playSurfaceColors.body);
 	await commandInput.fill("look at lantern");
 	await page.getByRole("tab", {name: "Editor"}).click();
 	await expect(page.getByPlaceholder("Search items, aliases, and tags")).toBeVisible();
+	const editorSurfaceColors = await page
+		.getByRole("complementary", {name: "Editor utility panel"})
+		.evaluate((panel) => ({
+			body: getComputedStyle(panel.querySelector<HTMLElement>(".rightSideBar")!).backgroundColor,
+			tab: getComputedStyle(panel.querySelector<HTMLElement>("[role='tab'][aria-selected='true']")!)
+				.backgroundColor,
+		}));
+	expect(editorSurfaceColors.tab).toBe(editorSurfaceColors.body);
 	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(commandInput).toHaveValue("look at lantern");
+	const utilityPanel = page.getByRole("complementary", {name: "Editor utility panel"});
+	const utilityTabs = page.locator(".editorUtilityTabs");
+	const centeredTabs = await utilityPanel.evaluate((panel) => {
+		const bar = panel.querySelector<HTMLElement>(".editorUtilityTabBar")!;
+		const tabs = panel.querySelector<HTMLElement>(".editorUtilityTabs")!;
+		const tabButtons = Array.from(tabs.querySelectorAll<HTMLElement>("[role='tab']"));
+		const barRect = bar.getBoundingClientRect();
+		const tabsRect = tabs.getBoundingClientRect();
+		return {
+			barWidth: barRect.width,
+			centerOffset: Math.abs(tabsRect.left + tabsRect.width / 2 - (barRect.left + barRect.width / 2)),
+			dividerStyle: getComputedStyle(bar).borderBottomStyle,
+			tabWidths: tabButtons.map((button) => button.getBoundingClientRect().width),
+		};
+	});
+	expect(centeredTabs.centerOffset).toBeLessThan(1);
+	expect(centeredTabs.dividerStyle).toBe("solid");
+	expect(centeredTabs.tabWidths[0]).toBeGreaterThan(70);
+	expect(centeredTabs.tabWidths[0]).toBeCloseTo(centeredTabs.tabWidths[1] ?? 0, 1);
+	expect(centeredTabs.barWidth).toBeGreaterThan(
+		await utilityTabs.evaluate((element) => element.clientWidth),
+	);
+	const expandedUtilityHeight = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().height,
+	);
+	await page.getByRole("button", {name: "Collapse editor utility panel"}).click();
+	await expect(page.getByRole("tab", {name: "Play"})).toHaveAttribute("aria-expanded", "false");
+	await expect(utilityPanel).toHaveClass(/editorUtilityPanel--collapsed/);
+	const collapsedTabs = await utilityPanel.evaluate((panel) => {
+		const panelRect = panel.getBoundingClientRect();
+		const tabs = Array.from(panel.querySelectorAll<HTMLElement>("[role='tab']"));
+		return {
+			centerOffsets: tabs.map((tab) => {
+				const rect = tab.getBoundingClientRect();
+				return Math.abs(rect.top + rect.height / 2 - (panelRect.top + panelRect.height / 2));
+			}),
+			borderBottomWidths: tabs.map((tab) => getComputedStyle(tab).borderBottomWidth),
+			bottomCornerRadii: tabs.map((tab) => {
+				const style = getComputedStyle(tab);
+				return [style.borderBottomLeftRadius, style.borderBottomRightRadius];
+			}),
+			verticalInsets: tabs.map((tab) => {
+				const rect = tab.getBoundingClientRect();
+				return {bottom: panelRect.bottom - rect.bottom, top: rect.top - panelRect.top};
+			}),
+		};
+	});
+	expect(collapsedTabs.centerOffsets.every((offset) => offset < 1)).toBe(true);
+	expect(collapsedTabs.borderBottomWidths).toEqual(["1px", "1px"]);
+	expect(collapsedTabs.bottomCornerRadii).toEqual([
+		["0px", "0px"],
+		["0px", "0px"],
+	]);
+	for (const insets of collapsedTabs.verticalInsets) {
+		expect(insets.top).toBeGreaterThan(1);
+		expect(insets.bottom).toBeGreaterThan(1);
+		expect(Math.abs(insets.top - insets.bottom)).toBeLessThan(2);
+	}
+	expect(
+		await utilityPanel.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThan(expandedUtilityHeight);
+	await page.getByRole("tab", {name: "Play"}).click();
+	await expect(page.getByRole("tab", {name: "Play"})).toHaveAttribute("aria-expanded", "true");
+
+	const resizeHandle = page.getByRole("separator", {name: "Resize editor utility panel"});
+	const beforeResize = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().height,
+	);
+	await resizeHandle.press("ArrowUp");
+	expect(
+		await utilityPanel.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThan(beforeResize);
 
 	for (const viewport of [
 		{width: 320, height: 568},
@@ -1238,8 +1346,67 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		expect(geometry.utilityTop).toBeGreaterThanOrEqual(geometry.workspaceBottom - 1);
 		expect(geometry.utilityBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
 		expect(geometry.workspaceHeight).toBeGreaterThan(80);
+		await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
 	}
 
+	await page.setViewportSize({width: 1000, height: 760});
+	await page.getByRole("button", {name: "Collapse editor utility panel"}).click();
+	const verticalTabs = await utilityPanel.evaluate((panel) => {
+		const tabs = panel.querySelector<HTMLElement>(".editorUtilityTabs")!;
+		const buttons = Array.from(tabs.querySelectorAll<HTMLElement>("[role='tab']"));
+		const panelRect = panel.getBoundingClientRect();
+		const tabsRect = tabs.getBoundingClientRect();
+		return {
+			centerOffset: Math.abs(
+				tabsRect.top + tabsRect.height / 2 - (panelRect.top + panelRect.height / 2),
+			),
+			heights: buttons.map((button) => button.getBoundingClientRect().height),
+			horizontalInsets: buttons.map((button) => {
+				const rect = button.getBoundingClientRect();
+				return {
+					left: rect.left - panelRect.left,
+					right: panelRect.right - rect.right,
+				};
+			}),
+		};
+	});
+	expect(verticalTabs.centerOffset).toBeLessThan(1);
+	expect(verticalTabs.heights[0]).toBeCloseTo(verticalTabs.heights[1] ?? 0, 1);
+	for (const insets of verticalTabs.horizontalInsets) {
+		expect(insets.left).toBeGreaterThan(1);
+		expect(insets.right).toBeGreaterThan(1);
+		expect(Math.abs(insets.left - insets.right)).toBeLessThan(2);
+	}
+
+	expect(browserErrors).toEqual([]);
+});
+
+test("mobile command editing keeps every authoring control reachable without overlap", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 320, height: 568});
+	await page.goto(`/worlds/${editor.worldSlug}`);
+
+	await page.getByRole("button", {name: "Map", expanded: false}).click();
+	await page.getByRole("menuitem", {name: "Logic"}).click();
+	await page.getByRole("button", {name: /Commands Define the commands/}).click();
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+
+	await page.getByRole("button", {name: /Travel go <direction> Everywhere/}).click();
+	const builder = page.locator(".commandBuilder");
+	const phraseBlock = page.getByRole("button", {name: "Phrase go"});
+	await expect(builder).toBeVisible();
+	await builder.evaluate((element) => element.scrollTo({top: element.scrollHeight}));
+	await expect(phraseBlock).toBeInViewport();
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+
+	const geometry = await builder.evaluate((element) => ({
+		clientHeight: element.clientHeight,
+		scrollHeight: element.scrollHeight,
+	}));
+	expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
 	expect(browserErrors).toEqual([]);
 });
 
