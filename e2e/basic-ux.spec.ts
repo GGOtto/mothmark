@@ -748,7 +748,7 @@ test("private worlds persist for one browser and remain unresolved for another",
 	await expect(nameField).toBeVisible();
 	await nameField.fill("A private entrance");
 	await expect.poll(first.saveCount, {timeout: 15_000}).toBe(1);
-	await expect(firstPage.getByRole("button", {name: "Save"})).toBeDisabled();
+	await expect(firstPage.getByRole("button", {name: "Retry"})).toHaveCount(0);
 	await expect(firstPage.locator(".worldAutosaveIndicator")).toContainText("Saved");
 	await firstPage.reload();
 	await expect(firstPage.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
@@ -878,7 +878,7 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	const firstName = firstPage.getByRole("textbox", {name: "Name", exact: true});
 	const secondName = secondPage.getByRole("textbox", {name: "Name", exact: true});
 	await firstName.fill("First tab revision");
-	await firstPage.getByRole("button", {name: "Save"}).click();
+	await firstPage.keyboard.press("Control+s");
 	await expect.poll(first.saveCount).toBeGreaterThanOrEqual(1);
 	await firstPage.getByRole("button", {name: /Current world: Private test world/}).click();
 	await firstPage.getByRole("menuitem", {name: "View all worlds"}).click();
@@ -887,7 +887,7 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	expect(first.worlds()[0].world.rooms[0].name).toBe("First tab revision");
 
 	await secondName.fill("Second tab revision");
-	await secondPage.getByRole("button", {name: "Save"}).click();
+	await secondPage.keyboard.press("Control+s");
 	await expect
 		.poll(() => secondErrors.some((error) => error.includes("status of 409")), {timeout: 15_000})
 		.toBe(true);
@@ -969,7 +969,8 @@ test("the world library creates, switches, isolates, and limits private worlds",
 		if (source === "Blank world") await expect(roomNameField).not.toBeFocused();
 		await roomNameField.fill(roomName);
 		await page.keyboard.press("Control+s");
-		await expect(page.getByRole("button", {name: "Save"})).toBeDisabled();
+		await expect(page.getByRole("button", {name: "Retry"})).toHaveCount(0);
+		await expect(page.locator(".worldAutosaveIndicator")).toContainText("Saved");
 		await page.getByRole("button", {name: new RegExp(`Current world: ${name}`)}).click();
 		await page.getByRole("menuitem", {name: "View all worlds"}).click();
 		await expect(page).toHaveURL(/\/worlds$/);

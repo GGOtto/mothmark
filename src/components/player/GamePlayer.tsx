@@ -18,6 +18,7 @@ type GamePlayerProps = {
 	startingRoomId: ID<"room">;
 	teleportRequest?: GamePlayerTeleportRequest | null;
 	onCurrentRoomChange?: (roomId: ID<"room">) => void;
+	isHeaderHidden?: boolean;
 };
 
 export type GamePlayerTeleportRequest = {
@@ -31,6 +32,7 @@ export function GamePlayer({
 	startingRoomId,
 	teleportRequest,
 	onCurrentRoomChange,
+	isHeaderHidden,
 }: GamePlayerProps) {
 	const resolvedStartingRoomId = world.rooms.some((room) => compareIds(room.id, startingRoomId))
 		? startingRoomId
@@ -39,22 +41,23 @@ export function GamePlayer({
 			: null;
 
 	return isLoading ? (
-		<LoadingGamePlayer />
+		<LoadingGamePlayer isHeaderHidden={isHeaderHidden} />
 	) : resolvedStartingRoomId ? (
 		<ActiveGamePlayer
 			world={world}
 			startingRoomId={resolvedStartingRoomId}
 			teleportRequest={teleportRequest}
 			onCurrentRoomChange={onCurrentRoomChange}
+			isHeaderHidden={isHeaderHidden}
 		/>
 	) : (
-		<EmptyGamePlayer />
+		<EmptyGamePlayer isHeaderHidden={isHeaderHidden} />
 	);
 }
 
-function LoadingGamePlayer() {
+function LoadingGamePlayer({isHeaderHidden}: {isHeaderHidden?: boolean}) {
 	return (
-		<PlayerFrame restartDisabled>
+		<PlayerFrame restartDisabled isHeaderHidden={isHeaderHidden}>
 			<PlayerTerminal
 				disabled
 				command=""
@@ -66,9 +69,9 @@ function LoadingGamePlayer() {
 	);
 }
 
-function EmptyGamePlayer() {
+function EmptyGamePlayer({isHeaderHidden}: {isHeaderHidden?: boolean}) {
 	return (
-		<PlayerFrame restartDisabled>
+		<PlayerFrame restartDisabled isHeaderHidden={isHeaderHidden}>
 			<PlayerTerminal
 				disabled
 				command=""
@@ -90,20 +93,24 @@ function PlayerFrame({
 	children,
 	onRestart,
 	restartDisabled = false,
+	isHeaderHidden = false,
 }: {
 	children: React.ReactNode;
 	onRestart?: () => void;
 	restartDisabled?: boolean;
+	isHeaderHidden?: boolean;
 }) {
 	return (
 		<div className="game-player-frame">
-			<div className="game-player__toolbar" aria-label="Player controls">
-				<span>Live preview</span>
-				<button type="button" onClick={onRestart} disabled={restartDisabled}>
-					<RotateCcw size={13} aria-hidden="true" />
-					Restart
-				</button>
-			</div>
+			{!isHeaderHidden && (
+				<div className="game-player__toolbar" aria-label="Player controls">
+					<span>Live preview</span>
+					<button type="button" onClick={onRestart} disabled={restartDisabled}>
+						<RotateCcw size={13} aria-hidden="true" />
+						Restart
+					</button>
+				</div>
+			)}
 			{children}
 		</div>
 	);
@@ -114,6 +121,7 @@ function ActiveGamePlayer({
 	startingRoomId,
 	teleportRequest,
 	onCurrentRoomChange,
+	isHeaderHidden,
 }: Omit<GamePlayerProps, "isLoading">) {
 	const handledTeleportRequestRef = useRef<number | null>(null);
 	const previousWorldRef = useRef(world);
@@ -225,7 +233,7 @@ function ActiveGamePlayer({
 			];
 
 	return (
-		<PlayerFrame onRestart={restart}>
+		<PlayerFrame onRestart={restart} isHeaderHidden={isHeaderHidden}>
 			<PlayerTerminal
 				disabled={!currentRoomAvailable}
 				command={command}

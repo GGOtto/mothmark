@@ -91,6 +91,7 @@ export function HomeExample() {
 						world={world}
 						startingRoomId={world.startRoomId}
 						onCurrentRoomChange={updateCurrentRoom}
+						isHeaderHidden={true}
 					/>
 				</div>
 			</div>
