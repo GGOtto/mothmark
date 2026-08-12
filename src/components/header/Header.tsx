@@ -9,7 +9,11 @@ import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {MothmarkMark} from "../brand/MothmarkMark";
 import {AnchoredLayer} from "../overlay/Overlay";
 import {useTheme} from "../theme/ThemeProvider";
-import {WorldAutosaveIndicator, WorldSwitcher} from "../world-autosave/WorldAutosave";
+import {
+	useWorldAutosave,
+	WorldAutosaveIndicator,
+	WorldSwitcher,
+} from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
 import {FeedbackDialog} from "./FeedbackDialog";
 import "./Header.scss";
@@ -22,6 +26,7 @@ export type HeaderAccount = {
 
 export function Header({account}: {account: HeaderAccount}) {
 	const {setTheme, theme} = useTheme();
+	const {errorMessage: worldSaveError, prepareForNavigation} = useWorldAutosave();
 	const pathname = usePathname();
 	const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 	const [pageMenuOpen, setPageMenuOpen] = useState(false);
@@ -29,6 +34,7 @@ export function Header({account}: {account: HeaderAccount}) {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
 	const [signingOut, setSigningOut] = useState(false);
+	const [signOutError, setSignOutError] = useState("");
 	const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
 	const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
 	const pageTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -58,7 +64,14 @@ export function Header({account}: {account: HeaderAccount}) {
 
 	async function signOut() {
 		setSigningOut(true);
+		setSignOutError("");
 		try {
+			if (!(await prepareForNavigation())) {
+				setSignOutError(
+					`${worldSaveError ?? "This revision has not reached the server yet."} Sign-out was stopped so this work remains recoverable.`,
+				);
+				return;
+			}
 			let token = readBrowserCsrfToken();
 			if (!token) {
 				const response = await fetch("/api/auth/csrf");
@@ -72,6 +85,8 @@ export function Header({account}: {account: HeaderAccount}) {
 			});
 			if (!response.ok) throw new Error("Sign out failed.");
 			window.location.assign("/");
+		} catch (caught) {
+			setSignOutError(caught instanceof Error ? caught.message : "Sign out failed.");
 		} finally {
 			setSigningOut(false);
 		}
@@ -201,6 +216,7 @@ export function Header({account}: {account: HeaderAccount}) {
 										>
 											{signingOut ? "Signing out…" : "Sign out"}
 										</button>
+										{signOutError ? <p role="alert">{signOutError}</p> : null}
 									</AnchoredLayer>
 								) : null}
 							</div>
@@ -317,6 +333,7 @@ export function Header({account}: {account: HeaderAccount}) {
 									<button type="button" disabled={signingOut} onClick={() => void signOut()}>
 										{signingOut ? "Signing out…" : "Sign out"}
 									</button>
+									{signOutError ? <p role="alert">{signOutError}</p> : null}
 								</>
 							) : (
 								<Link href="/register" onClick={closeMenus}>

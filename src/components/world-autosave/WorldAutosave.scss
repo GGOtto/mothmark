@@ -2,8 +2,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: flex-end;
-	width: 72px;
-	min-width: 72px;
+	min-width: 62px;
 }
 
 .worldAutosaveIndicator {
@@ -14,6 +13,27 @@
 	font-size: 12px;
 	font-weight: 500;
 	letter-spacing: 0.01em;
+	white-space: nowrap;
+
+	button {
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--color-action);
+		font: inherit;
+		font-weight: 650;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		cursor: pointer;
+	}
+}
+
+.worldAutosaveIndicator--error {
+	color: var(--color-danger);
+}
+
+.worldAutosaveIndicator--saved .worldAutosaveIndicatorDot {
+	animation: none;
 }
 
 .worldAutosaveIndicatorDot {
