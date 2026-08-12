@@ -5,6 +5,7 @@ import {useCallback, useEffect, useRef, useState} from "react";
 
 import {SiteFooter} from "@/components/footer/SiteFooter";
 import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
+import {AnchoredLayer, ModalLayer} from "@/components/overlay/Overlay";
 import {
 	deleteWorldDraft,
 	deleteWorldDraftsExceptUser,
@@ -243,9 +244,12 @@ export default function WorldsPage() {
 	};
 
 	const openDialog = (nextDialog: NonNullable<DialogState>, trigger: HTMLElement) => {
-		lastActionTrigger.current =
-			(trigger.closest(".worldCardActions")?.querySelector(".worldActionsTrigger") as HTMLElement) ??
-			trigger;
+		const cardTrigger = trigger
+			.closest(".worldCardActions")
+			?.querySelector<HTMLElement>(".worldActionsTrigger");
+		lastActionTrigger.current = trigger.closest(".worldActionsMenu")
+			? lastActionTrigger.current
+			: (cardTrigger ?? trigger);
 		setMenuWorldId(null);
 		setActionError("");
 		setDialog(nextDialog);
@@ -405,15 +409,13 @@ export default function WorldsPage() {
 															<Ellipsis size={17} aria-hidden="true" />
 														</button>
 														{menuWorldId === world.id ? (
-															<div
+															<AnchoredLayer
+																anchorRef={lastActionTrigger}
+																ariaLabel={`Actions for ${world.name}`}
 																className="worldActionsMenu"
+																onClose={() => setMenuWorldId(null)}
+																preferredWidth={158}
 																role="menu"
-																onKeyDown={(event) => {
-																	if (event.key === "Escape") {
-																		setMenuWorldId(null);
-																		queueMicrotask(() => lastActionTrigger.current?.focus());
-																	}
-																}}
 															>
 																<button
 																	role="menuitem"
@@ -441,7 +443,7 @@ export default function WorldsPage() {
 																>
 																	Move to trash
 																</button>
-															</div>
+															</AnchoredLayer>
 														) : null}
 													</>
 												)}
@@ -465,135 +467,134 @@ export default function WorldsPage() {
 			</PageShellBody>
 
 			{dialog ? (
-				<div className="worldDialogBackdrop" role="presentation">
-					<section
-						className="worldDialog"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="world-dialog-title"
-						onKeyDown={(event) => {
-							if (event.key === "Escape" && !working) closeDialog();
-						}}
+				<ModalLayer
+					ariaLabelledBy="world-dialog-title"
+					backdropClassName="worldDialogBackdrop"
+					className="worldDialog"
+					closeOnBackdropClick={!working}
+					closeOnEscape={!working}
+					mobilePresentation="sheet"
+					onClose={closeDialog}
+					returnFocusRef={lastActionTrigger}
+				>
+					<h2 id="world-dialog-title">
+						{dialog.kind === "create"
+							? "New world"
+							: dialog.kind === "rename"
+								? "Rename world"
+								: dialog.kind === "delete"
+									? "Move world to trash?"
+									: "Delete world permanently?"}
+					</h2>
+					<p>
+						{dialog.kind === "create"
+							? "Choose a starting point. You can change everything later."
+							: dialog.kind === "rename"
+								? "This changes the private library name."
+								: dialog.kind === "delete"
+									? "You can restore this world from Trash for 30 days."
+									: "This immediately removes the world and cannot be undone."}
+					</p>
+					<form
+						onSubmit={(event) =>
+							void (dialog.kind === "create" ? createWorld(event) : performDialogAction(event))
+						}
 					>
-						<h2 id="world-dialog-title">
-							{dialog.kind === "create"
-								? "New world"
-								: dialog.kind === "rename"
-									? "Rename world"
-									: dialog.kind === "delete"
-										? "Move world to trash?"
-										: "Delete world permanently?"}
-						</h2>
-						<p>
-							{dialog.kind === "create"
-								? "Choose a starting point. You can change everything later."
-								: dialog.kind === "rename"
-									? "This changes the private library name."
-									: dialog.kind === "delete"
-										? "You can restore this world from Trash for 30 days."
-										: "This immediately removes the world and cannot be undone."}
-						</p>
-						<form
-							onSubmit={(event) =>
-								void (dialog.kind === "create" ? createWorld(event) : performDialogAction(event))
-							}
-						>
-							{dialog.kind === "create" || dialog.kind === "rename" ? (
-								<>
-									<label htmlFor="world-name">World name</label>
+						{dialog.kind === "create" || dialog.kind === "rename" ? (
+							<>
+								<label htmlFor="world-name">World name</label>
+								<input
+									id="world-name"
+									value={name}
+									onChange={(event) => setName(event.target.value)}
+									maxLength={80}
+									autoFocus
+									required
+								/>
+							</>
+						) : null}
+						{dialog.kind === "create" ? (
+							<fieldset>
+								<legend>Starting point</legend>
+								<label>
 									<input
-										id="world-name"
-										value={name}
-										onChange={(event) => setName(event.target.value)}
-										maxLength={80}
-										autoFocus
-										required
-									/>
-								</>
-							) : null}
-							{dialog.kind === "create" ? (
-								<fieldset>
-									<legend>Starting point</legend>
-									<label>
-										<input
-											type="radio"
-											name="source"
-											checked={source === "starter"}
-											onChange={() => setSource("starter")}
-										/>{" "}
-										Starter world
-									</label>
-									<label>
-										<input
-											type="radio"
-											name="source"
-											checked={source === "blank"}
-											onChange={() => setSource("blank")}
-										/>{" "}
-										Blank world
-									</label>
-									<label>
-										<input
-											type="radio"
-											name="source"
-											checked={source === "import"}
-											onChange={() => setSource("import")}
-										/>{" "}
-										Import JSON file
-									</label>
-								</fieldset>
-							) : null}
-							{dialog.kind === "create" && source === "import" ? (
-								<div className="worldImportField">
-									<label htmlFor="world-import-file">World JSON file</label>
+										type="radio"
+										name="source"
+										checked={source === "starter"}
+										onChange={() => setSource("starter")}
+									/>{" "}
+									Starter world
+								</label>
+								<label>
 									<input
-										id="world-import-file"
-										type="file"
-										accept=".json,.mothmark.json,application/json"
-										onChange={(event) => void readImportFile(event.target.files?.[0])}
-									/>
-									{importFileName ? <small>Loaded {importFileName}</small> : null}
-								</div>
-							) : null}
-							{actionError ? (
-								<p className="worldDialogError" role="alert">
-									{actionError}
-								</p>
-							) : null}
-							<div className="worldDialogActions">
-								<button
-									type="button"
-									autoFocus={dialog.kind === "delete" || dialog.kind === "permanent"}
-									onClick={closeDialog}
-									disabled={working}
-								>
-									Cancel
-								</button>
-								<button
-									type="submit"
-									className={
-										dialog.kind === "delete" || dialog.kind === "permanent" ? "worldDialogDanger" : ""
-									}
-									disabled={
-										working ||
-										((dialog.kind === "create" || dialog.kind === "rename") && !name.trim()) ||
-										(dialog.kind === "create" && source === "import" && !importedWorld)
-									}
-								>
-									{working
-										? "Working…"
-										: dialog.kind === "create"
-											? "Create world"
-											: dialog.kind === "rename"
-												? "Rename"
-												: dialog.kind === "delete"
-													? "Move to trash"
-													: "Delete permanently"}
-								</button>
+										type="radio"
+										name="source"
+										checked={source === "blank"}
+										onChange={() => setSource("blank")}
+									/>{" "}
+									Blank world
+								</label>
+								<label>
+									<input
+										type="radio"
+										name="source"
+										checked={source === "import"}
+										onChange={() => setSource("import")}
+									/>{" "}
+									Import JSON file
+								</label>
+							</fieldset>
+						) : null}
+						{dialog.kind === "create" && source === "import" ? (
+							<div className="worldImportField">
+								<label htmlFor="world-import-file">World JSON file</label>
+								<input
+									id="world-import-file"
+									type="file"
+									accept=".json,.mothmark.json,application/json"
+									onChange={(event) => void readImportFile(event.target.files?.[0])}
+								/>
+								{importFileName ? <small>Loaded {importFileName}</small> : null}
 							</div>
-						</form>
-					</section>
-				</div>
+						) : null}
+						{actionError ? (
+							<p className="worldDialogError" role="alert">
+								{actionError}
+							</p>
+						) : null}
+						<div className="worldDialogActions">
+							<button
+								type="button"
+								autoFocus={dialog.kind === "delete" || dialog.kind === "permanent"}
+								onClick={closeDialog}
+								disabled={working}
+							>
+								Cancel
+							</button>
+							<button
+								type="submit"
+								className={
+									dialog.kind === "delete" || dialog.kind === "permanent" ? "worldDialogDanger" : ""
+								}
+								disabled={
+									working ||
+									((dialog.kind === "create" || dialog.kind === "rename") && !name.trim()) ||
+									(dialog.kind === "create" && source === "import" && !importedWorld)
+								}
+							>
+								{working
+									? "Working…"
+									: dialog.kind === "create"
+										? "Create world"
+										: dialog.kind === "rename"
+											? "Rename"
+											: dialog.kind === "delete"
+												? "Move to trash"
+												: "Delete permanently"}
+							</button>
+						</div>
+					</form>
+				</ModalLayer>
 			) : null}
 		</PageShell>
 	);

@@ -10,6 +10,7 @@ import {
 	generateEditorSummary,
 } from "./utils/universalEditorUtils";
 import {FieldShell} from "./FieldShell";
+import {useOptionalPopup} from "../popup/Popup";
 import {MultiSelectEditor, type MultiSelectControlMetadata} from "./MultiSelectEditor";
 import {renderEditorControl} from "./renderEditorControl";
 import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
@@ -125,6 +126,7 @@ export function ArrayEditor({
 	readonly,
 	context,
 }: ArrayEditorProps) {
+	const popup = useOptionalPopup();
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -156,9 +158,18 @@ export function ArrayEditor({
 		onChange(value.map((item, itemIndex) => (itemIndex === index ? nextItem : item)));
 	}
 
-	function removeItem(index: number) {
+	async function removeItem(index: number) {
 		if (!canEdit || !removable || value.length <= minItems) return;
-		if (metadata.features?.confirmRemove && !window.confirm("Remove this item?")) return;
+		if (metadata.features?.confirmRemove) {
+			const confirmed = popup
+				? await popup.confirm({
+						title: "Remove this item?",
+						confirmLabel: "Remove",
+						danger: true,
+					})
+				: globalThis.confirm("Remove this item?");
+			if (!confirmed) return;
+		}
 
 		onChange(value.filter((_, itemIndex) => itemIndex !== index));
 	}
@@ -200,7 +211,7 @@ export function ArrayEditor({
 				onClick={(event) => {
 					event.preventDefault();
 					event.stopPropagation();
-					removeItem(index);
+					void removeItem(index);
 				}}
 				aria-label={`Delete ${title}`}
 				title={`Delete ${title}`}

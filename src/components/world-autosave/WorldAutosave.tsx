@@ -14,6 +14,8 @@ import {
 
 import type {World} from "@/schemas/world/worldSchema";
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
+import {AnchoredLayer} from "@/components/overlay/Overlay";
+import {useOptionalPopup} from "@/components/popup/Popup";
 import {deleteWorldDraft, writeWorldDraft} from "./worldDraftStorage";
 
 import "./WorldAutosave.scss";
@@ -611,7 +613,7 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 	const [worlds, setWorlds] = useState<SwitcherWorld[]>([]);
 	const [navigationError, setNavigationError] = useState("");
 	const firstItemRef = useRef<HTMLButtonElement | null>(null);
-	const switcherRef = useRef<HTMLDivElement | null>(null);
+	const triggerRef = useRef<HTMLButtonElement | null>(null);
 
 	useEffect(() => {
 		if (!open || !target) return;
@@ -633,17 +635,6 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 		if (open) firstItemRef.current?.focus();
 	}, [open, worlds]);
 
-	useEffect(() => {
-		if (!open) return;
-		const closeOutside = (event: PointerEvent) => {
-			if (event.target instanceof Node && !switcherRef.current?.contains(event.target)) {
-				setOpen(false);
-			}
-		};
-		document.addEventListener("pointerdown", closeOutside, true);
-		return () => document.removeEventListener("pointerdown", closeOutside, true);
-	}, [open]);
-
 	if (!target) return showLoading ? <CurrentWorldName showLoading /> : null;
 
 	const navigate = async (path: string) => {
@@ -656,17 +647,9 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 	};
 
 	return (
-		<div
-			ref={switcherRef}
-			className="worldSwitcher"
-			onKeyDown={(event) => {
-				if (event.key === "Escape") {
-					setOpen(false);
-					(event.currentTarget.querySelector(".worldSwitcherTrigger") as HTMLElement)?.focus();
-				}
-			}}
-		>
+		<div className="worldSwitcher">
 			<button
+				ref={triggerRef}
 				type="button"
 				className="worldSwitcherTrigger"
 				aria-label={`Current world: ${target.worldName}`}
@@ -678,7 +661,15 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 				<ChevronDown size={13} aria-hidden="true" />
 			</button>
 			{open ? (
-				<div className="worldSwitcherMenu" role="menu" aria-label="Switch worlds">
+				<AnchoredLayer
+					anchorRef={triggerRef}
+					ariaLabel="Switch worlds"
+					className="worldSwitcherMenu"
+					mobilePresentation="sheet"
+					onClose={() => setOpen(false)}
+					preferredWidth={220}
+					role="menu"
+				>
 					{worlds
 						.filter((world) => world.id !== target.worldId)
 						.slice(0, 5)
@@ -701,7 +692,7 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 						New world
 					</button>
 					{navigationError ? <p role="alert">{navigationError}</p> : null}
-				</div>
+				</AnchoredLayer>
 			) : null}
 		</div>
 	);
@@ -709,13 +700,22 @@ export function WorldSwitcher({showLoading = false}: {showLoading?: boolean}) {
 
 export function WorldResetButton() {
 	const {resetWorld, target} = useWorldAutosave();
+	const popup = useOptionalPopup();
 
 	if (!target) return null;
 
-	const confirmReset = () => {
-		const confirmed = window.confirm(
-			"Replace every authored room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world? This replacement will be autosaved.",
-		);
+	const confirmReset = async () => {
+		const message =
+			"Replace every authored room, item, connection, command, condition, effect, event, and metadata field with the bundled starter world? This replacement will be autosaved.";
+		const confirmed = popup
+			? await popup.confirm({
+					title: "Reset to the starter world?",
+					message,
+					confirmLabel: "Reset world",
+					cancelLabel: "Keep world",
+					danger: true,
+				})
+			: globalThis.confirm(message);
 		if (confirmed) resetWorld();
 	};
 
@@ -723,7 +723,7 @@ export function WorldResetButton() {
 		<button
 			type="button"
 			className="worldResetButton"
-			onClick={confirmReset}
+			onClick={() => void confirmReset()}
 			title="Reset world to the bundled starter"
 		>
 			<RotateCcw size={14} strokeWidth={2} aria-hidden="true" />

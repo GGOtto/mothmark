@@ -4,6 +4,7 @@ import {ExternalLink} from "lucide-react";
 import {useEffect, useState} from "react";
 
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
+import {usePopup} from "@/components/popup/Popup";
 
 import "./PublishingPanel.scss";
 
@@ -29,6 +30,7 @@ export function PublishingPanel({
 	worldName: string;
 	revision: number | null;
 }) {
+	const popup = usePopup();
 	const [eligible, setEligible] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [publication, setPublication] = useState<Publication | null>(null);
@@ -192,14 +194,19 @@ export function PublishingPanel({
 						type="button"
 						className="publishingPanelDanger"
 						disabled={working}
-						onClick={() => {
-							if (
-								window.confirm(
-									"Unpublish this world? Existing active playthroughs can continue, but new play cannot start.",
+						onClick={() =>
+							void (async () => {
+								if (
+									await popup.confirm({
+										title: "Unpublish this world?",
+										message: "Existing active playthroughs can continue, but new play cannot start.",
+										confirmLabel: "Unpublish",
+										danger: true,
+									})
 								)
-							)
-								void mutatePublication("PATCH", {action: "unpublish"});
-						}}
+									void mutatePublication("PATCH", {action: "unpublish"});
+							})()
+						}
 					>
 						Unpublish
 					</button>

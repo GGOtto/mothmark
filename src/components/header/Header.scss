@@ -442,18 +442,15 @@
 }
 
 .feedbackDialogBackdrop {
-	position: fixed;
-	inset: 0;
 	z-index: 200;
-	display: grid;
-	place-items: center;
 	padding: 20px;
-	background: var(--color-backdrop);
 }
 
 .feedbackDialog {
+	display: flex;
 	width: min(560px, 100%);
-	box-sizing: border-box;
+	flex-direction: column;
+	overflow: hidden;
 	border: 1px solid var(--color-border-strong);
 	border-radius: var(--radius-dialog);
 	background: var(--color-surface-raised);
@@ -504,10 +501,12 @@
 
 	form {
 		display: grid;
-		gap: 8px;
-		padding: 20px 24px 24px;
+		min-height: 0;
+		flex: 1 1 auto;
+		grid-template-rows: minmax(0, 1fr) auto;
+		overflow: hidden;
 
-		> label:not(.feedbackDialogPage, .feedbackDialogHoneypot) {
+		.feedbackDialogFields > label:not(.feedbackDialogPage, .feedbackDialogHoneypot) {
 			margin-top: 6px;
 			font-size: 13px;
 			font-weight: 700;
@@ -554,7 +553,9 @@
 			display: flex;
 			justify-content: flex-end;
 			gap: 8px;
-			margin-top: 10px;
+			padding: 14px 24px;
+			border-top: 1px solid var(--color-border);
+			background: var(--color-surface-raised);
 
 			button {
 				height: 38px;
@@ -580,6 +581,15 @@
 			}
 		}
 	}
+}
+
+.feedbackDialogFields {
+	display: grid;
+	min-height: 0;
+	gap: 8px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 20px 24px;
 }
 
 .feedbackDialogPage {
@@ -826,14 +836,11 @@
 	}
 
 	.feedbackDialogBackdrop {
-		align-items: end;
 		padding: 0;
 	}
 
 	.feedbackDialog {
 		width: 100%;
-		max-height: calc(100dvh - 24px);
-		overflow-y: auto;
 		border-right: 0;
 		border-bottom: 0;
 		border-left: 0;
@@ -841,7 +848,8 @@
 	}
 
 	.feedbackDialog > header,
-	.feedbackDialog form {
+	.feedbackDialogFields,
+	.feedbackDialog form footer {
 		padding-right: 18px;
 		padding-left: 18px;
 	}

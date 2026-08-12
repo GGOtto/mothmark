@@ -10,6 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import {ModalLayer} from "../overlay/Overlay";
 import {AlertPopup} from "./template/AlertPopup";
 import {ConfirmPopup} from "./template/ConfirmPopup";
 import {PromptPopup} from "./template/PromptPopup";
@@ -23,6 +24,7 @@ export type PopupControls<TResult> = {
 export type PopupRenderer<TResult> = (controls: PopupControls<TResult>) => ReactNode;
 
 export type PopupOptions = {
+	ariaLabel?: string;
 	closeOnBackdropClick?: boolean;
 	closeOnEscape?: boolean;
 	className?: string;
@@ -83,6 +85,7 @@ type ActivePopup = {
 };
 
 const DEFAULT_OPTIONS: Required<PopupOptions> = {
+	ariaLabel: "",
 	closeOnBackdropClick: true,
 	closeOnEscape: true,
 	className: "",
@@ -156,6 +159,7 @@ export function PopupProvider({children}: PopupProviderProps) {
 					/>
 				),
 				{
+					ariaLabel: typeof options.title === "string" ? options.title : "Alert",
 					closeOnBackdropClick: false,
 					closeOnEscape: options.closeOnEscape ?? true,
 					className: "popupSurfaceAlert",
@@ -180,6 +184,7 @@ export function PopupProvider({children}: PopupProviderProps) {
 					/>
 				),
 				{
+					ariaLabel: typeof options.title === "string" ? options.title : "Confirmation",
 					closeOnBackdropClick: options.closeOnBackdropClick ?? false,
 					closeOnEscape: options.closeOnEscape ?? true,
 					className: "popupSurfaceConfirm",
@@ -210,6 +215,7 @@ export function PopupProvider({children}: PopupProviderProps) {
 					/>
 				),
 				{
+					ariaLabel: typeof options.title === "string" ? options.title : "Prompt",
 					closeOnBackdropClick: options.closeOnBackdropClick ?? false,
 					closeOnEscape: options.closeOnEscape ?? true,
 					className: "popupSurfacePrompt",
@@ -267,118 +273,23 @@ type PopupHostProps = {
 
 function PopupHost({popup, onFinish}: PopupHostProps) {
 	const {options} = popup;
-	const backdropRef = useRef<HTMLDivElement>(null);
-	const surfaceRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		const surface = surfaceRef.current;
-		const focusTarget = surface?.querySelector<HTMLElement>(
-			"button, input, select, textarea, [tabindex]:not([tabindex='-1'])",
-		);
-
-		(focusTarget ?? surface)?.focus();
-
-		return () => popup.returnFocus?.focus();
-	}, [popup.returnFocus]);
-
-	useEffect(() => {
-		const backdrop = backdropRef.current;
-		const visualViewport = window.visualViewport;
-		const previousBodyOverflow = document.body.style.overflow;
-
-		function syncToVisualViewport(): void {
-			if (!backdrop) return;
-
-			backdrop.style.setProperty("--popup-viewport-left", `${visualViewport?.offsetLeft ?? 0}px`);
-			backdrop.style.setProperty("--popup-viewport-top", `${visualViewport?.offsetTop ?? 0}px`);
-			backdrop.style.setProperty(
-				"--popup-viewport-width",
-				`${visualViewport?.width ?? window.innerWidth}px`,
-			);
-			backdrop.style.setProperty(
-				"--popup-viewport-height",
-				`${visualViewport?.height ?? window.innerHeight}px`,
-			);
-		}
-
-		syncToVisualViewport();
-		document.body.style.overflow = "hidden";
-		visualViewport?.addEventListener("resize", syncToVisualViewport);
-		visualViewport?.addEventListener("scroll", syncToVisualViewport);
-		window.addEventListener("resize", syncToVisualViewport);
-
-		return () => {
-			document.body.style.overflow = previousBodyOverflow;
-			visualViewport?.removeEventListener("resize", syncToVisualViewport);
-			visualViewport?.removeEventListener("scroll", syncToVisualViewport);
-			window.removeEventListener("resize", syncToVisualViewport);
-		};
-	}, []);
-
-	useEffect(() => {
-		function handleKeyDown(event: KeyboardEvent): void {
-			if (event.key === "Escape" && options.closeOnEscape) {
-				event.preventDefault();
-				onFinish(undefined);
-				return;
-			}
-
-			if (event.key !== "Tab") return;
-
-			const surface = surfaceRef.current;
-			if (!surface) return;
-			const focusableElements = Array.from(
-				surface.querySelectorAll<HTMLElement>(
-					"a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
-				),
-			).filter((element) => element.getAttribute("aria-hidden") !== "true");
-
-			if (focusableElements.length === 0) {
-				event.preventDefault();
-				surface.focus();
-				return;
-			}
-
-			const first = focusableElements[0];
-			const last = focusableElements[focusableElements.length - 1];
-			if (event.shiftKey && document.activeElement === first) {
-				event.preventDefault();
-				last?.focus();
-			} else if (!event.shiftKey && document.activeElement === last) {
-				event.preventDefault();
-				first?.focus();
-			}
-		}
-
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [onFinish, options.closeOnEscape]);
-
-	function handleBackdropClick(event: React.MouseEvent<HTMLDivElement>): void {
-		if (options.closeOnBackdropClick && event.target === event.currentTarget) {
-			onFinish(undefined);
-		}
-	}
+	const returnFocusRef = useMemo(() => ({current: popup.returnFocus}), [popup.returnFocus]);
 
 	return (
-		<div
-			ref={backdropRef}
-			className="popupBackdrop"
-			role="presentation"
-			onMouseDown={handleBackdropClick}
+		<ModalLayer
+			ariaLabel={options.ariaLabel || undefined}
+			backdropClassName="popupBackdrop"
+			className={["popupSurface", options.className].filter(Boolean).join(" ")}
+			closeOnBackdropClick={options.closeOnBackdropClick}
+			closeOnEscape={options.closeOnEscape}
+			mobilePresentation="sheet"
+			onClose={() => onFinish(undefined)}
+			returnFocusRef={returnFocusRef}
 		>
-			<div
-				ref={surfaceRef}
-				className={["popupSurface", options.className].filter(Boolean).join(" ")}
-				role="dialog"
-				aria-modal="true"
-				tabIndex={-1}
-			>
-				{popup.render({
-					resolve: onFinish,
-					cancel: () => onFinish(undefined),
-				})}
-			</div>
-		</div>
+			{popup.render({
+				resolve: onFinish,
+				cancel: () => onFinish(undefined),
+			})}
+		</ModalLayer>
 	);
 }

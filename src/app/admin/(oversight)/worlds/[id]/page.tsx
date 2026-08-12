@@ -7,11 +7,13 @@ import {useCallback, useEffect, useState} from "react";
 import {formatAdminDate, formatBytes, mutateAdminJson, readAdminJson} from "../../../adminClient";
 import type {AdminPlaythrough, AdminWorld} from "../../../adminTypes";
 import {AdminPlaythroughSummaryList} from "../../../AdminPlaythroughSummaryList";
+import {usePopup} from "@/components/popup/Popup";
 
 type AdminWorldDetail = AdminWorld & {world: unknown; playthroughs: AdminPlaythrough[]};
 
 export default function AdminWorldDetailPage() {
 	const {id} = useParams<{id: string}>();
+	const popup = usePopup();
 	const [world, setWorld] = useState<AdminWorldDetail | null>(null);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
@@ -55,19 +57,19 @@ export default function AdminWorldDetailPage() {
 		}
 	};
 
-	const control = (action: "archive" | "delete" | "restore" | "transfer") => {
+	const control = async (action: "archive" | "delete" | "restore" | "transfer") => {
 		if ((action === "delete" || action === "transfer") && !reason.trim()) {
 			setError("Enter an administrative reason first.");
 			return;
 		}
-		if (
-			!window.confirm(
-				action === "delete"
-					? "Permanently delete this world? This cannot be undone."
-					: `${action[0].toUpperCase()}${action.slice(1)} this world?`,
-			)
-		)
-			return;
+		const label = `${action[0].toUpperCase()}${action.slice(1)}`;
+		const confirmed = await popup.confirm({
+			title: action === "delete" ? "Permanently delete this world?" : `${label} this world?`,
+			message: action === "delete" ? "This cannot be undone." : undefined,
+			confirmLabel: label,
+			danger: action === "delete",
+		});
+		if (!confirmed) return;
 		void mutate(
 			() =>
 				mutateAdminJson(`/api/admin/worlds/${id}/control`, "POST", {
