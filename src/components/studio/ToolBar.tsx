@@ -1,28 +1,20 @@
 "use client";
 
-import {
-	CircleX,
-	CornerDownLeft,
-	Focus,
-	Hand,
-	Map,
-	MousePointer2,
-	MousePointerClick,
-} from "lucide-react";
+import {CircleX, CornerDownLeft, Focus, Map, MousePointerClick, Plus, X} from "lucide-react";
 import {useCallback, useEffect, useRef, useState} from "react";
-import type {MapTool} from "../map/Map";
 import "./ToolBar.scss";
 
 type ToolBarProps = {
-	activeTool: MapTool;
-	onToolChange: (tool: MapTool) => void;
+	isAddingRoom: boolean;
+	onAddingRoomChange: (isAddingRoom: boolean) => void;
+	addRoomDisabled?: boolean;
 	zoom: number;
 	onRecenter: () => void;
 	status: ToolBarStatus;
 };
 
 export type ToolBarStatus = {
-	kind: "cancelled" | "destination" | "idle" | "node" | "pathway" | "return";
+	kind: "cancelled" | "destination" | "idle" | "node" | "pathway" | "placement" | "return";
 	label: string;
 };
 
@@ -68,38 +60,38 @@ export function useToolBarStatus() {
 	return {hoverStatus, noticeStatus, updateStatus};
 }
 
-export function ToolBar({activeTool, onToolChange, zoom, onRecenter, status}: ToolBarProps) {
+export function ToolBar({
+	isAddingRoom,
+	onAddingRoomChange,
+	addRoomDisabled = false,
+	zoom,
+	onRecenter,
+	status,
+}: ToolBarProps) {
 	const StatusIcon = {
 		cancelled: CircleX,
 		destination: MousePointerClick,
 		idle: Map,
 		node: MousePointerClick,
 		pathway: MousePointerClick,
+		placement: Plus,
 		return: CornerDownLeft,
 	}[status.kind];
 
 	return (
 		<div className="toolbar" aria-label="Map tools">
-			<div className="toolbarTools" role="group" aria-label="Pointer tool">
+			<div className="toolbarTools" role="group" aria-label="Map actions">
 				<button
 					type="button"
-					className={`toolbarTool ${activeTool === "edit" ? "toolbarToolActive" : ""}`}
-					onClick={() => onToolChange("edit")}
-					aria-pressed={activeTool === "edit"}
-					title="Edit map (V or Left Arrow)"
+					className={`toolbarTool toolbarAddRoom ${isAddingRoom ? "toolbarToolActive" : ""}`}
+					onClick={() => onAddingRoomChange(!isAddingRoom)}
+					aria-pressed={isAddingRoom}
+					aria-label={isAddingRoom ? "Cancel room placement" : "Add room"}
+					title={isAddingRoom ? "Cancel room placement (Escape)" : "Add room"}
+					disabled={addRoomDisabled}
 				>
-					<MousePointer2 size={17} strokeWidth={1.9} />
-					<span>Edit</span>
-				</button>
-				<button
-					type="button"
-					className={`toolbarTool ${activeTool === "pan" ? "toolbarToolActive" : ""}`}
-					onClick={() => onToolChange("pan")}
-					aria-pressed={activeTool === "pan"}
-					title="Pan map (H or Right Arrow)"
-				>
-					<Hand size={17} strokeWidth={1.9} />
-					<span>Pan</span>
+					{isAddingRoom ? <X size={17} strokeWidth={1.9} /> : <Plus size={17} strokeWidth={1.9} />}
+					<span>{isAddingRoom ? "Cancel" : "Add room"}</span>
 				</button>
 				<button type="button" className="toolbarTool" onClick={onRecenter} title="Recenter map">
 					<Focus size={17} strokeWidth={1.9} />

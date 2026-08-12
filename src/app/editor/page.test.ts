@@ -26,4 +26,16 @@ describe("map toolbar node status", () => {
 			),
 		).toEqual({kind: "destination", label: "Choose destination"});
 	});
+
+	it("announces room placement ahead of an active connection draft", () => {
+		expect(
+			getConnectionDraftStatus(
+				{state: "choosing-destination", fromRoomId: "room-1", fromDirection: "n"},
+				[],
+				null,
+				null,
+				true,
+			),
+		).toEqual({kind: "placement", label: "Choose where to place the room"});
+	});
 });

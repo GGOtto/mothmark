@@ -500,7 +500,7 @@ the full task definitions but do not imply a different sequence.
   - Keep layer controls usable at the 310px inspector minimum and as a mobile sheet/full task.
   - Preserve authored layer geometry and the existing layer preview behavior used by world folios.
 
-- [ ] **E03 — Make room placement an explicit two-step action.**
+- [x] **E03 — Make room placement an explicit two-step action.**
 
   **Outcome:** A normal map click selects or pans; it never unexpectedly creates a room.
 
@@ -510,6 +510,10 @@ the full task definitions but do not imply a different sequence.
 
   - Clicking `Add room` enters a clearly announced placement mode; the next valid map click places
     one room and exits the mode.
+  - Keep the map direct-manipulation by default: room drags move rooms and empty-map drags pan, with
+    no persistent Edit or Pan modes.
+  - While choosing a connection destination, `Add room` places a new destination and continues to
+    the return-connector choice instead of cancelling the connection draft.
   - Escape, switching view/layer, or pressing Cancel exits without mutation. Touch users receive the
     same explicit mode and clear cancel action.
   - Show a placement preview and reject invalid coordinates without leaving a partial room.

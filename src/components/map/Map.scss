@@ -38,13 +38,14 @@
 	overscroll-behavior-x: none;
 	touch-action: none;
 	color-scheme: light;
-	cursor: default;
+	cursor: grab;
 
-	&.map--tool-edit {
+	&.map--placing-room {
 		cursor: crosshair;
 	}
 
-	&.map--tool-pan {
+	&.map--space-pan,
+	&.map--read-only {
 		cursor: grab;
 
 		.mapViewport {
@@ -92,6 +93,23 @@
 		inset: 0;
 		transform-origin: 0 0;
 		will-change: transform;
+	}
+
+	.mapRoomPlacementPreview {
+		position: absolute;
+		z-index: 7;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		border: 2px dashed var(--map-accent-strong);
+		border-radius: 6px;
+		background: color-mix(in srgb, var(--map-room-surface) 72%, transparent);
+		color: var(--map-room-text);
+		font-size: 12px;
+		font-weight: 600;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
 	}
 
 	.mapSvg {
