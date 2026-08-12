@@ -71,7 +71,7 @@ function LoadingGamePlayer({isHeaderHidden}: {isHeaderHidden?: boolean}) {
 
 function EmptyGamePlayer({isHeaderHidden}: {isHeaderHidden?: boolean}) {
 	return (
-		<PlayerFrame restartDisabled isHeaderHidden>
+		<PlayerFrame restartDisabled isHeaderHidden={isHeaderHidden}>
 			<PlayerTerminal
 				disabled
 				command=""

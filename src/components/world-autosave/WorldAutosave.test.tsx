@@ -128,7 +128,7 @@ describe("world autosave", () => {
 		expect(handlePersisted).toHaveBeenCalledWith(worldId, 2);
 	});
 
-	it("saves immediately from the Save button and Ctrl+S", async () => {
+	it("saves immediately from Ctrl+S and Cmd+S without showing a save button", async () => {
 		const fetchMock = jest
 			.fn()
 			.mockResolvedValueOnce(successfulSave(2))
@@ -141,8 +141,10 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("Button save")} />
 			</WorldAutosaveProvider>,
 		);
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		expect(screen.queryByRole("button", {name: "Retry"})).not.toBeInTheDocument();
+		const controlAllowed = fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		await act(flushPromises);
+		expect(controlAllowed).toBe(false);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
 		view.rerender(
@@ -150,7 +152,7 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("Keyboard save")} revision={2} />
 			</WorldAutosaveProvider>,
 		);
-		const allowed = fireEvent.keyDown(window, {key: "s", ctrlKey: true});
+		const allowed = fireEvent.keyDown(window, {key: "s", metaKey: true});
 		await act(flushPromises);
 		expect(allowed).toBe(false);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -173,7 +175,7 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("First edit")} />
 			</WorldAutosaveProvider>,
 		);
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		await act(flushPromises);
 		view.rerender(
 			<WorldAutosaveProvider>
@@ -209,8 +211,9 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("Slow save")} />
 			</WorldAutosaveProvider>,
 		);
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		expect(screen.getByRole("status")).toHaveTextContent("Saving…");
+		expect(screen.queryByRole("button", {name: "Retry"})).not.toBeInTheDocument();
 
 		act(() => jest.advanceTimersByTime(749));
 		expect(screen.getByRole("status")).toHaveTextContent("Saving…");
@@ -251,15 +254,17 @@ describe("world autosave", () => {
 			await flushPromises();
 		});
 		expect(screen.getByText("Changes not saved")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Retry"})).toBeVisible();
 		const callsBeforeManualSave = fetchMock.mock.calls.length;
 		connectionRestored = true;
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", {name: "Save now"}));
+			fireEvent.click(screen.getByRole("button", {name: "Retry"}));
 			await flushPromises();
 			await flushPromises();
 		});
 		expect(fetchMock).toHaveBeenCalledTimes(callsBeforeManualSave + 1);
 		expect(screen.getByText("Saved")).toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Retry"})).not.toBeInTheDocument();
 	});
 
 	it("surfaces non-retryable validation details immediately", async () => {
@@ -284,12 +289,13 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("Invalid save")} />
 			</WorldAutosaveProvider>,
 		);
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		await act(flushPromises);
 		expect(screen.getByText("Changes not saved")).toHaveAttribute(
 			"title",
 			"The request data is invalid. world.rooms.16.id: Duplicate room id.",
 		);
+		expect(screen.getByRole("button", {name: "Retry"})).toBeVisible();
 	});
 
 	it("warns before unloading until the server confirms the latest world", async () => {
@@ -307,7 +313,7 @@ describe("world autosave", () => {
 		window.dispatchEvent(dirtyUnload);
 		expect(dirtyUnload.defaultPrevented).toBe(true);
 
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		await act(flushPromises);
 		const savedUnload = new Event("beforeunload", {cancelable: true});
 		window.dispatchEvent(savedUnload);
@@ -361,7 +367,7 @@ describe("world autosave", () => {
 				<AutosaveHarness world={editedWorld("First queued edit")} onConfirmed={confirmed} />
 			</WorldAutosaveProvider>,
 		);
-		fireEvent.click(screen.getByRole("button", {name: "Save"}));
+		fireEvent.keyDown(window, {key: "s", ctrlKey: true});
 		view.rerender(
 			<WorldAutosaveProvider>
 				<AutosaveHarness world={editedWorld("Newest queued edit")} onConfirmed={confirmed} />
