@@ -768,6 +768,7 @@ test("an inaccessible world cannot be restored from an old local draft", async (
 
 	await expect(page.getByRole("banner").getByLabel("Current world")).toHaveText("Loading world…");
 	await expect(page.getByRole("button", {name: "Leaked private draft"})).not.toBeVisible();
+	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeDisabled();
 	expect(browserErrors.filter((error) => !error.includes("status of 404"))).toEqual([]);
 });
@@ -798,6 +799,7 @@ test("a stale local draft is reconciled explicitly instead of being discarded", 
 	await expect(dialog.getByRole("button", {name: "Export draft"})).toBeVisible();
 	await dialog.getByRole("button", {name: "Use server version"}).click();
 	await expect(dialog).not.toBeVisible();
+	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 	expect(browserErrors).toEqual([]);
 });
@@ -838,6 +840,7 @@ test("private worlds persist for one browser and remain unresolved for another",
 		"Loading world…",
 	);
 	await expect(secondPage.getByRole("button", {name: "A private entrance"})).not.toBeVisible();
+	await secondPage.getByRole("tab", {name: "Play"}).click();
 	await expect(secondPage.getByRole("textbox", {name: "Game command"})).toBeDisabled();
 
 	expect(firstErrors).toEqual([]);
@@ -918,10 +921,13 @@ test("the world library creates, switches, isolates, and limits private worlds",
 		await dialog.getByRole("button", {name: "Create world"}).click();
 		await expect(page).toHaveURL(new RegExp(`/worlds/${name.toLowerCase().replaceAll(" ", "-")}$`));
 		if (source === "Blank world") {
+			await expect(page.getByRole("button", {name: "Clear Ground layer"})).toBeVisible();
+			await page.getByRole("tab", {name: "Play"}).click();
 			await expect(page.getByText("No rooms available. Add a room to begin exploring.")).toBeVisible();
 			await expect(page.getByRole("button", {name: "Shop Floor"})).not.toBeVisible();
 			await page.locator("[data-map]").click({position: {x: 180, y: 180}});
 			await expect(page.getByRole("button", {name: "Room 1"})).toBeVisible();
+			await page.getByRole("tab", {name: "Editor"}).click();
 		}
 		const roomNameField = page.getByRole("textbox", {name: "Name", exact: true});
 		await roomNameField.fill(roomName);
@@ -1110,6 +1116,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto("/worlds/undefined");
 	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
+	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 
 	await page.getByRole("button", {name: "Items"}).click();
@@ -1169,11 +1176,70 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await relativeDirections.click();
 	await expect(page.getByRole("switch", {name: "Off"})).not.toBeChecked();
 
-	await page.getByRole("button", {name: "World settings"}).click();
+	await page.getByRole("button", {name: "Logic", expanded: false}).click();
+	await page.getByRole("menuitem", {name: "World settings"}).click();
 	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
 
 	await page.goto(`/editor/${editor.worldId}`);
 	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
+	expect(browserErrors).toEqual([]);
+});
+
+test("the editor uses top navigation and a persistent bottom utility switcher on phones", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 390, height: 844});
+	await page.goto(`/worlds/${editor.worldSlug}`);
+
+	const destination = page.getByRole("button", {name: "Map", expanded: false});
+	await expect(destination).toBeVisible();
+	await destination.click();
+	await page.getByRole("menuitem", {name: "Items"}).click();
+	await expect(page.getByRole("button", {name: "Items", expanded: false})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Editor"})).toHaveAttribute("aria-selected", "true");
+
+	await page.getByRole("tab", {name: "Play"}).click();
+	const commandInput = page.getByRole("textbox", {name: "Game command"});
+	await commandInput.fill("look at lantern");
+	await page.getByRole("tab", {name: "Editor"}).click();
+	await expect(page.getByPlaceholder("Search items, aliases, and tags")).toBeVisible();
+	await page.getByRole("tab", {name: "Play"}).click();
+	await expect(commandInput).toHaveValue("look at lantern");
+
+	for (const viewport of [
+		{width: 320, height: 568},
+		{width: 390, height: 844},
+		{width: 740, height: 430},
+	]) {
+		await page.setViewportSize(viewport);
+		const geometry = await page.evaluate(() => {
+			const navigation = document.querySelector<HTMLElement>(".mobileEditorNavigation")!;
+			const workspace = document.querySelector<HTMLElement>(".editorMainPanel")!;
+			const utility = document.querySelector<HTMLElement>(".editorUtilityPanel")!;
+			const navigationBox = navigation.getBoundingClientRect();
+			const workspaceBox = workspace.getBoundingClientRect();
+			const utilityBox = utility.getBoundingClientRect();
+			return {
+				documentWidth: document.documentElement.scrollWidth,
+				navigationBottom: navigationBox.bottom,
+				utilityBottom: utilityBox.bottom,
+				utilityTop: utilityBox.top,
+				viewportHeight: window.innerHeight,
+				viewportWidth: window.innerWidth,
+				workspaceBottom: workspaceBox.bottom,
+				workspaceHeight: workspaceBox.height,
+				workspaceTop: workspaceBox.top,
+			};
+		});
+		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+		expect(geometry.workspaceTop).toBeGreaterThanOrEqual(geometry.navigationBottom - 1);
+		expect(geometry.utilityTop).toBeGreaterThanOrEqual(geometry.workspaceBottom - 1);
+		expect(geometry.utilityBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+		expect(geometry.workspaceHeight).toBeGreaterThan(80);
+	}
+
 	expect(browserErrors).toEqual([]);
 });
 

@@ -86,52 +86,52 @@ stable, understandable authoring experience demonstrated afterward.
 The table below is the implementation order. The workstream sections later in the document contain
 the full task definitions but do not imply a different sequence.
 
-| Priority | Task | Why it is ordered here                                                                                          |
-| -------- | ---- | --------------------------------------------------------------------------------------------------------------- |
-| 1        | R01  | The hosted player, transcript, prompt, and software-keyboard behavior are the center of phone play.             |
-| 2        | G02  | New players will immediately look for Help and a way to list available exits.                                   |
-| 3        | G01  | Players will naturally try `forward`, `straight`, `left`, `right`, and `face`.                                  |
-| 4        | R02  | Guests need a reliable way to restart without corrupting or overwriting the previous playthrough.               |
-| 5        | Q01  | A focused real-device audit proves that the complete guest phone-play path works before authoring work expands. |
-| 6        | F02  | Mobile-safe dialogs, menus, and popups support the rest of phone play and mobile authoring.                     |
-| 7        | F01  | Smooth saving makes the authoring demonstration safe and keeps publication on the correct revision.             |
-| 8        | F04  | Refresh and navigation must preserve the demonstrated editor view and selection.                                |
-| 9        | F03  | Shared responsive shells make the editor and remaining pages workable on mobile.                                |
-| 10       | E03  | Explicit Add room mode removes a surprising map interaction that is likely to appear during the demo.           |
-| 11       | E02  | Layers should be understandable and visually finished when the Map workspace is shown.                          |
-| 12       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.            |
-| 13       | E04  | Audit the remaining editors before polishing individual complex workflows.                                      |
-| 14       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.         |
-| 15       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.               |
-| 16       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                             |
-| 17       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.                 |
-| 18       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.            |
-| 19       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable.        |
-| 20       | E09  | Logic should open directly into the working authoring subsection and preserve its context.                      |
-| 21       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.                 |
-| 22       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.                     |
-| 23       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                               |
-| 24       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                         |
-| 25       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.                    |
-| 26       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                          |
-| 27       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.            |
-| 28       | A05  | Profile images improve public identity after the player and publication surfaces are stable.                    |
-| 29       | A01  | Likes and follows build on finished public publication cards and profiles.                                      |
-| 30       | A02  | Real notifications depend on likes/follows and Official publication events.                                     |
-| 31       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.                  |
-| 32       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.                     |
-| 33       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.                      |
-| 34       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.                |
-| 35       | T02  | Template creation/application follows the versioned template domain.                                            |
-| 36       | T03  | Template discovery and profile presence follow creation, application, and likes.                                |
-| 37       | T04  | Issues can then validate real template provenance as well as the rest of the world.                             |
-| 38       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                                  |
-| 39       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                          |
-| 40       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.                   |
-| 41       | R06  | Audit becomes useful after the product actions it must investigate exist.                                       |
-| 42       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                         |
-| 43       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.              |
-| 44       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.           |
+| Priority | Task | Why it is ordered here                                                                                   |
+| -------- | ---- | -------------------------------------------------------------------------------------------------------- |
+| 1        | R01  | The hosted player, transcript, prompt, and software-keyboard behavior are the center of phone play.      |
+| 2        | G02  | New players will immediately look for Help and a way to list available exits.                            |
+| 3        | G01  | Players will naturally try `forward`, `straight`, `left`, `right`, and `face`.                           |
+| 4        | R02  | Guests need a reliable way to restart without corrupting or overwriting the previous playthrough.        |
+| 5        | F03  | Shared responsive shells and the mobile editor frame make every page ready for phone-specific work.      |
+| 6        | F02  | Mobile-safe dialogs, menus, and popups support the rest of phone play and mobile authoring.              |
+| 7        | F01  | Smooth saving makes the authoring demonstration safe and keeps publication on the correct revision.      |
+| 8        | F04  | Refresh and navigation must preserve the demonstrated editor view and selection.                         |
+| 9        | E03  | Explicit Add room mode removes a surprising map interaction that is likely to appear during the demo.    |
+| 10       | E02  | Layers should be understandable and visually finished when the Map workspace is shown.                   |
+| 11       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.     |
+| 12       | E04  | Audit the remaining editors before polishing individual complex workflows.                               |
+| 13       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.  |
+| 14       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
+| 15       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
+| 16       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
+| 17       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
+| 18       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.     |
+| 19       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable. |
+| 20       | E09  | Logic should open directly into the working authoring subsection and preserve its context.               |
+| 21       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.          |
+| 22       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.              |
+| 23       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                        |
+| 24       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                  |
+| 25       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.             |
+| 26       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                   |
+| 27       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.     |
+| 28       | A05  | Profile images improve public identity after the player and publication surfaces are stable.             |
+| 29       | A01  | Likes and follows build on finished public publication cards and profiles.                               |
+| 30       | A02  | Real notifications depend on likes/follows and Official publication events.                              |
+| 31       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.           |
+| 32       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.              |
+| 33       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.               |
+| 34       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.         |
+| 35       | T02  | Template creation/application follows the versioned template domain.                                     |
+| 36       | T03  | Template discovery and profile presence follow creation, application, and likes.                         |
+| 37       | T04  | Issues can then validate real template provenance as well as the rest of the world.                      |
+| 38       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                           |
+| 39       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                   |
+| 40       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.            |
+| 41       | R06  | Audit becomes useful after the product actions it must investigate exist.                                |
+| 42       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                  |
+| 43       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.       |
+| 44       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.    |
 
 ---
 
@@ -176,7 +176,7 @@ the full task definitions but do not imply a different sequence.
     notifications, profile images, templates, and condition/effect editors.
   - Verify at 320px, 390px, and a short landscape viewport with keyboard-only and touch workflows.
 
-- [ ] **F03 — Establish responsive page and workspace shells.**
+- [x] **F03 — Establish responsive page and workspace shells.**
 
   **Outcome:** New page work shares predictable pinned headers, scrolling bodies, and mobile
   navigation rather than fixing overflow independently on every route.
@@ -188,8 +188,15 @@ the full task definitions but do not imply a different sequence.
   - Keep page title, search, filters, and primary actions outside a growing content body's scroller.
   - Define phone behavior for the global header, editor activity rail, property inspector, terminal,
     and split panes. No essential action may depend on hover.
-  - Preserve the activity-rail geometry and label reveal on desktop; use a compact mobile switcher
-    rather than squeezing the rail beside the workspace.
+  - Preserve the activity-rail geometry and label reveal on desktop. On phones, move the editor
+    destinations into a compact top navigator that identifies the current destination and exposes
+    every destination without hover or horizontal clipping.
+  - Give Editor and Play one shared utility region. On desktop it occupies the right side of the
+    workspace; on phones it becomes a bottom region with an explicit Editor/Play toggle. Switching
+    views preserves the current selection, form state, transcript, and command input.
+  - Keep the primary editor workspace visible above the mobile utility region, respect safe areas and
+    software keyboards, and never squeeze the desktop activity rail, workspace, inspector, and
+    terminal into simultaneous phone-width columns.
   - Add representative browser harness coverage so regressions in sticky regions, safe areas, and
     horizontal overflow fail in one place.
 
@@ -464,12 +471,10 @@ the full task definitions but do not imply a different sequence.
 
   **Scope and acceptance:**
 
-  - Evaluate moving the embedded player terminal/chat to the right side region on wide screens. Use
-    the chosen layout only if map space increases and terminal readability remains strong.
-  - Allow map, inspector, and terminal regions to collapse/resize with accessible controls and
-    persisted reversible sizes.
-  - On mobile, switch between Map, Inspector, and Play as focused surfaces instead of squeezing
-    three panes together. Preserve current selection and terminal output while switching.
+  - Build on F03's shared right-side Editor/Play region and mobile bottom switcher; do not introduce a
+    separate Map-only terminal arrangement.
+  - Allow the map workspace and shared utility region to collapse or resize with accessible controls
+    and persisted reversible sizes.
   - Keep the authored map on the light map palette in both application themes. Floating controls use
     application surface tokens.
   - Retain pan/zoom, selection, connection editing, layer switching, keyboard access, and reduced

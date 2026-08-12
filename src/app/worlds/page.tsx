@@ -4,6 +4,7 @@ import {ArrowUpRight, Ellipsis, FilePlus2, Trash2} from "lucide-react";
 import {useCallback, useEffect, useRef, useState} from "react";
 
 import {SiteFooter} from "@/components/footer/SiteFooter";
+import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 import {
 	deleteWorldDraft,
 	deleteWorldDraftsExceptUser,
@@ -260,8 +261,8 @@ export default function WorldsPage() {
 	const visibleWorlds = view === "active" ? (library?.worlds ?? []) : trash;
 
 	return (
-		<div className="worldsPage">
-			<header className="worldLibraryHeader">
+		<PageShell className="worldsPage" variant="catalog">
+			<PageShellHeader className="worldLibraryHeader">
 				<div className="worldLibraryHeading">
 					<div>
 						<h1 id="world-library-title">{view === "active" ? "My worlds" : "Trash"}</h1>
@@ -314,9 +315,9 @@ export default function WorldsPage() {
 						</div>
 					) : null}
 				</div>
-			</header>
+			</PageShellHeader>
 
-			<div className="worldLibraryScroll" ref={libraryScroll}>
+			<PageShellBody className="worldLibraryScroll" ref={libraryScroll}>
 				<main className="worldLibrary" aria-labelledby="world-library-title">
 					{loadingError || actionError ? (
 						<p className="worldLibraryError" role="alert">
@@ -461,7 +462,7 @@ export default function WorldsPage() {
 					)}
 				</main>
 				<SiteFooter />
-			</div>
+			</PageShellBody>
 
 			{dialog ? (
 				<div className="worldDialogBackdrop" role="presentation">
@@ -594,6 +595,6 @@ export default function WorldsPage() {
 					</section>
 				</div>
 			) : null}
-		</div>
+		</PageShell>
 	);
 }

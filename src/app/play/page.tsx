@@ -3,6 +3,7 @@
 import {Search} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useState} from "react";
+import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 
 import "./play.scss";
 
@@ -50,8 +51,8 @@ export default function PlayCatalogPage() {
 	}, [search]);
 
 	return (
-		<main className="playCatalogPage">
-			<header className="playCatalogHeader">
+		<PageShell as="main" className="playCatalogPage" variant="catalog">
+			<PageShellHeader className="playCatalogHeader">
 				<div>
 					<Link href="/">Mothmark</Link>
 					<h1>Published worlds</h1>
@@ -67,63 +68,65 @@ export default function PlayCatalogPage() {
 						placeholder="Search worlds"
 					/>
 				</label>
-			</header>
-			{error ? (
-				<p className="playCatalogError" role="alert">
-					{error}
-				</p>
-			) : null}
-			{loading ? (
-				<p className="playCatalogStatus" role="status">
-					Loading worlds…
-				</p>
-			) : publications.length ? (
-				<ul className="playCatalogGrid">
-					{publications.map((publication) => {
-						const action =
-							publication.playAction === "continue"
-								? "Continue"
-								: publication.playAction === "play_again"
-									? "Play again"
-									: "Play";
-						return (
-							<li key={publication.id}>
-								<article>
-									<div>
-										<Link className="playCatalogWorldLink" href={`/play/${publication.slug}`}>
-											<h2>{publication.title}</h2>
-										</Link>
-										<small className="playCatalogAuthor">
-											by{" "}
-											<Link href={`/users/${encodeURIComponent(publication.authorUsername)}`}>
-												{publication.authorUsername}
+			</PageShellHeader>
+			<PageShellBody className="playCatalogBody">
+				{error ? (
+					<p className="playCatalogError" role="alert">
+						{error}
+					</p>
+				) : null}
+				{loading ? (
+					<p className="playCatalogStatus" role="status">
+						Loading worlds…
+					</p>
+				) : publications.length ? (
+					<ul className="playCatalogGrid">
+						{publications.map((publication) => {
+							const action =
+								publication.playAction === "continue"
+									? "Continue"
+									: publication.playAction === "play_again"
+										? "Play again"
+										: "Play";
+							return (
+								<li key={publication.id}>
+									<article>
+										<div>
+											<Link className="playCatalogWorldLink" href={`/play/${publication.slug}`}>
+												<h2>{publication.title}</h2>
 											</Link>
-										</small>
-										<p>{publication.summary}</p>
-									</div>
-									<footer>
-										<small>
-											Published{" "}
-											{new Intl.DateTimeFormat(undefined, {dateStyle: "medium"}).format(
-												new Date(publication.release.publishedAt),
-											)}
-										</small>
-										<Link
-											className="playCatalogAction"
-											href={`/play/${publication.slug}`}
-											aria-label={`${action} ${publication.title}`}
-										>
-											{action}
-										</Link>
-									</footer>
-								</article>
-							</li>
-						);
-					})}
-				</ul>
-			) : (
-				<p className="playCatalogStatus">No published worlds match this search.</p>
-			)}
-		</main>
+											<small className="playCatalogAuthor">
+												by{" "}
+												<Link href={`/users/${encodeURIComponent(publication.authorUsername)}`}>
+													{publication.authorUsername}
+												</Link>
+											</small>
+											<p>{publication.summary}</p>
+										</div>
+										<footer>
+											<small>
+												Published{" "}
+												{new Intl.DateTimeFormat(undefined, {dateStyle: "medium"}).format(
+													new Date(publication.release.publishedAt),
+												)}
+											</small>
+											<Link
+												className="playCatalogAction"
+												href={`/play/${publication.slug}`}
+												aria-label={`${action} ${publication.title}`}
+											>
+												{action}
+											</Link>
+										</footer>
+									</article>
+								</li>
+							);
+						})}
+					</ul>
+				) : (
+					<p className="playCatalogStatus">No published worlds match this search.</p>
+				)}
+			</PageShellBody>
+		</PageShell>
 	);
 }

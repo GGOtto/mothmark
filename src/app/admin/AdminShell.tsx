@@ -4,6 +4,7 @@ import {MapPinned} from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useState, type ReactNode} from "react";
+import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 
 export function AdminShell({children}: {children: ReactNode}) {
 	const pathname = usePathname();
@@ -30,8 +31,8 @@ export function AdminShell({children}: {children: ReactNode}) {
 	};
 
 	return (
-		<div className="adminApp">
-			<header className="adminHeader">
+		<PageShell className="adminApp" variant="document">
+			<PageShellHeader className="adminHeader">
 				<Link href="/admin/users" className="adminHeaderIdentity">
 					<MapPinned size={15} aria-hidden="true" />
 					<span>Mothmark administration</span>
@@ -77,13 +78,15 @@ export function AdminShell({children}: {children: ReactNode}) {
 						{signingOut ? "Signing out…" : "Sign out"}
 					</button>
 				</nav>
-			</header>
-			{error ? (
-				<p className="adminShellError" role="alert">
-					{error}
-				</p>
-			) : null}
-			<div className="adminContent">{children}</div>
-		</div>
+			</PageShellHeader>
+			<PageShellBody className="adminContent">
+				{error ? (
+					<p className="adminShellError" role="alert">
+						{error}
+					</p>
+				) : null}
+				{children}
+			</PageShellBody>
+		</PageShell>
 	);
 }
