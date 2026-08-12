@@ -1,21 +1,16 @@
 .playCatalogPage {
-	height: 100%;
-	box-sizing: border-box;
-	padding: 40px 24px;
-	overflow: auto;
 	background: var(--color-workspace);
 	color: var(--color-text);
 }
 
 .playCatalogHeader {
 	display: flex;
-	width: min(1040px, 100%);
 	align-items: end;
 	justify-content: space-between;
 	gap: 24px;
-	margin: 0 auto 24px;
-	padding-bottom: 20px;
+	padding: 32px max(24px, calc((100% - 1040px) / 2)) 20px;
 	border-bottom: 1px solid var(--color-border);
+	background: var(--color-workspace);
 
 	a {
 		color: var(--color-action);
@@ -32,6 +27,10 @@
 		color: var(--color-text-muted);
 		font-size: 14px;
 	}
+}
+
+.playCatalogBody {
+	padding: 24px max(24px, calc((100% - 1040px) / 2)) 48px;
 }
 
 .playCatalogSearch {
@@ -399,12 +398,14 @@
 }
 
 @media (max-width: 600px) {
-	.playCatalogPage {
-		padding: 24px 14px;
-	}
 	.playCatalogHeader {
 		align-items: stretch;
 		flex-direction: column;
+		padding: 20px max(14px, env(safe-area-inset-right)) 16px max(14px, env(safe-area-inset-left));
+	}
+	.playCatalogBody {
+		padding: 18px max(14px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom))
+			max(14px, env(safe-area-inset-left));
 	}
 	.hostedPlayerHeader {
 		grid-template-columns: auto minmax(0, 1fr) auto;

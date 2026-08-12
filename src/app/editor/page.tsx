@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState, useSyncExternalStore} from "react";
 import {produce} from "immer";
 import {usePathname} from "next/navigation";
 import {
@@ -56,6 +56,25 @@ type EditorSelection = {
 	selectedId: string | null;
 	isConnectionSelected: boolean;
 };
+
+type EditorUtilityView = "editor" | "play";
+
+const MOBILE_EDITOR_QUERY = "(max-width: 900px)";
+
+function subscribeToMobileEditorLayout(onStoreChange: () => void) {
+	if (typeof window.matchMedia !== "function") return () => undefined;
+	const mediaQuery = window.matchMedia(MOBILE_EDITOR_QUERY);
+	mediaQuery.addEventListener("change", onStoreChange);
+	return () => mediaQuery.removeEventListener("change", onStoreChange);
+}
+
+function getMobileEditorLayoutSnapshot() {
+	return typeof window.matchMedia === "function" && window.matchMedia(MOBILE_EDITOR_QUERY).matches;
+}
+
+function getServerMobileEditorLayoutSnapshot() {
+	return false;
+}
 
 type EditorTabMetadata = {
 	title: string;
@@ -137,6 +156,13 @@ export default function EditorPage() {
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+	const mobileEditorLayout = useSyncExternalStore(
+		subscribeToMobileEditorLayout,
+		getMobileEditorLayoutSnapshot,
+		getServerMobileEditorLayoutSnapshot,
+	);
+	const [utilityViewOverride, setUtilityView] = useState<EditorUtilityView | null>(null);
+	const utilityView = utilityViewOverride ?? (mobileEditorLayout ? "play" : "editor");
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
@@ -299,6 +325,7 @@ export default function EditorPage() {
 
 	const handleTabChange = useCallback((tab: EditorTab) => {
 		setActiveTab(tab);
+		setUtilityView("editor");
 		if (tab !== "logic") return;
 
 		setLogicSection("home");
@@ -388,63 +415,112 @@ export default function EditorPage() {
 			) : null}
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-			<EditorMainPanel
-				isLoading={!worldIsLoaded}
-				activeTab={activeTab}
-				world={editorWorld}
-				rooms={rooms}
-				updateWorld={updateWorld}
-				selection={selection}
-				setSelection={setSelection}
-				selectedRoom={selectedRoom}
-				mapTool={mapTool}
-				setMapTool={setMapTool}
-				mapZoom={mapZoom}
-				setMapZoom={setMapZoom}
-				mapRecenterRequest={mapRecenterRequest}
-				connectionDraft={connectionDraft}
-				setConnectionDraft={setConnectionDraft}
-				logicSection={logicSection}
-				setLogicSection={setLogicSection}
-				selectedEventId={selectedEventId}
-				setSelectedEventId={setSelectedEventId}
-				logicSelection={logicSelection}
-				setLogicSelection={setLogicSelection}
-				selectedCommandId={selectedCommandId}
-				setSelectedCommandId={setSelectedCommandId}
-				commandSelection={commandSelection}
-				setCommandSelection={setCommandSelection}
-				selectedItemId={selectedItemId}
-				setSelectedItemId={setSelectedItemId}
-				persistedWorldId={persistedWorldId}
-				persistedWorldRevision={persistedWorldRevision}
-				worldName={worldName}
-				onMapRecenter={() => {
-					setMapZoom(1);
-					setMapRecenterRequest((request) => request + 1);
-				}}
-			/>
+			<div className="editorPageBody">
+				<EditorMainPanel
+					isLoading={!worldIsLoaded}
+					activeTab={activeTab}
+					world={editorWorld}
+					rooms={rooms}
+					updateWorld={updateWorld}
+					selection={selection}
+					setSelection={setSelection}
+					mapTool={mapTool}
+					setMapTool={setMapTool}
+					mapZoom={mapZoom}
+					setMapZoom={setMapZoom}
+					mapRecenterRequest={mapRecenterRequest}
+					connectionDraft={connectionDraft}
+					setConnectionDraft={setConnectionDraft}
+					logicSection={logicSection}
+					setLogicSection={setLogicSection}
+					selectedEventId={selectedEventId}
+					setSelectedEventId={setSelectedEventId}
+					logicSelection={logicSelection}
+					setLogicSelection={setLogicSelection}
+					selectedCommandId={selectedCommandId}
+					setSelectedCommandId={setSelectedCommandId}
+					commandSelection={commandSelection}
+					setCommandSelection={setCommandSelection}
+					selectedItemId={selectedItemId}
+					setSelectedItemId={setSelectedItemId}
+					persistedWorldId={persistedWorldId}
+					persistedWorldRevision={persistedWorldRevision}
+					worldName={worldName}
+					onMapRecenter={() => {
+						setMapZoom(1);
+						setMapRecenterRequest((request) => request + 1);
+					}}
+				/>
 
-			<EditorInspector
-				activeTab={activeTab}
-				world={editorWorld}
-				selectedRoom={selectedRoom}
-				selectedConnection={selectedConnection}
-				updateWorld={updateWorld}
-				onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
-				onOpenItem={(itemId) => {
-					setSelectedItemId(itemId);
-					setActiveTab("world");
-				}}
-				logicSection={logicSection}
-				logicSelection={logicSelection}
-				selectedCommandId={selectedCommandId}
-				setSelectedCommandId={setSelectedCommandId}
-				commandSelection={commandSelection}
-				setCommandSelection={setCommandSelection}
-				selectedItem={selectedItem}
-				setSelectedItemId={setSelectedItemId}
-			/>
+				<aside className="editorUtilityPanel" aria-label="Editor utility panel">
+					<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
+						<button
+							type="button"
+							role="tab"
+							id="editor-utility-editor-tab"
+							aria-controls="editor-utility-editor-panel"
+							aria-selected={utilityView === "editor"}
+							onClick={() => setUtilityView("editor")}
+						>
+							Editor
+						</button>
+						<button
+							type="button"
+							role="tab"
+							id="editor-utility-play-tab"
+							aria-controls="editor-utility-play-panel"
+							aria-selected={utilityView === "play"}
+							onClick={() => setUtilityView("play")}
+						>
+							Play
+						</button>
+					</div>
+
+					<div
+						className="editorUtilityContent"
+						role="tabpanel"
+						id="editor-utility-editor-panel"
+						aria-labelledby="editor-utility-editor-tab"
+						hidden={utilityView !== "editor"}
+					>
+						<EditorInspector
+							activeTab={activeTab}
+							world={editorWorld}
+							selectedRoom={selectedRoom}
+							selectedConnection={selectedConnection}
+							updateWorld={updateWorld}
+							onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+							onOpenItem={(itemId) => {
+								setSelectedItemId(itemId);
+								setActiveTab("world");
+							}}
+							logicSection={logicSection}
+							logicSelection={logicSelection}
+							selectedCommandId={selectedCommandId}
+							setSelectedCommandId={setSelectedCommandId}
+							commandSelection={commandSelection}
+							setCommandSelection={setCommandSelection}
+							selectedItem={selectedItem}
+							setSelectedItemId={setSelectedItemId}
+						/>
+					</div>
+
+					<div
+						className="editorUtilityContent editorUtilityPlay"
+						role="tabpanel"
+						id="editor-utility-play-panel"
+						aria-labelledby="editor-utility-play-tab"
+						hidden={utilityView !== "play"}
+					>
+						<CommandLine
+							contained
+							isLoading={!worldIsLoaded}
+							world={editorWorld}
+							selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null}
+						/>
+					</div>
+				</aside>
+			</div>
 		</main>
 	);
 }
@@ -457,7 +533,6 @@ type EditorMainPanelProps = {
 	updateWorld: UpdateWorld;
 	selection: EditorSelection;
 	setSelection: React.Dispatch<React.SetStateAction<EditorSelection>>;
-	selectedRoom: Room | null;
 	mapTool: MapTool;
 	setMapTool: (tool: MapTool) => void;
 	mapZoom: number;
@@ -491,7 +566,6 @@ function EditorMainPanel({
 	updateWorld,
 	selection,
 	setSelection,
-	selectedRoom,
 	mapTool,
 	setMapTool,
 	mapZoom,
@@ -620,12 +694,6 @@ function EditorMainPanel({
 					/>
 				</div>
 			</div>
-
-			<CommandLine
-				isLoading={isLoading}
-				world={world}
-				selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null}
-			/>
 		</section>
 	);
 }
@@ -1036,6 +1104,7 @@ function EditorInspector({
 	if (activeTab === "map") {
 		return (
 			<RightSideBar
+				contained
 				world={world}
 				updateWorld={updateWorld}
 				selectedRoom={selectedRoom}
@@ -1049,6 +1118,7 @@ function EditorInspector({
 	if (activeTab === "logic" && logicSection === "events") {
 		return (
 			<RightSideBar
+				contained
 				world={world}
 				updateWorld={updateWorld}
 				selectedRoom={null}
@@ -1069,6 +1139,7 @@ function EditorInspector({
 				null;
 			return (
 				<RightSideBar
+					contained
 					world={world}
 					updateWorld={updateWorld}
 					selectedRoom={null}
@@ -1088,6 +1159,7 @@ function EditorInspector({
 		if (!commandSelection) {
 			return (
 				<RightSideBar
+					contained
 					world={world}
 					updateWorld={updateWorld}
 					selectedRoom={null}
@@ -1100,6 +1172,7 @@ function EditorInspector({
 		}
 		return (
 			<RightSideBar
+				contained
 				world={world}
 				updateWorld={updateWorld}
 				selectedRoom={null}
@@ -1119,6 +1192,7 @@ function EditorInspector({
 	if (activeTab === "world") {
 		return (
 			<RightSideBar
+				contained
 				world={world}
 				updateWorld={updateWorld}
 				selectedRoom={null}
@@ -1147,6 +1221,7 @@ function EditorInspector({
 
 	return (
 		<RightSideBar
+			contained
 			world={world}
 			updateWorld={updateWorld}
 			selectedRoom={null}

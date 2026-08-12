@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 
 import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
 import {readWorldDraft} from "@/components/world-autosave/worldDraftStorage";
@@ -74,9 +74,13 @@ describe("EditorPage loading", () => {
 
 		expect(screen.getByRole("status")).toHaveTextContent("Loading world…");
 		expect(container.querySelector("[data-map].map--loading")).toBeInTheDocument();
-		expect(screen.getByRole("button", {name: "Map"})).toBeInTheDocument();
+		expect(
+			within(container.querySelector(".leftSideBar") as HTMLElement).getByRole("button", {
+				name: "Map",
+			}),
+		).toBeInTheDocument();
 		expect(container.querySelector(".command-line")).toBeInTheDocument();
-		expect(screen.getByRole("textbox", {name: "Game command"})).toBeDisabled();
+		expect(screen.getByRole("textbox", {name: "Game command", hidden: true})).toBeDisabled();
 		expect(screen.queryByRole("button", {name: "Shop Floor"})).not.toBeInTheDocument();
 	});
 
@@ -197,7 +201,8 @@ describe("EditorPage loading", () => {
 			expect(container.querySelector("[data-map].map--loading")).not.toBeInTheDocument(),
 		);
 
-		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+		const desktopNavigation = within(container.querySelector(".leftSideBar") as HTMLElement);
+		fireEvent.click(desktopNavigation.getByRole("button", {name: "Logic"}));
 		fireEvent.click(screen.getByRole("button", {name: /Commands Define the commands/}));
 
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
@@ -207,7 +212,7 @@ describe("EditorPage loading", () => {
 		expect(screen.getByRole("button", {name: "New command"})).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Edit command"})).toBeInTheDocument();
 
-		fireEvent.click(screen.getByRole("button", {name: "Logic"}));
+		fireEvent.click(desktopNavigation.getByRole("button", {name: "Logic"}));
 
 		expect(screen.getByRole("heading", {name: "Logic"})).toBeInTheDocument();
 		expect(screen.getByText("Choose what you want to build.")).toBeInTheDocument();
