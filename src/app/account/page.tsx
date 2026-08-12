@@ -8,7 +8,6 @@ import {
 	PUBLIC_PROFILE_DISPLAY_NAME_MAX_LENGTH,
 	PUBLIC_PROFILE_WEBSITE_MAX_LENGTH,
 } from "@/auth/publicProfile";
-import {deleteWorldDraftsForUser} from "@/components/world-autosave/worldDraftStorage";
 import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 import {ModalLayer} from "@/components/overlay/Overlay";
 
@@ -196,7 +195,6 @@ export default function AccountPage() {
 			});
 			const result = (await response.json()) as {error?: {message?: string}};
 			if (!response.ok) throw new Error(result.error?.message || "The account could not be deleted.");
-			await deleteWorldDraftsForUser(account.userId).catch(() => undefined);
 			window.location.assign("/");
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "The account could not be deleted.");

@@ -5,6 +5,7 @@ import {usePathname} from "next/navigation";
 import {Header} from "./Header";
 
 const setTheme = jest.fn();
+const allowNextUnload = jest.fn();
 const prepareForNavigation = jest.fn().mockResolvedValue(true);
 
 jest.mock("next/navigation", () => ({usePathname: jest.fn()}));
@@ -13,8 +14,9 @@ jest.mock("../theme/ThemeProvider", () => ({
 }));
 jest.mock("../world-autosave/WorldAutosave", () => ({
 	WorldAutosaveIndicator: () => null,
+	WorldSaveButton: () => null,
 	WorldSwitcher: () => null,
-	useWorldAutosave: () => ({errorMessage: null, prepareForNavigation}),
+	useWorldAutosave: () => ({allowNextUnload, prepareForNavigation}),
 }));
 jest.mock("./CommandCopyAction", () => ({CommandCopyButton: () => null}));
 
@@ -22,6 +24,7 @@ describe("Header", () => {
 	beforeEach(() => {
 		jest.mocked(usePathname).mockReturnValue("/");
 		prepareForNavigation.mockReset().mockResolvedValue(true);
+		allowNextUnload.mockReset();
 	});
 
 	afterEach(() => {
@@ -96,7 +99,7 @@ describe("Header", () => {
 		expect(prepareForNavigation).toHaveBeenCalledTimes(1);
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(screen.getByRole("alert")).toHaveTextContent(
-			"Sign-out was stopped so this work remains recoverable.",
+			"Sign-out cancelled. This world still has unsaved changes.",
 		);
 	});
 

@@ -12,6 +12,7 @@ import {useTheme} from "../theme/ThemeProvider";
 import {
 	useWorldAutosave,
 	WorldAutosaveIndicator,
+	WorldSaveButton,
 	WorldSwitcher,
 } from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
@@ -26,7 +27,7 @@ export type HeaderAccount = {
 
 export function Header({account}: {account: HeaderAccount}) {
 	const {setTheme, theme} = useTheme();
-	const {errorMessage: worldSaveError, prepareForNavigation} = useWorldAutosave();
+	const {allowNextUnload, prepareForNavigation} = useWorldAutosave();
 	const pathname = usePathname();
 	const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 	const [pageMenuOpen, setPageMenuOpen] = useState(false);
@@ -67,9 +68,7 @@ export function Header({account}: {account: HeaderAccount}) {
 		setSignOutError("");
 		try {
 			if (!(await prepareForNavigation())) {
-				setSignOutError(
-					`${worldSaveError ?? "This revision has not reached the server yet."} Sign-out was stopped so this work remains recoverable.`,
-				);
+				setSignOutError("Sign-out cancelled. This world still has unsaved changes.");
 				return;
 			}
 			let token = readBrowserCsrfToken();
@@ -84,6 +83,7 @@ export function Header({account}: {account: HeaderAccount}) {
 				headers: {"x-csrf-token": token},
 			});
 			if (!response.ok) throw new Error("Sign out failed.");
+			allowNextUnload();
 			window.location.assign("/");
 		} catch (caught) {
 			setSignOutError(caught instanceof Error ? caught.message : "Sign out failed.");
@@ -158,6 +158,7 @@ export function Header({account}: {account: HeaderAccount}) {
 
 				<div className="headerUtilities">
 					<WorldAutosaveIndicator />
+					<WorldSaveButton />
 					<CommandCopyButton />
 					<button
 						type="button"

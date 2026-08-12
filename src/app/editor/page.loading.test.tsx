@@ -1,7 +1,6 @@
 import {fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 
 import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
-import {readWorldDraft} from "@/components/world-autosave/worldDraftStorage";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
@@ -12,16 +11,7 @@ jest.mock("next/navigation", () => ({
 	usePathname: () => "/worlds/8ebc3f3f-b9ca-4f75-898f-e196bae50be4",
 }));
 
-jest.mock("@/components/world-autosave/worldDraftStorage", () => ({
-	...jest.requireActual("@/components/world-autosave/worldDraftStorage"),
-	readWorldDraft: jest.fn(),
-}));
-
 describe("EditorPage loading", () => {
-	beforeEach(() => {
-		jest.mocked(readWorldDraft).mockResolvedValue(null);
-	});
-
 	const installSuccessfulEditorFetch = (world = initialWorld, revision = 1) => {
 		const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
 		Object.defineProperty(globalThis, "fetch", {
@@ -150,39 +140,6 @@ describe("EditorPage loading", () => {
 		expect(warning).toHaveBeenCalledWith(
 			"Could not load the private editor world.",
 			expect.any(Error),
-		);
-	});
-
-	it("restores a local draft based on the loaded server revision", async () => {
-		jest.spyOn(window, "scrollTo").mockImplementation(() => {});
-		const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
-		const localWorld = {
-			...initialWorld,
-			rooms: [{...initialWorld.rooms[0], name: "Recovered entrance"}, ...initialWorld.rooms.slice(1)],
-		};
-		jest.mocked(readWorldDraft).mockResolvedValue({
-			key: `world-draft:3e816c4d-b957-45dc-8523-d53ec04c8d0f:${worldId}`,
-			schemaVersion: 2,
-			userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
-			world: localWorld,
-			worldId,
-			baseServerRevision: 4,
-			updatedAt: Date.now(),
-		});
-		installSuccessfulEditorFetch(initialWorld, 4);
-
-		render(
-			<ThemeProvider>
-				<PopupProvider>
-					<WorldAutosaveProvider>
-						<EditorPage />
-					</WorldAutosaveProvider>
-				</PopupProvider>
-			</ThemeProvider>,
-		);
-
-		await waitFor(() =>
-			expect(screen.getByRole("button", {name: "Recovered entrance"})).toBeInTheDocument(),
 		);
 	});
 

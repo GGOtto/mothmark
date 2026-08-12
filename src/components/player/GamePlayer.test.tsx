@@ -1,6 +1,6 @@
 import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
-import {toID} from "@/utils/idUtils";
+import {idValue, toID} from "@/utils/idUtils";
 import {GamePlayer} from "./GamePlayer";
 import {CommandLine} from "./CommandLine";
 
@@ -60,13 +60,68 @@ describe("GamePlayer focus", () => {
 
 		await waitFor(() => expect(onCurrentRoomChange).toHaveBeenCalledWith(toID("room", "stockroom")));
 	});
+
+	it("uses live world edits while preserving the existing game state", async () => {
+		const view = render(
+			<GamePlayer world={initialWorld} startingRoomId={initialWorld.startRoomId} />,
+		);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+		fireEvent.change(input, {target: {value: "east"}});
+		fireEvent.submit(input.closest("form")!);
+		await screen.findByText(/Shelves hold boxes waiting to be unpacked/);
+
+		const editedWorld = {
+			...initialWorld,
+			rooms: initialWorld.rooms.map((room) =>
+				idValue(room.id) === "stockroom"
+					? {...room, description: "The freshly edited shelves are empty."}
+					: room,
+			),
+		};
+		view.rerender(<GamePlayer world={editedWorld} startingRoomId={editedWorld.startRoomId} />);
+		fireEvent.change(input, {target: {value: "look"}});
+		fireEvent.submit(input.closest("form")!);
+
+		await screen.findByText(/The freshly edited shelves are empty/);
+	});
+
+	it("restarts from the current world's starting room only when requested", async () => {
+		const onCurrentRoomChange = jest.fn();
+		const view = render(
+			<GamePlayer
+				world={initialWorld}
+				startingRoomId={initialWorld.startRoomId}
+				onCurrentRoomChange={onCurrentRoomChange}
+			/>,
+		);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+		fireEvent.change(input, {target: {value: "east"}});
+		fireEvent.submit(input.closest("form")!);
+		await waitFor(() =>
+			expect(onCurrentRoomChange).toHaveBeenLastCalledWith(toID("room", "stockroom")),
+		);
+
+		view.rerender(
+			<GamePlayer
+				world={initialWorld}
+				startingRoomId={toID("room", "office")}
+				onCurrentRoomChange={onCurrentRoomChange}
+			/>,
+		);
+		expect(onCurrentRoomChange).toHaveBeenLastCalledWith(toID("room", "stockroom"));
+
+		fireEvent.click(screen.getByRole("button", {name: "Restart"}));
+		await waitFor(() => expect(onCurrentRoomChange).toHaveBeenLastCalledWith(toID("room", "office")));
+		await screen.findByText(/A desk and two chairs fill the small office/);
+	});
 });
 
 describe("CommandLine", () => {
-	it("renders the player directly without a separate toolbar", () => {
+	it("renders the live player with a restart control", () => {
 		render(<CommandLine contained world={initialWorld} />);
 
 		expect(screen.queryByRole("button", {name: "Sync Room"})).not.toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Restart"})).toBeEnabled();
 		expect(screen.getByText(/Shop Floor/)).toBeInTheDocument();
 		expect(screen.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 	});
