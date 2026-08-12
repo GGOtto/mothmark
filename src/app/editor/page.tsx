@@ -50,14 +50,15 @@ import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWo
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
 import {idValue} from "@/utils/idUtils";
+import {
+	buildEditorContextSearch,
+	resolveEditorContext,
+	type EditorContext,
+	type EditorSelection,
+} from "./utils/editorContextUrl";
 import {getConnectionDraftStatus} from "./utils/editorPageUtils";
 import {loadEditorWorld as loadAuthorizedEditorWorld} from "./loadMainWorld";
 import "./page.scss";
-
-type EditorSelection = {
-	selectedId: string | null;
-	isConnectionSelected: boolean;
-};
 
 type EditorUtilityView = "editor" | "play";
 
@@ -158,6 +159,12 @@ export default function EditorPage() {
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+	const [editorSlug, setEditorSlug] = useState<string | null>(null);
+	const [editorContextReady, setEditorContextReady] = useState(false);
+	const [editorContextNotice, setEditorContextNotice] = useState<string | null>(null);
+	const [inspectorNavigationVersion, setInspectorNavigationVersion] = useState(0);
+	const editorUtilityContentRef = useRef<HTMLDivElement | null>(null);
+	const historyModeRef = useRef<"push" | "replace">("replace");
 	const mobileEditorLayout = useSyncExternalStore(
 		subscribeToMobileEditorLayout,
 		getMobileEditorLayoutSnapshot,
@@ -198,6 +205,28 @@ export default function EditorPage() {
 		setEditorWorld((world) => (typeof update === "function" ? produce(world, update) : update));
 	}, []);
 
+	const applyEditorContext = useCallback((context: EditorContext, notice: string | null) => {
+		setActiveTab(context.activeTab);
+		setSelection(context.selection);
+		setLogicSection(context.logicSection);
+		setSelectedEventId(context.selectedEventId);
+		setLogicSelection(context.logicSelection);
+		setSelectedCommandId(context.selectedCommandId);
+		setCommandSelection(context.commandSelection);
+		setSelectedItemId(context.selectedItemId);
+		setEditorContextNotice(notice);
+	}, []);
+
+	const beginEditorNavigation = useCallback(() => {
+		historyModeRef.current = "push";
+		setEditorContextNotice(null);
+		setInspectorNavigationVersion((version) => version + 1);
+	}, []);
+
+	const replaceEditorContext = useCallback(() => {
+		historyModeRef.current = "replace";
+	}, []);
+
 	useEffect(() => {
 		const abortController = new AbortController();
 
@@ -222,15 +251,17 @@ export default function EditorPage() {
 				setWorldName(loadedName);
 				setPersistedWorldRevision(revision);
 				setRestoredFromLocalDraft(restored);
-				setSelection({
-					selectedId: idValue(world.startRoomId),
-					isConnectionSelected: false,
-				});
+				const resolvedContext = resolveEditorContext(world, window.location.search);
+				applyEditorContext(resolvedContext.context, resolvedContext.notice);
 				setConnectionDraft({state: "idle"});
+				setEditorSlug(editorSlug);
 				setWorldIsLoaded(true);
-				if (window.location.pathname !== `/worlds/${editorSlug}`) {
-					window.history.replaceState(null, "", `/worlds/${editorSlug}`);
-				}
+				setEditorContextReady(true);
+				window.history.replaceState(
+					null,
+					"",
+					`/worlds/${editorSlug}${buildEditorContextSearch(resolvedContext.context)}`,
+				);
 			})
 			.catch((error: unknown) => {
 				if ((error as {name?: string}).name === "AbortError") return;
@@ -239,7 +270,7 @@ export default function EditorPage() {
 			});
 
 		return () => abortController.abort();
-	}, [requestedWorldId, updateWorld]);
+	}, [applyEditorContext, requestedWorldId, updateWorld]);
 
 	const acceptServerWorld = useCallback(async () => {
 		if (!draftConflict) return;
@@ -254,19 +285,78 @@ export default function EditorPage() {
 			setWorldName(server.worldName);
 			setPersistedWorldRevision(server.revision);
 			setRestoredFromLocalDraft(false);
-			setSelection({selectedId: idValue(server.world.startRoomId), isConnectionSelected: false});
+			const resolvedContext = resolveEditorContext(server.world, window.location.search);
+			applyEditorContext(resolvedContext.context, resolvedContext.notice);
 			setConnectionDraft({state: "idle"});
+			setEditorSlug(server.editorSlug);
 			setWorldIsLoaded(true);
+			setEditorContextReady(true);
 			setDraftConflict(null);
-			if (window.location.pathname !== `/worlds/${server.editorSlug}`) {
-				window.history.replaceState(null, "", `/worlds/${server.editorSlug}`);
-			}
+			window.history.replaceState(
+				null,
+				"",
+				`/worlds/${server.editorSlug}${buildEditorContextSearch(resolvedContext.context)}`,
+			);
 		} catch {
 			setDraftConflictError("The local draft could not be cleared. Export it before continuing.");
 		} finally {
 			setDraftConflictBusy(false);
 		}
-	}, [draftConflict, updateWorld]);
+	}, [applyEditorContext, draftConflict, updateWorld]);
+
+	const editorContext = useMemo<EditorContext>(
+		() => ({
+			activeTab,
+			selection,
+			logicSection,
+			selectedEventId,
+			logicSelection,
+			selectedCommandId,
+			commandSelection,
+			selectedItemId,
+		}),
+		[
+			activeTab,
+			commandSelection,
+			logicSection,
+			logicSelection,
+			selectedCommandId,
+			selectedEventId,
+			selectedItemId,
+			selection,
+		],
+	);
+
+	useEffect(() => {
+		if (!editorContextReady || !editorSlug) return;
+		const nextUrl = `/worlds/${editorSlug}${buildEditorContextSearch(editorContext)}`;
+		const currentUrl = `${window.location.pathname}${window.location.search}`;
+		const mode = historyModeRef.current;
+		historyModeRef.current = "replace";
+		if (currentUrl === nextUrl) return;
+		window.history[mode === "push" ? "pushState" : "replaceState"](null, "", nextUrl);
+	}, [editorContext, editorContextReady, editorSlug]);
+
+	useEffect(() => {
+		if (!editorContextReady || !editorSlug) return;
+		const handlePopState = () => {
+			const resolved = resolveEditorContext(editorWorld, window.location.search);
+			historyModeRef.current = "replace";
+			applyEditorContext(resolved.context, resolved.notice);
+			setInspectorNavigationVersion((version) => version + 1);
+			const canonicalUrl = `/worlds/${editorSlug}${buildEditorContextSearch(resolved.context)}`;
+			if (`${window.location.pathname}${window.location.search}` !== canonicalUrl) {
+				window.history.replaceState(null, "", canonicalUrl);
+			}
+		};
+		window.addEventListener("popstate", handlePopState);
+		return () => window.removeEventListener("popstate", handlePopState);
+	}, [applyEditorContext, editorContextReady, editorSlug, editorWorld]);
+
+	useEffect(() => {
+		const scroller = editorUtilityContentRef.current?.querySelector<HTMLElement>(".rightSideBar");
+		if (scroller) scroller.scrollTop = 0;
+	}, [inspectorNavigationVersion]);
 
 	const exportDraft = useCallback(() => {
 		if (!draftConflict) return;
@@ -336,6 +426,7 @@ export default function EditorPage() {
 
 	const handleTabChange = useCallback(
 		(tab: EditorTab) => {
+			beginEditorNavigation();
 			setIsAddingRoom(false);
 			setActiveTab(tab);
 			setUtilityView("editor");
@@ -348,7 +439,7 @@ export default function EditorPage() {
 			setSelectedCommandId(null);
 			setCommandSelection(null);
 		},
-		[mobileEditorLayout],
+		[beginEditorNavigation, mobileEditorLayout],
 	);
 
 	const activateUtilityView = useCallback((view: EditorUtilityView) => {
@@ -503,7 +594,10 @@ export default function EditorPage() {
 					rooms={rooms}
 					updateWorld={updateWorld}
 					selection={selection}
-					setSelection={setSelection}
+					setSelection={(nextSelection) => {
+						beginEditorNavigation();
+						setSelection(nextSelection);
+					}}
 					isAddingRoom={isAddingRoom}
 					onAddingRoomChange={setIsAddingRoom}
 					mapZoom={mapZoom}
@@ -512,17 +606,35 @@ export default function EditorPage() {
 					connectionDraft={connectionDraft}
 					setConnectionDraft={setConnectionDraft}
 					logicSection={logicSection}
-					setLogicSection={setLogicSection}
+					setLogicSection={(section) => {
+						beginEditorNavigation();
+						setLogicSection(section);
+					}}
 					selectedEventId={selectedEventId}
-					setSelectedEventId={setSelectedEventId}
+					setSelectedEventId={(eventId) => {
+						beginEditorNavigation();
+						setSelectedEventId(eventId);
+					}}
 					logicSelection={logicSelection}
 					setLogicSelection={setLogicSelection}
 					selectedCommandId={selectedCommandId}
-					setSelectedCommandId={setSelectedCommandId}
+					setSelectedCommandId={(commandId) => {
+						beginEditorNavigation();
+						setSelectedCommandId(commandId);
+					}}
 					commandSelection={commandSelection}
 					setCommandSelection={setCommandSelection}
 					selectedItemId={selectedItemId}
-					setSelectedItemId={setSelectedItemId}
+					setSelectedItemId={(itemId) => {
+						beginEditorNavigation();
+						setSelectedItemId(itemId);
+					}}
+					editorContextNotice={editorContextNotice}
+					onDismissEditorContextNotice={() => setEditorContextNotice(null)}
+					onEditorContextRecovery={(message) => {
+						replaceEditorContext();
+						setEditorContextNotice(message);
+					}}
 					persistedWorldId={persistedWorldId}
 					persistedWorldRevision={persistedWorldRevision}
 					worldName={worldName}
@@ -597,6 +709,7 @@ export default function EditorPage() {
 					</div>
 
 					<div
+						ref={editorUtilityContentRef}
 						className="editorUtilityContent"
 						role="tabpanel"
 						id="editor-utility-editor-panel"
@@ -609,19 +722,44 @@ export default function EditorPage() {
 							selectedRoom={selectedRoom}
 							selectedConnection={selectedConnection}
 							updateWorld={updateWorld}
-							onSelectedIdChange={(selectedId) => setSelection((current) => ({...current, selectedId}))}
+							onSelectedIdChange={(selectedId) => {
+								replaceEditorContext();
+								setSelection((current) => ({...current, selectedId}));
+							}}
 							onOpenItem={(itemId) => {
+								beginEditorNavigation();
 								setSelectedItemId(itemId);
 								setActiveTab("world");
 							}}
 							logicSection={logicSection}
 							logicSelection={logicSelection}
 							selectedCommandId={selectedCommandId}
-							setSelectedCommandId={setSelectedCommandId}
+							setSelectedCommandId={(commandId) => {
+								beginEditorNavigation();
+								setSelectedCommandId(commandId);
+							}}
 							commandSelection={commandSelection}
 							setCommandSelection={setCommandSelection}
 							selectedItem={selectedItem}
-							setSelectedItemId={setSelectedItemId}
+							setSelectedItemId={(itemId) => {
+								replaceEditorContext();
+								setSelectedItemId(itemId);
+							}}
+							onSelectionDeleted={(entity) => {
+								replaceEditorContext();
+								if (entity === "room") {
+									setSelection({selectedId: null, isConnectionSelected: false});
+									setEditorContextNotice("The room was deleted. Showing the map without a selection.");
+								}
+								if (entity === "connection") {
+									setSelection({selectedId: null, isConnectionSelected: false});
+									setEditorContextNotice("The connection was deleted. Showing the map without a selection.");
+								}
+								if (entity === "item") {
+									setSelectedItemId(null);
+									setEditorContextNotice("The item was deleted. Choose another item to continue.");
+								}
+							}}
 						/>
 					</div>
 
@@ -668,6 +806,9 @@ type EditorMainPanelProps = {
 	setCommandSelection: (selection: CommandSelection | null) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	editorContextNotice: string | null;
+	onDismissEditorContextNotice: () => void;
+	onEditorContextRecovery: (message: string) => void;
 	persistedWorldId: string | null;
 	persistedWorldRevision: number | null;
 	worldName: string;
@@ -701,6 +842,9 @@ function EditorMainPanel({
 	setCommandSelection,
 	selectedItemId,
 	setSelectedItemId,
+	editorContextNotice,
+	onDismissEditorContextNotice,
+	onEditorContextRecovery,
 	persistedWorldId,
 	persistedWorldRevision,
 	worldName,
@@ -754,6 +898,10 @@ function EditorMainPanel({
 						});
 						setSelectedEventId(nextEvent ? idValue(nextEvent.id) : null);
 						setLogicSelection(nextEvent ? {kind: "event", eventId: idValue(nextEvent.id)} : null);
+						onEditorContextRecovery(
+							"The event was deleted. " +
+								(nextEvent ? "The next available event is open." : "Choose another event to continue."),
+						);
 					}}
 					onDeleteCommand={() => {
 						if (!selectedCommandId) return;
@@ -771,8 +919,26 @@ function EditorMainPanel({
 						setCommandSelection(
 							nextCommand ? {kind: "command", commandId: idValue(nextCommand.id)} : null,
 						);
+						onEditorContextRecovery(
+							"The command was deleted. " +
+								(nextCommand
+									? "The next available command is open."
+									: "Showing the command library instead."),
+						);
 					}}
 				/>
+				{editorContextNotice ? (
+					<div className="editorContextNotice" role="status">
+						<span>{editorContextNotice}</span>
+						<button
+							type="button"
+							aria-label="Dismiss editor notice"
+							onClick={onDismissEditorContextNotice}
+						>
+							<X size={15} aria-hidden="true" />
+						</button>
+					</div>
+				) : null}
 
 				<div className="editorWorkspaceShell">
 					<EditorWorkspace
@@ -1196,6 +1362,7 @@ type EditorInspectorProps = {
 	setCommandSelection: (selection: CommandSelection | null) => void;
 	selectedItem: World["items"][number] | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	onSelectionDeleted: (entity: "room" | "connection" | "item") => void;
 };
 
 function EditorInspector({
@@ -1214,6 +1381,7 @@ function EditorInspector({
 	setCommandSelection,
 	selectedItem,
 	setSelectedItemId,
+	onSelectionDeleted,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
 		return (
@@ -1225,6 +1393,8 @@ function EditorInspector({
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
 				onOpenItem={onOpenItem}
+				onSelectionDeleted={() => onSelectionDeleted("room")}
+				onConnectionDeleted={() => onSelectionDeleted("connection")}
 			/>
 		);
 	}
@@ -1318,6 +1488,7 @@ function EditorInspector({
 						world={world}
 						updateWorld={updateWorld}
 						onSelectedIdChange={setSelectedItemId}
+						onDelete={() => onSelectionDeleted("item")}
 					/>
 				) : (
 					<div className="rightSideBarEmptyPanel">

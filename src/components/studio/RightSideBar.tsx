@@ -15,6 +15,8 @@ type RightSideBarProps = {
 	selectedConnection: Connection | null;
 	onSelectedIdChange?: (selectedId: string) => void;
 	onOpenItem?: (itemId: string) => void;
+	onSelectionDeleted?: () => void;
+	onConnectionDeleted?: () => void;
 	title?: string;
 	description?: string;
 	children?: ReactNode;
@@ -28,6 +30,8 @@ export function RightSideBar({
 	selectedConnection,
 	onSelectedIdChange,
 	onOpenItem,
+	onSelectionDeleted,
+	onConnectionDeleted,
 	title,
 	description,
 	children,
@@ -49,6 +53,7 @@ export function RightSideBar({
 					updateWorld={updateWorld}
 					onSelectedIdChange={onSelectedIdChange}
 					onOpenItem={onOpenItem}
+					onDelete={onSelectionDeleted}
 				/>
 			) : selectedConnection ? (
 				<ConnectionEditor
@@ -57,6 +62,7 @@ export function RightSideBar({
 					world={world}
 					updateWorld={updateWorld}
 					onSelectedIdChange={onSelectedIdChange}
+					onDelete={onConnectionDeleted}
 				/>
 			) : title ? (
 				<EmptyTabPanel title={title} description={description} />

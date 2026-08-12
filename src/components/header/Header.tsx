@@ -112,6 +112,47 @@ export function Header({account}: {account: HeaderAccount}) {
 						<MothmarkMark className="headerLogoMark" />
 						<span className="headerTitle">Mothmark</span>
 					</Link>
+					<nav className="headerPrimaryNav" aria-label="Primary navigation">
+						<div className="headerMenuAnchor">
+							<button
+								ref={pageTriggerRef}
+								type="button"
+								className="headerPageSelector"
+								aria-haspopup="menu"
+								aria-expanded={pageMenuOpen}
+								aria-label={`Choose page, current: ${currentPageLabel}`}
+								onClick={() => setPageMenuOpen((open) => !open)}
+							>
+								<span>{currentPageLabel}</span>
+								<ChevronDown size={17} aria-hidden="true" />
+							</button>
+							{pageMenuOpen ? (
+								<AnchoredLayer
+									anchorRef={pageTriggerRef}
+									ariaLabel="Pages"
+									className="headerPageMenu"
+									onClose={() => setPageMenuOpen(false)}
+									preferredWidth={200}
+									role="menu"
+								>
+									<Link role="menuitem" href="/" onClick={closeMenus}>
+										Home
+									</Link>
+									<Link role="menuitem" href="/worlds" onClick={closeMenus}>
+										Create
+									</Link>
+									<Link role="menuitem" href="/play" onClick={closeMenus}>
+										Play
+									</Link>
+									{administrator ? (
+										<Link role="menuitem" href="/admin" onClick={closeMenus}>
+											Admin
+										</Link>
+									) : null}
+								</AnchoredLayer>
+							) : null}
+						</div>
+					</nav>
 					<WorldSwitcher showLoading={/^\/worlds\/[^/]+$/.test(pathname)} />
 				</div>
 
@@ -232,48 +273,6 @@ export function Header({account}: {account: HeaderAccount}) {
 						</div>
 					)}
 				</div>
-
-				<nav className="headerPrimaryNav" aria-label="Primary navigation">
-					<div className="headerMenuAnchor">
-						<button
-							ref={pageTriggerRef}
-							type="button"
-							className="headerPageSelector"
-							aria-haspopup="menu"
-							aria-expanded={pageMenuOpen}
-							aria-label={`Choose page, current: ${currentPageLabel}`}
-							onClick={() => setPageMenuOpen((open) => !open)}
-						>
-							<span>{currentPageLabel}</span>
-							<ChevronDown size={17} aria-hidden="true" />
-						</button>
-						{pageMenuOpen ? (
-							<AnchoredLayer
-								anchorRef={pageTriggerRef}
-								ariaLabel="Pages"
-								className="headerPageMenu"
-								onClose={() => setPageMenuOpen(false)}
-								preferredWidth={200}
-								role="menu"
-							>
-								<Link role="menuitem" href="/" onClick={closeMenus}>
-									Home
-								</Link>
-								<Link role="menuitem" href="/worlds" onClick={closeMenus}>
-									Create
-								</Link>
-								<Link role="menuitem" href="/play" onClick={closeMenus}>
-									Play
-								</Link>
-								{administrator ? (
-									<Link role="menuitem" href="/admin" onClick={closeMenus}>
-										Admin
-									</Link>
-								) : null}
-							</AnchoredLayer>
-						) : null}
-					</div>
-				</nav>
 
 				<div className="headerMobile">
 					<button

@@ -47,6 +47,7 @@ type ConnectionEditorProps = {
 	world?: World;
 	updateWorld?: UpdateWorld;
 	onSelectedIdChange?: (selectedId: string) => void;
+	onDelete?: () => void;
 };
 
 export function ConnectionEditor({
@@ -55,6 +56,7 @@ export function ConnectionEditor({
 	world,
 	updateWorld,
 	onSelectedIdChange,
+	onDelete,
 }: ConnectionEditorProps) {
 	const {theme} = useTheme();
 	const duplicateConnectionId = useMemo(() => {
@@ -133,6 +135,7 @@ export function ConnectionEditor({
 				}}
 				className="connectionEditorUniversal"
 				allowDelete={true}
+				onDelete={onDelete}
 			/>
 		</div>
 	);

@@ -15,6 +15,7 @@ type RoomEditorProps = {
 	updateWorld?: UpdateWorld;
 	onSelectedIdChange?: (selectedId: string) => void;
 	onOpenItem?: (itemId: string) => void;
+	onDelete?: () => void;
 };
 
 export function RoomEditor({
@@ -23,6 +24,7 @@ export function RoomEditor({
 	updateWorld,
 	onSelectedIdChange,
 	onOpenItem,
+	onDelete,
 }: RoomEditorProps) {
 	const {theme} = useTheme();
 	const duplicateRoomId = useMemo(() => {
@@ -80,6 +82,7 @@ export function RoomEditor({
 				}}
 				className="roomEditorUniversal"
 				allowDelete={true}
+				onDelete={onDelete}
 			/>
 
 			{world && updateWorld ? (

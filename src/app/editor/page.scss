@@ -231,6 +231,39 @@
 		container-type: inline-size;
 	}
 
+	.editorContextNotice {
+		display: flex;
+		min-height: 38px;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 7px 12px 7px 16px;
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-strong);
+		color: var(--color-text);
+		font-size: 13px;
+
+		button {
+			display: inline-flex;
+			width: 28px;
+			height: 28px;
+			flex: 0 0 auto;
+			align-items: center;
+			justify-content: center;
+			border: 0;
+			border-radius: var(--radius-control);
+			background: transparent;
+			color: var(--color-text-muted);
+			cursor: pointer;
+
+			&:hover {
+				background: var(--color-surface);
+				color: var(--color-text);
+			}
+		}
+	}
+
 	.editorToolbar {
 		display: flex;
 		align-items: center;
