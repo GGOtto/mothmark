@@ -3,8 +3,10 @@
 import {ExternalLink} from "lucide-react";
 import {useEffect, useState} from "react";
 
+import {readOptionalJson} from "@/auth/apiResponse";
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {usePopup} from "@/components/popup/Popup";
+import {useWorldAutosave} from "@/components/world-autosave/WorldAutosave";
 
 import "./PublishingPanel.scss";
 
@@ -21,6 +23,22 @@ type Publication = {
 	unpublishedChanges: boolean;
 };
 
+type PublicationResponse = {data?: Publication | null; error?: {message?: string}};
+
+async function readPublicationResponse(
+	response: Response,
+	fallbackError: string,
+): Promise<PublicationResponse | undefined> {
+	let body: PublicationResponse | undefined;
+	try {
+		body = await readOptionalJson(response);
+	} catch {
+		throw new Error(fallbackError);
+	}
+	if (!response.ok) throw new Error(body?.error?.message || fallbackError);
+	return body;
+}
+
 export function PublishingPanel({
 	worldId,
 	worldName,
@@ -31,6 +49,7 @@ export function PublishingPanel({
 	revision: number | null;
 }) {
 	const popup = usePopup();
+	const {confirmCurrentRevision, isDirty, status: saveStatus} = useWorldAutosave();
 	const [eligible, setEligible] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [publication, setPublication] = useState<Publication | null>(null);
@@ -39,6 +58,7 @@ export function PublishingPanel({
 	const [summary, setSummary] = useState("");
 	const [visibility, setVisibility] = useState<"listed" | "unlisted">("listed");
 	const [working, setWorking] = useState(false);
+	const [waitingForSave, setWaitingForSave] = useState(false);
 	const [error, setError] = useState("");
 
 	useEffect(() => {
@@ -46,13 +66,16 @@ export function PublishingPanel({
 		let cancelled = false;
 		Promise.all([fetch("/api/account"), fetch(`/api/world/${worldId}/publication`)])
 			.then(async ([accountResponse, publicationResponse]) => {
-				const accountBody = (await accountResponse.json()) as {data?: {accountType?: string}};
-				if (cancelled || accountBody.data?.accountType !== "registered") return;
+				const accountBody = await readOptionalJson<{data?: {accountType?: string}}>(accountResponse);
+				if (cancelled || !accountResponse.ok || accountBody?.data?.accountType !== "registered") return;
 				setEligible(true);
 				if (publicationResponse.ok) {
-					const body = (await publicationResponse.json()) as {data?: Publication | null};
-					setPublication(body.data ?? null);
-					if (body.data) {
+					const body = await readPublicationResponse(
+						publicationResponse,
+						"Publishing details could not be loaded.",
+					);
+					setPublication(body?.data ?? null);
+					if (body?.data) {
 						setTitle(body.data.title);
 						setSummary(body.data.summary);
 						setVisibility(body.data.visibility);
@@ -75,48 +98,78 @@ export function PublishingPanel({
 		setWorking(true);
 		setError("");
 		try {
+			setWaitingForSave(true);
+			const confirmed = await confirmCurrentRevision();
+			setWaitingForSave(false);
+			if (!confirmed.ok) {
+				throw new Error(`${confirmed.message} Publication was not changed.`);
+			}
 			const csrf = readBrowserCsrfToken();
 			if (!csrf) throw new Error("The editor security token is missing.");
-			const response = await fetch(`/api/world/${worldId}/publication`, {
+			const response = await fetch(`/api/world/${confirmed.id}/publication`, {
 				method: "POST",
 				headers: {"content-type": "application/json", "x-csrf-token": csrf},
-				body: JSON.stringify({expectedRevision: revision, title, slug, summary, visibility}),
+				body: JSON.stringify({
+					expectedRevision: confirmed.revision,
+					title,
+					slug,
+					summary,
+					visibility,
+				}),
 			});
-			const body = (await response.json()) as {data?: Publication; error?: {message?: string}};
-			if (!response.ok || !body.data)
-				throw new Error(body.error?.message || "The world could not be published.");
+			const body = await readPublicationResponse(response, "The world could not be published.");
+			if (!body?.data) throw new Error("The world could not be published.");
 			setPublication(body.data);
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "The world could not be published.");
 		} finally {
+			setWaitingForSave(false);
 			setWorking(false);
 		}
 	};
 
-	const mutatePublication = async (method: "PUT" | "PATCH", body: unknown) => {
+	const mutatePublication = async (
+		method: "PUT" | "PATCH",
+		body: Record<string, unknown>,
+		options?: {publishCurrentRevision?: boolean},
+	) => {
 		setWorking(true);
 		setError("");
 		try {
+			let requestWorldId = worldId;
+			let requestBody = body;
+			if (options?.publishCurrentRevision) {
+				setWaitingForSave(true);
+				const confirmed = await confirmCurrentRevision();
+				setWaitingForSave(false);
+				if (!confirmed.ok) {
+					throw new Error(`${confirmed.message} Publication was not changed.`);
+				}
+				requestWorldId = confirmed.id;
+				requestBody = {...body, expectedRevision: confirmed.revision};
+			}
 			const csrf = readBrowserCsrfToken();
 			if (!csrf) throw new Error("The editor security token is missing.");
-			const response = await fetch(`/api/world/${worldId}/publication`, {
+			const response = await fetch(`/api/world/${requestWorldId}/publication`, {
 				method,
 				headers: {"content-type": "application/json", "x-csrf-token": csrf},
-				body: JSON.stringify(body),
+				body: JSON.stringify(requestBody),
 			});
-			const result = (await response.json()) as {data?: Publication; error?: {message?: string}};
-			if (!response.ok || !result.data)
-				throw new Error(result.error?.message || "The publication could not be updated.");
+			const result = await readPublicationResponse(response, "The publication could not be updated.");
+			if (!result?.data) throw new Error("The publication could not be updated.");
 			setPublication(result.data);
 			setVisibility(result.data.visibility);
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "The publication could not be updated.");
 		} finally {
+			setWaitingForSave(false);
 			setWorking(false);
 		}
 	};
 
-	const hasUnpublishedChanges = publication ? revision !== publication.worldRevision : false;
+	const hasUnpublishedChanges = publication
+		? isDirty || revision !== publication.worldRevision
+		: false;
 
 	return publication ? (
 		<section className="publishingPanel" aria-labelledby="publishing-title">
@@ -125,6 +178,9 @@ export function PublishingPanel({
 				Release {publication.release.number} uses saved revision {publication.worldRevision}.
 				{hasUnpublishedChanges ? " The editor has unpublished changes." : " It matches the editor."}
 			</p>
+			{isDirty ? (
+				<p role="status">Your latest edits will be saved before this release is published.</p>
+			) : null}
 			<dl>
 				<div>
 					<dt>Public title</dt>
@@ -148,7 +204,7 @@ export function PublishingPanel({
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
-					void mutatePublication("PUT", {expectedRevision: revision, title, summary});
+					void mutatePublication("PUT", {title, summary}, {publishCurrentRevision: true});
 				}}
 			>
 				<label htmlFor="publication-update-title">Public title for next release</label>
@@ -171,7 +227,7 @@ export function PublishingPanel({
 					type="submit"
 					disabled={working || !hasUnpublishedChanges || publication.status === "suspended"}
 				>
-					{working ? "Working…" : "Publish update"}
+					{waitingForSave ? "Saving before publishing…" : working ? "Publishing…" : "Publish update"}
 				</button>
 			</form>
 			<div className="publishingPanelControls">
@@ -231,7 +287,11 @@ export function PublishingPanel({
 	) : (
 		<section className="publishingPanel" aria-labelledby="publishing-title">
 			<h2 id="publishing-title">Publishing</h2>
-			<p>Publish the current server-saved revision as an immutable first release.</p>
+			<p>
+				{isDirty || saveStatus === "saving"
+					? "Your latest edits will be saved first, then this exact revision will be published automatically."
+					: "Publish the current server-saved revision as an immutable first release."}
+			</p>
 			<form onSubmit={(event) => void publish(event)}>
 				<label htmlFor="publication-title">Public title</label>
 				<input
@@ -272,7 +332,11 @@ export function PublishingPanel({
 					</p>
 				) : null}
 				<button type="submit" disabled={working}>
-					{working ? "Publishing…" : "Publish current version"}
+					{waitingForSave
+						? "Saving before publishing…"
+						: working
+							? "Publishing…"
+							: "Publish current version"}
 				</button>
 			</form>
 		</section>

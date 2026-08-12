@@ -5,6 +5,7 @@ import {usePathname} from "next/navigation";
 import {Header} from "./Header";
 
 const setTheme = jest.fn();
+const prepareForNavigation = jest.fn().mockResolvedValue(true);
 
 jest.mock("next/navigation", () => ({usePathname: jest.fn()}));
 jest.mock("../theme/ThemeProvider", () => ({
@@ -13,11 +14,20 @@ jest.mock("../theme/ThemeProvider", () => ({
 jest.mock("../world-autosave/WorldAutosave", () => ({
 	WorldAutosaveIndicator: () => null,
 	WorldSwitcher: () => null,
+	useWorldAutosave: () => ({errorMessage: null, prepareForNavigation}),
 }));
 jest.mock("./CommandCopyAction", () => ({CommandCopyButton: () => null}));
 
 describe("Header", () => {
-	beforeEach(() => jest.mocked(usePathname).mockReturnValue("/"));
+	beforeEach(() => {
+		jest.mocked(usePathname).mockReturnValue("/");
+		prepareForNavigation.mockReset().mockResolvedValue(true);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+		Reflect.deleteProperty(globalThis, "fetch");
+	});
 
 	it("shows Home, Create, and Play in the left page selector", async () => {
 		const user = userEvent.setup();
@@ -64,6 +74,30 @@ describe("Header", () => {
 
 		await user.click(within(menu).getByRole("button", {name: "Light"}));
 		expect(setTheme).toHaveBeenCalledWith("light");
+	});
+
+	it("stops sign-out when the current editor revision cannot be server-confirmed", async () => {
+		const user = userEvent.setup();
+		prepareForNavigation.mockResolvedValue(false);
+		const fetchMock = jest.fn();
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: fetchMock,
+		});
+		jest.mocked(usePathname).mockReturnValue("/worlds/private-world");
+		render(
+			<Header account={{accountType: "registered", siteRole: "user", username: "archivekeeper"}} />,
+		);
+
+		await user.click(screen.getByRole("button", {name: /archivekeeper/}));
+		await user.click(screen.getByRole("menuitem", {name: "Sign out"}));
+
+		expect(prepareForNavigation).toHaveBeenCalledTimes(1);
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			"Sign-out was stopped so this work remains recoverable.",
+		);
 	});
 
 	it("adds the Admin selection only for administrators", async () => {

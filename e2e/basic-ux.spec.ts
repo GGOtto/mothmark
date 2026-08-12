@@ -119,6 +119,7 @@ async function useDeterministicEditorWorld(
 	}
 	let bootstrapCount = 0;
 	let saveCount = 0;
+	let saveFailuresRemaining = 0;
 	const bootstrapRequests: BootstrapRequest[] = [];
 	await page.route("**/api/auth/csrf", async (route) => {
 		await route.fulfill({
@@ -324,6 +325,11 @@ async function useDeterministicEditorWorld(
 		}
 
 		if (route.request().method() === "PUT") {
+			if (saveFailuresRemaining > 0) {
+				saveFailuresRemaining -= 1;
+				await route.fulfill({status: 503, body: ""});
+				return;
+			}
 			const body = route.request().postDataJSON() as {
 				name?: string;
 				world?: typeof initialWorld;
@@ -360,6 +366,9 @@ async function useDeterministicEditorWorld(
 		worldSlug: storedWorlds.get(worldId)?.editorSlug ?? "private-test-world",
 		bootstrapCount: () => bootstrapCount,
 		bootstrapRequests: () => [...bootstrapRequests],
+		failNextSave: () => {
+			saveFailuresRemaining += 1;
+		},
 		saveCount: () => saveCount,
 		worlds: () => [...storedWorlds.values()],
 		worldStore: storedWorlds,
@@ -829,7 +838,7 @@ test("private worlds persist for one browser and remain unresolved for another",
 	await expect(nameField).toBeVisible();
 	await nameField.fill("A private entrance");
 	await expect.poll(first.saveCount, {timeout: 15_000}).toBe(1);
-	await expect(firstPage.getByText("Saving...")).not.toBeVisible({timeout: 5_000});
+	await expect(firstPage.getByText("Saved", {exact: true})).toBeVisible();
 	await firstPage.reload();
 	await expect(firstPage.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
 		"A private entrance",
@@ -850,6 +859,74 @@ test("private worlds persist for one browser and remain unresolved for another",
 	await secondContext.close();
 });
 
+test("a local edit recovers from a transient save failure and publishes only after saving", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	let publishedRevision: number | null = null;
+	editor.failNextSave();
+	await page.route("**/api/account", (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {accountType: "registered"}}),
+		}),
+	);
+	await page.route(`**/api/world/${editor.worldId}/publication`, async (route) => {
+		if (route.request().method() === "GET") {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify({data: null}),
+			});
+			return;
+		}
+		const input = route.request().postDataJSON() as {expectedRevision: number};
+		publishedRevision = input.expectedRevision;
+		expect(editor.saveCount()).toBe(1);
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					id: "publication-id",
+					slug: "recovered-world",
+					title: "Recovered world",
+					summary: "Recovered safely before publishing.",
+					visibility: "listed",
+					status: "published",
+					release: {number: 1, publishedAt: "2026-08-12T12:00:00.000Z"},
+					worldRevision: input.expectedRevision,
+					currentWorldRevision: input.expectedRevision,
+					unpublishedChanges: false,
+				},
+			}),
+		});
+	});
+
+	await page.goto(`/worlds/${editor.worldSlug}`);
+	await page.getByRole("textbox", {name: "Name", exact: true}).fill("Recovered entrance");
+	await expect(page.locator(".worldAutosaveIndicator")).toContainText("Save failed");
+	await expect(page.getByRole("button", {name: "Retry"})).toBeVisible();
+
+	await page.reload();
+	await expect(page.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
+		"Recovered entrance",
+	);
+	await page.getByRole("button", {name: "World settings"}).click();
+	await page.getByLabel("Short summary").fill("Recovered safely before publishing.");
+	await page.getByRole("button", {name: "Publish current version"}).click();
+
+	await expect(page.getByText(/Release 1 uses saved revision 2/)).toBeVisible();
+	expect(publishedRevision).toBe(2);
+	await page.reload();
+	await expect(page.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
+		"Recovered entrance",
+	);
+	expect(browserErrors.filter((error) => !error.includes("status of 503"))).toEqual([]);
+});
+
 test("two tabs surface a revision conflict before switching away", async ({browser}) => {
 	const context = await browser.newContext();
 	const firstPage = await context.newPage();
@@ -867,7 +944,8 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	await firstPage.getByRole("button", {name: /Current world: Private test world/}).click();
 	await firstPage.getByRole("menuitem", {name: "View all worlds"}).click();
 	await expect(firstPage).toHaveURL(/\/worlds$/);
-	expect(first.saveCount()).toBe(1);
+	expect(first.saveCount()).toBeGreaterThanOrEqual(1);
+	expect(first.worlds()[0].world.rooms[0].name).toBe("First tab revision");
 
 	await secondName.fill("Second tab revision");
 	await expect
@@ -1413,7 +1491,15 @@ test("mobile command editing keeps every authoring control reachable without ove
 test("a registered owner publishes the current saved world from world settings", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const environment = await useDeterministicEditorWorld(page);
-	let publishRequest: unknown;
+	let publishRequest:
+		| {
+				expectedRevision: number;
+				title: string;
+				slug: string;
+				summary: string;
+				visibility: "listed" | "unlisted";
+		  }
+		| undefined;
 
 	await page.route("**/api/account", (route) =>
 		route.fulfill({
@@ -1431,7 +1517,8 @@ test("a registered owner publishes the current saved world from world settings",
 			});
 			return;
 		}
-		publishRequest = route.request().postDataJSON();
+		publishRequest = route.request().postDataJSON() as typeof publishRequest;
+		if (!publishRequest) throw new Error("The publication request body is missing.");
 		await route.fulfill({
 			status: 201,
 			contentType: "application/json",
@@ -1444,8 +1531,8 @@ test("a registered owner publishes the current saved world from world settings",
 					visibility: "listed",
 					status: "published",
 					release: {number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
-					worldRevision: 1,
-					currentWorldRevision: 1,
+					worldRevision: publishRequest.expectedRevision,
+					currentWorldRevision: publishRequest.expectedRevision,
 					unpublishedChanges: false,
 				},
 			}),
@@ -1460,13 +1547,14 @@ test("a registered owner publishes the current saved world from world settings",
 	await page.getByLabel("Short summary").fill("A compact public world.");
 	await page.getByRole("button", {name: "Publish current version"}).click();
 
-	await expect(page.getByText("Release 1 uses saved revision 1.", {exact: false})).toBeVisible();
+	await expect(page.getByText(/Release 1 uses saved revision \d+\./)).toBeVisible();
 	await expect(page.getByRole("link", {name: "Open published world"})).toHaveAttribute(
 		"href",
 		"/play/quiet-archive",
 	);
+	const savedRevision = environment.worldStore.get(environment.worldId)?.revision;
 	expect(publishRequest).toEqual({
-		expectedRevision: 1,
+		expectedRevision: savedRevision,
 		title: "Quiet archive",
 		slug: "quiet-archive",
 		summary: "A compact public world.",

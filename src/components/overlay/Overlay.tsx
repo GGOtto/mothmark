@@ -100,7 +100,8 @@ function useModalBehavior({
 
 	useEffect(() => {
 		if (!active) return;
-		capturedReturnFocus.current = returnFocusRef?.current ?? (document.activeElement as HTMLElement);
+		const explicitReturnFocus = returnFocusRef?.current;
+		capturedReturnFocus.current = explicitReturnFocus ?? (document.activeElement as HTMLElement);
 		const unlock = lockBodyScroll();
 		const surface = surfaceRef.current;
 		const preferred = initialFocusRef?.current;
@@ -109,7 +110,7 @@ function useModalBehavior({
 
 		return () => {
 			unlock();
-			const focusTarget = returnFocusRef?.current ?? capturedReturnFocus.current;
+			const focusTarget = explicitReturnFocus ?? capturedReturnFocus.current;
 			if (focusTarget?.isConnected) focusTarget.focus();
 		};
 	}, [active, initialFocusRef, returnFocusRef, surfaceRef]);
@@ -313,7 +314,10 @@ export function AnchoredLayer({
 		});
 	}, [anchorRef, matchViewportWidth, mobilePresentation, preferredWidth]);
 
-	useLayoutEffect(() => updatePosition(), [updatePosition]);
+	useLayoutEffect(() => {
+		const frame = window.requestAnimationFrame(updatePosition);
+		return () => window.cancelAnimationFrame(frame);
+	}, [updatePosition]);
 	useVisualViewport(true, updatePosition);
 
 	useEffect(() => {
@@ -348,10 +352,11 @@ export function AnchoredLayer({
 
 	useEffect(() => {
 		if (mobileSheet) return;
+		const anchor = anchorRef.current;
 		const firstFocusable = surfaceRef.current ? focusableElements(surfaceRef.current)[0] : undefined;
 		(firstFocusable ?? surfaceRef.current)?.focus();
 		return () => {
-			if (anchorRef.current?.isConnected) anchorRef.current.focus();
+			if (anchor?.isConnected) anchor.focus();
 		};
 	}, [anchorRef, mobileSheet]);
 
