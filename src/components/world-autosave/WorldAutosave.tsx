@@ -1,6 +1,6 @@
 "use client";
 
-import {ChevronDown, RotateCcw, Save} from "lucide-react";
+import {ChevronDown, RotateCcw} from "lucide-react";
 import {
 	createContext,
 	useCallback,
@@ -609,7 +609,7 @@ export function useWorldAutosaveRegistration({
 }
 
 export function WorldAutosaveIndicator() {
-	const {errorMessage, isDirty, saveNow, status, target} = useWorldAutosave();
+	const {errorMessage, isDirty, status, target} = useWorldAutosave();
 	if (!target) return null;
 	const visibleStatus = status === "error" ? "error" : isDirty ? "saving" : "saved";
 
@@ -625,11 +625,6 @@ export function WorldAutosaveIndicator() {
 					: visibleStatus === "saved"
 						? "Saved"
 						: "Changes not saved"}
-				{visibleStatus === "error" ? (
-					<button type="button" onClick={() => void saveNow()}>
-						Save now
-					</button>
-				) : null}
 			</span>
 		</span>
 	);
@@ -773,24 +768,19 @@ export function WorldResetButton() {
 	);
 }
 
-/** Kept for debugging and recovery, but intentionally not rendered in the header. */
 export function WorldSaveButton() {
-	const {isDirty, saveNow, status, target} = useWorldAutosave();
+	const {saveNow, status, target} = useWorldAutosave();
 
-	if (!target) return null;
-
-	const label = status === "saving" ? "Saving…" : "Save";
+	if (!target || status !== "error") return null;
 
 	return (
 		<button
 			type="button"
-			className={`worldSaveButton ${isDirty ? "worldSaveButtonDirty" : ""}`}
+			className="worldSaveButton"
 			onClick={() => void saveNow()}
-			disabled={!isDirty && status !== "error"}
-			title={isDirty ? "Save world changes (Ctrl+S or Cmd+S)" : "World changes are saved"}
+			title="Retry saving this world"
 		>
-			<Save size={15} strokeWidth={2.4} aria-hidden="true" />
-			<span>{label}</span>
+			Retry
 		</button>
 	);
 }

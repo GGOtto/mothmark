@@ -14,18 +14,6 @@
 	font-weight: 500;
 	letter-spacing: 0.01em;
 	white-space: nowrap;
-
-	button {
-		padding: 0;
-		border: 0;
-		background: transparent;
-		color: var(--color-action);
-		font: inherit;
-		font-weight: 650;
-		text-decoration: underline;
-		text-underline-offset: 2px;
-		cursor: pointer;
-	}
 }
 
 .worldAutosaveIndicator--error {
@@ -85,25 +73,20 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 6px;
-	height: 32px;
+	height: 28px;
 	box-sizing: border-box;
-	padding: 0 10px;
-	border: 1px solid var(--chrome-border);
+	padding: 0 7px;
+	border: 1px solid transparent;
 	border-radius: var(--radius-control);
 	background: transparent;
-	color: var(--color-frame-text);
+	color: var(--color-action);
 	font: inherit;
-	font-size: 13px;
+	font-size: 12px;
 	font-weight: 650;
-	box-shadow: none;
 	cursor: pointer;
-	transition:
-		background-color 120ms ease,
-		border-color 120ms ease,
-		color 120ms ease;
+	transition: background-color 120ms ease;
 
-	&:hover:not(:disabled) {
+	&:hover {
 		background: var(--chrome-raised);
 	}
 
@@ -111,14 +94,4 @@
 		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
-
-	&:disabled {
-		color: var(--chrome-muted);
-		cursor: default;
-	}
-}
-
-.worldSaveButtonDirty {
-	border-color: var(--color-action);
-	color: var(--color-action);
 }

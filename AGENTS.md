@@ -129,8 +129,9 @@
 - Preserve a property inspector's scroll position when editing the current selection. Scroll to the
   top only when the user navigates to a different entity or editor view.
 - Treat the in-memory editor world as the source for authoring and the embedded player. Server saving
-  is a serialized, non-blocking background sync with a quiet status, an explicit Save action, and
-  Ctrl/Cmd+S; player access and ordinary editing must never wait for a save.
+  is a serialized, non-blocking background sync with a quiet status and Ctrl/Cmd+S; player access and
+  ordinary editing must never wait for a save. Do not show a manual save control during healthy
+  editing or autosave; surface only a quiet Retry action after a visible save failure.
 - Present active account sessions as structured records rather than plain bullet text, and keep a
   self-service action for signing out every device. Derive a short browser-and-device label when the
   session is created; do not retain the raw user-agent string or add fingerprinting data just to make
