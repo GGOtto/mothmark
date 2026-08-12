@@ -137,7 +137,7 @@ the full task definitions but do not imply a different sequence.
 
 ## Workstream — Reliability and responsive foundations
 
-- [ ] **F01 — Make world saving immediate, quiet, and recoverable.**
+- [x] **F01 — Make world saving immediate, quiet, and recoverable.**
 
   **Outcome:** Authors can edit continuously without thinking about saving, losing work, or choosing
   between a stale local draft and the server copy.
