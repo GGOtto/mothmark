@@ -1,8 +1,9 @@
 "use client";
 
 import type React from "react";
-import {useCallback, useEffect, useMemo, useState, useSyncExternalStore} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from "react";
 import {produce} from "immer";
+import {X} from "lucide-react";
 import {usePathname} from "next/navigation";
 import {
 	ToolBar,
@@ -163,6 +164,15 @@ export default function EditorPage() {
 	);
 	const [utilityViewOverride, setUtilityView] = useState<EditorUtilityView | null>(null);
 	const utilityView = utilityViewOverride ?? (mobileEditorLayout ? "play" : "editor");
+	const [utilityCollapsedOverride, setUtilityCollapsed] = useState<boolean | null>(null);
+	const utilityCollapsed = utilityCollapsedOverride ?? mobileEditorLayout;
+	const [desktopUtilityWidth, setDesktopUtilityWidth] = useState(380);
+	const [mobileUtilityHeight, setMobileUtilityHeight] = useState(280);
+	const utilityResizeRef = useRef<{
+		pointerId: number;
+		startPosition: number;
+		startSize: number;
+	} | null>(null);
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
@@ -323,17 +333,84 @@ export default function EditorPage() {
 		setMapRecenterRequest((request) => request + 1);
 	}, [updateWorld]);
 
-	const handleTabChange = useCallback((tab: EditorTab) => {
-		setActiveTab(tab);
-		setUtilityView("editor");
-		if (tab !== "logic") return;
+	const handleTabChange = useCallback(
+		(tab: EditorTab) => {
+			setActiveTab(tab);
+			setUtilityView("editor");
+			setUtilityCollapsed(mobileEditorLayout);
+			if (tab !== "logic") return;
 
-		setLogicSection("home");
-		setSelectedEventId(null);
-		setLogicSelection(null);
-		setSelectedCommandId(null);
-		setCommandSelection(null);
+			setLogicSection("home");
+			setSelectedEventId(null);
+			setLogicSelection(null);
+			setSelectedCommandId(null);
+			setCommandSelection(null);
+		},
+		[mobileEditorLayout],
+	);
+
+	const activateUtilityView = useCallback((view: EditorUtilityView) => {
+		setUtilityView(view);
+		setUtilityCollapsed(false);
 	}, []);
+
+	function clampUtilitySize(size: number): number {
+		if (mobileEditorLayout) {
+			return Math.round(Math.max(140, Math.min(window.innerHeight * 0.72, size)));
+		}
+		return Math.round(Math.max(310, Math.min(Math.min(640, window.innerWidth - 320), size)));
+	}
+
+	function resizeUtility(size: number): void {
+		const nextSize = clampUtilitySize(size);
+		if (mobileEditorLayout) setMobileUtilityHeight(nextSize);
+		else setDesktopUtilityWidth(nextSize);
+	}
+
+	function handleUtilityResizeStart(event: React.PointerEvent<HTMLDivElement>): void {
+		if (utilityCollapsed) return;
+		event.preventDefault();
+		event.currentTarget.setPointerCapture(event.pointerId);
+		utilityResizeRef.current = {
+			pointerId: event.pointerId,
+			startPosition: mobileEditorLayout ? event.clientY : event.clientX,
+			startSize: mobileEditorLayout ? mobileUtilityHeight : desktopUtilityWidth,
+		};
+	}
+
+	function handleUtilityResizeMove(event: React.PointerEvent<HTMLDivElement>): void {
+		const resize = utilityResizeRef.current;
+		if (!resize || resize.pointerId !== event.pointerId) return;
+		const position = mobileEditorLayout ? event.clientY : event.clientX;
+		resizeUtility(resize.startSize + resize.startPosition - position);
+	}
+
+	function handleUtilityResizeEnd(event: React.PointerEvent<HTMLDivElement>): void {
+		if (utilityResizeRef.current?.pointerId !== event.pointerId) return;
+		utilityResizeRef.current = null;
+		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+			event.currentTarget.releasePointerCapture(event.pointerId);
+		}
+	}
+
+	function handleUtilityResizeKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+		const increment = 24;
+		const currentSize = mobileEditorLayout ? mobileUtilityHeight : desktopUtilityWidth;
+		const delta = mobileEditorLayout
+			? event.key === "ArrowUp"
+				? increment
+				: event.key === "ArrowDown"
+					? -increment
+					: 0
+			: event.key === "ArrowLeft"
+				? increment
+				: event.key === "ArrowRight"
+					? -increment
+					: 0;
+		if (!delta) return;
+		event.preventDefault();
+		resizeUtility(currentSize + delta);
+	}
 
 	useWorldAutosaveRegistration({
 		ready: worldIsLoaded,
@@ -452,28 +529,68 @@ export default function EditorPage() {
 					}}
 				/>
 
-				<aside className="editorUtilityPanel" aria-label="Editor utility panel">
-					<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
-						<button
-							type="button"
-							role="tab"
-							id="editor-utility-editor-tab"
-							aria-controls="editor-utility-editor-panel"
-							aria-selected={utilityView === "editor"}
-							onClick={() => setUtilityView("editor")}
-						>
-							Editor
-						</button>
-						<button
-							type="button"
-							role="tab"
-							id="editor-utility-play-tab"
-							aria-controls="editor-utility-play-panel"
-							aria-selected={utilityView === "play"}
-							onClick={() => setUtilityView("play")}
-						>
-							Play
-						</button>
+				<aside
+					className={`editorUtilityPanel editorUtilityPanel--${utilityView} ${utilityCollapsed ? "editorUtilityPanel--collapsed" : ""}`}
+					aria-label="Editor utility panel"
+					style={
+						{
+							"--editor-utility-height": `${mobileUtilityHeight}px`,
+							"--editor-utility-width": `${desktopUtilityWidth}px`,
+						} as React.CSSProperties
+					}
+				>
+					{!utilityCollapsed ? (
+						<div
+							className="editorUtilityResizeHandle"
+							role="separator"
+							aria-label="Resize editor utility panel"
+							aria-orientation={mobileEditorLayout ? "horizontal" : "vertical"}
+							aria-valuemin={mobileEditorLayout ? 140 : 310}
+							aria-valuemax={mobileEditorLayout ? Math.round(window.innerHeight * 0.72) : 640}
+							aria-valuenow={mobileEditorLayout ? mobileUtilityHeight : desktopUtilityWidth}
+							tabIndex={0}
+							onKeyDown={handleUtilityResizeKeyDown}
+							onPointerDown={handleUtilityResizeStart}
+							onPointerMove={handleUtilityResizeMove}
+							onPointerUp={handleUtilityResizeEnd}
+							onPointerCancel={handleUtilityResizeEnd}
+						/>
+					) : null}
+					<div className="editorUtilityTabBar">
+						<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
+							<button
+								type="button"
+								role="tab"
+								id="editor-utility-editor-tab"
+								aria-controls="editor-utility-editor-panel"
+								aria-selected={utilityView === "editor"}
+								aria-expanded={utilityView === "editor" && !utilityCollapsed}
+								onClick={() => activateUtilityView("editor")}
+							>
+								Editor
+							</button>
+							<button
+								type="button"
+								role="tab"
+								id="editor-utility-play-tab"
+								aria-controls="editor-utility-play-panel"
+								aria-selected={utilityView === "play"}
+								aria-expanded={utilityView === "play" && !utilityCollapsed}
+								onClick={() => activateUtilityView("play")}
+							>
+								Play
+							</button>
+						</div>
+						{!utilityCollapsed ? (
+							<button
+								type="button"
+								className="editorUtilityCollapse"
+								aria-label="Collapse editor utility panel"
+								onClick={() => setUtilityCollapsed(true)}
+							>
+								<X size={15} aria-hidden="true" />
+							</button>
+						) : null}
 					</div>
 
 					<div
@@ -481,7 +598,7 @@ export default function EditorPage() {
 						role="tabpanel"
 						id="editor-utility-editor-panel"
 						aria-labelledby="editor-utility-editor-tab"
-						hidden={utilityView !== "editor"}
+						hidden={utilityCollapsed || utilityView !== "editor"}
 					>
 						<EditorInspector
 							activeTab={activeTab}
@@ -510,14 +627,9 @@ export default function EditorPage() {
 						role="tabpanel"
 						id="editor-utility-play-panel"
 						aria-labelledby="editor-utility-play-tab"
-						hidden={utilityView !== "play"}
+						hidden={utilityCollapsed || utilityView !== "play"}
 					>
-						<CommandLine
-							contained
-							isLoading={!worldIsLoaded}
-							world={editorWorld}
-							selectedRoomId={selectedRoom ? idValue(selectedRoom.id) : null}
-						/>
+						<CommandLine contained isLoading={!worldIsLoaded} world={editorWorld} />
 					</div>
 				</aside>
 			</div>

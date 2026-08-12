@@ -1,6 +1,8 @@
 .toolbar {
 	height: 48px;
 	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 	flex-shrink: 0;
 	border-bottom: 1px solid var(--panel-border);
 	background: var(--panel-bg);
@@ -92,4 +94,67 @@
 	margin-left: auto;
 	border-color: var(--panel-border);
 	color: var(--panel-text);
+}
+
+@media (max-width: 600px) {
+	.toolbar {
+		height: 44px;
+		gap: 4px;
+		padding: 0 8px;
+		overflow: hidden;
+	}
+
+	.toolbarTools {
+		min-width: 0;
+		flex: 0 0 auto;
+		gap: 2px;
+	}
+
+	.toolbarTool {
+		position: relative;
+		width: 32px;
+		height: 32px;
+		justify-content: center;
+		gap: 0;
+		padding: 0;
+
+		span {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			margin: -1px;
+			padding: 0;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+		}
+	}
+
+	.toolbarDivider {
+		margin: 8px 3px;
+	}
+
+	.toolbarZoom {
+		min-width: 40px;
+	}
+
+	.toolbarHint {
+		display: none;
+	}
+
+	.toolbarStatus {
+		max-width: none;
+		flex: 1 1 auto;
+		justify-content: flex-end;
+	}
+}
+
+@media (max-width: 360px) {
+	.toolbarStatus {
+		flex: 0 0 auto;
+
+		span {
+			display: none;
+		}
+	}
 }

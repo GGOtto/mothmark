@@ -1,4 +1,5 @@
 import {expect, test, type Page} from "@playwright/test";
+import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
 function collectBrowserErrors(page: Page) {
 	const errors: string[] = [];
@@ -72,6 +73,7 @@ test("the narrow header collapses secondary actions into one menu", async ({page
 
 	await expect(page.getByRole("navigation", {name: "Primary navigation"})).toBeHidden();
 	await expect(page.getByRole("button", {name: "Send feedback"})).toBeHidden();
+	await expectMobileLayoutIntegrity(page);
 	await page.getByRole("button", {name: "Open menu"}).click();
 
 	const mobile = page.getByRole("navigation", {name: "Mobile navigation"});

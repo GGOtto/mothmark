@@ -1,4 +1,5 @@
 import {expect, test, type Page} from "@playwright/test";
+import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
 function collectBrowserErrors(page: Page) {
 	const errors: string[] = [];
@@ -281,11 +282,7 @@ test("a registered account keeps the username fixed and exposes public profile f
 		website: "github.com/archivekeeper",
 	});
 	await page.setViewportSize({width: 310, height: 844});
-	expect(
-		await page.evaluate(
-			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-		),
-	).toBe(true);
+	await expectMobileLayoutIntegrity(page);
 	expect(browserErrors).toEqual([]);
 });
 
@@ -304,10 +301,6 @@ test("privacy guidance remains readable at the minimum narrow layout", async ({p
 		"href",
 		"/account",
 	);
-	expect(
-		await page.evaluate(
-			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-		),
-	).toBe(true);
+	await expectMobileLayoutIntegrity(page);
 	expect(browserErrors).toEqual([]);
 });
