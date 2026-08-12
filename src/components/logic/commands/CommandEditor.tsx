@@ -360,7 +360,11 @@ export function CommandEditor({
 								}
 							/>
 						),
-						{closeOnBackdropClick: false, className: "popupSurfaceConfirm"},
+						{
+							ariaLabel: `Add ${definition.label.toLowerCase()} block?`,
+							closeOnBackdropClick: false,
+							className: "popupSurfaceConfirm",
+						},
 					)
 				: "pattern";
 		} else if (hasMultiplePatterns) {
@@ -439,7 +443,11 @@ export function CommandEditor({
 								}
 							/>
 						),
-						{closeOnBackdropClick: false, className: "popupSurfaceConfirm"},
+						{
+							ariaLabel: `Delete ${definition.label.toLowerCase()} block?`,
+							closeOnBackdropClick: false,
+							className: "popupSurfaceConfirm",
+						},
 					)
 				: isStructuralBlock(block)
 					? "pattern"

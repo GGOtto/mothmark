@@ -10,6 +10,7 @@ import {
 } from "@/auth/publicProfile";
 import {deleteWorldDraftsForUser} from "@/components/world-autosave/worldDraftStorage";
 import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
+import {ModalLayer} from "@/components/overlay/Overlay";
 
 import "./page.scss";
 
@@ -494,55 +495,54 @@ export default function AccountPage() {
 			</PageShellBody>
 
 			{deleteOpen && account ? (
-				<div className="accountDialogBackdrop" role="presentation">
-					<section
-						className="accountDialog"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="delete-account-title"
-						onKeyDown={(event) => {
-							if (event.key === "Escape" && !busy) closeDelete();
-						}}
-					>
-						<h2 id="delete-account-title">Delete this account?</h2>
-						<p>
-							This immediately deletes every active and trashed private world, revokes every session, and
-							removes local recovery drafts. It cannot be undone.
+				<ModalLayer
+					ariaLabelledBy="delete-account-title"
+					backdropClassName="accountDialogBackdrop"
+					className="accountDialog"
+					closeOnBackdropClick={!busy}
+					closeOnEscape={!busy}
+					mobilePresentation="sheet"
+					onClose={closeDelete}
+					returnFocusRef={deleteTrigger}
+				>
+					<h2 id="delete-account-title">Delete this account?</h2>
+					<p>
+						This immediately deletes every active and trashed private world, revokes every session, and
+						removes local recovery drafts. It cannot be undone.
+					</p>
+					{registered ? (
+						<>
+							<label htmlFor="delete-password">Confirm your password</label>
+							<input
+								id="delete-password"
+								type="password"
+								autoComplete="current-password"
+								autoFocus
+								required
+								value={deletePassword}
+								onChange={(event) => setDeletePassword(event.target.value)}
+							/>
+						</>
+					) : null}
+					{error ? (
+						<p className="accountError" role="alert">
+							{error}
 						</p>
-						{registered ? (
-							<>
-								<label htmlFor="delete-password">Confirm your password</label>
-								<input
-									id="delete-password"
-									type="password"
-									autoComplete="current-password"
-									autoFocus
-									required
-									value={deletePassword}
-									onChange={(event) => setDeletePassword(event.target.value)}
-								/>
-							</>
-						) : null}
-						{error ? (
-							<p className="accountError" role="alert">
-								{error}
-							</p>
-						) : null}
-						<div className="accountDialogActions">
-							<button type="button" autoFocus={!registered} onClick={closeDelete} disabled={busy}>
-								Cancel
-							</button>
-							<button
-								type="button"
-								className="accountDeleteConfirm"
-								onClick={() => void deleteAccount()}
-								disabled={busy || (registered && !deletePassword)}
-							>
-								{busy ? "Deleting…" : "Delete account"}
-							</button>
-						</div>
-					</section>
-				</div>
+					) : null}
+					<div className="accountDialogActions">
+						<button type="button" autoFocus={!registered} onClick={closeDelete} disabled={busy}>
+							Cancel
+						</button>
+						<button
+							type="button"
+							className="accountDeleteConfirm"
+							onClick={() => void deleteAccount()}
+							disabled={busy || (registered && !deletePassword)}
+						>
+							{busy ? "Deleting…" : "Delete account"}
+						</button>
+					</div>
+				</ModalLayer>
 			) : null}
 		</PageShell>
 	);

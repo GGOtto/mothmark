@@ -134,6 +134,9 @@
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
   bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
   viewport.
+- Build production dialogs, menus, pickers, and popovers with the shared overlay primitives. Keep
+  them inside the visual viewport, promote complex phone popovers to sheets, trap and return focus,
+  lock background scrolling, and keep scrollable content and actions usable above onscreen keyboards.
 - Keep command selection in the command library rather than adding a second command scroller inside
   the editor. Pin command behavior and pattern creation controls above the pattern workspace.
 - Treat repeated command block IDs as shared block identities across patterns. Block edits propagate

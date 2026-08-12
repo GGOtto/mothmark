@@ -114,9 +114,9 @@ describe("PopupProvider", () => {
 		const backdrop = screen.getByRole("dialog").parentElement as HTMLElement;
 
 		expect(backdrop).toHaveStyle({
-			"--popup-viewport-height": "420px",
-			"--popup-viewport-top": "280px",
-			"--popup-viewport-width": "390px",
+			"--overlay-viewport-height": "420px",
+			"--overlay-viewport-top": "280px",
+			"--overlay-viewport-width": "390px",
 		});
 		expect(document.body).toHaveStyle({overflow: "hidden"});
 
@@ -125,8 +125,8 @@ describe("PopupProvider", () => {
 		act(() => listeners.get("resize")?.(new Event("resize")));
 
 		expect(backdrop).toHaveStyle({
-			"--popup-viewport-height": "260px",
-			"--popup-viewport-top": "120px",
+			"--overlay-viewport-height": "260px",
+			"--overlay-viewport-top": "120px",
 		});
 
 		await user.keyboard("{Escape}");

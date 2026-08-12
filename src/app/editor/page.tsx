@@ -17,6 +17,7 @@ import {ItemCatalog} from "@/components/studio/ItemCatalog";
 import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
+import {ModalLayer} from "@/components/overlay/Overlay";
 import {Map, type ConnectionDraft, type MapTool} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
@@ -453,42 +454,43 @@ export default function EditorPage() {
 	return (
 		<main className="editorPage">
 			{draftConflict ? (
-				<div className="draftConflictBackdrop">
-					<section
-						className="draftConflictDialog"
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="draft-conflict-title"
-					>
-						<h2 id="draft-conflict-title">This browser has an older local draft</h2>
-						<p>
-							The server is now at revision {draftConflict.server.revision}, while this draft was based on
-							revision {draftConflict.draft.baseServerRevision}. Choose which work to keep; Mothmark will
-							not overwrite either version silently.
+				<ModalLayer
+					ariaLabelledBy="draft-conflict-title"
+					backdropClassName="draftConflictBackdrop"
+					className="draftConflictDialog"
+					closeOnBackdropClick={false}
+					closeOnEscape={false}
+					mobilePresentation="sheet"
+					onClose={() => undefined}
+				>
+					<h2 id="draft-conflict-title">This browser has an older local draft</h2>
+					<p>
+						The server is now at revision {draftConflict.server.revision}, while this draft was based on
+						revision {draftConflict.draft.baseServerRevision}. Choose which work to keep; Mothmark will
+						not overwrite either version silently.
+					</p>
+					{draftConflictError ? (
+						<p className="draftConflictError" role="alert">
+							{draftConflictError}
 						</p>
-						{draftConflictError ? (
-							<p className="draftConflictError" role="alert">
-								{draftConflictError}
-							</p>
-						) : null}
-						<div className="draftConflictActions">
-							<button type="button" onClick={() => void openDraftAsCopy()} disabled={draftConflictBusy}>
-								Open draft as a copy
-							</button>
-							<button type="button" onClick={exportDraft} disabled={draftConflictBusy}>
-								Export draft
-							</button>
-							<button
-								type="button"
-								className="draftConflictPrimary"
-								onClick={() => void acceptServerWorld()}
-								disabled={draftConflictBusy}
-							>
-								Use server version
-							</button>
-						</div>
-					</section>
-				</div>
+					) : null}
+					<div className="draftConflictActions">
+						<button type="button" onClick={() => void openDraftAsCopy()} disabled={draftConflictBusy}>
+							Open draft as a copy
+						</button>
+						<button type="button" onClick={exportDraft} disabled={draftConflictBusy}>
+							Export draft
+						</button>
+						<button
+							type="button"
+							className="draftConflictPrimary"
+							onClick={() => void acceptServerWorld()}
+							disabled={draftConflictBusy}
+						>
+							Use server version
+						</button>
+					</div>
+				</ModalLayer>
 			) : null}
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 

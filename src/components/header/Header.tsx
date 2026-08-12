@@ -3,10 +3,11 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {Bell, ChevronDown, Menu, MessageSquare, UserRound, X} from "lucide-react";
-import {useEffect, useRef, useState} from "react";
+import {useRef, useState} from "react";
 
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {MothmarkMark} from "../brand/MothmarkMark";
+import {AnchoredLayer} from "../overlay/Overlay";
 import {useTheme} from "../theme/ThemeProvider";
 import {WorldAutosaveIndicator, WorldSwitcher} from "../world-autosave/WorldAutosave";
 import {CommandCopyButton} from "./CommandCopyAction";
@@ -28,10 +29,11 @@ export function Header({account}: {account: HeaderAccount}) {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
 	const [signingOut, setSigningOut] = useState(false);
-	const accountRef = useRef<HTMLDivElement | null>(null);
-	const pageRef = useRef<HTMLDivElement | null>(null);
-	const mobileRef = useRef<HTMLDivElement | null>(null);
-	const notificationsRef = useRef<HTMLDivElement | null>(null);
+	const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
+	const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
+	const pageTriggerRef = useRef<HTMLButtonElement | null>(null);
+	const notificationsTriggerRef = useRef<HTMLButtonElement | null>(null);
+	const feedbackReturnFocusRef = useRef<HTMLElement | null>(null);
 
 	const registered = account?.accountType === "registered";
 	const administrator = account?.siteRole === "admin";
@@ -51,30 +53,6 @@ export function Header({account}: {account: HeaderAccount}) {
 							? "Admin"
 							: "Home";
 	const hidden = pathname.startsWith("/admin") || /^\/play\/[^/]+/.test(pathname);
-
-	useEffect(() => {
-		if (!accountMenuOpen && !pageMenuOpen && !mobileMenuOpen && !notificationsOpen) return;
-		const closeOutside = (event: PointerEvent) => {
-			if (!(event.target instanceof Node)) return;
-			if (!accountRef.current?.contains(event.target)) setAccountMenuOpen(false);
-			if (!pageRef.current?.contains(event.target)) setPageMenuOpen(false);
-			if (!mobileRef.current?.contains(event.target)) setMobileMenuOpen(false);
-			if (!notificationsRef.current?.contains(event.target)) setNotificationsOpen(false);
-		};
-		const closeOnEscape = (event: KeyboardEvent) => {
-			if (event.key !== "Escape") return;
-			setAccountMenuOpen(false);
-			setPageMenuOpen(false);
-			setMobileMenuOpen(false);
-			setNotificationsOpen(false);
-		};
-		document.addEventListener("pointerdown", closeOutside, true);
-		document.addEventListener("keydown", closeOnEscape);
-		return () => {
-			document.removeEventListener("pointerdown", closeOutside, true);
-			document.removeEventListener("keydown", closeOnEscape);
-		};
-	}, [accountMenuOpen, pageMenuOpen, mobileMenuOpen, notificationsOpen]);
 
 	if (hidden) return null;
 
@@ -125,15 +103,23 @@ export function Header({account}: {account: HeaderAccount}) {
 				<div className="headerUtilities">
 					<WorldAutosaveIndicator />
 					<CommandCopyButton />
-					<button type="button" className="headerFeedback" onClick={() => setFeedbackOpen(true)}>
+					<button
+						type="button"
+						className="headerFeedback"
+						onClick={(event) => {
+							feedbackReturnFocusRef.current = event.currentTarget;
+							setFeedbackOpen(true);
+						}}
+					>
 						<MessageSquare size={18} aria-hidden="true" />
 						Send feedback
 					</button>
 
 					{registered ? (
 						<>
-							<div className="headerMenuAnchor" ref={notificationsRef}>
+							<div className="headerMenuAnchor">
 								<button
+									ref={notificationsTriggerRef}
 									type="button"
 									className="headerIconButton"
 									aria-label="Notifications"
@@ -144,15 +130,24 @@ export function Header({account}: {account: HeaderAccount}) {
 									<Bell size={20} aria-hidden="true" />
 								</button>
 								{notificationsOpen ? (
-									<div className="headerNotifications" role="dialog" aria-label="Notifications">
+									<AnchoredLayer
+										anchorRef={notificationsTriggerRef}
+										ariaLabel="Notifications"
+										className="headerNotifications"
+										mobilePresentation="sheet"
+										onClose={() => setNotificationsOpen(false)}
+										preferredWidth={230}
+										role="dialog"
+									>
 										<strong>Notifications</strong>
 										<p>You are all caught up.</p>
-									</div>
+									</AnchoredLayer>
 								) : null}
 							</div>
 
-							<div className="headerMenuAnchor" ref={accountRef}>
+							<div className="headerMenuAnchor">
 								<button
+									ref={accountTriggerRef}
 									type="button"
 									className="headerAccountTrigger"
 									aria-haspopup="menu"
@@ -164,7 +159,15 @@ export function Header({account}: {account: HeaderAccount}) {
 									<ChevronDown size={16} aria-hidden="true" />
 								</button>
 								{accountMenuOpen ? (
-									<div className="headerAccountMenu" role="menu">
+									<AnchoredLayer
+										anchorRef={accountTriggerRef}
+										ariaLabel="Account menu"
+										className="headerAccountMenu"
+										mobilePresentation="sheet"
+										onClose={() => setAccountMenuOpen(false)}
+										preferredWidth={240}
+										role="menu"
+									>
 										<strong>{accountName}</strong>
 										{account?.username ? (
 											<Link
@@ -198,7 +201,7 @@ export function Header({account}: {account: HeaderAccount}) {
 										>
 											{signingOut ? "Signing out…" : "Sign out"}
 										</button>
-									</div>
+									</AnchoredLayer>
 								) : null}
 							</div>
 						</>
@@ -215,8 +218,9 @@ export function Header({account}: {account: HeaderAccount}) {
 				</div>
 
 				<nav className="headerPrimaryNav" aria-label="Primary navigation">
-					<div className="headerMenuAnchor" ref={pageRef}>
+					<div className="headerMenuAnchor">
 						<button
+							ref={pageTriggerRef}
 							type="button"
 							className="headerPageSelector"
 							aria-haspopup="menu"
@@ -228,7 +232,14 @@ export function Header({account}: {account: HeaderAccount}) {
 							<ChevronDown size={17} aria-hidden="true" />
 						</button>
 						{pageMenuOpen ? (
-							<div className="headerPageMenu" role="menu">
+							<AnchoredLayer
+								anchorRef={pageTriggerRef}
+								ariaLabel="Pages"
+								className="headerPageMenu"
+								onClose={() => setPageMenuOpen(false)}
+								preferredWidth={200}
+								role="menu"
+							>
 								<Link role="menuitem" href="/" onClick={closeMenus}>
 									Home
 								</Link>
@@ -243,13 +254,14 @@ export function Header({account}: {account: HeaderAccount}) {
 										Admin
 									</Link>
 								) : null}
-							</div>
+							</AnchoredLayer>
 						) : null}
 					</div>
 				</nav>
 
-				<div className="headerMobile" ref={mobileRef}>
+				<div className="headerMobile">
 					<button
+						ref={mobileTriggerRef}
 						type="button"
 						className="headerMobileTrigger"
 						aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -259,7 +271,14 @@ export function Header({account}: {account: HeaderAccount}) {
 						{mobileMenuOpen ? <X size={25} aria-hidden="true" /> : <Menu size={27} aria-hidden="true" />}
 					</button>
 					{mobileMenuOpen ? (
-						<nav className="headerMobileMenu" aria-label="Mobile navigation">
+						<AnchoredLayer
+							anchorRef={mobileTriggerRef}
+							ariaLabel="Mobile navigation"
+							className="headerMobileMenu"
+							matchViewportWidth
+							onClose={() => setMobileMenuOpen(false)}
+							role="navigation"
+						>
 							<Link href="/" onClick={closeMenus}>
 								Home
 							</Link>
@@ -278,6 +297,7 @@ export function Header({account}: {account: HeaderAccount}) {
 								type="button"
 								className="headerMobileFeedback"
 								onClick={() => {
+									feedbackReturnFocusRef.current = mobileTriggerRef.current;
 									closeMenus();
 									setFeedbackOpen(true);
 								}}
@@ -303,12 +323,16 @@ export function Header({account}: {account: HeaderAccount}) {
 									Sign up
 								</Link>
 							)}
-						</nav>
+						</AnchoredLayer>
 					) : null}
 				</div>
 			</header>
 			{feedbackOpen ? (
-				<FeedbackDialog onClose={() => setFeedbackOpen(false)} requiresReplyEmail={!registered} />
+				<FeedbackDialog
+					onClose={() => setFeedbackOpen(false)}
+					requiresReplyEmail={!registered}
+					returnFocusRef={feedbackReturnFocusRef}
+				/>
 			) : null}
 		</>
 	);

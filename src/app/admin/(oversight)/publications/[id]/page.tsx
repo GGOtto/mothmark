@@ -6,9 +6,11 @@ import {useEffect, useState} from "react";
 
 import {formatAdminDate, mutateAdminJson, readAdminJson} from "../../../adminClient";
 import type {AdminPublication} from "../../../adminTypes";
+import {usePopup} from "@/components/popup/Popup";
 
 export default function AdminPublicationDetailPage() {
 	const id = String(useParams<{id: string}>().id);
+	const popup = usePopup();
 	const [publication, setPublication] = useState<AdminPublication | null>(null);
 	const [error, setError] = useState("");
 	const [working, setWorking] = useState(false);
@@ -21,7 +23,15 @@ export default function AdminPublicationDetailPage() {
 	}, [id]);
 	const setSuspension = async (suspended: boolean) => {
 		const reason = suspended
-			? window.prompt("Reason for suspending this publication")?.trim()
+			? (
+					await popup.prompt({
+						title: "Suspend this publication?",
+						message: "Suspension immediately blocks all play.",
+						label: "Administrative reason",
+						submitLabel: "Suspend publication",
+						required: true,
+					})
+				)?.trim()
 			: undefined;
 		if (suspended && !reason) return;
 		setWorking(true);
