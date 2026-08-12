@@ -57,6 +57,7 @@ export type UniversalEditorProps<TValue> = {
 	disabled?: boolean;
 	className?: string;
 	allowDelete?: boolean;
+	onDelete?: () => void;
 	scrollOnExternalValueChange?: boolean;
 	commandVariableCatalog?: CommandVariableCatalog;
 	logicEditorPresentation?: "popup" | "inline";
@@ -378,6 +379,7 @@ export function UniversalEditor<TValue>({
 	disabled,
 	className,
 	allowDelete,
+	onDelete,
 	scrollOnExternalValueChange = true,
 	commandVariableCatalog,
 	logicEditorPresentation,
@@ -887,7 +889,8 @@ export function UniversalEditor<TValue>({
 
 		updateWorld(nextWorld);
 		setViewStack((views) => views.slice(0, -1));
-	}, [resolvedEntityId, updateWorld, world]);
+		onDelete?.();
+	}, [onDelete, resolvedEntityId, updateWorld, world]);
 
 	const breadcrumbs = [
 		{label: metadata.shell?.title ?? metadata.title ?? "Editor", path},

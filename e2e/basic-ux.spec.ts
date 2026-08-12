@@ -831,8 +831,12 @@ test("private worlds persist for one browser and remain unresolved for another",
 
 	await firstPage.goto(`/worlds/${first.worldSlug}`);
 	await secondPage.goto(`/worlds/${second.worldSlug}`);
-	await expect(firstPage).toHaveURL(new RegExp(`/worlds/${first.worldSlug}$`));
-	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${second.worldSlug}$`));
+	await expect(firstPage).toHaveURL(
+		new RegExp(`/worlds/${first.worldSlug}\\?view=map&room=shop-floor$`),
+	);
+	await expect(secondPage).toHaveURL(
+		new RegExp(`/worlds/${second.worldSlug}\\?view=map&room=shop-floor$`),
+	);
 
 	const nameField = firstPage.getByRole("textbox", {name: "Name", exact: true});
 	await expect(nameField).toBeVisible();
@@ -921,6 +925,9 @@ test("a local edit recovers from a transient save failure and publishes only aft
 	await expect(page.getByText(/Release 1 uses saved revision 2/)).toBeVisible();
 	expect(publishedRevision).toBe(2);
 	await page.reload();
+	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
+	await page.getByRole("button", {name: "Map"}).click();
+	await page.getByRole("button", {name: "Recovered entrance"}).click();
 	await expect(page.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
 		"Recovered entrance",
 	);
@@ -957,7 +964,9 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	await expect(
 		secondPage.getByText("Save this world before switching.", {exact: true}),
 	).toBeVisible();
-	await expect(secondPage).toHaveURL(new RegExp(`/worlds/${first.worldSlug}$`));
+	await expect(secondPage).toHaveURL(
+		new RegExp(`/worlds/${first.worldSlug}\\?view=map&room=shop-floor$`),
+	);
 	expect(first.worlds()[0].world.rooms[0].name).toBe("First tab revision");
 	expect(firstErrors).toEqual([]);
 	expect(secondErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
@@ -998,7 +1007,11 @@ test("the world library creates, switches, isolates, and limits private worlds",
 		await dialog.getByRole("textbox", {name: "World name"}).fill(name);
 		await dialog.getByRole("radio", {name: source}).check();
 		await dialog.getByRole("button", {name: "Create world"}).click();
-		await expect(page).toHaveURL(new RegExp(`/worlds/${name.toLowerCase().replaceAll(" ", "-")}$`));
+		await expect(page).toHaveURL(
+			new RegExp(
+				`/worlds/${name.toLowerCase().replaceAll(" ", "-")}\\?view=map(?:&room=shop-floor)?$`,
+			),
+		);
 		if (source === "Blank world") {
 			await expect(page.getByRole("button", {name: "Clear Ground layer"})).toBeVisible();
 			await page.getByRole("tab", {name: "Play"}).click();
@@ -1118,7 +1131,7 @@ test("a new world can start from an exported JSON file", async ({page}) => {
 	await expect(dialog.getByRole("textbox", {name: "World name"})).toHaveValue("Imported archive");
 	await dialog.getByRole("button", {name: "Create world"}).click();
 
-	await expect(page).toHaveURL(/\/worlds\/imported-archive$/);
+	await expect(page).toHaveURL(/\/worlds\/imported-archive\?view=map&room=shop-floor$/);
 	await expect(page.getByRole("button", {name: "Imported landing"})).toBeVisible();
 	expect(browserErrors).toEqual([]);
 });
@@ -1205,7 +1218,9 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto("/worlds/undefined");
-	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
+	await expect(page).toHaveURL(
+		new RegExp(`/worlds/${editor.worldSlug}\\?view=map&room=shop-floor$`),
+	);
 	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 
@@ -1271,7 +1286,84 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
 
 	await page.goto(`/editor/${editor.worldId}`);
-	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}$`));
+	await expect(page).toHaveURL(
+		new RegExp(`/worlds/${editor.worldSlug}\\?view=map&room=shop-floor$`),
+	);
+	expect(browserErrors).toEqual([]);
+});
+
+test("editor URLs restore context through reload, history, and invalid selections", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
+
+	await expect(page.getByRole("heading", {name: "Items"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Shop Counter"})).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole("heading", {name: "Shop Counter"})).toBeVisible();
+	await expect(page).toHaveURL(/\?view=items&item=shop-counter$/);
+
+	await page.getByRole("button", {name: "Map"}).click();
+	await page.getByRole("button", {name: "Stockroom"}).click();
+	await expect(page).toHaveURL(/\?view=map&room=stockroom$/);
+	await page.goBack();
+	await expect(page).toHaveURL(/\?view=map$/);
+	await page.goBack();
+	await expect(page.getByRole("heading", {name: "Shop Counter"})).toBeVisible();
+	await expect(page).toHaveURL(/\?view=items&item=shop-counter$/);
+	await page.goForward();
+	await expect(page).toHaveURL(/\?view=map$/);
+	await page.goForward();
+	await expect(page.getByRole("heading", {name: "Stockroom"})).toBeVisible();
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=removed-item`);
+	await expect(page.getByRole("heading", {name: "Items"})).toBeVisible();
+	await expect(page.locator(".editorContextNotice")).toContainText(
+		"That item is no longer available",
+	);
+	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}\\?view=items$`));
+
+	const createSelector = page.getByRole("button", {name: "Choose page, current: Create"});
+	const worldSelector = page.getByRole("button", {name: /Current world: Private test world/});
+	const order = await createSelector.evaluate(
+		(create, world) => {
+			const relation = create.compareDocumentPosition(world as Node);
+			return {
+				comesFirst: Boolean(relation & Node.DOCUMENT_POSITION_FOLLOWING),
+				createX: create.getBoundingClientRect().x,
+				worldX: (world as Element).getBoundingClientRect().x,
+			};
+		},
+		await worldSelector.elementHandle(),
+	);
+	expect(order.comesFirst).toBe(true);
+	expect(order.createX).toBeLessThan(order.worldX);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the inspector only resets scroll for editor navigation", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 1280, height: 500});
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+	await expect(page.getByRole("heading", {name: "Shop Floor"})).toBeVisible();
+
+	const inspector = page.locator(".rightSideBar");
+	const scrolledTop = await inspector.evaluate((element) => {
+		element.scrollTop = Math.min(120, element.scrollHeight - element.clientHeight);
+		return element.scrollTop;
+	});
+	expect(scrolledTop).toBeGreaterThan(0);
+	await page
+		.getByPlaceholder("Describe what the player sees...")
+		.fill("A revised shop description.");
+	expect(await inspector.evaluate((element) => element.scrollTop)).toBe(scrolledTop);
+
+	await page.getByRole("button", {name: "Stockroom"}).click();
+	await expect(page.getByRole("heading", {name: "Stockroom"})).toBeVisible();
+	await expect.poll(() => inspector.evaluate((element) => element.scrollTop)).toBe(0);
 	expect(browserErrors).toEqual([]);
 });
 

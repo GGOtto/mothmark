@@ -200,7 +200,7 @@ the full task definitions but do not imply a different sequence.
   - Add representative browser harness coverage so regressions in sticky regions, safe areas, and
     horizontal overflow fail in one place.
 
-- [ ] **F04 — Preserve editor context across reloads and navigation.**
+- [x] **F04 — Preserve editor context across reloads and navigation.**
 
   **Outcome:** Refreshing the editor does not unexpectedly switch the author back to Map or lose the
   selected entity/task.

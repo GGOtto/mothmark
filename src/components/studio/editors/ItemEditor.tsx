@@ -13,6 +13,7 @@ type ItemEditorProps = {
 	world: World;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange?: (selectedId: string) => void;
+	onDelete?: () => void;
 };
 
 export function ItemEditor({
@@ -20,6 +21,7 @@ export function ItemEditor({
 	world,
 	updateWorld,
 	onSelectedIdChange,
+	onDelete,
 }: ItemEditorProps) {
 	const {theme} = useTheme();
 	const duplicateItemId = useMemo(
@@ -71,6 +73,7 @@ export function ItemEditor({
 				appearance={{theme: "auto", scheme: theme}}
 				className="itemEditorUniversal"
 				allowDelete={true}
+				onDelete={onDelete}
 			/>
 		</div>
 	);
