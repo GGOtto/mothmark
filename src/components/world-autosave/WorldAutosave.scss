@@ -2,7 +2,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: flex-end;
-	min-width: 62px;
+	min-width: 58px;
 }
 
 .worldAutosaveIndicator {
@@ -85,29 +85,26 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 7px;
-	height: 34px;
+	gap: 6px;
+	height: 32px;
 	box-sizing: border-box;
-	padding: 0 14px;
-	border: 1px solid var(--color-action);
+	padding: 0 10px;
+	border: 1px solid var(--chrome-border);
 	border-radius: var(--radius-control);
-	background: var(--color-action);
-	color: var(--color-action-contrast);
+	background: transparent;
+	color: var(--color-frame-text);
 	font: inherit;
 	font-size: 13px;
-	font-weight: 700;
-	letter-spacing: 0.01em;
+	font-weight: 650;
 	box-shadow: none;
 	cursor: pointer;
 	transition:
 		background-color 120ms ease,
-		box-shadow 120ms ease,
-		transform 120ms ease,
-		opacity 120ms ease;
+		border-color 120ms ease,
+		color 120ms ease;
 
 	&:hover:not(:disabled) {
-		border-color: var(--color-action-hover);
-		background: var(--color-action-hover);
+		background: var(--chrome-raised);
 	}
 
 	&:focus-visible {
@@ -116,25 +113,12 @@
 	}
 
 	&:disabled {
-		border-color: var(--chrome-border);
-		background: var(--chrome-raised);
 		color: var(--chrome-muted);
-		box-shadow: none;
 		cursor: default;
-		opacity: 0.8;
 	}
 }
 
 .worldSaveButtonDirty {
-	animation: world-save-attention 220ms ease-out;
-}
-
-@keyframes world-save-attention {
-	0% {
-		transform: scale(0.96);
-	}
-
-	100% {
-		transform: scale(1);
-	}
+	border-color: var(--color-action);
+	color: var(--color-action);
 }

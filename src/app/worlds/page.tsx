@@ -6,10 +6,6 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {SiteFooter} from "@/components/footer/SiteFooter";
 import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
 import {AnchoredLayer, ModalLayer} from "@/components/overlay/Overlay";
-import {
-	deleteWorldDraft,
-	deleteWorldDraftsExceptUser,
-} from "@/components/world-autosave/worldDraftStorage";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 
 import {WorldFolioPreview} from "./WorldFolioPreview";
@@ -63,7 +59,6 @@ export default function WorldsPage() {
 	const [library, setLibrary] = useState<WorldLibrary | null>(null);
 	const [trash, setTrash] = useState<LibraryWorld[]>([]);
 	const [csrfToken, setCsrfToken] = useState("");
-	const [userId, setUserId] = useState("");
 	const [loadingError, setLoadingError] = useState("");
 	const [view, setView] = useState<"active" | "trash">("active");
 	const [dialog, setDialog] = useState<DialogState>(null);
@@ -96,14 +91,12 @@ export default function WorldsPage() {
 	const loadLibrary = useCallback(async () => {
 		const csrf = await readJson<{data: {csrfToken: string}}>(await fetch("/api/auth/csrf"));
 		setCsrfToken(csrf.data.csrfToken);
-		const bootstrap = await readJson<{meta: {userId: string}}>(
+		await readJson<{meta: {userId: string}}>(
 			await fetch("/api/editor/bootstrap", {
 				method: "POST",
 				headers: {"x-csrf-token": csrf.data.csrfToken},
 			}),
 		);
-		setUserId(bootstrap.meta.userId);
-		await deleteWorldDraftsExceptUser(bootstrap.meta.userId).catch(() => undefined);
 		await loadWorlds("active");
 	}, [loadWorlds]);
 
@@ -208,10 +201,8 @@ export default function WorldsPage() {
 				});
 			} else if (dialog.kind === "delete") {
 				await mutate(`/api/world/${dialog.world.id}`, "DELETE");
-				await deleteWorldDraft(userId, dialog.world.id).catch(() => undefined);
 			} else {
 				await mutate(`/api/world/${dialog.world.id}?permanent=1`, "DELETE");
-				await deleteWorldDraft(userId, dialog.world.id).catch(() => undefined);
 			}
 			closeDialog();
 			await loadWorlds(view);
