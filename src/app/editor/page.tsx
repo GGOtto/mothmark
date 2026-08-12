@@ -17,7 +17,6 @@ import {ItemCatalog} from "@/components/studio/ItemCatalog";
 import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
-import {ModalLayer} from "@/components/overlay/Overlay";
 import {Map, type ConnectionDraft} from "@/components/map/Map";
 import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
 import {
@@ -35,17 +34,10 @@ import {
 	type LogicSelection,
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
-import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {
 	useWorldAutosaveRegistration,
 	WorldResetButton,
 } from "@/components/world-autosave/WorldAutosave";
-import {
-	deleteWorldDraft,
-	draftMatchesServer,
-	readWorldDraft,
-	type WorldDraft,
-} from "@/components/world-autosave/worldDraftStorage";
 import {createInitialWorld, world as initialWorld} from "@/data/worlds/initialWorld";
 import type {Room, World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld, WorldUpdate} from "@/types/worldUpdaterTypes";
@@ -116,30 +108,8 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 };
 
 async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
-	const serverWorld = await loadAuthorizedEditorWorld(fetch, signal, requestedWorldId);
-	const draft = await readWorldDraft(serverWorld.userId, serverWorld.worldId).catch(
-		(error: unknown) => {
-			console.warn("Could not read the local world draft.", error);
-			return null;
-		},
-	);
-
-	if (draft && draftMatchesServer(draft, serverWorld)) {
-		return {
-			...serverWorld,
-			world: draft.world,
-			restoredFromLocalDraft: true,
-			draftConflict: undefined,
-		};
-	}
-	if (draft) {
-		return {...serverWorld, restoredFromLocalDraft: false, draftConflict: draft};
-	}
-
-	return {...serverWorld, restoredFromLocalDraft: false, draftConflict: undefined};
+	return loadAuthorizedEditorWorld(fetch, signal, requestedWorldId);
 }
-
-type LoadedWorld = Awaited<ReturnType<typeof loadEditorWorld>>;
 
 export default function EditorPage() {
 	const pathname = usePathname();
@@ -184,17 +154,9 @@ export default function EditorPage() {
 
 	const [editorWorld, setEditorWorld] = useState<World>(initialWorld);
 	const [persistedWorldId, setPersistedWorldId] = useState<string | null>(null);
-	const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
 	const [worldName, setWorldName] = useState("");
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
-	const [restoredFromLocalDraft, setRestoredFromLocalDraft] = useState(false);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
-	const [draftConflict, setDraftConflict] = useState<{
-		draft: WorldDraft;
-		server: LoadedWorld;
-	} | null>(null);
-	const [draftConflictBusy, setDraftConflictBusy] = useState(false);
-	const [draftConflictError, setDraftConflictError] = useState("");
 
 	const [selection, setSelection] = useState<EditorSelection>({
 		selectedId: null,
@@ -232,25 +194,11 @@ export default function EditorPage() {
 
 		loadEditorWorld(abortController.signal, requestedWorldId)
 			.then((loaded) => {
-				if (loaded.draftConflict) {
-					setDraftConflict({draft: loaded.draftConflict, server: loaded});
-					return;
-				}
-				const {
-					editorSlug,
-					world,
-					worldId,
-					worldName: loadedName,
-					userId,
-					revision,
-					restoredFromLocalDraft: restored,
-				} = loaded;
+				const {editorSlug, world, worldId, worldName: loadedName, revision} = loaded;
 				updateWorld(world);
 				setPersistedWorldId(worldId);
-				setOwnerUserId(userId);
 				setWorldName(loadedName);
 				setPersistedWorldRevision(revision);
-				setRestoredFromLocalDraft(restored);
 				const resolvedContext = resolveEditorContext(world, window.location.search);
 				applyEditorContext(resolvedContext.context, resolvedContext.notice);
 				setConnectionDraft({state: "idle"});
@@ -271,38 +219,6 @@ export default function EditorPage() {
 
 		return () => abortController.abort();
 	}, [applyEditorContext, requestedWorldId, updateWorld]);
-
-	const acceptServerWorld = useCallback(async () => {
-		if (!draftConflict) return;
-		setDraftConflictBusy(true);
-		setDraftConflictError("");
-		try {
-			await deleteWorldDraft(draftConflict.draft.userId, draftConflict.draft.worldId);
-			const {server} = draftConflict;
-			updateWorld(server.world);
-			setPersistedWorldId(server.worldId);
-			setOwnerUserId(server.userId);
-			setWorldName(server.worldName);
-			setPersistedWorldRevision(server.revision);
-			setRestoredFromLocalDraft(false);
-			const resolvedContext = resolveEditorContext(server.world, window.location.search);
-			applyEditorContext(resolvedContext.context, resolvedContext.notice);
-			setConnectionDraft({state: "idle"});
-			setEditorSlug(server.editorSlug);
-			setWorldIsLoaded(true);
-			setEditorContextReady(true);
-			setDraftConflict(null);
-			window.history.replaceState(
-				null,
-				"",
-				`/worlds/${server.editorSlug}${buildEditorContextSearch(resolvedContext.context)}`,
-			);
-		} catch {
-			setDraftConflictError("The local draft could not be cleared. Export it before continuing.");
-		} finally {
-			setDraftConflictBusy(false);
-		}
-	}, [applyEditorContext, draftConflict, updateWorld]);
 
 	const editorContext = useMemo<EditorContext>(
 		() => ({
@@ -358,56 +274,9 @@ export default function EditorPage() {
 		if (scroller) scroller.scrollTop = 0;
 	}, [inspectorNavigationVersion]);
 
-	const exportDraft = useCallback(() => {
-		if (!draftConflict) return;
-		const blob = new Blob([JSON.stringify(draftConflict.draft.world, null, 2)], {
-			type: "application/json",
-		});
-		const url = URL.createObjectURL(blob);
-		const anchor = document.createElement("a");
-		anchor.href = url;
-		anchor.download = `${draftConflict.server.editorSlug}-local-draft.mothmark.json`;
-		anchor.click();
-		URL.revokeObjectURL(url);
-		void acceptServerWorld();
-	}, [acceptServerWorld, draftConflict]);
-
-	const openDraftAsCopy = useCallback(async () => {
-		if (!draftConflict) return;
-		setDraftConflictBusy(true);
-		setDraftConflictError("");
-		try {
-			const csrf = readBrowserCsrfToken();
-			if (!csrf) throw new Error("The editor security token is missing.");
-			const response = await fetch("/api/world", {
-				method: "POST",
-				headers: {"content-type": "application/json", "x-csrf-token": csrf},
-				body: JSON.stringify({
-					name: `${draftConflict.server.worldName} recovered draft`,
-					source: "import",
-					world: draftConflict.draft.world,
-				}),
-			});
-			const result = (await response.json()) as {
-				data?: {editorSlug?: string};
-				error?: {message?: string};
-			};
-			if (!response.ok || !result.data?.editorSlug)
-				throw new Error(result.error?.message || "The draft copy could not be created.");
-			await deleteWorldDraft(draftConflict.draft.userId, draftConflict.draft.worldId);
-			window.location.assign(`/worlds/${result.data.editorSlug}`);
-		} catch (caught) {
-			setDraftConflictError(
-				caught instanceof Error ? caught.message : "The draft copy could not be created.",
-			);
-			setDraftConflictBusy(false);
-		}
-	}, [draftConflict]);
-
 	const handleWorldPersisted = useCallback((worldId: string, revision: number) => {
 		setPersistedWorldId(worldId);
 		setPersistedWorldRevision(revision);
-		setRestoredFromLocalDraft(false);
 	}, []);
 
 	const handleResetWorld = useCallback(() => {
@@ -509,10 +378,8 @@ export default function EditorPage() {
 		ready: worldIsLoaded,
 		world: editorWorld,
 		worldId: persistedWorldId,
-		userId: ownerUserId,
 		worldName,
 		revision: persistedWorldRevision,
-		restoredFromLocalDraft,
 		onPersisted: handleWorldPersisted,
 		onReset: handleResetWorld,
 	});
@@ -545,45 +412,6 @@ export default function EditorPage() {
 
 	return (
 		<main className="editorPage">
-			{draftConflict ? (
-				<ModalLayer
-					ariaLabelledBy="draft-conflict-title"
-					backdropClassName="draftConflictBackdrop"
-					className="draftConflictDialog"
-					closeOnBackdropClick={false}
-					closeOnEscape={false}
-					mobilePresentation="sheet"
-					onClose={() => undefined}
-				>
-					<h2 id="draft-conflict-title">This browser has an older local draft</h2>
-					<p>
-						The server is now at revision {draftConflict.server.revision}, while this draft was based on
-						revision {draftConflict.draft.baseServerRevision}. Choose which work to keep; Mothmark will
-						not overwrite either version silently.
-					</p>
-					{draftConflictError ? (
-						<p className="draftConflictError" role="alert">
-							{draftConflictError}
-						</p>
-					) : null}
-					<div className="draftConflictActions">
-						<button type="button" onClick={() => void openDraftAsCopy()} disabled={draftConflictBusy}>
-							Open draft as a copy
-						</button>
-						<button type="button" onClick={exportDraft} disabled={draftConflictBusy}>
-							Export draft
-						</button>
-						<button
-							type="button"
-							className="draftConflictPrimary"
-							onClick={() => void acceptServerWorld()}
-							disabled={draftConflictBusy}
-						>
-							Use server version
-						</button>
-					</div>
-				</ModalLayer>
-			) : null}
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<div className="editorPageBody">

@@ -11,7 +11,6 @@ import type {World} from "@/schemas/world/worldSchema";
 import {PublishingPanel} from "./PublishingPanel";
 
 const worldId = "8ebc3f3f-b9ca-4f75-898f-e196bae50be4";
-const userId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
 const handlePersisted = () => undefined;
 const handleReset = () => undefined;
 
@@ -27,7 +26,6 @@ function PublishingHarness({world}: {world: World}) {
 		ready: true,
 		world,
 		worldId,
-		userId,
 		worldName: "Private test world",
 		revision: 1,
 		onPersisted: handlePersisted,

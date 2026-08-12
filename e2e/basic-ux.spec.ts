@@ -376,44 +376,6 @@ async function useDeterministicEditorWorld(
 	};
 }
 
-async function writeLocalWorldDraft(
-	page: Page,
-	input: {world: typeof initialWorld; worldId: string; revision: number},
-) {
-	await page.evaluate(
-		async ({world, worldId, revision}) =>
-			new Promise<void>((resolve, reject) => {
-				const openRequest = indexedDB.open("mothmark-editor", 1);
-				openRequest.onupgradeneeded = () => {
-					const database = openRequest.result;
-					if (!database.objectStoreNames.contains("world-drafts")) {
-						database.createObjectStore("world-drafts", {keyPath: "key"});
-					}
-				};
-				openRequest.onerror = () => reject(openRequest.error);
-				openRequest.onsuccess = () => {
-					const database = openRequest.result;
-					const transaction = database.transaction("world-drafts", "readwrite");
-					transaction.objectStore("world-drafts").put({
-						key: `world-draft:3e816c4d-b957-45dc-8523-d53ec04c8d0f:${worldId}`,
-						schemaVersion: 2,
-						userId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
-						world,
-						worldId,
-						baseServerRevision: revision,
-						updatedAt: Date.now(),
-					});
-					transaction.oncomplete = () => {
-						database.close();
-						resolve();
-					};
-					transaction.onerror = () => reject(transaction.error);
-				};
-			}),
-		input,
-	);
-}
-
 test("the home page continues without an account into the world library", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
@@ -758,62 +720,6 @@ test("legacy shared-world routes stay closed to a public browser", async ({reque
 	expect(defaultResponse.status()).toBe(404);
 });
 
-test("an inaccessible world cannot be restored from an old local draft", async ({page}) => {
-	const browserErrors = collectBrowserErrors(page);
-	const accessibleWorldId = "b84151a0-ce68-4aa9-984f-b0306bcfa2c7";
-	const inaccessibleWorldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6";
-	await useDeterministicEditorWorld(page, accessibleWorldId);
-	const leakedDraftWorld = {
-		...initialWorld,
-		rooms: [{...initialWorld.rooms[0], name: "Leaked private draft"}, ...initialWorld.rooms.slice(1)],
-	};
-
-	await page.goto("/");
-	await writeLocalWorldDraft(page, {
-		world: leakedDraftWorld,
-		worldId: inaccessibleWorldId,
-		revision: 1,
-	});
-	await page.goto(`/worlds/${inaccessibleWorldId}`);
-
-	await expect(page.getByRole("banner").getByLabel("Current world")).toHaveText("Loading world…");
-	await expect(page.getByRole("button", {name: "Leaked private draft"})).not.toBeVisible();
-	await page.getByRole("tab", {name: "Play"}).click();
-	await expect(page.getByRole("textbox", {name: "Game command"})).toBeDisabled();
-	expect(browserErrors.filter((error) => !error.includes("status of 404"))).toEqual([]);
-});
-
-test("a stale local draft is reconciled explicitly instead of being discarded", async ({page}) => {
-	const browserErrors = collectBrowserErrors(page);
-	const worldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6";
-	const editor = await useDeterministicEditorWorld(page, worldId);
-	await page.goto("/");
-	await writeLocalWorldDraft(page, {
-		world: {...initialWorld, metadata: {...initialWorld.metadata, title: "Older local draft"}},
-		worldId,
-		revision: 1,
-	});
-	const server = editor.worldStore.get(worldId);
-	if (!server) throw new Error("The deterministic server world is missing.");
-	server.revision = 2;
-	server.world = {
-		...initialWorld,
-		metadata: {...initialWorld.metadata, title: "Newer server world"},
-	};
-
-	await page.goto(`/worlds/${editor.worldSlug}`);
-	const dialog = page.getByRole("dialog", {name: "This browser has an older local draft"});
-	await expect(dialog).toContainText("server is now at revision 2");
-	await expect(dialog).toContainText("based on revision 1");
-	await expect(dialog.getByRole("button", {name: "Open draft as a copy"})).toBeVisible();
-	await expect(dialog.getByRole("button", {name: "Export draft"})).toBeVisible();
-	await dialog.getByRole("button", {name: "Use server version"}).click();
-	await expect(dialog).not.toBeVisible();
-	await page.getByRole("tab", {name: "Play"}).click();
-	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
-	expect(browserErrors).toEqual([]);
-});
-
 test("private worlds persist for one browser and remain unresolved for another", async ({
 	browser,
 }) => {
@@ -842,7 +748,8 @@ test("private worlds persist for one browser and remain unresolved for another",
 	await expect(nameField).toBeVisible();
 	await nameField.fill("A private entrance");
 	await expect.poll(first.saveCount, {timeout: 15_000}).toBe(1);
-	await expect(firstPage.getByText("Saved", {exact: true})).toBeVisible();
+	await expect(firstPage.getByRole("button", {name: "Save"})).toBeDisabled();
+	await expect(firstPage.locator(".worldAutosaveIndicator")).toContainText("Saved");
 	await firstPage.reload();
 	await expect(firstPage.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
 		"A private entrance",
@@ -863,9 +770,37 @@ test("private worlds persist for one browser and remain unresolved for another",
 	await secondContext.close();
 });
 
-test("a local edit recovers from a transient save failure and publishes only after saving", async ({
+test("the editor player uses unsaved world edits, preserves play state, and restarts explicitly", async ({
 	page,
 }) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}`);
+
+	await page.getByRole("tab", {name: "Play"}).click();
+	const commandInput = page.getByRole("textbox", {name: "Game command"});
+	await commandInput.fill("east");
+	await commandInput.press("Enter");
+	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
+
+	await page.getByRole("tab", {name: "Editor"}).click();
+	await page.getByRole("button", {name: "Stockroom"}).click();
+	await page.getByRole("textbox", {name: "Name", exact: true}).fill("Live stockroom");
+	await page.getByRole("tab", {name: "Play"}).click();
+	expect(editor.saveCount()).toBe(0);
+	await commandInput.fill("look");
+	await commandInput.press("Enter");
+	await expect(page.locator(".game-player__output").getByText(/^Live stockroom/)).toBeVisible();
+
+	await page.getByRole("button", {name: "Restart"}).click();
+	await expect(page.locator(".game-player__output").getByText(/^Shop Floor/)).toBeVisible();
+	await page.keyboard.press("Control+s");
+	await expect.poll(editor.saveCount).toBe(1);
+	await expect(page.locator(".worldAutosaveIndicator")).toContainText("Saved");
+	expect(browserErrors).toEqual([]);
+});
+
+test("a transient save failure retries quietly and publishes only after saving", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	let publishedRevision: number | null = null;
@@ -911,19 +846,14 @@ test("a local edit recovers from a transient save failure and publishes only aft
 
 	await page.goto(`/worlds/${editor.worldSlug}`);
 	await page.getByRole("textbox", {name: "Name", exact: true}).fill("Recovered entrance");
-	await expect(page.locator(".worldAutosaveIndicator")).toContainText("Save failed");
-	await expect(page.getByRole("button", {name: "Retry"})).toBeVisible();
-
-	await page.reload();
-	await expect(page.getByRole("textbox", {name: "Name", exact: true})).toHaveValue(
-		"Recovered entrance",
-	);
+	await expect.poll(editor.saveCount, {timeout: 15_000}).toBe(1);
+	await expect(page.locator(".worldAutosaveIndicator")).toContainText("Saved");
 	await page.getByRole("button", {name: "World settings"}).click();
 	await page.getByLabel("Short summary").fill("Recovered safely before publishing.");
 	await page.getByRole("button", {name: "Publish current version"}).click();
 
-	await expect(page.getByText(/Release 1 uses saved revision 2/)).toBeVisible();
-	expect(publishedRevision).toBe(2);
+	await expect(page.getByText(/Release 1 uses saved revision/)).toBeVisible();
+	expect(publishedRevision).toBe(editor.worlds()[0].revision);
 	await page.reload();
 	await expect(page.getByRole("button", {name: "Reset to starter world"})).toBeVisible();
 	await page.getByRole("button", {name: "Map"}).click();
@@ -948,6 +878,8 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	const firstName = firstPage.getByRole("textbox", {name: "Name", exact: true});
 	const secondName = secondPage.getByRole("textbox", {name: "Name", exact: true});
 	await firstName.fill("First tab revision");
+	await firstPage.getByRole("button", {name: "Save"}).click();
+	await expect.poll(first.saveCount).toBeGreaterThanOrEqual(1);
 	await firstPage.getByRole("button", {name: /Current world: Private test world/}).click();
 	await firstPage.getByRole("menuitem", {name: "View all worlds"}).click();
 	await expect(firstPage).toHaveURL(/\/worlds$/);
@@ -955,14 +887,16 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 	expect(first.worlds()[0].world.rooms[0].name).toBe("First tab revision");
 
 	await secondName.fill("Second tab revision");
+	await secondPage.getByRole("button", {name: "Save"}).click();
 	await expect
 		.poll(() => secondErrors.some((error) => error.includes("status of 409")), {timeout: 15_000})
 		.toBe(true);
 
 	await secondPage.getByRole("button", {name: /Current world: Private test world/}).click();
+	secondPage.once("dialog", (dialog) => dialog.dismiss());
 	await secondPage.getByRole("menuitem", {name: "View all worlds"}).click();
 	await expect(
-		secondPage.getByText("Save this world before switching.", {exact: true}),
+		secondPage.getByText("Unsaved changes were kept in this editor.", {exact: true}),
 	).toBeVisible();
 	await expect(secondPage).toHaveURL(
 		new RegExp(`/worlds/${first.worldSlug}\\?view=map&room=shop-floor$`),
@@ -1034,6 +968,8 @@ test("the world library creates, switches, isolates, and limits private worlds",
 		const roomNameField = page.getByRole("textbox", {name: "Name", exact: true});
 		if (source === "Blank world") await expect(roomNameField).not.toBeFocused();
 		await roomNameField.fill(roomName);
+		await page.keyboard.press("Control+s");
+		await expect(page.getByRole("button", {name: "Save"})).toBeDisabled();
 		await page.getByRole("button", {name: new RegExp(`Current world: ${name}`)}).click();
 		await page.getByRole("menuitem", {name: "View all worlds"}).click();
 		await expect(page).toHaveURL(/\/worlds$/);
