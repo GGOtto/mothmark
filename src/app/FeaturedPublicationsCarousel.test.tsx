@@ -28,6 +28,7 @@ describe("FeaturedPublicationsCarousel", () => {
 						{
 							authorUsername: "Mothmark",
 							id: "publication-2",
+							playAction: "continue",
 							slug: "corner-shop",
 							title: "Corner Shop",
 							summary: "A small example world.",
@@ -48,27 +49,34 @@ describe("FeaturedPublicationsCarousel", () => {
 
 		render(<FeaturedPublicationsCarousel />);
 
-		await waitFor(() => expect(screen.getByRole("heading", {name: "Corner Shop"})).toBeVisible());
+		await waitFor(() => expect(screen.getByRole("heading", {name: "Quiet archive"})).toBeVisible());
+		expect(global.fetch).toHaveBeenCalledWith("/api/play/publications?surface=homepage", {
+			signal: expect.any(AbortSignal),
+		});
 		expect(screen.getByLabelText("Featured publication carousel")).toHaveClass("homeFeaturedDeck");
 		expect(
-			screen.getByRole("heading", {name: "Corner Shop"}).closest(".homeFeaturedPage"),
+			screen.getByRole("heading", {name: "Quiet archive"}).closest(".homeFeaturedPage"),
 		).toHaveAttribute("aria-current", "true");
-		expect(screen.getByText("Quiet archive").closest(".homeFeaturedPage")).toHaveClass(
+		expect(screen.getByText("Signal room").closest(".homeFeaturedPage")).toHaveClass(
 			"homeFeaturedPage--previous",
 		);
-		expect(screen.getByText("Signal room").closest(".homeFeaturedPage")).toHaveClass(
+		expect(screen.getByText("Corner Shop").closest(".homeFeaturedPage")).toHaveClass(
 			"homeFeaturedPage--next",
+		);
+		expect(screen.getByRole("link", {name: 'Play "Quiet archive"'})).toHaveAttribute(
+			"href",
+			"/play/quiet-archive",
 		);
 
 		await user.click(screen.getByRole("button", {name: "Next featured publication"}));
 
 		expect(
-			screen.getByRole("heading", {name: "Signal room"}).closest(".homeFeaturedPage"),
+			screen.getByRole("heading", {name: "Corner Shop"}).closest(".homeFeaturedPage"),
 		).toHaveAttribute("aria-current", "true");
-		expect(screen.getByText("3 / 3")).toBeVisible();
-		expect(screen.getByRole("link", {name: "Play Signal room"})).toHaveAttribute(
+		expect(screen.getByText("2 / 3")).toBeVisible();
+		expect(screen.getByRole("link", {name: 'Continue "Corner Shop"'})).toHaveAttribute(
 			"href",
-			"/play/signal-room",
+			"/play/corner-shop",
 		);
 	});
 });

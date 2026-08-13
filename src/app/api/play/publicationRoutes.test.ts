@@ -70,6 +70,7 @@ describe("public publication routes", () => {
 		jest.mocked(getPublicPublication).mockResolvedValue({
 			authorUsername: "archivekeeper",
 			id: "publication-id",
+			isOfficial: false,
 			slug: "quiet-archive",
 			title: "Quiet archive",
 			summary: "A small test world.",
@@ -130,9 +131,18 @@ describe("public publication routes", () => {
 			}),
 		);
 		expect(response.status).toBe(200);
-		expect(listPublications).toHaveBeenCalledWith("", userId);
+		expect(listPublications).toHaveBeenCalledWith("", userId, "catalog");
 		expect(bootstrapHostedPlay).not.toHaveBeenCalled();
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
+	});
+
+	it("requests only deliberately ordered official worlds for the home page", async () => {
+		jest.mocked(listPublications).mockResolvedValue([]);
+		const response = await catalog(
+			new Request("http://localhost/api/play/publications?surface=homepage"),
+		);
+		expect(response.status).toBe(200);
+		expect(listPublications).toHaveBeenCalledWith("", undefined, "homepage");
 	});
 
 	it("requires a play-audience actor and optimistic revision for commands", async () => {

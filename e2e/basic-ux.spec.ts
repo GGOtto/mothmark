@@ -37,7 +37,7 @@ function collectBrowserErrors(page: Page) {
 }
 
 async function useHomePublications(page: Page) {
-	await page.route("**/api/play/publications", (route) =>
+	await page.route("**/api/play/publications?surface=homepage", (route) =>
 		route.fulfill({
 			status: 200,
 			contentType: "application/json",
@@ -58,6 +58,7 @@ async function useHomePublications(page: Page) {
 						{
 							authorUsername: "Mothmark",
 							id: "publication-id-2",
+							playAction: "continue",
 							slug: "corner-shop",
 							title: "Corner Shop",
 							summary: "A small example world with a few useful directions.",
@@ -438,19 +439,21 @@ test("the home page example plays through the real command path", async ({page})
 	await expect(publicationCarousel).toBeVisible();
 	await expect(
 		publicationCarousel.locator(".homeFeaturedPage--current").getByRole("heading", {
-			name: "Corner Shop",
+			name: "Quiet archive",
 		}),
 	).toBeVisible();
 	await expect(publicationCarousel.locator(".homeFeaturedPage--previous")).toContainText(
-		"Quiet archive",
+		"Signal room",
 	);
-	await expect(publicationCarousel.locator(".homeFeaturedPage--next")).toContainText("Signal room");
+	await expect(publicationCarousel.locator(".homeFeaturedPage--next")).toContainText("Corner Shop");
+	await expect(page.getByRole("link", {name: 'Play "Quiet archive"'})).toBeVisible();
 	await page.getByRole("button", {name: "Next featured publication"}).click();
 	await expect(
 		publicationCarousel.locator(".homeFeaturedPage--current").getByRole("heading", {
-			name: "Signal room",
+			name: "Corner Shop",
 		}),
 	).toBeVisible();
+	await expect(page.getByRole("link", {name: 'Continue "Corner Shop"'})).toBeVisible();
 	const videoButtons = page.getByRole("button", {name: "Watch video"});
 	await expect(videoButtons).toHaveCount(2);
 	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
@@ -1750,8 +1753,26 @@ test("administrator sign-in and granular controls support deep links and back na
 		id: "6f56ddaf-a999-49d7-a4b2-5b0281ccce3f",
 		username: "archivekeeper",
 	};
+	const publicationId = "7973548a-9957-40f4-8146-64d3ff7fb017";
+	let publication = {
+		homepagePosition: null as number | null,
+		id: publicationId,
+		isOfficial: false,
+		listedOnHomepage: false,
+		ownerName: null,
+		ownerUserId: registeredUser.id,
+		ownerUsername: registeredUser.username,
+		release: {id: "a00e257a-587f-4e28-aacf-4123875eedf1", number: 1, publishedAt: now},
+		slug: "quiet-archive",
+		status: "published" as const,
+		summary: "A compact world for testing hosted play.",
+		title: "Quiet archive",
+		visibility: "listed" as const,
+		worldId,
+	};
 	let permissionState: "deny" | "inherited" = "inherited";
 	let permissionMutation: unknown;
+	let publicationMutation: unknown;
 	await page.route("**/api/admin/auth/password", (route) =>
 		route.fulfill({
 			status: 200,
@@ -1830,6 +1851,22 @@ test("administrator sign-in and granular controls support deep links and back na
 			body: JSON.stringify({data: {revision: 4}}),
 		}),
 	);
+	await page.route(new RegExp(`/api/admin/publications/${publicationId}$`), async (route) => {
+		if (route.request().method() === "PUT") {
+			publicationMutation = route.request().postDataJSON();
+			publication = {
+				...publication,
+				homepagePosition: 1,
+				isOfficial: true,
+				listedOnHomepage: true,
+			};
+		}
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: publication}),
+		});
+	});
 	await page.route("**/api/auth/csrf?audience=admin", (route) =>
 		route.fulfill({
 			status: 200,
@@ -1879,6 +1916,37 @@ test("administrator sign-in and granular controls support deep links and back na
 	await page.getByLabel("Administrative reason").fill("Repair a malformed maintained document");
 	await expect(page.getByRole("button", {name: "Save administrative edit"})).toBeEnabled();
 	await page.setViewportSize({width: 390, height: 844});
+	expect(
+		await page.evaluate(
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+		),
+	).toBe(true);
+
+	await page.goto(`/admin/publications/${publicationId}`);
+	await expect(page.getByRole("heading", {name: "Quiet archive"})).toBeVisible();
+	await page
+		.getByRole("checkbox", {
+			name: "Official world Mark this as deliberately reviewed and endorsed by Mothmark.",
+		})
+		.check();
+	await page
+		.getByRole("checkbox", {
+			name: "Home page Feature this official world in the home page carousel.",
+		})
+		.check();
+	await expect(page.getByLabel("Home page position")).toHaveValue("1");
+	await page.getByLabel("Administrative reason").fill("Lead with the maintained introductory world");
+	await page.getByRole("button", {name: "Save discovery settings"}).click();
+	await page.getByRole("button", {name: "Make official"}).click();
+	await expect(page.getByRole("status")).toHaveText("Discovery settings saved.");
+	expect(publicationMutation).toEqual({
+		action: "update_curation",
+		homepagePosition: 1,
+		isOfficial: true,
+		listedOnHomepage: true,
+		reason: "Lead with the maintained introductory world",
+		visibility: "listed",
+	});
 	expect(
 		await page.evaluate(
 			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,

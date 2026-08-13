@@ -453,6 +453,70 @@
 .adminSectionNote {
 	margin-bottom: 0;
 }
+.adminSubheading {
+	margin: 20px 0 6px;
+	font-size: 13px;
+	font-weight: 650;
+}
+.adminDiscoveryControls {
+	display: grid;
+	gap: 0;
+	margin: 16px 0 18px;
+	border-top: 1px solid var(--color-border);
+}
+.adminSection .adminCheckboxControl {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 13px 0;
+	border-bottom: 1px solid var(--color-border);
+	cursor: pointer;
+	input {
+		width: 16px;
+		height: 16px;
+		margin: 1px 0 0;
+		accent-color: var(--color-action);
+	}
+	span {
+		display: grid;
+		gap: 3px;
+	}
+	strong {
+		color: var(--color-text);
+		font-size: 13px;
+	}
+	small {
+		color: var(--color-text-faint);
+		font-size: 11px;
+		font-weight: 400;
+	}
+	&:has(input:disabled) {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+}
+.adminSection .adminHomepagePosition {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 100px;
+	align-items: center;
+	gap: 4px 12px;
+	padding: 13px 0;
+	border-bottom: 1px solid var(--color-border);
+	span {
+		color: var(--color-text);
+		font-size: 13px;
+	}
+	input {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		width: 100%;
+	}
+	small {
+		color: var(--color-text-faint);
+		font-size: 11px;
+		font-weight: 400;
+	}
+}
 .adminJson {
 	max-height: 520px;
 	margin: 0;

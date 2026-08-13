@@ -39,6 +39,9 @@ export type AdminFeedbackDetail = AdminFeedback & {
 };
 export type AdminPublication = {
 	id: string;
+	homepagePosition: number | null;
+	isOfficial: boolean;
+	listedOnHomepage: boolean;
 	slug: string;
 	status: "published" | "unpublished" | "suspended";
 	visibility: "listed" | "unlisted";

@@ -9,7 +9,11 @@ import {
 	recordAdministratorRead,
 	administratorHasPermission,
 } from "@/db/dbal/adminRepository";
-import {listAdminPublications, setPublicationSuspension} from "@/db/dbal/publicationRepository";
+import {
+	listAdminPublications,
+	setPublicationSuspension,
+	updateAdminPublicationCuration,
+} from "@/db/dbal/publicationRepository";
 import {listAdminPlaythroughs} from "@/db/dbal/adminPlaythroughRepository";
 
 import {GET as getSession} from "./session/route";
@@ -33,6 +37,7 @@ jest.mock("@/db/dbal/publicationRepository", () => ({
 	PublicationError: class PublicationError extends Error {},
 	listAdminPublications: jest.fn(),
 	setPublicationSuspension: jest.fn(),
+	updateAdminPublicationCuration: jest.fn(),
 }));
 jest.mock("@/db/dbal/adminPlaythroughRepository", () => ({listAdminPlaythroughs: jest.fn()}));
 
@@ -150,6 +155,31 @@ describe("read-only administrator routes", () => {
 			publicationId: targetId,
 			suspended: true,
 			reason: "Unsafe content pending review",
+		});
+	});
+
+	it("audits complete publication discovery settings through administrator oversight", async () => {
+		jest.mocked(updateAdminPublicationCuration).mockResolvedValue({id: targetId} as never);
+		const response = await setPublicationStatus(
+			mutationRequest(`/api/admin/publications/${targetId}`, {
+				action: "update_curation",
+				visibility: "listed",
+				isOfficial: true,
+				listedOnHomepage: true,
+				homepagePosition: 1,
+				reason: "Lead with the maintained introductory world",
+			}),
+			{params: Promise.resolve({id: targetId})},
+		);
+		expect(response.status).toBe(200);
+		expect(updateAdminPublicationCuration).toHaveBeenCalledWith({
+			actorUserId: adminId,
+			publicationId: targetId,
+			visibility: "listed",
+			isOfficial: true,
+			listedOnHomepage: true,
+			homepagePosition: 1,
+			reason: "Lead with the maintained introductory world",
 		});
 	});
 });
