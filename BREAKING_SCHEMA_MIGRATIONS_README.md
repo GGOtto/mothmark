@@ -113,5 +113,12 @@ Never edit an applied migration or reuse its ID. Add another forward migration.
 domain it affects. It converts player actions from `item-action` to `player`, moves navigation and
 stored-value operations to their owning domains, flattens legacy item-condition tests, and renames
 affected command-variable bindings. The world transform walks every nested logic document while
-preserving unrelated authored fields; game states and messages are explicitly unchanged and still
-advance to version 6.
+preserving unrelated authored fields. Game states replay retained commands to populate newly tracked
+player runtime fields, while messages are unchanged and still advance to version 6.
+
+### Version 6 to 7: name empty legacy flags
+
+`v6-to-v7-name-empty-logic-flags` replaces a blank flag name in retained condition and effect logic
+with the deterministic reserved key `legacy.empty-flag`. The same key is used everywhere so paired
+legacy writers and readers keep their behavior. Unrelated authored fields, game states, and messages
+are preserved while every retained document advances to version 7.
