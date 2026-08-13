@@ -1,4 +1,4 @@
-import {ChevronDown, ChevronUp} from "lucide-react";
+import {ChevronDown, ChevronUp, SendHorizontal} from "lucide-react";
 
 import "./CommandInput.scss";
 
@@ -87,6 +87,15 @@ export function CommandInput({
 				enterKeyHint="send"
 				spellCheck={false}
 			/>
+			<button
+				type="submit"
+				className="command-input__submit"
+				disabled={disabled || busy || !command.trim()}
+				aria-label="Send command"
+			>
+				<SendHorizontal size={16} aria-hidden="true" />
+				<span>Send</span>
+			</button>
 			<div className="command-input__history" aria-label="Command history">
 				<button
 					type="button"
