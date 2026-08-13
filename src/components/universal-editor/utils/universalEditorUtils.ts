@@ -216,16 +216,14 @@ function generateSchemaVariantSummary(
 	kind: "condition" | "effect" | "nested",
 ) {
 	const type = String(value.type ?? "");
-	const flagType = typeof value["flag-type"] === "string" ? value["flag-type"] : undefined;
 	const operation = typeof value.operation === "string" ? value.operation : undefined;
 	const variant = findSummaryVariant(schema, value);
 	if (!variant) return kind === "nested" ? "" : `Unknown ${kind}`;
 
 	const typeLabel = schemaTypeOptions(schema).find((option) => option.value === type)?.label ?? type;
 	const operationLabel = operation
-		? schemaFieldOptions(schema, "operation", {type, "flag-type": flagType}).find(
-				(option) => option.value === operation,
-			)?.label
+		? schemaFieldOptions(schema, "operation", {type}).find((option) => option.value === operation)
+				?.label
 		: undefined;
 	const boundFields = commandBoundFields(value);
 	const details = Object.keys(variant.shape)
@@ -238,9 +236,6 @@ function generateSchemaVariantSummary(
 			boundFields.has(key) ? "command input" : stringifySummaryValue(value[key], variant.shape[key]),
 		)
 		.filter(Boolean);
-	const effectTypeLabel = operationLabel
-		? `${typeLabel.charAt(0).toLowerCase()}${typeLabel.slice(1)}`
-		: typeLabel;
-	const parts = kind === "effect" ? [operationLabel, effectTypeLabel] : [typeLabel, operationLabel];
+	const parts = kind === "effect" ? [operationLabel ?? typeLabel] : [typeLabel, operationLabel];
 	return [...parts, ...details].filter(Boolean).join(" ").trim() || typeLabel;
 }

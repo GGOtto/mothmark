@@ -1,5 +1,6 @@
 import type {z} from "zod";
 import type {EditorSelectOption} from "@/types/universalEditorTypes";
+import type {EditorDiscoveryMetadata} from "@/types/editor/editorMetadataTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {getEditorMetadata, getEditorVariants} from "@/utils/editorMetadata";
 
@@ -34,7 +35,7 @@ function getDef(schema: z.ZodTypeAny): ZodDef {
 	return introspectable.def ?? introspectable._def ?? {};
 }
 
-function titleFromValue(value: string) {
+export function titleFromSchemaValue(value: string) {
 	const words = value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ");
 	return `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
 }
@@ -49,11 +50,12 @@ function objectShape(schema: z.ZodTypeAny) {
 export function getEditorSchemaVariants(
 	schema: z.ZodTypeAny,
 	seen = new Set<z.ZodTypeAny>(),
-	inheritedMetadataSchema: z.ZodTypeAny = schema,
+	inheritedMetadataSchema?: z.ZodTypeAny,
 ): EditorSchemaVariant[] {
 	if (seen.has(schema)) return [];
 	seen.add(schema);
-	const metadataSchema = getEditorMetadata(schema) ? schema : inheritedMetadataSchema;
+	const ownMetadataSchema = getEditorMetadata(schema) ? schema : undefined;
+	const metadataSchema = ownMetadataSchema ?? inheritedMetadataSchema;
 	const declaredVariants = getEditorVariants(schema);
 	if (declaredVariants && declaredVariants !== schema) {
 		return getEditorSchemaVariants(declaredVariants, seen, metadataSchema);
@@ -76,7 +78,9 @@ export function getEditorSchemaVariants(
 	}
 	if (def.type === "object") {
 		const shape = objectShape(schema);
-		return shape ? [{schema, shape, metadataSchema}] : [];
+		// Once a containing union supplies domain metadata, an operation-level object's
+		// title must not replace it in the top-level type picker.
+		return shape ? [{schema, shape, metadataSchema: inheritedMetadataSchema ?? schema}] : [];
 	}
 
 	return [];
@@ -144,7 +148,7 @@ export function schemaFieldOptions(
 		const metadata = getEditorMetadata(fieldSchema);
 		for (const value of getSchemaFieldValues(fieldSchema)) {
 			const declared = metadata?.options?.find((option) => option.value === value);
-			options.set(value, declared ?? {label: titleFromValue(value), value});
+			options.set(value, declared ?? {label: titleFromSchemaValue(value), value});
 		}
 	}
 	return [...options.values()];
@@ -160,12 +164,146 @@ export function schemaTypeOptions(schema: z.ZodTypeAny, field = "type"): EditorS
 			? metadata?.title
 			: metadata?.title?.replace(/\s+(condition|effect)$/i, "");
 		options.set(value, {
-			label: schemaTitle || titleFromValue(value),
+			label: schemaTitle || titleFromSchemaValue(value),
 			value,
 			description: metadata?.description,
 		});
 	}
 	return [...options.values()];
+}
+
+export type SchemaLogicOption = {
+	key: string;
+	type: string;
+	operation?: string;
+	title: string;
+	description?: string;
+	category: string;
+	keywords: string[];
+	situations: string[];
+	example?: string;
+	note?: string;
+	requires: string[];
+	fields: string[];
+	defaultValue: Record<string, unknown>;
+	searchText: string;
+};
+
+const LOGIC_INTERNAL_FIELDS = new Set([
+	"type",
+	"operation",
+	"messageType",
+	"commandVariables",
+	"id",
+	"name",
+	"label",
+	"title",
+	"allowMultipleUsesInWorld",
+]);
+
+function mergeDiscovery(
+	...values: Array<EditorDiscoveryMetadata | undefined>
+): Required<Pick<EditorDiscoveryMetadata, "keywords" | "situations" | "requires">> &
+	Pick<EditorDiscoveryMetadata, "example" | "note"> {
+	return {
+		keywords: [...new Set(values.flatMap((value) => value?.keywords ?? []))],
+		situations: [...new Set(values.flatMap((value) => value?.situations ?? []))],
+		requires: [...new Set(values.flatMap((value) => value?.requires ?? []))],
+		example: values.find((value) => value?.example)?.example,
+		note: values.find((value) => value?.note)?.note,
+	};
+}
+
+/**
+ * Produces every concrete condition/effect choice from the supplied schema.
+ * The active schema controls availability, while metadata on its type, object,
+ * operation, and input fields controls author-facing discovery.
+ */
+export function schemaLogicOptions(schema: z.ZodTypeAny): SchemaLogicOption[] {
+	const typeOptions = new Map(schemaTypeOptions(schema).map((option) => [option.value, option]));
+	const options = new Map<string, SchemaLogicOption>();
+
+	for (const variant of getEditorSchemaVariants(schema)) {
+		const type = schemaVariantValue(variant, "type");
+		if (!type || type === "group") continue;
+
+		const typeOption = typeOptions.get(type);
+		const domainMetadata = getEditorMetadata(variant.metadataSchema);
+		const branchMetadata = getEditorMetadata(variant.schema);
+		const operationSchema = variant.shape.operation ?? variant.shape.messageType;
+		const operationMetadata = operationSchema ? getEditorMetadata(operationSchema) : undefined;
+		const operations = operationSchema ? getSchemaFieldValues(operationSchema) : [undefined];
+
+		for (const operation of operations.length > 0 ? operations : [undefined]) {
+			const declaredOperation = operationMetadata?.options?.find(
+				(option) => option.value === operation,
+			);
+			const key = `${type}:${operation ?? ""}`;
+			if (options.has(key)) continue;
+
+			const discovery = mergeDiscovery(
+				domainMetadata?.discovery,
+				branchMetadata?.discovery,
+				operationMetadata?.discovery,
+				declaredOperation,
+			);
+			const title =
+				declaredOperation?.label ??
+				branchMetadata?.title ??
+				(operation ? titleFromSchemaValue(operation) : typeOption?.label) ??
+				titleFromSchemaValue(type);
+			const description =
+				declaredOperation?.description ?? branchMetadata?.description ?? domainMetadata?.description;
+			const fields = Object.entries(variant.shape)
+				.filter(([field]) => !LOGIC_INTERNAL_FIELDS.has(field))
+				.map(
+					([field, fieldSchema]) => getEditorMetadata(fieldSchema)?.title ?? titleFromSchemaValue(field),
+				);
+			const category = type.endsWith("-ref")
+				? "Reusable"
+				: (typeOption?.label ?? titleFromSchemaValue(type));
+			const searchText = [
+				title,
+				description,
+				category,
+				...discovery.keywords,
+				...discovery.situations,
+				...fields,
+				operation,
+				type,
+			]
+				.filter(Boolean)
+				.join(" ")
+				.toLocaleLowerCase();
+
+			options.set(key, {
+				key,
+				type,
+				operation,
+				title,
+				description,
+				category,
+				keywords: discovery.keywords,
+				situations: discovery.situations,
+				example: declaredOperation?.example ?? discovery.example,
+				note: declaredOperation?.note ?? discovery.note,
+				requires: discovery.requires,
+				fields,
+				defaultValue: createSchemaVariantDefault(schema, {type, operation}),
+				searchText,
+			});
+		}
+	}
+
+	return [...options.values()];
+}
+
+export function schemaLogicOptionForValue(schema: z.ZodTypeAny, value: Record<string, unknown>) {
+	const type = String(value.type ?? "");
+	const operation = value.operation ?? value.messageType;
+	return schemaLogicOptions(schema).find(
+		(option) => option.type === type && option.operation === operation,
+	);
 }
 
 export function createSchemaVariantDefault(

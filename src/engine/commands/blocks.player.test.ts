@@ -52,8 +52,8 @@ function numberCommand() {
 				type: "group",
 				effects: [
 					{
-						type: "counter",
-						operation: "increase",
+						type: "world",
+						operation: "increase-counter",
 						counter: "matched-number",
 						amount: 0,
 						commandVariables: [{blockId: value.id, field: "amount"}],

@@ -12,6 +12,8 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 			currentRoom: startingRoomId,
 			facing: "n",
 			turns: 0,
+			randomState: 0x6d2b79f5,
+			equippedItemIds: [],
 			freezeState: {},
 		},
 		variables: {

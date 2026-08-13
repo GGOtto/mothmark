@@ -6,18 +6,15 @@ import {
 	type RoomState,
 } from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
-import {DIRECTIONS} from "@/schemas/world/directionSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {choose} from "@/utils/choose";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {
-	resolveCounterEffect,
+	resolveWorldEffect,
 	resolveItemEffect,
-	resolveFlagEffect,
 	resolveMessageEffect,
 	resolveRoomEffect,
-	resolveTextEffect,
 } from "./resolveEffects";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
@@ -69,8 +66,8 @@ describe("resolveMessageEffect", () => {
 		const game = createGameState();
 
 		const effect = {
-			type: "flag",
-			operation: "set",
+			type: "world",
+			operation: "set-flag",
 			flag: "door-open",
 			value: true,
 		} as Effect;
@@ -122,7 +119,7 @@ describe("resolveMessageEffect", () => {
 
 		const effect = {
 			type: "message",
-			operation: "random",
+			operation: "show-random",
 			messages,
 		} as Effect;
 
@@ -148,7 +145,7 @@ describe("resolveMessageEffect", () => {
 
 		const effect = {
 			type: "message",
-			operation: "random",
+			operation: "show-random",
 			messages: ["Fallback"],
 		} as Effect;
 
@@ -183,7 +180,7 @@ describe("resolveMessageEffect", () => {
 
 		const effect = {
 			type: "message",
-			operation: "append-last-message",
+			operation: "append-to-last",
 			message: " updated",
 			format: "inline",
 		} as Effect;
@@ -229,34 +226,34 @@ describe("resolveMessageEffect", () => {
 	});
 });
 
-describe("resolveFlagEffect", () => {
+describe("resolveWorldEffect", () => {
 	it("returns the original game for a non-flag effect", () => {
 		const game = createGameState();
 
 		const effect = {
-			type: "counter",
-			operation: "set",
-			counter: "health",
-			value: 10,
+			type: "message",
+			operation: "show",
+			message: "Not world state",
 		} as Effect;
 
-		const result = resolveFlagEffect(game, effect);
+		const result = resolveWorldEffect(game, effect);
 
 		expect(result).toBe(game);
 	});
 
-	describe.each(["create", "set"] as const)("%s", (operation) => {
+	describe("set-flag", () => {
+		const operation = "set-flag" as const;
 		it("adds a new flag when it does not exist", () => {
 			const game = createGameState();
 
 			const effect = {
-				type: "flag",
+				type: "world",
 				operation,
 				flag: "door-open",
 				value: true,
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"door-open": true}]);
 			expect(game.variables.flags).toEqual([]);
@@ -271,13 +268,13 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
+				type: "world",
 				operation,
 				flag: "door-open",
 				value: true,
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"door-open": true}]);
 			expect(game.variables.flags).toEqual([{"door-open": false}]);
@@ -292,13 +289,13 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
+				type: "world",
 				operation,
 				flag: "door-open",
 				value: true,
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([
 				{"has-key": true},
@@ -321,13 +318,13 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
+				type: "world",
 				operation,
 				flag: "door-open",
 				value: true,
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([
 				{
@@ -343,12 +340,12 @@ describe("resolveFlagEffect", () => {
 			const game = createGameState();
 
 			const effect = {
-				type: "flag",
-				operation: "toggle",
+				type: "world",
+				operation: "toggle-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"door-open": true}]);
 		});
@@ -362,12 +359,12 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
-				operation: "toggle",
+				type: "world",
+				operation: "toggle-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"door-open": true}]);
 		});
@@ -381,12 +378,12 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
-				operation: "toggle",
+				type: "world",
+				operation: "toggle-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"door-open": false}]);
 		});
@@ -402,12 +399,12 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
-				operation: "delete",
+				type: "world",
+				operation: "delete-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"has-key": true}]);
 			expect(game.variables.flags).toEqual([{"has-key": true}, {"door-open": false}]);
@@ -427,12 +424,12 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
-				operation: "delete",
+				type: "world",
+				operation: "delete-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"has-key": true}]);
 		});
@@ -446,12 +443,12 @@ describe("resolveFlagEffect", () => {
 			});
 
 			const effect = {
-				type: "flag",
-				operation: "delete",
+				type: "world",
+				operation: "delete-flag",
 				flag: "door-open",
 			} as Effect;
 
-			const result = resolveFlagEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result).toBe(game);
 			expect(result.variables.flags).toEqual([{"has-key": true}]);
@@ -467,13 +464,13 @@ describe("resolveFlagEffect", () => {
 		});
 
 		const effect = {
-			type: "flag",
-			operation: "set",
+			type: "world",
+			operation: "set-flag",
 			flag: "door-open",
 			value: true,
 		} as Effect;
 
-		const result = resolveFlagEffect(game, effect);
+		const result = resolveWorldEffect(game, effect);
 
 		expect(result).not.toBe(game);
 		expect(result.variables).not.toBe(game.variables);
@@ -497,18 +494,16 @@ describe("resolveFlagEffect", () => {
 				}),
 			],
 		});
-		const roomSet = resolveFlagEffect(game, {
-			type: "flag",
-			"flag-type": "room",
-			operation: "set",
+		const roomSet = resolveRoomEffect(game, {
+			type: "room",
+			operation: "set-flag",
 			roomId: {type: "room", id: "hall"},
 			flag: "dark",
 			value: true,
 		} as Effect);
-		const itemToggle = resolveFlagEffect(roomSet, {
-			type: "flag",
-			"flag-type": "item",
-			operation: "toggle",
+		const itemToggle = resolveItemEffect(roomSet, {
+			type: "item",
+			operation: "toggle-flag",
 			itemId: {type: "item", id: "statue"},
 			flag: "glowing",
 		} as Effect);
@@ -534,25 +529,22 @@ describe("resolveFlagEffect", () => {
 				}),
 			],
 		});
-		const visited = resolveFlagEffect(game, {
-			type: "flag",
-			"flag-type": "room",
-			operation: "toggle",
+		const visited = resolveRoomEffect(game, {
+			type: "room",
+			operation: "toggle-flag",
 			roomId: {type: "room", id: "hall"},
 			flag: "visited",
 		} as Effect);
-		const examined = resolveFlagEffect(game, {
-			type: "flag",
-			"flag-type": "item",
-			operation: "set",
+		const examined = resolveItemEffect(game, {
+			type: "item",
+			operation: "set-flag",
 			itemId: {type: "item", id: "statue"},
 			flag: "examined",
 			value: true,
 		} as Effect);
-		const active = resolveFlagEffect(game, {
-			type: "flag",
-			"flag-type": "room",
-			operation: "delete",
+		const active = resolveRoomEffect(game, {
+			type: "room",
+			operation: "delete-flag",
 			roomId: {type: "room", id: "hall"},
 			flag: "active",
 		} as Effect);
@@ -563,34 +555,34 @@ describe("resolveFlagEffect", () => {
 	});
 });
 
-describe("resolveCounterEffect", () => {
+describe("resolveWorldEffect", () => {
 	it("returns the original game for a non-counter effect", () => {
 		const game = createGameState();
 
 		const effect = {
-			type: "flag",
-			operation: "set",
-			flag: "door-open",
-			value: true,
+			type: "message",
+			operation: "show",
+			message: "Not world state",
 		} as Effect;
 
-		const result = resolveCounterEffect(game, effect);
+		const result = resolveWorldEffect(game, effect);
 
 		expect(result).toBe(game);
 	});
 
-	describe.each(["create", "set"] as const)("%s", (operation) => {
+	describe("set-counter", () => {
+		const operation = "set-counter" as const;
 		it("adds a new counter when it does not exist", () => {
 			const game = createGameState();
 
 			const effect = {
-				type: "counter",
+				type: "world",
 				operation,
 				counter: "health",
 				value: 10,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{health: 10}]);
 			expect(game.variables.counters).toEqual([]);
@@ -605,13 +597,13 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
+				type: "world",
 				operation,
 				counter: "health",
 				value: 10,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{health: 10}]);
 			expect(game.variables.counters).toEqual([{health: 5}]);
@@ -626,13 +618,13 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
+				type: "world",
 				operation,
 				counter: "gold",
 				value: 50,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{health: 5}, {gold: 50}, {reputation: 3}]);
 		});
@@ -651,13 +643,13 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
+				type: "world",
 				operation,
 				counter: "health",
 				value: 20,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([
 				{
@@ -678,13 +670,13 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "increase",
+				type: "world",
+				operation: "increase-counter",
 				counter: "gold",
 				amount: 4,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{gold: 14}]);
 			expect(game.variables.counters).toEqual([{gold: 10}]);
@@ -694,13 +686,13 @@ describe("resolveCounterEffect", () => {
 			const game = createGameState();
 
 			const effect = {
-				type: "counter",
-				operation: "increase",
+				type: "world",
+				operation: "increase-counter",
 				counter: "gold",
 				amount: 4,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{gold: 4}]);
 		});
@@ -716,13 +708,13 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "decrease",
+				type: "world",
+				operation: "decrease-counter",
 				counter: "health",
 				amount: 3,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{health: 7}]);
 			expect(game.variables.counters).toEqual([{health: 10}]);
@@ -732,13 +724,13 @@ describe("resolveCounterEffect", () => {
 			const game = createGameState();
 
 			const effect = {
-				type: "counter",
-				operation: "decrease",
+				type: "world",
+				operation: "decrease-counter",
 				counter: "health",
 				amount: 3,
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{health: -3}]);
 		});
@@ -754,12 +746,12 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "delete",
+				type: "world",
+				operation: "delete-counter",
 				counter: "health",
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{gold: 20}]);
 			expect(game.variables.counters).toEqual([{health: 10}, {gold: 20}]);
@@ -779,12 +771,12 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "delete",
+				type: "world",
+				operation: "delete-counter",
 				counter: "health",
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.counters).toEqual([{mana: 5}]);
 		});
@@ -798,12 +790,12 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "delete",
+				type: "world",
+				operation: "delete-counter",
 				counter: "health",
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result.variables.flags).toEqual([{"has-key": true}, {"door-open": false}]);
 			expect(result.variables.counters).toEqual([{gold: 20}]);
@@ -818,12 +810,12 @@ describe("resolveCounterEffect", () => {
 			});
 
 			const effect = {
-				type: "counter",
-				operation: "delete",
+				type: "world",
+				operation: "delete-counter",
 				counter: "gold",
 			} as Effect;
 
-			const result = resolveCounterEffect(game, effect);
+			const result = resolveWorldEffect(game, effect);
 
 			expect(result).toBe(game);
 			expect(result.variables.counters).toEqual([{health: 10}]);
@@ -839,13 +831,13 @@ describe("resolveCounterEffect", () => {
 		});
 
 		const effect = {
-			type: "counter",
-			operation: "increase",
+			type: "world",
+			operation: "increase-counter",
 			counter: "health",
 			amount: 5,
 		} as Effect;
 
-		const result = resolveCounterEffect(game, effect);
+		const result = resolveWorldEffect(game, effect);
 
 		expect(result).not.toBe(game);
 		expect(result.variables).not.toBe(game.variables);
@@ -855,12 +847,13 @@ describe("resolveCounterEffect", () => {
 	});
 });
 
-describe("resolveTextEffect", () => {
-	it.each(["create", "set"] as const)("%s creates or replaces saved text", (operation) => {
+describe("resolveWorldEffect", () => {
+	it("set-text creates or replaces saved text", () => {
+		const operation = "set-text" as const;
 		const game = createGameState({variables: {texts: [{note: "old"}]}});
 
-		const result = resolveTextEffect(game, {
-			type: "text",
+		const result = resolveWorldEffect(game, {
+			type: "world",
 			operation,
 			text: "note",
 			value: "new",
@@ -871,9 +864,9 @@ describe("resolveTextEffect", () => {
 	});
 
 	it("creates a missing saved text value", () => {
-		const result = resolveTextEffect(createGameState(), {
-			type: "text",
-			operation: "set",
+		const result = resolveWorldEffect(createGameState(), {
+			type: "world",
+			operation: "set-text",
 			text: "note",
 			value: "new",
 		});
@@ -882,9 +875,9 @@ describe("resolveTextEffect", () => {
 	});
 
 	it("deletes only the requested saved text value", () => {
-		const result = resolveTextEffect(
+		const result = resolveWorldEffect(
 			createGameState({variables: {texts: [{note: "old", other: "kept"}]}}),
-			{type: "text", operation: "delete", text: "note"},
+			{type: "world", operation: "delete-text", text: "note"},
 		);
 
 		expect(result.variables.texts).toEqual([{other: "kept"}]);
@@ -922,16 +915,16 @@ describe("resolveItemEffect", () => {
 
 		expect(
 			resolveItemEffect(game, {
-				type: "flag",
-				operation: "toggle",
+				type: "world",
+				operation: "toggle-flag",
 				flag: "door-open",
 			} as Effect),
 		).toBe(game);
 	});
 
 	it.each([
-		["change-name", "name", "Ancient statue"],
-		["change-examine-text", "description", "Its eyes are glowing."],
+		["set-name", "name", "Ancient statue"],
+		["set-examine-text", "description", "Its eyes are glowing."],
 	] as const)("resolves %s without mutating the original item", (operation, property, value) => {
 		const game = createGameWithItems();
 		const result = resolveItemEffect(game, itemEffect(operation, {value}));
@@ -959,8 +952,8 @@ describe("resolveItemEffect", () => {
 	});
 
 	it.each([
-		["list-in-room", true],
-		["unlist-in-room", false],
+		["set-listed", true],
+		["set-unlisted", false],
 	] as const)("resolves %s by updating the complete item state", (operation, value) => {
 		const game = produce(createGameWithItems(), (draft) => {
 			draft.itemStates[0].listedInRoom = !value;
@@ -1038,61 +1031,21 @@ describe("resolveRoomEffect", () => {
 
 	it("returns the original game for a non-room effect", () => {
 		const game = createGameWithRoom();
-		expect(resolveRoomEffect(game, {type: "flag", operation: "toggle", flag: "x"} as Effect)).toBe(
-			game,
-		);
-	});
-
-	it("moves the player to the selected room", () => {
-		const game = createGameWithRoom();
-		game.roomStates.push(
-			createRoomState({
-				id: {type: "room", id: "vault"},
-				flags: {visited: false, active: true},
-			}),
-		);
-		const result = resolveRoomEffect(
-			game,
-			roomEffect("move-player-to", {roomId: {type: "room", id: "vault"}}),
-		);
-
-		expect(result.player.currentRoom).toEqual({type: "room", id: "vault"});
-		expect(result.roomStates[1].flags.visited).toBe(true);
-		expect(game.player.currentRoom).toEqual({type: "room", id: "hall"});
-		expect(game.roomStates[1].flags.visited).toBe(false);
+		expect(
+			resolveRoomEffect(game, {type: "world", operation: "toggle-flag", flag: "x"} as Effect),
+		).toBe(game);
 	});
 
 	it.each([
 		["set-name", "name", "ruined-hall"],
 		["set-description", "description", "flooded-hall"],
 		["set-short-description", "shortDescription", "still-flooded-hall"],
-	] as const)("resolves %s", (operation, property, variantId) => {
+	] as const)("resolves %s", (operation, property, value) => {
 		const game = createGameWithRoom();
-		const result = resolveRoomEffect(game, roomEffect(operation, {variantId}));
+		const result = resolveRoomEffect(game, roomEffect(operation, {value}));
 
-		expect(result.roomStates[0]).toMatchObject({[property]: variantId});
-		expect(game.roomStates[0][property]).not.toBe(variantId);
-	});
-
-	it("locks an exit once and unlocks it", () => {
-		const game = createGameWithRoom();
-		const locked = resolveRoomEffect(game, roomEffect("lock-exit", {direction: "e"}));
-		const relocked = resolveRoomEffect(locked, roomEffect("lock-exit", {direction: "e"}));
-		const unlocked = resolveRoomEffect(relocked, roomEffect("unlock-exit", {direction: "n"}));
-
-		expect(locked.roomStates[0].lockedExits).toEqual(["n", "e"]);
-		expect(relocked.roomStates[0].lockedExits).toEqual(["n", "e"]);
-		expect(unlocked.roomStates[0].lockedExits).toEqual(["e"]);
-	});
-
-	it("locks and unlocks all exits", () => {
-		const game = createGameWithRoom();
-		const locked = resolveRoomEffect(game, roomEffect("lock-all-exits"));
-		const unlocked = resolveRoomEffect(locked, roomEffect("unlock-all-exits"));
-
-		expect(locked.roomStates[0].lockedExits).toEqual(DIRECTIONS);
-		expect(unlocked.roomStates[0].lockedExits).toEqual([]);
-		expect(game.roomStates[0].lockedExits).toEqual(["n"]);
+		expect(result.roomStates[0]).toMatchObject({[property]: value});
+		expect(game.roomStates[0][property]).not.toBe(value);
 	});
 
 	it("adds a tag once and removes tags", () => {

@@ -8,7 +8,7 @@ describe("teleportation through the player path", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const event = createPlayerTestEvent(
 			"room-move",
-			[{type: "room", operation: "move-player-to", roomId: toID("room", "gallery")}],
+			[{type: "navigation", operation: "move-to-room", roomId: toID("room", "gallery")}],
 			(draft) => {
 				draft.disposable = true;
 			},

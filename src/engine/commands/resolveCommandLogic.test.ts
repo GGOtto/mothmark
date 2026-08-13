@@ -42,16 +42,16 @@ describe("command logic schemas", () => {
 	it("preserves command bindings only in command templates", () => {
 		const commandVariables = [{blockId: amountBlockId, field: "value"}];
 		const condition = {
-			type: "counter" as const,
-			operation: "compare" as const,
+			type: "world" as const,
+			operation: "counter-compare" as const,
 			counter: "count",
 			operator: "gt" as const,
 			value: 0,
 			commandVariables,
 		};
 		const effect = {
-			type: "counter" as const,
-			operation: "set" as const,
+			type: "world" as const,
+			operation: "set-counter" as const,
 			counter: "count",
 			value: 0,
 			commandVariables,
@@ -66,8 +66,8 @@ describe("command logic schemas", () => {
 	it("rejects duplicate or structural field bindings", () => {
 		expect(
 			CommandEffectSchema.safeParse({
-				type: "counter",
-				operation: "set",
+				type: "world",
+				operation: "set-counter",
 				commandVariables: [
 					{blockId: amountBlockId, field: "value"},
 					{blockId: otherAmountBlockId, field: "value"},
@@ -76,8 +76,8 @@ describe("command logic schemas", () => {
 		).toBe(false);
 		expect(
 			CommandEffectSchema.safeParse({
-				type: "counter",
-				operation: "set",
+				type: "world",
+				operation: "set-counter",
 				commandVariables: [{blockId: amountBlockId, field: "operation"}],
 			}).success,
 		).toBe(false);
@@ -123,16 +123,16 @@ describe("command logic schemas", () => {
 describe("resolveCommandCondition", () => {
 	it("fills an optional normal-condition value from a command variable", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "count",
 			operator: "gt",
 			commandVariables: [{blockId: amountBlockId, field: "value"}],
 		});
 
 		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "count",
 			operator: "gt",
 			value: 3,
@@ -159,9 +159,8 @@ describe("resolveCommandCondition", () => {
 
 	it("fills a flag expectation from a boolean command variable", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+			type: "world",
+			operation: "flag-is",
 			flag: "ready",
 			value: true,
 			commandVariables: [{blockId: booleanBlockId, field: "value"}],
@@ -171,9 +170,8 @@ describe("resolveCommandCondition", () => {
 		});
 
 		expect(resolveCommandCondition(game, condition)).toEqual({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+			type: "world",
+			operation: "flag-is",
 			flag: "ready",
 			value: false,
 		});
@@ -181,8 +179,8 @@ describe("resolveCommandCondition", () => {
 
 	it("compares a number command value where a saved counter can be selected", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "count",
 			operator: "eq",
 			value: 3,
@@ -198,9 +196,8 @@ describe("resolveCommandCondition", () => {
 
 	it("compares a boolean command value where a saved flag can be selected", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+			type: "world",
+			operation: "flag-is",
 			flag: "ready",
 			value: false,
 			commandVariables: [{blockId: booleanBlockId, field: "flag"}],
@@ -215,8 +212,8 @@ describe("resolveCommandCondition", () => {
 
 	it("compares a text command value where saved text can be selected", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "text",
-			operation: "contains",
+			type: "world",
+			operation: "text-contains",
 			text: "saved-text",
 			value: "message",
 			commandVariables: [{blockId: messageBlockId, field: "text"}],
@@ -231,15 +228,15 @@ describe("resolveCommandCondition", () => {
 
 	it("interpolates a choice block's raw text into a text condition", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "text",
-			operation: "is",
+			type: "world",
+			operation: "text-is",
 			text: "tone",
 			value: `{variable ${choiceBlockId.id} text}`,
 		});
 
 		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({
-			type: "text",
-			operation: "is",
+			type: "world",
+			operation: "text-is",
 			text: "tone",
 			value: "properly",
 		});
@@ -263,8 +260,8 @@ describe("resolveCommandCondition", () => {
 
 	it("fails closed when a required value has no authored or command value", () => {
 		const condition = CommandConditionSchema.parse({
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "count",
 			operator: "gt",
 		});
@@ -280,7 +277,7 @@ describe("resolveCommandCondition", () => {
 		const condition = CommandConditionSchema.parse({
 			type: "group",
 			operation: "none",
-			conditions: [{type: "counter", operation: "compare", counter: "count", operator: "gt"}],
+			conditions: [{type: "world", operation: "counter-compare", counter: "count", operator: "gt"}],
 		});
 
 		expect(resolveCommandCondition(gameWithCommandVariables(), condition)).toEqual({

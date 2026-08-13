@@ -98,26 +98,27 @@ type PopupProviderProps = {
 };
 
 export function PopupProvider({children}: PopupProviderProps) {
-	const [activePopup, setActivePopup] = useState<ActivePopup | null>(null);
-	const activePopupRef = useRef<ActivePopup | null>(null);
+	const [popupStack, setPopupStack] = useState<ActivePopup[]>([]);
+	const popupStackRef = useRef<ActivePopup[]>([]);
 	const nextIdRef = useRef(0);
 
 	const finishPopup = useCallback((result?: unknown, id?: number) => {
-		const currentPopup = activePopupRef.current;
+		const currentPopup = popupStackRef.current.at(-1);
 
 		if (!currentPopup || (id !== undefined && currentPopup.id !== id)) {
 			return;
 		}
 
-		activePopupRef.current = null;
-		setActivePopup(null);
+		const nextStack = popupStackRef.current.slice(0, -1);
+		popupStackRef.current = nextStack;
+		setPopupStack(nextStack);
 		currentPopup.resolvePromise(result);
 	}, []);
 
 	useEffect(
 		() => () => {
-			activePopupRef.current?.resolvePromise(undefined);
-			activePopupRef.current = null;
+			popupStackRef.current.forEach((popup) => popup.resolvePromise(undefined));
+			popupStackRef.current = [];
 		},
 		[],
 	);
@@ -139,9 +140,9 @@ export function PopupProvider({children}: PopupProviderProps) {
 					resolvePromise: resolvePromise as (result: unknown | undefined) => void,
 				};
 
-				activePopupRef.current?.resolvePromise(undefined);
-				activePopupRef.current = popup;
-				setActivePopup(popup);
+				const nextStack = [...popupStackRef.current, popup];
+				popupStackRef.current = nextStack;
+				setPopupStack(nextStack);
 			});
 		},
 		[],
@@ -240,13 +241,14 @@ export function PopupProvider({children}: PopupProviderProps) {
 		<PopupContext.Provider value={api}>
 			{children}
 
-			{activePopup && (
+			{popupStack.map((popup, index) => (
 				<PopupHost
-					key={activePopup.id}
-					popup={activePopup}
-					onFinish={(result) => finishPopup(result, activePopup.id)}
+					key={popup.id}
+					active={index === popupStack.length - 1}
+					popup={popup}
+					onFinish={(result) => finishPopup(result, popup.id)}
 				/>
-			)}
+			))}
 		</PopupContext.Provider>
 	);
 }
@@ -267,16 +269,18 @@ export function useOptionalPopup(): PopupApi | undefined {
 }
 
 type PopupHostProps = {
+	active: boolean;
 	popup: ActivePopup;
 	onFinish: (result?: unknown) => void;
 };
 
-function PopupHost({popup, onFinish}: PopupHostProps) {
+function PopupHost({active, popup, onFinish}: PopupHostProps) {
 	const {options} = popup;
 	const returnFocusRef = useMemo(() => ({current: popup.returnFocus}), [popup.returnFocus]);
 
 	return (
 		<ModalLayer
+			active={active}
 			ariaLabel={options.ariaLabel || undefined}
 			backdropClassName="popupBackdrop"
 			className={["popupSurface", options.className].filter(Boolean).join(" ")}

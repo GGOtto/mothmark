@@ -67,29 +67,57 @@
 	"priority": 1,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "put-on-item"},
+			"blockId": {
+				"type": "command-block",
+				"id": "put-on-item"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "put-on-item-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "put-on-item-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve held item",
-					"id": {"type": "effect", "id": "put-on-item-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "put-on-item-fallback-effects"
+					},
 					"type": "group",
 					"effects": [
-						{"type": "message", "operation": "show", "message": "You can't put that anywhere."}
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't put that anywhere."
+						}
 					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
 		},
 		{
-			"blockId": {"type": "command-block", "id": "put-on-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "put-on-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "put-on-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "put-on-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve surface",
-					"id": {"type": "effect", "id": "put-on-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "put-on-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't put it on that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't put it on that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -109,8 +137,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "put-on",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "put-on-item-fallback"
@@ -134,7 +161,8 @@
 							},
 							"field": "surfaceId"
 						}
-					]
+					],
+					"operation": "put-on"
 				}
 			],
 			"allowMultipleUsesInWorld": true

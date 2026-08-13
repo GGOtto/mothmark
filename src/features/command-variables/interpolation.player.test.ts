@@ -18,7 +18,6 @@ import {
 	CommandConditionWithEffectSchema,
 	CommandEffectGroupSchema,
 } from "@/schemas/world/commandLogicSchemas";
-import {TextConditionSchema} from "@/schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID, type ID} from "@/utils/idUtils";
 import {createPlayerTestScenario} from "@/engine/utils/testUtils";
@@ -140,8 +139,8 @@ describe("command variable interpolation through the player path", () => {
 	it("uses an entered number instead of a saved counter in a counter condition", () => {
 		const amountId = toID("command-block", "guess-amount");
 		const conditionLeaf = CommandConditionSchema.parse({
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "answer",
 			operator: "eq",
 			value: 3,
@@ -187,9 +186,8 @@ describe("command variable interpolation through the player path", () => {
 	it("uses an entered boolean instead of a saved flag in a flag condition", () => {
 		const valueId = toID("command-block", "confirm-value");
 		const conditionLeaf = CommandConditionSchema.parse({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+			type: "world",
+			operation: "flag-is",
 			flag: "ready",
 			value: true,
 			commandVariables: [{blockId: valueId, field: "flag"}],
@@ -228,8 +226,8 @@ describe("command variable interpolation through the player path", () => {
 	it("uses entered text instead of saved text in a text condition", () => {
 		const textId = toID("command-block", "say-text");
 		const conditionLeaf = CommandConditionSchema.parse({
-			type: "text",
-			operation: "starts-with",
+			type: "world",
+			operation: "text-starts-with",
 			text: "answer",
 			value: "moth",
 			commandVariables: [{blockId: textId, field: "text"}],
@@ -284,9 +282,8 @@ describe("command variable interpolation through the player path", () => {
 					...messageGroup("mark-ready", "Recorded."),
 					effects: [
 						{
-							type: "flag",
-							"flag-type": "normal",
-							operation: "set",
+							type: "world",
+							operation: "set-flag",
 							flag: "ready",
 							value: true,
 							commandVariables: [{blockId: valueId, field: "value"}],
@@ -312,9 +309,8 @@ describe("command variable interpolation through the player path", () => {
 		const styleId = toID("command-block", "record-style");
 		const rawCommand = `{variable ${verbId.id} text} {variable ${relationId.id} text} {variable ${styleId.id} text}`;
 		const condition = CommandConditionSchema.parse({
-			...createDefaultFieldObject(TextConditionSchema),
-			type: "text",
-			operation: "is",
+			type: "world",
+			operation: "text-is",
 			text: "expected-command",
 			value: rawCommand,
 		});
@@ -338,7 +334,7 @@ describe("command variable interpolation through the player path", () => {
 					effect: {
 						...messageGroup("record-style", "Matched raw text."),
 						effects: [
-							{type: "text", operation: "set", text: "last-command", value: rawCommand},
+							{type: "world", operation: "set-text", text: "last-command", value: rawCommand},
 							{type: "message", operation: "show", message: "Matched raw text."},
 						],
 					},

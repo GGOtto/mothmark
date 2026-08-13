@@ -1,5 +1,8 @@
 {
-	"id": {"type": "command", "id": "help"},
+	"id": {
+		"type": "command",
+		"id": "help"
+	},
 	"name": "Help",
 	"enabled": true,
 	"showInHelp": true,
@@ -9,7 +12,10 @@
 		{
 			"blocks": [
 				{
-					"id": {"type": "command-block", "id": "help-phrase"},
+					"id": {
+						"type": "command-block",
+						"id": "help-phrase"
+					},
 					"type": "phrase",
 					"matches": [
 						"help",
@@ -25,16 +31,29 @@
 			]
 		}
 	],
-	"scope": {"scope": "global"},
+	"scope": {
+		"scope": "global"
+	},
 	"priority": 0,
 	"fallbacks": [],
 	"behavior": {
-		"id": {"type": "condition-branch", "id": "help-branch"},
+		"id": {
+			"type": "condition-branch",
+			"id": "help-branch"
+		},
 		"always": {
-			"id": {"type": "effect", "id": "help-effect"},
+			"id": {
+				"type": "effect",
+				"id": "help-effect"
+			},
 			"name": "Show help",
 			"type": "group",
-			"effects": [{"type": "message", "operation": "show-command-help"}],
+			"effects": [
+				{
+					"type": "message",
+					"operation": "show-command-help"
+				}
+			],
 			"allowMultipleUsesInWorld": true
 		},
 		"elifs": []

@@ -188,7 +188,7 @@ describe("saved base item commands through resolveTurn", () => {
 			const effects = command.behavior.always?.effects ?? command.behavior.if?.effect.effects;
 			expect(effects).toEqual([
 				expect.objectContaining({
-					type: "item-action",
+					type: "player",
 					commandVariables: expect.arrayContaining([expect.objectContaining({field: "itemId"})]),
 				}),
 			]);

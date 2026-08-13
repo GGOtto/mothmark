@@ -3,6 +3,7 @@ import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
 import {ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
 import {DirectionSchema} from "./directionSchema";
+import {ConditionalTextSchema} from "./conditionSchema";
 
 export {DirectionSchema} from "./directionSchema";
 
@@ -94,6 +95,13 @@ export const RoomSchema = editor.object(
 				chrome: "field",
 			},
 		}),
+		descriptionFragments: editor
+			.array(ConditionalTextSchema, {
+				title: "Conditional description fragments",
+				description: "Extra room text shown whenever its condition passes.",
+				layout: {group: "details", width: "full", order: 3.5},
+			})
+			.default([]),
 
 		shortDescription: editor
 			.textarea({

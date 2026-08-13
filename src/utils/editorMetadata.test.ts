@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {ConditionalTextSchema, FlagConditionSchema} from "@/schemas/world/conditionSchema";
-import {FlagEffectSchema} from "@/schemas/world/effectSchema";
+import {ConditionalTextSchema, WorldConditionSchema} from "@/schemas/world/conditionSchema";
+import {WorldEffectSchema} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "./createDefaultFieldObject";
 import {getEditorMetadata} from "./editorMetadata";
 
@@ -53,17 +53,15 @@ describe("editor schema defaultFieldValue", () => {
 			text: "",
 			when: {type: "group", operation: "all", conditions: []},
 		});
-		expect(createDefaultFieldObject(FlagConditionSchema)).toEqual({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+		expect(createDefaultFieldObject(WorldConditionSchema)).toEqual({
+			type: "world",
+			operation: "flag-is",
 			flag: "",
 			value: true,
 		});
-		expect(createDefaultFieldObject(FlagEffectSchema)).toEqual({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "set",
+		expect(createDefaultFieldObject(WorldEffectSchema)).toEqual({
+			type: "world",
+			operation: "set-flag",
 			flag: "",
 			value: true,
 		});
@@ -102,7 +100,7 @@ describe("editor schema defaultFieldValue", () => {
 	});
 
 	it("configures a single effect control through schema metadata", () => {
-		const schema = editor.effectControl(FlagEffectSchema, {
+		const schema = editor.effectControl(WorldEffectSchema, {
 			title: "Outcome",
 			childControls: {
 				flag: {control: "flag-picker", title: "World flag"},
@@ -113,7 +111,7 @@ describe("editor schema defaultFieldValue", () => {
 			control: "effect",
 			title: "Outcome",
 			features: {
-				effectSchema: FlagEffectSchema,
+				effectSchema: WorldEffectSchema,
 				showGeneratedSummary: true,
 			},
 			childControls: {

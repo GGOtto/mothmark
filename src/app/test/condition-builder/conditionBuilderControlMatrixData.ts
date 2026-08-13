@@ -7,9 +7,8 @@ import type {ControlMatrixVariant} from "../ControlMatrix";
 import {toID} from "../../../utils/idUtils";
 import {
 	ConditionSchema,
-	CounterConditionSchema,
-	CurrentRoomConditionSchema,
-	FlagConditionSchema,
+	PlayerConditionSchema,
+	WorldConditionSchema,
 } from "../../../schemas/world/conditionSchema";
 import {createDefaultFieldObject} from "../../../utils/createDefaultFieldObject";
 
@@ -33,7 +32,7 @@ const SETUPS = {
 	basic: {
 		id: "basic",
 		value: {
-			...createDefaultFieldObject(FlagConditionSchema),
+			...createDefaultFieldObject(WorldConditionSchema),
 			flag: "foyer.doorUnlocked",
 		},
 		metadata: {
@@ -51,11 +50,12 @@ const SETUPS = {
 			operator: "and",
 			conditions: [
 				{
-					...createDefaultFieldObject(FlagConditionSchema),
+					...createDefaultFieldObject(WorldConditionSchema),
 					flag: "library.lampLit",
 				},
 				{
-					...createDefaultFieldObject(CounterConditionSchema),
+					type: "world",
+					operation: "counter-compare",
 					counter: "turns",
 					operator: "gt",
 					value: 3,
@@ -73,18 +73,18 @@ const SETUPS = {
 	},
 	restricted: {
 		id: "restricted",
-		value: {type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+		value: {type: "player", operation: "is-in-room", roomId: toID("room", "foyer")},
 		metadata: {
 			title: "Restricted Types",
 			features: {
-				conditionSchema: CurrentRoomConditionSchema,
+				conditionSchema: PlayerConditionSchema,
 				compact: true,
 			},
 		},
 	},
 	listDriven: {
 		id: "list-driven",
-		value: {type: "counter", operation: "compare", counter: "turns", operator: "gte", value: 2},
+		value: {type: "world", operation: "counter-compare", counter: "turns", operator: "gte", value: 2},
 		metadata: {
 			title: "World Data Lists",
 			description: "Condition and operator choices are supplied by the schema.",
@@ -95,7 +95,7 @@ const SETUPS = {
 	},
 	error: {
 		id: "error",
-		value: createDefaultFieldObject(FlagConditionSchema),
+		value: createDefaultFieldObject(WorldConditionSchema),
 		error: "Flag id is required.",
 		metadata: {
 			title: "Errored Condition",

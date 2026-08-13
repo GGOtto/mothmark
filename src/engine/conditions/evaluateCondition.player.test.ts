@@ -1,7 +1,7 @@
 import {produce} from "immer";
 import {
-	CurrentRoomConditionSchema,
-	TextConditionSchema,
+	NavigationConditionSchema,
+	WorldConditionSchema,
 	type Condition,
 } from "@/schemas/world/conditionSchema";
 import type {Effect} from "@/schemas/world/effectSchema";
@@ -35,9 +35,9 @@ describe("conditions through the player path", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const event = conditionalEvent(
 			"open-exit",
-			CurrentRoomConditionSchema.parse({
-				...createDefaultFieldObject(CurrentRoomConditionSchema),
-				operation: "is-exit-open",
+			NavigationConditionSchema.parse({
+				...createDefaultFieldObject(NavigationConditionSchema),
+				operation: "exit-is-open",
 				direction: "e",
 			}),
 			[{type: "message", operation: "show", message: "The eastern exit is open."}],
@@ -75,9 +75,8 @@ describe("conditions through the player path", () => {
 						operation: "none",
 						conditions: [
 							{
-								type: "flag",
-								"flag-type": "normal",
-								operation: "is",
+								type: "world",
+								operation: "flag-is",
 								flag: "blocked",
 								value: true,
 							},
@@ -92,8 +91,8 @@ describe("conditions through the player path", () => {
 				{
 					identity: storedConditionId,
 					condition: {
-						type: "current-room",
-						operation: "is",
+						type: "player",
+						operation: "is-in-room",
 						roomId: toID("room", "foyer"),
 					},
 				},
@@ -129,7 +128,7 @@ describe("conditions through the player path", () => {
 		);
 		const react = conditionalEvent(
 			"tag-reaction",
-			{type: "current-room", operation: "has-tag", tag: "moonlit"},
+			{type: "room", operation: "current-has-tag", tag: "moonlit"},
 			[{type: "message", operation: "show", message: "Moonlight fills the foyer."}],
 		);
 		const world = produce(scenario.world, (draft) => {
@@ -150,8 +149,8 @@ describe("conditions through the player path", () => {
 		const event = conditionalEvent(
 			"counter-check",
 			{
-				type: "counter",
-				operation: "between",
+				type: "world",
+				operation: "counter-between",
 				counter: "keys",
 				min: 1,
 				max: 3,
@@ -187,10 +186,9 @@ describe("conditions through the player path", () => {
 		["missing", "unknown", undefined],
 	] as const)("evaluates saved text operation %s through resolveTurn", (operation, text, value) => {
 		const scenario = createPlayerTestScenario("navigation");
-		const condition = TextConditionSchema.parse({
-			...createDefaultFieldObject(TextConditionSchema),
-			type: "text",
-			operation,
+		const condition = WorldConditionSchema.parse({
+			type: "world",
+			operation: `text-${operation}`,
 			text,
 			...(value === undefined ? {} : {value}),
 		});

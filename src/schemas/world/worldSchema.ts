@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
-import {WorldConditionSchema} from "./conditionSchema";
+import {SavedConditionSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
 import {EventSchema} from "./eventSchema";
 import {CommandSchema} from "./commandSchemas";
@@ -134,7 +134,7 @@ export const WorldSchema = editor
 				},
 				duplicate: {duplicateBehavior: "with-new-id", idField: "id", idPrefix: "command"},
 			}),
-			conditions: editor.array(WorldConditionSchema, {
+			conditions: editor.array(SavedConditionSchema, {
 				title: "Conditions",
 				description: "Reusable conditions for rooms and items.",
 				duplicate: {

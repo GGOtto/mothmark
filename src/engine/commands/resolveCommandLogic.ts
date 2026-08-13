@@ -97,7 +97,8 @@ function conditionBinding(
 }
 
 function compareText(left: string, operation: string, right: unknown): boolean {
-	switch (operation) {
+	const textOperation = operation.replace(/^text-/, "");
+	switch (textOperation) {
 		case "is-empty":
 			return left.length === 0;
 		case "is-not-empty":
@@ -110,7 +111,7 @@ function compareText(left: string, operation: string, right: unknown): boolean {
 
 	if (typeof right !== "string") return false;
 
-	switch (operation) {
+	switch (textOperation) {
 		case "is":
 			return left === right;
 		case "is-not":
@@ -136,11 +137,15 @@ function resolveBoundSubjectCondition(
 	game: GameState,
 	condition: Exclude<CommandCondition, {type: "group" | "comparison"}>,
 ): Condition | undefined {
-	const subjectField =
-		condition.type === "counter" ? "counter" : condition.type === "flag" ? "flag" : "text";
-	if (condition.type !== "counter" && condition.type !== "flag" && condition.type !== "text") {
-		return undefined;
-	}
+	if (condition.type !== "world" || typeof condition.operation !== "string") return undefined;
+	const subjectField = condition.operation.startsWith("counter-")
+		? "counter"
+		: condition.operation.startsWith("flag-")
+			? "flag"
+			: condition.operation.startsWith("text-")
+				? "text"
+				: undefined;
+	if (!subjectField) return undefined;
 	const binding = conditionBinding(condition, subjectField);
 	if (!binding) return undefined;
 
@@ -149,15 +154,15 @@ function resolveBoundSubjectCondition(
 	const operation = String(resolved.operation);
 	let passes = false;
 
-	if (condition.type === "counter") {
-		if (operation === "exists" || operation === "missing") {
-			passes = operation === "exists" ? subject !== undefined : subject === undefined;
+	if (subjectField === "counter") {
+		if (operation === "counter-exists" || operation === "counter-missing") {
+			passes = operation === "counter-exists" ? subject !== undefined : subject === undefined;
 		} else if (typeof subject === "number" && Number.isFinite(subject)) {
-			if (operation === "compare") {
+			if (operation === "counter-compare") {
 				passes =
 					typeof resolved.value === "number" &&
 					compareNumbers(subject, String(resolved.operator), resolved.value);
-			} else if (operation === "between") {
+			} else if (operation === "counter-between") {
 				passes =
 					typeof resolved.min === "number" &&
 					typeof resolved.max === "number" &&
@@ -166,12 +171,12 @@ function resolveBoundSubjectCondition(
 						: subject > resolved.min && subject < resolved.max);
 			}
 		}
-	} else if (condition.type === "flag") {
-		if (operation === "exists" || operation === "missing") {
-			passes = operation === "exists" ? subject !== undefined : subject === undefined;
+	} else if (subjectField === "flag") {
+		if (operation === "flag-exists" || operation === "flag-missing") {
+			passes = operation === "flag-exists" ? subject !== undefined : subject === undefined;
 		} else {
 			passes =
-				operation === "is" &&
+				operation === "flag-is" &&
 				typeof subject === "boolean" &&
 				typeof resolved.value === "boolean" &&
 				subject === resolved.value;
@@ -179,7 +184,7 @@ function resolveBoundSubjectCondition(
 	} else if (typeof subject === "string") {
 		passes = compareText(subject, operation, resolved.value);
 	} else {
-		passes = operation === "missing";
+		passes = operation === "text-missing";
 	}
 
 	return passes ? passingCondition : failingCondition;

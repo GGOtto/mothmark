@@ -18,15 +18,15 @@ describe("direct item effects through resolveTurn", () => {
 		const event = createPlayerTestEvent(
 			"transform-token",
 			[
-				{type: "item", operation: "change-name", itemId: tokenId, value: "silver token"},
+				{type: "item", operation: "set-name", itemId: tokenId, value: "silver token"},
 				{
 					type: "item",
-					operation: "change-examine-text",
+					operation: "set-examine-text",
 					itemId: tokenId,
 					value: "The silver token shines.",
 				},
 				{type: "item", operation: "add-tag", itemId: tokenId, value: "valuable"},
-				{type: "item", operation: "mark-examined", itemId: tokenId},
+				{type: "item", operation: "set-examined", itemId: tokenId},
 			],
 			(draft) => {
 				draft.disposable = true;
@@ -70,8 +70,8 @@ describe("direct item effects through resolveTurn", () => {
 			"move-token",
 			[
 				{type: "item", operation: "place-inside", itemId: tokenId, containerId: boxId},
-				{type: "item", operation: "lock", itemId: boxId},
-				{type: "item", operation: "unlock", itemId: boxId},
+				{type: "item", operation: "set-locked", itemId: boxId},
+				{type: "item", operation: "set-unlocked", itemId: boxId},
 				{type: "item", operation: "empty-into-inventory", itemId: boxId, placement: "inside"},
 			],
 			(draft) => {

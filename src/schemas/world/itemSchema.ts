@@ -1,7 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
-import {ConditionSchema} from "./conditionSchema";
+import {ConditionSchema, ConditionalTextSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
 import {ITEM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
 
@@ -162,6 +162,7 @@ export const LockableBehaviorSchema = editor.object(
 	{
 		title: "Lockable",
 		description: "Lets matching items or item tags unlock this openable item.",
+		discovery: {requires: ["openable"]},
 		childControls: {
 			afterUnlock: {title: "After unlock"},
 			afterLock: {title: "After lock"},
@@ -188,6 +189,7 @@ export const DoorBehaviorSchema = editor.object(
 	{
 		title: "Door",
 		description: "Makes this openable item block a connection while closed.",
+		discovery: {requires: ["openable"]},
 	},
 );
 
@@ -317,6 +319,12 @@ export const ItemExamineSchema = editor.object(
 			description: "The description shown by the standard examine action.",
 			placeholder: "Describe what the player notices...",
 		}),
+		conditionalText: editor
+			.array(ConditionalTextSchema, {
+				title: "Conditional examine text",
+				description: "Extra examine text shown whenever its condition passes.",
+			})
+			.default([]),
 		afterExamine: EffectGroupSchema.optional(),
 	},
 	{
@@ -405,6 +413,12 @@ export const ItemSchema = editor
 							description: "Optional shorter text used in room output instead of examine text.",
 						})
 						.default(""),
+					conditionalText: editor
+						.array(ConditionalTextSchema, {
+							title: "Conditional room-listing text",
+							description: "Extra listing text shown whenever its condition passes.",
+						})
+						.default([]),
 				},
 				{
 					title: "Presentation",

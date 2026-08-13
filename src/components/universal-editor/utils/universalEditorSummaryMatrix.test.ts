@@ -1,9 +1,5 @@
 import type {z} from "zod";
-import {
-	ConditionSchema,
-	ItemConditionSchema,
-	ItemPredicateSchema,
-} from "@/schemas/world/conditionSchema";
+import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import {CommandConditionSchema, CommandEffectSchema} from "@/schemas/world/commandLogicSchemas";
 import {EffectSchema} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -21,14 +17,6 @@ type SummaryCase = {
 };
 
 const TOP_LEVEL_DISCRIMINATORS = ["type", "flag-type", "operation", "action"] as const;
-const ITEM_PREDICATE_DISCRIMINATORS = [
-	"type",
-	"state",
-	"location",
-	"test",
-	"tag",
-	"placement",
-] as const;
 
 function sampleId(field: string) {
 	if (field === "roomId") return toID("room", "summary-room");
@@ -102,22 +90,7 @@ function expectUsefulSummary(summary: string) {
 }
 
 const effectCases = summaryCases(EffectSchema);
-const nonItemConditionCases = summaryCases(ConditionSchema).filter(
-	(candidate) => candidate.value.type !== "item",
-);
-const itemConditionCases = summaryCases(ItemPredicateSchema, ITEM_PREDICATE_DISCRIMINATORS).map(
-	({key, value: test}) => {
-		const condition = createDefaultFieldObject(ItemConditionSchema);
-		return {
-			key: `type=item,test(${key})`,
-			value: {
-				...condition,
-				itemId: toID("item", "summary-subject"),
-				test,
-			},
-		};
-	},
-);
+const conditionCases = summaryCases(ConditionSchema);
 
 describe("effect summary schema coverage", () => {
 	it.each(effectCases)("summarizes $key", ({value}) => {
@@ -126,19 +99,8 @@ describe("effect summary schema coverage", () => {
 });
 
 describe("condition summary schema coverage", () => {
-	it.each(nonItemConditionCases)("summarizes $key", ({value}) => {
+	it.each(conditionCases)("summarizes $key", ({value}) => {
 		expectUsefulSummary(generateConditionSummary(value, ConditionSchema));
-	});
-
-	it("summarizes every nested item predicate without leaking object serialization", () => {
-		const invalidSummaries = itemConditionCases.flatMap(({key, value}) => {
-			const summary = generateConditionSummary(value, ConditionSchema);
-			return summary.includes("[object Object]") || summary.startsWith("Unknown")
-				? [{key, summary}]
-				: [];
-		});
-
-		expect(invalidSummaries).toEqual([]);
 	});
 
 	it.each([
@@ -196,8 +158,8 @@ const boundSummaryCases: Array<{
 		fallback: "91",
 		value: {
 			...createDefaultFieldObject(CommandEffectSchema),
-			type: "counter",
-			operation: "increase",
+			type: "world",
+			operation: "increase-counter",
 			counter: "turn-count",
 			amount: 91,
 			commandVariables: [{blockId: commandBlockIds.number, field: "amount"}],
@@ -210,7 +172,7 @@ const boundSummaryCases: Array<{
 		value: {
 			...createDefaultFieldObject(CommandEffectSchema),
 			type: "message",
-			operation: "current-room-description",
+			operation: "describe-current-room",
 			allowShorten: false,
 			commandVariables: [{blockId: commandBlockIds.boolean, field: "allowShorten"}],
 		},
@@ -221,8 +183,8 @@ const boundSummaryCases: Array<{
 		fallback: "fallback-room",
 		value: {
 			...createDefaultFieldObject(CommandEffectSchema),
-			type: "room",
-			operation: "move-player-to",
+			type: "navigation",
+			operation: "move-to-room",
 			roomId: toID("room", "fallback-room"),
 			commandVariables: [{blockId: commandBlockIds.target, field: "roomId"}],
 		},
@@ -233,7 +195,7 @@ const boundSummaryCases: Array<{
 		fallback: "sw",
 		value: {
 			...createDefaultFieldObject(CommandEffectSchema),
-			type: "player",
+			type: "navigation",
 			operation: "move-in-direction",
 			direction: "sw",
 			commandVariables: [{blockId: commandBlockIds.direction, field: "direction"}],
@@ -245,8 +207,8 @@ const boundSummaryCases: Array<{
 		fallback: "fallback-room-tag",
 		value: {
 			...createDefaultFieldObject(CommandConditionSchema),
-			type: "current-room",
-			operation: "has-tag",
+			type: "room",
+			operation: "current-has-tag",
 			tag: "fallback-room-tag",
 			commandVariables: [{blockId: commandBlockIds.text, field: "tag"}],
 		},
@@ -257,8 +219,8 @@ const boundSummaryCases: Array<{
 		fallback: "92",
 		value: {
 			...createDefaultFieldObject(CommandConditionSchema),
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
 			counter: "turn-count",
 			operator: "gte",
 			value: 92,
@@ -271,8 +233,8 @@ const boundSummaryCases: Array<{
 		fallback: "fallback-current-room",
 		value: {
 			...createDefaultFieldObject(CommandConditionSchema),
-			type: "current-room",
-			operation: "is",
+			type: "player",
+			operation: "is-in-room",
 			roomId: toID("room", "fallback-current-room"),
 			commandVariables: [{blockId: commandBlockIds.target, field: "roomId"}],
 		},
@@ -283,8 +245,8 @@ const boundSummaryCases: Array<{
 		fallback: "ne",
 		value: {
 			...createDefaultFieldObject(CommandConditionSchema),
-			type: "current-room",
-			operation: "is-exit-open",
+			type: "navigation",
+			operation: "exit-is-open",
 			direction: "ne",
 			commandVariables: [{blockId: commandBlockIds.direction, field: "direction"}],
 		},

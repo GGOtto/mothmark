@@ -72,28 +72,28 @@ describe("evaluateSingleCondition", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "is", flag: "gate.open", value: true}),
+				condition({type: "world", operation: "flag-is", flag: "gate.open", value: true}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "is", flag: "lamp.lit", value: false}),
+				condition({type: "world", operation: "flag-is", flag: "lamp.lit", value: false}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "exists", flag: "lamp.lit"}),
+				condition({type: "world", operation: "flag-exists", flag: "lamp.lit"}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "flag", operation: "missing", flag: "unknown"}),
+				condition({type: "world", operation: "flag-missing", flag: "unknown"}),
 			),
 		).toBe(true);
 	});
@@ -104,8 +104,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "counter",
-					operation: "compare",
+					type: "world",
+					operation: "counter-compare",
 					counter: "score",
 					operator: "gte",
 					value: 10,
@@ -116,14 +116,20 @@ describe("evaluateSingleCondition", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "counter", operation: "compare", counter: "steps", operator: "gt", value: 3}),
+				condition({
+					type: "world",
+					operation: "counter-compare",
+					counter: "steps",
+					operator: "gt",
+					value: 3,
+				}),
 			),
 		).toBe(false);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "counter", operation: "missing", counter: "turns"}),
+				condition({type: "world", operation: "counter-missing", counter: "turns"}),
 			),
 		).toBe(true);
 	});
@@ -139,13 +145,17 @@ describe("evaluateSingleCondition", () => {
 		["does-not-contain", "title", "spider"],
 	] as const)("evaluates the saved text %s operation", (operation, text, value) => {
 		expect(
-			evaluateSingleCondition(world, game, condition({type: "text", operation, text, value})),
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "world", operation: `text-${operation}`, text, value}),
+			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "text", operation, text: "unknown", value}),
+				condition({type: "world", operation: `text-${operation}`, text: "unknown", value}),
 			),
 		).toBe(false);
 	});
@@ -156,9 +166,13 @@ describe("evaluateSingleCondition", () => {
 		["exists", "empty"],
 		["missing", "unknown"],
 	] as const)("evaluates the saved text %s operation", (operation, text) => {
-		expect(evaluateSingleCondition(world, game, condition({type: "text", operation, text}))).toBe(
-			true,
-		);
+		expect(
+			evaluateSingleCondition(
+				world,
+				game,
+				condition({type: "world", operation: `text-${operation}`, text}),
+			),
+		).toBe(true);
 	});
 
 	it("honors inclusive and exclusive counter ranges", () => {
@@ -167,8 +181,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "counter",
-					operation: "between",
+					type: "world",
+					operation: "counter-between",
 					counter: "steps",
 					min: 3,
 					max: 5,
@@ -181,8 +195,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "counter",
-					operation: "between",
+					type: "world",
+					operation: "counter-between",
 					counter: "steps",
 					min: 3,
 					max: 5,
@@ -197,42 +211,42 @@ describe("evaluateSingleCondition", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is", roomId: toID("room", "atrium")}),
+				condition({type: "player", operation: "is-in-room", roomId: toID("room", "atrium")}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is-not", roomId: toID("room", "cellar")}),
+				condition({type: "player", operation: "is-not-in-room", roomId: toID("room", "cellar")}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "has-tag", tag: "safe"}),
+				condition({type: "room", operation: "current-has-tag", tag: "safe"}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "missing-tag", tag: "outdoors"}),
+				condition({type: "room", operation: "current-missing-tag", tag: "outdoors"}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is-exit-open", direction: "e"}),
+				condition({type: "navigation", operation: "exit-is-open", direction: "e"}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				condition({type: "current-room", operation: "is-exit-open", direction: "w"}),
+				condition({type: "navigation", operation: "exit-is-open", direction: "w"}),
 			),
 		).toBe(false);
 	});
@@ -243,9 +257,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "flag",
-					"flag-type": "room",
-					operation: "is",
+					type: "room",
+					operation: "flag-is",
 					roomId: currentRoom,
 					flag: "visited",
 					value: true,
@@ -257,9 +270,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "flag",
-					"flag-type": "room",
-					operation: "missing",
+					type: "room",
+					operation: "flag-missing",
 					roomId: currentRoom,
 					flag: "dark",
 				}),
@@ -273,9 +285,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "flag",
-					"flag-type": "item",
-					operation: "is",
+					type: "item",
+					operation: "flag-is",
 					itemId: toID("item", "statue"),
 					flag: "examined",
 					value: false,
@@ -287,9 +298,8 @@ describe("evaluateSingleCondition", () => {
 				world,
 				game,
 				condition({
-					type: "flag",
-					"flag-type": "item",
-					operation: "is",
+					type: "item",
+					operation: "flag-is",
 					itemId: toID("item", "statue"),
 					flag: "glowing",
 					value: true,

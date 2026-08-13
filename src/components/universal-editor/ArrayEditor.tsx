@@ -147,6 +147,7 @@ export function ArrayEditor({
 		value: string;
 		description?: string;
 		defaultValue?: Record<string, unknown>;
+		discovery?: {requires?: string[]};
 	}>;
 	const selectedTypes = value.flatMap((item) => {
 		if (!item || typeof item !== "object" || Array.isArray(item)) return [];
@@ -196,11 +197,20 @@ export function ArrayEditor({
 	function renderItem(item: unknown, index: number) {
 		const itemSchema = metadata.features?.itemMetadata?.features?.sourceSchema as
 			z.ZodTypeAny | undefined;
-		const title = getItemTitle(item, index, metadata.features?.getItemTitle, itemSchema);
+		const selectedType =
+			item && typeof item === "object" && !Array.isArray(item)
+				? String((item as Record<string, unknown>)[selectionDiscriminator] ?? "")
+				: "";
+		const selectedOption = selectableUnion
+			? selectionOptions.find((option) => option.value === selectedType)
+			: undefined;
+		const title =
+			selectedOption?.label ?? getItemTitle(item, index, metadata.features?.getItemTitle, itemSchema);
 		const subtitle =
-			templateValue(item, metadata.features?.getItemSummary, itemSchema) ||
-			templateValue(item, metadata.features?.getItemSubtitle, itemSchema) ||
-			generateEditorSummary(item, metadata.features?.itemMetadata?.summary);
+			selectedOption?.description ??
+			(templateValue(item, metadata.features?.getItemSummary, itemSchema) ||
+				templateValue(item, metadata.features?.getItemSubtitle, itemSchema) ||
+				generateEditorSummary(item, metadata.features?.itemMetadata?.summary));
 		const badge = templateValue(item, metadata.features?.getItemBadge);
 		const status = metadata.features?.getItemStatus;
 		const removeButton = removable ? (
@@ -231,7 +241,12 @@ export function ArrayEditor({
 			renderEditorControl({
 				value: item,
 				onChange: (nextItem) => updateItem(index, nextItem),
-				metadata: resolvedItemMetadata,
+				metadata: selectableUnion
+					? {
+							...resolvedItemMetadata,
+							features: {...resolvedItemMetadata.features, hideDiscriminator: true},
+						}
+					: resolvedItemMetadata,
 				path: [...path, index],
 				disabled,
 				readonly,
@@ -311,6 +326,22 @@ export function ArrayEditor({
 	}
 
 	function changeSelection(nextTypes: string[]) {
+		const requiredTypes = new Set(nextTypes);
+		let requirementAdded = true;
+		while (requirementAdded) {
+			requirementAdded = false;
+			for (const type of [...requiredTypes]) {
+				const option = selectionOptions.find((candidate) => candidate.value === type);
+				for (const requirement of option?.discovery?.requires ?? []) {
+					if (requiredTypes.has(requirement)) continue;
+					requiredTypes.add(requirement);
+					requirementAdded = true;
+				}
+			}
+		}
+		const orderedTypes = selectionOptions
+			.map((option) => option.value)
+			.filter((type) => requiredTypes.has(type));
 		const existingItems = new Map(
 			value.flatMap((item) => {
 				if (!item || typeof item !== "object" || Array.isArray(item)) return [];
@@ -320,7 +351,7 @@ export function ArrayEditor({
 		);
 
 		onChange(
-			nextTypes.flatMap((type) => {
+			orderedTypes.flatMap((type) => {
 				const existingItem = existingItems.get(type);
 				if (existingItem !== undefined) return [existingItem];
 				const option = selectionOptions.find((candidate) => candidate.value === type);
@@ -371,7 +402,18 @@ export function ArrayEditor({
 								type: "multi-select",
 								title: metadata.features?.selectionTitle,
 								features: {
-									options: selectionOptions,
+									options: selectionOptions.map((option) => ({
+										...option,
+										description: option.discovery?.requires?.length
+											? `${option.description ?? ""}${option.description ? " " : ""}Requires ${option.discovery.requires
+													.map(
+														(requirement) =>
+															selectionOptions.find((candidate) => candidate.value === requirement)?.label ??
+															requirement,
+													)
+													.join(", ")}.`
+											: option.description,
+									})),
 									searchable: false,
 									clearButton: true,
 									showDescriptions: true,
@@ -385,7 +427,7 @@ export function ArrayEditor({
 						context={context}
 					/>
 				) : null}
-				{selectableUnion ? null : value.map(renderItem)}
+				{value.map(renderItem)}
 				{value.length === 0 && !selectableUnion ? (
 					<div className="arrayEditor__empty">
 						<strong>{metadata.features?.emptyTitle ?? "No items yet."}</strong>
