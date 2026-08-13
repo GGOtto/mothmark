@@ -398,13 +398,13 @@ export const ItemConditionSchema = editor.discriminatedUnion(
 						],
 					},
 					"is-listed": {
-						label: "An item is listed in its room",
-						description: "Check whether automatic room output lists the item.",
-						keywords: ["room listing", "shown", "scenery", "mentioned"],
+						label: "An item is listed in its parent",
+						description: "Check whether the item is marked for its parent listing.",
+						keywords: ["parent listing", "room listing", "container", "shown", "mentioned"],
 						situations: [
-							"when scenery should be mentioned",
-							"if an object appears in the room list",
-							"before changing automatic room output",
+							"when an object should be mentioned beneath its parent",
+							"if an item appears in a room or open container listing",
+							"before changing an item's automatic listing state",
 						],
 					},
 					"is-open": {

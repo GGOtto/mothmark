@@ -69,9 +69,32 @@ export function itemAccess(game: GameState, id: ID<"item">) {
 	return {
 		visible: currentRoom && accessible,
 		reachable: currentRoom && accessible,
-		known: Boolean(item.flags.examined || (room?.flags.visited && item.listedInRoom)),
+		known: Boolean(
+			item.flags.examined || (room?.flags.visited && itemIsListedThroughParents(game, id)),
+		),
 		carried: false,
 	};
+}
+
+export function itemIsListedThroughParents(game: GameState, id: ID<"item">): boolean {
+	let item = findItemState(game, id);
+	const seen = new Set<string>();
+
+	while (item) {
+		const itemId = idValue(item.id);
+		if (seen.has(itemId) || item.flags.hidden || !item.listedInRoom) return false;
+		seen.add(itemId);
+
+		if (item.location.type === "room") return true;
+		if (item.location.type !== "item") return false;
+
+		const childLocation = item.location;
+		const parent = findItemState(game, childLocation.itemId);
+		if (!parent || (childLocation.placement === "inside" && !parent.open)) return false;
+		item = parent;
+	}
+
+	return false;
 }
 
 export function rootItemLocation(game: GameState, id: ID<"item">) {

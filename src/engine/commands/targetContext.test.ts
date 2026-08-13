@@ -1,8 +1,10 @@
 import {TargetBlockSchema} from "@/schemas/world/commandSchemas";
+import {ContainerBehaviorSchema, OpenableBehaviorSchema} from "@/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {compareIds, idValue, toID} from "@/utils/idUtils";
 import {produce} from "immer";
-import {createPlayerTestScenario} from "../utils/testUtils";
+import {createInitialGameState} from "../states/createInitialState";
+import {createPlayerTestItem, createPlayerTestScenario} from "../utils/testUtils";
 import {matchBlock} from "./blocks";
 import {resolveTargetMatchContext} from "./targetContext";
 
@@ -84,5 +86,44 @@ describe("resolveTargetMatchContext", () => {
 		);
 
 		expect(gallery?.sources).not.toContain("reachable");
+	});
+
+	it("does not mark listed contents as known through a closed or unlisted parent", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const box = produce(createPlayerTestItem("box", "Box", "A box rests here.", "foyer"), (draft) => {
+			draft.behaviors = [
+				createDefaultFieldObject(ContainerBehaviorSchema),
+				createDefaultFieldObject(OpenableBehaviorSchema),
+			];
+		});
+		const token = produce(
+			createPlayerTestItem("token", "Token", "A token lies inside.", "foyer"),
+			(draft) => {
+				draft.initialState.location = {
+					type: "item",
+					itemId: toID("item", "box"),
+					placement: "inside",
+				};
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.items = [box, token];
+		});
+		const closedGame = createInitialGameState(world, world.startRoomId);
+		const openGame = produce(closedGame, (draft) => {
+			draft.itemStates[0].open = true;
+		});
+		const unlistedGame = produce(openGame, (draft) => {
+			draft.itemStates[0].listedInRoom = false;
+		});
+		const tokenId = toID("item", "token");
+		const sources = (game: typeof closedGame) =>
+			(resolveTargetMatchContext(world, game).targets ?? []).find((candidate) =>
+				compareIds(candidate.reference, tokenId),
+			)?.sources;
+
+		expect(sources(closedGame)).not.toContain("known");
+		expect(sources(openGame)).toContain("known");
+		expect(sources(unlistedGame)).not.toContain("known");
 	});
 });

@@ -6,7 +6,9 @@ import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from "re
 
 import {readOptionalJson} from "@/auth/apiResponse";
 import {ModalLayer} from "@/components/overlay/Overlay";
+import {resolveTurn} from "@/engine/player/resolveTurn";
 import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
+import type {World} from "@/schemas/world/worldSchema";
 
 import {PlayerTerminal} from "./PlayerTerminal";
 
@@ -17,6 +19,7 @@ type Publication = {
 	summary: string;
 	visibility: "listed" | "unlisted";
 	release: {id: string; number: number; publishedAt: string};
+	world?: World;
 };
 
 type Playthrough = {
@@ -41,6 +44,11 @@ type BootstrapData = {
 };
 
 type RestartSource = "player_menu" | "release_notice" | "play_again";
+
+type QueuedCommand = {
+	command: string;
+	expectedRevision: number;
+};
 
 function responseErrorMessage(body: unknown): string | undefined {
 	if (!body || typeof body !== "object" || !("error" in body)) return undefined;
@@ -96,11 +104,15 @@ export function HostedPlayer({slug}: {slug: string}) {
 	const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 	const menuTitleRef = useRef<HTMLHeadingElement | null>(null);
 	const restartRequestIdRef = useRef<string | null>(null);
+	const playthroughRef = useRef<Playthrough | null>(null);
+	const pendingCommandsRef = useRef<QueuedCommand[]>([]);
+	const flushingCommandsRef = useRef(false);
 	const [publication, setPublication] = useState<Publication | null>(null);
 	const [playthrough, setPlaythrough] = useState<Playthrough | null>(null);
 	const [csrf, setCsrf] = useState("");
 	const [command, setCommand] = useState("");
 	const [status, setStatus] = useState<"loading" | "saving" | "saved" | "failed">("loading");
+	const [blockingOperation, setBlockingOperation] = useState(false);
 	const [error, setError] = useState("");
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [menuView, setMenuView] = useState<"about" | "restart" | "delete">("about");
@@ -113,6 +125,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 
 	const applyBootstrap = useCallback((data: BootstrapData) => {
 		setPublication(data.publication);
+		playthroughRef.current = data.playthrough;
 		setPlaythrough(data.playthrough);
 		setNewerReleaseAvailable(data.newerReleaseAvailable);
 		setRestartAvailability(data.restartAvailability);
@@ -180,8 +193,65 @@ export function HostedPlayer({slug}: {slug: string}) {
 			window.requestAnimationFrame(() => menuTitleRef.current?.focus({preventScroll: true}));
 	}, [menuOpen, menuView]);
 
-	const submit = async (value: string) => {
+	const flushPendingCommands = useCallback(async () => {
+		if (flushingCommandsRef.current || !csrf) return;
+		flushingCommandsRef.current = true;
+		setStatus("saving");
+		setError("");
+		let lastSavedPlaythrough: Playthrough | undefined;
+		let needsReconciliation = false;
+		let failed = false;
+
+		try {
+			while (pendingCommandsRef.current.length > 0) {
+				const queued = pendingCommandsRef.current[0];
+				const body = await hostedResponseJson<{
+					data?: Playthrough & {outputMessages: GameMessage[]};
+				}>(
+					await fetch(`/api/play/publications/${encodeURIComponent(slug)}/command`, {
+						method: "POST",
+						headers: {"content-type": "application/json", "x-csrf-token": csrf},
+						body: JSON.stringify(queued),
+					}),
+					"The command could not be saved.",
+				);
+				pendingCommandsRef.current.shift();
+				if (body?.data) lastSavedPlaythrough = body.data;
+				else needsReconciliation = true;
+			}
+
+			if (needsReconciliation) {
+				const data = await bootstrap(csrf);
+				if ((playthroughRef.current?.revision ?? 0) <= data.playthrough.revision) {
+					applyBootstrap(data);
+				}
+			} else if (
+				lastSavedPlaythrough &&
+				(playthroughRef.current?.revision ?? 0) <= lastSavedPlaythrough.revision
+			) {
+				playthroughRef.current = lastSavedPlaythrough;
+				setPlaythrough(lastSavedPlaythrough);
+			}
+			setStatus("saved");
+		} catch (caught) {
+			failed = true;
+			setError(
+				requestError(
+					caught,
+					"The command could not be saved.",
+					"Connection lost. Your progress is still visible here; reconnect and retry saving.",
+				),
+			);
+			setStatus("failed");
+		} finally {
+			flushingCommandsRef.current = false;
+			if (!failed && pendingCommandsRef.current.length > 0) void flushPendingCommands();
+		}
+	}, [applyBootstrap, bootstrap, csrf, slug]);
+
+	const submitLegacy = async (value: string) => {
 		if (!playthrough || !csrf) return;
+		setBlockingOperation(true);
 		setStatus("saving");
 		setError("");
 		try {
@@ -195,8 +265,10 @@ export function HostedPlayer({slug}: {slug: string}) {
 				}),
 				"The command could not be saved.",
 			);
-			if (body?.data) setPlaythrough(body.data);
-			else applyBootstrap(await bootstrap(csrf));
+			if (body?.data) {
+				playthroughRef.current = body.data;
+				setPlaythrough(body.data);
+			} else applyBootstrap(await bootstrap(csrf));
 			setCommand("");
 			setStatus("saved");
 		} catch (caught) {
@@ -208,7 +280,37 @@ export function HostedPlayer({slug}: {slug: string}) {
 				),
 			);
 			setStatus("failed");
+		} finally {
+			setBlockingOperation(false);
 		}
+	};
+
+	const submit = (value: string) => {
+		const currentPlaythrough = playthroughRef.current;
+		if (!publication?.world || !currentPlaythrough || !csrf) {
+			void submitLegacy(value);
+			return;
+		}
+
+		const nextState = resolveTurn(publication.world, currentPlaythrough.state, value);
+		const nextPlaythrough: Playthrough = {
+			...currentPlaythrough,
+			revision: currentPlaythrough.revision + 1,
+			commandCount: currentPlaythrough.commandCount + 1,
+			commands: currentPlaythrough.commands ? `${currentPlaythrough.commands}\n${value}` : value,
+			state: nextState,
+			status: nextState.player.isDead ? "completed" : currentPlaythrough.status,
+		};
+		pendingCommandsRef.current.push({
+			command: value,
+			expectedRevision: currentPlaythrough.revision,
+		});
+		playthroughRef.current = nextPlaythrough;
+		setPlaythrough(nextPlaythrough);
+		setCommand("");
+		setError("");
+		setStatus("saving");
+		void flushPendingCommands();
 	};
 
 	const restart = async () => {
@@ -216,6 +318,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 		const restartRequestId = restartRequestIdRef.current ?? crypto.randomUUID();
 		restartRequestIdRef.current = restartRequestId;
 		setStatus("saving");
+		setBlockingOperation(true);
 		setError("");
 		try {
 			const body = await hostedResponseJson<{data?: BootstrapData}>(
@@ -242,12 +345,15 @@ export function HostedPlayer({slug}: {slug: string}) {
 		} catch (caught) {
 			setError(requestError(caught, "The playthrough could not be restarted."));
 			setStatus("failed");
+		} finally {
+			setBlockingOperation(false);
 		}
 	};
 
 	const deleteProgress = async () => {
 		if (!csrf || !playthrough) return;
 		setStatus("saving");
+		setBlockingOperation(true);
 		setError("");
 		try {
 			const response = await fetch(`/api/play/publications/${encodeURIComponent(slug)}/playthrough`, {
@@ -259,6 +365,8 @@ export function HostedPlayer({slug}: {slug: string}) {
 		} catch (caught) {
 			setError(requestError(caught, "The saved playthrough could not be deleted."));
 			setStatus("failed");
+		} finally {
+			setBlockingOperation(false);
 		}
 	};
 
@@ -272,7 +380,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 	};
 
 	const closeMenu = () => {
-		if (status === "saving") return;
+		if (blockingOperation) return;
 		setMenuOpen(false);
 		setMenuView("about");
 	};
@@ -437,13 +545,18 @@ export function HostedPlayer({slug}: {slug: string}) {
 				</div>
 			) : null}
 			{error ? (
-				<p className="hostedPlayerError" role="alert">
-					{error}
-				</p>
+				<div className="hostedPlayerError" role="alert">
+					<span>{error}</span>
+					{pendingCommandsRef.current.length > 0 ? (
+						<button type="button" onClick={() => void flushPendingCommands()}>
+							Retry saving
+						</button>
+					) : null}
+				</div>
 			) : null}
 			<div className="hostedTerminal">
 				<PlayerTerminal
-					busy={status === "saving"}
+					busy={blockingOperation}
 					disabled={!playthrough || playthrough.status !== "active"}
 					command={command}
 					messages={playthrough?.state.messages ?? []}

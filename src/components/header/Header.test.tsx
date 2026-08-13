@@ -10,7 +10,7 @@ const prepareForNavigation = jest.fn().mockResolvedValue(true);
 
 jest.mock("next/navigation", () => ({usePathname: jest.fn()}));
 jest.mock("../theme/ThemeProvider", () => ({
-	useTheme: () => ({setTheme, theme: "dark", toggleTheme: jest.fn()}),
+	useTheme: () => ({setTheme, theme: "dark", themePreference: "system", toggleTheme: jest.fn()}),
 }));
 jest.mock("../world-autosave/WorldAutosave", () => ({
 	WorldAutosaveIndicator: () => null,
@@ -77,10 +77,16 @@ describe("Header", () => {
 			"/account",
 		);
 		expect(within(menu).getByRole("group", {name: "Appearance"})).toBeInTheDocument();
+		expect(within(menu).getByRole("button", {name: "System"})).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 		expect(within(menu).getByRole("menuitem", {name: "Sign out"})).toBeInTheDocument();
 
 		await user.click(within(menu).getByRole("button", {name: "Light"}));
 		expect(setTheme).toHaveBeenCalledWith("light");
+		await user.click(within(menu).getByRole("button", {name: "System"}));
+		expect(setTheme).toHaveBeenCalledWith("system");
 	});
 
 	it("stops sign-out when the current editor revision cannot be server-confirmed", async () => {

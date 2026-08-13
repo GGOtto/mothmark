@@ -26,7 +26,7 @@ export type HeaderAccount = {
 } | null;
 
 export function Header({account}: {account: HeaderAccount}) {
-	const {setTheme, theme} = useTheme();
+	const {setTheme, themePreference} = useTheme();
 	const {allowNextUnload, prepareForNavigation} = useWorldAutosave();
 	const pathname = usePathname();
 	const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -242,10 +242,25 @@ export function Header({account}: {account: HeaderAccount}) {
 										</Link>
 										<div className="headerAppearance" role="group" aria-label="Appearance">
 											<span>Appearance</span>
-											<button type="button" aria-pressed={theme === "light"} onClick={() => setTheme("light")}>
+											<button
+												type="button"
+												aria-pressed={themePreference === "system"}
+												onClick={() => setTheme("system")}
+											>
+												System
+											</button>
+											<button
+												type="button"
+												aria-pressed={themePreference === "light"}
+												onClick={() => setTheme("light")}
+											>
 												Light
 											</button>
-											<button type="button" aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>
+											<button
+												type="button"
+												aria-pressed={themePreference === "dark"}
+												onClick={() => setTheme("dark")}
+											>
 												Dark
 											</button>
 										</div>

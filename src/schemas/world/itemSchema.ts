@@ -403,19 +403,20 @@ export const ItemSchema = editor
 				{
 					listedInRoom: editor
 						.boolean({
-							title: "List in room",
-							description: "Include this item's examine text in room output.",
+							title: "List in parent",
+							description: "Include this item's listing text beneath its room or visible containing item.",
 						})
 						.default(false),
 					listingText: editor
 						.textarea({
-							title: "Room listing text",
-							description: "Optional shorter text used in room output instead of examine text.",
+							title: "Parent listing text",
+							description:
+								"Optional shorter text shown beneath the item's room or containing item instead of examine text.",
 						})
 						.default(""),
 					conditionalText: editor
 						.array(ConditionalTextSchema, {
-							title: "Conditional room-listing text",
+							title: "Conditional parent-listing text",
 							description: "Extra listing text shown whenever its condition passes.",
 						})
 						.default([]),
