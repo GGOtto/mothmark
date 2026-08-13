@@ -1,15 +1,37 @@
 /** @jest-environment node */
 
 import v2BlankWorld from "./fixtures/v2BlankWorld.json";
+import {resolveTurn} from "@/engine/player/resolveTurn";
 import {createPlayerTestScenario} from "@/engine/utils/testUtils";
+import {GameStateSchema, type GameState} from "@/schemas/states/gameStateSchemas";
 import {CommandSchema} from "@/schemas/world/commandSchemas";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {toID} from "@/utils/idUtils";
 import {PERSISTED_SCHEMA_VERSION, migrationFrom} from ".";
+import {replayCompatibilityIssues} from "../replayCompatibility";
 import {applyVersionedTransform} from "./types";
 import {reorganizeConditionsAndEffects, v5ToV6} from "./v5ToV6";
 
 describe("the v5 to v6 condition and effect migration", () => {
+	function withoutV6RuntimeFields(game: GameState): unknown {
+		const legacy = structuredClone(game) as unknown as Record<string, unknown>;
+		const player = legacy.player as Record<string, unknown>;
+		for (const field of [
+			"previousRoom",
+			"lastRoomTransitionTurn",
+			"lastCommandSucceeded",
+			"lastCommandTurn",
+			"randomState",
+			"carryingCapacity",
+			"equippedItemIds",
+			"hasWon",
+			"isEnded",
+			"endingMessage",
+		])
+			delete player[field];
+		return legacy;
+	}
+
 	it("moves legacy operations under their owning domains throughout a world", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const retained = {
@@ -189,6 +211,74 @@ describe("the v5 to v6 condition and effect migration", () => {
 			explicitReusable,
 			expect.objectContaining({name: "Use conditional outcome"}),
 		]);
+	});
+
+	it("replays retained turns to populate the new player runtime fields", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const migratedWorld = WorldSchema.parse(
+			applyVersionedTransform(v5ToV6, 5, v5ToV6.world, scenario.world, {
+				id: "world-1",
+				storage: "publication",
+			}).value,
+		);
+		const legacyEast = resolveTurn(migratedWorld, scenario.game, "east");
+		const first = GameStateSchema.parse(
+			applyVersionedTransform(v5ToV6, 5, v5ToV6.gameState, withoutV6RuntimeFields(legacyEast), {
+				playthroughId: "playthrough-1",
+				sequence: 1,
+				storage: "turn",
+				world: migratedWorld,
+				command: "east",
+				previousState: scenario.game,
+			}).value,
+		);
+		const legacyWest = resolveTurn(migratedWorld, first, "west");
+		const second = GameStateSchema.parse(
+			applyVersionedTransform(v5ToV6, 5, v5ToV6.gameState, withoutV6RuntimeFields(legacyWest), {
+				playthroughId: "playthrough-1",
+				sequence: 2,
+				storage: "turn",
+				world: migratedWorld,
+				command: "west",
+				previousState: first,
+			}).value,
+		);
+		const current = GameStateSchema.parse(
+			applyVersionedTransform(v5ToV6, 5, v5ToV6.gameState, withoutV6RuntimeFields(legacyWest), {
+				playthroughId: "playthrough-1",
+				sequence: null,
+				storage: "current",
+				world: migratedWorld,
+				previousState: second,
+			}).value,
+		);
+
+		expect(first.player).toMatchObject({
+			previousRoom: scenario.world.startRoomId,
+			lastCommandSucceeded: true,
+			randomState: 0x6d2b79f5,
+			equippedItemIds: [],
+		});
+		expect(
+			replayCompatibilityIssues(
+				migratedWorld,
+				[
+					{
+						sequence: 1,
+						command: "east",
+						outputMessages: legacyEast.messages.slice(scenario.game.messages.length),
+						resultingState: first,
+					},
+					{
+						sequence: 2,
+						command: "west",
+						outputMessages: legacyWest.messages.slice(first.messages.length),
+						resultingState: second,
+					},
+				],
+				current,
+			),
+		).toEqual([]);
 	});
 
 	it("is the final adjacent migration and only applies at v5", () => {
