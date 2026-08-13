@@ -130,3 +130,9 @@ pinned world and recorded command log, then uses the final replayed turn as the 
 state. It regenerates each turn's output messages and the final transcript from those replayed states.
 Worlds remain unchanged. This removes stale derived runtime state while preserving the authoritative
 command history and player-visible output.
+
+### Version 8 to 9: name saved conditions
+
+`v8-to-v9-name-saved-conditions` adds the neutral empty-string name to retained saved-condition
+definitions that lack the new field. Existing names, condition logic, and unrelated authored world
+data are preserved. Game states and messages remain unchanged while their rows advance to version 9.

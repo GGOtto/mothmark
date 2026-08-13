@@ -67,7 +67,7 @@ describe("the v7 to v8 retained game-state replay migration", () => {
 		expect(transcript.value).toEqual(parsedReplay.messages);
 	});
 
-	it("is the final adjacent migration and only applies at v7", () => {
+	it("remains adjacent and only applies at v7", () => {
 		const value = {retained: true};
 		const applied = applyVersionedTransform(v7ToV8, 7, v7ToV8.world, value, {
 			id: "world-1",
@@ -78,9 +78,9 @@ describe("the v7 to v8 retained game-state replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(8);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(9);
 		expect(migrationFrom(7)).toBe(v7ToV8);
-		expect(migrationFrom(8)).toBeUndefined();
+		expect(migrationFrom(8)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 8, value});
 		expect(skipped).toEqual({applied: false, schemaVersion: 8, value});
 	});
