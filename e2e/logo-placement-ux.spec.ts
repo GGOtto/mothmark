@@ -11,6 +11,7 @@ function collectBrowserErrors(page: Page) {
 
 test("the approved logo suite is used in the site shell and metadata", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
+	await page.emulateMedia({colorScheme: "dark"});
 	await page.goto("/");
 
 	const headerLogo = page.getByRole("link", {name: "Mothmark home"}).locator("img");
@@ -76,6 +77,7 @@ test("the approved compact lockup fits the narrow header", async ({page}) => {
 
 test("account entry uses the approved theme-aware logo", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
+	await page.emulateMedia({colorScheme: "dark"});
 	await page.goto("/sign-in");
 	const accountLogo = page.locator(".authBrand img");
 	await expect(accountLogo).toHaveAttribute("src", "/logo/dark/header-compact.png");

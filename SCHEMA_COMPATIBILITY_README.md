@@ -141,3 +141,10 @@ authoritative command logs. It replays every turn after random-message effects m
 process randomness to the game state's saved random seed, then regenerates turn output, the current
 state, and transcripts. Identical command histories now produce identical ambience during live play
 and compatibility validation.
+
+## Parent item listings in v12
+
+The `v11-to-v12-replay-parent-item-listings` migration preserves retained worlds and authoritative
+command logs. It replays every turn after listed items begin nesting beneath their room, open
+container, or surface parent, then regenerates turn output, the current state, and transcripts.
+Stored item presentation field names remain unchanged.

@@ -3,6 +3,7 @@ import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import type {MatchBlockContext, TargetMatchCandidate} from "./blocks";
 import {getAvailableExits} from "../player/move";
+import {itemAccess} from "../items/itemRuntime";
 
 function reachableRoomIds(world: World, game: GameState): Set<string> {
 	const reachable = new Set<string>([idValue(game.player.currentRoom)]);
@@ -75,9 +76,8 @@ function itemSources(itemId: ID<"item">, game: GameState): TargetMatchCandidate[
 
 	if (location.type !== "room") return sources;
 	const isCurrentRoom = compareIds(location.roomId, game.player.currentRoom);
-	const roomState = game.roomStates.find((room) => compareIds(room.id, location.roomId));
 	if (isCurrentRoom && accessible) sources.push("current-room", "visible", "reachable");
-	if (item.flags.examined || (roomState?.flags.visited && item.listedInRoom)) sources.push("known");
+	if (itemAccess(game, itemId).known) sources.push("known");
 
 	return sources;
 }

@@ -1,4 +1,6 @@
 import {expect, test, type Page} from "@playwright/test";
+import {world as initialWorld} from "../src/data/worlds/initialWorld";
+import {createInitialGameState} from "../src/engine/states/createInitialState";
 import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
 function collectBrowserErrors(page: Page) {
@@ -94,6 +96,14 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	let revision = 1;
 	let commands = "";
 	let messages = [{id: "opening", type: "room", text: "A quiet archive waits."}];
+	let state = {
+		...createInitialGameState(initialWorld, initialWorld.startRoomId),
+		messages,
+	};
+	let releaseCommandSave!: () => void;
+	const commandSaveGate = new Promise<void>((resolve) => {
+		releaseCommandSave = resolve;
+	});
 
 	await page.route("**/api/auth/csrf?audience=play", (route) =>
 		route.fulfill({
@@ -109,7 +119,7 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 			contentType: "application/json",
 			body: JSON.stringify({
 				data: {
-					publication,
+					publication: {...publication, world: initialWorld},
 					playthrough: {
 						id: "playthrough-id",
 						revision,
@@ -117,7 +127,7 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 						commands,
 						status: "active",
 						release: {id: "release-id", number: 1},
-						state: {messages},
+						state,
 					},
 					newerReleaseAvailable: false,
 					restartAvailability: {
@@ -131,12 +141,14 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	await page.route("**/api/play/publications/quiet-archive/command", async (route) => {
 		const body = route.request().postDataJSON() as {command: string; expectedRevision: number};
 		expect(body.expectedRevision).toBe(revision);
+		await commandSaveGate;
 		commands = commands ? `${commands}\n${body.command}` : body.command;
 		messages = [
 			...messages,
 			{id: `command-${revision}`, type: "command", text: body.command},
 			{id: `output-${revision}`, type: "system", text: "The archive remains still."},
 		];
+		state = {...state, messages};
 		revision += 1;
 		await route.fulfill({
 			status: 200,
@@ -149,7 +161,7 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 					commands,
 					status: "active",
 					release: {id: "release-id", number: 1},
-					state: {messages},
+					state,
 					outputMessages: messages.slice(-2),
 				},
 			}),
@@ -163,6 +175,10 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	await page.getByRole("button", {name: "Send command"}).click();
 	await expect(page.getByText('<img src=x onerror="alert(1)">')).toBeVisible();
 	await expect(page.locator(".output-log img")).toHaveCount(0);
+	await expect(page.getByLabel("Game command")).toBeEnabled();
+	await expect(page.getByLabel("Game command")).toHaveValue("");
+	await expect(page.getByText("Saving…", {exact: true})).toBeVisible();
+	releaseCommandSave();
 	await expect(page.getByText("The archive remains still.")).toBeVisible();
 	await expect(page.getByText("Saved", {exact: true})).toBeVisible();
 	await expect(page.getByLabel("Game command")).toBeFocused();
@@ -326,8 +342,12 @@ test("the hosted command line stays usable on short, tall, and landscape phones"
 	expect(browserErrors).toEqual([]);
 });
 
-test("a failed hosted command remains in the prompt and can be retried", async ({page}) => {
+test("a failed background save keeps progress visible and can be retried", async ({page}) => {
 	let attempts = 0;
+	const initialState = {
+		...createInitialGameState(initialWorld, initialWorld.startRoomId),
+		messages: [{id: "opening", type: "room" as const, text: "A quiet archive waits."}],
+	};
 	await page.route("**/api/auth/csrf?audience=play", (route) =>
 		route.fulfill({
 			status: 200,
@@ -341,7 +361,7 @@ test("a failed hosted command remains in the prompt and can be retried", async (
 			contentType: "application/json",
 			body: JSON.stringify({
 				data: {
-					publication,
+					publication: {...publication, world: initialWorld},
 					playthrough: {
 						id: "playthrough-id",
 						revision: 1,
@@ -349,7 +369,7 @@ test("a failed hosted command remains in the prompt and can be retried", async (
 						commands: "",
 						status: "active",
 						release: {id: "release-id", number: 1},
-						state: {messages: [{id: "opening", type: "room", text: "A quiet archive waits."}]},
+						state: initialState,
 					},
 					newerReleaseAvailable: false,
 					restartAvailability: {
@@ -375,6 +395,7 @@ test("a failed hosted command remains in the prompt and can be retried", async (
 					status: "active",
 					release: {id: "release-id", number: 1},
 					state: {
+						...initialState,
 						messages: [
 							{id: "opening", type: "room", text: "A quiet archive waits."},
 							{id: "result", type: "system", text: "The retry succeeds."},
@@ -390,10 +411,12 @@ test("a failed hosted command remains in the prompt and can be retried", async (
 	const input = page.getByRole("textbox", {name: "Game command"});
 	await input.fill("look");
 	await input.press("Enter");
-	await expect(page.locator(".hostedPlayerError")).toHaveText("The command could not be saved.");
-	await expect(input).toHaveValue("look");
+	await expect(page.locator(".hostedPlayerError")).toContainText("The command could not be saved.");
+	await expect(page.getByText(/A narrow shop with a counter by the door/)).toBeVisible();
+	await expect(input).toHaveValue("");
+	await expect(input).toBeEnabled();
 	await expect(input).toBeFocused();
-	await input.press("Enter");
+	await page.getByRole("button", {name: "Retry saving"}).click();
 	await expect(page.getByText("The retry succeeds.")).toBeVisible();
 	await expect(input).toHaveValue("");
 });

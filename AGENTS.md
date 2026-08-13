@@ -178,6 +178,9 @@
   email on a public profile. Link author usernames on published-world cards to that profile. Accept
   bare website domains in profile settings and normalize them to HTTPS instead of requiring users to
   type the scheme.
+- Curate home-page publications explicitly in the publication admin controls. Official status, public
+  catalog listing, and home-page listing are separate settings; home-page entries must be listed and
+  official, use an administrator-controlled position, and position 1 is the initially prominent game.
 - A blank-world choice must contain no authored rooms, items, connections, layers, conditions,
   effects, or events. The first room a user adds becomes its starting room.
 - Keep the bundled starter world small, plainspoken, and clearly instructional. Avoid sprawling

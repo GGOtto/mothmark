@@ -52,6 +52,7 @@ export const RESERVED_PUBLICATION_SLUGS = new Set([
 
 export type PublicationVisibility = "listed" | "unlisted";
 export type PublicationStatus = "published" | "unpublished" | "suspended";
+export type PublicationDiscoverySurface = "catalog" | "homepage";
 
 export function resolveCatalogPlayAction(
 	status?: "active" | "completed" | "abandoned" | "errored",
@@ -93,6 +94,7 @@ export class PublicationError extends Error {
 		readonly code:
 			| "COMMAND_INVALID"
 			| "COMMAND_TOO_LARGE"
+			| "CURATION_INVALID"
 			| "FORBIDDEN"
 			| "NOT_FOUND"
 			| "PLAYTHROUGH_ERRORED"
@@ -204,6 +206,9 @@ async function hasPermission(
 type PublicationRow = {
 	author_username: string;
 	id: string;
+	homepage_position: number | null;
+	is_official: boolean;
+	listed_on_homepage: boolean;
 	world_id: string;
 	slug: string;
 	status: PublicationStatus;
@@ -228,6 +233,7 @@ type PublicationRow = {
 export type PublicPublication = {
 	authorUsername: string;
 	id: string;
+	isOfficial: boolean;
 	slug: string;
 	title: string;
 	summary: string;
@@ -254,6 +260,9 @@ const publicationBaseSelect = (connection: Knex | Knex.Transaction = database) =
 			"p.slug",
 			"p.status",
 			"p.visibility",
+			"p.homepage_position",
+			"p.is_official",
+			"p.listed_on_homepage",
 			"p.current_release_id",
 			"p.published_at",
 			"p.updated_at",
@@ -282,6 +291,7 @@ const publicationSelect = (connection: Knex | Knex.Transaction = database) =>
 const mapPublicPublication = (row: PublicationRow): PublicPublication => ({
 	authorUsername: row.author_username,
 	id: row.id,
+	isOfficial: row.is_official,
 	slug: row.slug,
 	title: row.title,
 	summary: row.summary,
@@ -311,9 +321,16 @@ function requireAvailablePublicationOwner(row: PublicationRow): void {
 export async function listPublications(
 	search = "",
 	playerUserId?: string,
+	surface: PublicationDiscoverySurface = "catalog",
 ): Promise<PublicPublication[]> {
 	const query = publicationSelect()
 		.where({"p.visibility": "listed"})
+		.modify((builder) => {
+			if (surface === "homepage") {
+				builder.where({"p.is_official": true, "p.listed_on_homepage": true});
+				builder.orderBy("p.homepage_position", "asc");
+			} else builder.orderBy("p.is_official", "desc");
+		})
 		.orderBy("r.published_at", "desc")
 		.limit(100);
 	const normalizedSearch = search.trim();
@@ -324,7 +341,9 @@ export async function listPublications(
 				.orWhereILike("r.summary", `%${normalizedSearch}%`);
 		});
 	}
-	const publications = (await query).map(mapPublicPublication);
+	const publications: PublicPublication[] = (await query).map((row: PublicationRow) =>
+		mapPublicPublication(row),
+	);
 	if (!playerUserId || publications.length === 0) return publications;
 	const history = await database("playthroughs")
 		.distinctOn("publication_id")
@@ -524,6 +543,7 @@ export async function publishOwnedWorld(input: {
 		return {
 			authorUsername,
 			id: publication.id,
+			isOfficial: Boolean(publication.is_official),
 			slug,
 			title: release.title,
 			summary: release.summary,
@@ -607,6 +627,7 @@ export async function publishOwnedWorldUpdate(input: {
 		return {
 			authorUsername,
 			id: publication.id,
+			isOfficial: Boolean(publication.is_official),
 			slug: publication.slug,
 			title: release.title,
 			summary: release.summary,
@@ -742,7 +763,7 @@ export function resolveHostedCommand(
 }
 
 export type HostedPlayBootstrap = {
-	publication: PublicPublication;
+	publication: PlayablePublication;
 	playthrough: HostedPlaythrough;
 	newerReleaseAvailable: boolean;
 	restartAvailability: HostedRestartAvailability;
@@ -1210,6 +1231,8 @@ export async function submitHostedCommand(input: {
 }
 
 export type AdminPublication = PublicPublication & {
+	homepagePosition: number | null;
+	listedOnHomepage: boolean;
 	status: "published" | "unpublished" | "suspended";
 	worldId: string;
 	ownerUserId: string;
@@ -1227,6 +1250,9 @@ export async function listAdminPublications(): Promise<AdminPublication[]> {
 			"p.slug",
 			"p.status",
 			"p.visibility",
+			"p.homepage_position",
+			"p.is_official",
+			"p.listed_on_homepage",
 			"p.world_id",
 			"r.id as release_id",
 			"r.release_number",
@@ -1240,12 +1266,106 @@ export async function listAdminPublications(): Promise<AdminPublication[]> {
 		.orderBy("r.published_at", "desc");
 	return rows.map((row) => ({
 		...mapPublicPublication(row),
+		homepagePosition: row.homepage_position === null ? null : Number(row.homepage_position),
+		listedOnHomepage: Boolean(row.listed_on_homepage),
 		status: row.status,
 		worldId: row.world_id,
 		ownerUserId: row.owner_user_id,
 		ownerName: row.owner_name,
 		ownerUsername: row.author_username,
 	}));
+}
+
+export async function updateAdminPublicationCuration(input: {
+	actorUserId: string;
+	publicationId: string;
+	visibility: PublicationVisibility;
+	isOfficial: boolean;
+	listedOnHomepage: boolean;
+	homepagePosition: number | null;
+	reason: string;
+}): Promise<AdminPublication> {
+	if (
+		(input.listedOnHomepage &&
+			(input.visibility !== "listed" ||
+				!input.isOfficial ||
+				input.homepagePosition === null ||
+				!Number.isInteger(input.homepagePosition) ||
+				input.homepagePosition < 1)) ||
+		(!input.listedOnHomepage && input.homepagePosition !== null)
+	)
+		throw new PublicationError(
+			"CURATION_INVALID",
+			"A home page publication must be listed, official, and have a positive position.",
+		);
+	await database.transaction(async (transaction) => {
+		await transaction.raw("select pg_advisory_xact_lock(hashtext(?))", [
+			"mothmark-publication-homepage-order",
+		]);
+		const publication = await transaction("world_publications")
+			.where({id: input.publicationId})
+			.forUpdate()
+			.first();
+		if (!publication) throw new PublicationError("NOT_FOUND", "The publication does not exist.");
+		const before = {
+			visibility: publication.visibility,
+			homepagePosition:
+				publication.homepage_position === null ? null : Number(publication.homepage_position),
+			isOfficial: Boolean(publication.is_official),
+			listedOnHomepage: Boolean(publication.listed_on_homepage),
+		};
+		const after = {
+			visibility: input.visibility,
+			homepagePosition: input.homepagePosition,
+			isOfficial: input.isOfficial,
+			listedOnHomepage: input.listedOnHomepage,
+		};
+		const currentPosition = before.listedOnHomepage ? before.homepagePosition : null;
+		const nextPosition = after.listedOnHomepage ? after.homepagePosition : null;
+		if (currentPosition === null && nextPosition !== null) {
+			await transaction("world_publications")
+				.where({listed_on_homepage: true})
+				.whereNot({id: input.publicationId})
+				.where("homepage_position", ">=", nextPosition)
+				.increment("homepage_position", 1);
+		} else if (currentPosition !== null && nextPosition === null) {
+			await transaction("world_publications")
+				.where({listed_on_homepage: true})
+				.whereNot({id: input.publicationId})
+				.where("homepage_position", ">", currentPosition)
+				.decrement("homepage_position", 1);
+		} else if (currentPosition !== null && nextPosition !== null && nextPosition < currentPosition) {
+			await transaction("world_publications")
+				.where({listed_on_homepage: true})
+				.whereNot({id: input.publicationId})
+				.whereBetween("homepage_position", [nextPosition, currentPosition - 1])
+				.increment("homepage_position", 1);
+		} else if (currentPosition !== null && nextPosition !== null && nextPosition > currentPosition) {
+			await transaction("world_publications")
+				.where({listed_on_homepage: true})
+				.whereNot({id: input.publicationId})
+				.whereBetween("homepage_position", [currentPosition + 1, nextPosition])
+				.decrement("homepage_position", 1);
+		}
+		await transaction("world_publications").where({id: input.publicationId}).update({
+			visibility: input.visibility,
+			homepage_position: input.homepagePosition,
+			is_official: input.isOfficial,
+			listed_on_homepage: input.listedOnHomepage,
+			updated_at: transaction.fn.now(),
+		});
+		await transaction("admin_audit_log").insert({
+			actor_user_id: input.actorUserId,
+			action: "publication.curation_updated",
+			target_type: "publication",
+			target_id: input.publicationId,
+			reason: input.reason,
+			details: {before, after},
+		});
+	});
+	const result = (await listAdminPublications()).find((item) => item.id === input.publicationId);
+	if (!result) throw new PublicationError("NOT_FOUND", "The publication does not exist.");
+	return result;
 }
 
 export async function setPublicationSuspension(input: {

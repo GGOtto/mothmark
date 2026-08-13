@@ -42,7 +42,7 @@ export default function AdminPublicationsPage() {
 								<th>Owner</th>
 								<th>Release</th>
 								<th>Status</th>
-								<th>Visibility</th>
+								<th>Discovery</th>
 								<th>Published</th>
 							</tr>
 						</thead>
@@ -57,8 +57,18 @@ export default function AdminPublicationsPage() {
 										<Link href={`/admin/users/${publication.ownerUserId}`}>{publication.ownerUsername}</Link>
 									</td>
 									<td>{publication.release.number}</td>
-									<td>{publication.status}</td>
-									<td>{publication.visibility}</td>
+									<td>
+										<span className={`adminStatus adminStatus-${publication.status}`}>
+											{publication.status}
+										</span>
+									</td>
+									<td>
+										{publication.isOfficial ? "Official" : "Community"}
+										<small>
+											{publication.visibility === "listed" ? "Published worlds" : "Direct link only"}
+											{publication.listedOnHomepage ? ` · Home page #${publication.homepagePosition}` : ""}
+										</small>
+									</td>
 									<td>{formatAdminDate(publication.release.publishedAt)}</td>
 								</tr>
 							))}
