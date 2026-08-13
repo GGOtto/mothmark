@@ -2,9 +2,21 @@ import {world} from "@/data/worlds/initialWorld";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {resolveRoomEffect} from "../effects/resolveEffects";
 import {createInitialGameState} from "../states/createInitialState";
+import {createPlayerTestScenario} from "../utils/testUtils";
 import {createRoomMessage} from "./createRoomMessage";
 
 describe("createRoomMessage", () => {
+	it("indents every listed item line beneath the room description", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const room = scenario.world.rooms[0];
+
+		const message = createRoomMessage(scenario.world, room, scenario.game);
+
+		expect(message.text).toContain(
+			"You are back in the test foyer.\n A small brass bell hangs beside the doorway.",
+		);
+	});
+
 	it("uses the runtime short description for a visited room", () => {
 		const initialGame = createInitialGameState(world, world.startRoomId);
 		const namedGame = resolveRoomEffect(initialGame, {

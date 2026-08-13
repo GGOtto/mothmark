@@ -45,6 +45,37 @@
 	opacity: 0.72;
 }
 
+.command-input__submit {
+	display: inline-flex;
+	height: 32px;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 0 10px;
+	border: 1px solid var(--color-terminal-border);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-terminal-prompt);
+	cursor: pointer;
+	font: inherit;
+}
+
+.command-input__submit:hover:not(:disabled),
+.command-input__submit:focus-visible {
+	border-color: var(--color-terminal-prompt);
+	color: var(--color-terminal-text);
+}
+
+.command-input__submit:focus-visible {
+	outline: 2px solid var(--color-terminal-prompt);
+	outline-offset: -2px;
+}
+
+.command-input__submit:disabled {
+	cursor: default;
+	opacity: 0.35;
+}
+
 .command-input__history {
 	display: flex;
 	flex: 0 0 auto;
@@ -82,6 +113,10 @@
 }
 
 @media (max-width: 600px), (pointer: coarse) {
+	.command-input__submit {
+		height: 40px;
+	}
+
 	.command-input__history {
 		gap: 4px;
 

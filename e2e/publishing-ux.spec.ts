@@ -160,7 +160,7 @@ test("hosted play saves an inert transcript and resumes it after refresh", async
 	await expect(page.getByText("Quiet archive · by archivekeeper")).toBeVisible();
 	await expect(page.getByText("A quiet archive waits.")).toBeVisible();
 	await page.getByLabel("Game command").fill('<img src=x onerror="alert(1)">');
-	await page.getByLabel("Game command").press("Enter");
+	await page.getByRole("button", {name: "Send command"}).click();
 	await expect(page.getByText('<img src=x onerror="alert(1)">')).toBeVisible();
 	await expect(page.locator(".output-log img")).toHaveCount(0);
 	await expect(page.getByText("The archive remains still.")).toBeVisible();

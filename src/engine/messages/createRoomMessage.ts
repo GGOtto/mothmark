@@ -57,7 +57,13 @@ export function createRoomMessage(
 		const fragments = (authored?.presentation.conditionalText ?? [])
 			.filter((fragment) => evaluateCondition(world, gameState, fragment.when))
 			.map((fragment) => fragment.text);
-		text += `${[itemState.listingText || itemState.description, ...fragments].filter(Boolean).join("\n")}\n`;
+		const itemText = [itemState.listingText || itemState.description, ...fragments]
+			.filter(Boolean)
+			.join("\n")
+			.split("\n")
+			.map((line) => ` ${line}`)
+			.join("\n");
+		text += `${itemText}\n`;
 	}
 
 	return createGameMessage(`${text}\n`, "room", {roomId: room.id});

@@ -61,6 +61,17 @@ describe("GamePlayer focus", () => {
 		await waitFor(() => expect(onCurrentRoomChange).toHaveBeenCalledWith(toID("room", "stockroom")));
 	});
 
+	it("submits from the visible button and returns focus to the command input", async () => {
+		render(<GamePlayer world={initialWorld} startingRoomId={initialWorld.startRoomId} />);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+		fireEvent.change(input, {target: {value: "east"}});
+
+		fireEvent.click(screen.getByRole("button", {name: "Send command"}));
+
+		await screen.findByText(/Shelves hold boxes waiting to be unpacked/);
+		await waitFor(() => expect(input).toHaveFocus());
+	});
+
 	it("uses live world edits while preserving the existing game state", async () => {
 		const view = render(
 			<GamePlayer world={initialWorld} startingRoomId={initialWorld.startRoomId} />,
