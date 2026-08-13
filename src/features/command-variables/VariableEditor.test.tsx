@@ -1,12 +1,8 @@
 import {fireEvent, render, screen, within} from "@testing-library/react";
 import {useState} from "react";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {
-	CounterConditionSchema,
-	FlagConditionSchema,
-	TextConditionSchema,
-} from "@/schemas/world/conditionSchema";
-import {ItemActionEffectSchema} from "@/schemas/world/effectSchema";
+import {WorldConditionSchema} from "@/schemas/world/conditionSchema";
+import {PlayerEffectSchema} from "@/schemas/world/effectSchema";
 import {
 	CommandConditionSchema,
 	CommandEffectGroupSchema,
@@ -140,10 +136,10 @@ function UnavailableTypedHarness() {
 }
 
 function EntityHarness() {
-	const schema = ItemActionEffectSchema;
+	const schema = PlayerEffectSchema;
 	const [value, setValue] = useState<Record<string, unknown>>({
-		type: "item-action",
-		action: "take",
+		type: "player",
+		operation: "take",
 		itemId: toID("item", "torch"),
 	});
 	return (
@@ -166,9 +162,9 @@ function ConditionHarness() {
 	});
 	const [value, setValue] = useState(() => {
 		const leaf = CommandConditionSchema.parse({
-			...createDefaultFieldObject(CounterConditionSchema),
-			type: "counter",
-			operation: "compare",
+			type: "world",
+			operation: "counter-compare",
+			operator: "eq",
 			counter: "turns",
 			value: 1,
 		});
@@ -197,8 +193,8 @@ function DirectionConditionHarness() {
 		operation: "all" as const,
 		conditions: [
 			{
-				type: "current-room",
-				operation: "is-exit-open",
+				type: "navigation",
+				operation: "exit-is-open",
 				direction: "n",
 			},
 		],
@@ -257,9 +253,9 @@ function FlagConditionHarness() {
 		operation: "all" as const,
 		conditions: [
 			CommandConditionSchema.parse({
-				...createDefaultFieldObject(FlagConditionSchema),
-				type: "flag",
-				operation: "is",
+				...createDefaultFieldObject(WorldConditionSchema),
+				type: "world",
+				operation: "flag-is",
 				flag: "ready",
 				value: true,
 			}),
@@ -288,9 +284,8 @@ function TextConditionHarness() {
 		operation: "all" as const,
 		conditions: [
 			CommandConditionSchema.parse({
-				...createDefaultFieldObject(TextConditionSchema),
-				type: "text",
-				operation: "contains",
+				type: "world",
+				operation: "text-contains",
 				text: "answer",
 				value: "moth",
 			}),
@@ -318,7 +313,7 @@ function DirectionEffectHarness() {
 		...createDefaultFieldObject(CommandEffectGroupSchema),
 		id: toID("effect", "direction-effect"),
 		name: "Move player",
-		effects: [{type: "player", operation: "move-in-direction", direction: "n"}],
+		effects: [{type: "navigation", operation: "move-in-direction", direction: "n"}],
 	}));
 	return (
 		<>
@@ -514,7 +509,8 @@ describe("variable-aware editors", () => {
 	it("binds compatible variables to fields inside a condition", () => {
 		render(<ConditionHarness />);
 		expect(screen.queryByRole("combobox", {name: "Reusable world condition"})).toBeNull();
-		expect(screen.getByRole("combobox", {name: "Operation"})).toBeVisible();
+		expect(screen.queryByRole("combobox", {name: "Operation"})).toBeNull();
+		expect(screen.getByRole("button", {name: "Condition Compare a counter Change"})).toBeVisible();
 		expect(screen.getByRole("combobox", {name: "Counter"})).toBeVisible();
 		const valueField = screen
 			.getByRole("spinbutton", {name: "Value"})

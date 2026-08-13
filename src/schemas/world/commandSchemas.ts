@@ -8,6 +8,7 @@ import type {
 import {editor} from "../utils/editorSchemaHelpers";
 import {CommandConditionBranchSchema} from "./commandLogicSchemas";
 import {DirectionSchema} from "./roomSchema";
+import {ConditionSchema} from "./conditionSchema";
 
 const RoleSchema = editor
 	.input({
@@ -507,6 +508,12 @@ export const CommandSchema = editor
 				.input({title: "Name", description: "The author-facing name of this command."})
 				.min(1),
 			enabled: editor.boolean({title: "Enabled"}).default(true),
+			availableWhen: editor
+				.conditionControl(ConditionSchema, {
+					title: "Available when",
+					description: "Only match or show this command in help while this condition passes.",
+				})
+				.optional(),
 			showInHelp: editor
 				.boolean({
 					title: "Show in help",
@@ -646,8 +653,14 @@ export const CommandSchema = editor
 			if (record.type === "comparison" && (field === "left" || field === "right")) {
 				return "number" as const;
 			}
-			if (record.type === "counter" && field === "counter") return "number" as const;
-			if (record.type === "flag" && field === "flag") return "boolean" as const;
+			if (
+				record.type === "world" &&
+				String(record.operation).startsWith("counter-") &&
+				field === "counter"
+			)
+				return "number" as const;
+			if (record.type === "world" && String(record.operation).startsWith("flag-") && field === "flag")
+				return "boolean" as const;
 			if (field === "direction") return "direction" as const;
 			if (typeof fallback === "number") return "number" as const;
 			if (typeof fallback === "boolean") return "boolean" as const;

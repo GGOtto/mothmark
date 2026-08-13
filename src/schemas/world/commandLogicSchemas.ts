@@ -10,7 +10,6 @@ const PROTECTED_BINDING_FIELDS = new Set([
 	"constructor",
 	"type",
 	"operation",
-	"flag-type",
 	"commandVariables",
 	"conditions",
 	"effects",
@@ -99,14 +98,25 @@ function commandNumberOperand(title: string) {
 	);
 }
 
-export const CommandComparisonConditionSchema = z.object({
-	type: z.literal("comparison"),
-	valueType: z.literal("number"),
-	operator: ComparisonOperatorSchema,
-	left: commandNumberOperand("Left value").optional(),
-	right: commandNumberOperand("Right value").optional(),
-	commandVariables: commandVariablesField,
-});
+export const CommandComparisonConditionSchema = editor.object(
+	{
+		type: z.literal("comparison"),
+		valueType: z.literal("number"),
+		operator: ComparisonOperatorSchema,
+		left: commandNumberOperand("Left value").optional(),
+		right: commandNumberOperand("Right value").optional(),
+		commandVariables: commandVariablesField,
+	},
+	{
+		title: "Compare two numbers",
+		description: "Compare literal numbers, saved counters, or values captured by this command.",
+		discovery: {
+			keywords: ["number", "counter", "command value", "greater", "less", "equals", "range"],
+			example:
+				"Continue when the number typed by the player is greater than the saved attempts counter.",
+		},
+	},
+);
 
 export type CommandComparisonCondition = z.infer<typeof CommandComparisonConditionSchema>;
 export type CommandConditionGroup = {

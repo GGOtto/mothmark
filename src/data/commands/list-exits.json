@@ -1,5 +1,8 @@
 {
-	"id": {"type": "command", "id": "list-exits"},
+	"id": {
+		"type": "command",
+		"id": "list-exits"
+	},
 	"name": "List exits",
 	"enabled": true,
 	"showInHelp": true,
@@ -9,7 +12,10 @@
 		{
 			"blocks": [
 				{
-					"id": {"type": "command-block", "id": "list-exits-phrase"},
+					"id": {
+						"type": "command-block",
+						"id": "list-exits-phrase"
+					},
 					"type": "phrase",
 					"matches": [
 						"list exits",
@@ -24,16 +30,29 @@
 			]
 		}
 	],
-	"scope": {"scope": "global"},
+	"scope": {
+		"scope": "global"
+	},
 	"priority": 0,
 	"fallbacks": [],
 	"behavior": {
-		"id": {"type": "condition-branch", "id": "list-exits-branch"},
+		"id": {
+			"type": "condition-branch",
+			"id": "list-exits-branch"
+		},
 		"always": {
-			"id": {"type": "effect", "id": "list-exits-effect"},
+			"id": {
+				"type": "effect",
+				"id": "list-exits-effect"
+			},
 			"name": "List exits",
 			"type": "group",
-			"effects": [{"type": "message", "operation": "list-available-exits"}],
+			"effects": [
+				{
+					"type": "message",
+					"operation": "list-available-exits"
+				}
+			],
 			"allowMultipleUsesInWorld": true
 		},
 		"elifs": []

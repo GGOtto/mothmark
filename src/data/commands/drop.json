@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "drop-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "drop-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "drop-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "drop-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "drop-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "drop-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't drop that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't drop that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "drop",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "drop-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "drop"
 				}
 			],
 			"allowMultipleUsesInWorld": true

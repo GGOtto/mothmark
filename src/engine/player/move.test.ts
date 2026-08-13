@@ -1,7 +1,7 @@
 import {world} from "@/data/worlds/initialWorld";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {idValue} from "@/utils/idUtils";
-import {resolveRoomEffect} from "../effects/resolveEffects";
+import {resolveNavigationEffect} from "../effects/resolveEffects";
 import {createInitialGameState} from "../states/createInitialState";
 import {isExitOpen, move, silentlyMove} from "./move";
 
@@ -27,8 +27,8 @@ describe("move", () => {
 
 	it("blocks a locked exit and leaves the player in the current room", () => {
 		const game = createInitialGameState(world, world.startRoomId);
-		const lockedGame = resolveRoomEffect(game, {
-			type: "room",
+		const lockedGame = resolveNavigationEffect(world, game, {
+			type: "navigation",
 			operation: "lock-exit",
 			roomId: world.startRoomId,
 			direction: "e",
@@ -46,14 +46,14 @@ describe("move", () => {
 
 	it("allows movement after the exit is unlocked", () => {
 		const game = createInitialGameState(world, world.startRoomId);
-		const lockedGame = resolveRoomEffect(game, {
-			type: "room",
+		const lockedGame = resolveNavigationEffect(world, game, {
+			type: "navigation",
 			operation: "lock-exit",
 			roomId: world.startRoomId,
 			direction: "e",
 		} as Effect);
-		const unlockedGame = resolveRoomEffect(lockedGame, {
-			type: "room",
+		const unlockedGame = resolveNavigationEffect(world, lockedGame, {
+			type: "navigation",
 			operation: "unlock-exit",
 			roomId: world.startRoomId,
 			direction: "e",
@@ -68,8 +68,8 @@ describe("move", () => {
 
 	it("blocks every connection after all exits are locked", () => {
 		const game = createInitialGameState(world, world.startRoomId);
-		const lockedGame = resolveRoomEffect(game, {
-			type: "room",
+		const lockedGame = resolveNavigationEffect(world, game, {
+			type: "navigation",
 			operation: "lock-all-exits",
 			roomId: world.startRoomId,
 		} as Effect);

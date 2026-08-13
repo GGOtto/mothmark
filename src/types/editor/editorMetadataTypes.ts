@@ -76,12 +76,26 @@ export type EditorOption = {
 	label: string;
 	value: string;
 	description?: string;
+	keywords?: string[];
+	situations?: string[];
+	example?: string;
+	note?: string;
+	requires?: string[];
 	group?: string;
 	icon?: string;
 	tone?: EditorControlTone;
 	disabled?: boolean;
 	deprecated?: boolean;
 	badge?: string;
+};
+
+export type EditorDiscoveryMetadata = {
+	keywords?: string[];
+	/** Natural-language author scenarios used only for discovery search. */
+	situations?: string[];
+	example?: string;
+	note?: string;
+	requires?: string[];
 };
 
 export type EditorPreviewFeatures = {
@@ -284,4 +298,5 @@ export type EditorFieldMetadata = {
 	className?: string;
 	testId?: string;
 	debugName?: string;
+	discovery?: EditorDiscoveryMetadata;
 };

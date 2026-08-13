@@ -3,6 +3,7 @@ import type {World} from "@/schemas/world/worldSchema";
 import {DIRECTION_NAMES} from "@/schemas/world/directionSchema";
 import {commandIsInScope} from "../commands/parse";
 import {getAvailableExits} from "./move";
+import {evaluateCondition} from "../conditions/evaluateCondition";
 
 const HELP_GROUP_SIZE = 6;
 
@@ -27,6 +28,7 @@ export function commandHelpMessage(world: World, game: GameState): string {
 		.filter(
 			(command) =>
 				command.enabled &&
+				(!command.availableWhen || evaluateCondition(world, game, command.availableWhen)) &&
 				command.showInHelp &&
 				command.helpPattern.trim() &&
 				commandIsInScope(command, world, game),

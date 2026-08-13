@@ -67,29 +67,57 @@
 	"priority": 1,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "put-inside-item"},
+			"blockId": {
+				"type": "command-block",
+				"id": "put-inside-item"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "put-inside-item-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "put-inside-item-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve held item",
-					"id": {"type": "effect", "id": "put-inside-item-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "put-inside-item-fallback-effects"
+					},
 					"type": "group",
 					"effects": [
-						{"type": "message", "operation": "show", "message": "You can't put that anywhere."}
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't put that anywhere."
+						}
 					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
 		},
 		{
-			"blockId": {"type": "command-block", "id": "put-inside-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "put-inside-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "put-inside-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "put-inside-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve container",
-					"id": {"type": "effect", "id": "put-inside-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "put-inside-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't put it in that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't put it in that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -109,8 +137,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "put-inside",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "put-inside-item-fallback"
@@ -134,7 +161,8 @@
 							},
 							"field": "containerId"
 						}
-					]
+					],
+					"operation": "put-inside"
 				}
 			],
 			"allowMultipleUsesInWorld": true

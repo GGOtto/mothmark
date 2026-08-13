@@ -99,8 +99,8 @@ describe("schema-driven condition and effect summaries", () => {
 					type: "group",
 					operation: "none",
 					conditions: [
-						{type: "current-room", operation: "has-tag", tag: "flooded"},
-						{type: "current-room", operation: "has-tag", tag: "dark"},
+						{type: "room", operation: "current-has-tag", tag: "flooded"},
+						{type: "room", operation: "current-has-tag", tag: "dark"},
 					],
 				},
 				ConditionSchema,

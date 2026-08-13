@@ -32,25 +32,37 @@ function BehaviorsEditor() {
 }
 
 describe("ArrayEditor multi-select arrays", () => {
-	it("shows every schema-backed behavior without duplicate configuration rows", () => {
+	it("shows every schema-backed behavior and configures selected behaviors", () => {
 		const {container} = render(<BehaviorsEditor />);
 
-		expect(screen.getByRole("checkbox", {name: /Takeable/})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Takeable /})).toBeInTheDocument();
 		expect(
 			screen.getByText("Lets the player take, carry, place, and drop this item."),
 		).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Container/})).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Surface/})).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Openable/})).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Lockable/})).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Door/})).toBeInTheDocument();
-		expect(screen.getByRole("checkbox", {name: /Usable/})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Container /})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Surface /})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Openable /})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Lockable /})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Door /})).toBeInTheDocument();
+		expect(screen.getByRole("checkbox", {name: /^Usable /})).toBeInTheDocument();
 
-		fireEvent.click(screen.getByRole("checkbox", {name: /Takeable/}));
+		fireEvent.click(screen.getByRole("checkbox", {name: /^Takeable /}));
 
 		expect(screen.getByText("1 selected")).toBeInTheDocument();
 		expect(screen.getByTestId("behaviors-value")).toHaveTextContent('"type":"takeable"');
-		expect(container.querySelector(".arrayEditor__item")).not.toBeInTheDocument();
-		expect(screen.queryByRole("button", {name: /Delete/})).not.toBeInTheDocument();
+		expect(container.querySelector(".arrayEditor__item")).toBeInTheDocument();
+		expect(screen.getByRole("combobox", {name: "Size"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Delete Takeable"})).toBeInTheDocument();
+	});
+
+	it("adds required behaviors and exposes lock configuration", () => {
+		render(<BehaviorsEditor />);
+
+		fireEvent.click(screen.getByRole("checkbox", {name: /^Lockable /}));
+
+		expect(screen.getByRole("checkbox", {name: /^Openable /})).toBeChecked();
+		expect(screen.getByRole("checkbox", {name: /^Lockable /})).toBeChecked();
+		expect(screen.getByText("Unlock with")).toBeInTheDocument();
+		expect(screen.getByRole("switch")).toBeInTheDocument();
 	});
 });

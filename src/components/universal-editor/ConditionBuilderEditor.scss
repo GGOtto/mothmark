@@ -165,6 +165,30 @@
 	color: var(--field-text);
 }
 
+.conditionBuilderEditor__add {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 8px 10px;
+	border: 1px dashed var(--field-border);
+	border-radius: 4px;
+	background: var(--field-bg-raised);
+	color: var(--field-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	text-align: left;
+}
+
+.conditionBuilderEditor__add:hover:not(:disabled) {
+	border-color: var(--color-action);
+	color: var(--color-action);
+}
+
+.conditionBuilderEditor__add:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
 .conditionBuilderEditor__item,
 .conditionBuilderEditor__group {
 	min-width: 0;
@@ -238,6 +262,50 @@
 	min-width: 0;
 	grid-template-columns: repeat(auto-fit, minmax(min(156px, 100%), 1fr));
 	gap: 7px;
+}
+
+.conditionBuilderEditor__change {
+	display: grid;
+	width: 100%;
+	min-width: 0;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	padding: 7px 8px;
+	border: 1px solid var(--field-border);
+	border-radius: 4px;
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	cursor: pointer;
+	font: inherit;
+	font-size: 10px;
+	text-align: left;
+}
+
+.conditionBuilderEditor__change strong {
+	min-width: 0;
+	color: var(--field-text);
+	font-size: 12px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.conditionBuilderEditor__change small {
+	color: var(--color-action);
+	font-size: 10px;
+	font-weight: 700;
+}
+
+.conditionBuilderEditor__change:hover:not(:disabled) {
+	border-color: var(--field-border-strong);
+	background: var(--field-bg-strong);
+}
+
+.conditionBuilderEditor__change:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
 }
 
 .conditionBuilderEditor__fields {

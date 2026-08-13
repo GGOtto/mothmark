@@ -1,7 +1,7 @@
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {getEditorMetadata} from "@/utils/editorMetadata";
 import {toID} from "@/utils/idUtils";
-import {ConditionSchema, WorldConditionSchema} from "./conditionSchema";
+import {ConditionSchema, SavedConditionSchema} from "./conditionSchema";
 
 const schema = editor.condition(ConditionSchema);
 const controlSchema = editor.conditionControl(ConditionSchema);
@@ -22,7 +22,7 @@ describe("editor.condition", () => {
 	it.each([
 		{
 			name: "a single condition",
-			value: {type: "flag", operation: "is", flag: "gate.open", value: true},
+			value: {type: "world", operation: "flag-is", flag: "gate.open", value: true},
 		},
 		{
 			name: "a condition reference",
@@ -34,7 +34,7 @@ describe("editor.condition", () => {
 				type: "group",
 				operation: "all",
 				conditions: [
-					{type: "flag", operation: "is", flag: "gate.open", value: true},
+					{type: "world", operation: "flag-is", flag: "gate.open", value: true},
 					{
 						type: "group",
 						operation: "none",
@@ -54,7 +54,7 @@ describe("editor.condition", () => {
 
 	it("rejects untyped ID references", () => {
 		expect(schema.safeParse({type: "condition-ref", conditionId: "gate-open"}).success).toBe(false);
-		expect(schema.safeParse({type: "current-room", operation: "is", roomId: "foyer"}).success).toBe(
+		expect(schema.safeParse({type: "player", operation: "is-in-room", roomId: "foyer"}).success).toBe(
 			false,
 		);
 	});
@@ -62,9 +62,8 @@ describe("editor.condition", () => {
 	it("accepts room and feature flag conditions", () => {
 		expect(
 			schema.safeParse({
-				type: "flag",
-				"flag-type": "room",
-				operation: "is",
+				type: "room",
+				operation: "flag-is",
 				roomId: toID("room", "foyer"),
 				flag: "visited",
 				value: true,
@@ -72,9 +71,8 @@ describe("editor.condition", () => {
 		).toBe(true);
 		expect(
 			schema.safeParse({
-				type: "flag",
-				"flag-type": "item",
-				operation: "is",
+				type: "item",
+				operation: "flag-is",
 				roomId: toID("room", "foyer"),
 				itemId: toID("item", "door"),
 				flag: "examined",
@@ -86,8 +84,8 @@ describe("editor.condition", () => {
 	it("accepts current-room exit availability conditions", () => {
 		expect(
 			ConditionSchema.safeParse({
-				type: "current-room",
-				operation: "is-exit-open",
+				type: "navigation",
+				operation: "exit-is-open",
 				direction: "e",
 			}).success,
 		).toBe(true);
@@ -105,14 +103,22 @@ describe("editor.condition", () => {
 			"does-not-contain",
 		] as const) {
 			expect(
-				ConditionSchema.safeParse({type: "text", operation, text: "answer", value: "moth"}).success,
+				ConditionSchema.safeParse({
+					type: "world",
+					operation: `text-${operation}`,
+					text: "answer",
+					value: "moth",
+				}).success,
 			).toBe(true);
 		}
 		for (const operation of ["is-empty", "is-not-empty", "exists", "missing"] as const) {
-			expect(ConditionSchema.safeParse({type: "text", operation, text: "answer"}).success).toBe(true);
+			expect(
+				ConditionSchema.safeParse({type: "world", operation: `text-${operation}`, text: "answer"})
+					.success,
+			).toBe(true);
 		}
 		expect(
-			ConditionSchema.safeParse({type: "text", operation: "contains", text: "answer"}).success,
+			ConditionSchema.safeParse({type: "world", operation: "text-contains", text: "answer"}).success,
 		).toBe(false);
 		expect(
 			ConditionSchema.safeParse({type: "flag", operation: "true", flag: "gate.open"}).success,
@@ -123,40 +129,37 @@ describe("editor.condition", () => {
 	});
 
 	it.each([
-		{type: "state", state: "reachable", value: true},
-		{type: "location", location: "inside-item", parentItemId: toID("item", "box")},
-		{type: "important-tag", tag: "container", value: true},
-		{type: "tag", tag: "quest-item", value: false},
-		{type: "contents", test: "empty", placement: "either", value: true},
+		{operation: "is-reachable", value: true},
+		{operation: "is-inside", parentItemId: toID("item", "box")},
+		{operation: "has-behavior", behavior: "container", value: true},
+		{operation: "has-tag", tag: "quest-item", value: false},
+		{operation: "contents-empty", placement: "either", value: true},
 		{
-			type: "capacity",
-			test: "can-fit",
-			itemId: toID("item", "coin"),
+			operation: "can-fit-item",
+			candidateItemId: toID("item", "coin"),
 			placement: "inside",
 		},
 		{
-			type: "can-unlock",
-			lockItemId: toID("item", "door"),
+			operation: "can-be-unlocked-by",
 			keyItemId: toID("item", "key"),
 		},
 		{
-			type: "door",
-			test: "connection-passable",
+			operation: "connection-is-passable",
 			connectionId: toID("connection", "hall"),
 			value: true,
 		},
-	])("accepts item predicate %#", (test) => {
+	])("accepts item operation %#", (itemOperation) => {
 		expect(
-			ConditionSchema.safeParse({type: "item", itemId: toID("item", "subject"), test}).success,
+			ConditionSchema.safeParse({type: "item", itemId: toID("item", "subject"), ...itemOperation})
+				.success,
 		).toBe(true);
 	});
 
 	it("accepts ordinary typed item flag references", () => {
 		expect(
 			ConditionSchema.parse({
-				type: "flag",
-				"flag-type": "item",
-				operation: "is",
+				type: "item",
+				operation: "flag-is",
 				itemId: toID("item", "door"),
 				flag: "glowing",
 				value: true,
@@ -165,10 +168,11 @@ describe("editor.condition", () => {
 	});
 
 	it("defaults flag conditions without an entity type to normal flags", () => {
-		expect(schema.parse({type: "flag", operation: "is", flag: "gate.open", value: true})).toEqual({
-			type: "flag",
-			"flag-type": "normal",
-			operation: "is",
+		expect(
+			schema.parse({type: "world", operation: "flag-is", flag: "gate.open", value: true}),
+		).toEqual({
+			type: "world",
+			operation: "flag-is",
 			flag: "gate.open",
 			value: true,
 		});
@@ -203,13 +207,11 @@ describe("editor.conditionControl", () => {
 
 	it("migrates a legacy condition list to an all group", () => {
 		expect(
-			controlSchema.parse([{type: "flag", operation: "is", flag: "gate.open", value: true}]),
+			controlSchema.parse([{type: "world", operation: "flag-is", flag: "gate.open", value: true}]),
 		).toEqual({
 			type: "group",
 			operation: "all",
-			conditions: [
-				{type: "flag", "flag-type": "normal", operation: "is", flag: "gate.open", value: true},
-			],
+			conditions: [{type: "world", operation: "flag-is", flag: "gate.open", value: true}],
 		});
 	});
 
@@ -218,7 +220,7 @@ describe("editor.conditionControl", () => {
 			type: "group",
 			operation: "any",
 			conditions: [
-				{type: "flag", operation: "is", flag: "gate.open", value: true},
+				{type: "world", operation: "flag-is", flag: "gate.open", value: true},
 				{type: "condition-ref", conditionId: toID("condition", "gate-open")},
 				{type: "group", operation: "none", conditions: []},
 			],
@@ -228,24 +230,18 @@ describe("editor.conditionControl", () => {
 	});
 });
 
-describe("WorldConditionSchema", () => {
-	it("migrates a legacy flat stored condition", () => {
+describe("SavedConditionSchema", () => {
+	it("stores an identity around a canonical condition", () => {
 		expect(
-			WorldConditionSchema.parse({
-				id: toID("condition", "gate-open"),
-				name: "Gate open",
-				allowMultipleUsesInWorld: true,
-				type: "flag",
-				operation: "is",
-				flag: "gate.open",
-				value: true,
+			SavedConditionSchema.parse({
+				identity: toID("condition", "gate-open"),
+				condition: {type: "world", operation: "flag-is", flag: "gate.open", value: true},
 			}),
 		).toEqual({
 			identity: toID("condition", "gate-open"),
 			condition: {
-				type: "flag",
-				"flag-type": "normal",
-				operation: "is",
+				type: "world",
+				operation: "flag-is",
 				flag: "gate.open",
 				value: true,
 			},

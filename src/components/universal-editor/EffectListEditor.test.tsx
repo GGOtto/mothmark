@@ -1,11 +1,13 @@
-import {render, screen} from "@testing-library/react";
+import {fireEvent, render, screen} from "@testing-library/react";
 import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
 import {EffectSchema} from "../../schemas/world/effectSchema";
 import {createDefaultFieldObject} from "../../utils/createDefaultFieldObject";
+import {toID} from "../../utils/idUtils";
 import {EffectListEditor, type EffectListControlMetadata} from "./EffectListEditor";
 import {findEditorSchemaVariant} from "./utils/editorSchemaVariants";
+import {PopupProvider} from "@/components/popup/Popup";
 
 const metadata: EffectListControlMetadata = {
 	type: "effect-list",
@@ -15,15 +17,28 @@ const metadata: EffectListControlMetadata = {
 	},
 };
 
-function EffectListHarness({initialValue}: {initialValue: Record<string, unknown>[]}) {
+function EffectListHarness({
+	initialValue,
+	initialWorldEffects = [],
+	embeddedGroups = [],
+}: {
+	initialValue: Record<string, unknown>[];
+	initialWorldEffects?: Record<string, unknown>[];
+	embeddedGroups?: Record<string, unknown>[];
+}) {
 	const [value, setValue] = useState(initialValue);
-	const [worldEffects, setWorldEffects] = useState<Record<string, unknown>[]>([]);
+	const [worldEffects, setWorldEffects] = useState<Record<string, unknown>[]>(initialWorldEffects);
 	const context: EditorControlContext = {
 		mode: "edit",
 		registries: {} as EditorRegistries,
 		getValue: () => undefined,
 		setValue: () => undefined,
-		getWorldValue: (path) => (path[0] === "effects" ? worldEffects : undefined),
+		getWorldValue: (path) =>
+			path.length === 0
+				? {effects: worldEffects, commands: embeddedGroups}
+				: path[0] === "effects"
+					? worldEffects
+					: undefined,
 		setWorldValue: (path, nextValue) => {
 			if (path[0] === "effects" && Array.isArray(nextValue)) {
 				setWorldEffects(nextValue as Record<string, unknown>[]);
@@ -32,7 +47,7 @@ function EffectListHarness({initialValue}: {initialValue: Record<string, unknown
 	};
 
 	return (
-		<>
+		<PopupProvider>
 			<EffectListEditor
 				value={value}
 				onChange={setValue}
@@ -42,7 +57,7 @@ function EffectListHarness({initialValue}: {initialValue: Record<string, unknown
 			/>
 			<output data-testid="value">{JSON.stringify(value)}</output>
 			<output data-testid="world-effects">{JSON.stringify(worldEffects)}</output>
-		</>
+		</PopupProvider>
 	);
 }
 
@@ -65,7 +80,7 @@ describe("EffectListEditor", () => {
 	it("preserves schema-derived options for variant select fields", () => {
 		const appendMessageSchema = findEditorSchemaVariant(EffectSchema, {
 			type: "message",
-			operation: "append-last-message",
+			operation: "append-to-last",
 		})?.schema;
 		expect(appendMessageSchema).toBeDefined();
 		const appendMessage = createDefaultFieldObject(appendMessageSchema!);
@@ -99,9 +114,56 @@ describe("EffectListEditor", () => {
 				]}
 			/>,
 		);
+		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
 
 		expect(screen.queryByRole("option", {name: "Group"})).not.toBeInTheDocument();
-		expect(screen.getByRole("option", {name: "Use saved effect"})).toBeInTheDocument();
+		expect(screen.queryByRole("option", {name: "Use saved effect"})).not.toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "Choose an effect"})).toBeInTheDocument();
+	});
+
+	it("offers explicit reusable groups with a summary of their effects", () => {
+		render(
+			<EffectListHarness
+				initialValue={[]}
+				initialWorldEffects={[
+					{
+						type: "group",
+						id: toID("effect", "open-gate"),
+						name: "Open the gate",
+						effects: [{type: "message", operation: "show", message: "The gate opens."}],
+						allowMultipleUsesInWorld: true,
+					},
+				]}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
+
+		expect(screen.getByRole("option", {name: /Open the gate/})).toBeInTheDocument();
+		expect(screen.getAllByText("Show a message The gate opens.").length).toBeGreaterThan(0);
+		expect(screen.queryByText("Unknown effect")).not.toBeInTheDocument();
+	});
+
+	it("hides legacy copies of embedded outcome groups from reusable choices", () => {
+		const embeddedGroup = {
+			type: "group",
+			id: toID("effect", "command-1-always"),
+			name: "Always",
+			effects: [{type: "message", operation: "show", message: "That does not work."}],
+			allowMultipleUsesInWorld: true,
+		};
+		render(
+			<EffectListHarness
+				initialValue={[]}
+				initialWorldEffects={[embeddedGroup]}
+				embeddedGroups={[{behavior: {always: embeddedGroup}}]}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
+
+		expect(screen.queryByRole("option", {name: /^Always/})).not.toBeInTheDocument();
+		expect(screen.queryByText("Unknown effect")).not.toBeInTheDocument();
 	});
 
 	it("keeps reuse controls off concrete child effects", () => {

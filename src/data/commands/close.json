@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "close-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "close-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "close-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "close-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "close-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "close-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't close that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't close that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "close",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "close-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "close"
 				}
 			],
 			"allowMultipleUsesInWorld": true

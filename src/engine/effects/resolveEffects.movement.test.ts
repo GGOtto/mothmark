@@ -1,15 +1,15 @@
-import {MessageEffectSchema, PlayerEffectSchema} from "@/schemas/world/effectSchema";
+import {MessageEffectSchema, NavigationEffectSchema} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {createPlayerTestScenario} from "../utils/testUtils";
-import {resolveMessageEffect, resolvePlayerEffect} from "./resolveEffects";
+import {resolveMessageEffect, resolveNavigationEffect} from "./resolveEffects";
 
 describe("movement-related effects", () => {
 	it("shows the current room's full description and listed features", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
 		const effect = MessageEffectSchema.parse({
 			...createDefaultFieldObject(MessageEffectSchema),
-			operation: "current-room-description",
+			operation: "describe-current-room",
 			allowShorten: false,
 		});
 
@@ -24,19 +24,19 @@ describe("movement-related effects", () => {
 
 	it("moves in an open direction without adding output and ignores blocked movement", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
-		const openEffect = PlayerEffectSchema.parse({
-			...createDefaultFieldObject(PlayerEffectSchema),
+		const openEffect = NavigationEffectSchema.parse({
+			...createDefaultFieldObject(NavigationEffectSchema),
 			operation: "move-in-direction",
 			direction: "e",
 		});
-		const blockedEffect = PlayerEffectSchema.parse({
-			...createDefaultFieldObject(PlayerEffectSchema),
+		const blockedEffect = NavigationEffectSchema.parse({
+			...createDefaultFieldObject(NavigationEffectSchema),
 			operation: "move-in-direction",
 			direction: "w",
 		});
 
-		const moved = resolvePlayerEffect(world, game, openEffect);
-		const blocked = resolvePlayerEffect(world, game, blockedEffect);
+		const moved = resolveNavigationEffect(world, game, openEffect);
+		const blocked = resolveNavigationEffect(world, game, blockedEffect);
 
 		expect(idValue(moved.player.currentRoom)).toBe("gallery");
 		expect(moved.messages).toEqual(game.messages);
@@ -45,13 +45,13 @@ describe("movement-related effects", () => {
 
 	it("sets facing without moving the player", () => {
 		const {world, game} = createPlayerTestScenario("navigation");
-		const effect = PlayerEffectSchema.parse({
-			...createDefaultFieldObject(PlayerEffectSchema),
+		const effect = NavigationEffectSchema.parse({
+			...createDefaultFieldObject(NavigationEffectSchema),
 			operation: "set-facing",
 			direction: "sw",
 		});
 
-		const result = resolvePlayerEffect(world, game, effect);
+		const result = resolveNavigationEffect(world, game, effect);
 
 		expect(result.player.currentRoom).toEqual(game.player.currentRoom);
 		expect(result.player.facing).toBe("sw");

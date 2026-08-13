@@ -13,11 +13,18 @@ export type DiscriminatedUnionOption = {
 	description?: string;
 	defaultValue?: Record<string, unknown>;
 	fields?: ObjectFieldMetadata[];
+	discovery?: {
+		keywords?: string[];
+		example?: string;
+		note?: string;
+		requires?: string[];
+	};
 };
 
 export type DiscriminatedUnionFeatures = {
 	discriminator: string;
 	options: DiscriminatedUnionOption[];
+	hideDiscriminator?: boolean;
 };
 
 export type DiscriminatedUnionControlMetadata = EditorControlMetadata & {
@@ -96,21 +103,23 @@ export function DiscriminatedUnionEditor({
 			testId={metadata.testId}
 		>
 			<div className="discriminatedUnionEditor">
-				<select
-					className="discriminatedUnionEditor__select"
-					aria-label={metadata.title}
-					value={selectedValue}
-					disabled={isDisabled || isReadonly}
-					onChange={(event) => changeBranch(event.target.value)}
-				>
-					{options.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
-						</option>
-					))}
-				</select>
+				{metadata.features.hideDiscriminator ? null : (
+					<select
+						className="discriminatedUnionEditor__select"
+						aria-label={metadata.title}
+						value={selectedValue}
+						disabled={isDisabled || isReadonly}
+						onChange={(event) => changeBranch(event.target.value)}
+					>
+						{options.map((option) => (
+							<option key={option.value} value={option.value}>
+								{option.label}
+							</option>
+						))}
+					</select>
+				)}
 
-				{selectedOption?.description ? (
+				{!metadata.features.hideDiscriminator && selectedOption?.description ? (
 					<div className="discriminatedUnionEditor__description">{selectedOption.description}</div>
 				) : null}
 

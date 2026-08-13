@@ -4,9 +4,8 @@ import {toID} from "@/utils/idUtils";
 import {getCondition} from "./lookupUtils";
 
 const gateOpen = {
-	type: "flag",
-	"flag-type": "normal",
-	operation: "is",
+	type: "world",
+	operation: "flag-is",
 	flag: "gate.open",
 	value: true,
 } as ConditionDefinition;

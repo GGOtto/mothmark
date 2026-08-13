@@ -3,7 +3,7 @@ import {
 	EffectGroupSchema,
 	EffectSchema,
 	EffectUsageSchema,
-	WorldEffectSchema,
+	SavedEffectSchema,
 } from "./effectSchema";
 
 describe("effect storage schemas", () => {
@@ -21,20 +21,20 @@ describe("effect storage schemas", () => {
 
 	it("accepts current-room descriptions and directional movement effects", () => {
 		expect(
-			EffectSchema.safeParse({type: "message", operation: "current-room-description"}).success,
+			EffectSchema.safeParse({type: "message", operation: "describe-current-room"}).success,
 		).toBe(true);
 		expect(
 			EffectSchema.safeParse({
-				type: "player",
+				type: "navigation",
 				operation: "move-in-direction",
 				direction: "e",
 			}).success,
 		).toBe(true);
 		expect(
-			EffectSchema.safeParse({type: "player", operation: "set-facing", direction: "sw"}).success,
+			EffectSchema.safeParse({type: "navigation", operation: "set-facing", direction: "sw"}).success,
 		).toBe(true);
 		expect(
-			EffectSchema.safeParse({type: "player", operation: "set-facing", direction: "up"}).success,
+			EffectSchema.safeParse({type: "navigation", operation: "set-facing", direction: "up"}).success,
 		).toBe(false);
 	});
 
@@ -49,9 +49,9 @@ describe("effect storage schemas", () => {
 
 	it("accepts saved text create, set, and delete effects", () => {
 		for (const effect of [
-			{type: "text", operation: "create", text: "answer", value: "moth"},
-			{type: "text", operation: "set", text: "answer", value: "mark"},
-			{type: "text", operation: "delete", text: "answer"},
+			{type: "world", operation: "set-text", text: "answer", value: "moth"},
+			{type: "world", operation: "set-text", text: "answer", value: "mark"},
+			{type: "world", operation: "delete-text", text: "answer"},
 		]) {
 			expect(EffectSchema.safeParse(effect).success).toBe(true);
 		}
@@ -69,7 +69,7 @@ describe("effect storage schemas", () => {
 			allowMultipleUsesInWorld: true,
 		};
 
-		expect(EffectGroupSchema.parse(group)).toEqual(WorldEffectSchema.parse(group));
+		expect(EffectGroupSchema.parse(group)).toEqual(SavedEffectSchema.parse(group));
 		expect(EffectUsageSchema.parse(group)).toMatchObject({
 			id: {type: "effect", id: "open-gate-sequence"},
 			type: "group",
@@ -117,9 +117,8 @@ describe("effect storage schemas", () => {
 	it("accepts room and feature flag effects", () => {
 		expect(
 			EffectSchema.safeParse({
-				type: "flag",
-				"flag-type": "room",
-				operation: "set",
+				type: "room",
+				operation: "set-flag",
 				roomId: toID("room", "vault"),
 				flag: "dark",
 				value: true,
@@ -127,9 +126,8 @@ describe("effect storage schemas", () => {
 		).toBe(true);
 		expect(
 			EffectSchema.safeParse({
-				type: "flag",
-				"flag-type": "item",
-				operation: "toggle",
+				type: "item",
+				operation: "toggle-flag",
 				roomId: toID("room", "vault"),
 				itemId: toID("item", "door"),
 				flag: "locked",
@@ -137,14 +135,14 @@ describe("effect storage schemas", () => {
 		).toBe(true);
 	});
 
-	it("defaults legacy flag effects to normal flags", () => {
+	it("accepts canonical world flag effects", () => {
 		expect(
-			EffectSchema.parse({type: "flag", operation: "set", flag: "gate.open", value: true}),
-		).toMatchObject({"flag-type": "normal"});
+			EffectSchema.parse({type: "world", operation: "set-flag", flag: "gate.open", value: true}),
+		).toEqual({type: "world", operation: "set-flag", flag: "gate.open", value: true});
 	});
 
 	it.each([
-		{type: "item", operation: "change-listing-text", itemId: toID("item", "item"), value: "Here."},
+		{type: "item", operation: "set-listing-text", itemId: toID("item", "item"), value: "Here."},
 		{
 			type: "item",
 			operation: "place-inside",
@@ -160,56 +158,51 @@ describe("effect storage schemas", () => {
 			placement: "on",
 		},
 		{
-			type: "item-action",
-			action: "take",
+			type: "player",
+			operation: "take",
 			itemId: toID("item", "item"),
 		},
 		{
-			type: "item-action",
-			action: "unlock",
+			type: "player",
+			operation: "unlock",
 			itemId: toID("item", "item"),
 			keyItemId: toID("item", "key"),
 		},
 		{
-			type: "item-action",
-			action: "put-on",
+			type: "player",
+			operation: "put-on",
 			itemId: toID("item", "item"),
 			surfaceId: toID("item", "table"),
 		},
-		{type: "item-action", action: "use", itemId: toID("item", "item")},
+		{type: "player", operation: "use", itemId: toID("item", "item")},
 	])("accepts item effect %#", (effect) => {
 		expect(EffectSchema.safeParse(effect).success).toBe(true);
 	});
 
-	it("normalizes legacy direct item effects", () => {
+	it("rejects legacy direct item effects", () => {
 		expect(
-			EffectSchema.parse({
+			EffectSchema.safeParse({
 				type: "item",
 				operation: "change-description",
 				itemId: toID("item", "door"),
 				value: "Changed.",
-			}),
-		).toMatchObject({
-			operation: "change-examine-text",
-			itemId: toID("item", "door"),
-		});
+			}).success,
+		).toBe(false);
 	});
 
 	it("rejects readonly edits and permanent deletion", () => {
 		expect(
 			EffectSchema.safeParse({
-				type: "flag",
-				"flag-type": "room",
-				operation: "toggle",
+				type: "room",
+				operation: "toggle-flag",
 				roomId: toID("room", "vault"),
 				flag: "visited",
 			}).success,
 		).toBe(false);
 		expect(
 			EffectSchema.safeParse({
-				type: "flag",
-				"flag-type": "room",
-				operation: "delete",
+				type: "room",
+				operation: "delete-flag",
 				roomId: toID("room", "vault"),
 				flag: "active",
 			}).success,

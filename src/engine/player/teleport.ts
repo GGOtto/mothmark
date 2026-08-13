@@ -41,6 +41,10 @@ export function teleport(
 	const roomMessage = options.silent ? undefined : createRoomMessage(world, destinationRoom, game);
 
 	return produce(game, (draft) => {
+		if (!compareIds(draft.player.currentRoom, destinationRoom.id)) {
+			draft.player.previousRoom = draft.player.currentRoom;
+			draft.player.lastRoomTransitionTurn = draft.player.turns;
+		}
 		draft.player.currentRoom = destinationRoom.id;
 		if (roomMessage) draft.messages.push(roomMessage);
 

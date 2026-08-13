@@ -175,9 +175,8 @@ describe("resolveConditionBranchWithResult", () => {
 		const branch = createBranch((draft) => {
 			draft.always = createPlayerTestEffectGroup("set-ready", [
 				{
-					type: "flag",
-					"flag-type": "normal",
-					operation: "create",
+					type: "world",
+					operation: "set-flag",
 					flag: "ready",
 					value: true,
 				},
@@ -188,9 +187,8 @@ describe("resolveConditionBranchWithResult", () => {
 					operation: "all",
 					conditions: [
 						{
-							type: "flag",
-							"flag-type": "normal",
-							operation: "is",
+							type: "world",
+							operation: "flag-is",
 							flag: "ready",
 							value: true,
 						},

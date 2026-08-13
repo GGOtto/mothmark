@@ -90,3 +90,16 @@ change cannot remain backward compatible.
 The v3-to-v4 migration records the reviewed command-help contract without rewriting retained
 documents. Existing playthroughs therefore preserve their historical command results; newly
 created worlds receive the expanded initial command set.
+
+## Condition and effect domains in v6
+
+The `v5-to-v6-reorganize-conditions-and-effects` migration makes the affected domain the outer
+discriminator for every condition and effect. Player-facing item actions such as `take`, `drop`, and
+`open` become Player effects; direct item-state mutations remain Item effects; movement and exit
+locking become Navigation effects; and flags, counters, and text move under World, Room, or Item as
+appropriate. Item conditions are flattened from their former nested `test` object.
+
+The migration walks complete retained world documents, including commands, events, item hooks,
+saved condition definitions, and saved effect groups. It preserves unrelated authored fields and
+renames command-variable bindings whenever their target field moves or changes name. Game states
+and messages do not change shape, but their rows still advance from schema version 5 to 6.

@@ -11,6 +11,7 @@ import type {
 	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {useOptionalPopup} from "@/components/popup/Popup";
 import {generateConditionSummary} from "./utils/universalEditorUtils";
 import {idValue, isID, toID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
@@ -19,9 +20,12 @@ import {
 	createSchemaVariantDefault,
 	findEditorSchemaVariant,
 	schemaFieldOptions,
+	schemaLogicOptionForValue,
+	type SchemaLogicOption,
 	schemaTypeOptions,
 } from "./utils/editorSchemaVariants";
 import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
+import {openLogicPicker} from "./LogicPicker";
 import "./ConditionBuilderEditor.scss";
 
 export type ConditionValue = Record<string, unknown>;
@@ -51,7 +55,7 @@ export type ConditionBuilderControlMetadata = EditorControlMetadata & {
 };
 
 export type ConditionBuilderEditorProps = EditorControlProps<
-	ConditionValue | ConditionValue[],
+	ConditionValue | ConditionValue[] | undefined,
 	ConditionBuilderControlMetadata
 >;
 
@@ -70,6 +74,14 @@ function conditionTypeOptions(metadata: ConditionBuilderControlMetadata) {
 	});
 }
 
+function defaultLeafConditionType(metadata: ConditionBuilderControlMetadata) {
+	const options = conditionTypeOptions(metadata);
+	return (
+		options.find((option) => !["group", "condition-ref", "comparison"].includes(option.value))
+			?.value ?? options.find((option) => option.value !== "group")?.value
+	);
+}
+
 function groupOperatorOptions(metadata: ConditionBuilderControlMetadata) {
 	return schemaFieldOptions(editorConditionSchema(metadata), "operation", {type: "group"});
 }
@@ -83,14 +95,14 @@ function shouldShowSummary(metadata: ConditionBuilderControlMetadata) {
 	);
 }
 
-export function createDefaultCondition(type = "flag", schema?: z.ZodTypeAny): ConditionValue {
+export function createDefaultCondition(type = "world", schema?: z.ZodTypeAny): ConditionValue {
 	return schema ? createSchemaVariantDefault(schema, {type}) : {type};
 }
 
 function getConditionType(condition: ConditionValue) {
 	if (condition.type === "condition-ref") return "condition-ref";
 	if (condition.kind === "group" || condition.type === "group") return "group";
-	return String(condition.type ?? (condition.kind === "expression" ? "counter" : "flag"));
+	return String(condition.type ?? "world");
 }
 
 function normalizeGroupOperator(operator: unknown): "all" | "any" | "none" {
@@ -234,14 +246,14 @@ function ensureConditionIdentity(
 }
 
 function createNamedCondition(
-	type: "flag" | "group",
+	type: string,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
 	siblings: ConditionValue[],
 	overrides: ConditionValue = {},
 ) {
 	const condition = {
-		...createDefaultCondition(type, metadata.features?.conditionSchema),
+		...createDefaultCondition(type, editorConditionSchema(metadata)),
 		...overrides,
 	};
 	if (type === "group" && Array.isArray(condition.conditions)) {
@@ -416,13 +428,13 @@ function uniqueWorldConditionName(
 }
 
 function createWorldConditionDefinition(
-	type: "flag" | "group",
+	type: string,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
 	overrides: ConditionValue = {},
 ) {
 	const condition = {
-		...createDefaultCondition(type),
+		...createDefaultCondition(type, editorConditionSchema(metadata)),
 		...overrides,
 	};
 	const nextCondition = {
@@ -434,7 +446,7 @@ function createWorldConditionDefinition(
 }
 
 function createWorldCondition(
-	type: "flag" | "group",
+	type: string,
 	metadata: ConditionBuilderControlMetadata,
 	context: EditorControlContext,
 	overrides: ConditionValue = {},
@@ -501,6 +513,33 @@ function reusableWorldConditions(context: EditorControlContext) {
 	return worldConditions(context).filter((condition) => storedConditionId(condition));
 }
 
+function reusableConditionPickerOptions(
+	metadata: ConditionBuilderControlMetadata,
+	context: EditorControlContext,
+): SchemaLogicOption[] {
+	return reusableWorldConditions(context).map((condition) => {
+		const conditionId = storedConditionId(condition) ?? "";
+		const title = storedConditionName(condition) ?? conditionId;
+		const description = generateConditionSummary(
+			conditionUsage(condition, context),
+			editorConditionSchema(metadata),
+		);
+		return {
+			key: `condition-ref:${conditionId}`,
+			type: "condition-ref",
+			title,
+			description,
+			category: "Reusable",
+			keywords: ["saved", "reusable", "shared"],
+			situations: [],
+			requires: [],
+			fields: [],
+			defaultValue: {type: "condition-ref", conditionId: toID("condition", conditionId)},
+			searchText: `${title} ${description} saved reusable shared`.toLocaleLowerCase(),
+		};
+	});
+}
+
 function hasWorldConditionLibrary(context: EditorControlContext) {
 	return Array.isArray(context.getWorldValue?.(["conditions"]) ?? context.getValue(["conditions"]));
 }
@@ -523,6 +562,7 @@ export function ConditionBuilderEditor({
 	readonly,
 	context,
 }: ConditionBuilderEditorProps) {
+	const popup = useOptionalPopup();
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -535,15 +575,36 @@ export function ConditionBuilderEditor({
 	]
 		.filter(Boolean)
 		.join(" ");
+	const isMissingCondition = value === undefined;
 	const isConditionList = Array.isArray(value);
-	const singleCondition = isConditionList ? undefined : normalizeCondition(value as ConditionValue);
+	const singleCondition =
+		isConditionList || isMissingCondition ? undefined : normalizeCondition(value as ConditionValue);
 	const worldConditionIndex =
 		!isConditionList && isWorldConditionEditorPath(path) && typeof path[1] === "number"
 			? path[1]
 			: undefined;
 
+	async function chooseCondition(current?: ConditionValue, includeReusable = true) {
+		const currentReferenceId =
+			current && isID(current.conditionId) ? idValue(current.conditionId) : undefined;
+		return openLogicPicker(popup, {
+			kind: "condition",
+			schema: editorConditionSchema(metadata),
+			additionalOptions:
+				includeReusable && canReuseWorldConditions(metadata, context)
+					? reusableConditionPickerOptions(metadata, context)
+					: [],
+			hiddenTypes: ["condition-ref", "group"],
+			selectedKey: currentReferenceId
+				? `condition-ref:${currentReferenceId}`
+				: current
+					? schemaLogicOptionForValue(editorConditionSchema(metadata), current)?.key
+					: undefined,
+		});
+	}
+
 	useEffect(() => {
-		if (!isConditionList || !canEdit || !canReuseWorldConditions(metadata, context)) return;
+		if (!isConditionList || !value || !canEdit || !canReuseWorldConditions(metadata, context)) return;
 
 		const conditions = value.map((condition) => normalizeCondition(condition as ConditionValue));
 		if (conditions.every(isConditionReference)) return;
@@ -598,6 +659,7 @@ export function ConditionBuilderEditor({
 			conditions: summaryConditions,
 		};
 		const canAddGroup = canEdit && (metadata.features?.allowGroups ?? true);
+		const defaultLeafType = defaultLeafConditionType(metadata);
 
 		function updateCondition(index: number, nextCondition: ConditionValue) {
 			onChange(
@@ -612,29 +674,31 @@ export function ConditionBuilderEditor({
 			onChange(conditions.filter((_, conditionIndex) => conditionIndex !== index));
 		}
 
-		function addCondition(type: "flag" | "group") {
+		function addConditionValue(selectedCondition: ConditionValue) {
 			if (!canEdit) return;
+			if (isConditionReference(selectedCondition)) {
+				onChange([...conditions, selectedCondition]);
+				return;
+			}
+			const type = getConditionType(selectedCondition);
 			if (type === "group" && !canAddGroup) return;
 			if (canReuseWorldConditions(metadata, context)) {
-				const nextCondition = createWorldCondition(
-					type,
-					metadata,
-					context,
-					type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
-				);
+				const nextCondition = createWorldCondition(type, metadata, context, selectedCondition);
 				onChange([...conditions, conditionRefFor(nextCondition)]);
 				return;
 			}
 			onChange([
 				...conditions,
-				createNamedCondition(
-					type,
-					metadata,
-					context,
-					conditions,
-					type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
-				),
+				createNamedCondition(type, metadata, context, conditions, selectedCondition),
 			]);
+		}
+
+		function addGroup() {
+			addConditionValue({
+				type: "group",
+				operation: metadata.features?.defaultGroupOperator ?? "all",
+				conditions: [],
+			});
 		}
 
 		return (
@@ -674,18 +738,47 @@ export function ConditionBuilderEditor({
 						emptyState={<ConditionEmptyState />}
 						addConditionLabel={addConditionLabel}
 						addGroupLabel={addGroupLabel}
-						canAddCondition={canEdit}
+						canAddCondition={canEdit && Boolean(defaultLeafType)}
 						canAddGroup={canAddGroup}
-						onAddCondition={() => addCondition("flag")}
-						onAddGroup={() => addCondition("group")}
-						onAddExistingCondition={(conditionId) =>
-							onChange([
-								...conditions,
-								{type: "condition-ref", conditionId: toID("condition", conditionId)},
-							])
-						}
+						onAddCondition={async () => {
+							const selected = await chooseCondition();
+							if (selected) addConditionValue(selected.defaultValue);
+						}}
+						onAddGroup={addGroup}
 					/>
 				</div>
+			</FieldShell>
+		);
+	}
+
+	if (isMissingCondition) {
+		return (
+			<FieldShell
+				title={metadata.title}
+				description={metadata.description}
+				error={error}
+				warnings={warnings}
+				appearance={appearance}
+				className={metadata.className}
+				testId={metadata.testId}
+			>
+				<button
+					className="conditionBuilderEditor__add"
+					type="button"
+					disabled={!canEdit}
+					onClick={async () => {
+						const selected = await chooseCondition();
+						if (!selected) return;
+						const condition = selected.defaultValue;
+						onChange(
+							metadata.features?.rootGroup
+								? {type: "group", operation: "all", conditions: [condition]}
+								: condition,
+						);
+					}}
+				>
+					{metadata.emptyState?.emptyActionLabel ?? "Add condition"}
+				</button>
 			</FieldShell>
 		);
 	}
@@ -1078,6 +1171,7 @@ function ConditionNodeEditor({
 	context,
 	editorTitle,
 }: ConditionNodeEditorProps) {
+	const popup = useOptionalPopup();
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
@@ -1090,11 +1184,9 @@ function ConditionNodeEditor({
 		(metadata.features?.allowGroups ?? true) &&
 		(metadata.features?.allowNestedGroups ?? true) &&
 		depth < maxDepth;
-	const availableTypes = conditionTypeOptions(metadata).filter(
-		(option) => option.value !== "group" || canAddGroup || isGroup,
-	);
 	const addConditionLabel = metadata.features?.addConditionLabel ?? "Add condition";
 	const addGroupLabel = metadata.features?.addGroupLabel ?? "Add group";
+	const defaultLeafType = defaultLeafConditionType(metadata);
 	const childConditions = Array.isArray(value.conditions)
 		? (value.conditions as ConditionValue[]).map(normalizeCondition)
 		: [];
@@ -1106,15 +1198,15 @@ function ConditionNodeEditor({
 		});
 	}
 
-	function addChild(type: "flag" | "group") {
+	function addChildValue(selectedCondition: ConditionValue) {
+		if (isConditionReference(selectedCondition)) {
+			updateField("conditions", [...childConditions, selectedCondition]);
+			return;
+		}
+		const type = getConditionType(selectedCondition);
 		if (type === "group" && !canAddGroup) return;
 		if (canReuseWorldConditions(metadata, context)) {
-			const nextCondition = createWorldConditionDefinition(
-				type,
-				metadata,
-				context,
-				type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
-			);
+			const nextCondition = createWorldConditionDefinition(type, metadata, context, selectedCondition);
 			const nextChildConditions = [...childConditions, conditionRefFor(nextCondition)];
 
 			if (context.setWorldValue && isWorldConditionEditorPath(path) && typeof path[1] === "number") {
@@ -1136,14 +1228,28 @@ function ConditionNodeEditor({
 		}
 		updateField("conditions", [
 			...childConditions,
-			createNamedCondition(
-				type,
-				metadata,
-				context,
-				childConditions,
-				type === "group" ? {operation: metadata.features?.defaultGroupOperator ?? "all"} : {},
-			),
+			createNamedCondition(type, metadata, context, childConditions, selectedCondition),
 		]);
+	}
+
+	function addChildGroup() {
+		addChildValue({
+			type: "group",
+			operation: metadata.features?.defaultGroupOperator ?? "all",
+			conditions: [],
+		});
+	}
+
+	async function chooseChildCondition() {
+		const selected = await openLogicPicker(popup, {
+			kind: "condition",
+			schema: editorConditionSchema(metadata),
+			additionalOptions: canReuseWorldConditions(metadata, context)
+				? reusableConditionPickerOptions(metadata, context)
+				: [],
+			hiddenTypes: ["condition-ref", "group"],
+		});
+		if (selected) addChildValue(selected.defaultValue);
 	}
 
 	function updateChild(index: number, nextValue: ConditionValue) {
@@ -1162,9 +1268,16 @@ function ConditionNodeEditor({
 		);
 	}
 
-	function changeType(nextType: string) {
+	async function changeCondition() {
+		const selected = await openLogicPicker(popup, {
+			kind: "condition",
+			schema: editorConditionSchema(metadata),
+			hiddenTypes: ["condition-ref", "group"],
+			selectedKey: schemaLogicOptionForValue(editorConditionSchema(metadata), value)?.key,
+		});
+		if (!selected) return;
 		onChange({
-			...createDefaultCondition(nextType, metadata.features?.conditionSchema),
+			...selected.defaultValue,
 			...conditionDisplayNameFields(value),
 		});
 	}
@@ -1181,20 +1294,21 @@ function ConditionNodeEditor({
 		>
 			{editorTitle ? <div className="conditionBuilderEditor__editingTitle">{editorTitle}</div> : null}
 			<div className="conditionBuilderEditor__row">
-				{isFixedRootGroup
-					? null
-					: renderSelect({
-							childKey: "conditionType",
-							value: type,
-							onChange: (nextType) => changeType(String(nextType)),
-							title: "Type",
-							options: availableTypes,
-							metadata,
-							path: [...path, "type"],
-							disabled,
-							readonly,
-							context,
-						})}
+				{!isFixedRootGroup && !isGroup ? (
+					<button
+						className="conditionBuilderEditor__change"
+						type="button"
+						disabled={!canEdit}
+						onClick={changeCondition}
+					>
+						<span>Condition</span>
+						<strong>
+							{schemaLogicOptionForValue(editorConditionSchema(metadata), value)?.title ??
+								generateConditionSummary(value, editorConditionSchema(metadata))}
+						</strong>
+						<small>Change</small>
+					</button>
+				) : null}
 
 				{isGroup
 					? renderSelect({
@@ -1239,24 +1353,17 @@ function ConditionNodeEditor({
 						emptyState={<ConditionEmptyState />}
 						addConditionLabel={addConditionLabel}
 						addGroupLabel={addGroupLabel}
-						canAddCondition={canEdit}
+						canAddCondition={canEdit && Boolean(defaultLeafType)}
 						canAddGroup={canAddGroup}
 						groupTitle={!canAddGroup && depth >= maxDepth ? "Maximum nesting depth reached." : undefined}
-						onAddCondition={() => addChild("flag")}
-						onAddGroup={() => addChild("group")}
-						onAddExistingCondition={(conditionId) =>
-							updateField("conditions", [
-								...childConditions,
-								{type: "condition-ref", conditionId: toID("condition", conditionId)},
-							])
-						}
+						onAddCondition={chooseChildCondition}
+						onAddGroup={addChildGroup}
 					/>
 				</div>
 			) : (
 				<ConditionLeafFields
 					value={value}
 					onChange={updateField}
-					onReplace={onChange}
 					metadata={metadata}
 					path={path}
 					disabled={disabled}
@@ -1271,7 +1378,6 @@ function ConditionNodeEditor({
 function ConditionLeafFields({
 	value,
 	onChange,
-	onReplace,
 	metadata,
 	path,
 	disabled,
@@ -1280,7 +1386,6 @@ function ConditionLeafFields({
 }: {
 	value: ConditionValue;
 	onChange: (key: string, nextValue: unknown) => void;
-	onReplace: (value: ConditionValue) => void;
 	metadata: ConditionBuilderControlMetadata;
 	path: Array<string | number>;
 	disabled?: boolean;
@@ -1288,60 +1393,18 @@ function ConditionLeafFields({
 	context: ConditionBuilderEditorProps["context"];
 }) {
 	const type = getConditionType(value);
-	const flagType = typeof value["flag-type"] === "string" ? value["flag-type"] : undefined;
 	const operation = typeof value.operation === "string" ? value.operation : undefined;
 	const schema = editorConditionSchema(metadata);
 	const variant = findEditorSchemaVariant(schema, {
 		type,
-		"flag-type": flagType,
 		operation,
 	});
 	if (!variant) return null;
 
-	const replaceVariant = (selection: Record<string, string | undefined>) => {
-		onReplace({
-			...createSchemaVariantDefault(schema, selection),
-			...conditionDisplayNameFields(value),
-		});
-	};
-
 	return (
 		<div className="conditionBuilderEditor__fields">
-			{variant.shape["flag-type"]
-				? renderSelect({
-						childKey: "flag-type",
-						value: flagType ?? "normal",
-						onChange: (nextFlagType) => replaceVariant({type, "flag-type": nextFlagType}),
-						title: resolveEditorMetadata(variant.shape["flag-type"]).title ?? "Flag type",
-						options: schemaFieldOptions(schema, "flag-type", {type}),
-						metadata,
-						path: [...path, "flag-type"],
-						disabled,
-						readonly,
-						context,
-					})
-				: null}
-			{variant.shape.operation
-				? renderSelect({
-						childKey: "operation",
-						value: operation ?? "",
-						onChange: (nextOperation) =>
-							replaceVariant({
-								type,
-								"flag-type": flagType,
-								operation: nextOperation,
-							}),
-						title: resolveEditorMetadata(variant.shape.operation).title ?? "Operation",
-						options: schemaFieldOptions(schema, "operation", {type, "flag-type": flagType}),
-						metadata,
-						path: [...path, "operation"],
-						disabled,
-						readonly,
-						context,
-					})
-				: null}
 			{Object.entries(variant.shape)
-				.filter(([key]) => !["type", "flag-type", "operation", "commandVariables"].includes(key))
+				.filter(([key]) => !["type", "operation", "commandVariables"].includes(key))
 				.map(([key, fieldSchema]) => {
 					const fieldMetadata = resolveEditorMetadata(fieldSchema);
 					return (

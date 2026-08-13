@@ -108,8 +108,11 @@ const game = produce(createDefaultFieldObject(GameStateSchema), (draft) => {
 	}));
 });
 
-function itemCondition(itemId: (typeof ids)[keyof typeof ids], test: unknown): SingleCondition {
-	return SingleConditionSchema.parse({type: "item", itemId, test});
+function itemCondition(
+	itemId: (typeof ids)[keyof typeof ids],
+	condition: Record<string, unknown>,
+): SingleCondition {
+	return SingleConditionSchema.parse({type: "item", itemId, ...condition});
 }
 
 describe("item conditions", () => {
@@ -123,35 +126,26 @@ describe("item conditions", () => {
 		["locked", false],
 	] as const)("checks the %s state", (state, value) => {
 		expect(
-			evaluateSingleCondition(world, game, itemCondition(ids.box, {type: "state", state, value})),
+			evaluateSingleCondition(world, game, itemCondition(ids.box, {operation: `is-${state}`, value})),
 		).toBe(true);
 	});
 
 	it("checks root and direct nested locations", () => {
 		expect(
-			evaluateSingleCondition(
-				world,
-				game,
-				itemCondition(ids.coin, {type: "location", location: "current-room"}),
-			),
+			evaluateSingleCondition(world, game, itemCondition(ids.coin, {operation: "is-in-current-room"})),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
 				itemCondition(ids.coin, {
-					type: "location",
-					location: "inside-item",
+					operation: "is-inside",
 					parentItemId: ids.box,
 				}),
 			),
 		).toBe(true);
 		expect(
-			evaluateSingleCondition(
-				world,
-				game,
-				itemCondition(ids.key, {type: "location", location: "inventory"}),
-			),
+			evaluateSingleCondition(world, game, itemCondition(ids.key, {operation: "is-in-inventory"})),
 		).toBe(true);
 	});
 
@@ -160,14 +154,14 @@ describe("item conditions", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.box, {type: "important-tag", tag: "container", value: true}),
+				itemCondition(ids.box, {operation: "has-behavior", behavior: "container", value: true}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.key, {type: "tag", tag: "brass-key", value: true}),
+				itemCondition(ids.key, {operation: "has-tag", tag: "brass-key", value: true}),
 			),
 		).toBe(true);
 	});
@@ -178,9 +172,8 @@ describe("item conditions", () => {
 				world,
 				game,
 				itemCondition(ids.box, {
-					type: "contents",
-					test: "contains-item",
-					itemId: ids.coin,
+					operation: "contains-item",
+					containedItemId: ids.coin,
 					placement: "inside",
 				}),
 			),
@@ -189,16 +182,15 @@ describe("item conditions", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.box, {type: "capacity", test: "full", placement: "inside", value: true}),
+				itemCondition(ids.box, {operation: "capacity-is-full", placement: "inside", value: true}),
 			),
 		).toBe(true);
 		expect(
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.key, {
-					type: "can-unlock",
-					lockItemId: ids.box,
+				itemCondition(ids.box, {
+					operation: "can-be-unlocked-by",
 					keyItemId: ids.key,
 				}),
 			),
@@ -211,8 +203,7 @@ describe("item conditions", () => {
 				world,
 				game,
 				itemCondition(ids.door, {
-					type: "door",
-					test: "controls-connection",
+					operation: "controls-connection",
 					connectionId: toID("connection", "passage"),
 					value: true,
 				}),
@@ -222,7 +213,7 @@ describe("item conditions", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.door, {type: "door", test: "connection-passable", value: false}),
+				itemCondition(ids.door, {operation: "connection-is-passable", value: false}),
 			),
 		).toBe(true);
 	});
@@ -232,7 +223,7 @@ describe("item conditions", () => {
 			evaluateSingleCondition(
 				world,
 				game,
-				itemCondition(ids.key, {type: "tag", tag: "brass-key", value: true}),
+				itemCondition(ids.key, {operation: "has-tag", tag: "brass-key", value: true}),
 			),
 		).toBe(true);
 	});

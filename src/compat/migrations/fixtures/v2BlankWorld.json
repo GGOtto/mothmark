@@ -1,0 +1,1786 @@
+{
+	"metadata": {
+		"title": "Untitled world",
+		"author": "",
+		"description": "",
+		"version": "0.1.0",
+		"layers": []
+	},
+	"startRoomId": {
+		"type": "room",
+		"id": "room-1"
+	},
+	"deathMessage": "The story ends here.",
+	"rooms": [],
+	"items": [],
+	"connections": [],
+	"commands": [
+		{
+			"id": {
+				"type": "command",
+				"id": "command-1"
+			},
+			"name": "Travel",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-1"
+							},
+							"type": "phrase",
+							"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-2"
+							},
+							"type": "direction",
+							"role": "direction",
+							"allowed": []
+						}
+					]
+				},
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-1"
+							},
+							"type": "phrase",
+							"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-3"
+							},
+							"type": "relation",
+							"relation": "to",
+							"aliasMode": "defaults",
+							"aliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-2"
+							},
+							"type": "direction",
+							"role": "direction",
+							"allowed": []
+						}
+					]
+				},
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-1"
+							},
+							"type": "phrase",
+							"matches": ["go", "walk", "move", "travel", "head", "proceed", "run"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-3"
+							},
+							"type": "relation",
+							"relation": "to",
+							"aliasMode": "defaults",
+							"aliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-4"
+							},
+							"type": "phrase",
+							"matches": ["the"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-2"
+							},
+							"type": "direction",
+							"role": "direction",
+							"allowed": []
+						}
+					]
+				},
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-2"
+							},
+							"type": "direction",
+							"role": "direction",
+							"allowed": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "command-block-2"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "command-block-2-fallback"
+						},
+						"always": {
+							"name": "Always",
+							"id": {
+								"type": "effect",
+								"id": "command-1-always"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "That's not a direction you can go."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "command-1-branch"
+				},
+				"if": {
+					"condition": {
+						"type": "group",
+						"operation": "all",
+						"conditions": [
+							{
+								"type": "current-room",
+								"operation": "is-exit-open",
+								"commandVariables": [
+									{
+										"blockId": {
+											"type": "command-block",
+											"id": "command-block-2"
+										},
+										"field": "direction"
+									}
+								],
+								"direction": "n",
+								"id": {
+									"type": "condition",
+									"id": "flag-1"
+								},
+								"name": "Flag 1"
+							}
+						]
+					},
+					"effect": {
+						"name": "If",
+						"id": {
+							"type": "effect",
+							"id": "command-1-if"
+						},
+						"type": "group",
+						"effects": [
+							{
+								"type": "player",
+								"operation": "move-in-direction",
+								"commandVariables": [
+									{
+										"blockId": {
+											"type": "command-block",
+											"id": "command-block-2"
+										},
+										"field": "direction"
+									}
+								],
+								"direction": "n"
+							},
+							{
+								"type": "message",
+								"operation": "current-room-description",
+								"commandVariables": [],
+								"allowShorten": true
+							}
+						],
+						"allowMultipleUsesInWorld": true
+					},
+					"delayTurns": 0,
+					"cancelIfConditionFails": true
+				},
+				"elifs": [],
+				"else": {
+					"name": "Else",
+					"id": {
+						"type": "effect",
+						"id": "command-1-else"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"commandVariables": [],
+							"message": "You can't go that way."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "command-2"
+			},
+			"name": "Look",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "command-block-1"
+							},
+							"type": "phrase",
+							"matches": ["look", "look around", "l", "look about"]
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "command-2-branch"
+				},
+				"always": {
+					"name": "Response",
+					"id": {
+						"type": "effect",
+						"id": "command-2-effect"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "current-room-description",
+							"commandVariables": [],
+							"allowShorten": false
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "take"
+			},
+			"name": "Take",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "take-verb"
+							},
+							"type": "phrase",
+							"matches": ["take", "get", "pick up"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "take-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["takeable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "take-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "take-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "take-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't take that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "take-branch"
+				},
+				"if": {
+					"condition": {
+						"type": "group",
+						"operation": "all",
+						"conditions": [
+							{
+								"type": "item",
+								"commandVariables": [
+									{
+										"blockId": {
+											"type": "command-block",
+											"id": "take-target"
+										},
+										"field": "itemId"
+									}
+								],
+								"itemId": {
+									"type": "item",
+									"id": "take-item"
+								},
+								"test": {
+									"type": "state",
+									"state": "reachable",
+									"value": true
+								}
+							}
+						]
+					},
+					"effect": {
+						"name": "Take item",
+						"id": {
+							"type": "effect",
+							"id": "take-effects"
+						},
+						"type": "group",
+						"effects": [
+							{
+								"type": "item-action",
+								"commandVariables": [
+									{
+										"blockId": {
+											"type": "command-block",
+											"id": "take-target"
+										},
+										"field": "itemId"
+									}
+								],
+								"action": "take",
+								"itemId": {
+									"type": "item",
+									"id": "take-item"
+								}
+							}
+						],
+						"allowMultipleUsesInWorld": true
+					},
+					"delayTurns": 0,
+					"cancelIfConditionFails": true
+				},
+				"elifs": [],
+				"else": {
+					"name": "Cannot take",
+					"id": {
+						"type": "effect",
+						"id": "take-failed"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"commandVariables": [],
+							"message": "You can't take that right now."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "drop"
+			},
+			"name": "Drop",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "drop-verb"
+							},
+							"type": "phrase",
+							"matches": ["drop"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "drop-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["takeable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "drop-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "drop-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "drop-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't drop that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "drop-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "drop-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "drop-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "drop",
+							"itemId": {
+								"type": "item",
+								"id": "drop-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "examine"
+			},
+			"name": "Examine",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "examine-verb"
+							},
+							"type": "phrase",
+							"matches": ["examine", "inspect", "x", "look at"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "examine-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": [],
+							"tagMode": "all",
+							"source": "visible",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "examine-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "examine-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "examine-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't examine that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "examine-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "examine-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "examine-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "examine",
+							"itemId": {
+								"type": "item",
+								"id": "examine-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "open"
+			},
+			"name": "Open",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "open-verb"
+							},
+							"type": "phrase",
+							"matches": ["open"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "open-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["openable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "open-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "open-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "open-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't open that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "open-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "open-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "open-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "open",
+							"itemId": {
+								"type": "item",
+								"id": "open-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "close"
+			},
+			"name": "Close",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "close-verb"
+							},
+							"type": "phrase",
+							"matches": ["close", "shut"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "close-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["openable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "close-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "close-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "close-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't close that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "close-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "close-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "close-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "close",
+							"itemId": {
+								"type": "item",
+								"id": "close-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "lock"
+			},
+			"name": "Lock",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "lock-verb"
+							},
+							"type": "phrase",
+							"matches": ["lock"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "lock-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["lockable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "lock-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "lock-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "lock-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't lock that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "lock-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "lock-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "lock-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "lock",
+							"itemId": {
+								"type": "item",
+								"id": "lock-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "unlock"
+			},
+			"name": "Unlock",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "unlock-verb"
+							},
+							"type": "phrase",
+							"matches": ["unlock"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "unlock-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["lockable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "unlock-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "unlock-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "unlock-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't unlock that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "unlock-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "unlock-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "unlock-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "unlock",
+							"itemId": {
+								"type": "item",
+								"id": "unlock-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "use"
+			},
+			"name": "Use",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-verb"
+							},
+							"type": "phrase",
+							"matches": ["use"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["usable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 0,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "use-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "use-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve item",
+							"id": {
+								"type": "effect",
+								"id": "use-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't use that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "use-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "use-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "use-target"
+									},
+									"field": "itemId"
+								}
+							],
+							"action": "use",
+							"itemId": {
+								"type": "item",
+								"id": "use-item"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "use-targeted"
+			},
+			"name": "Use with target",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-verb"
+							},
+							"type": "phrase",
+							"matches": ["use"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-item"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["usable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-with"
+							},
+							"type": "relation",
+							"relation": "with",
+							"aliasMode": "defaults",
+							"aliases": [],
+							"role": "relation"
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-object"
+							},
+							"type": "target",
+							"role": "indirect-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": [],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				},
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-verb"
+							},
+							"type": "phrase",
+							"matches": ["use"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-item"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["usable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-on"
+							},
+							"type": "relation",
+							"relation": "on",
+							"aliasMode": "defaults",
+							"aliases": [],
+							"role": "relation"
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "use-target-object"
+							},
+							"type": "target",
+							"role": "indirect-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": [],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 1,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "use-target-item"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "use-target-item-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve used item",
+							"id": {
+								"type": "effect",
+								"id": "use-target-item-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't use that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				},
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "use-target-object"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "use-target-object-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve use target",
+							"id": {
+								"type": "effect",
+								"id": "use-target-object-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't use it on that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "use-target-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "use-target-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "use-target-item"
+									},
+									"field": "itemId"
+								},
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "use-target-object"
+									},
+									"field": "targetItemId"
+								}
+							],
+							"action": "use",
+							"itemId": {
+								"type": "item",
+								"id": "use-item-fallback"
+							},
+							"targetItemId": {
+								"type": "item",
+								"id": "use-target-fallback"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "put-inside"
+			},
+			"name": "Put inside",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-inside-verb"
+							},
+							"type": "phrase",
+							"matches": ["put", "place"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-inside-item"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["takeable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-inside-relation"
+							},
+							"type": "relation",
+							"relation": "in",
+							"aliasMode": "defaults",
+							"aliases": [],
+							"role": "placement"
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-inside-target"
+							},
+							"type": "target",
+							"role": "indirect-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["container"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 1,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "put-inside-item"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "put-inside-item-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve held item",
+							"id": {
+								"type": "effect",
+								"id": "put-inside-item-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't put that anywhere."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				},
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "put-inside-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "put-inside-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve container",
+							"id": {
+								"type": "effect",
+								"id": "put-inside-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't put it in that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "put-inside-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "put-inside-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "put-inside-item"
+									},
+									"field": "itemId"
+								},
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "put-inside-target"
+									},
+									"field": "containerId"
+								}
+							],
+							"action": "put-inside",
+							"itemId": {
+								"type": "item",
+								"id": "put-inside-item-fallback"
+							},
+							"containerId": {
+								"type": "item",
+								"id": "put-inside-target-fallback"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		},
+		{
+			"id": {
+				"type": "command",
+				"id": "put-on"
+			},
+			"name": "Put on",
+			"enabled": true,
+			"patterns": [
+				{
+					"blocks": [
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-on-verb"
+							},
+							"type": "phrase",
+							"matches": ["put", "place"]
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-on-item"
+							},
+							"type": "target",
+							"role": "direct-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["takeable"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-on-relation"
+							},
+							"type": "relation",
+							"relation": "on",
+							"aliasMode": "defaults",
+							"aliases": [],
+							"role": "placement"
+						},
+						{
+							"id": {
+								"type": "command-block",
+								"id": "put-on-target"
+							},
+							"type": "target",
+							"role": "indirect-object",
+							"entityTypes": ["item"],
+							"entityIds": [],
+							"tags": ["surface"],
+							"tagMode": "all",
+							"source": "reachable",
+							"extraAliases": []
+						}
+					]
+				}
+			],
+			"scope": {
+				"scope": "global"
+			},
+			"priority": 1,
+			"fallbacks": [
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "put-on-item"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "put-on-item-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve held item",
+							"id": {
+								"type": "effect",
+								"id": "put-on-item-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't put that anywhere."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				},
+				{
+					"blockId": {
+						"type": "command-block",
+						"id": "put-on-target"
+					},
+					"behavior": {
+						"id": {
+							"type": "condition-branch",
+							"id": "put-on-target-fallback"
+						},
+						"always": {
+							"name": "Cannot resolve surface",
+							"id": {
+								"type": "effect",
+								"id": "put-on-target-fallback-effects"
+							},
+							"type": "group",
+							"effects": [
+								{
+									"type": "message",
+									"operation": "show",
+									"commandVariables": [],
+									"message": "You can't put it on that."
+								}
+							],
+							"allowMultipleUsesInWorld": true
+						},
+						"elifs": []
+					}
+				}
+			],
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "put-on-branch"
+				},
+				"always": {
+					"name": "Always",
+					"id": {
+						"type": "effect",
+						"id": "put-on-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "item-action",
+							"commandVariables": [
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "put-on-item"
+									},
+									"field": "itemId"
+								},
+								{
+									"blockId": {
+										"type": "command-block",
+										"id": "put-on-target"
+									},
+									"field": "surfaceId"
+								}
+							],
+							"action": "put-on",
+							"itemId": {
+								"type": "item",
+								"id": "put-on-item-fallback"
+							},
+							"surfaceId": {
+								"type": "item",
+								"id": "put-on-target-fallback"
+							}
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				},
+				"elifs": []
+			}
+		}
+	],
+	"conditions": [],
+	"effects": [],
+	"events": [],
+	"initialState": {
+		"flags": [],
+		"counters": [],
+		"texts": []
+	}
+}

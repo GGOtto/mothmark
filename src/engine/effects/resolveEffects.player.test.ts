@@ -24,13 +24,13 @@ describe("effects through the player path", () => {
 		const {world, game} = scenarioWithEffects([
 			{
 				type: "item",
-				operation: "change-name",
+				operation: "set-name",
 				itemId: toID("item", "brass-bell"),
 				value: "Silver Bell",
 			},
 			{
 				type: "item",
-				operation: "change-examine-text",
+				operation: "set-examine-text",
 				itemId: toID("item", "brass-bell"),
 				value: "The newly silver bell gleams beside the doorway.",
 			},
@@ -87,19 +87,19 @@ describe("effects through the player path", () => {
 				type: "room",
 				operation: "set-name",
 				roomId: toID("room", "foyer"),
-				variantId: "Darkened Foyer",
+				value: "Darkened Foyer",
 			},
 			{
 				type: "room",
 				operation: "set-description",
 				roomId: toID("room", "foyer"),
-				variantId: "Every lamp in the foyer has gone out.",
+				value: "Every lamp in the foyer has gone out.",
 			},
 			{
 				type: "room",
 				operation: "set-short-description",
 				roomId: toID("room", "foyer"),
-				variantId: "The foyer remains dark.",
+				value: "The foyer remains dark.",
 			},
 		]);
 
@@ -117,7 +117,7 @@ describe("effects through the player path", () => {
 	it("locks an exit before the player's next attempt to use it", () => {
 		const {world, game} = scenarioWithEffects([
 			{
-				type: "room",
+				type: "navigation",
 				operation: "lock-exit",
 				roomId: toID("room", "foyer"),
 				direction: "e",
@@ -136,7 +136,7 @@ describe("effects through the player path", () => {
 
 	it("teleports the player with the destination room description", () => {
 		const {world, game} = scenarioWithEffects([
-			{type: "player", operation: "teleport", roomId: toID("room", "gallery")},
+			{type: "navigation", operation: "move-to-room", roomId: toID("room", "gallery")},
 		]);
 
 		const nextGame = resolveTurn(world, game, "help");

@@ -235,6 +235,7 @@ function buildDiscriminatedUnionFeatures(schema: z.ZodTypeAny, metadata?: Editor
 				label: optionMetadata.title ?? optionLabel(value),
 				value,
 				description: optionMetadata.description,
+				discovery: optionMetadata.discovery,
 				defaultValue: createDefaultFieldObject(optionSchema) as Record<string, unknown>,
 				fields: optionMetadata.features?.fields as ObjectFieldMetadata[] | undefined,
 			},

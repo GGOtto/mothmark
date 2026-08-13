@@ -2,7 +2,7 @@ import {fireEvent, render, screen} from "@testing-library/react";
 import {useState} from "react";
 import {
 	ConditionSchema,
-	FlagConditionSchema,
+	WorldConditionSchema,
 	type Condition,
 } from "@/schemas/world/conditionSchema";
 import {CommandConditionSchema} from "@/schemas/world/commandLogicSchemas";
@@ -19,9 +19,8 @@ function StatefulConditionEditor() {
 		operation: "all",
 		conditions: [
 			{
-				type: "flag",
-				"flag-type": "normal",
-				operation: "is",
+				type: "world",
+				operation: "flag-is",
 				flag: "door-open",
 				value: true,
 			},
@@ -34,7 +33,7 @@ function StatefulConditionEditor() {
 function StatefulCommandConditionEditor() {
 	const [value, setValue] = useState<Record<string, unknown>>(() => ({
 		...createDefaultFieldObject(commandSchema),
-		conditions: [{...createDefaultFieldObject(FlagConditionSchema), flag: "door-open"}],
+		conditions: [{...createDefaultFieldObject(WorldConditionSchema), flag: "door-open"}],
 	}));
 
 	return <UniversalEditor schema={commandSchema} value={value} onChange={setValue} />;
@@ -46,9 +45,8 @@ describe("ConditionBuilderEditor", () => {
 		render(<StatefulConditionEditor />);
 
 		fireEvent.click(screen.getByRole("button", {name: /Edit/}));
-
 		expect(screen.getByRole("button", {name: "Back to conditions"})).toBeInTheDocument();
-		expect(screen.getByRole("heading", {name: "Flag 1"})).toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "World state 1"})).toBeInTheDocument();
 	});
 
 	it("derives command condition options from the command condition schema", () => {
@@ -56,9 +54,7 @@ describe("ConditionBuilderEditor", () => {
 		render(<StatefulCommandConditionEditor />);
 
 		fireEvent.click(screen.getByRole("button", {name: /Edit/}));
-
-		expect(screen.getByRole("option", {name: "Flag"})).toBeInTheDocument();
-		expect(screen.getByRole("option", {name: "Counter"})).toBeInTheDocument();
-		expect(screen.getByRole("option", {name: "Comparison"})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: /Condition .* Change/})).toBeInTheDocument();
+		expect(screen.queryByRole("combobox", {name: "Type"})).not.toBeInTheDocument();
 	});
 });

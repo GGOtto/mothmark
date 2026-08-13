@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "examine-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "examine-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "examine-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "examine-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "examine-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "examine-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't examine that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't examine that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "examine",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "examine-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "examine"
 				}
 			],
 			"allowMultipleUsesInWorld": true

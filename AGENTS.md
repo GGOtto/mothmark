@@ -65,6 +65,7 @@
 ## Schema-driven editors
 
 - Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
+- Give every concrete condition and effect operation several hidden, natural-language situation phrases in schema metadata. Include varied author intents such as traps, discoveries, puzzles, transformations, and state changes; keep these phrases searchable but out of visible picker copy, and enforce their presence with metadata-completeness tests.
 - Reuse the existing typed-field command-variable path for condition and effect inputs. Expose ordinary schema fields such as `itemId`, then bind command blocks through `commandVariables` so the shared variable UI and runtime resolver handle them; do not introduce parallel source selectors or command-target resolution systems.
 
 ## Initial commands

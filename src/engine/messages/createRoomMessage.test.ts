@@ -11,19 +11,19 @@ describe("createRoomMessage", () => {
 			type: "room",
 			operation: "set-name",
 			roomId: world.startRoomId,
-			variantId: "Changed Entrance",
+			value: "Changed Entrance",
 		} as Effect);
 		const fullyDescribedGame = resolveRoomEffect(namedGame, {
 			type: "room",
 			operation: "set-description",
 			roomId: world.startRoomId,
-			variantId: "This full description should not be shown.",
+			value: "This full description should not be shown.",
 		} as Effect);
 		const describedGame = resolveRoomEffect(fullyDescribedGame, {
 			type: "room",
 			operation: "set-short-description",
 			roomId: world.startRoomId,
-			variantId: "The entrance remains cold and dark.",
+			value: "The entrance remains cold and dark.",
 		} as Effect);
 		const room = world.rooms.find((candidate) => candidate.id.id === world.startRoomId.id)!;
 
@@ -41,13 +41,13 @@ describe("createRoomMessage", () => {
 			type: "room",
 			operation: "set-description",
 			roomId: room.id,
-			variantId: "The guardroom has changed.",
+			value: "The guardroom has changed.",
 		} as Effect);
 		const gameWithShortDescription = resolveRoomEffect(game, {
 			type: "room",
 			operation: "set-short-description",
 			roomId: room.id,
-			variantId: "This short description should not be shown.",
+			value: "This short description should not be shown.",
 		} as Effect);
 
 		const message = createRoomMessage(world, room, gameWithShortDescription);

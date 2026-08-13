@@ -6,9 +6,9 @@ import type {
 	EditorControlContext,
 	EditorControlMetadata,
 	EditorControlProps,
-	EditorSelectOption,
 } from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
+import {useOptionalPopup} from "@/components/popup/Popup";
 import {generateEffectSummary} from "./utils/universalEditorUtils";
 import {idValue, isID, toID} from "../../utils/idUtils";
 import {FieldShell} from "./FieldShell";
@@ -18,8 +18,11 @@ import {
 	createSchemaVariantDefault,
 	findEditorSchemaVariant,
 	schemaFieldOptions,
+	schemaLogicOptionForValue,
+	type SchemaLogicOption,
 	schemaTypeOptions,
 } from "./utils/editorSchemaVariants";
+import {openLogicPicker} from "./LogicPicker";
 import "./EffectListEditor.scss";
 
 export type EffectValue = Record<string, unknown>;
@@ -63,18 +66,46 @@ function operationOptionsForType(type: string, metadata: EffectListControlMetada
 function defaultEffect(
 	schema: z.ZodTypeAny | undefined,
 	type: string,
-	operationOptions: EditorSelectOption[] = [],
+	operationOptions: Array<{value: string}> = [],
 	operation?: string,
-	flagType: "normal" | "room" | "item" = "normal",
 ): EffectValue {
 	const selectedOperation = operation ?? operationOptions[0]?.value;
 	return schema
 		? createSchemaVariantDefault(schema, {
 				type,
-				"flag-type": type === "flag" ? flagType : undefined,
 				operation: selectedOperation,
 			})
 		: {type, ...(selectedOperation ? {operation: selectedOperation} : {})};
+}
+
+function reusableEffectPickerOptions(
+	metadata: EffectListControlMetadata,
+	context: EditorControlContext,
+): SchemaLogicOption[] {
+	return reusableWorldEffects(context)
+		.filter(
+			(effect) =>
+				storedEffectId(effect) &&
+				!metadata.features?.excludedEffectIds?.includes(storedEffectId(effect) ?? ""),
+		)
+		.map((effect) => {
+			const effectId = storedEffectId(effect) ?? "";
+			const title = storedEffectName(effect) ?? effectId;
+			const description = storedEffectDescription(effect, editorEffectSchema(metadata));
+			return {
+				key: `effect-ref:${effectId}`,
+				type: "effect-ref",
+				title,
+				description,
+				category: "Reusable",
+				keywords: ["saved", "reusable", "group", "sequence"],
+				situations: [],
+				requires: [],
+				fields: [],
+				defaultValue: {type: "effect-ref", effectId: toID("effect", effectId)},
+				searchText: `${title} ${description} reusable saved group sequence`.toLocaleLowerCase(),
+			};
+		});
 }
 
 function normalizeEffect(effect: EffectValue): EffectValue {
@@ -113,6 +144,54 @@ function worldEffects(context: EditorControlContext) {
 	return Array.isArray(effects) ? (effects as EffectValue[]).map(normalizeEffect) : [];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function embeddedEffectGroupIds(context: EditorControlContext) {
+	const world = context.getWorldValue?.([]);
+	const ids = new Set<string>();
+	const seen = new Set<object>();
+
+	function visit(value: unknown) {
+		if (!value || typeof value !== "object" || seen.has(value)) return;
+		seen.add(value);
+		if (Array.isArray(value)) {
+			value.forEach(visit);
+			return;
+		}
+
+		if (isRecord(value) && value.type === "group") {
+			const id = storedEffectId(value);
+			if (id) ids.add(id);
+		}
+		Object.values(value).forEach(visit);
+	}
+
+	if (isRecord(world)) {
+		Object.entries(world).forEach(([key, value]) => {
+			if (key !== "effects") visit(value);
+		});
+	}
+
+	return ids;
+}
+
+function reusableWorldEffects(context: EditorControlContext) {
+	const embeddedIds = embeddedEffectGroupIds(context);
+	return worldEffects(context).filter((effect) => {
+		const id = storedEffectId(effect);
+		return !id || !embeddedIds.has(id);
+	});
+}
+
+function storedEffectDescription(effect: EffectValue, schema: z.ZodTypeAny) {
+	const effects = Array.isArray(effect.effects) ? (effect.effects as EffectValue[]) : [];
+	return effects.length > 0
+		? effects.map((child) => generateEffectSummary(child, schema)).join("; ")
+		: "No effects";
+}
+
 function worldEffectById(context: EditorControlContext, id: unknown) {
 	if (!isID(id) || id.type !== "effect") return undefined;
 	const effectId = id.id.trim();
@@ -147,15 +226,12 @@ function effectOperation(effect: EffectValue) {
 function effectWithVisibleDefaults(effect: EffectValue, metadata: EffectListControlMetadata) {
 	const type = String(effect.type ?? "message");
 	if (type === "effect-ref") return effect;
-	const flagType =
-		effect["flag-type"] === "room" || effect["flag-type"] === "item" ? effect["flag-type"] : "normal";
 	return {
 		...defaultEffect(
 			editorEffectSchema(metadata),
 			type,
 			operationOptionsForType(type, metadata),
 			effectOperation(effect),
-			flagType,
 		),
 		...effect,
 	};
@@ -177,6 +253,7 @@ export function EffectListEditor({
 	readonly,
 	context,
 }: EffectListEditorProps) {
+	const popup = useOptionalPopup();
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
@@ -185,6 +262,24 @@ export function EffectListEditor({
 	const allowedTypes = availableEffectTypeOptions.map((option) => option.value);
 	const removable = metadata.features?.removable ?? true;
 	const normalizedEffects = value.map(normalizeEffect);
+	const pickerOptions = reusableEffectPickerOptions(metadata, context);
+
+	async function chooseEffect(current?: EffectValue) {
+		const currentReferenceId =
+			current && isID(current.effectId) ? idValue(current.effectId) : undefined;
+		const selected = await openLogicPicker(popup, {
+			kind: "effect",
+			schema: editorEffectSchema(metadata),
+			additionalOptions: pickerOptions,
+			hiddenTypes: ["effect-ref"],
+			selectedKey: currentReferenceId
+				? `effect-ref:${currentReferenceId}`
+				: current
+					? schemaLogicOptionForValue(editorEffectSchema(metadata), current)?.key
+					: undefined,
+		});
+		return selected?.defaultValue;
+	}
 
 	function updateEffect(index: number, nextEffect: EffectValue) {
 		onChange(
@@ -203,39 +298,6 @@ export function EffectListEditor({
 		};
 
 		updateEffect(index, nextEffect);
-	}
-
-	function updateFlagType(index: number, nextFlagType: string) {
-		const currentEffect = effectUsage(normalizedEffects[index] ?? {}, context);
-		const schema = editorEffectSchema(metadata);
-		const currentOperation = effectOperation(currentEffect);
-		const operation = findEditorSchemaVariant(schema, {
-			type: "flag",
-			"flag-type": nextFlagType,
-			operation: currentOperation,
-		})
-			? currentOperation
-			: schemaFieldOptions(schema, "operation", {
-					type: "flag",
-					"flag-type": nextFlagType,
-				})[0]?.value;
-		const variant = findEditorSchemaVariant(schema, {
-			type: "flag",
-			"flag-type": nextFlagType,
-			operation,
-		});
-		const defaults = createSchemaVariantDefault(schema, {
-			type: "flag",
-			"flag-type": nextFlagType,
-			operation,
-		});
-		const preservedFields = Object.fromEntries(
-			Object.keys(variant?.shape ?? {}).flatMap((key) =>
-				currentEffect[key] === undefined ? [] : [[key, currentEffect[key]]],
-			),
-		);
-
-		updateEffect(index, {...defaults, ...preservedFields, "flag-type": nextFlagType, operation});
 	}
 
 	function removeEffect(index: number) {
@@ -306,16 +368,8 @@ export function EffectListEditor({
 						? rawEffect
 						: effectWithVisibleDefaults(resolvedEffect, metadata);
 					const effectType = String(effect.type ?? allowedTypes[0]);
-					const flagType = String(effect["flag-type"] ?? "normal");
-					const operationOptions = operationOptionsForType(effectType, metadata).filter(
-						(option) =>
-							effectType !== "flag" ||
-							String(effect["flag-type"] ?? "normal") === "normal" ||
-							option.value !== "create",
-					);
 					const effectVariant = findEditorSchemaVariant(editorEffectSchema(metadata), {
 						type: effectType,
-						"flag-type": effectType === "flag" ? flagType : undefined,
 						operation: effectOperation(effect),
 					});
 					const title = `${index + 1}. ${generateEffectSummary(
@@ -326,69 +380,23 @@ export function EffectListEditor({
 						isEffectReference(rawEffect) && !worldEffectById(context, rawEffect.effectId);
 					const body = (
 						<>
-							{renderChildControl({
-								type: "select",
-								childKey: "effectType",
-								value: effectType,
-								onChange: (nextType) =>
-									updateEffect(
-										index,
-										defaultEffect(
-											editorEffectSchema(metadata),
-											nextType,
-											operationOptionsForType(nextType, metadata),
-										),
-									),
-								metadata: {
-									title: "Type",
-									appearance: {chrome: "inline", size: "sm"},
-									features: {
-										options: availableEffectTypeOptions,
-										searchable: metadata.features?.searchableEffectTypes ?? false,
-									},
-								},
-								parentMetadata: metadata,
-								useMetadataCopy: true,
-								path: [...path, index, "type"],
-								disabled,
-								readonly,
-								context,
-							})}
-
-							{operationOptions.length
-								? renderChildControl({
-										type: "select",
-										childKey: "operator",
-										value: String(effect.operation ?? effect.messageType ?? ""),
-										onChange: (nextOperation) => {
-											const flagType =
-												effect["flag-type"] === "room" || effect["flag-type"] === "item"
-													? effect["flag-type"]
-													: "normal";
-											updateEffect(
-												index,
-												defaultEffect(
-													editorEffectSchema(metadata),
-													effectType,
-													operationOptions,
-													nextOperation,
-													flagType as "normal" | "room" | "item",
-												),
-											);
-										},
-										metadata: {
-											title: "Action",
-											appearance: {chrome: "inline", size: "sm"},
-											features: {options: operationOptions},
-										},
-										parentMetadata: metadata,
-										useMetadataCopy: true,
-										path: [...path, index, "operation"],
-										disabled,
-										readonly,
-										context,
-									})
-								: null}
+							<button
+								className="effectListEditor__change"
+								type="button"
+								disabled={!canEdit}
+								onClick={async () => {
+									const nextEffect = await chooseEffect(rawEffect);
+									if (nextEffect) updateEffect(index, nextEffect);
+								}}
+							>
+								<span>Behavior</span>
+								<strong>
+									{storedEffectName(resolvedEffect) ??
+										schemaLogicOptionForValue(editorEffectSchema(metadata), resolvedEffect)?.title ??
+										generateEffectSummary(resolvedEffect, editorEffectSchema(metadata))}
+								</strong>
+								<small>Change</small>
+							</button>
 
 							<div className="effectListEditor__fields">
 								{(effectVariant
@@ -397,32 +405,6 @@ export function EffectListEditor({
 								)
 									.filter(([key]) => key !== "type" && key !== "operation" && key !== "messageType")
 									.map(([key, fieldValue]) => {
-										if (key === "flag-type") {
-											return (
-												<Fragment key={key}>
-													{renderChildControl({
-														type: "select",
-														childKey: key,
-														value: String(fieldValue ?? "normal"),
-														onChange: (nextValue) => updateFlagType(index, nextValue),
-														metadata: {
-															title: "Flag type",
-															features: {
-																options: schemaFieldOptions(editorEffectSchema(metadata), "flag-type", {
-																	type: "flag",
-																}),
-															},
-														},
-														parentMetadata: metadata,
-														path: [...path, index, key],
-														disabled,
-														readonly,
-														context,
-													})}
-												</Fragment>
-											);
-										}
-
 										const schemaMetadata = effectVariant?.shape[key]
 											? resolveEditorMetadata(effectVariant.shape[key])
 											: undefined;
@@ -430,7 +412,7 @@ export function EffectListEditor({
 										if (referenceType) {
 											const savedEffectOptions =
 												referenceType === "effect"
-													? worldEffects(context)
+													? reusableWorldEffects(context)
 															.filter(
 																(worldEffect) =>
 																	!metadata.features?.excludedEffectIds?.includes(storedEffectId(worldEffect) ?? ""),
@@ -441,7 +423,7 @@ export function EffectListEditor({
 																return {
 																	id,
 																	label: storedEffectName(worldEffect) ?? id,
-																	description: generateEffectSummary(worldEffect, editorEffectSchema(metadata)),
+																	description: storedEffectDescription(worldEffect, editorEffectSchema(metadata)),
 																	entityType: "effect" as const,
 																};
 															})
@@ -564,12 +546,9 @@ export function EffectListEditor({
 					className="effectListEditor__addButton"
 					type="button"
 					disabled={!canEdit}
-					onClick={() => {
-						const type = allowedTypes[0];
-						onChange([
-							...normalizedEffects,
-							defaultEffect(editorEffectSchema(metadata), type, operationOptionsForType(type, metadata)),
-						]);
+					onClick={async () => {
+						const nextEffect = await chooseEffect();
+						if (nextEffect) onChange([...normalizedEffects, nextEffect]);
 					}}
 				>
 					{metadata.emptyState?.emptyActionLabel ?? "Add effect"}

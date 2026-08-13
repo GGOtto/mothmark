@@ -45,8 +45,8 @@ function counterBehavior(id: string, amountBlockId: ID<"command-block">) {
 			type: "group" as const,
 			effects: [
 				{
-					type: "counter",
-					operation: "increase",
+					type: "world",
+					operation: "increase-counter",
 					counter: "fallback-total",
 					commandVariables: [{blockId: amountBlockId, field: "amount"}],
 				},

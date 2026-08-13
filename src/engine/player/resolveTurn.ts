@@ -10,7 +10,7 @@ export function resolveTurn(world: World, game: GameState, response: string): Ga
 		return produce(game, () => {});
 	}
 
-	if (game.player.isDead) {
+	if (game.player.isDead || game.player.isEnded) {
 		return game;
 	}
 
@@ -34,6 +34,10 @@ export function resolveTurn(world: World, game: GameState, response: string): Ga
 			});
 			newGameState = runCommand(response, world, newGameState);
 		} else {
+			newGameState = produce(newGameState, (draft) => {
+				draft.player.lastCommandSucceeded = false;
+				draft.player.lastCommandTurn = draft.player.turns;
+			});
 			const message = newGameState.player.freezeState.message || "You are currently unable to act.";
 			newGameState = addMessage(newGameState, message, "error");
 		}
