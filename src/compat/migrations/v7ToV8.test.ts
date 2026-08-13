@@ -78,7 +78,7 @@ describe("the v7 to v8 retained game-state replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(10);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(11);
 		expect(migrationFrom(7)).toBe(v7ToV8);
 		expect(migrationFrom(8)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 8, value});

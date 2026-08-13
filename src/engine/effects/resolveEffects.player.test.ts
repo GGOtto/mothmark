@@ -20,6 +20,23 @@ function scenarioWithEffects(effects: Effect[]) {
 }
 
 describe("effects through the player path", () => {
+	it("replays random messages deterministically from the saved game seed", () => {
+		const {world, game} = scenarioWithEffects([
+			{
+				type: "message",
+				operation: "show-random",
+				messages: ["A shutter clicks.", "A dog barks twice.", "A bicycle rattles past."],
+			},
+		]);
+
+		const firstRun = resolveTurn(world, game, "help");
+		const replay = resolveTurn(world, game, "help");
+
+		expect(replay.messages.at(-1)?.text).toBe(firstRun.messages.at(-1)?.text);
+		expect(replay.player.randomState).toBe(firstRun.player.randomState);
+		expect(firstRun.player.randomState).not.toBe(game.player.randomState);
+	});
+
 	it("changes item presentation used by room output", () => {
 		const {world, game} = scenarioWithEffects([
 			{
