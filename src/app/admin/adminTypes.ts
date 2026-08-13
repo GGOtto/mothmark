@@ -5,6 +5,11 @@ export type AdminPermission = {
 	permission: string;
 	source: string;
 };
+export type AdminSubscriber = {
+	email: string;
+	source: "footer" | "registration";
+	subscribedAt: string;
+};
 export type AdminFeedbackReply = {
 	actorUserId: string | null;
 	authorEmail: string;

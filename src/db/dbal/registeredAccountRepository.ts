@@ -15,9 +15,11 @@ import {
 	createOpaqueToken,
 	hashSessionToken,
 } from "@/auth/sessionTokens";
+import {normalizeEmail} from "@/auth/normalizeEmail";
 import {normalizeUsername} from "@/auth/usernames";
 
 import {getDb} from "./knex";
+import {upsertEmailSubscriber} from "./subscriberRepository";
 import {DEFAULT_MAX_WORLDS} from "./worldsRepository";
 
 const database = getDb();
@@ -66,10 +68,6 @@ export type RegistrationCompletion =
 export type AuthenticationResult =
 	| {status: "invalid" | "throttled"}
 	| {status: "authenticated"; signIn: EditorSignIn; siteRole: "admin" | "user"};
-
-export function normalizeEmail(email: string): string {
-	return email.trim().toLowerCase();
-}
 
 const storedPassword = (row: PasswordCredentialRow): StoredPassword => ({
 	passwordHash: row.password_hash,
@@ -211,6 +209,7 @@ export async function beginRegistration(input: {
 	email: string;
 	network: string;
 	password: string;
+	subscribeToUpdates?: boolean;
 	username: string;
 	userId?: string;
 }): Promise<EmailDispatch | undefined> {
@@ -278,6 +277,7 @@ export async function beginRegistration(input: {
 				email,
 				expires_at: new Date(Date.now() + VERIFICATION_DURATION_MS),
 				normalized_email: normalizedEmail,
+				subscribe_to_updates: input.subscribeToUpdates ?? false,
 				username,
 				user_id: input.userId ?? null,
 			})
@@ -379,6 +379,7 @@ export async function completeRegistration(
 				password_hash: string;
 				hash_version: number;
 				hash_parameters: Record<string, number>;
+				subscribe_to_updates: boolean;
 				username: string;
 			}>();
 		if (
@@ -444,6 +445,9 @@ export async function completeRegistration(
 			user_id: userId,
 			verified_at: now,
 		});
+		if (row.subscribe_to_updates) {
+			await upsertEmailSubscriber(transaction, {email: row.email, source: "registration"}, now);
+		}
 		await transaction("password_credentials").insert({
 			...passwordColumns({
 				hashParameters: row.hash_parameters,

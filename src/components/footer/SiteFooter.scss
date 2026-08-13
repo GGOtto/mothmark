@@ -104,7 +104,27 @@
 		color: var(--color-action-contrast);
 		font-weight: 600;
 		cursor: pointer;
+
+		&:disabled {
+			cursor: wait;
+			opacity: 0.7;
+		}
 	}
+}
+
+.siteFooter__newsletterNotice,
+.siteFooter__newsletterError {
+	grid-column: 1 / -1;
+	margin: 7px 0 0 !important;
+	font-size: 12px !important;
+}
+
+.siteFooter__newsletterNotice {
+	color: var(--color-success) !important;
+}
+
+.siteFooter__newsletterError {
+	color: var(--color-danger) !important;
 }
 
 .siteFooter__directory {

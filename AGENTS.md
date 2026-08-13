@@ -94,6 +94,7 @@
 - Treat `docs/design-system.md` and the semantic tokens in `src/app/globals.css` as the production
   color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
+- Keep promotional and descriptive interface copy direct. Avoid habitual three-part lists or parallel three-clause rhythms that read as generated marketing copy.
 - Keep UI styling restrained, task-specific, and consistent with Mothmark's quiet archive-workbench character. Avoid generic AI-generated dashboard patterns, excessive pills or cards, decorative gradients, glow effects, and ornamental copy.
 - Do not expose production navigation to placeholder pages that have no real schema-backed object or
   user task. Hide unfinished destinations until their functionality exists instead of filling them

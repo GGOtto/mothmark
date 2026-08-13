@@ -69,6 +69,12 @@ export function AdminShell({children}: {children: ReactNode}) {
 						Feedback
 					</Link>
 					<Link
+						href="/admin/subscribers"
+						aria-current={pathname.startsWith("/admin/subscribers") ? "page" : undefined}
+					>
+						Subscribers
+					</Link>
+					<Link
 						href="/admin/audit"
 						aria-current={pathname.startsWith("/admin/audit") ? "page" : undefined}
 					>
