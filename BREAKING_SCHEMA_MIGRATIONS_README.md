@@ -127,5 +127,6 @@ are preserved while every retained document advances to version 7.
 
 `v7-to-v8-replay-retained-game-states` rebuilds every retained turn snapshot in sequence from the
 pinned world and recorded command log, then uses the final replayed turn as the playthrough's current
-state. Worlds and stored message lists remain unchanged. This removes stale derived runtime state
-while preserving the authoritative command history and player-visible transcript.
+state. It regenerates each turn's output messages and the final transcript from those replayed states.
+Worlds remain unchanged. This removes stale derived runtime state while preserving the authoritative
+command history and player-visible output.

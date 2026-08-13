@@ -176,7 +176,13 @@ async function applyMigration(
 			Number(row.schema_version),
 			migration.messages,
 			row.output_messages,
-			{playthroughId, sequence, storage: "output" as const},
+			{
+				playthroughId,
+				sequence,
+				storage: "output" as const,
+				gameState: state.value,
+				previousState: previousStateByPlaythrough.get(playthroughId),
+			},
 		);
 		if (!state.applied || !messages.applied)
 			throw new Error(
@@ -215,7 +221,13 @@ async function applyMigration(
 			Number(row.schema_version),
 			migration.messages,
 			transcriptValue,
-			{playthroughId, sequence: null, storage: "transcript" as const},
+			{
+				playthroughId,
+				sequence: null,
+				storage: "transcript" as const,
+				gameState: state.value,
+				previousState: previousStateByPlaythrough.get(playthroughId),
+			},
 		);
 		if (!state.applied || !transcript.applied)
 			throw new Error(`Playthrough ${playthroughId} changed version while locked.`);
