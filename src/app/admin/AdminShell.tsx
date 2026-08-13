@@ -1,10 +1,10 @@
 "use client";
 
-import {MapPinned} from "lucide-react";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useState, type ReactNode} from "react";
 import {PageShell, PageShellBody, PageShellHeader} from "@/components/layout/ResponsivePage";
+import {MothmarkLogo} from "@/components/brand/MothmarkLogo";
 
 export function AdminShell({children}: {children: ReactNode}) {
 	const pathname = usePathname();
@@ -34,7 +34,7 @@ export function AdminShell({children}: {children: ReactNode}) {
 		<PageShell className="adminApp" variant="document">
 			<PageShellHeader className="adminHeader">
 				<Link href="/admin/users" className="adminHeaderIdentity">
-					<MapPinned size={15} aria-hidden="true" />
+					<MothmarkLogo variant="basic" />
 					<span>Mothmark administration</span>
 				</Link>
 				<nav aria-label="Administrator navigation">

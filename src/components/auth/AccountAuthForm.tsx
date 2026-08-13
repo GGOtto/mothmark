@@ -10,6 +10,7 @@ import {
 	usernameValidationMessage,
 } from "@/auth/usernames";
 import {readOptionalJson} from "@/auth/apiResponse";
+import {MothmarkLogo} from "@/components/brand/MothmarkLogo";
 
 import "./AccountAuthForm.scss";
 
@@ -354,7 +355,10 @@ function AuthShell({children, title}: {children: React.ReactNode; title: string}
 	return (
 		<main className="authPage">
 			<section className="authPanel" aria-labelledby="auth-title">
-				<p className="authBrand">Mothmark account</p>
+				<div className="authBrand">
+					<MothmarkLogo variant="headerCompact" />
+					<span>Account</span>
+				</div>
 				<h1 id="auth-title">{title}</h1>
 				{children}
 				<Link className="authHome" href="/">

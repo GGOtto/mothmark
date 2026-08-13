@@ -560,6 +560,55 @@
 		}
 	}
 
+	.commandInspector__basics {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: end;
+		gap: 10px;
+		margin-bottom: 14px;
+
+		> label:not(.commandInspector__enabled) {
+			display: grid;
+			min-width: 0;
+			gap: 5px;
+			color: var(--color-text);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		input[type="text"] {
+			width: 100%;
+			height: 32px;
+			box-sizing: border-box;
+			min-width: 0;
+			padding: 0 8px;
+			border: 1px solid var(--color-control-border);
+			border-radius: var(--radius-control);
+			background: var(--color-surface);
+			color: var(--color-text);
+			font: inherit;
+		}
+	}
+
+	.commandInspector__enabled {
+		display: inline-flex;
+		height: 32px;
+		align-items: center;
+		gap: 7px;
+		box-sizing: border-box;
+		padding: 0 9px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		color: var(--color-text);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+
+		input {
+			accent-color: var(--color-action);
+		}
+	}
+
 	.commandInspector__help {
 		display: grid;
 		gap: 8px;

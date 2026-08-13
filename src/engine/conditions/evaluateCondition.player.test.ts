@@ -90,6 +90,7 @@ describe("conditions through the player path", () => {
 			draft.conditions = [
 				{
 					identity: storedConditionId,
+					name: "Player is in the foyer",
 					condition: {
 						type: "player",
 						operation: "is-in-room",

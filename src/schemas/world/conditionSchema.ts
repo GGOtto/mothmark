@@ -1446,6 +1446,7 @@ export const ConditionSchema: z.ZodType<Condition> = z.lazy(() =>
 
 export const SavedConditionSchema = z.object({
 	identity: editor.id("condition"),
+	name: editor.input({title: "Condition name"}).default(""),
 	condition: editor.condition(z.union([SingleConditionSchema, ConditionGroupSchema]), {
 		title: "Condition",
 	}),

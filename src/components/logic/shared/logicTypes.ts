@@ -1,4 +1,24 @@
+import type {z} from "zod";
+import type {CommandVariableCatalog} from "@/features/command-variables";
+
 export type LogicSection = "home" | "events" | "commands" | "conditions" | "effects";
+
+export type LogicLibraryDraftEditor = {
+	schema: z.ZodTypeAny;
+	value: unknown;
+	commandVariableCatalog?: CommandVariableCatalog;
+	onDone: (value: unknown) => void;
+};
+
+export type OpenLogicLibraryRequest = {
+	kind: "condition" | "effect";
+	returnSection: "events" | "commands";
+	selectedId?: string | null;
+	returnLabel: string;
+	onDone?: (selectedId: string) => void;
+	onCancel?: () => void;
+	draftEditor?: LogicLibraryDraftEditor;
+};
 
 export type LogicSelection =
 	| {kind: "event"; eventId: string}

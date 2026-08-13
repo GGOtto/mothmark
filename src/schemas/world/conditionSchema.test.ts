@@ -239,6 +239,7 @@ describe("SavedConditionSchema", () => {
 			}),
 		).toEqual({
 			identity: toID("condition", "gate-open"),
+			name: "",
 			condition: {
 				type: "world",
 				operation: "flag-is",

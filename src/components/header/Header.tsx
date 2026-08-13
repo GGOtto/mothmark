@@ -6,7 +6,7 @@ import {Bell, ChevronDown, Menu, MessageSquare, UserRound, X} from "lucide-react
 import {useRef, useState} from "react";
 
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
-import {MothmarkMark} from "../brand/MothmarkMark";
+import {MothmarkLogo} from "../brand/MothmarkLogo";
 import {AnchoredLayer} from "../overlay/Overlay";
 import {useTheme} from "../theme/ThemeProvider";
 import {
@@ -109,8 +109,7 @@ export function Header({account}: {account: HeaderAccount}) {
 						aria-label="Mothmark home"
 						aria-current={pathname === "/" ? "page" : undefined}
 					>
-						<MothmarkMark className="headerLogoMark" />
-						<span className="headerTitle">Mothmark</span>
+						<MothmarkLogo className="headerLogoImage" priority variant="headerCompact" />
 					</Link>
 					<nav className="headerPrimaryNav" aria-label="Primary navigation">
 						<div className="headerMenuAnchor">

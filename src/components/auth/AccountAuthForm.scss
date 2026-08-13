@@ -39,9 +39,21 @@
 }
 
 .authBrand {
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
 	margin: 0;
-	color: var(--color-text-faint) !important;
-	font-size: 12px !important;
+
+	img {
+		width: 176px;
+		height: auto;
+	}
+
+	span {
+		padding-bottom: 1px;
+		color: var(--color-text-faint);
+		font-size: 12px;
+	}
 }
 
 .authForm {

@@ -1,4 +1,9 @@
 import {createInitialWorld} from "@/data/worlds/initialWorld";
+import {SavedConditionSchema} from "@/schemas/world/conditionSchema";
+import {EffectGroupSchema} from "@/schemas/world/effectSchema";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {toID} from "@/utils/idUtils";
+import {produce} from "immer";
 import {idValue} from "@/utils/idUtils";
 import {buildEditorContextSearch, resolveEditorContext} from "./editorContextUrl";
 
@@ -31,6 +36,37 @@ describe("editorContextUrl", () => {
 		expect(
 			resolveEditorContext(world, `?view=logic&section=commands&command=${commandId}`).context,
 		).toMatchObject({activeTab: "logic", logicSection: "commands", selectedCommandId: commandId});
+	});
+
+	it("restores reusable condition and effect selections", () => {
+		const world = produce(createInitialWorld(), (draft) => {
+			const condition = createDefaultFieldObject(SavedConditionSchema);
+			condition.identity = toID("condition", "test-condition");
+			draft.conditions.push(condition);
+			const effect = createDefaultFieldObject(EffectGroupSchema);
+			effect.id = toID("effect", "test-effect");
+			draft.effects.push(effect);
+		});
+		const conditionId = idValue(world.conditions[0].identity);
+		const effectId = idValue(world.effects[0].id);
+
+		const conditionContext = resolveEditorContext(
+			world,
+			`?view=logic&section=conditions&condition=${conditionId}`,
+		).context;
+		const effectContext = resolveEditorContext(
+			world,
+			`?view=logic&section=effects&effect=${effectId}`,
+		).context;
+
+		expect(conditionContext.selectedConditionId).toBe(conditionId);
+		expect(buildEditorContextSearch(conditionContext)).toBe(
+			`?view=logic&section=conditions&condition=${conditionId}`,
+		);
+		expect(effectContext.selectedEffectId).toBe(effectId);
+		expect(buildEditorContextSearch(effectContext)).toBe(
+			`?view=logic&section=effects&effect=${effectId}`,
+		);
 	});
 
 	it("removes an inaccessible selection and explains the fallback", () => {

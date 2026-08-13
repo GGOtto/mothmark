@@ -16,7 +16,11 @@ function domRect(top: number, height: number) {
 	} as DOMRect;
 }
 
-function renderLayerMenu(setIsLayerMenuOpen = jest.fn(), sourceWorld = world) {
+function renderLayerMenu(
+	setIsLayerMenuOpen = jest.fn(),
+	sourceWorld = world,
+	renameLayer = jest.fn(),
+) {
 	return render(
 		<LayerMenu
 			world={sourceWorld}
@@ -25,6 +29,7 @@ function renderLayerMenu(setIsLayerMenuOpen = jest.fn(), sourceWorld = world) {
 			selectedId={null}
 			isConnectionSelected={false}
 			setCurrentLayer={jest.fn()}
+			renameLayer={renameLayer}
 		/>,
 	);
 }
@@ -51,6 +56,7 @@ describe("LayerMenu", () => {
 					selectedId={null}
 					isConnectionSelected={false}
 					setCurrentLayer={jest.fn()}
+					renameLayer={jest.fn()}
 				/>
 			</div>,
 		);
@@ -76,6 +82,20 @@ describe("LayerMenu", () => {
 		fireEvent.click(screen.getByRole("button", {name: "Close layer menu"}));
 
 		expect(setIsLayerMenuOpen).toHaveBeenCalledWith(false);
+	});
+
+	it("renames the displayed layer", () => {
+		const renameLayer = jest.fn();
+		renderLayerMenu(jest.fn(), world, renameLayer);
+
+		fireEvent.change(screen.getByRole("textbox", {name: "Layer name"}), {
+			target: {value: "Street level"},
+		});
+
+		expect(screen.getByRole("textbox", {name: "Layer name"})).toHaveValue("Street level");
+		expect(renameLayer).toHaveBeenLastCalledWith(
+			expect.objectContaining({layer: 0, name: "Street level"}),
+		);
 	});
 
 	it("zooms the preview without changing the displayed layer", () => {

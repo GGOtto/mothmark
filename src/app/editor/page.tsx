@@ -18,20 +18,23 @@ import {ItemEditor} from "@/components/studio/editors/ItemEditor";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {Map, type ConnectionDraft} from "@/components/map/Map";
-import {EventEditor, EventInspector, EventToolbar} from "@/components/logic/events";
+import {EventEditor, EventToolbar} from "@/components/logic/events";
 import {
 	CommandEditor,
 	CommandInspector,
 	CommandLibrary,
-	CommandLibraryPreview,
 	CommandToolbar,
 } from "@/components/logic/commands";
+import {useOptionalPopup} from "@/components/popup/Popup";
+import {PopupTemplate} from "@/components/popup/template/PopupTemplate";
 import {
 	LogicHome,
-	LogicSectionPlaceholder,
+	LogicLibraryWorkspace,
 	type CommandSelection,
 	type LogicSection,
 	type LogicSelection,
+	type LogicUsage,
+	type OpenLogicLibraryRequest,
 } from "@/components/logic/shared";
 import {useCommandCopyRegistration} from "@/components/header/CommandCopyAction";
 import {
@@ -113,6 +116,7 @@ async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
 
 export default function EditorPage() {
 	const pathname = usePathname();
+	const popup = useOptionalPopup();
 	const [requestedWorldId] = useState(() => {
 		const locator =
 			pathname.match(/^\/worlds\/([^/]+)$/)?.[1] ?? pathname.match(/^\/editor\/([^/]+)$/)?.[1];
@@ -128,6 +132,9 @@ export default function EditorPage() {
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
+	const [selectedConditionId, setSelectedConditionId] = useState<string | null>(null);
+	const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
+	const [logicLibraryReturn, setLogicLibraryReturn] = useState<OpenLogicLibraryRequest | null>(null);
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 	const [editorSlug, setEditorSlug] = useState<string | null>(null);
 	const [editorContextReady, setEditorContextReady] = useState(false);
@@ -141,7 +148,10 @@ export default function EditorPage() {
 		getServerMobileEditorLayoutSnapshot,
 	);
 	const [utilityViewOverride, setUtilityView] = useState<EditorUtilityView | null>(null);
-	const utilityView = utilityViewOverride ?? (mobileEditorLayout ? "play" : "editor");
+	const utilityView =
+		activeTab === "logic"
+			? "play"
+			: (utilityViewOverride ?? (mobileEditorLayout ? "play" : "editor"));
 	const [utilityCollapsedOverride, setUtilityCollapsed] = useState<boolean | null>(null);
 	const utilityCollapsed = utilityCollapsedOverride ?? mobileEditorLayout;
 	const [desktopUtilityWidth, setDesktopUtilityWidth] = useState(380);
@@ -167,6 +177,29 @@ export default function EditorPage() {
 		setEditorWorld((world) => (typeof update === "function" ? produce(world, update) : update));
 	}, []);
 
+	const openCommandInspector = useCallback(
+		async (nextSelection: CommandSelection) => {
+			if (!popup) return;
+			const nextWorld = await popup.open<World>(
+				({resolve, cancel}) => (
+					<CommandInspectorDialog
+						world={editorWorld}
+						selection={nextSelection}
+						onCancel={cancel}
+						onSave={resolve}
+					/>
+				),
+				{
+					ariaLabel: nextSelection.kind === "command" ? "Edit command settings" : "Edit command block",
+					closeOnBackdropClick: false,
+					className: "popupSurfaceLogicSettings",
+				},
+			);
+			if (nextWorld) updateWorld(nextWorld);
+		},
+		[editorWorld, popup, updateWorld],
+	);
+
 	const applyEditorContext = useCallback((context: EditorContext, notice: string | null) => {
 		setActiveTab(context.activeTab);
 		setSelection(context.selection);
@@ -175,7 +208,10 @@ export default function EditorPage() {
 		setLogicSelection(context.logicSelection);
 		setSelectedCommandId(context.selectedCommandId);
 		setCommandSelection(context.commandSelection);
+		setSelectedConditionId(context.selectedConditionId);
+		setSelectedEffectId(context.selectedEffectId);
 		setSelectedItemId(context.selectedItemId);
+		setLogicLibraryReturn(null);
 		setEditorContextNotice(notice);
 	}, []);
 
@@ -229,6 +265,8 @@ export default function EditorPage() {
 			logicSelection,
 			selectedCommandId,
 			commandSelection,
+			selectedConditionId,
+			selectedEffectId,
 			selectedItemId,
 		}),
 		[
@@ -236,7 +274,9 @@ export default function EditorPage() {
 			commandSelection,
 			logicSection,
 			logicSelection,
+			selectedConditionId,
 			selectedCommandId,
+			selectedEffectId,
 			selectedEventId,
 			selectedItemId,
 			selection,
@@ -288,6 +328,9 @@ export default function EditorPage() {
 		setLogicSelection(null);
 		setSelectedCommandId(null);
 		setCommandSelection(null);
+		setSelectedConditionId(null);
+		setSelectedEffectId(null);
+		setLogicLibraryReturn(null);
 		setSelectedItemId(idValue(nextWorld.items[0]?.id) || null);
 		setMapZoom(1);
 		setMapRecenterRequest((request) => request + 1);
@@ -298,8 +341,8 @@ export default function EditorPage() {
 			beginEditorNavigation();
 			setIsAddingRoom(false);
 			setActiveTab(tab);
-			setUtilityView("editor");
-			setUtilityCollapsed(mobileEditorLayout);
+			setUtilityView(tab === "logic" ? "play" : "editor");
+			setUtilityCollapsed(tab === "logic" ? true : mobileEditorLayout);
 			if (tab !== "logic") return;
 
 			setLogicSection("home");
@@ -307,6 +350,9 @@ export default function EditorPage() {
 			setLogicSelection(null);
 			setSelectedCommandId(null);
 			setCommandSelection(null);
+			setSelectedConditionId(null);
+			setSelectedEffectId(null);
+			setLogicLibraryReturn(null);
 		},
 		[beginEditorNavigation, mobileEditorLayout],
 	);
@@ -452,6 +498,75 @@ export default function EditorPage() {
 					}}
 					commandSelection={commandSelection}
 					setCommandSelection={setCommandSelection}
+					selectedConditionId={selectedConditionId}
+					setSelectedConditionId={(conditionId) => {
+						beginEditorNavigation();
+						setSelectedConditionId(conditionId);
+					}}
+					selectedEffectId={selectedEffectId}
+					setSelectedEffectId={(effectId) => {
+						beginEditorNavigation();
+						setSelectedEffectId(effectId);
+					}}
+					logicLibraryReturn={logicLibraryReturn}
+					onOpenLogicLibrary={(request) => {
+						beginEditorNavigation();
+						setLogicLibraryReturn(request);
+						setLogicSection(request.kind === "condition" ? "conditions" : "effects");
+						if (request.kind === "condition") setSelectedConditionId(request.selectedId ?? null);
+						else setSelectedEffectId(request.selectedId ?? null);
+					}}
+					onCancelLogicLibrary={() => {
+						const request = logicLibraryReturn;
+						if (!request) return;
+						request.onCancel?.();
+						setLogicLibraryReturn(null);
+						setLogicSection(request.returnSection);
+					}}
+					onDoneLogicLibrary={(selectedId) => {
+						const request = logicLibraryReturn;
+						if (!request) return;
+						request.onDone?.(selectedId);
+						setLogicLibraryReturn(null);
+						setLogicSection(request.returnSection);
+					}}
+					onDoneLogicLibraryDraft={(value) => {
+						const request = logicLibraryReturn;
+						if (!request?.draftEditor) return;
+						request.draftEditor.onDone(value);
+						setLogicLibraryReturn(null);
+						setLogicSection(request.returnSection);
+					}}
+					onOpenLogicUsage={(usage) => {
+						beginEditorNavigation();
+						setLogicLibraryReturn(null);
+						if (usage.kind === "command") {
+							setActiveTab("logic");
+							setLogicSection("commands");
+							setSelectedCommandId(usage.id);
+							setCommandSelection({kind: "command", commandId: usage.id});
+						} else if (usage.kind === "event") {
+							setActiveTab("logic");
+							setLogicSection("events");
+							setSelectedEventId(usage.id);
+							setLogicSelection({kind: "event", eventId: usage.id});
+						} else if (usage.kind === "condition") {
+							setActiveTab("logic");
+							setLogicSection("conditions");
+							setSelectedConditionId(usage.id);
+						} else if (usage.kind === "effect") {
+							setActiveTab("logic");
+							setLogicSection("effects");
+							setSelectedEffectId(usage.id);
+						} else if (usage.kind === "item") {
+							setActiveTab("world");
+							setSelectedItemId(usage.id);
+						} else {
+							setActiveTab("map");
+							setSelection({selectedId: usage.id, isConnectionSelected: false});
+						}
+					}}
+					onOpenCommandInspector={(nextSelection) => void openCommandInspector(nextSelection)}
 					selectedItemId={selectedItemId}
 					setSelectedItemId={(itemId) => {
 						beginEditorNavigation();
@@ -501,17 +616,19 @@ export default function EditorPage() {
 					) : null}
 					<div className="editorUtilityTabBar">
 						<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
-							<button
-								type="button"
-								role="tab"
-								id="editor-utility-editor-tab"
-								aria-controls="editor-utility-editor-panel"
-								aria-selected={utilityView === "editor"}
-								aria-expanded={utilityView === "editor" && !utilityCollapsed}
-								onClick={() => activateUtilityView("editor")}
-							>
-								Editor
-							</button>
+							{activeTab === "map" || activeTab === "world" ? (
+								<button
+									type="button"
+									role="tab"
+									id="editor-utility-editor-tab"
+									aria-controls="editor-utility-editor-panel"
+									aria-selected={utilityView === "editor"}
+									aria-expanded={utilityView === "editor" && !utilityCollapsed}
+									onClick={() => activateUtilityView("editor")}
+								>
+									Editor
+								</button>
+							) : null}
 							<button
 								type="button"
 								role="tab"
@@ -536,60 +653,55 @@ export default function EditorPage() {
 						) : null}
 					</div>
 
-					<div
-						ref={editorUtilityContentRef}
-						className="editorUtilityContent"
-						role="tabpanel"
-						id="editor-utility-editor-panel"
-						aria-labelledby="editor-utility-editor-tab"
-						hidden={utilityCollapsed || utilityView !== "editor"}
-					>
-						<EditorInspector
-							activeTab={activeTab}
-							world={editorWorld}
-							selectedRoom={selectedRoom}
-							selectedConnection={selectedConnection}
-							updateWorld={updateWorld}
-							onSelectedIdChange={(selectedId) => {
-								replaceEditorContext();
-								setSelection((current) => ({...current, selectedId}));
-							}}
-							onOpenItem={(itemId) => {
-								beginEditorNavigation();
-								setSelectedItemId(itemId);
-								setActiveTab("world");
-							}}
-							logicSection={logicSection}
-							logicSelection={logicSelection}
-							selectedCommandId={selectedCommandId}
-							setSelectedCommandId={(commandId) => {
-								beginEditorNavigation();
-								setSelectedCommandId(commandId);
-							}}
-							commandSelection={commandSelection}
-							setCommandSelection={setCommandSelection}
-							selectedItem={selectedItem}
-							setSelectedItemId={(itemId) => {
-								replaceEditorContext();
-								setSelectedItemId(itemId);
-							}}
-							onSelectionDeleted={(entity) => {
-								replaceEditorContext();
-								if (entity === "room") {
-									setSelection({selectedId: null, isConnectionSelected: false});
-									setEditorContextNotice("The room was deleted. Showing the map without a selection.");
-								}
-								if (entity === "connection") {
-									setSelection({selectedId: null, isConnectionSelected: false});
-									setEditorContextNotice("The connection was deleted. Showing the map without a selection.");
-								}
-								if (entity === "item") {
-									setSelectedItemId(null);
-									setEditorContextNotice("The item was deleted. Choose another item to continue.");
-								}
-							}}
-						/>
-					</div>
+					{activeTab === "map" || activeTab === "world" ? (
+						<div
+							ref={editorUtilityContentRef}
+							className="editorUtilityContent"
+							role="tabpanel"
+							id="editor-utility-editor-panel"
+							aria-labelledby="editor-utility-editor-tab"
+							hidden={utilityCollapsed || utilityView !== "editor"}
+						>
+							<EditorInspector
+								activeTab={activeTab}
+								world={editorWorld}
+								selectedRoom={selectedRoom}
+								selectedConnection={selectedConnection}
+								updateWorld={updateWorld}
+								onSelectedIdChange={(selectedId) => {
+									replaceEditorContext();
+									setSelection((current) => ({...current, selectedId}));
+								}}
+								onOpenItem={(itemId) => {
+									beginEditorNavigation();
+									setSelectedItemId(itemId);
+									setActiveTab("world");
+								}}
+								selectedItem={selectedItem}
+								setSelectedItemId={(itemId) => {
+									replaceEditorContext();
+									setSelectedItemId(itemId);
+								}}
+								onSelectionDeleted={(entity) => {
+									replaceEditorContext();
+									if (entity === "room") {
+										setSelection({selectedId: null, isConnectionSelected: false});
+										setEditorContextNotice("The room was deleted. Showing the map without a selection.");
+									}
+									if (entity === "connection") {
+										setSelection({selectedId: null, isConnectionSelected: false});
+										setEditorContextNotice(
+											"The connection was deleted. Showing the map without a selection.",
+										);
+									}
+									if (entity === "item") {
+										setSelectedItemId(null);
+										setEditorContextNotice("The item was deleted. Choose another item to continue.");
+									}
+								}}
+							/>
+						</div>
+					) : null}
 
 					<div
 						className="editorUtilityContent editorUtilityPlay"
@@ -632,6 +744,17 @@ type EditorMainPanelProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedConditionId: string | null;
+	setSelectedConditionId: (conditionId: string | null) => void;
+	selectedEffectId: string | null;
+	setSelectedEffectId: (effectId: string | null) => void;
+	logicLibraryReturn: OpenLogicLibraryRequest | null;
+	onOpenLogicLibrary: (request: OpenLogicLibraryRequest) => void;
+	onCancelLogicLibrary: () => void;
+	onDoneLogicLibrary: (selectedId: string) => void;
+	onDoneLogicLibraryDraft: (value: unknown) => void;
+	onOpenLogicUsage: (usage: LogicUsage) => void;
+	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
 	editorContextNotice: string | null;
@@ -668,6 +791,17 @@ function EditorMainPanel({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedConditionId,
+	setSelectedConditionId,
+	selectedEffectId,
+	setSelectedEffectId,
+	logicLibraryReturn,
+	onOpenLogicLibrary,
+	onCancelLogicLibrary,
+	onDoneLogicLibrary,
+	onDoneLogicLibraryDraft,
+	onOpenLogicUsage,
+	onOpenCommandInspector,
 	selectedItemId,
 	setSelectedItemId,
 	editorContextNotice,
@@ -712,7 +846,7 @@ function EditorMainPanel({
 					}}
 					onCommandSettings={() => {
 						if (selectedCommandId) {
-							setCommandSelection({kind: "command", commandId: selectedCommandId});
+							onOpenCommandInspector({kind: "command", commandId: selectedCommandId});
 						}
 					}}
 					onDeleteEvent={() => {
@@ -793,6 +927,17 @@ function EditorMainPanel({
 						setSelectedCommandId={setSelectedCommandId}
 						commandSelection={commandSelection}
 						setCommandSelection={setCommandSelection}
+						selectedConditionId={selectedConditionId}
+						setSelectedConditionId={setSelectedConditionId}
+						selectedEffectId={selectedEffectId}
+						setSelectedEffectId={setSelectedEffectId}
+						logicLibraryReturn={logicLibraryReturn}
+						onOpenLogicLibrary={onOpenLogicLibrary}
+						onCancelLogicLibrary={onCancelLogicLibrary}
+						onDoneLogicLibrary={onDoneLogicLibrary}
+						onDoneLogicLibraryDraft={onDoneLogicLibraryDraft}
+						onOpenLogicUsage={onOpenLogicUsage}
+						onOpenCommandInspector={onOpenCommandInspector}
 						selectedItemId={selectedItemId}
 						setSelectedItemId={setSelectedItemId}
 						persistedWorldId={persistedWorldId}
@@ -887,13 +1032,13 @@ function EditorToolbar({
 		return (
 			<CommandToolbar
 				command={command}
-				updateWorld={updateWorld}
 				onBack={onCommandBack}
 				onDelete={onDeleteCommand}
 				onOpenSettings={onCommandSettings}
 			/>
 		);
 	}
+	if (activeTab === "logic") return null;
 
 	const metadata = getEditorTabMetadata(activeTab);
 
@@ -931,6 +1076,17 @@ type EditorWorkspaceProps = {
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
+	selectedConditionId: string | null;
+	setSelectedConditionId: (conditionId: string | null) => void;
+	selectedEffectId: string | null;
+	setSelectedEffectId: (effectId: string | null) => void;
+	logicLibraryReturn: OpenLogicLibraryRequest | null;
+	onOpenLogicLibrary: (request: OpenLogicLibraryRequest) => void;
+	onCancelLogicLibrary: () => void;
+	onDoneLogicLibrary: (selectedId: string) => void;
+	onDoneLogicLibraryDraft: (value: unknown) => void;
+	onOpenLogicUsage: (usage: LogicUsage) => void;
+	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
 	persistedWorldId: string | null;
@@ -962,6 +1118,17 @@ function EditorWorkspace({
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
+	selectedConditionId,
+	setSelectedConditionId,
+	selectedEffectId,
+	setSelectedEffectId,
+	logicLibraryReturn,
+	onOpenLogicLibrary,
+	onCancelLogicLibrary,
+	onDoneLogicLibrary,
+	onDoneLogicLibraryDraft,
+	onOpenLogicUsage,
+	onOpenCommandInspector,
 	selectedItemId,
 	setSelectedItemId,
 	persistedWorldId,
@@ -1003,6 +1170,8 @@ function EditorWorkspace({
 							setSelectedCommandId(null);
 							setCommandSelection(null);
 						}
+						if (section === "conditions") setSelectedConditionId(null);
+						if (section === "effects") setSelectedEffectId(null);
 					}}
 				/>
 			);
@@ -1016,6 +1185,7 @@ function EditorWorkspace({
 					onSelectedEventIdChange={setSelectedEventId}
 					selection={logicSelection}
 					onSelectionChange={setLogicSelection}
+					onOpenLogicLibrary={onOpenLogicLibrary}
 				/>
 			);
 		}
@@ -1041,14 +1211,41 @@ function EditorWorkspace({
 					onSelectedCommandIdChange={setSelectedCommandId}
 					selection={commandSelection}
 					onSelectionChange={setCommandSelection}
+					onOpenLogicLibrary={onOpenLogicLibrary}
+					onOpenInspector={onOpenCommandInspector}
 				/>
 			);
 		}
-		const title = {
-			conditions: "Build Complex Conditions",
-			effects: "Build Complex Effects",
-		}[logicSection];
-		return <LogicSectionPlaceholder title={title} onBack={() => setLogicSection("home")} />;
+		const kind = logicSection === "conditions" ? "condition" : "effect";
+		return (
+			<LogicLibraryWorkspace
+				kind={kind}
+				world={world}
+				updateWorld={updateWorld}
+				selectedId={kind === "condition" ? selectedConditionId : selectedEffectId}
+				onSelectedIdChange={kind === "condition" ? setSelectedConditionId : setSelectedEffectId}
+				onBackToLogic={() => {
+					if (logicLibraryReturn) onCancelLogicLibrary();
+					else setLogicSection("home");
+				}}
+				returnTo={
+					logicLibraryReturn
+						? {
+								label: logicLibraryReturn.returnLabel,
+								onCancel: onCancelLogicLibrary,
+								onDone: logicLibraryReturn.onDone ? onDoneLogicLibrary : undefined,
+								draftEditor: logicLibraryReturn.draftEditor
+									? {
+											...logicLibraryReturn.draftEditor,
+											onDone: onDoneLogicLibraryDraft,
+										}
+									: undefined,
+							}
+						: null
+				}
+				onOpenUsage={onOpenLogicUsage}
+			/>
+		);
 	}
 
 	if (activeTab === "world") {
@@ -1182,12 +1379,6 @@ type EditorInspectorProps = {
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
 	onOpenItem: (itemId: string) => void;
-	logicSection: LogicSection;
-	logicSelection: LogicSelection | null;
-	selectedCommandId: string | null;
-	setSelectedCommandId: (commandId: string | null) => void;
-	commandSelection: CommandSelection | null;
-	setCommandSelection: (selection: CommandSelection | null) => void;
 	selectedItem: World["items"][number] | null;
 	setSelectedItemId: (itemId: string | null) => void;
 	onSelectionDeleted: (entity: "room" | "connection" | "item") => void;
@@ -1201,12 +1392,6 @@ function EditorInspector({
 	updateWorld,
 	onSelectedIdChange,
 	onOpenItem,
-	logicSection,
-	logicSelection,
-	selectedCommandId,
-	setSelectedCommandId,
-	commandSelection,
-	setCommandSelection,
 	selectedItem,
 	setSelectedItemId,
 	onSelectionDeleted,
@@ -1224,80 +1409,6 @@ function EditorInspector({
 				onSelectionDeleted={() => onSelectionDeleted("room")}
 				onConnectionDeleted={() => onSelectionDeleted("connection")}
 			/>
-		);
-	}
-
-	if (activeTab === "logic" && logicSection === "events") {
-		return (
-			<RightSideBar
-				contained
-				world={world}
-				updateWorld={updateWorld}
-				selectedRoom={null}
-				selectedConnection={null}
-				onSelectedIdChange={onSelectedIdChange}
-			>
-				<EventInspector world={world} updateWorld={updateWorld} selection={logicSelection} />
-			</RightSideBar>
-		);
-	}
-	if (activeTab === "logic" && logicSection === "commands") {
-		if (!selectedCommandId) {
-			const previewedCommandId =
-				commandSelection?.kind === "command" ? commandSelection.commandId : null;
-			const previewedCommand =
-				world.commands.find((command) => idValue(command.id) === previewedCommandId) ??
-				world.commands[0] ??
-				null;
-			return (
-				<RightSideBar
-					contained
-					world={world}
-					updateWorld={updateWorld}
-					selectedRoom={null}
-					selectedConnection={null}
-					onSelectedIdChange={onSelectedIdChange}
-				>
-					<CommandLibraryPreview
-						command={previewedCommand}
-						onOpenCommand={(commandId) => {
-							setSelectedCommandId(commandId);
-							setCommandSelection({kind: "command", commandId});
-						}}
-					/>
-				</RightSideBar>
-			);
-		}
-		if (!commandSelection) {
-			return (
-				<RightSideBar
-					contained
-					world={world}
-					updateWorld={updateWorld}
-					selectedRoom={null}
-					selectedConnection={null}
-					onSelectedIdChange={onSelectedIdChange}
-					title="Commands"
-					description="Choose a command to edit its patterns and behavior."
-				/>
-			);
-		}
-		return (
-			<RightSideBar
-				contained
-				world={world}
-				updateWorld={updateWorld}
-				selectedRoom={null}
-				selectedConnection={null}
-				onSelectedIdChange={onSelectedIdChange}
-			>
-				<CommandInspector
-					world={world}
-					updateWorld={updateWorld}
-					selection={commandSelection}
-					onSelectionChange={setCommandSelection}
-				/>
-			</RightSideBar>
 		);
 	}
 
@@ -1330,19 +1441,59 @@ function EditorInspector({
 		);
 	}
 
-	const metadata = getEditorTabMetadata(activeTab);
+	return null;
+}
+
+function CommandInspectorDialog({
+	world,
+	selection,
+	onCancel,
+	onSave,
+}: {
+	world: World;
+	selection: CommandSelection;
+	onCancel: () => void;
+	onSave: (world: World) => void;
+}) {
+	const [draftWorld, setDraftWorld] = useState(world);
+	const [draftSelection, setDraftSelection] = useState(selection);
+	const updateDraftWorld = useCallback<UpdateWorld>((update) => {
+		setDraftWorld((current) => (typeof update === "function" ? produce(current, update) : update));
+	}, []);
+	const title = draftSelection.kind === "command" ? "Command settings" : "Command block";
 
 	return (
-		<RightSideBar
-			contained
-			world={world}
-			updateWorld={updateWorld}
-			selectedRoom={null}
-			selectedConnection={null}
-			onSelectedIdChange={onSelectedIdChange}
-			title={metadata.title}
-			description={metadata.description}
-		/>
+		<PopupTemplate
+			title={title}
+			message={
+				draftSelection.kind === "command"
+					? "Control where the command is available and how it appears to players."
+					: "Configure this block everywhere its shared identity is used."
+			}
+			actions={
+				<>
+					<button type="button" className="popupButton popupButtonSecondary" onClick={onCancel}>
+						Cancel
+					</button>
+					<button
+						type="button"
+						className="popupButton popupButtonPrimary"
+						onClick={() => onSave(draftWorld)}
+					>
+						Save
+					</button>
+				</>
+			}
+		>
+			<div className="logicSettingsDialog">
+				<CommandInspector
+					world={draftWorld}
+					updateWorld={updateDraftWorld}
+					selection={draftSelection}
+					onSelectionChange={setDraftSelection}
+				/>
+			</div>
+		</PopupTemplate>
 	);
 }
 

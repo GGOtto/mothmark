@@ -1,6 +1,8 @@
 import {Camera, Cloud, MessageCircle} from "lucide-react";
 import Link from "next/link";
 
+import {MothmarkLogo} from "../brand/MothmarkLogo";
+
 import "./SiteFooter.scss";
 
 const footerGroups = [
@@ -44,9 +46,9 @@ export function SiteFooter() {
 			<div className="siteFooter__lead">
 				<div className="siteFooter__identity">
 					<Link href="/" aria-label="Mothmark footer home">
-						Mothmark
+						<MothmarkLogo className="siteFooter__logo" variant="headerPrimary" />
 					</Link>
-					<p>Build strange places. Leave good directions.</p>
+					<p>Build strange places. Make your mark.</p>
 				</div>
 
 				<section className="siteFooter__newsletter" aria-labelledby="footer-newsletter-title">

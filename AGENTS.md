@@ -87,6 +87,10 @@
 
 ## UI visual language
 
+- Treat the approved Mothmark raster assets in `public/logo` as the production logo source. Preserve
+  their geometry and lockup spacing exactly, keep light/dark logo backgrounds transparent, do not
+  attach the wordmark to the book symbol, and do not substitute recreated SVG artwork.
+
 - Treat `docs/design-system.md` and the semantic tokens in `src/app/globals.css` as the production
   color and usage contract. New app-facing styles must use those tokens.
 - Use sentence case for interface headings and labels. Reserve all-caps text for rare, genuinely useful compact markers; do not use repeated uppercase eyebrow or section-heading patterns.
@@ -106,10 +110,15 @@
   full-workspace item page. Do not bring the map into the Items view or make the right property
   inspector the primary item editor. Do not assume, generate, or infer item imagery that authors have
   not supplied, and do not fall back to dashboard grids or decorative fields of names. The selector's
-  visual identity may use a small maintained library of flat, stylized, reusable SVG categories
-  selected by recognized item tags; never create bespoke or inferred artwork for each item. Keep
-  item names horizontal and visible, avoid realistic or metallic rendering, and avoid RPG inventory
-  conventions or ornamental fantasy chrome.
+  visual identity may use a maintained library of flat, stylized, reusable category marks selected by
+  recognized item tags; never create bespoke or inferred artwork for each item. Explicit icon tags
+  take precedence, followed by concrete identity, broad category, and descriptive tags. Behavior tags
+  may participate only at the lowest matching priority. Keep the icon vocabulary adventurous and
+  fantasy-leaning through its object choices while remaining simple, restrained UI iconography; avoid
+  contemporary office or device imagery unless a category specifically requires it. Give every
+  raster size the same restrained geometry and detail level established at 32px; scale and recolor
+  that canonical design without adding or removing details at other sizes. Keep item names horizontal and visible, avoid
+  realistic or metallic rendering, and avoid RPG inventory conventions or ornamental fantasy chrome.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
 - Use action blue for interaction, brass for focus and rare identity emphasis, and semantic colors only
   for their named statuses. Do not introduce another primary-action color.
@@ -137,8 +146,10 @@
   self-service action for signing out every device. Derive a short browser-and-device label when the
   session is created; do not retain the raw user-agent string or add fingerprinting data just to make
   the session list more detailed.
-- Open condition and effect editors directly from their workspace buttons; do not require selecting
-  them in the right inspector before their popup can open.
+- Keep reusable conditions and effects in dedicated searchable libraries, and edit one saved or
+  inline group at a time on its full-workspace page. Add-condition and add-effect actions should
+  open that focused page directly with Back, Cancel, and Save; Logic uses no right inspector, while
+  Play remains available and command/event general settings use shared popups.
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
   bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
   viewport.
