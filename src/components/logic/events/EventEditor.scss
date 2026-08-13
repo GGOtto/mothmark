@@ -340,6 +340,100 @@
 	gap: 10px;
 }
 
+.logicToolbar__identity {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+
+	p,
+	span {
+		margin: 0;
+	}
+
+	p {
+		overflow: hidden;
+		color: var(--color-text);
+		font-size: 14px;
+		font-weight: 700;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	span {
+		color: var(--color-text-muted);
+		font-size: 11px;
+	}
+}
+
+.popupSurfaceLogicSettings {
+	width: min(620px, 100%);
+	max-height: min(760px, calc(100dvh - 40px));
+	overflow: auto;
+}
+
+.logicSettingsDialog {
+	min-width: 0;
+	color: var(--color-text);
+
+	.rightSideBarSection {
+		padding: 0;
+	}
+}
+
+.logicSettingsForm {
+	display: grid;
+	gap: 16px;
+
+	> label,
+	.logicSettingsForm__columns > label {
+		display: grid;
+		gap: 6px;
+		color: var(--color-text);
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	input[type="text"],
+	input[type="number"],
+	> label > input:not([type]) {
+		width: 100%;
+		height: 36px;
+		box-sizing: border-box;
+		padding: 0 10px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+	}
+}
+
+.logicSettingsForm__columns {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.logicSettingsForm__toggles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+
+	label {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		color: var(--color-text);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	input {
+		accent-color: var(--color-action);
+	}
+}
+
 .logicToolbar__toggle {
 	flex: 0 0 auto;
 	white-space: nowrap;
@@ -484,9 +578,18 @@
 		grid-area: name;
 	}
 
+	.logicToolbar__identity {
+		grid-area: name;
+	}
+
 	.logicToolbar__settings {
 		grid-area: settings;
 		justify-content: flex-start;
+	}
+
+	.commandToolbar__scope {
+		grid-area: settings;
+		justify-self: start;
 	}
 
 	.logicToolbar__delete {

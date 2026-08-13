@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {produce, type Draft} from "immer";
 import {PopupProvider} from "@/components/popup/Popup";
@@ -9,7 +9,7 @@ import {EventSchema, type Event} from "@/schemas/world/eventSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
 import type {WorldUpdate} from "@/types/worldUpdaterTypes";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
-import {idValue, toID} from "@/utils/idUtils";
+import {toID} from "@/utils/idUtils";
 import {LogicHome} from "../shared/LogicWorkspace";
 import {EventEditor, EventToolbar} from "./EventEditor";
 
@@ -45,8 +45,8 @@ describe("LogicHome", () => {
 
 		expect(screen.getByText("Events")).toBeInTheDocument();
 		expect(screen.getByText("Commands")).toBeInTheDocument();
-		expect(screen.getByText("Build Complex Conditions")).toBeInTheDocument();
-		expect(screen.getByText("Build Complex Effects")).toBeInTheDocument();
+		expect(screen.getByText("Conditions")).toBeInTheDocument();
+		expect(screen.getByText("Effects")).toBeInTheDocument();
 	});
 });
 
@@ -165,7 +165,7 @@ describe("EventEditor", () => {
 		expect(scrollTo).toHaveBeenCalledWith({top: 0, behavior: "smooth"});
 	});
 
-	it("adds a saved one-effect group and opens its editor directly", () => {
+	it("opens the complete inline effect group as a focused draft", () => {
 		let world = createWorld((draft) => {
 			draft.effects = [];
 			draft.events = [
@@ -194,6 +194,7 @@ describe("EventEditor", () => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		});
 		const onSelectionChange = jest.fn();
+		const onOpenLogicLibrary = jest.fn();
 
 		render(
 			<PopupProvider>
@@ -204,23 +205,35 @@ describe("EventEditor", () => {
 					onSelectedEventIdChange={jest.fn()}
 					selection={null}
 					onSelectionChange={onSelectionChange}
+					onOpenLogicLibrary={onOpenLogicLibrary}
 				/>
 			</PopupProvider>,
 		);
 
 		fireEvent.click(screen.getByRole("button", {name: "Add an effect"}));
 
-		expect(world.effects).toHaveLength(1);
-		expect(world.effects[0].effects).toEqual([{type: "message", operation: "show", message: ""}]);
+		expect(world.effects).toHaveLength(0);
+		expect(onOpenLogicLibrary).toHaveBeenCalledWith(
+			expect.objectContaining({
+				kind: "effect",
+				returnSection: "events",
+				selectedId: null,
+				draftEditor: expect.objectContaining({schema: EffectGroupSchema}),
+			}),
+		);
+		const request = onOpenLogicLibrary.mock.calls[0][0];
+		expect(request.draftEditor.value.effects).toEqual([]);
+		request.draftEditor.onDone({
+			...request.draftEditor.value,
+			effects: [{type: "message", operation: "show", message: "It worked."}],
+		});
 		expect(world.events?.[0].branch.always?.effects).toEqual([
-			{type: "effect-ref", effectId: toID("effect", idValue(world.effects[0].id))},
+			{type: "message", operation: "show", message: "It worked."},
 		]);
-		expect(screen.getByRole("dialog")).toBeInTheDocument();
-		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeInTheDocument();
 		expect(onSelectionChange).not.toHaveBeenCalled();
 	});
 
-	it("opens a branch condition directly without changing the inspector selection", () => {
+	it("opens a branch condition in the reusable condition library", () => {
 		const event = produce(createTestEvent(), (draft) => {
 			draft.branch.if = createTestConditionalBranch("if");
 		});
@@ -228,6 +241,7 @@ describe("EventEditor", () => {
 			draft.events = [event];
 		});
 		const onSelectionChange = jest.fn();
+		const onOpenLogicLibrary = jest.fn();
 
 		const view = render(
 			<PopupProvider>
@@ -238,14 +252,20 @@ describe("EventEditor", () => {
 					onSelectedEventIdChange={jest.fn()}
 					selection={null}
 					onSelectionChange={onSelectionChange}
+					onOpenLogicLibrary={onOpenLogicLibrary}
 				/>
 			</PopupProvider>,
 		);
 
 		fireEvent.click(view.container.querySelector<HTMLButtonElement>(".logicBranch__condition")!);
 
-		expect(screen.getByRole("dialog")).toBeInTheDocument();
-		expect(screen.getByRole("heading", {name: "Edit condition"})).toBeInTheDocument();
+		expect(onOpenLogicLibrary).toHaveBeenCalledWith(
+			expect.objectContaining({
+				kind: "condition",
+				returnSection: "events",
+				draftEditor: expect.objectContaining({schema: expect.anything()}),
+			}),
+		);
 		expect(onSelectionChange).not.toHaveBeenCalled();
 	});
 
@@ -324,6 +344,35 @@ describe("EventEditor", () => {
 });
 
 describe("EventToolbar", () => {
+	it("edits general event settings in a saveable popup", async () => {
+		const user = userEvent.setup();
+		let world = createWorld((draft) => {
+			draft.events = [createTestEvent()];
+		});
+		const updateWorld = (update: WorldUpdate) => {
+			world = typeof update === "function" ? produce(world, update) : update;
+		};
+
+		render(
+			<PopupProvider>
+				<EventToolbar
+					event={world.events![0]}
+					updateWorld={updateWorld}
+					onBack={jest.fn()}
+					onDelete={jest.fn()}
+				/>
+			</PopupProvider>,
+		);
+
+		await user.click(screen.getByRole("button", {name: "Edit event"}));
+		const dialog = screen.getByRole("dialog", {name: "Edit event settings"});
+		await user.clear(within(dialog).getByRole("textbox", {name: "Name"}));
+		await user.type(within(dialog).getByRole("textbox", {name: "Name"}), "Changed event");
+		await user.click(within(dialog).getByRole("button", {name: "Save"}));
+
+		expect(world.events?.[0].name).toBe("Changed event");
+	});
+
 	it("hides the event ID and confirms before deleting", async () => {
 		const user = userEvent.setup();
 		const event = createTestEvent();

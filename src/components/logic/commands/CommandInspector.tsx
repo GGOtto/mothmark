@@ -163,6 +163,24 @@ export function CommandInspector({
 					<p>Command</p>
 					<h2>{command.name}</h2>
 				</header>
+				<section className="commandInspector__basics" aria-label="General command settings">
+					<label>
+						<span>Name</span>
+						<input
+							type="text"
+							value={command.name}
+							onChange={(event) => updateCommand((target) => void (target.name = event.target.value))}
+						/>
+					</label>
+					<label className="commandInspector__enabled">
+						<input
+							type="checkbox"
+							checked={command.enabled}
+							onChange={(event) => updateCommand((target) => void (target.enabled = event.target.checked))}
+						/>
+						<span>Enabled</span>
+					</label>
+				</section>
 				<section className="commandInspector__help" aria-labelledby="command-help-heading">
 					<h3 id="command-help-heading">Player help</h3>
 					<label className="commandInspector__helpToggle">

@@ -550,7 +550,7 @@ the full task definitions but do not imply a different sequence.
   **Scope and acceptance:**
 
   - Keep the selector content-led, with horizontal visible names, keyboard navigation, search, Add
-    item, compact starting-location context, and the maintained category SVG marks in the appendix.
+    item, compact starting-location context, and the maintained category marks in the appendix.
   - Do not show the map, use an RPG inventory grid, infer item art, or make the right inspector the
     primary editor.
   - The item page uses the whole workspace and groups player-facing text, behavior, commands,
@@ -1055,36 +1055,46 @@ presentation categories and recommendations, not automatic player behavior.
 
 | Category  | Maintained mark              | Recognized ordinary tags                                                                        |
 | --------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| Generic   | Circle, square, and triangle | `generic`, `misc`, `miscellaneous`, `other`; fallback for unmatched items                       |
-| Structure | Block pillar                 | `structure`, `architecture`, `wall`, `pillar`, `column`, `arch`, `bridge`, `platform`, `stairs` |
-| Door      | Door                         | `door`, `gate`, `hatch`, `portal`, `portcullis`, `barrier`, `entrance`, `exit`                  |
-| Furniture | Chair                        | `furniture`, `chair`, `table`, `desk`, `bed`, `bench`, `shelf`, `cabinet`, `counter`, `rack`    |
-| Container | Chest                        | `container`, `chest`, `box`, `crate`, `barrel`, `bag`, `pouch`, `locker`, `vessel`              |
-| Mechanism | Gears                        | `mechanism`, `machine`, `device`, `gear`, `lever`, `switch`, `wheel`, `trap`, `clockwork`       |
-| Tool      | Crossed pick and hammer      | `tool`, `implement`, `utensil`, `crafting`, `hammer`, `pick`, `shovel`, `rope`, `training`      |
-| Key       | Key                          | `key`, `lockpick`, `access`, `pass`, `permit`                                                   |
-| Weapon    | Crossed swords               | `weapon`, `sword`, `dagger`, `axe`, `bow`, `spear`, `club`, `firearm`                           |
-| Wearable  | Hat                          | `wearable`, `clothing`, `garment`, `armor`, `helmet`, `boots`, `gloves`                         |
-| Light     | Lantern                      | `light`, `fire`, `torch`, `lantern`, `lamp`, `candle`, `brazier`                                |
-| Document  | Book                         | `document`, `book`, `note`, `letter`, `scroll`, `map`, `journal`, `record`                      |
-| Food      | Apple                        | `food`, `drink`, `edible`, `consumable`, `ingredient`, `fruit`, `meal`                          |
-| Nature    | Leaf                         | `nature`, `plant`, `flora`, `fungus`, `tree`, `herb`, `flower`, `rock`, `mineral`               |
+| Generic   | Curious objects and sparkle  | `generic`, `misc`, `miscellaneous`, `other`; fallback for unmatched items                       |
+| Structure | Stone watchtower             | `structure`, `architecture`, `wall`, `pillar`, `column`, `arch`, `bridge`, `platform`, `stairs` |
+| Door      | Arched dungeon door          | `door`, `gate`, `hatch`, `portal`, `portcullis`, `barrier`, `entrance`, `exit`                  |
+| Furniture | High-backed wooden chair     | `furniture`, `chair`, `table`, `desk`, `bed`, `bench`, `shelf`, `cabinet`, `counter`, `rack`    |
+| Container | Bound chest                  | `container`, `chest`, `box`, `crate`, `barrel`, `bag`, `pouch`, `locker`, `vessel`              |
+| Mechanism | Clockwork gears              | `mechanism`, `machine`, `device`, `gear`, `lever`, `switch`, `wheel`, `trap`, `clockwork`       |
+| Tool      | Pickaxe                      | `tool`, `implement`, `utensil`, `crafting`, `hammer`, `pick`, `shovel`, `rope`, `training`      |
+| Key       | Old iron key                 | `key`, `lockpick`, `access`, `pass`, `permit`                                                   |
+| Weapon    | Fuller-lined crossed swords  | `weapon`, `sword`, `dagger`, `axe`, `bow`, `spear`, `club`, `firearm`                           |
+| Wearable  | Bent adventurer hat          | `wearable`, `clothing`, `garment`, `armor`, `helmet`, `boots`, `gloves`                         |
+| Light     | Handled lantern              | `light`, `fire`, `torch`, `lantern`, `lamp`, `candle`, `brazier`                                |
+| Document  | Vertical parchment scroll    | `document`, `book`, `note`, `letter`, `scroll`, `map`, `journal`, `record`                      |
+| Food      | Grouped fruit and carrot     | `food`, `drink`, `edible`, `consumable`, `ingredient`, `fruit`, `meal`                          |
+| Nature    | Leaf sprig and acorn         | `nature`, `plant`, `flora`, `fungus`, `tree`, `herb`, `flower`, `rock`, `mineral`               |
 | Remains   | Skull                        | `remains`, `corpse`, `body`, `bone`, `bones`, `skull`, `skeleton`, `grave`                      |
-| Art       | Statue                       | `art`, `statue`, `sculpture`, `painting`, `portrait`, `mural`, `tapestry`, `carving`            |
-| Relic     | Reliquary or peaked shrine   | `relic`, `ritual`, `sacred`, `holy`, `shrine`, `altar`, `idol`, `ceremonial`                    |
-| Treasure  | Gem                          | `treasure`, `valuable`, `gem`, `coin`, `currency`, `gold`, `jewel`, `precious`                  |
-| Music     | Musical note                 | `music`, `musical`, `instrument`, `sound`, `bell`, `horn`, `chime`                              |
-| Magic     | Open hand and orb            | `magic`, `magical`, `arcane`, `enchanted`, `spell`, `sorcery`                                   |
+| Art       | Carved masks                 | `art`, `statue`, `sculpture`, `painting`, `portrait`, `mural`, `tapestry`, `carving`            |
+| Relic     | Gothic reliquary             | `relic`, `ritual`, `sacred`, `holy`, `shrine`, `altar`, `idol`, `ceremonial`                    |
+| Treasure  | Faceted gem                  | `treasure`, `valuable`, `gem`, `coin`, `currency`, `gold`, `jewel`, `precious`                  |
+| Music     | Traveling lute               | `music`, `musical`, `instrument`, `sound`, `bell`, `horn`, `chime`                              |
+| Magic     | Side-profile palm with flame | `magic`, `magical`, `arcane`, `enchanted`, `spell`, `sorcery`                                   |
+
+The earlier draft SVG exploration remains in [item category mark mockups](mockups/item-category-marks-v1.svg)
+and [`mockups/item-category-marks`](mockups/item-category-marks/), but it does not define the current
+visual direction.
+Current transparent PNG exports live in [`public/item-icons`](../public/item-icons/).
 
 Matching rules:
 
 1. An explicit `icon:<category>` tag selects that category.
-2. Otherwise, trim and case-normalize tags, then use the first recognized ordinary tag in saved tag
-   order.
-3. Never inspect name, description, behavior, or other authored content to infer a category.
-4. Use Generic when no tag matches.
-5. Category marks remain optional, flat, stylized, reusable SVGs. The item name stays visible and
-   accessible when a mark is absent or fails.
+2. Otherwise, trim and case-normalize tags and rank matches by concrete identity, broad category,
+   descriptive trait, then behavior. Behavior tags may select a mark, but only at the lowest priority.
+3. Break equal-priority matches by saved tag order, then by a stable catalog order.
+4. Never inspect the item name, description, or other authored prose to infer a category.
+5. Use Generic when no tag matches.
+6. Category marks remain optional, flat, stylized, reusable transparent raster assets. The item name
+   stays visible and accessible when a mark is absent or fails.
+7. Keep the shared icon vocabulary adventurous and fantasy-leaning without adding ornamental RPG
+   chrome; contemporary imagery belongs only to categories that specifically require it.
+8. Keep one canonical geometry per category at the restrained 32px detail level. Reuse that same
+   design at every export size so details do not appear or disappear as the mark scales.
 
 ## Additional tasks added during this reorganization
 

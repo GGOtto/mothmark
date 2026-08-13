@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 860" role="img" aria-labelledby="title desc">
+  <title id="title">Mothmark item category mark mockups</title>
+  <desc id="desc">Twenty flat, reusable SVG category marks from the retained item category contract.</desc>
+  <rect width="1200" height="860" fill="#e8dfd0"/>
+  <text x="32" y="44" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="600">Item category marks</text>
+  <text x="32" y="72" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="14">Flat, reusable marks driven only by recognized tags. Item names remain the primary identity.</text>
+
+  <g transform="translate(32 110)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/generic.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Generic</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Circle, square, triangle</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">generic · misc · fallback</text>
+  </g>
+  <g transform="translate(260 110)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/structure.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Structure</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Block pillar</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">wall · pillar · arch</text>
+  </g>
+  <g transform="translate(488 110)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/door.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Door</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Arched door</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">door · gate · hatch</text>
+  </g>
+  <g transform="translate(716 110)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/furniture.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Furniture</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Chair</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">chair · table · shelf</text>
+  </g>
+  <g transform="translate(944 110)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/container.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Container</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Chest</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">chest · crate · bag</text>
+  </g>
+
+  <g transform="translate(32 297)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/mechanism.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Mechanism</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Gears</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">device · lever · trap</text>
+  </g>
+  <g transform="translate(260 297)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/tool.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Tool</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Crossed pick and hammer</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">tool · hammer · rope</text>
+  </g>
+  <g transform="translate(488 297)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/key.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Key</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Key</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">key · lockpick · pass</text>
+  </g>
+  <g transform="translate(716 297)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/weapon.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Weapon</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Crossed swords</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">sword · axe · bow</text>
+  </g>
+  <g transform="translate(944 297)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/wearable.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Wearable</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Hat</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">clothing · armor · boots</text>
+  </g>
+
+  <g transform="translate(32 484)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/light.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Light</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Lantern</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">torch · lamp · candle</text>
+  </g>
+  <g transform="translate(260 484)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/document.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Document</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Open book</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">book · note · map</text>
+  </g>
+  <g transform="translate(488 484)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/food.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Food</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Apple</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">food · drink · ingredient</text>
+  </g>
+  <g transform="translate(716 484)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/nature.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Nature</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Leaf</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">plant · fungus · rock</text>
+  </g>
+  <g transform="translate(944 484)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/remains.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Remains</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Skull</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">corpse · bones · grave</text>
+  </g>
+
+  <g transform="translate(32 671)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/art.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Art</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Statue</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">statue · painting · mural</text>
+  </g>
+  <g transform="translate(260 671)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/relic.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Relic</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Peaked shrine</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">sacred · altar · idol</text>
+  </g>
+  <g transform="translate(488 671)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/treasure.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Treasure</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Gem</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">valuable · coin · jewel</text>
+  </g>
+  <g transform="translate(716 671)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/music.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Music</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Musical note</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">instrument · bell · chime</text>
+  </g>
+  <g transform="translate(944 671)">
+    <rect width="216" height="170" rx="6" fill="#f6eee0" stroke="#b7a992"/>
+    <image href="item-category-marks/magic.svg" x="76" y="14" width="64" height="64"/>
+    <text x="108" y="105" text-anchor="middle" fill="#211e19" font-family="Arial, Helvetica, sans-serif" font-size="18">Magic</text>
+    <text x="108" y="126" text-anchor="middle" fill="#5c5347" font-family="Arial, Helvetica, sans-serif" font-size="12">Open hand and orb</text>
+    <text x="108" y="150" text-anchor="middle" fill="#756a5a" font-family="Arial, Helvetica, sans-serif" font-size="11">arcane · enchanted · spell</text>
+  </g>
+</svg>

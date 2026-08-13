@@ -303,6 +303,10 @@ function worldConditions(context: EditorControlContext) {
 			return {
 				...normalizeCondition(storedCondition.condition as ConditionValue),
 				id: storedCondition.identity,
+				name:
+					typeof storedCondition.name === "string" && storedCondition.name.trim()
+						? storedCondition.name
+						: undefined,
 			};
 		}
 		return normalizeCondition(storedCondition);
@@ -320,6 +324,7 @@ function storedWorldCondition(condition: ConditionValue) {
 	delete definition.allowMultipleUsesInWorld;
 	return {
 		identity: toID("condition", conditionId),
+		name: storedConditionName(condition) ?? "",
 		condition: definition,
 	};
 }

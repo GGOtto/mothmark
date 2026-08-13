@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+  <title>Treasure item category mark</title>
+  <path d="m8 25 10-13h28l10 13-24 30Z" fill="currentColor" fill-opacity=".12"/>
+  <path d="M8 25h48M18 12l8 13 6-13 6 13 8-13M26 25l6 30 6-30"/>
+</svg>

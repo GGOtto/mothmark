@@ -5,16 +5,9 @@ import {produce} from "immer";
 import {useLayoutEffect, useRef} from "react";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import {EffectBranch} from "@/components/logic/shared/EffectBranch";
-import {useLogicEditorPopup} from "@/components/universal-editor/useLogicEditorPopup";
-import {
-	generateConditionSummary,
-	generateEffectSummary,
-} from "@/components/universal-editor/utils/universalEditorUtils";
 import {buildCommandVariableCatalog} from "@/features/command-variables";
 import {
-	CommandConditionSchema,
 	CommandEffectGroupSchema,
-	CommandEffectSchema,
 	type CommandConditionBranch,
 	type CommandEffectGroup,
 } from "@/schemas/world/commandLogicSchemas";
@@ -22,14 +15,13 @@ import type {Command, CommandBlock} from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {idValue, toID} from "@/utils/idUtils";
-import type {CommandSelection} from "../shared";
+import type {CommandSelection, OpenLogicLibraryRequest} from "../shared";
 import {CommandConditionEditorSchema} from "../shared/logicEditorSchemas";
 import {commandBlockWord} from "./CommandSummary";
 import {createBlockFallbackBehavior} from "./commandFallback";
 
 type BranchKey = "always" | "if" | "elif" | "else";
 type BehaviorTarget = {kind: "command"} | {kind: "fallback"; blockId: string};
-type BranchCondition = NonNullable<CommandConditionBranch["if"]>["condition"];
 
 function targetFromSelection(selection: CommandSelection): BehaviorTarget | null {
 	if (selection.kind === "behavior") return {kind: "command"};
@@ -97,12 +89,6 @@ function branchCondition(
 	return branch === "if" ? behavior.if?.condition : behavior.elifs?.[elifIndex ?? -1]?.condition;
 }
 
-function effectGroupSummary(group: CommandEffectGroup) {
-	if (group.effects.length === 0) return "No effects configured";
-	const first = generateEffectSummary(group.effects[0], CommandEffectSchema);
-	return group.effects.length === 1 ? first : `${first} + ${group.effects.length - 1} more`;
-}
-
 function fallbackTitle(block: CommandBlock | undefined) {
 	if (!block) return "Fallback behavior";
 	return `${block.type.charAt(0).toLocaleUpperCase()}${block.type.slice(1)} fallback`;
@@ -114,15 +100,16 @@ export function CommandBehaviorEditor({
 	command,
 	selection,
 	onSelectionChange,
+	onOpenLogicLibrary,
 }: {
 	world: World;
 	updateWorld: UpdateWorld;
 	command: Command;
 	selection: CommandSelection;
 	onSelectionChange: (selection: CommandSelection | null) => void;
+	onOpenLogicLibrary?: (request: OpenLogicLibraryRequest) => void;
 }) {
 	const popup = useOptionalPopup();
-	const openLogicEditor = useLogicEditorPopup();
 	const target = targetFromSelection(selection);
 	const behavior = target ? behaviorFor(command, target) : undefined;
 	const fallbackLocation =
@@ -174,21 +161,44 @@ export function CommandBehaviorEditor({
 		branch: "if" | "elif",
 		elifIndex?: number,
 		value = branchCondition(behavior!, branch, elifIndex),
-		editorWorld = world,
+		onCancel?: () => void,
 	) {
 		if (!value) return;
+		const currentReference =
+			value.conditions.length === 1 && value.conditions[0]?.type === "condition-ref"
+				? idValue(value.conditions[0].conditionId)
+				: null;
 		const failedBlockId =
 			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
-		void openLogicEditor<BranchCondition>({
+		onOpenLogicLibrary?.({
 			kind: "condition",
-			schema: CommandConditionEditorSchema,
-			value,
-			world: editorWorld,
-			updateWorld,
-			commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
-			summary: (condition) => generateConditionSummary(condition, CommandConditionSchema),
-			onChange: (condition) => {
+			returnSection: "commands",
+			selectedId: currentReference,
+			returnLabel: `${command.name || "Command"} · ${branch === "if" ? "If" : "Else if"} condition`,
+			onCancel,
+			draftEditor: currentReference
+				? undefined
+				: {
+						schema: CommandConditionEditorSchema,
+						value,
+						commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
+						onDone: (draftValue) => {
+							const condition = CommandConditionEditorSchema.parse(draftValue);
+							updateBehavior((next) => {
+								if (branch === "if" && next.if) next.if.condition = condition;
+								else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
+									next.elifs[elifIndex ?? -1].condition = condition;
+								}
+							});
+						},
+					},
+			onDone: (conditionId) => {
 				updateBehavior((next) => {
+					const condition = {
+						type: "group" as const,
+						operation: "all" as const,
+						conditions: [{type: "condition-ref" as const, conditionId: toID("condition", conditionId)}],
+					};
 					if (branch === "if" && next.if) next.if.condition = condition;
 					else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
 						next.elifs[elifIndex ?? -1].condition = condition;
@@ -198,49 +208,88 @@ export function CommandBehaviorEditor({
 		});
 	}
 
-	function editEffect(
-		branch: BranchKey,
-		elifIndex?: number,
-		value = branchGroup(behavior!, branch, elifIndex),
-		editorWorld = world,
-	) {
-		if (!value) return;
-		const failedBlockId =
-			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
-		void openLogicEditor<CommandEffectGroup>({
+	function editEffectReference(effectId: string) {
+		onOpenLogicLibrary?.({
 			kind: "effect",
-			schema: CommandEffectGroupSchema,
-			value,
-			world: editorWorld,
-			updateWorld,
-			commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
-			summary: effectGroupSummary,
-			onChange: (group) => {
-				updateBehavior((next) => {
-					if (branch === "always") next.always = group;
-					else if (branch === "if" && next.if) next.if.effect = group;
-					else if (branch === "else") next.else = group;
-					else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
-						next.elifs[elifIndex ?? -1].effect = group;
-					}
-				});
-			},
+			returnSection: "commands",
+			selectedId: effectId,
+			returnLabel: `${command.name || "Command"} · Effect`,
+			onDone: () => undefined,
 		});
 	}
 
 	function addEffect(branch: BranchKey, elifIndex?: number) {
 		const group = branchGroup(behavior!, branch, elifIndex);
 		if (!group) return;
-		const nextGroup: CommandEffectGroup = {
-			...group,
-			effects: [...group.effects, {type: "message", operation: "show", message: ""}],
-		};
-		const editorWorld = worldWithBehaviorUpdate((next) => {
-			const targetGroup = branchGroup(next, branch, elifIndex);
-			if (targetGroup) targetGroup.effects = nextGroup.effects;
+		const failedBlockId =
+			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
+		onOpenLogicLibrary?.({
+			kind: "effect",
+			returnSection: "commands",
+			selectedId: null,
+			returnLabel: `${command.name || "Command"} · ${branch === "elif" ? "Else if" : branch} effects`,
+			draftEditor: {
+				schema: CommandEffectGroupSchema,
+				value: group,
+				commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
+				onDone: (draftValue) => {
+					const nextGroup = CommandEffectGroupSchema.parse(draftValue);
+					updateBehavior((next) => {
+						if (branch === "always") next.always = nextGroup;
+						else if (branch === "if" && next.if) next.if.effect = nextGroup;
+						else if (branch === "else") next.else = nextGroup;
+						else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
+							next.elifs[elifIndex ?? -1].effect = nextGroup;
+						}
+					});
+				},
+			},
+			onDone: (effectId) => {
+				updateBehavior((next) => {
+					branchGroup(next, branch, elifIndex)?.effects.push({
+						type: "effect-ref",
+						effectId: toID("effect", effectId),
+					});
+				});
+			},
 		});
-		updateWorld(editorWorld);
-		editEffect(branch, elifIndex, nextGroup, editorWorld);
+	}
+
+	function editInlineEffect(branch: BranchKey, index: number, elifIndex?: number) {
+		const group = branchGroup(behavior!, branch, elifIndex);
+		if (!group) return;
+		const failedBlockId =
+			target!.kind === "fallback" ? toID("command-block", target!.blockId) : undefined;
+		onOpenLogicLibrary?.({
+			kind: "effect",
+			returnSection: "commands",
+			selectedId: null,
+			returnLabel: `${command.name || "Command"} · Edit effects`,
+			draftEditor: {
+				schema: CommandEffectGroupSchema,
+				value: group,
+				commandVariableCatalog: buildCommandVariableCatalog(command, failedBlockId),
+				onDone: (draftValue) => {
+					const nextGroup = CommandEffectGroupSchema.parse(draftValue);
+					updateBehavior((next) => {
+						if (branch === "always") next.always = nextGroup;
+						else if (branch === "if" && next.if) next.if.effect = nextGroup;
+						else if (branch === "else") next.else = nextGroup;
+						else if (branch === "elif" && next.elifs?.[elifIndex ?? -1]) {
+							next.elifs[elifIndex ?? -1].effect = nextGroup;
+						}
+					});
+				},
+			},
+			onDone: (effectId) => {
+				updateBehavior((next) => {
+					const effects = branchGroup(next, branch, elifIndex)?.effects;
+					if (effects?.[index]) {
+						effects[index] = {type: "effect-ref", effectId: toID("effect", effectId)};
+					}
+				});
+			},
+		});
 	}
 
 	function removeEffect(branch: BranchKey, index: number, elifIndex?: number) {
@@ -397,7 +446,11 @@ export function CommandBehaviorEditor({
 											}),
 									);
 									updateWorld(editorWorld);
-									editCondition("if", undefined, condition, editorWorld);
+									editCondition("if", undefined, condition, () =>
+										updateBehavior((next) => {
+											delete next.if;
+										}),
+									);
 								}}
 							>
 								<Plus size={15} />
@@ -423,7 +476,11 @@ export function CommandBehaviorEditor({
 											}),
 									);
 									updateWorld(editorWorld);
-									editCondition("elif", index, condition, editorWorld);
+									editCondition("elif", index, condition, () =>
+										updateBehavior((next) => {
+											next.elifs?.splice(index, 1);
+										}),
+									);
 								}}
 							>
 								<Plus size={15} />
@@ -457,8 +514,8 @@ export function CommandBehaviorEditor({
 						label="Always"
 						world={world}
 						group={behavior.always}
-						onSelectGroup={() => editEffect("always")}
-						onSelectInlineGroup={() => editEffect("always")}
+						onSelectGroup={editEffectReference}
+						onSelectInlineEffect={(index) => editInlineEffect("always", index)}
 						onAddEffect={() => addEffect("always")}
 						onRemoveEffect={(index) => removeEffect("always", index)}
 						onMoveEffect={(from, to) => moveEffect("always", from, to)}
@@ -490,8 +547,8 @@ export function CommandBehaviorEditor({
 								if (next.if) next.if.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={() => editEffect("if")}
-						onSelectInlineGroup={() => editEffect("if")}
+						onSelectGroup={editEffectReference}
+						onSelectInlineEffect={(index) => editInlineEffect("if", index)}
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
 						onMoveEffect={(from, to) => moveEffect("if", from, to)}
@@ -533,8 +590,8 @@ export function CommandBehaviorEditor({
 								if (item) item.cancelIfConditionFails = cancel;
 							})
 						}
-						onSelectGroup={() => editEffect("elif", index)}
-						onSelectInlineGroup={() => editEffect("elif", index)}
+						onSelectGroup={editEffectReference}
+						onSelectInlineEffect={(effectIndex) => editInlineEffect("elif", effectIndex, index)}
 						onAddEffect={() => addEffect("elif", index)}
 						onRemoveEffect={(effectIndex) => removeEffect("elif", effectIndex, index)}
 						onMoveEffect={(from, to) => moveEffect("elif", from, to, index)}
@@ -549,8 +606,8 @@ export function CommandBehaviorEditor({
 						label="Else"
 						world={world}
 						group={behavior.else}
-						onSelectGroup={() => editEffect("else")}
-						onSelectInlineGroup={() => editEffect("else")}
+						onSelectGroup={editEffectReference}
+						onSelectInlineEffect={(index) => editInlineEffect("else", index)}
 						onAddEffect={() => addEffect("else")}
 						onRemoveEffect={(index) => removeEffect("else", index)}
 						onMoveEffect={(from, to) => moveEffect("else", from, to)}

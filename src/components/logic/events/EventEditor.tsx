@@ -2,24 +2,19 @@
 
 import {ArrowLeft, CalendarClock, Plus, Trash2} from "lucide-react";
 import {produce} from "immer";
-import {type CSSProperties, useLayoutEffect, useRef} from "react";
+import {type CSSProperties, useLayoutEffect, useRef, useState} from "react";
 import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
 import {useOptionalPopup} from "@/components/popup/Popup";
-import {useLogicEditorPopup} from "@/components/universal-editor/useLogicEditorPopup";
-import {
-	generateConditionSummary,
-	generateEffectSummary,
-} from "@/components/universal-editor/utils/universalEditorUtils";
+import {PopupTemplate} from "@/components/popup/template/PopupTemplate";
 import type {Event} from "@/schemas/world/eventSchema";
-import {ConditionSchema} from "@/schemas/world/conditionSchema";
-import {EffectGroupSchema, EffectSchema, type EffectGroup} from "@/schemas/world/effectSchema";
+import {EffectGroupSchema, type EffectGroup} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {idValue, toID} from "@/utils/idUtils";
 import {CenteredScrollSelector} from "@/components/ui/CenteredScrollSelector";
 import {EffectBranch} from "../shared/EffectBranch";
 import {EventConditionEditorSchema} from "../shared/logicEditorSchemas";
-import type {LogicSelection} from "../shared/logicTypes";
+import type {LogicSelection, OpenLogicLibraryRequest} from "../shared/logicTypes";
 import "./EventEditor.scss";
 
 export type EventBranchKey = "always" | "if" | "elif" | "else";
@@ -31,6 +26,7 @@ type EventEditorProps = {
 	onSelectedEventIdChange: (eventId: string) => void;
 	selection: LogicSelection | null;
 	onSelectionChange: (selection: LogicSelection | null) => void;
+	onOpenLogicLibrary?: (request: OpenLogicLibraryRequest) => void;
 };
 
 function uniqueId(prefix: string, usedIds: string[]) {
@@ -94,12 +90,6 @@ function branchCondition(event: Event, branch: "if" | "elif", elifIndex?: number
 		: event.branch.elifs?.[elifIndex ?? -1]?.condition;
 }
 
-function effectGroupSummary(group: EffectGroup) {
-	if (group.effects.length === 0) return "No effects configured";
-	const first = generateEffectSummary(group.effects[0], EffectSchema);
-	return group.effects.length === 1 ? first : `${first} + ${group.effects.length - 1} more`;
-}
-
 export function EventEditor({
 	world,
 	updateWorld,
@@ -107,9 +97,9 @@ export function EventEditor({
 	onSelectedEventIdChange,
 	selection,
 	onSelectionChange,
+	onOpenLogicLibrary,
 }: EventEditorProps) {
 	const popup = useOptionalPopup();
-	const openLogicEditor = useLogicEditorPopup();
 	const events = world.events ?? [];
 	const selectedEvent =
 		events.find((event) => idValue(event.id) === selectedEventId) ?? events[0] ?? null;
@@ -176,18 +166,41 @@ export function EventEditor({
 		branch: "if" | "elif",
 		elifIndex?: number,
 		value = selectedEvent ? branchCondition(selectedEvent, branch, elifIndex) : undefined,
-		editorWorld = world,
+		_onCancel?: () => void,
 	) {
 		if (!selectedEvent || !value) return;
-		void openLogicEditor<BranchCondition>({
+		const currentReference =
+			value.conditions.length === 1 && value.conditions[0]?.type === "condition-ref"
+				? idValue(value.conditions[0].conditionId)
+				: null;
+		onOpenLogicLibrary?.({
 			kind: "condition",
-			schema: EventConditionEditorSchema,
-			value,
-			world: editorWorld,
-			updateWorld,
-			summary: (condition) => generateConditionSummary(condition, ConditionSchema),
-			onChange: (condition) => {
+			returnSection: "events",
+			selectedId: currentReference,
+			returnLabel: `${selectedEvent.name || "Event"} · ${branch === "if" ? "If" : "Else if"} condition`,
+			onCancel: _onCancel,
+			draftEditor: currentReference
+				? undefined
+				: {
+						schema: EventConditionEditorSchema,
+						value,
+						onDone: (draftValue) => {
+							const condition = EventConditionEditorSchema.parse(draftValue);
+							updateEvent((event) => {
+								if (branch === "if" && event.branch.if) event.branch.if.condition = condition;
+								else if (branch === "elif" && event.branch.elifs?.[elifIndex ?? -1]) {
+									event.branch.elifs[elifIndex ?? -1].condition = condition;
+								}
+							});
+						},
+					},
+			onDone: (conditionId) => {
 				updateEvent((event) => {
+					const condition = {
+						type: "group" as const,
+						operation: "all" as const,
+						conditions: [{type: "condition-ref" as const, conditionId: toID("condition", conditionId)}],
+					};
 					if (branch === "if" && event.branch.if) event.branch.if.condition = condition;
 					else if (branch === "elif" && event.branch.elifs?.[elifIndex ?? -1]) {
 						event.branch.elifs[elifIndex ?? -1].condition = condition;
@@ -197,46 +210,76 @@ export function EventEditor({
 		});
 	}
 
-	function editEffectGroup(effectId: string, value?: EffectGroup, editorWorld = world) {
-		const group = value ?? editorWorld.effects.find((effect) => idValue(effect.id) === effectId);
-		if (!group) return;
-		void openLogicEditor<EffectGroup>({
+	function editEffectGroup(effectId: string) {
+		if (!selectedEvent) return;
+		onOpenLogicLibrary?.({
 			kind: "effect",
-			schema: EffectGroupSchema,
-			value: group,
-			world: editorWorld,
-			updateWorld,
-			summary: effectGroupSummary,
-			onChange: (nextGroup) => {
-				updateWorld((draft) => {
-					const index = draft.effects.findIndex((effect) => idValue(effect.id) === effectId);
-					if (index >= 0) draft.effects[index] = nextGroup;
-				});
-			},
+			returnSection: "events",
+			selectedId: effectId,
+			returnLabel: `${selectedEvent.name || "Event"} · Effect`,
+			onDone: () => undefined,
 		});
 	}
 
 	function addEffect(branch: EventBranchKey, elifIndex?: number) {
 		if (!selectedEvent) return;
-		const effectId = uniqueId(
-			"new-effect",
-			world.effects.map((effect) => idValue(effect.id)),
-		);
-		const group: EffectGroup = {
-			...emptyEffectGroup(effectId),
-			effects: [{type: "message", operation: "show", message: ""}],
-		};
-
-		const nextWorld = produce(world, (draft) => {
-			draft.effects.push(group);
-			const event = draft.events?.find(
-				(candidate) => idValue(candidate.id) === idValue(selectedEvent.id),
-			);
-			const target = event ? branchGroup(event as Event, branch, elifIndex) : undefined;
-			target?.effects.push({type: "effect-ref", effectId: toID("effect", effectId)});
+		const group = branchGroup(selectedEvent, branch, elifIndex);
+		if (!group) return;
+		onOpenLogicLibrary?.({
+			kind: "effect",
+			returnSection: "events",
+			selectedId: null,
+			returnLabel: `${selectedEvent.name || "Event"} · ${branch === "elif" ? "Else if" : branch} effects`,
+			draftEditor: {
+				schema: EffectGroupSchema,
+				value: group,
+				onDone: (draftValue) => {
+					const nextGroup = EffectGroupSchema.parse(draftValue);
+					updateEvent((event) => {
+						if (branch === "always") event.branch.always = nextGroup;
+						else if (branch === "if" && event.branch.if) event.branch.if.effect = nextGroup;
+						else if (branch === "else") event.branch.else = nextGroup;
+						else if (branch === "elif" && event.branch.elifs?.[elifIndex ?? -1]) {
+							event.branch.elifs[elifIndex ?? -1].effect = nextGroup;
+						}
+					});
+				},
+			},
 		});
-		updateWorld(nextWorld);
-		editEffectGroup(effectId, group, nextWorld);
+	}
+
+	function editInlineEffect(branch: EventBranchKey, index: number, elifIndex?: number) {
+		if (!selectedEvent) return;
+		const group = branchGroup(selectedEvent, branch, elifIndex);
+		if (!group) return;
+		onOpenLogicLibrary?.({
+			kind: "effect",
+			returnSection: "events",
+			selectedId: null,
+			returnLabel: `${selectedEvent.name || "Event"} · Edit effects`,
+			draftEditor: {
+				schema: EffectGroupSchema,
+				value: group,
+				onDone: (draftValue) => {
+					const nextGroup = EffectGroupSchema.parse(draftValue);
+					updateEvent((event) => {
+						if (branch === "always") event.branch.always = nextGroup;
+						else if (branch === "if" && event.branch.if) event.branch.if.effect = nextGroup;
+						else if (branch === "else") event.branch.else = nextGroup;
+						else if (branch === "elif" && event.branch.elifs?.[elifIndex ?? -1]) {
+							event.branch.elifs[elifIndex ?? -1].effect = nextGroup;
+						}
+					});
+				},
+			},
+			onDone: (effectId) => {
+				updateEvent((event) => {
+					const effects = branchGroup(event, branch, elifIndex)?.effects;
+					if (effects?.[index])
+						effects[index] = {type: "effect-ref", effectId: toID("effect", effectId)};
+				});
+			},
+		});
 	}
 
 	function removeEffect(branch: EventBranchKey, index: number, elifIndex?: number) {
@@ -280,7 +323,11 @@ export function EventEditor({
 			};
 		});
 		updateWorld(editorWorld);
-		editCondition("if", undefined, condition, editorWorld);
+		editCondition("if", undefined, condition, () =>
+			updateEvent((event) => {
+				delete event.branch.if;
+			}),
+		);
 	}
 
 	function addElseIf() {
@@ -297,7 +344,11 @@ export function EventEditor({
 			});
 		});
 		updateWorld(editorWorld);
-		editCondition("elif", index, condition, editorWorld);
+		editCondition("elif", index, condition, () =>
+			updateEvent((event) => {
+				event.branch.elifs?.splice(index, 1);
+			}),
+		);
 	}
 
 	function addElse() {
@@ -424,6 +475,7 @@ export function EventEditor({
 						world={world}
 						group={selectedEvent.branch.always}
 						onSelectGroup={editEffectGroup}
+						onSelectInlineEffect={(index) => editInlineEffect("always", index)}
 						onAddEffect={() => addEffect("always")}
 						onRemoveEffect={(index) => removeEffect("always", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("always", fromIndex, toIndex)}
@@ -461,6 +513,7 @@ export function EventEditor({
 							})
 						}
 						onSelectGroup={editEffectGroup}
+						onSelectInlineEffect={(index) => editInlineEffect("if", index)}
 						onAddEffect={() => addEffect("if")}
 						onRemoveEffect={(index) => removeEffect("if", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("if", fromIndex, toIndex)}
@@ -515,6 +568,7 @@ export function EventEditor({
 							})
 						}
 						onSelectGroup={editEffectGroup}
+						onSelectInlineEffect={(effectIndex) => editInlineEffect("elif", effectIndex, index)}
 						onAddEffect={() => addEffect("elif", index)}
 						onRemoveEffect={(effectIndex) => removeEffect("elif", effectIndex, index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("elif", fromIndex, toIndex, index)}
@@ -535,6 +589,7 @@ export function EventEditor({
 						world={world}
 						group={selectedEvent.branch.else}
 						onSelectGroup={editEffectGroup}
+						onSelectInlineEffect={(index) => editInlineEffect("else", index)}
 						onAddEffect={() => addEffect("else")}
 						onRemoveEffect={(index) => removeEffect("else", index)}
 						onMoveEffect={(fromIndex, toIndex) => moveEffect("else", fromIndex, toIndex)}
@@ -577,13 +632,22 @@ export function EventToolbar({
 		);
 	}
 
-	function updateField(
-		field: "name" | "enabled" | "disposable" | "wait" | "priority",
-		value: string | number | boolean,
-	) {
+	async function openSettings() {
+		if (!popup) return;
+		const nextEvent = await popup.open<Event>(
+			({resolve, cancel}) => <EventSettingsDialog event={event!} onCancel={cancel} onSave={resolve} />,
+			{
+				ariaLabel: "Edit event settings",
+				closeOnBackdropClick: false,
+				className: "popupSurfaceLogicSettings",
+			},
+		);
+		if (!nextEvent) return;
 		updateWorld((draft) => {
-			const target = draft.events?.find((candidate) => idValue(candidate.id) === idValue(event!.id));
-			if (target) Object.assign(target, {[field]: value});
+			const index = draft.events?.findIndex(
+				(candidate) => idValue(candidate.id) === idValue(nextEvent.id),
+			);
+			if (index != null && index >= 0 && draft.events) draft.events[index] = nextEvent;
 		});
 	}
 
@@ -605,53 +669,96 @@ export function EventToolbar({
 			<button type="button" className="logicToolbar__back" onClick={onBack} aria-label="Back to Logic">
 				<ArrowLeft size={16} aria-hidden="true" />
 			</button>
-			<label className="logicToolbar__field logicToolbar__name">
-				<span>Name</span>
-				<input
-					type="text"
-					value={event.name}
-					onChange={(change) => updateField("name", change.target.value)}
-				/>
-			</label>
-			<div className="logicToolbar__settings">
-				<label className="logicToolbar__toggle">
-					<span>Enabled</span>
-					<input
-						type="checkbox"
-						checked={event.enabled}
-						onChange={(change) => updateField("enabled", change.target.checked)}
-					/>
-				</label>
-				<label className="logicToolbar__toggle">
-					<span>Run once</span>
-					<input
-						type="checkbox"
-						checked={event.disposable}
-						onChange={(change) => updateField("disposable", change.target.checked)}
-					/>
-				</label>
-				<label className="logicToolbar__field logicToolbar__number">
-					<span>Wait</span>
-					<input
-						type="number"
-						min={0}
-						value={event.wait}
-						onChange={(change) => updateField("wait", Math.max(0, Number(change.target.value)))}
-					/>
-				</label>
-				<label className="logicToolbar__field logicToolbar__number">
-					<span>Priority</span>
-					<input
-						type="number"
-						value={event.priority}
-						onChange={(change) => updateField("priority", Number(change.target.value))}
-					/>
-				</label>
+			<div className="logicToolbar__identity">
+				<p>{event.name || "Unnamed event"}</p>
+				<span>{event.enabled ? "Enabled" : "Disabled"}</span>
 			</div>
+			<button type="button" className="commandToolbar__scope" onClick={() => void openSettings()}>
+				Edit event
+			</button>
 			<button type="button" className="logicToolbar__delete" onClick={() => void requestDelete()}>
 				<Trash2 size={15} aria-hidden="true" />
 				Delete
 			</button>
 		</div>
+	);
+}
+
+function EventSettingsDialog({
+	event,
+	onCancel,
+	onSave,
+}: {
+	event: Event;
+	onCancel: () => void;
+	onSave: (event: Event) => void;
+}) {
+	const [draft, setDraft] = useState<Event>(() => produce(event, () => undefined));
+	function updateField<K extends "name" | "enabled" | "disposable" | "wait" | "priority">(
+		field: K,
+		value: Event[K],
+	) {
+		setDraft((current) => ({...current, [field]: value}));
+	}
+
+	return (
+		<PopupTemplate
+			title="Event settings"
+			message="Control when this event can run. Branches and their logic stay in the event workspace."
+			actions={
+				<>
+					<button type="button" className="popupButton popupButtonSecondary" onClick={onCancel}>
+						Cancel
+					</button>
+					<button type="button" className="popupButton popupButtonPrimary" onClick={() => onSave(draft)}>
+						Save
+					</button>
+				</>
+			}
+		>
+			<div className="logicSettingsForm">
+				<label>
+					<span>Name</span>
+					<input value={draft.name} onChange={(change) => updateField("name", change.target.value)} />
+				</label>
+				<div className="logicSettingsForm__toggles">
+					<label>
+						<input
+							type="checkbox"
+							checked={draft.enabled}
+							onChange={(change) => updateField("enabled", change.target.checked)}
+						/>
+						<span>Enabled</span>
+					</label>
+					<label>
+						<input
+							type="checkbox"
+							checked={draft.disposable}
+							onChange={(change) => updateField("disposable", change.target.checked)}
+						/>
+						<span>Run once</span>
+					</label>
+				</div>
+				<div className="logicSettingsForm__columns">
+					<label>
+						<span>Wait (turns)</span>
+						<input
+							type="number"
+							min={0}
+							value={draft.wait}
+							onChange={(change) => updateField("wait", Math.max(0, Number(change.target.value)))}
+						/>
+					</label>
+					<label>
+						<span>Priority</span>
+						<input
+							type="number"
+							value={draft.priority}
+							onChange={(change) => updateField("priority", Number(change.target.value))}
+						/>
+					</label>
+				</div>
+			</div>
+		</PopupTemplate>
 	);
 }

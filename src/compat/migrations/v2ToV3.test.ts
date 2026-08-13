@@ -53,7 +53,7 @@ describe("the v2 to v3 reviewed-contract migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(8);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(9);
 		expect(migrationFrom(2)).toBe(v2ToV3);
 		expect(result).toEqual({
 			applied: false,

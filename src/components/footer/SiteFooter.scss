@@ -15,13 +15,19 @@
 
 .siteFooter__identity {
 	a {
-		display: inline-block;
-		color: var(--color-frame-text);
-		font-size: clamp(28px, 3vw, 40px);
-		font-weight: 600;
-		letter-spacing: -0.035em;
-		line-height: 1;
+		display: block;
+		width: min(100%, 312px);
 		text-decoration: none;
+
+		&:hover {
+			opacity: 0.78;
+		}
+	}
+
+	.siteFooter__logo {
+		display: block;
+		width: 100%;
+		height: auto;
 	}
 
 	p {
@@ -191,7 +197,7 @@
 	}
 
 	.siteFooter__identity a {
-		font-size: 30px;
+		width: min(100%, 260px);
 	}
 
 	.siteFooter__newsletter {

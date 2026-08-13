@@ -1,10 +1,10 @@
 "use client";
 
-import {MapPinned} from "lucide-react";
 import Link from "next/link";
 import {FormEvent, useState} from "react";
 
 import {adminNextPath} from "../adminClient";
+import {MothmarkLogo} from "@/components/brand/MothmarkLogo";
 
 async function csrfToken(): Promise<string> {
 	const response = await fetch("/api/auth/csrf?audience=admin");
@@ -56,9 +56,7 @@ export default function AdminSignInPage() {
 		<main className="adminSignIn">
 			<section className="adminSignInPanel" aria-labelledby="admin-sign-in-title">
 				<div className="adminBrand">
-					<span aria-hidden="true">
-						<MapPinned size={16} />
-					</span>
+					<MothmarkLogo variant="basic" />
 					Mothmark administration
 				</div>
 				<h1 id="admin-sign-in-title">Administrator sign-in</h1>

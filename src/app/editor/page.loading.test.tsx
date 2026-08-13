@@ -168,9 +168,13 @@ describe("EditorPage loading", () => {
 
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
 		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
-		expect(container.querySelector(".rightSideBar")).toBeInTheDocument();
-		expect(screen.getByRole("button", {name: /Travel/})).toBeInTheDocument();
+		expect(container.querySelector(".rightSideBar")).not.toBeInTheDocument();
+		expect(screen.queryByRole("tab", {name: "Editor"})).not.toBeInTheDocument();
+		expect(screen.getByRole("tab", {name: "Play"})).toBeInTheDocument();
+		const travelCommand = screen.getByRole("button", {name: /Travel/});
+		expect(travelCommand).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "New command"})).toBeInTheDocument();
+		fireEvent.click(travelCommand);
 		expect(screen.getByRole("button", {name: "Edit command"})).toBeInTheDocument();
 
 		fireEvent.click(desktopNavigation.getByRole("button", {name: "Logic"}));

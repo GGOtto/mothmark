@@ -40,7 +40,7 @@ import {
 import type {CommandConditionBranch} from "@/schemas/world/commandLogicSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
-import type {CommandSelection} from "../shared";
+import type {CommandSelection, OpenLogicLibraryRequest} from "../shared";
 import {CommandBehaviorEditor} from "./CommandBehaviorEditor";
 import {commandBlockWord, commandPatternText} from "./CommandSummary";
 import "./CommandEditor.scss";
@@ -223,6 +223,8 @@ type CommandEditorProps = {
 	onSelectedCommandIdChange: (commandId: string) => void;
 	selection: CommandSelection | null;
 	onSelectionChange: (selection: CommandSelection | null) => void;
+	onOpenLogicLibrary?: (request: OpenLogicLibraryRequest) => void;
+	onOpenInspector?: (selection: CommandSelection) => void;
 };
 
 export function CommandEditor({
@@ -232,6 +234,8 @@ export function CommandEditor({
 	onSelectedCommandIdChange,
 	selection,
 	onSelectionChange,
+	onOpenLogicLibrary,
+	onOpenInspector,
 }: CommandEditorProps) {
 	const commands = world.commands;
 	const selectedCommand =
@@ -387,12 +391,14 @@ export function CommandEditor({
 				command.patterns[activePatternIndex]?.blocks.push(block);
 			}
 		});
-		onSelectionChange({
+		const nextSelection: CommandSelection = {
 			kind: "block",
 			commandId: idValue(selectedCommand.id),
 			patternIndex: activePatternIndex,
 			blockId: idValue(block.id),
-		});
+		};
+		onSelectionChange(nextSelection);
+		onOpenInspector?.(nextSelection);
 	}
 
 	async function removeBlock(patternIndex: number, blockIndex: number) {
@@ -533,6 +539,7 @@ export function CommandEditor({
 					command={selectedCommand}
 					selection={selection}
 					onSelectionChange={onSelectionChange}
+					onOpenLogicLibrary={onOpenLogicLibrary}
 				/>
 			) : (
 				<div className="commandBuilder">
@@ -692,7 +699,14 @@ export function CommandEditor({
 																onClick={(event) => {
 																	event.stopPropagation();
 																	setActivePatternIndex(patternIndex);
-																	onSelectionChange({kind: "block", commandId, patternIndex, blockId});
+																	const nextSelection: CommandSelection = {
+																		kind: "block",
+																		commandId,
+																		patternIndex,
+																		blockId,
+																	};
+																	onSelectionChange(nextSelection);
+																	onOpenInspector?.(nextSelection);
 																}}
 															>
 																<span>
@@ -733,13 +747,11 @@ export function CommandEditor({
 
 export function CommandToolbar({
 	command,
-	updateWorld,
 	onBack,
 	onDelete,
 	onOpenSettings,
 }: {
 	command: Command | null;
-	updateWorld: UpdateWorld;
 	onBack: () => void;
 	onDelete: () => void;
 	onOpenSettings?: () => void;
@@ -763,15 +775,6 @@ export function CommandToolbar({
 	}
 	const activeCommand = command;
 
-	function updateCommand(field: "name" | "enabled", value: string | boolean) {
-		updateWorld((draft) => {
-			const target = draft.commands.find(
-				(candidate) => idValue(candidate.id) === idValue(activeCommand.id),
-			);
-			if (target) Object.assign(target, {[field]: value});
-		});
-	}
-
 	async function requestDelete() {
 		const confirmed = popup
 			? await popup.confirm({
@@ -794,32 +797,14 @@ export function CommandToolbar({
 			>
 				<ArrowLeft size={16} aria-hidden="true" />
 			</button>
-			<label className="logicToolbar__field logicToolbar__name">
-				<span>Name</span>
-				<input
-					type="text"
-					value={command.name}
-					onChange={(event) => updateCommand("name", event.target.value)}
-				/>
-			</label>
-			<div className="logicToolbar__settings">
-				<label className="logicToolbar__toggle">
-					<span>Enabled</span>
-					<input
-						type="checkbox"
-						checked={command.enabled}
-						onChange={(event) => updateCommand("enabled", event.target.checked)}
-					/>
-				</label>
-				<button type="button" className="commandToolbar__scope" onClick={onOpenSettings}>
-					<Settings size={14} aria-hidden="true" />
-					{command.scope.scope === "global"
-						? "Global"
-						: command.scope.scope === "rooms"
-							? "Rooms"
-							: "Layers"}
-				</button>
+			<div className="logicToolbar__identity">
+				<p>{command.name || "Unnamed command"}</p>
+				<span>{command.enabled ? "Enabled" : "Disabled"}</span>
 			</div>
+			<button type="button" className="commandToolbar__scope" onClick={onOpenSettings}>
+				<Settings size={14} aria-hidden="true" />
+				Edit command
+			</button>
 			<button type="button" className="logicToolbar__delete" onClick={() => void requestDelete()}>
 				<Trash2 size={15} aria-hidden="true" />
 				Delete

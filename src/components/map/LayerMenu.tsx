@@ -44,6 +44,7 @@ export type LayerMenuProps = {
 	selectedId: string | null;
 	isConnectionSelected: boolean;
 	setCurrentLayer: (layer: Layer) => void;
+	renameLayer: (layer: Layer) => void;
 };
 
 export function LayerMenu({
@@ -53,6 +54,7 @@ export function LayerMenu({
 	selectedId,
 	isConnectionSelected,
 	setCurrentLayer,
+	renameLayer,
 }: LayerMenuProps) {
 	const [displayedLayer, setDisplayedLayer] = useState<Layer>(currentLayer);
 	const displayedLayerRef = useRef(displayedLayer);
@@ -110,6 +112,13 @@ export function LayerMenu({
 		setIsLayerMenuOpen(false);
 	}
 
+	function handleLayerNameChange(name: string) {
+		const renamedLayer = {...displayedLayerRef.current, name};
+		displayedLayerRef.current = renamedLayer;
+		setDisplayedLayer(renamedLayer);
+		renameLayer(renamedLayer);
+	}
+
 	return (
 		<div
 			className="layerMenu"
@@ -145,8 +154,15 @@ export function LayerMenu({
 			/>
 			<div className="layerMenu--right">
 				<div className="layerMenu--header">
-					<div className="layerMenu--header__name">Layer Name</div>
-					<div className="layerMenu--header__info">{currentLayer.layer}</div>
+					<label className="layerMenu--nameField">
+						<span>Layer name</span>
+						<input
+							aria-label="Layer name"
+							value={displayedLayer.name}
+							onChange={(event) => handleLayerNameChange(event.target.value)}
+						/>
+					</label>
+					<div className="layerMenu--header__info">Layer {displayedLayer.layer}</div>
 				</div>
 				<div className="layerMenu--preview">
 					<LayerPreview

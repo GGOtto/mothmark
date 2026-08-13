@@ -36,6 +36,7 @@ test("the signed-out desktop header uses a left page selector and sends feedback
 	const primary = page.getByRole("navigation", {name: "Primary navigation"});
 	const selector = primary.getByRole("button", {name: "Choose page, current: Home"});
 	const brand = page.getByRole("link", {name: "Mothmark home"});
+	await expect(brand.locator("img")).toHaveAttribute("src", "/logo/dark/header-compact.png");
 	const selectorBox = await selector.boundingBox();
 	const brandBox = await brand.boundingBox();
 	expect(selectorBox?.x).toBeGreaterThan(brandBox?.x ?? 0);
@@ -137,5 +138,19 @@ test("the full header remains through 901px and collapses at 900px", async ({pag
 			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the approved header logo follows the selected appearance", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.goto("/");
+
+	const brandImage = page.getByRole("link", {name: "Mothmark home"}).locator("img");
+	await expect(brandImage).toHaveAttribute("src", "/logo/dark/header-compact.png");
+	await page.evaluate(() => {
+		window.localStorage.setItem("mothmark-theme", "light");
+	});
+	await page.reload();
+	await expect(brandImage).toHaveAttribute("src", "/logo/light/header-compact.png");
 	expect(browserErrors).toEqual([]);
 });

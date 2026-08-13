@@ -16171,7 +16171,7 @@
 			}
 		}
 	},
-	"schemaSourceDigest": "b222bc0e34d56c610117d3a911afd963b94ec8d232e166a5764412f6685d10cf",
+	"schemaSourceDigest": "fc10cd59a244400c7e8e204e74e7054c92f64f8720f285323333615dfa3a1a80",
 	"world": {
 		"kind": "object",
 		"checks": [
@@ -23567,6 +23567,13 @@
 									]
 								},
 								"outputFingerprint": "transform"
+							},
+							"name": {
+								"kind": "default",
+								"input": {
+									"kind": "string"
+								},
+								"defaultValue": ""
 							}
 						}
 					}

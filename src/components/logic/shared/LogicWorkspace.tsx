@@ -1,6 +1,6 @@
 "use client";
 
-import {ArrowLeft, Braces, Command, GitBranch, Sparkles} from "lucide-react";
+import {Braces, Command, GitBranch, Sparkles} from "lucide-react";
 import type {LogicSection} from "./logicTypes";
 import "./LogicWorkspace.scss";
 
@@ -19,14 +19,14 @@ const LOGIC_SECTIONS = [
 	},
 	{
 		id: "conditions",
-		title: "Build Complex Conditions",
-		description: "Create reusable condition groups.",
+		title: "Conditions",
+		description: "Build, find, and manage reusable condition groups.",
 		icon: Braces,
 	},
 	{
 		id: "effects",
-		title: "Build Complex Effects",
-		description: "Create reusable effect groups.",
+		title: "Effects",
+		description: "Build, find, and manage reusable effect groups.",
 		icon: Sparkles,
 	},
 ] satisfies Array<{
@@ -57,18 +57,6 @@ export function LogicHome({onOpen}: {onOpen: (section: Exclude<LogicSection, "ho
 					})}
 				</div>
 			</div>
-		</div>
-	);
-}
-
-export function LogicSectionPlaceholder({title, onBack}: {title: string; onBack: () => void}) {
-	return (
-		<div className="logicEmpty">
-			<p>{title}</p>
-			<button type="button" onClick={onBack}>
-				<ArrowLeft size={15} aria-hidden="true" />
-				Back to Logic
-			</button>
 		</div>
 	);
 }

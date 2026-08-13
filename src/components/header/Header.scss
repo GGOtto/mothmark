@@ -25,12 +25,10 @@
 .headerLogo {
 	display: inline-flex;
 	align-items: center;
-	gap: 13px;
-	color: var(--color-frame-text);
 	text-decoration: none;
 
 	&:hover {
-		color: var(--color-action);
+		opacity: 0.78;
 	}
 
 	&:focus-visible {
@@ -39,18 +37,10 @@
 	}
 }
 
-.headerLogoMark {
-	width: 52px;
-	height: 31px;
+.headerLogoImage {
+	width: 220px;
+	height: auto;
 	flex: 0 0 auto;
-}
-
-.headerTitle {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 20px;
-	font-weight: 800;
-	letter-spacing: 0.015em;
-	text-transform: uppercase;
 }
 
 .headerUtilities,
@@ -681,17 +671,8 @@
 		gap: 0;
 	}
 
-	.headerLogo {
-		gap: 8px;
-	}
-
-	.headerLogoMark {
-		width: 40px;
-		height: 24px;
-	}
-
-	.headerTitle {
-		font-size: 15px;
+	.headerLogoImage {
+		width: 158px;
 	}
 
 	.worldSwitcher,
@@ -852,15 +833,11 @@
 }
 
 @media (max-width: 400px) {
-	.headerTitle {
-		display: none;
-	}
-
 	.headerIconButton {
 		width: 34px;
 	}
 
-	.headerLogoMark {
-		width: 36px;
+	.headerLogoImage {
+		width: 132px;
 	}
 }

@@ -36,6 +36,10 @@ describe("Header", () => {
 		const user = userEvent.setup();
 		render(<Header account={null} />);
 
+		expect(screen.getByRole("link", {name: "Mothmark home"}).querySelector("img")).toHaveAttribute(
+			"src",
+			"/logo/dark/header-compact.png",
+		);
 		const primary = screen.getByRole("navigation", {name: "Primary navigation"});
 		const selector = within(primary).getByRole("button", {name: "Choose page, current: Home"});
 		expect(screen.getByRole("button", {name: "Send feedback"})).toBeInTheDocument();

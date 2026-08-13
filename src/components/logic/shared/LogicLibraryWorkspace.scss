@@ -1,0 +1,583 @@
+.logicLibraryWorkspace {
+	display: grid;
+	grid-template-rows: auto auto minmax(0, 1fr);
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	background: var(--color-workspace);
+	color: var(--color-text);
+}
+
+.logicLibraryWorkspace--editor {
+	grid-template-rows: auto minmax(0, 1fr);
+}
+
+.logicLibraryHeader,
+.logicDraftHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 14px 18px;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-surface);
+}
+
+.logicLibraryHeader__title {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 16px;
+
+	h1,
+	p {
+		margin: 0;
+	}
+
+	h1 {
+		font-size: 21px;
+	}
+
+	p {
+		margin-top: 2px;
+		color: var(--color-text-muted);
+		font-size: 13px;
+	}
+}
+
+.logicLibraryBack,
+.logicLibraryPrimaryAction,
+.logicDraftHeader button,
+.logicDraftDelete,
+.logicLibraryFilters button {
+	display: inline-flex;
+	min-height: 34px;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 0 11px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.logicLibraryBack {
+	min-height: 30px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--color-action);
+}
+
+.logicLibraryPrimaryAction,
+.logicDraftHeader .logicDraftHeader__save {
+	border-color: var(--color-action);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
+}
+
+.logicLibraryTools {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: end;
+	gap: 10px 14px;
+	padding: 14px 18px;
+	border-bottom: 1px solid var(--color-border);
+	background: var(--color-surface);
+
+	> p {
+		grid-column: 1 / -1;
+		margin: 0;
+		color: var(--color-text-muted);
+		font-size: 12px;
+	}
+}
+
+.logicLibrarySearch {
+	display: grid;
+	gap: 5px;
+	color: var(--color-text);
+	font-size: 12px;
+}
+
+.logicLibrarySearch__control {
+	position: relative;
+	display: block;
+
+	svg {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		color: var(--color-text-muted);
+		pointer-events: none;
+	}
+
+	input {
+		width: 100%;
+		min-height: 36px;
+		padding: 6px 10px 6px 34px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+		color: var(--color-text);
+		font: inherit;
+	}
+}
+
+.logicLibraryFilters {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+
+	button {
+		min-height: 32px;
+	}
+
+	button[aria-pressed="true"] {
+		border-color: var(--color-action);
+		background: var(--color-action);
+		color: var(--color-action-contrast);
+	}
+}
+
+.logicLibraryList {
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	background: var(--color-surface);
+}
+
+.logicLibraryRow {
+	display: grid;
+	grid-template-columns: minmax(190px, 1.2fr) minmax(260px, 2fr) auto;
+	gap: 18px;
+	width: 100%;
+	min-width: 0;
+	align-items: center;
+	padding: 14px 18px;
+	border: 0;
+	border-bottom: 1px solid var(--color-border);
+	background: transparent;
+	color: var(--color-text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+
+	&:hover {
+		background: var(--color-surface-strong);
+	}
+
+	strong,
+	small {
+		display: block;
+	}
+
+	strong {
+		font-size: 13px;
+	}
+
+	small,
+	.logicLibraryRow__summary,
+	.logicLibraryRow__usage {
+		color: var(--color-text-muted);
+		font-size: 12px;
+	}
+}
+
+.logicLibraryRow__summary {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.logicLibraryRow__usage {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	white-space: nowrap;
+}
+
+.logicLibraryEmpty {
+	display: grid;
+	min-height: 280px;
+	place-content: center;
+	justify-items: center;
+	padding: 24px;
+	text-align: center;
+	color: var(--color-text-muted);
+
+	h2,
+	p {
+		margin: 0;
+	}
+
+	h2 {
+		margin-top: 8px;
+		color: var(--color-text);
+		font-size: 17px;
+	}
+
+	p {
+		margin-top: 4px;
+	}
+}
+
+.logicDraftHeader__back {
+	min-width: 0;
+	justify-content: flex-start;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-align: left;
+
+	span {
+		min-width: 0;
+	}
+
+	strong,
+	small {
+		display: block;
+	}
+
+	small {
+		overflow: hidden;
+		color: var(--color-text-muted);
+		font-size: 11px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+.logicDraftHeader__actions {
+	display: flex;
+	gap: 8px;
+}
+
+.logicDraftBody {
+	min-width: 0;
+	min-height: 0;
+	padding: 22px clamp(18px, 3vw, 36px) 40px;
+	overflow-y: auto;
+}
+
+.logicDraftIntro {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 18px;
+	margin-bottom: 18px;
+
+	h1,
+	p {
+		margin: 0;
+	}
+
+	h1 {
+		font-size: 22px;
+	}
+
+	p {
+		margin-top: 4px;
+		color: var(--color-text-muted);
+		font-size: 13px;
+	}
+}
+
+.logicDraftDelete {
+	min-height: 30px;
+	flex: 0 0 auto;
+	border-color: transparent;
+	background: transparent;
+	color: var(--color-text-muted);
+
+	&:hover {
+		color: var(--color-danger);
+	}
+}
+
+.logicDraftError {
+	margin-bottom: 12px;
+	padding: 9px 11px;
+	border: 1px solid var(--color-danger);
+	border-radius: var(--radius-panel);
+	background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+	color: var(--color-danger);
+}
+
+.logicDraftEditor {
+	max-width: 1040px;
+
+	> .universalEditor {
+		width: 100%;
+	}
+
+	.universalField {
+		--field-text: var(--color-text);
+		--field-muted: var(--color-text-muted);
+		--field-soft: var(--color-text-faint);
+		--field-border: var(--color-border);
+		--field-border-strong: var(--color-border-strong);
+		--field-bg: var(--color-surface);
+		--field-bg-raised: var(--color-surface-raised);
+		--field-bg-strong: var(--color-surface-strong);
+	}
+
+	.effectEditor {
+		gap: 14px;
+	}
+
+	.effectEditor__identity > .universalField {
+		max-width: 640px;
+		grid-template-columns: minmax(100px, 150px) minmax(0, 1fr);
+		padding: 8px 10px;
+		border-color: var(--color-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+	}
+
+	.effectListEditor {
+		gap: 10px;
+	}
+
+	.effectListEditor__item {
+		position: relative;
+		border-width: 0 0 1px;
+		border-color: var(--color-border);
+		background: transparent;
+	}
+
+	.effectListEditor__itemTitle {
+		padding: 10px 0 8px;
+		border: 0;
+		background: transparent;
+		font-size: 13px;
+	}
+
+	.effectListEditor__change {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		padding: 9px 0;
+		border: 0;
+		border-bottom: 1px solid var(--color-border);
+		background: transparent;
+		font-size: 11px;
+	}
+
+	.effectListEditor__change strong {
+		font-size: 13px;
+	}
+
+	.effectListEditor__fields {
+		gap: 10px;
+		padding: 10px 0;
+	}
+
+	.effectListEditor label {
+		gap: 5px;
+		padding: 0;
+		font-size: 11px;
+	}
+
+	.effectListEditor input,
+	.effectListEditor select {
+		min-height: 34px;
+		padding: 6px 8px;
+		border-color: var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+	}
+
+	.effectListEditor__actions {
+		gap: 6px;
+		justify-content: flex-end;
+		padding: 0 0 10px;
+		border: 0;
+		background: transparent;
+	}
+
+	.effectListEditor__actions button,
+	.effectListEditor__addButton {
+		min-height: 30px;
+		padding: 0 9px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+	}
+
+	.effectListEditor__addButton {
+		align-self: flex-start;
+		padding-right: 12px;
+		padding-left: 12px;
+	}
+
+	.conditionBuilderEditor__summary {
+		display: none;
+	}
+
+	.conditionBuilderEditor__node--group > .conditionBuilderEditor__row {
+		max-width: 360px;
+	}
+
+	.conditionBuilderEditor__group {
+		margin-left: min(calc(var(--condition-depth, 0) * 12px), 36px);
+		border-width: 0 0 0 3px;
+		border-color: var(--color-focus);
+		background: var(--color-surface);
+		padding: 12px 14px;
+	}
+
+	.conditionBuilderEditor__groupHeader {
+		padding: 0 0 10px;
+		border: 0;
+		background: transparent;
+	}
+
+	.conditionBuilderEditor__linkItems {
+		gap: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+
+	.conditionBuilderEditor__linkItem {
+		border-width: 0 0 1px;
+		border-color: var(--color-border);
+		background: transparent;
+	}
+
+	.conditionBuilderEditor__linkButton {
+		padding: 10px 4px;
+	}
+
+	.conditionBuilderEditor__actions {
+		justify-content: flex-start;
+		padding: 10px 0 0;
+		border: 0;
+		background: transparent;
+	}
+
+	.conditionBuilderEditor__item {
+		border: 0;
+		background: transparent;
+	}
+
+	.conditionBuilderEditor__itemHeader,
+	.conditionBuilderEditor__editingTitle {
+		border-color: var(--color-border);
+		background: var(--color-surface-raised);
+	}
+}
+
+.logicUsageSection {
+	max-width: 1040px;
+	margin-top: 24px;
+	padding-top: 18px;
+	border-top: 1px solid var(--color-border);
+
+	h2,
+	p {
+		margin: 0;
+	}
+
+	h2 {
+		font-size: 16px;
+	}
+
+	p {
+		margin-top: 3px;
+		color: var(--color-text-muted);
+		font-size: 12px;
+	}
+}
+
+.logicUsageSection__empty {
+	padding: 12px 0;
+}
+
+.logicUsageList {
+	display: grid;
+	margin-top: 8px;
+
+	button {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 0;
+		border: 0;
+		border-bottom: 1px solid var(--color-border);
+		background: transparent;
+		color: var(--color-action);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	strong,
+	small {
+		display: block;
+	}
+
+	strong {
+		font-size: 12px;
+	}
+
+	small {
+		color: var(--color-text-muted);
+		font-size: 11px;
+	}
+}
+
+@media (max-width: 760px) {
+	.logicLibraryHeader,
+	.logicDraftHeader,
+	.logicDraftIntro {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.logicLibraryHeader__title {
+		align-items: flex-start;
+	}
+
+	.logicLibraryPrimaryAction {
+		align-self: flex-start;
+	}
+
+	.logicLibraryTools,
+	.logicLibraryRow {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.logicLibraryRow {
+		gap: 5px;
+	}
+
+	.logicLibraryRow__usage {
+		white-space: normal;
+	}
+
+	.logicDraftHeader__actions {
+		justify-content: flex-end;
+	}
+
+	.logicDraftDelete {
+		align-self: flex-start;
+	}
+}
+
+@media (max-width: 420px) {
+	.logicLibraryHeader,
+	.logicLibraryTools,
+	.logicLibraryRow,
+	.logicDraftHeader,
+	.logicDraftBody {
+		padding-right: 12px;
+		padding-left: 12px;
+	}
+
+	.logicDraftEditor .effectListEditor__fields {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
