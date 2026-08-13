@@ -1,4 +1,6 @@
-import {defineStorageMigration, unchanged} from "./types";
+import {resolveTurn} from "@/engine/player/resolveTurn";
+import {GameStateSchema} from "@/schemas/states/gameStateSchemas";
+import {defineStorageMigration, unchanged, type GameStateMigrationContext} from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -417,11 +419,43 @@ function migrateWorld(value: unknown): unknown {
 	return removeAccidentalEmbeddedEffectCopies(reorganizeConditionsAndEffects(value));
 }
 
+const PLAYER_RUNTIME_FIELDS = [
+	"previousRoom",
+	"lastRoomTransitionTurn",
+	"lastCommandSucceeded",
+	"lastCommandTurn",
+	"randomState",
+	"carryingCapacity",
+	"equippedItemIds",
+	"hasWon",
+	"isEnded",
+	"endingMessage",
+] as const;
+
+function migrateGameState(value: unknown, context: GameStateMigrationContext): unknown {
+	if (!isRecord(value) || !isRecord(value.player)) {
+		throw new Error("The retained game state and player state must be objects.");
+	}
+	if (!context.previousState || !context.world) return value;
+
+	const previous = GameStateSchema.parse(context.previousState);
+	const replayed = context.command
+		? resolveTurn(context.world, previous, context.command)
+		: previous;
+	const player = {...value.player};
+	for (const field of PLAYER_RUNTIME_FIELDS) {
+		const nextValue = replayed.player[field];
+		if (nextValue === undefined) delete player[field];
+		else player[field] = nextValue;
+	}
+	return {...value, player};
+}
+
 export const v5ToV6 = defineStorageMigration({
 	id: "v5-to-v6-reorganize-conditions-and-effects",
 	fromVersion: 5,
 	toVersion: 6,
 	world: migrateWorld,
-	gameState: unchanged,
+	gameState: migrateGameState,
 	messages: unchanged,
 });
