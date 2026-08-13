@@ -80,7 +80,7 @@ describe("the v3 to v4 command-help contract migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(7);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(8);
 		expect(migrationFrom(3)).toBe(v3ToV4);
 		expect(migrationFrom(4)).toBeDefined();
 		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();

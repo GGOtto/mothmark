@@ -122,3 +122,11 @@ player runtime fields, while messages are unchanged and still advance to version
 with the deterministic reserved key `legacy.empty-flag`. The same key is used everywhere so paired
 legacy writers and readers keep their behavior. Unrelated authored fields, game states, and messages
 are preserved while every retained document advances to version 7.
+
+### Version 7 to 8: replay retained game states
+
+`v7-to-v8-replay-retained-game-states` rebuilds every retained turn snapshot in sequence from the
+pinned world and recorded command log, then uses the final replayed turn as the playthrough's current
+state. It regenerates each turn's output messages and the final transcript from those replayed states.
+Worlds remain unchanged. This removes stale derived runtime state while preserving the authoritative
+command history and player-visible output.

@@ -110,3 +110,11 @@ The `v6-to-v7-name-empty-logic-flags` migration replaces blank flag names in ret
 effect logic with the deterministic reserved key `legacy.empty-flag`. Using one key preserves the
 relationship between legacy effects that write the unnamed flag and conditions that read it. Game
 states and messages remain unchanged while their rows advance to schema version 7.
+
+## Retained game-state replay in v8
+
+The `v7-to-v8-replay-retained-game-states` migration rebuilds turn snapshots sequentially from each
+playthrough's pinned world and recorded command log. The final replayed turn becomes the current
+state. Each turn's output messages and the final transcript are regenerated from those replayed
+states. The release gate verifies that every turn, transcript, and final state exactly matches
+exhaustive replay before committing schema version 8.
