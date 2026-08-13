@@ -8,6 +8,18 @@ import {CommandCopyProvider} from "../components/header/CommandCopyAction";
 import {resolveCurrentEditorPageActor} from "@/auth/currentPageActor";
 import {getOwnedAccountSummary} from "@/db/dbal/accountRepository";
 
+const initializeTheme = `
+try {
+	const stored = localStorage.getItem("mothmark-theme");
+	const preference = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+	const theme = preference === "system"
+		? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+		: preference;
+	document.documentElement.dataset.theme = theme;
+	document.documentElement.style.colorScheme = theme;
+} catch {}
+`;
+
 export const metadata: Metadata = {
 	title: "Mothmark",
 	description: "A room-and-command editor for text adventures.",
@@ -55,7 +67,10 @@ export default async function RootLayout({
 		: null;
 
 	return (
-		<html lang="en" className="h-full antialiased" data-theme="dark">
+		<html lang="en" className="h-full antialiased" data-theme="dark" suppressHydrationWarning>
+			<head>
+				<script dangerouslySetInnerHTML={{__html: initializeTheme}} />
+			</head>
 			<body className="flex h-dvh flex-col overflow-hidden">
 				<ThemeProvider>
 					<PopupProvider>

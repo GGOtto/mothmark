@@ -4,10 +4,12 @@ import {createContext, useContext, useEffect, useMemo, useRef, useState} from "r
 import type {ReactNode} from "react";
 
 export type AppTheme = "light" | "dark";
+export type ThemePreference = AppTheme | "system";
 
 type ThemeContextValue = {
 	theme: AppTheme;
-	setTheme: (theme: AppTheme) => void;
+	themePreference: ThemePreference;
+	setTheme: (theme: ThemePreference) => void;
 	toggleTheme: () => void;
 };
 
@@ -15,21 +17,33 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const THEME_STORAGE_KEY = "mothmark-theme";
 
 export function ThemeProvider({children}: {children: ReactNode}) {
-	const [theme, setTheme] = useState<AppTheme>("dark");
+	const [themePreference, setThemePreference] = useState<ThemePreference>("system");
+	const [systemTheme, setSystemTheme] = useState<AppTheme>("dark");
 	const hasHydratedThemeRef = useRef(false);
+	const theme = themePreference === "system" ? systemTheme : themePreference;
 
 	useEffect(() => {
 		const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+		const systemThemeQuery =
+			typeof window.matchMedia === "function"
+				? window.matchMedia("(prefers-color-scheme: light)")
+				: undefined;
 		let isActive = true;
+		const updateSystemTheme = () => {
+			if (isActive) setSystemTheme(systemThemeQuery?.matches ? "light" : "dark");
+		};
 
-		if (storedTheme === "light" || storedTheme === "dark") {
+		updateSystemTheme();
+		if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
 			queueMicrotask(() => {
-				if (isActive) setTheme(storedTheme);
+				if (isActive) setThemePreference(storedTheme);
 			});
 		}
+		systemThemeQuery?.addEventListener("change", updateSystemTheme);
 
 		return () => {
 			isActive = false;
+			systemThemeQuery?.removeEventListener("change", updateSystemTheme);
 		};
 	}, []);
 
@@ -41,16 +55,17 @@ export function ThemeProvider({children}: {children: ReactNode}) {
 
 		document.documentElement.dataset.theme = theme;
 		document.documentElement.style.colorScheme = theme;
-		window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-	}, [theme]);
+		window.localStorage.setItem(THEME_STORAGE_KEY, themePreference);
+	}, [theme, themePreference]);
 
 	const value = useMemo<ThemeContextValue>(
 		() => ({
 			theme,
-			setTheme,
-			toggleTheme: () => setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark")),
+			themePreference,
+			setTheme: setThemePreference,
+			toggleTheme: () => setThemePreference(theme === "dark" ? "light" : "dark"),
 		}),
-		[theme],
+		[theme, themePreference],
 	);
 
 	return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

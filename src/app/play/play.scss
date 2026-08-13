@@ -396,12 +396,27 @@
 	padding-left: max(12px, env(safe-area-inset-left));
 }
 .hostedPlayerError {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 	margin: 0;
 	padding: 8px 14px;
 	background: var(--color-terminal-raised);
 	color: var(--color-terminal-danger);
 	font-family: var(--font-mono);
 	font-size: 12px;
+
+	button {
+		flex: 0 0 auto;
+		padding: 3px 7px;
+		border: 1px solid currentColor;
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 }
 
 @media (max-width: 600px) {

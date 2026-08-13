@@ -1,7 +1,10 @@
 import {act, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import {GameMessageSchema, GameStateSchema} from "@/schemas/states/gameStateSchemas";
+import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {resolveTurn} from "@/engine/player/resolveTurn";
+import {createInitialGameState} from "@/engine/states/createInitialState";
+import {GameMessageSchema, type GameMessage} from "@/schemas/states/gameStateSchemas";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
 import {HostedPlayer} from "./HostedPlayer";
@@ -17,6 +20,7 @@ const publication = {
 		number: 1,
 		publishedAt: "2026-08-09T12:00:00.000Z",
 	},
+	world: initialWorld,
 };
 
 function message(id: string, text: string, type: "command" | "room" | "system" = "room") {
@@ -26,7 +30,7 @@ function message(id: string, text: string, type: "command" | "room" | "system" =
 function playthrough(
 	overrides: {
 		commands?: string;
-		messages?: ReturnType<typeof message>[];
+		messages?: GameMessage[];
 		revision?: number;
 		status?: "active" | "completed";
 	} = {},
@@ -38,7 +42,7 @@ function playthrough(
 		commandCount: commands ? commands.split("\n").length : 0,
 		commands,
 		state: {
-			...createDefaultFieldObject(GameStateSchema),
+			...createInitialGameState(initialWorld, initialWorld.startRoomId),
 			messages: overrides.messages ?? [message("opening", "A quiet archive waits.")],
 		},
 		status: overrides.status ?? ("active" as const),
@@ -121,7 +125,7 @@ describe("HostedPlayer", () => {
 		expect(menuButton).toHaveFocus();
 	});
 
-	it("keeps the software-keyboard prompt focused and intact while a command is saving", async () => {
+	it("shows engine output immediately and keeps the prompt usable while a command saves", async () => {
 		let resolveCommand!: (response: Response) => void;
 		installBootstrapFetch(
 			() =>
@@ -131,36 +135,95 @@ describe("HostedPlayer", () => {
 		);
 		render(<HostedPlayer slug="quiet-archive" />);
 		const input = await screen.findByRole("textbox", {name: "Game command"});
-		fireEvent.change(input, {target: {value: "open the unusually-long-archive-door"}});
+		fireEvent.change(input, {target: {value: "east"}});
 		input.focus();
 		fireEvent.submit(input.closest("form")!);
 
-		await waitFor(() => expect(input).toHaveAttribute("readonly"));
-		expect(input).not.toBeDisabled();
+		await screen.findByText(/Shelves hold boxes waiting to be unpacked/);
+		expect(input).not.toHaveAttribute("readonly");
+		expect(input).toBeEnabled();
 		expect(input).toHaveFocus();
-		expect(input).toHaveValue("open the unusually-long-archive-door");
+		expect(input).toHaveValue("");
+		expect(screen.getByRole("status")).toHaveTextContent("Saving…");
+
+		const serverState = resolveTurn(initialWorld, playthrough().state, "east");
 
 		await act(async () => {
 			resolveCommand(
 				await json({
 					data: {
 						...playthrough({
-							commands: "open the unusually-long-archive-door",
-							messages: [
-								message("opening", "A quiet archive waits."),
-								message("command", "open the unusually-long-archive-door", "command"),
-							],
+							commands: "east",
+							messages: serverState.messages,
 							revision: 2,
 						}),
-						outputMessages: [message("command", "open the unusually-long-archive-door", "command")],
+						state: serverState,
+						outputMessages: serverState.messages.slice(1),
 					},
 				}),
 			);
 		});
 
-		await waitFor(() => expect(input).not.toHaveAttribute("readonly"));
+		await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
 		expect(input).toHaveValue("");
 		expect(input).toHaveFocus();
+	});
+
+	it("serializes rapid background saves without holding up the next turn", async () => {
+		const resolvers: Array<(response: Response) => void> = [];
+		installBootstrapFetch(
+			() =>
+				new Promise<Response>((resolve) => {
+					resolvers.push(resolve);
+				}),
+		);
+		render(<HostedPlayer slug="quiet-archive" />);
+		const input = await screen.findByRole("textbox", {name: "Game command"});
+
+		fireEvent.change(input, {target: {value: "east"}});
+		fireEvent.submit(input.closest("form")!);
+		await screen.findByText(/Shelves hold boxes waiting to be unpacked/);
+		fireEvent.change(input, {target: {value: "west"}});
+		fireEvent.submit(input.closest("form")!);
+		await screen.findByText(/A narrow shop with a counter by the door/);
+		expect(resolvers).toHaveLength(1);
+
+		const startingPlaythrough = playthrough();
+		const eastState = resolveTurn(initialWorld, startingPlaythrough.state, "east");
+		await act(async () => {
+			resolvers[0]?.(
+				await json({
+					data: {
+						...startingPlaythrough,
+						revision: 2,
+						commandCount: 1,
+						commands: "east",
+						state: eastState,
+						outputMessages: eastState.messages.slice(startingPlaythrough.state.messages.length),
+					},
+				}),
+			);
+		});
+		await waitFor(() => expect(resolvers).toHaveLength(2));
+
+		const westState = resolveTurn(initialWorld, eastState, "west");
+		await act(async () => {
+			resolvers[1]?.(
+				await json({
+					data: {
+						...startingPlaythrough,
+						revision: 3,
+						commandCount: 2,
+						commands: "east\nwest",
+						state: westState,
+						outputMessages: westState.messages.slice(eastState.messages.length),
+					},
+				}),
+			);
+		});
+
+		await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved"));
+		expect(input).toBeEnabled();
 	});
 
 	it("explains when an unpublished world cannot be restarted", async () => {
@@ -230,19 +293,19 @@ describe("HostedPlayer", () => {
 		expect(restartBodies[1]?.restartRequestId).toBe(restartBodies[0]?.restartRequestId);
 	});
 
-	it("keeps a command available for retry after a connection failure", async () => {
+	it("keeps optimistic progress visible and offers a background-save retry after a connection failure", async () => {
 		installBootstrapFetch(() => Promise.reject(new TypeError("Failed to fetch")));
 		render(<HostedPlayer slug="quiet-archive" />);
 		const input = await screen.findByRole("textbox", {name: "Game command"});
 		fireEvent.change(input, {target: {value: "look"}});
 		fireEvent.submit(input.closest("form")!);
 
-		expect(
-			await screen.findByText(
-				"Connection lost. Your command is still in the prompt; check your connection and try again.",
-			),
-		).toHaveAttribute("role", "alert");
-		expect(input).toHaveValue("look");
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"Connection lost. Your progress is still visible here; reconnect and retry saving.",
+		);
+		expect(screen.getByText(/look/, {selector: ".output-log__message"})).toBeVisible();
+		expect(screen.getByRole("button", {name: "Retry saving"})).toBeEnabled();
+		expect(input).toHaveValue("");
 		expect(input).not.toHaveAttribute("readonly");
 	});
 

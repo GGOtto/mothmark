@@ -763,7 +763,7 @@ export function resolveHostedCommand(
 }
 
 export type HostedPlayBootstrap = {
-	publication: PublicPublication;
+	publication: PlayablePublication;
 	playthrough: HostedPlaythrough;
 	newerReleaseAvailable: boolean;
 	restartAvailability: HostedRestartAvailability;

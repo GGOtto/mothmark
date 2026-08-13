@@ -498,19 +498,20 @@ export const ItemEffectSchema = editor
 				{
 					type: z.literal("item"),
 					operation: editor.logicOperation("set-listing-text", {
-						label: "Change an item's room listing",
-						description: "Replace the short text used when the item appears in a room.",
-						keywords: ["room text", "listing", "appearance", "description"],
+						label: "Change an item's parent listing",
+						description:
+							"Replace the short text used when the item appears beneath its room or containing item.",
+						keywords: ["parent text", "room text", "container", "listing", "description"],
 						situations: [
-							"show disturbed ground in the room",
-							"change how scenery is introduced",
-							"update a prop's short visible description",
+							"show disturbed ground beneath its room",
+							"change how an item inside an open container is introduced",
+							"update an object's short parent-listing description",
 						],
 					}),
-					value: editor.textarea({title: "Room listing text"}),
+					value: editor.textarea({title: "Parent listing text"}),
 					itemId: editor.reference("item", {title: "Item"}),
 				},
-				{title: "Set room listing text"},
+				{title: "Set parent listing text"},
 			),
 			editor.object(
 				{
@@ -808,23 +809,24 @@ export const ItemEffectSchema = editor
 								],
 							},
 							"set-listed": {
-								label: "Include an item in room listings",
-								description: "Make an item appear in automatic room item lists.",
-								keywords: ["show", "visible", "room listing", "state"],
+								label: "Include an item in its parent listing",
+								description: "Make an item appear beneath its room or visible containing item.",
+								keywords: ["show", "visible", "parent listing", "room listing", "container"],
 								situations: [
-									"mention a newly important object in the room",
-									"add scenery to automatic room output",
-									"show a revealed clue in the item list",
+									"mention a newly important object beneath its parent",
+									"show a discovered object inside an open container",
+									"add scenery to a room's automatic listing",
 								],
 							},
 							"set-unlisted": {
-								label: "Omit an item from room listings",
-								description: "Keep an item targetable but omit it from automatic room item lists.",
-								keywords: ["hide listing", "scenery", "room listing", "state"],
+								label: "Omit an item from its parent listing",
+								description:
+									"Keep an item targetable but omit it from its room or containing item's listing.",
+								keywords: ["hide listing", "scenery", "parent listing", "room listing", "container"],
 								situations: [
-									"keep scenery targetable but unmentioned",
-									"remove a collected clue from room output",
-									"hide clutter from the automatic item list",
+									"keep an object targetable but unmentioned beneath its parent",
+									"remove a clue from an open container's listing",
+									"hide clutter from a room's automatic listing",
 								],
 							},
 						},
@@ -953,9 +955,9 @@ export const ItemEffectSchema = editor
 								],
 							},
 							"append-listing-text": {
-								label: "Append to room listing",
-								description: "Add text to the end of an item's room listing.",
-								keywords: ["append", "listing", "room text", "appearance"],
+								label: "Append to parent listing",
+								description: "Add text to the end of an item's parent listing.",
+								keywords: ["append", "listing", "parent text", "room text", "appearance"],
 								situations: [
 									"add that the ground looks disturbed",
 									"extend a changing scenery line",
@@ -963,9 +965,9 @@ export const ItemEffectSchema = editor
 								],
 							},
 							"prepend-listing-text": {
-								label: "Prepend to room listing",
-								description: "Add text to the beginning of an item's room listing.",
-								keywords: ["prepend", "listing", "room text", "appearance"],
+								label: "Prepend to parent listing",
+								description: "Add text to the beginning of an item's parent listing.",
+								keywords: ["prepend", "listing", "parent text", "room text", "appearance"],
 								situations: [
 									"prefix a warning to scenery",
 									"put a status before an item listing",
@@ -1242,9 +1244,9 @@ export const ItemCollectionEffectSchema = editor.discriminatedUnion(
 						],
 					},
 					"set-listing-text-on-matching": {
-						label: "Change matching items' room listing",
-						description: "Replace room listing text on every queried item.",
-						keywords: ["bulk", "listing", "room text", "collection", "query"],
+						label: "Change matching items' parent listing",
+						description: "Replace parent listing text on every queried item.",
+						keywords: ["bulk", "listing", "parent text", "room text", "collection", "query"],
 						situations: [
 							"say the ground here is disturbed",
 							"change a current-room hole without naming it",

@@ -1,6 +1,7 @@
 import type {Room, World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
 import type {GameMessageType, GameState} from "@/schemas/states/gameStateSchemas";
+import type {ItemState} from "@/schemas/states/entityStateSchemas";
 import {createGameMessage} from "./createMessage";
 import {GameMessage} from "@/schemas/states/gameStateSchemas";
 import {getRoom} from "../utils/lookupUtils";
@@ -44,27 +45,45 @@ export function createRoomMessage(
 		.map((fragment) => fragment.text);
 	let text = `${name}\n${[description, ...roomFragments].filter(Boolean).join("\n")}\n`;
 
-	for (const itemState of gameState.itemStates) {
+	const listingLines = gameState.itemStates.flatMap((itemState) => {
+		if (itemState.location.type !== "room" || !compareIds(itemState.location.roomId, room.id)) {
+			return [];
+		}
+		return createItemListingLines(world, gameState, itemState, 1);
+	});
+	if (listingLines.length > 0) text += `${listingLines.join("\n")}\n`;
+
+	return createGameMessage(`${text}\n`, "room", {roomId: room.id});
+}
+
+function createItemListingLines(
+	world: World,
+	gameState: GameState,
+	itemState: ItemState,
+	depth: number,
+): string[] {
+	if ((itemState.flags.hidden ?? false) || !itemState.listedInRoom) return [];
+
+	const authored = findAuthoredItem(world, itemState.id, gameState);
+	const fragments = (authored?.presentation.conditionalText ?? [])
+		.filter((fragment) => evaluateCondition(world, gameState, fragment.when))
+		.map((fragment) => fragment.text);
+	const indent = " ".repeat(depth);
+	const lines = [itemState.listingText || itemState.description, ...fragments]
+		.filter(Boolean)
+		.flatMap((itemText) => itemText.split("\n"))
+		.map((line) => `${indent}${line}`);
+
+	for (const childState of gameState.itemStates) {
 		if (
-			itemState.location.type !== "room" ||
-			!compareIds(itemState.location.roomId, room.id) ||
-			(itemState.flags.hidden ?? false) ||
-			!itemState.listedInRoom
+			childState.location.type !== "item" ||
+			!compareIds(childState.location.itemId, itemState.id) ||
+			(childState.location.placement === "inside" && !itemState.open)
 		) {
 			continue;
 		}
-		const authored = findAuthoredItem(world, itemState.id, gameState);
-		const fragments = (authored?.presentation.conditionalText ?? [])
-			.filter((fragment) => evaluateCondition(world, gameState, fragment.when))
-			.map((fragment) => fragment.text);
-		const itemText = [itemState.listingText || itemState.description, ...fragments]
-			.filter(Boolean)
-			.join("\n")
-			.split("\n")
-			.map((line) => ` ${line}`)
-			.join("\n");
-		text += `${itemText}\n`;
+		lines.push(...createItemListingLines(world, gameState, childState, depth + 1));
 	}
 
-	return createGameMessage(`${text}\n`, "room", {roomId: room.id});
+	return lines;
 }
