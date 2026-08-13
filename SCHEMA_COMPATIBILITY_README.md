@@ -118,3 +118,10 @@ playthrough's pinned world and recorded command log. The final replayed turn bec
 state. Each turn's output messages and the final transcript are regenerated from those replayed
 states. The release gate verifies that every turn, transcript, and final state exactly matches
 exhaustive replay before committing schema version 8.
+
+## Saved condition names in v9
+
+The `v8-to-v9-name-saved-conditions` migration adds an empty name to retained saved-condition
+definitions that predate the reusable logic-library naming field. Existing authored names and all
+condition logic remain unchanged. Game states and messages advance to version 9 without rewriting
+their JSON.
