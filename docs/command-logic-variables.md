@@ -154,7 +154,7 @@ Every feature state contains:
 }
 ```
 
-Each field can have at most one binding. Structural fields cannot be replaced, including `type`, `operation`, `flag-type`, `conditions`, `effects`, and `commandVariables`. Prototype-related keys are rejected as well.
+Each field can have at most one binding. Structural fields cannot be replaced, including `type`, `operation`, `conditions`, `effects`, and `commandVariables`. Prototype-related keys are rejected as well.
 
 Bindings replace only values. They cannot change what kind of condition or effect is being run.
 

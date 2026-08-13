@@ -1,5 +1,8 @@
 {
-	"id": {"type": "command", "id": "face"},
+	"id": {
+		"type": "command",
+		"id": "face"
+	},
 	"name": "Face",
 	"enabled": true,
 	"showInHelp": true,
@@ -9,12 +12,18 @@
 		{
 			"blocks": [
 				{
-					"id": {"type": "command-block", "id": "face-verb"},
+					"id": {
+						"type": "command-block",
+						"id": "face-verb"
+					},
 					"type": "phrase",
 					"matches": ["face", "turn"]
 				},
 				{
-					"id": {"type": "command-block", "id": "face-direction"},
+					"id": {
+						"type": "command-block",
+						"id": "face-direction"
+					},
 					"type": "direction",
 					"role": "direction",
 					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
@@ -25,19 +34,28 @@
 		{
 			"blocks": [
 				{
-					"id": {"type": "command-block", "id": "face-verb"},
+					"id": {
+						"type": "command-block",
+						"id": "face-verb"
+					},
 					"type": "phrase",
 					"matches": ["face", "turn"]
 				},
 				{
-					"id": {"type": "command-block", "id": "face-to"},
+					"id": {
+						"type": "command-block",
+						"id": "face-to"
+					},
 					"type": "relation",
 					"relation": "to",
 					"aliasMode": "defaults",
 					"aliases": []
 				},
 				{
-					"id": {"type": "command-block", "id": "face-direction"},
+					"id": {
+						"type": "command-block",
+						"id": "face-direction"
+					},
 					"type": "direction",
 					"role": "direction",
 					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
@@ -48,24 +66,36 @@
 		{
 			"blocks": [
 				{
-					"id": {"type": "command-block", "id": "face-verb"},
+					"id": {
+						"type": "command-block",
+						"id": "face-verb"
+					},
 					"type": "phrase",
 					"matches": ["face", "turn"]
 				},
 				{
-					"id": {"type": "command-block", "id": "face-to"},
+					"id": {
+						"type": "command-block",
+						"id": "face-to"
+					},
 					"type": "relation",
 					"relation": "to",
 					"aliasMode": "defaults",
 					"aliases": []
 				},
 				{
-					"id": {"type": "command-block", "id": "face-the"},
+					"id": {
+						"type": "command-block",
+						"id": "face-the"
+					},
 					"type": "phrase",
 					"matches": ["the"]
 				},
 				{
-					"id": {"type": "command-block", "id": "face-direction"},
+					"id": {
+						"type": "command-block",
+						"id": "face-direction"
+					},
 					"type": "direction",
 					"role": "direction",
 					"allowed": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
@@ -74,16 +104,27 @@
 			]
 		}
 	],
-	"scope": {"scope": "global"},
+	"scope": {
+		"scope": "global"
+	},
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "face-direction"},
+			"blockId": {
+				"type": "command-block",
+				"id": "face-direction"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "face-direction-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "face-direction-fallback"
+				},
 				"always": {
 					"name": "Unknown direction",
-					"id": {"type": "effect", "id": "face-direction-fallback-effect"},
+					"id": {
+						"type": "effect",
+						"id": "face-direction-fallback-effect"
+					},
 					"type": "group",
 					"effects": [
 						{
@@ -99,18 +140,27 @@
 		}
 	],
 	"behavior": {
-		"id": {"type": "condition-branch", "id": "face-branch"},
+		"id": {
+			"type": "condition-branch",
+			"id": "face-branch"
+		},
 		"always": {
 			"name": "Face direction",
-			"id": {"type": "effect", "id": "face-effect"},
+			"id": {
+				"type": "effect",
+				"id": "face-effect"
+			},
 			"type": "group",
 			"effects": [
 				{
-					"type": "player",
+					"type": "navigation",
 					"operation": "set-facing",
 					"commandVariables": [
 						{
-							"blockId": {"type": "command-block", "id": "face-direction"},
+							"blockId": {
+								"type": "command-block",
+								"id": "face-direction"
+							},
 							"field": "direction"
 						}
 					],

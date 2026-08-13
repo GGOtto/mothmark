@@ -56,9 +56,8 @@ const SETUPS = {
 		value: group("open-gate", "Open the gate", [
 			{type: "message", operation: "show", message: "The iron gate groans open."},
 			{
-				type: "flag",
-				"flag-type": "normal",
-				operation: "set",
+				type: "world",
+				operation: "set-flag",
 				flag: "foyer.doorUnlocked",
 				value: true,
 			},
@@ -118,9 +117,7 @@ const SETUPS = {
 		},
 	},
 	restricted: {
-		value: group("player-only", "Player only", [
-			{type: "player", operation: "teleport", roomId: toID("room", "library")},
-		]),
+		value: group("player-only", "Player only", [{type: "player", operation: "freeze", turns: 2}]),
 		metadata: {
 			title: "Restricted group",
 			description: "Its child schema narrows the available concrete effect types.",
@@ -143,7 +140,7 @@ const SETUPS = {
 	},
 	error: {
 		value: group("invalid-group", "Invalid group", [
-			{type: "flag", "flag-type": "normal", operation: "set", flag: "", value: true},
+			{type: "world", operation: "set-flag", flag: "", value: true},
 		]),
 		error: "Choose a flag before saving this group.",
 		metadata: {

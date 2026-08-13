@@ -104,3 +104,14 @@ migration, confirm a Neon restore point first and document the restore procedure
 review.
 
 Never edit an applied migration or reuse its ID. Add another forward migration.
+
+## Migration history
+
+### Version 5 to 6: condition and effect domains
+
+`v5-to-v6-reorganize-conditions-and-effects` moves each condition and effect operation beneath the
+domain it affects. It converts player actions from `item-action` to `player`, moves navigation and
+stored-value operations to their owning domains, flattens legacy item-condition tests, and renames
+affected command-variable bindings. The world transform walks every nested logic document while
+preserving unrelated authored fields; game states and messages are explicitly unchanged and still
+advance to version 6.

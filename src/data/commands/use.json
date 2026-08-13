@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "use-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "use-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "use-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "use-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "use-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "use-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't use that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't use that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "use",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "use-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "use"
 				}
 			],
 			"allowMultipleUsesInWorld": true

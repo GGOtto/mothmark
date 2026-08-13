@@ -1,8 +1,7 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {SingleCondition} from "@/schemas/world/conditionSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, ID} from "@/utils/idUtils";
-import {EntityState} from "@/schemas/states/entityStateSchemas";
+import {compareIds} from "@/utils/idUtils";
 import {findVariable} from "../utils/lookupUtils";
 import {isExitOpen} from "../player/move";
 import {
@@ -17,174 +16,13 @@ import {
 	keyUnlocks,
 	remainingCapacity,
 	rootItemLocation,
+	playerCanCarry,
 } from "../items/itemRuntime";
-
-function findStateById(states: EntityState[], id: ID): EntityState | undefined {
-	for (const state of states) {
-		if (compareIds(state.id, id)) {
-			return state;
-		}
-	}
-}
-
-function evaluateFlag(
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "flag"}>,
-): boolean {
-	if (condition["flag-type"] === "room") {
-		const room = findStateById(game.roomStates, condition.roomId);
-		if (!room || room.type !== "room") return false;
-		return evaluateFlagValue(room.flags, condition);
-	}
-	if (condition["flag-type"] === "item") {
-		const item = findStateById(game.itemStates, condition.itemId);
-		if (!item || item.type !== "item") return false;
-		return evaluateFlagValue(item.flags, condition);
-	}
-
-	const flag = findVariable(game.variables.flags, condition.flag);
-	return evaluateFlagResult(flag.exists, flag.value, condition);
-}
+import {matchingItems} from "../items/itemCollections";
+import {ITEM_SIZE_UNITS} from "@/schemas/world/itemSchema";
 
 function expected(actual: boolean, value: boolean): boolean {
 	return actual === value;
-}
-
-function evaluateItem(
-	world: World,
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "item"}>,
-): boolean {
-	const itemId = condition.itemId;
-	const item = findItemState(game, itemId);
-	const authored = findAuthoredItem(world, itemId);
-	if (!item || !authored) return false;
-	const test = condition.test;
-
-	switch (test.type) {
-		case "state": {
-			const access = itemAccess(game, itemId);
-			const states = {
-				visible: access.visible,
-				reachable: access.reachable,
-				known: access.known,
-				carried: access.carried,
-				hidden: Boolean(item.flags.hidden || item.location.type === "hidden"),
-				destroyed: item.location.type === "destroyed",
-				examined: Boolean(item.flags.examined),
-				listed: item.listedInRoom,
-				open: item.open,
-				locked: item.locked,
-			};
-			return expected(states[test.state], test.value);
-		}
-		case "location": {
-			if (test.location === "inside-item" || test.location === "on-item") {
-				return Boolean(
-					item.location.type === "item" &&
-					item.location.placement === (test.location === "inside-item" ? "inside" : "on") &&
-					compareIds(item.location.itemId, test.parentItemId),
-				);
-			}
-			if (test.location === "hidden" || test.location === "destroyed") {
-				return item.location.type === test.location;
-			}
-			const root = rootItemLocation(game, itemId);
-			if (test.location === "inventory") return root?.type === "inventory";
-			if (test.location === "current-room") {
-				return root?.type === "room" && compareIds(root.roomId, game.player.currentRoom);
-			}
-			return test.location === "room" && root?.type === "room"
-				? compareIds(root.roomId, test.roomId)
-				: false;
-		}
-		case "important-tag":
-			return expected(Boolean(findBehavior(authored, test.tag)), test.value);
-		case "tag":
-			return expected(item.tags.includes(test.tag), test.value);
-		case "contents": {
-			const contents = directContents(game, itemId, test.placement);
-			if (test.test === "empty") return expected(contents.length === 0, test.value);
-			if (test.test === "contains-tag") return contents.some((child) => child.tags.includes(test.tag));
-			return contents.some((child) => compareIds(child.id, test.itemId));
-		}
-		case "capacity":
-			if (test.test === "can-fit") {
-				return canPlaceItem(world, game, test.itemId, itemId, test.placement);
-			}
-			return expected(
-				test.test === "empty"
-					? directContents(game, itemId, test.placement).length === 0
-					: remainingCapacity(world, game, itemId, test.placement) === 0,
-				test.value,
-			);
-		case "can-unlock": {
-			return keyUnlocks(world, game, test.lockItemId, test.keyItemId);
-		}
-		case "door":
-			return expected(
-				test.test === "controls-connection"
-					? doorControlsConnection(world, itemId, test.connectionId)
-					: doorConnectionPassable(world, game, itemId, test.connectionId),
-				test.value,
-			);
-	}
-}
-
-function evaluateFlagResult(
-	exists: boolean,
-	value: boolean | undefined,
-	condition: Extract<SingleCondition, {type: "flag"}>,
-): boolean {
-	switch (condition.operation) {
-		case "is":
-			return exists && value === condition.value;
-		case "exists":
-			return exists;
-		case "missing":
-			return !exists;
-	}
-}
-
-function evaluateFlagValue(
-	flags: Record<string, boolean>,
-	condition: Extract<SingleCondition, {type: "flag"}>,
-): boolean {
-	return evaluateFlagResult(Object.hasOwn(flags, condition.flag), flags[condition.flag], condition);
-}
-
-function evaluateText(
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "text"}>,
-): boolean {
-	const text = findVariable(game.variables.texts, condition.text);
-
-	switch (condition.operation) {
-		case "is":
-			return text.exists && text.value === condition.value;
-		case "is-not":
-			return text.exists && text.value !== condition.value;
-		case "starts-with":
-			return text.exists && text.value.startsWith(condition.value);
-		case "does-not-start-with":
-			return text.exists && !text.value.startsWith(condition.value);
-		case "ends-with":
-			return text.exists && text.value.endsWith(condition.value);
-		case "does-not-end-with":
-			return text.exists && !text.value.endsWith(condition.value);
-		case "contains":
-			return text.exists && text.value.includes(condition.value);
-		case "does-not-contain":
-			return text.exists && !text.value.includes(condition.value);
-		case "is-empty":
-			return text.exists && text.value.length === 0;
-		case "is-not-empty":
-			return text.exists && text.value.length > 0;
-		case "exists":
-			return text.exists;
-		case "missing":
-			return !text.exists;
-	}
 }
 
 function compareCounter(left: number, operator: string, right: number): boolean {
@@ -206,50 +44,322 @@ function compareCounter(left: number, operator: string, right: number): boolean 
 	}
 }
 
-function evaluateCounter(
+function evaluateWorld(
 	game: GameState,
-	condition: Extract<SingleCondition, {type: "counter"}>,
+	condition: Extract<SingleCondition, {type: "world"}>,
 ): boolean {
-	const counter = findVariable(game.variables.counters, condition.counter);
-
-	switch (condition.operation) {
-		case "compare":
-			return counter.exists && compareCounter(counter.value, condition.operator, condition.value);
-		case "between":
-			if (!counter.exists) return false;
-			return condition.inclusive
-				? counter.value >= condition.min && counter.value <= condition.max
-				: counter.value > condition.min && counter.value < condition.max;
-		case "exists":
-			return counter.exists;
-		case "missing":
-			return !counter.exists;
+	if (condition.operation === "counter-compare-counter") {
+		const left = findVariable(game.variables.counters, condition.leftCounter);
+		const right = findVariable(game.variables.counters, condition.rightCounter);
+		return left.exists && right.exists && compareCounter(left.value, condition.operator, right.value);
 	}
-}
+	if ("flag" in condition) {
+		const flag = findVariable(game.variables.flags, condition.flag);
+		switch (condition.operation) {
+			case "flag-is":
+				return flag.exists && flag.value === condition.value;
+			case "flag-exists":
+				return flag.exists;
+			case "flag-missing":
+				return !flag.exists;
+		}
+	}
+	if ("counter" in condition) {
+		const counter = findVariable(game.variables.counters, condition.counter);
+		switch (condition.operation) {
+			case "counter-compare":
+				return counter.exists && compareCounter(counter.value, condition.operator, condition.value);
+			case "counter-between":
+				return (
+					counter.exists &&
+					(condition.inclusive
+						? counter.value >= condition.min && counter.value <= condition.max
+						: counter.value > condition.min && counter.value < condition.max)
+				);
+			case "counter-exists":
+				return counter.exists;
+			case "counter-missing":
+				return !counter.exists;
+		}
+	}
 
-function evaluateCurrentRoom(
-	world: World,
-	game: GameState,
-	condition: Extract<SingleCondition, {type: "current-room"}>,
-): boolean {
+	if (!("text" in condition)) return false;
+	const text = findVariable(game.variables.texts, condition.text);
 	switch (condition.operation) {
-		case "is":
-			return compareIds(game.player.currentRoom, condition.roomId);
-		case "is-not":
-			return !compareIds(game.player.currentRoom, condition.roomId);
-		case "has-tag": {
-			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
-			return roomState?.tags.includes(condition.tag) ?? false;
-		}
-		case "missing-tag": {
-			const roomState = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
-			return roomState ? !roomState.tags.includes(condition.tag) : false;
-		}
-		case "is-exit-open":
-			return isExitOpen(world, game, condition.direction);
+		case "text-is":
+			return text.exists && text.value === condition.value;
+		case "text-is-not":
+			return text.exists && text.value !== condition.value;
+		case "text-starts-with":
+			return text.exists && text.value.startsWith(condition.value);
+		case "text-does-not-start-with":
+			return text.exists && !text.value.startsWith(condition.value);
+		case "text-ends-with":
+			return text.exists && text.value.endsWith(condition.value);
+		case "text-does-not-end-with":
+			return text.exists && !text.value.endsWith(condition.value);
+		case "text-contains":
+			return text.exists && text.value.includes(condition.value);
+		case "text-does-not-contain":
+			return text.exists && !text.value.includes(condition.value);
+		case "text-is-empty":
+			return text.exists && text.value.length === 0;
+		case "text-is-not-empty":
+			return text.exists && text.value.length > 0;
+		case "text-exists":
+			return text.exists;
+		case "text-missing":
+			return !text.exists;
 		default:
 			return false;
 	}
+}
+
+function evaluateItemCollection(
+	world: World,
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "items"}>,
+): boolean {
+	const items = matchingItems(world, game, condition);
+	switch (condition.operation) {
+		case "matching-exists":
+			return items.length > 0;
+		case "matching-missing":
+			return items.length === 0;
+		case "matching-count":
+			return compareCounter(items.length, condition.operator, condition.value);
+		case "matching-total-size": {
+			const total = items.reduce((sum, item) => {
+				const authored = findAuthoredItem(world, item.id, game);
+				const takeable = authored && findBehavior(authored, "takeable");
+				return sum + (takeable ? ITEM_SIZE_UNITS[takeable.size] : 0);
+			}, 0);
+			return compareCounter(total, condition.operator, condition.value);
+		}
+		case "all-matching-have-flag":
+			return (
+				(!condition.requireMatch || items.length > 0) &&
+				items.every((item) => item.flags[condition.flag] === condition.value)
+			);
+	}
+}
+
+function evaluateEntityFlag(
+	flags: Record<string, boolean>,
+	condition: {operation: "flag-is" | "flag-exists" | "flag-missing"; flag: string; value?: boolean},
+): boolean {
+	const exists = Object.hasOwn(flags, condition.flag);
+	if (condition.operation === "flag-exists") return exists;
+	if (condition.operation === "flag-missing") return !exists;
+	return exists && flags[condition.flag] === condition.value;
+}
+
+function evaluateItem(
+	world: World,
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "item"}>,
+): boolean {
+	const item = findItemState(game, condition.itemId);
+	const authored = findAuthoredItem(world, condition.itemId, game);
+	if (!item) return false;
+	const access = itemAccess(game, condition.itemId);
+
+	switch (condition.operation) {
+		case "is-visible":
+			return expected(access.visible, condition.value);
+		case "is-reachable":
+			return expected(access.reachable, condition.value);
+		case "is-known":
+			return expected(access.known, condition.value);
+		case "is-carried":
+			return expected(access.carried, condition.value);
+		case "is-hidden":
+			return expected(Boolean(item.flags.hidden || item.location.type === "hidden"), condition.value);
+		case "is-destroyed":
+			return expected(item.location.type === "destroyed", condition.value);
+		case "is-examined":
+			return expected(Boolean(item.flags.examined), condition.value);
+		case "is-listed":
+			return expected(item.listedInRoom, condition.value);
+		case "is-open":
+			return expected(item.open, condition.value);
+		case "is-locked":
+			return expected(item.locked, condition.value);
+		case "location-is-hidden":
+			return expected(item.location.type === "hidden", condition.value);
+		case "location-is-destroyed":
+			return expected(item.location.type === "destroyed", condition.value);
+		case "is-in-current-room": {
+			const root = rootItemLocation(game, condition.itemId);
+			return root?.type === "room" && compareIds(root.roomId, game.player.currentRoom);
+		}
+		case "is-in-inventory":
+			return rootItemLocation(game, condition.itemId)?.type === "inventory";
+		case "is-in-room": {
+			const root = rootItemLocation(game, condition.itemId);
+			return root?.type === "room" && compareIds(root.roomId, condition.roomId);
+		}
+		case "is-inside":
+		case "is-on":
+			return (
+				item.location.type === "item" &&
+				item.location.placement === (condition.operation === "is-inside" ? "inside" : "on") &&
+				compareIds(item.location.itemId, condition.parentItemId)
+			);
+		case "has-behavior":
+			return expected(
+				Boolean(authored && findBehavior(authored, condition.behavior)),
+				condition.value,
+			);
+		case "has-tag":
+			return expected(item.tags.includes(condition.tag), condition.value);
+		case "contents-empty":
+			return expected(
+				directContents(game, condition.itemId, condition.placement).length === 0,
+				condition.value,
+			);
+		case "contains-item":
+			return directContents(game, condition.itemId, condition.placement).some((child) =>
+				compareIds(child.id, condition.containedItemId),
+			);
+		case "contains-tag":
+			return directContents(game, condition.itemId, condition.placement).some((child) =>
+				child.tags.includes(condition.tag),
+			);
+		case "capacity-is-empty":
+			return expected(
+				directContents(game, condition.itemId, condition.placement).length === 0,
+				condition.value,
+			);
+		case "capacity-is-full":
+			return expected(
+				remainingCapacity(world, game, condition.itemId, condition.placement) === 0,
+				condition.value,
+			);
+		case "can-fit-item":
+			return canPlaceItem(
+				world,
+				game,
+				condition.candidateItemId,
+				condition.itemId,
+				condition.placement,
+			);
+		case "can-be-unlocked-by":
+			return keyUnlocks(world, game, condition.itemId, condition.keyItemId);
+		case "controls-connection":
+			return expected(
+				doorControlsConnection(world, condition.itemId, condition.connectionId),
+				condition.value,
+			);
+		case "connection-is-passable":
+			return expected(
+				doorConnectionPassable(world, game, condition.itemId, condition.connectionId),
+				condition.value,
+			);
+		case "flag-is":
+		case "flag-exists":
+		case "flag-missing":
+			return evaluateEntityFlag(item.flags, condition);
+	}
+}
+
+function evaluateRoom(
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "room"}>,
+): boolean {
+	if (condition.operation === "current-flag-is") {
+		const room = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+		return room
+			? Object.hasOwn(room.flags, condition.flag) && room.flags[condition.flag] === condition.value
+			: false;
+	}
+	if (condition.operation === "current-has-tag" || condition.operation === "current-missing-tag") {
+		const room = game.roomStates.find((state) => compareIds(state.id, game.player.currentRoom));
+		if (!room) return false;
+		const hasTag = room.tags.includes(condition.tag);
+		return condition.operation === "current-has-tag" ? hasTag : !hasTag;
+	}
+	if (!("roomId" in condition)) return false;
+	const room = game.roomStates.find((state) => compareIds(state.id, condition.roomId));
+	return room ? evaluateEntityFlag(room.flags, condition) : false;
+}
+
+function evaluatePlayer(
+	world: World,
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "player"}>,
+): boolean {
+	switch (condition.operation) {
+		case "is-in-room":
+			return compareIds(game.player.currentRoom, condition.roomId);
+		case "is-not-in-room":
+			return !compareIds(game.player.currentRoom, condition.roomId);
+		case "is-alive":
+			return !game.player.isDead;
+		case "is-dead":
+			return Boolean(game.player.isDead);
+		case "has-won":
+			return Boolean(game.player.hasWon);
+		case "has-not-won":
+			return !game.player.hasWon;
+		case "game-has-ended":
+			return Boolean(game.player.isEnded);
+		case "game-is-continuing":
+			return !game.player.isEnded;
+		case "is-frozen":
+			return Boolean(game.player.freezeState.frozen);
+		case "is-unfrozen":
+			return !game.player.freezeState.frozen;
+		case "facing-is":
+			return game.player.facing === condition.direction;
+		case "turn-compare":
+			return compareCounter(game.player.turns, condition.operator, condition.value);
+		case "is-equipped":
+			return (game.player.equippedItemIds ?? []).some((itemId) =>
+				compareIds(itemId, condition.itemId),
+			);
+		case "is-not-equipped":
+			return !(game.player.equippedItemIds ?? []).some((itemId) =>
+				compareIds(itemId, condition.itemId),
+			);
+		case "can-carry":
+			return playerCanCarry(world, game, condition.itemId);
+		case "previous-room-is":
+			return Boolean(
+				game.player.previousRoom && compareIds(game.player.previousRoom, condition.roomId),
+			);
+		case "entered-room-this-turn":
+			return (
+				game.player.lastRoomTransitionTurn === game.player.turns &&
+				compareIds(game.player.currentRoom, condition.roomId)
+			);
+		case "left-room-this-turn":
+			return (
+				game.player.lastRoomTransitionTurn === game.player.turns &&
+				Boolean(game.player.previousRoom && compareIds(game.player.previousRoom, condition.roomId))
+			);
+		case "last-command-succeeded":
+			return (
+				game.player.lastCommandTurn === game.player.turns && game.player.lastCommandSucceeded === true
+			);
+		case "last-command-failed":
+			return (
+				game.player.lastCommandTurn === game.player.turns && game.player.lastCommandSucceeded === false
+			);
+	}
+}
+
+function evaluateEvent(
+	game: GameState,
+	condition: Extract<SingleCondition, {type: "event"}>,
+): boolean {
+	const event = game.events.find((candidate) => compareIds(candidate.id, condition.eventId));
+	if (condition.operation === "is-scheduled") return Boolean(event);
+	if (condition.operation === "is-cancelled") return !event;
+	if (!event) return false;
+	if (condition.operation === "is-enabled") return event.enabled;
+	if (condition.operation === "is-disabled") return !event.enabled;
+	return game.player.turns - event.lastSuccess >= event.wait;
 }
 
 export function evaluateSingleCondition(
@@ -258,17 +368,19 @@ export function evaluateSingleCondition(
 	condition: SingleCondition,
 ): boolean {
 	switch (condition.type) {
-		case "flag":
-			return evaluateFlag(game, condition);
-		case "counter":
-			return evaluateCounter(game, condition);
-		case "text":
-			return evaluateText(game, condition);
-		case "current-room":
-			return evaluateCurrentRoom(world, game, condition);
+		case "world":
+			return evaluateWorld(game, condition);
 		case "item":
 			return evaluateItem(world, game, condition);
-		default:
-			return false;
+		case "items":
+			return evaluateItemCollection(world, game, condition);
+		case "room":
+			return evaluateRoom(game, condition);
+		case "player":
+			return evaluatePlayer(world, game, condition);
+		case "navigation":
+			return isExitOpen(world, game, condition.direction);
+		case "event":
+			return evaluateEvent(game, condition);
 	}
 }

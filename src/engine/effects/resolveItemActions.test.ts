@@ -1,5 +1,5 @@
 import {produce} from "immer";
-import {EffectGroupSchema, type ItemActionEffect} from "@/schemas/world/effectSchema";
+import {EffectGroupSchema, type PlayerItemActionEffect} from "@/schemas/world/effectSchema";
 import {ItemSchema, type Item} from "@/schemas/world/itemSchema";
 import {RoomSchema} from "@/schemas/world/roomSchema";
 import {WorldSchema, type World} from "@/schemas/world/worldSchema";
@@ -11,7 +11,9 @@ import {resolveEffects} from "./resolveEffects";
 const roomId = toID("room", "workshop");
 const id = (value: string) => toID("item", value);
 
-function group(effects: ItemActionEffect[] | import("@/schemas/world/effectSchema").Effect[]) {
+function group(
+	effects: PlayerItemActionEffect[] | import("@/schemas/world/effectSchema").Effect[],
+) {
 	return produce(createDefaultFieldObject(EffectGroupSchema), (draft) => {
 		draft.id = toID("effect", "test-action");
 		draft.name = "Test action";
@@ -105,7 +107,7 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "take", itemId: id("coin")}]),
+			group([{type: "player", operation: "take", itemId: id("coin")}]),
 		);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("coin")))?.location).toEqual({
 			type: "inventory",
@@ -114,13 +116,13 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "drop", itemId: id("coin")}]),
+			group([{type: "player", operation: "drop", itemId: id("coin")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("Dropped hook.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "examine", itemId: id("coin")}]),
+			group([{type: "player", operation: "examine", itemId: id("coin")}]),
 		);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("coin")))?.flags.examined).toBe(
 			true,
@@ -134,14 +136,14 @@ describe("item-action effects", () => {
 		const notCarried = resolveEffects(
 			world,
 			initial,
-			group([{type: "item-action", action: "drop", itemId: id("coin")}]),
+			group([{type: "player", operation: "drop", itemId: id("coin")}]),
 		);
 		expect(notCarried.messages.at(-1)?.text).toBe("You're not carrying the coin.");
 
 		const carried = resolveEffects(
 			world,
 			initial,
-			group([{type: "item-action", action: "take", itemId: id("key")}]),
+			group([{type: "player", operation: "take", itemId: id("key")}]),
 		);
 		expect(carried.messages.at(-1)?.text).toBe("You're already carrying the key.");
 	});
@@ -152,13 +154,13 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "open", itemId: id("box")}]),
+			group([{type: "player", operation: "open", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("The box is locked.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "unlock", itemId: id("box")}]),
+			group([{type: "player", operation: "unlock", itemId: id("box")}]),
 		);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("box")))?.locked).toBe(false);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("key")))?.location).toEqual({
@@ -176,19 +178,19 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "open", itemId: id("box")}]),
+			group([{type: "player", operation: "open", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("Open hook.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "close", itemId: id("box")}]),
+			group([{type: "player", operation: "close", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("Close hook.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "lock", itemId: id("box")}]),
+			group([{type: "player", operation: "lock", itemId: id("box")}]),
 		);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("box")))?.locked).toBe(true);
 		expect(game.messages.at(-1)?.text).toBe("Lock hook.");
@@ -207,40 +209,40 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "open", itemId: id("box")}]),
+			group([{type: "player", operation: "open", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("The box is already open.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "close", itemId: id("box")}]),
+			group([{type: "player", operation: "close", itemId: id("box")}]),
 		);
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "close", itemId: id("box")}]),
+			group([{type: "player", operation: "close", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("The box is already closed.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "lock", itemId: id("box")}]),
+			group([{type: "player", operation: "lock", itemId: id("box")}]),
 		);
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "lock", itemId: id("box")}]),
+			group([{type: "player", operation: "lock", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("The box is already locked.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "unlock", itemId: id("box")}]),
+			group([{type: "player", operation: "unlock", itemId: id("box")}]),
 		);
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "unlock", itemId: id("box")}]),
+			group([{type: "player", operation: "unlock", itemId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("The box is already unlocked.");
 	});
@@ -256,18 +258,18 @@ describe("item-action effects", () => {
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "put-inside", itemId: id("coin"), containerId: id("box")}]),
+			group([{type: "player", operation: "put-inside", itemId: id("coin"), containerId: id("box")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("It won't fit there.");
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "open", itemId: id("box")}]),
+			group([{type: "player", operation: "open", itemId: id("box")}]),
 		);
 		game = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "put-inside", itemId: id("coin"), containerId: id("box")}]),
+			group([{type: "player", operation: "put-inside", itemId: id("coin"), containerId: id("box")}]),
 		);
 		expect(game.itemStates.find((state) => compareIds(state.id, id("coin")))?.location).toEqual({
 			type: "item",
@@ -281,7 +283,7 @@ describe("item-action effects", () => {
 		const game = resolveEffects(
 			world,
 			createInitialGameState(world, roomId),
-			group([{type: "item-action", action: "put-on", itemId: id("coin"), surfaceId: id("table")}]),
+			group([{type: "player", operation: "put-on", itemId: id("coin"), surfaceId: id("table")}]),
 		);
 		expect(game.messages.at(-1)?.text).toBe("You're not carrying the coin.");
 	});
@@ -292,13 +294,13 @@ describe("item-action effects", () => {
 		const used = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "use", itemId: id("wand")}]),
+			group([{type: "player", operation: "use", itemId: id("wand")}]),
 		);
 		expect(used.messages.at(-1)?.text).toBe("Sparks leap from the wand.");
 		const fallback = resolveEffects(
 			world,
 			game,
-			group([{type: "item-action", action: "use", itemId: id("wand"), targetItemId: id("table")}]),
+			group([{type: "player", operation: "use", itemId: id("wand"), targetItemId: id("table")}]),
 		);
 		expect(fallback.messages.at(-1)?.text).toBe("The wand does nothing.");
 	});

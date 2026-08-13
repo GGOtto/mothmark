@@ -26,17 +26,15 @@ function singleCondition(overrides: Record<string, unknown>): SingleCondition {
 }
 
 const passingCondition = singleCondition({
-	type: "flag",
-	"flag-type": "normal",
-	operation: "is",
+	type: "world",
+	operation: "flag-is",
 	flag: "passing",
 	value: true,
 });
 
 const failingCondition = singleCondition({
-	type: "flag",
-	"flag-type": "normal",
-	operation: "is",
+	type: "world",
+	operation: "flag-is",
 	flag: "failing",
 	value: true,
 });

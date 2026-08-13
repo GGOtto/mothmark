@@ -5,6 +5,7 @@ import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import {getPartitionSegments, type PartitionSegment} from "../utils/getPartitions";
 import {matchBlock, type MatchBlockContext} from "./blocks";
 import {resolveTargetMatchContext} from "./targetContext";
+import {evaluateCondition} from "../conditions/evaluateCondition";
 
 export function normalize(text: string): string {
 	return text.trim().toLowerCase().replace(/\s+/g, " ");
@@ -119,6 +120,7 @@ export function findMatchingCommands(
 	for (const partition of partitions) {
 		for (const command of world.commands) {
 			if (!command.enabled) continue;
+			if (command.availableWhen && !evaluateCondition(world, game, command.availableWhen)) continue;
 			if (!commandIsInScope(command, world, game)) continue;
 
 			const result = matchCommandToPartition(partition, command, context);

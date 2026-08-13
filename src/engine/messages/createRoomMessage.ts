@@ -5,6 +5,8 @@ import {createGameMessage} from "./createMessage";
 import {GameMessage} from "@/schemas/states/gameStateSchemas";
 import {getRoom} from "../utils/lookupUtils";
 import {produce} from "immer";
+import {evaluateCondition} from "../conditions/evaluateCondition";
+import {findAuthoredItem} from "../items/itemRuntime";
 
 export function addMessage(game: GameState, message: string, type: GameMessageType): GameState {
 	return produce(game, (draft) => {
@@ -37,7 +39,10 @@ export function createRoomMessage(
 				room.shortDescription ||
 				room.description
 			: (roomState?.description ?? room.description);
-	let text = `${name}\n${description}\n`;
+	const roomFragments = room.descriptionFragments
+		.filter((fragment) => evaluateCondition(world, gameState, fragment.when))
+		.map((fragment) => fragment.text);
+	let text = `${name}\n${[description, ...roomFragments].filter(Boolean).join("\n")}\n`;
 
 	for (const itemState of gameState.itemStates) {
 		if (
@@ -48,7 +53,11 @@ export function createRoomMessage(
 		) {
 			continue;
 		}
-		text += `${itemState.listingText || itemState.description}\n`;
+		const authored = findAuthoredItem(world, itemState.id, gameState);
+		const fragments = (authored?.presentation.conditionalText ?? [])
+			.filter((fragment) => evaluateCondition(world, gameState, fragment.when))
+			.map((fragment) => fragment.text);
+		text += `${[itemState.listingText || itemState.description, ...fragments].filter(Boolean).join("\n")}\n`;
 	}
 
 	return createGameMessage(`${text}\n`, "room", {roomId: room.id});

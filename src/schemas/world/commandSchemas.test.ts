@@ -333,9 +333,8 @@ describe("CommandSchema", () => {
 			type: "group",
 			effects: [
 				{
-					type: "flag",
-					"flag-type": "normal",
-					operation: "set",
+					type: "world",
+					operation: "set-flag",
 					flag: "marked",
 					value: true,
 					commandVariables: [{blockId: object.id, field: "value"}],

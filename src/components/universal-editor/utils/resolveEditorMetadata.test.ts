@@ -91,6 +91,7 @@ describe("resolveEditorMetadata object fields", () => {
 		expect(fields.map((field) => field.key)).toEqual([
 			"name",
 			"description",
+			"descriptionFragments",
 			"shortDescription",
 			"aliases",
 			"tags",

@@ -1,5 +1,9 @@
 import {produce} from "immer";
-import {MessageEffectSchema, PlayerEffectSchema, type Effect} from "@/schemas/world/effectSchema";
+import {
+	MessageEffectSchema,
+	NavigationEffectSchema,
+	type Effect,
+} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {resolveTurn} from "../player/resolveTurn";
@@ -19,14 +23,14 @@ function scenarioWithEffects(effects: Effect[]) {
 function currentRoomDescriptionEffect(): Effect {
 	return MessageEffectSchema.parse({
 		...createDefaultFieldObject(MessageEffectSchema),
-		operation: "current-room-description",
+		operation: "describe-current-room",
 		allowShorten: false,
 	});
 }
 
 function moveInDirectionEffect(direction: "e" | "w"): Effect {
-	return PlayerEffectSchema.parse({
-		...createDefaultFieldObject(PlayerEffectSchema),
+	return NavigationEffectSchema.parse({
+		...createDefaultFieldObject(NavigationEffectSchema),
 		operation: "move-in-direction",
 		direction,
 	});

@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "unlock-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "unlock-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "unlock-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "unlock-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "unlock-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "unlock-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't unlock that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't unlock that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "unlock",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "unlock-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "unlock"
 				}
 			],
 			"allowMultipleUsesInWorld": true

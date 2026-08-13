@@ -1,10 +1,11 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {useState} from "react";
 import type {EditorRegistries} from "../../types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "../../types/universalEditorTypes";
 import {toID} from "../../utils/idUtils";
 import {EffectGroupSchema, EffectSchema} from "../../schemas/world/effectSchema";
 import {CommandEffectGroupSchema} from "../../schemas/world/commandLogicSchemas";
+import {PopupProvider} from "../popup/Popup";
 import {EffectEditor, type EffectControlMetadata, type EffectGroupValue} from "./EffectEditor";
 import {resolveEditorMetadata} from "./utils/resolveEditorMetadata";
 
@@ -55,7 +56,7 @@ function StatefulEffectEditor({
 	};
 
 	return (
-		<>
+		<PopupProvider>
 			<EffectEditor
 				value={value}
 				onChange={(nextValue) => {
@@ -67,7 +68,7 @@ function StatefulEffectEditor({
 			/>
 			<output data-testid="value">{JSON.stringify(value)}</output>
 			<output data-testid="world-effects">{JSON.stringify(worldEffects)}</output>
-		</>
+		</PopupProvider>
 	);
 }
 
@@ -97,36 +98,42 @@ describe("EffectEditor", () => {
 		expect(screen.getByText("Outcome")).toBeInTheDocument();
 		expect(screen.getByRole("textbox", {name: "Group name"})).toHaveValue("Open the gate");
 		expect(screen.queryByText("Group ID")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", {name: /Edit effect:/}));
 		expect(screen.getByRole("button", {name: "Add effect"})).toBeInTheDocument();
 		expect(screen.queryByRole("option", {name: "Group"})).not.toBeInTheDocument();
 	});
 
-	it("derives add options from the effects field in the real group schema", () => {
+	it("derives add options from the effects field in the real group schema", async () => {
 		const schemaMetadata = resolveEditorMetadata(EffectGroupSchema) as EffectControlMetadata;
 		render(<StatefulEffectEditor metadata={schemaMetadata} emptyEffects />);
 
+		fireEvent.click(screen.getByRole("button", {name: /^Add effect:/}));
 		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
+		fireEvent.click(screen.getByRole("option", {name: /Show a message/}));
+		fireEvent.click(screen.getByRole("button", {name: "Use effect"}));
 
-		expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"');
+		await waitFor(() => expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"'));
 	});
 
-	it("derives command effect options from the command effect schema", () => {
+	it("derives command effect options from the command effect schema", async () => {
 		const schemaMetadata = resolveEditorMetadata(CommandEffectGroupSchema) as EffectControlMetadata;
 		render(<StatefulEffectEditor metadata={schemaMetadata} emptyEffects />);
 
+		fireEvent.click(screen.getByRole("button", {name: /^Add effect:/}));
 		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
 
-		expect(screen.getByRole("option", {name: "Message"})).toBeInTheDocument();
-		expect(screen.getByRole("option", {name: "Player"})).toBeInTheDocument();
-		expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"');
+		expect(screen.getByRole("button", {name: /Message \d+/})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: /Player \d+/})).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("option", {name: /Show a message/}));
+		fireEvent.click(screen.getByRole("button", {name: "Use effect"}));
+		await waitFor(() => expect(screen.getByTestId("value")).toHaveTextContent('"type":"message"'));
 	});
 
-	it("always saves the whole group to world.effects", () => {
+	it("keeps an embedded outcome out of world.effects", () => {
 		render(<StatefulEffectEditor />);
 
 		expect(screen.getByTestId("value")).toHaveTextContent('"type":"group"');
-		expect(screen.getByTestId("world-effects")).toHaveTextContent('"name":"Open the gate"');
-		expect(screen.getByTestId("world-effects")).toHaveTextContent('"message":"The gate opens."');
+		expect(screen.getByTestId("world-effects")).toHaveTextContent("[]");
 		expect(screen.queryByText("Saved in world effects")).not.toBeInTheDocument();
 		expect(screen.queryByText("1 effect")).not.toBeInTheDocument();
 		expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
@@ -145,21 +152,27 @@ describe("EffectEditor", () => {
 		render(<StatefulEffectEditor withoutName />);
 
 		const nameInput = screen.getByRole("textbox", {name: "Group name"});
+		fireEvent.click(screen.getByRole("button", {name: /Edit effect:/}));
 		const messageInput = screen.getByRole("textbox", {name: "Message"});
-		expect(nameInput).toHaveValue("Show message The gate opens.");
+		expect(nameInput).toHaveValue("Show a message The gate opens.");
 
 		fireEvent.change(messageInput, {target: {value: "The gate closes."}});
-		expect(nameInput).toHaveValue("Show message The gate closes.");
+		expect(nameInput).toHaveValue("Show a message The gate closes.");
 
+		fireEvent.click(screen.getByRole("button", {name: "Done"}));
 		fireEvent.change(nameInput, {target: {value: "Close the gate"}});
-		fireEvent.change(messageInput, {target: {value: "The gate slams shut."}});
+		fireEvent.click(screen.getByRole("button", {name: /Edit effect:/}));
+		fireEvent.change(screen.getByRole("textbox", {name: "Message"}), {
+			target: {value: "The gate slams shut."},
+		});
 		expect(nameInput).toHaveValue("Close the gate");
-		expect(screen.getByTestId("world-effects")).toHaveTextContent('"name":"Close the gate"');
+		expect(screen.getByTestId("world-effects")).toHaveTextContent("[]");
 
+		fireEvent.click(screen.getByRole("button", {name: "Done"}));
 		fireEvent.change(nameInput, {target: {value: ""}});
 		expect(nameInput).toHaveValue("");
 
 		fireEvent.click(screen.getByRole("button", {name: "Clear"}));
-		expect(nameInput).toHaveValue("Show message The gate slams shut.");
+		expect(nameInput).toHaveValue("Show a message The gate slams shut.");
 	});
 });

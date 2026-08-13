@@ -82,6 +82,49 @@ summary.effectListEditor__itemTitle {
 	grid-template-columns: repeat(auto-fit, minmax(min(168px, 100%), 1fr));
 }
 
+.effectListEditor__change {
+	display: grid;
+	width: 100%;
+	min-width: 0;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	padding: 7px;
+	border: 0;
+	border-bottom: 1px solid var(--field-border);
+	background: var(--field-bg-raised);
+	color: var(--field-muted);
+	cursor: pointer;
+	font: inherit;
+	font-size: 10px;
+	text-align: left;
+}
+
+.effectListEditor__change strong {
+	min-width: 0;
+	color: var(--field-text);
+	font-size: 12px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.effectListEditor__change small {
+	color: var(--color-action);
+	font-size: 10px;
+	font-weight: 700;
+}
+
+.effectListEditor__change:hover:not(:disabled) {
+	background: var(--field-bg-strong);
+}
+
+.effectListEditor__change:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
 .effectListEditor input,
 .effectListEditor select {
 	width: 100%;

@@ -1,5 +1,6 @@
 import {z} from "zod";
 import {EditorFieldMetadata} from "@/types/editor/editorMetadataTypes";
+import type {EditorOption} from "@/types/editor/editorMetadataTypes";
 import {withEditorMetadata} from "@/utils/editorMetadata";
 import type {EditorTagSource} from "@/types/editor/editorMetadataTypes";
 import type {EntityType} from "@/types/editor/editorRegistryTypes";
@@ -236,6 +237,32 @@ export function editorSelect<TSchema extends z.ZodTypeAny>(
 		},
 		defaultFieldValue,
 	);
+}
+
+type LogicOperationCopy = Omit<EditorOption, "value">;
+
+export function editorLogicOperation<const TValue extends string>(
+	value: TValue,
+	copy: LogicOperationCopy,
+): z.ZodType<TValue>;
+export function editorLogicOperation<const TValues extends readonly [string, ...string[]]>(
+	values: TValues,
+	copy: {[TValue in TValues[number]]: LogicOperationCopy},
+): z.ZodType<TValues[number]>;
+export function editorLogicOperation(
+	valueOrValues: string | readonly [string, ...string[]],
+	copy: LogicOperationCopy | Record<string, LogicOperationCopy>,
+): z.ZodTypeAny {
+	const values = typeof valueOrValues === "string" ? [valueOrValues] : [...valueOrValues];
+	const schema =
+		values.length === 1 ? z.literal(values[0]) : z.enum(values as [string, ...string[]]);
+	const options = values.map((value) => ({
+		value,
+		...(typeof valueOrValues === "string"
+			? (copy as LogicOperationCopy)
+			: (copy as Record<string, LogicOperationCopy>)[value]),
+	}));
+	return editorSelect(schema, {title: "Action", options});
 }
 
 export function editorMultiSelect(
@@ -1079,6 +1106,7 @@ export const editor = {
 	richText: editorRichText,
 	scope: editorScope,
 	select: editorSelect,
+	logicOperation: editorLogicOperation,
 	setDefault: editorSetDefault,
 	singleEditorLink: editorSingleEditorLink,
 	string: editorString,

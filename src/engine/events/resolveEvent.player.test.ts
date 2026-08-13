@@ -97,7 +97,7 @@ describe("events and conditions through the player path", () => {
 		const scenario = createPlayerTestScenario("navigation");
 		const event = createConditionalEvent(
 			"arrive-gallery",
-			{type: "current-room", operation: "is", roomId: toID("room", "gallery")},
+			{type: "player", operation: "is-in-room", roomId: toID("room", "gallery")},
 			[{type: "message", operation: "show", message: "The gallery recognizes you."}],
 		);
 		const world = produce(scenario.world, (draft) => {
@@ -121,7 +121,7 @@ describe("events and conditions through the player path", () => {
 		const event = produce(
 			createConditionalEvent(
 				"delayed-reaction",
-				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				{type: "player", operation: "is-in-room", roomId: toID("room", "foyer")},
 				[{type: "message", operation: "show", message: "The delayed bell rings."}],
 			),
 			(draft) => {
@@ -156,7 +156,7 @@ describe("events and conditions through the player path", () => {
 		const event = produce(
 			createConditionalEvent(
 				"non-cancellable-reaction",
-				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				{type: "player", operation: "is-in-room", roomId: toID("room", "foyer")},
 				[{type: "message", operation: "show", message: "The committed bell rings."}],
 			),
 			(draft) => {
@@ -185,7 +185,7 @@ describe("events and conditions through the player path", () => {
 		const event = produce(
 			createConditionalEvent(
 				"cancellable-reaction",
-				{type: "current-room", operation: "is", roomId: toID("room", "foyer")},
+				{type: "player", operation: "is-in-room", roomId: toID("room", "foyer")},
 				[{type: "message", operation: "show", message: "This should not ring."}],
 			),
 			(draft) => {
@@ -214,13 +214,12 @@ describe("events and conditions through the player path", () => {
 			"setup",
 			[
 				{
-					type: "flag",
-					"flag-type": "normal",
-					operation: "create",
+					type: "world",
+					operation: "set-flag",
 					flag: "mechanism-ready",
 					value: true,
 				},
-				{type: "counter", operation: "set", counter: "gears", value: 2},
+				{type: "world", operation: "set-counter", counter: "gears", value: 2},
 			],
 			(draft) => {
 				draft.priority = 10;
@@ -234,15 +233,14 @@ describe("events and conditions through the player path", () => {
 				operation: "all",
 				conditions: [
 					{
-						type: "flag",
-						"flag-type": "normal",
-						operation: "is",
+						type: "world",
+						operation: "flag-is",
 						flag: "mechanism-ready",
 						value: true,
 					},
 					{
-						type: "counter",
-						operation: "compare",
+						type: "world",
+						operation: "counter-compare",
 						counter: "gears",
 						operator: "gte",
 						value: 2,

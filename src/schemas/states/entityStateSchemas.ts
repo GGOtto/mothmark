@@ -6,6 +6,7 @@ import {ItemLocationSchema} from "../world/itemSchema";
 export const ItemStateSchema = z.object({
 	type: z.literal("item"),
 	id: editor.reference("item"),
+	templateItemId: editor.reference("item").optional(),
 	name: z.string(),
 	description: z.string(),
 	aliases: z.array(z.string()),

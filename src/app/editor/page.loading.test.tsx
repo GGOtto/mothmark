@@ -4,6 +4,7 @@ import {WorldAutosaveProvider} from "@/components/world-autosave/WorldAutosave";
 import {ThemeProvider} from "@/components/theme/ThemeProvider";
 import {PopupProvider} from "@/components/popup/Popup";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
+import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 
 import EditorPage from "./page";
 
@@ -31,6 +32,7 @@ describe("EditorPage loading", () => {
 							name: "My private world",
 							ownerUserId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
 							revision,
+							schemaVersion: PERSISTED_SCHEMA_VERSION,
 							world,
 						},
 					}),

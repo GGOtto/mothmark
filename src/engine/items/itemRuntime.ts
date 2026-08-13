@@ -10,8 +10,11 @@ export function findItemState(game: GameState, id: ID<"item">): ItemState | unde
 	return game.itemStates.find((item) => compareIds(item.id, id));
 }
 
-export function findAuthoredItem(world: World, id: ID<"item">): Item | undefined {
-	return world.items.find((item) => compareIds(item.id, id));
+export function findAuthoredItem(world: World, id: ID<"item">, game?: GameState): Item | undefined {
+	const direct = world.items.find((item) => compareIds(item.id, id));
+	if (direct || !game) return direct;
+	const templateId = findItemState(game, id)?.templateItemId;
+	return templateId ? world.items.find((item) => compareIds(item.id, templateId)) : undefined;
 }
 
 export function findBehavior<TType extends ItemBehavior["type"]>(
@@ -82,9 +85,20 @@ export function rootItemLocation(game: GameState, id: ID<"item">) {
 	return item?.location;
 }
 
-export function itemSizeUnits(world: World, id: ID<"item">): number {
-	const size = findBehavior(findAuthoredItem(world, id), "takeable")?.size;
+export function itemSizeUnits(world: World, id: ID<"item">, game?: GameState): number {
+	const size = findBehavior(findAuthoredItem(world, id, game), "takeable")?.size;
 	return size ? ITEM_SIZE_UNITS[size] : 0;
+}
+
+export function playerCanCarry(world: World, game: GameState, itemId: ID<"item">): boolean {
+	if (game.player.carryingCapacity === undefined) return true;
+	if (itemAccess(game, itemId).carried) return true;
+	const used = game.itemStates.reduce((total, item) => {
+		return rootItemLocation(game, item.id)?.type === "inventory"
+			? total + itemSizeUnits(world, item.id, game)
+			: total;
+	}, 0);
+	return used + itemSizeUnits(world, itemId, game) <= game.player.carryingCapacity;
 }
 
 export function directContents(
@@ -106,11 +120,11 @@ export function remainingCapacity(
 	parentId: ID<"item">,
 	placement: "inside" | "on",
 ): number | undefined {
-	const authored = findAuthoredItem(world, parentId);
+	const authored = findAuthoredItem(world, parentId, game);
 	const behavior = findBehavior(authored, placement === "inside" ? "container" : "surface");
 	if (!behavior) return;
 	const used = directContents(game, parentId, placement).reduce(
-		(total, item) => total + itemSizeUnits(world, item.id),
+		(total, item) => total + itemSizeUnits(world, item.id, game),
 		0,
 	);
 	return Math.max(0, behavior.capacity.capacity - used);
@@ -136,8 +150,8 @@ export function canPlaceItem(
 	placement: "inside" | "on",
 ): boolean {
 	if (compareIds(itemId, parentId) || wouldCreateCycle(game, itemId, parentId)) return false;
-	const item = findAuthoredItem(world, itemId);
-	const parent = findAuthoredItem(world, parentId);
+	const item = findAuthoredItem(world, itemId, game);
+	const parent = findAuthoredItem(world, parentId, game);
 	const takeable = findBehavior(item, "takeable");
 	const capacity = findBehavior(parent, placement === "inside" ? "container" : "surface")?.capacity;
 	if (!takeable || !capacity) return false;
@@ -161,8 +175,8 @@ export function keyUnlocks(
 	lockId: ID<"item">,
 	keyId: ID<"item">,
 ): boolean {
-	const lock = findBehavior(findAuthoredItem(world, lockId), "lockable");
-	const key = findAuthoredItem(world, keyId);
+	const lock = findBehavior(findAuthoredItem(world, lockId, game), "lockable");
+	const key = findAuthoredItem(world, keyId, game);
 	const state = findItemState(game, keyId);
 	if (!lock || !key) return false;
 	return lock.unlockWith.some((requirement) =>

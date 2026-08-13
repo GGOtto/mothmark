@@ -1,9 +1,9 @@
 import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
-import type {Effect, EffectGroup, ItemActionEffect} from "@/schemas/world/effectSchema";
+import type {Effect, EffectGroup, PlayerItemActionEffect} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {choose} from "@/utils/choose";
-import {compareIds, idValue} from "@/utils/idUtils";
+import {compareIds, generateUniqueId, idValue} from "@/utils/idUtils";
 import type {Direction, World} from "@/schemas/world/worldSchema";
 import type {UseTarget} from "@/schemas/world/itemSchema";
 import {DIRECTIONS} from "@/schemas/world/directionSchema";
@@ -20,12 +20,18 @@ import {lookAtRoom} from "../messages/createRoomMessage";
 import {evaluateCondition} from "../conditions/evaluateCondition";
 import {
 	canPlaceItem,
+	directContents,
 	findAuthoredItem,
 	findBehavior,
 	findItemState,
 	itemAccess,
 	keyUnlocks,
+	playerCanCarry,
 } from "../items/itemRuntime";
+import {matchingItems} from "../items/itemCollections";
+import {findVariable} from "../utils/lookupUtils";
+import {createItemState} from "../states/createEntityState";
+import {addEvent} from "../events/eventQueue";
 
 // TODO: message effects are all screwed up when events fire them
 export function resolveMessageEffect(world: World, game: GameState, effect: Effect): GameState {
@@ -38,12 +44,12 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 		case "show":
 			message = createGameMessage(effect.message, "system");
 			break;
-		case "random":
+		case "show-random":
 			message = createGameMessage(choose(effect.messages) ?? "", "system");
 			break;
-		case "append-last-message":
+		case "append-to-last":
 			return appendLastMessage(game, effect.message, effect.format);
-		case "current-room-description":
+		case "describe-current-room":
 			return lookAtRoom(world, game, !effect.allowShorten);
 		case "list-available-exits":
 			message = createGameMessage(availableExitsMessage(world, game), "system");
@@ -51,6 +57,46 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 		case "show-command-help":
 			message = createGameMessage(commandHelpMessage(world, game), "system");
 			break;
+		case "list-inventory": {
+			const names = game.itemStates
+				.filter((item) => item.location.type === "inventory")
+				.map((item) => item.name);
+			message = createGameMessage(
+				names.length
+					? `You are carrying:\n${names.map((name) => `- ${name}`).join("\n")}`
+					: effect.emptyMessage,
+				"system",
+			);
+			break;
+		}
+		case "list-contents": {
+			const names = directContents(
+				game,
+				effect.itemId,
+				effect.placement === "both" ? "either" : effect.placement,
+			).map((item) => item.name);
+			message = createGameMessage(
+				names.length ? names.map((name) => `- ${name}`).join("\n") : effect.emptyMessage,
+				"system",
+			);
+			break;
+		}
+		case "show-counter": {
+			const found = findVariable(game.variables.counters, effect.variable);
+			message = createGameMessage(
+				`${effect.prefix}${found.exists ? found.value : 0}${effect.suffix}`,
+				"system",
+			);
+			break;
+		}
+		case "show-saved-text": {
+			const found = findVariable(game.variables.texts, effect.variable);
+			message = createGameMessage(
+				`${effect.prefix}${found.exists ? found.value : ""}${effect.suffix}`,
+				"system",
+			);
+			break;
+		}
 		default:
 			return game;
 	}
@@ -64,170 +110,183 @@ type EffectResolutionContext = {
 	visitedRoomIdsAtStart: ReadonlySet<string>;
 };
 
-export function resolveFlagEffect(game: GameState, effect: Effect): GameState {
-	if (effect.type !== "flag") {
-		return game;
-	}
+export function resolveWorldEffect(game: GameState, effect: Effect): GameState {
+	if (effect.type !== "world") return game;
 
-	if (effect["flag-type"] === "room" || effect["flag-type"] === "item") {
-		return produce(game, (draft) => {
-			const definition = getEntityFlagDefinition(effect["flag-type"], effect.flag);
-			if (entityFlagMutationError(effect["flag-type"], effect.flag, effect.operation)) return;
+	return produce(game, (draft) => {
+		if ("flag" in effect) {
+			const flagRecordIndex = draft.variables.flags.findIndex((record) =>
+				Object.hasOwn(record, effect.flag),
+			);
+			const flagRecord = flagRecordIndex >= 0 ? draft.variables.flags[flagRecordIndex] : undefined;
+			switch (effect.operation) {
+				case "set-flag": {
+					if (flagRecord) {
+						flagRecord[effect.flag] = effect.value;
+					} else {
+						draft.variables.flags.push({
+							[effect.flag]: effect.value,
+						});
+					}
+					break;
+				}
 
-			const flags =
-				effect["flag-type"] === "item"
-					? draft.itemStates.find((item) => compareIds(item.id, effect.itemId))?.flags
-					: draft.roomStates.find((room) => compareIds(room.id, effect.roomId))?.flags;
-			if (!flags) return;
+				case "toggle-flag": {
+					if (flagRecord) {
+						flagRecord[effect.flag] = !flagRecord[effect.flag];
+					} else {
+						draft.variables.flags.push({
+							[effect.flag]: true,
+						});
+					}
+					break;
+				}
+
+				case "delete-flag": {
+					if (!flagRecord) {
+						break;
+					}
+
+					delete flagRecord[effect.flag];
+
+					// Remove the record if deleting the flag left it empty.
+					if (Object.keys(flagRecord).length === 0) {
+						draft.variables.flags.splice(flagRecordIndex, 1);
+					}
+					break;
+				}
+			}
+			return;
+		}
+
+		if ("counter" in effect) {
+			const counterRecordIndex = draft.variables.counters.findIndex((record) =>
+				Object.hasOwn(record, effect.counter),
+			);
+
+			const counterRecord =
+				counterRecordIndex >= 0 ? draft.variables.counters[counterRecordIndex] : undefined;
 
 			switch (effect.operation) {
-				case "set":
-					flags[effect.flag] = effect.value;
-					break;
-				case "toggle":
-					flags[effect.flag] = !flags[effect.flag];
-					break;
-				case "delete":
-					if (!definition?.permanent) delete flags[effect.flag];
-					break;
-			}
-		});
-	}
-
-	return produce(game, (draft) => {
-		const flagRecordIndex = draft.variables.flags.findIndex((record) =>
-			Object.hasOwn(record, effect.flag),
-		);
-
-		const flagRecord = flagRecordIndex >= 0 ? draft.variables.flags[flagRecordIndex] : undefined;
-
-		switch (effect.operation) {
-			case "create":
-			case "set": {
-				if (flagRecord) {
-					flagRecord[effect.flag] = effect.value;
-				} else {
-					draft.variables.flags.push({
-						[effect.flag]: effect.value,
-					});
-				}
-				break;
-			}
-
-			case "toggle": {
-				if (flagRecord) {
-					flagRecord[effect.flag] = !flagRecord[effect.flag];
-				} else {
-					draft.variables.flags.push({
-						[effect.flag]: true,
-					});
-				}
-				break;
-			}
-
-			case "delete": {
-				if (!flagRecord) {
+				case "set-counter": {
+					if (counterRecord) {
+						counterRecord[effect.counter] = effect.value;
+					} else {
+						draft.variables.counters.push({
+							[effect.counter]: effect.value,
+						});
+					}
 					break;
 				}
 
-				delete flagRecord[effect.flag];
+				case "decrease-counter":
+					if (counterRecord) {
+						counterRecord[effect.counter] = counterRecord[effect.counter] - effect.amount;
+					} else {
+						draft.variables.counters.push({
+							[effect.counter]: -effect.amount,
+						});
+					}
+					break;
 
-				// Remove the record if deleting the flag left it empty.
-				if (Object.keys(flagRecord).length === 0) {
-					draft.variables.flags.splice(flagRecordIndex, 1);
+				case "increase-counter": {
+					if (counterRecord) {
+						counterRecord[effect.counter] = counterRecord[effect.counter] + effect.amount;
+					} else {
+						draft.variables.counters.push({
+							[effect.counter]: effect.amount,
+						});
+					}
+					break;
 				}
-				break;
+
+				case "delete-counter": {
+					if (!counterRecord) {
+						break;
+					}
+
+					delete counterRecord[effect.counter];
+
+					// Remove the record if deleting the counter left it empty.
+					if (Object.keys(counterRecord).length === 0) {
+						draft.variables.counters.splice(counterRecordIndex, 1);
+					}
+					break;
+				}
+				case "copy-counter":
+				case "add-counter":
+				case "subtract-counter":
+				case "multiply-counter":
+				case "divide-counter": {
+					const source = findVariable(draft.variables.counters, effect.sourceCounter);
+					if (!source.exists) break;
+					const current = counterRecord?.[effect.counter] ?? 0;
+					const value =
+						effect.operation === "copy-counter"
+							? source.value
+							: effect.operation === "add-counter"
+								? current + source.value
+								: effect.operation === "subtract-counter"
+									? current - source.value
+									: effect.operation === "multiply-counter"
+										? current * source.value
+										: source.value === 0
+											? current
+											: Math.trunc(current / source.value);
+					if (counterRecord) counterRecord[effect.counter] = value;
+					else draft.variables.counters.push({[effect.counter]: value});
+					break;
+				}
+				case "clamp-counter": {
+					const low = Math.min(effect.min, effect.max);
+					const high = Math.max(effect.min, effect.max);
+					const value = Math.min(high, Math.max(low, counterRecord?.[effect.counter] ?? 0));
+					if (counterRecord) counterRecord[effect.counter] = value;
+					else draft.variables.counters.push({[effect.counter]: value});
+					break;
+				}
 			}
+			return;
 		}
-	});
-}
 
-export function resolveCounterEffect(game: GameState, effect: Effect): GameState {
-	if (effect.type !== "counter") {
-		return game;
-	}
-
-	return produce(game, (draft) => {
-		const counterRecordIndex = draft.variables.counters.findIndex((record) =>
-			Object.hasOwn(record, effect.counter),
-		);
-
-		const counterRecord =
-			counterRecordIndex >= 0 ? draft.variables.counters[counterRecordIndex] : undefined;
-
-		switch (effect.operation) {
-			case "create":
-			case "set": {
-				if (counterRecord) {
-					counterRecord[effect.counter] = effect.value;
-				} else {
-					draft.variables.counters.push({
-						[effect.counter]: effect.value,
-					});
-				}
-				break;
-			}
-
-			case "decrease":
-				if (counterRecord) {
-					counterRecord[effect.counter] = counterRecord[effect.counter] - effect.amount;
-				} else {
-					draft.variables.counters.push({
-						[effect.counter]: -effect.amount,
-					});
-				}
-				break;
-
-			case "increase": {
-				if (counterRecord) {
-					counterRecord[effect.counter] = counterRecord[effect.counter] + effect.amount;
-				} else {
-					draft.variables.counters.push({
-						[effect.counter]: effect.amount,
-					});
-				}
-				break;
-			}
-
-			case "delete": {
-				if (!counterRecord) {
-					break;
-				}
-
-				delete counterRecord[effect.counter];
-
-				// Remove the record if deleting the counter left it empty.
-				if (Object.keys(counterRecord).length === 0) {
-					draft.variables.counters.splice(counterRecordIndex, 1);
-				}
-				break;
-			}
-		}
-	});
-}
-
-export function resolveTextEffect(game: GameState, effect: Effect): GameState {
-	if (effect.type !== "text") return game;
-
-	return produce(game, (draft) => {
+		if (!("text" in effect)) return;
 		const textRecordIndex = draft.variables.texts.findIndex((record) =>
 			Object.hasOwn(record, effect.text),
 		);
 		const textRecord = textRecordIndex >= 0 ? draft.variables.texts[textRecordIndex] : undefined;
 
 		switch (effect.operation) {
-			case "create":
-			case "set":
+			case "set-text":
 				if (textRecord) textRecord[effect.text] = effect.value;
 				else draft.variables.texts.push({[effect.text]: effect.value});
 				break;
-			case "delete":
+			case "delete-text":
 				if (!textRecord) break;
 				delete textRecord[effect.text];
 				if (Object.keys(textRecord).length === 0) {
 					draft.variables.texts.splice(textRecordIndex, 1);
 				}
 				break;
+			case "copy-text":
+			case "append-text":
+			case "prepend-text":
+			case "append-saved-text":
+			case "prepend-saved-text": {
+				const current = textRecord?.[effect.text] ?? "";
+				const source = effect.sourceText
+					? findVariable(draft.variables.texts, effect.sourceText)
+					: undefined;
+				const addition = source?.exists ? source.value : (effect.value ?? "");
+				const value =
+					effect.operation === "copy-text"
+						? addition
+						: effect.operation === "append-text" || effect.operation === "append-saved-text"
+							? current + addition
+							: addition + current;
+				if (textRecord) textRecord[effect.text] = value;
+				else draft.variables.texts.push({[effect.text]: value});
+				break;
+			}
 		}
 	});
 }
@@ -252,7 +311,9 @@ export function resolveItemEffect(
 			? effect.containerId
 			: effect.operation === "place-on"
 				? effect.surfaceId
-				: effect.operation === "move-contents"
+				: effect.operation === "place-inside-validated" ||
+					  effect.operation === "place-on-validated" ||
+					  effect.operation === "move-contents"
 					? effect.destinationItemId
 					: undefined;
 
@@ -261,15 +322,27 @@ export function resolveItemEffect(
 		if (!itemState) return;
 
 		switch (effect.operation) {
-			case "change-name":
+			case "set-name":
 				itemState.name = effect.value;
 				break;
 
-			case "change-examine-text":
+			case "set-examine-text":
 				itemState.description = effect.value;
 				break;
-			case "change-listing-text":
+			case "set-listing-text":
 				itemState.listingText = effect.value;
+				break;
+			case "append-examine-text":
+				itemState.description += effect.value;
+				break;
+			case "prepend-examine-text":
+				itemState.description = effect.value + itemState.description;
+				break;
+			case "append-listing-text":
+				itemState.listingText += effect.value;
+				break;
+			case "prepend-listing-text":
+				itemState.listingText = effect.value + itemState.listingText;
 				break;
 			case "add-alias":
 				if (!itemState.aliases.includes(effect.value)) itemState.aliases.push(effect.value);
@@ -294,7 +367,7 @@ export function resolveItemEffect(
 				itemState.location = {type: "inventory"};
 				break;
 
-			case "drop-in-current-room":
+			case "move-to-current-room":
 				itemState.location = {type: "room", roomId: draft.player.currentRoom};
 				break;
 
@@ -325,6 +398,14 @@ export function resolveItemEffect(
 					};
 				}
 				break;
+			case "place-inside-validated":
+			case "place-on-validated": {
+				const placement = effect.operation === "place-inside-validated" ? "inside" : "on";
+				if (world && secondaryId && canPlaceItem(world, draft, itemId, secondaryId, placement)) {
+					itemState.location = {type: "item", itemId: secondaryId, placement};
+				}
+				break;
+			}
 
 			case "hide":
 				itemState.flags.hidden = true;
@@ -334,35 +415,35 @@ export function resolveItemEffect(
 				itemState.flags.hidden = false;
 				break;
 
-			case "list-in-room":
+			case "set-listed":
 				itemState.listedInRoom = true;
 				break;
 
-			case "unlist-in-room":
+			case "set-unlisted":
 				itemState.listedInRoom = false;
 				break;
 
-			case "open":
+			case "set-open":
 				itemState.locked = false;
 				itemState.open = true;
 				break;
 
-			case "close":
+			case "set-closed":
 				itemState.open = false;
 				break;
 
-			case "lock":
+			case "set-locked":
 				itemState.open = false;
 				itemState.locked = true;
 				break;
 
-			case "unlock":
+			case "set-unlocked":
 				itemState.locked = false;
 				break;
-			case "mark-examined":
+			case "set-examined":
 				itemState.flags.examined = true;
 				break;
-			case "mark-unexamined":
+			case "set-unexamined":
 				itemState.flags.examined = false;
 				break;
 
@@ -370,8 +451,41 @@ export function resolveItemEffect(
 				itemState.location = {type: "destroyed"};
 				break;
 			case "restore-start-location": {
-				const authored = world ? findAuthoredItem(world, itemId) : undefined;
+				const authored = world ? findAuthoredItem(world, itemId, game) : undefined;
 				if (authored) itemState.location = authored.initialState.location;
+				break;
+			}
+			case "reset-state": {
+				const authored = world ? findAuthoredItem(world, itemId, game) : undefined;
+				if (!authored) break;
+				const reset = createItemState(authored);
+				itemState.name = reset.name;
+				itemState.description = reset.description;
+				itemState.aliases = reset.aliases;
+				itemState.tags = reset.tags;
+				itemState.behaviorTags = reset.behaviorTags;
+				itemState.listedInRoom = reset.listedInRoom;
+				itemState.listingText = reset.listingText;
+				itemState.location = reset.location;
+				itemState.open = reset.open;
+				itemState.locked = reset.locked;
+				itemState.flags = reset.flags;
+				break;
+			}
+			case "apply-item-template": {
+				const template = world ? findAuthoredItem(world, effect.templateItemId) : undefined;
+				if (!template) break;
+				const state = createItemState(template);
+				itemState.name = state.name;
+				itemState.description = state.description;
+				itemState.aliases = state.aliases;
+				itemState.tags = state.tags;
+				itemState.behaviorTags = state.behaviorTags;
+				itemState.listedInRoom = state.listedInRoom;
+				itemState.listingText = state.listingText;
+				itemState.open = state.open;
+				itemState.locked = state.locked;
+				itemState.flags = state.flags;
 				break;
 			}
 			case "empty-into-room":
@@ -401,6 +515,91 @@ export function resolveItemEffect(
 					}
 				}
 				break;
+			case "set-flag":
+			case "toggle-flag":
+			case "delete-flag": {
+				const operation = effect.operation.replace("-flag", "") as "set" | "toggle" | "delete";
+				const definition = getEntityFlagDefinition("item", effect.flag);
+				if (entityFlagMutationError("item", effect.flag, operation)) break;
+				if (operation === "set" && "value" in effect) itemState.flags[effect.flag] = effect.value;
+				if (operation === "toggle") itemState.flags[effect.flag] = !itemState.flags[effect.flag];
+				if (operation === "delete" && !definition?.permanent) delete itemState.flags[effect.flag];
+				break;
+			}
+		}
+	});
+}
+
+export function resolveItemCollectionEffect(
+	world: World,
+	game: GameState,
+	effect: Effect,
+): GameState {
+	if (effect.type !== "items") return game;
+	if (effect.operation === "instantiate") {
+		const template = findAuthoredItem(world, effect.templateItemId);
+		if (!template) return game;
+		return produce(game, (draft) => {
+			const state = createItemState(template);
+			state.id = generateUniqueId("item", draft.itemStates);
+			state.templateItemId = template.id;
+			if (effect.destination === "current-room") {
+				state.location = {type: "room", roomId: draft.player.currentRoom};
+			} else if (effect.destination === "inventory") {
+				state.location = {type: "inventory"};
+			}
+			draft.itemStates.push(state);
+		});
+	}
+	const matchedIds = matchingItems(world, game, effect).map((item) => item.id);
+	return produce(game, (draft) => {
+		for (const itemId of matchedIds) {
+			const item = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
+			if (!item) continue;
+			switch (effect.operation) {
+				case "move-matching-to-current-room":
+					item.location = {type: "room", roomId: draft.player.currentRoom};
+					break;
+				case "move-matching-to-inventory":
+					item.location = {type: "inventory"};
+					break;
+				case "move-matching-to-room":
+					if (draft.roomStates.some((room) => compareIds(room.id, effect.roomId))) {
+						item.location = {type: "room", roomId: effect.roomId};
+					}
+					break;
+				case "place-matching-inside":
+				case "place-matching-on": {
+					const placement = effect.operation === "place-matching-inside" ? "inside" : "on";
+					if (canPlaceItem(world, draft, itemId, effect.destinationItemId, placement)) {
+						item.location = {type: "item", itemId: effect.destinationItemId, placement};
+					}
+					break;
+				}
+				case "destroy-matching":
+					item.location = {type: "destroyed"};
+					break;
+				case "add-tag-to-matching":
+					if (!item.tags.includes(effect.value)) item.tags.push(effect.value);
+					break;
+				case "remove-tag-from-matching":
+					item.tags = item.tags.filter((tag) => tag !== effect.value);
+					break;
+				case "set-flag-on-matching":
+					if (!entityFlagMutationError("item", effect.flag, "set")) {
+						item.flags[effect.flag] = effect.value;
+					}
+					break;
+				case "set-name-on-matching":
+					item.name = effect.value;
+					break;
+				case "set-examine-text-on-matching":
+					item.description = effect.value;
+					break;
+				case "set-listing-text-on-matching":
+					item.listingText = effect.value;
+					break;
+			}
 		}
 	});
 }
@@ -433,19 +632,19 @@ function useTargetMatches(
 	return Boolean(target.tag && state?.tags.includes(target.tag));
 }
 
-export function resolveItemActionEffect(
+export function resolvePlayerItemAction(
 	world: World,
 	game: GameState,
-	effect: ItemActionEffect,
+	effect: PlayerItemActionEffect,
 	context: EffectResolutionContext,
 ): GameState {
 	const itemId = effect.itemId;
 	const item = findItemState(game, itemId);
-	const authored = findAuthoredItem(world, itemId);
+	const authored = findAuthoredItem(world, itemId, game);
 	if (!item || !authored) return game;
 	const access = itemAccess(game, itemId);
 
-	switch (effect.action) {
+	switch (effect.operation) {
 		case "take": {
 			const behavior = findBehavior(authored, "takeable");
 			if (!behavior) return game;
@@ -453,6 +652,9 @@ export function resolveItemActionEffect(
 			if (!access.reachable) return withSystemMessage(game, behavior.blockedMessage);
 			if (behavior.allowedWhen && !evaluateCondition(world, game, behavior.allowedWhen)) {
 				return withSystemMessage(game, behavior.blockedMessage);
+			}
+			if (!playerCanCarry(world, game, itemId)) {
+				return withSystemMessage(game, "You can't carry any more.");
 			}
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
@@ -472,6 +674,9 @@ export function resolveItemActionEffect(
 			const next = produce(game, (draft) => {
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) state.location = {type: "room", roomId: draft.player.currentRoom};
+				draft.player.equippedItemIds = (draft.player.equippedItemIds ?? []).filter(
+					(candidate) => !compareIds(candidate, itemId),
+				);
 			});
 			return runItemHook(
 				world,
@@ -486,9 +691,13 @@ export function resolveItemActionEffect(
 				const state = draft.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 				if (state) state.flags.examined = true;
 			});
+			const conditionalText = authored.examine.conditionalText
+				.filter((fragment) => evaluateCondition(world, game, fragment.when))
+				.map((fragment) => fragment.text)
+				.filter(Boolean);
 			return runItemHook(
 				world,
-				withSystemMessage(next, item.description),
+				withSystemMessage(next, [item.description, ...conditionalText].join("\n")),
 				authored.examine.afterExamine,
 				context,
 			);
@@ -571,8 +780,8 @@ export function resolveItemActionEffect(
 			if (!access.carried) {
 				return withSystemMessage(game, `You're not carrying the ${item.name}.`);
 			}
-			const parentId = effect.action === "put-inside" ? effect.containerId : effect.surfaceId;
-			const placement = effect.action === "put-inside" ? "inside" : "on";
+			const parentId = effect.operation === "put-inside" ? effect.containerId : effect.surfaceId;
+			const placement = effect.operation === "put-inside" ? "inside" : "on";
 			if (
 				!parentId ||
 				!itemAccess(game, parentId).reachable ||
@@ -603,6 +812,8 @@ export function resolveItemActionEffect(
 				? resolveEffects(world, game, recipe.outcome, context)
 				: withSystemMessage(game, behavior.fallbackMessage);
 		}
+		default:
+			return game;
 	}
 }
 
@@ -611,55 +822,24 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 		return game;
 	}
 
-	if (effect.operation === "move-player-to") {
-		return produce(game, (draft) => {
-			draft.player.currentRoom = effect.roomId;
-			const destinationState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
-			if (destinationState) {
-				destinationState.flags.visited = true;
-			}
-		});
-	}
-
 	return produce(game, (draft) => {
-		const roomState = draft.roomStates.find((room) => compareIds(room.id, effect.roomId));
+		const targetRoomId = "roomId" in effect ? effect.roomId : draft.player.currentRoom;
+		const roomState = draft.roomStates.find((room) => compareIds(room.id, targetRoomId));
 		if (!roomState) {
 			return;
 		}
 
 		switch (effect.operation) {
 			case "set-name":
-				roomState.name = effect.variantId;
+				roomState.name = effect.value;
 				break;
 
 			case "set-description":
-				roomState.description = effect.variantId;
+				roomState.description = effect.value;
 				break;
 
 			case "set-short-description":
-				roomState.shortDescription = effect.variantId;
-				break;
-
-			case "lock-exit": {
-				const direction = effect.direction as Direction;
-				if (!roomState.lockedExits.includes(direction)) {
-					roomState.lockedExits.push(direction);
-				}
-				break;
-			}
-
-			case "unlock-exit": {
-				const direction = effect.direction as Direction;
-				roomState.lockedExits = roomState.lockedExits.filter((candidate) => candidate !== direction);
-				break;
-			}
-
-			case "lock-all-exits":
-				roomState.lockedExits = [...DIRECTIONS];
-				break;
-
-			case "unlock-all-exits":
-				roomState.lockedExits = [];
+				roomState.shortDescription = effect.value;
 				break;
 
 			case "add-tag":
@@ -671,6 +851,12 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 			case "remove-tag":
 				roomState.tags = roomState.tags.filter((tag) => tag !== effect.tag);
 				break;
+			case "add-alias":
+				if (!roomState.aliases.includes(effect.value)) roomState.aliases.push(effect.value);
+				break;
+			case "remove-alias":
+				roomState.aliases = roomState.aliases.filter((alias) => alias !== effect.value);
+				break;
 
 			case "set-active":
 				roomState.flags.active = true;
@@ -679,8 +865,64 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 			case "set-inactive":
 				roomState.flags.active = false;
 				break;
+			case "set-flag":
+			case "toggle-flag":
+			case "delete-flag": {
+				const operation = effect.operation.replace("-flag", "") as "set" | "toggle" | "delete";
+				const definition = getEntityFlagDefinition("room", effect.flag);
+				if (entityFlagMutationError("room", effect.flag, operation)) break;
+				if (operation === "set" && "value" in effect) roomState.flags[effect.flag] = effect.value;
+				if (operation === "toggle") roomState.flags[effect.flag] = !roomState.flags[effect.flag];
+				if (operation === "delete" && !definition?.permanent) delete roomState.flags[effect.flag];
+				break;
+			}
+			case "set-current-flag":
+				if (!entityFlagMutationError("room", effect.flag, "set")) {
+					roomState.flags[effect.flag] = effect.value ?? true;
+				}
+				break;
+			case "toggle-current-flag":
+				if (!entityFlagMutationError("room", effect.flag, "toggle")) {
+					roomState.flags[effect.flag] = !roomState.flags[effect.flag];
+				}
+				break;
+			case "delete-current-flag":
+				if (!entityFlagMutationError("room", effect.flag, "delete")) {
+					delete roomState.flags[effect.flag];
+				}
+				break;
 		}
 	});
+}
+
+export function resolveNavigationEffect(world: World, game: GameState, effect: Effect): GameState {
+	if (effect.type !== "navigation") return game;
+	switch (effect.operation) {
+		case "move-to-room":
+			return teleport(world, game, effect.roomId);
+		case "move-in-direction":
+			return silentlyMove(world, game, effect.direction);
+		case "set-facing":
+			return produce(game, (draft) => {
+				draft.player.facing = effect.direction;
+			});
+		case "lock-exit":
+		case "unlock-exit":
+		case "lock-all-exits":
+		case "unlock-all-exits":
+			return produce(game, (draft) => {
+				const room = draft.roomStates.find((candidate) => compareIds(candidate.id, effect.roomId));
+				if (!room) return;
+				if (effect.operation === "lock-all-exits") room.lockedExits = [...DIRECTIONS];
+				else if (effect.operation === "unlock-all-exits") room.lockedExits = [];
+				else if (effect.operation === "lock-exit") {
+					const direction = effect.direction as Direction;
+					if (!room.lockedExits.includes(direction)) room.lockedExits.push(direction);
+				} else if ("direction" in effect) {
+					room.lockedExits = room.lockedExits.filter((direction) => direction !== effect.direction);
+				}
+			});
+	}
 }
 
 export function resolvePlayerEffect(world: World, game: GameState, effect: Effect): GameState {
@@ -702,15 +944,160 @@ export function resolvePlayerEffect(world: World, game: GameState, effect: Effec
 			});
 		case "kill":
 			return kill(world, game, effect.customDeathMessage);
-		case "teleport":
-			return teleport(world, game, effect.roomId);
-		case "move-in-direction":
-			return silentlyMove(world, game, effect.direction);
-		case "set-facing":
+		case "win":
 			return produce(game, (draft) => {
-				draft.player.facing = effect.direction;
+				draft.player.hasWon = true;
+				draft.messages.push(createGameMessage(effect.message, "system"));
 			});
+		case "end-game":
+			return produce(game, (draft) => {
+				draft.player.isEnded = true;
+				draft.player.endingMessage = effect.message;
+				draft.messages.push(createGameMessage(effect.message, "system"));
+			});
+		case "revive":
+			return produce(game, (draft) => {
+				draft.player.isDead = false;
+				delete draft.player.customDeathMessage;
+			});
+		case "respawn": {
+			const revived = produce(game, (draft) => {
+				draft.player.isDead = false;
+				delete draft.player.customDeathMessage;
+				draft.player.freezeState = {};
+			});
+			return teleport(world, revived, effect.roomId);
+		}
+		case "equip":
+			return produce(game, (draft) => {
+				if (
+					itemAccess(game, effect.itemId).carried &&
+					!(draft.player.equippedItemIds ?? []).some((itemId) => compareIds(itemId, effect.itemId))
+				) {
+					draft.player.equippedItemIds ??= [];
+					draft.player.equippedItemIds.push(effect.itemId);
+				}
+			});
+		case "unequip":
+			return produce(game, (draft) => {
+				draft.player.equippedItemIds = (draft.player.equippedItemIds ?? []).filter(
+					(itemId) => !compareIds(itemId, effect.itemId),
+				);
+			});
+		case "set-carrying-capacity":
+			return produce(game, (draft) => {
+				draft.player.carryingCapacity = effect.capacity ?? 0;
+			});
+		case "clear-carrying-capacity":
+			return produce(game, (draft) => {
+				delete draft.player.carryingCapacity;
+			});
+		default:
+			return game;
 	}
+}
+
+export function resolveEventEffect(world: World, game: GameState, effect: Effect): GameState {
+	if (effect.type !== "event") return game;
+	if (effect.operation === "cancel") {
+		return produce(game, (draft) => {
+			draft.events = draft.events.filter((event) => !compareIds(event.id, effect.eventId));
+		});
+	}
+
+	const existing = game.events.find((event) => compareIds(event.id, effect.eventId));
+	if (!existing && (effect.operation === "schedule" || effect.operation === "reschedule")) {
+		const authored = world.events?.find((event) => compareIds(event.id, effect.eventId));
+		if (!authored) return game;
+		return addEvent(
+			game,
+			produce(authored, (draft) => {
+				draft.enabled = true;
+				draft.lastSuccess = game.player.turns;
+				if (effect.operation === "reschedule") draft.wait = effect.wait;
+			}),
+		);
+	}
+
+	return produce(game, (draft) => {
+		const event = draft.events.find((candidate) => compareIds(candidate.id, effect.eventId));
+		if (!event) return;
+		switch (effect.operation) {
+			case "schedule": {
+				const authored = world.events?.find((candidate) => compareIds(candidate.id, effect.eventId));
+				if (authored) {
+					event.enabled = true;
+					event.wait = authored.wait;
+					event.disposable = authored.disposable;
+					event.priority = authored.priority;
+					event.branch = authored.branch;
+				}
+				event.lastSuccess = draft.player.turns;
+				break;
+			}
+			case "enable":
+				event.enabled = true;
+				break;
+			case "disable":
+				event.enabled = false;
+				break;
+			case "reset-cooldown":
+				event.lastSuccess = draft.player.turns;
+				break;
+			case "reschedule":
+				event.enabled = true;
+				event.wait = effect.wait;
+				event.lastSuccess = draft.player.turns;
+				break;
+		}
+	});
+}
+
+function advanceRandom(game: GameState): {game: GameState; value: number} {
+	let state = game.player.randomState ?? 0x6d2b79f5;
+	state ^= state << 13;
+	state ^= state >>> 17;
+	state ^= state << 5;
+	state >>>= 0;
+	return {
+		game: produce(game, (draft) => {
+			draft.player.randomState = state;
+		}),
+		value: state / 0x1_0000_0000,
+	};
+}
+
+function resolveControlEffect(
+	world: World,
+	game: GameState,
+	effect: Extract<Effect, {type: "control"}>,
+	context?: EffectResolutionContext,
+): GameState {
+	if (effect.operation === "when") {
+		const effectId = evaluateCondition(world, game, effect.condition)
+			? effect.thenEffectId
+			: effect.otherwiseEffectId;
+		if (!effectId) return game;
+		const group = getEffect(world, effectId);
+		return group.type === "group"
+			? resolveEffects(world, game, group, context)
+			: resolveEffect(world, game, group, context);
+	}
+	if (effect.choices.length === 0) return game;
+	const total = effect.choices.reduce((sum, choice) => sum + choice.weight, 0);
+	if (!(total > 0)) return game;
+	const random = advanceRandom(game);
+	let cursor = random.value * total;
+	const choice =
+		effect.choices.find((candidate) => {
+			cursor -= candidate.weight;
+			return cursor < 0;
+		}) ?? effect.choices.at(-1);
+	if (!choice) return random.game;
+	const group = getEffect(world, choice.effectId);
+	return group.type === "group"
+		? resolveEffects(world, random.game, group, context)
+		: resolveEffect(world, random.game, group, context);
 }
 
 export function resolveEffect(
@@ -726,11 +1113,11 @@ export function resolveEffect(
 				return foundEffect.type === "group"
 					? resolveEffects(world, draft, foundEffect, context)
 					: resolveEffect(world, draft, foundEffect, context);
-			case "flag":
-				return resolveFlagEffect(draft, effect);
+			case "world":
+				return resolveWorldEffect(draft, effect);
 			case "message":
 				if (
-					effect.operation === "current-room-description" &&
+					effect.operation === "describe-current-room" &&
 					effect.allowShorten &&
 					context &&
 					!context.visitedRoomIdsAtStart.has(idValue(draft.player.currentRoom))
@@ -738,31 +1125,44 @@ export function resolveEffect(
 					return lookAtRoom(world, draft, true);
 				}
 				return resolveMessageEffect(world, draft, effect);
-			case "counter":
-				return resolveCounterEffect(draft, effect);
-			case "text":
-				return resolveTextEffect(draft, effect);
 			case "item":
 				return resolveItemEffect(world, draft, effect);
-			case "item-action":
-				return resolveItemActionEffect(
-					world,
-					draft,
-					effect,
-					context ?? {
-						visitedRoomIdsAtStart: new Set(
-							draft.roomStates
-								.filter((roomState) => roomState.flags.visited)
-								.map((roomState) => idValue(roomState.id)),
-						),
-					},
-				);
+			case "items":
+				return resolveItemCollectionEffect(world, draft, effect);
 			case "room":
-				return effect.operation === "move-player-to"
-					? teleport(world, draft, effect.roomId)
-					: resolveRoomEffect(draft, effect);
+				return resolveRoomEffect(draft, effect);
 			case "player":
-				return resolvePlayerEffect(world, draft, effect);
+				return [
+					"take",
+					"drop",
+					"examine",
+					"open",
+					"close",
+					"lock",
+					"put-inside",
+					"put-on",
+					"unlock",
+					"use",
+				].includes(effect.operation)
+					? resolvePlayerItemAction(
+							world,
+							draft,
+							effect as PlayerItemActionEffect,
+							context ?? {
+								visitedRoomIdsAtStart: new Set(
+									draft.roomStates
+										.filter((roomState) => roomState.flags.visited)
+										.map((roomState) => idValue(roomState.id)),
+								),
+							},
+						)
+					: resolvePlayerEffect(world, draft, effect);
+			case "navigation":
+				return resolveNavigationEffect(world, draft, effect);
+			case "event":
+				return resolveEventEffect(world, draft, effect);
+			case "control":
+				return resolveControlEffect(world, draft, effect, context);
 			default:
 				return draft;
 		}

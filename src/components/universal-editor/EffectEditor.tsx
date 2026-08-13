@@ -35,19 +35,9 @@ type DefinedEffectEditorProps = EffectEditorProps & {
 	onChange: (nextValue: EffectGroupValue) => void;
 };
 
-function worldEffectGroups(context: EffectEditorProps["context"]) {
-	const effects = context.getWorldValue?.(["effects"]) ?? context.getValue(["effects"]);
-	return Array.isArray(effects) ? (effects as EffectGroupValue[]) : [];
-}
-
 function groupId(value: unknown) {
 	if (isID(value) && value.type === "effect") return idValue(value).trim();
 	return typeof value === "string" ? value.trim() : "";
-}
-
-function setWorldEffectGroups(context: EffectEditorProps["context"], groups: EffectGroupValue[]) {
-	if (context.setWorldValue) context.setWorldValue(["effects"], groups);
-	else context.setValue(["effects"], groups);
 }
 
 function requireEffectSchema(schema: z.ZodTypeAny | undefined) {
@@ -73,8 +63,9 @@ export function generateEffectGroupName(effects: EffectValue[], schema: z.ZodTyp
 }
 
 /**
- * Edits one complete EffectGroup. Every group has an internal ID and is kept
- * synchronized in world.effects; child rows can reference those saved groups.
+ * Edits one complete EffectGroup. The parent owns where that group is stored:
+ * embedded outcomes stay embedded, while groups authored in world.effects are
+ * reusable definitions because their parent array already persists them there.
  */
 function DefinedEffectEditor({
 	value,
@@ -93,7 +84,6 @@ function DefinedEffectEditor({
 	const initialized = useRef(false);
 	const appearance = resolveEditorControlAppearance(context.appearance, metadata.appearance);
 	const canEdit = !(disabled || metadata.disabled || readonly || metadata.readonly);
-	const groups = worldEffectGroups(context);
 	const currentId = groupId(value.id) || generatedId;
 	const childListFeatures = metadata.childControls?.effects?.features as
 		EffectListFeatures | undefined;
@@ -116,13 +106,6 @@ function DefinedEffectEditor({
 			id: toID("effect", nextId),
 			allowMultipleUsesInWorld: true,
 		};
-		const matchingIndex = groups.findIndex((group) => groupId(group.id) === nextId);
-		const nextGroups =
-			matchingIndex >= 0
-				? groups.map((group, index) => (index === matchingIndex ? nextGroup : group))
-				: [...groups, nextGroup];
-
-		setWorldEffectGroups(context, nextGroups);
 		onChange(nextGroup);
 	}
 

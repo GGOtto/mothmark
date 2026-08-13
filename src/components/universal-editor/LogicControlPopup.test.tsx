@@ -3,12 +3,11 @@ import {useState} from "react";
 import {PopupProvider} from "@/components/popup/Popup";
 import type {CommandVariableCatalog} from "@/features/command-variables";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
-import {CounterConditionSchema} from "@/schemas/world/conditionSchema";
 import {
 	CommandConditionSchema,
 	CommandEffectGroupSchema,
 } from "@/schemas/world/commandLogicSchemas";
-import {PlayerEffectSchema} from "@/schemas/world/effectSchema";
+import {NavigationEffectSchema} from "@/schemas/world/effectSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {UniversalEditor} from "./UniversalEditor";
@@ -43,9 +42,8 @@ function ConditionHarness() {
 		...createDefaultFieldObject(schema),
 		conditions: [
 			{
-				...createDefaultFieldObject(CounterConditionSchema),
-				type: "counter",
-				operation: "compare",
+				type: "world",
+				operation: "counter-compare",
 				counter: "turns",
 				value: 1,
 			},
@@ -72,8 +70,8 @@ function EffectHarness() {
 		name: "Move the player",
 		effects: [
 			{
-				...createDefaultFieldObject(PlayerEffectSchema),
-				type: "player",
+				...createDefaultFieldObject(NavigationEffectSchema),
+				type: "navigation",
 				operation: "move-in-direction",
 				direction: "n",
 			},
@@ -126,10 +124,26 @@ describe("LogicControlPopup", () => {
 
 		const dialog = screen.getByRole("dialog");
 		expect(within(dialog).getByRole("heading", {name: "Edit effect"})).toBeVisible();
-		expect(within(dialog).getByRole("combobox", {name: "Action"})).toHaveValue("move-in-direction");
+		expect(
+			within(dialog).getByRole("button", {name: "Behavior Move in a direction Change"}),
+		).toBeVisible();
 		expect(within(dialog).queryByRole("button", {name: /Edit effect:/})).toBeNull();
+		fireEvent.click(
+			within(dialog).getByRole("button", {name: "Behavior Move in a direction Change"}),
+		);
+		const pickerDialog = screen.getByRole("dialog", {name: "Choose effect"});
+		expect(document.querySelectorAll("[role='dialog']")).toHaveLength(2);
+		expect(screen.getAllByRole("dialog")).toHaveLength(1);
+		fireEvent.click(
+			within(pickerDialog).getByRole("option", {
+				name: /Move in a direction Attempt normal movement/,
+			}),
+		);
+		fireEvent.click(within(pickerDialog).getByRole("button", {name: "Use effect"}));
+		expect(screen.getAllByRole("dialog")).toHaveLength(1);
+		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeVisible();
 
-		const directionField = within(dialog)
+		const directionField = within(screen.getByRole("dialog"))
 			.getByRole("combobox", {name: "Direction"})
 			.closest(".variableFieldEditor");
 		expect(directionField).not.toBeNull();

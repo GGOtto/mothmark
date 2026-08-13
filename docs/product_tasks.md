@@ -573,7 +573,8 @@ the full task definitions but do not imply a different sequence.
   **Scope and acceptance:**
 
   - Organize the chooser by affected domain first: Item, Room, Player, World state, Time/randomness,
-    Navigation, and Messaging. `Take` is an Item operation, not a top-level category.
+    Navigation, and Messaging. `Take` is a Player operation, while direct inventory/location
+    mutation is an Item operation; neither is a top-level category.
   - Generate available types, operations, fields, labels, descriptions, and defaults from schemas and
     metadata.
   - Support search by author language and schema term, recent choices, keyboard navigation, and a

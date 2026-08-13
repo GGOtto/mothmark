@@ -148,6 +148,7 @@ function useModalBehavior({
 }
 
 export type ModalLayerProps = {
+	active?: boolean;
 	ariaLabel?: string;
 	ariaLabelledBy?: string;
 	backdropClassName?: string;
@@ -163,6 +164,7 @@ export type ModalLayerProps = {
 };
 
 export function ModalLayer({
+	active = true,
 	ariaLabel,
 	ariaLabelledBy,
 	backdropClassName,
@@ -188,9 +190,9 @@ export function ModalLayer({
 		backdrop.style.setProperty("--overlay-viewport-height", `${viewport.height}px`);
 	}, []);
 
-	useVisualViewport(true, syncViewport);
+	useVisualViewport(active, syncViewport);
 	useModalBehavior({
-		active: true,
+		active,
 		closeOnEscape,
 		initialFocusRef,
 		onClose,
@@ -215,13 +217,14 @@ export function ModalLayer({
 				.filter(Boolean)
 				.join(" ")}
 			role="presentation"
+			aria-hidden={!active || undefined}
 			onPointerDown={handleBackdrop}
 		>
 			<section
 				ref={surfaceRef as RefObject<HTMLElement>}
 				className={["overlaySurface", className].filter(Boolean).join(" ")}
 				role="dialog"
-				aria-modal="true"
+				aria-modal={active ? "true" : undefined}
 				aria-label={ariaLabel}
 				aria-labelledby={ariaLabelledBy}
 				tabIndex={-1}

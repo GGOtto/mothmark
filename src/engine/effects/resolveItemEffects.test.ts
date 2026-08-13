@@ -54,16 +54,16 @@ function resolve(effects: Effect[]) {
 describe("direct item effects", () => {
 	it("changes every runtime presentation collection", () => {
 		const game = resolve([
-			{type: "item", operation: "change-name", itemId, value: "medallion"},
+			{type: "item", operation: "set-name", itemId, value: "medallion"},
 			{
 				type: "item",
-				operation: "change-examine-text",
+				operation: "set-examine-text",
 				itemId,
 				value: "A bright medallion.",
 			},
 			{
 				type: "item",
-				operation: "change-listing-text",
+				operation: "set-listing-text",
 				itemId,
 				value: "A medallion gleams here.",
 			},
@@ -85,7 +85,7 @@ describe("direct item effects", () => {
 	it("changes location and restores the authored starting location", () => {
 		const game = resolve([
 			{type: "item", operation: "move-to-inventory", itemId},
-			{type: "item", operation: "drop-in-current-room", itemId},
+			{type: "item", operation: "move-to-current-room", itemId},
 			{type: "item", operation: "move-to-room", itemId, roomId: otherRoomId},
 			{type: "item", operation: "place-inside", itemId, containerId: boxId},
 			{type: "item", operation: "place-on", itemId, surfaceId: tableId},
@@ -102,12 +102,12 @@ describe("direct item effects", () => {
 		const game = resolve([
 			{type: "item", operation: "hide", itemId},
 			{type: "item", operation: "reveal", itemId},
-			{type: "item", operation: "list-in-room", itemId},
-			{type: "item", operation: "mark-examined", itemId},
-			{type: "item", operation: "open", itemId},
-			{type: "item", operation: "lock", itemId},
-			{type: "item", operation: "unlock", itemId},
-			{type: "item", operation: "close", itemId},
+			{type: "item", operation: "set-listed", itemId},
+			{type: "item", operation: "set-examined", itemId},
+			{type: "item", operation: "set-open", itemId},
+			{type: "item", operation: "set-locked", itemId},
+			{type: "item", operation: "set-unlocked", itemId},
+			{type: "item", operation: "set-closed", itemId},
 		]);
 		const item = game.itemStates.find((candidate) => compareIds(candidate.id, itemId));
 		expect(item).toMatchObject({
@@ -121,8 +121,8 @@ describe("direct item effects", () => {
 			game,
 			produce(createDefaultFieldObject(EffectGroupSchema), (draft) => {
 				draft.effects = [
-					{type: "item", operation: "unlist-in-room", itemId},
-					{type: "item", operation: "mark-unexamined", itemId},
+					{type: "item", operation: "set-unlisted", itemId},
+					{type: "item", operation: "set-unexamined", itemId},
 				];
 			}),
 		);

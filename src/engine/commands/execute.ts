@@ -17,7 +17,14 @@ function higherPriorityMatch(
 export function runCommand(text: string, world: World, game: GameState): GameState {
 	const matches = findMatchingCommands(text, world, game);
 	if (matches.length === 0) {
-		return addMessage(game, "I don't know what that means.", "error");
+		return addMessage(
+			produce(game, (draft) => {
+				draft.player.lastCommandSucceeded = false;
+				draft.player.lastCommandTurn = draft.player.turns;
+			}),
+			"I don't know what that means.",
+			"error",
+		);
 	}
 
 	const chosenMatch = matches.reduce(higherPriorityMatch);
@@ -29,10 +36,19 @@ export function runCommand(text: string, world: World, game: GameState): GameSta
 				)?.behavior;
 
 	if (!behavior) {
-		return addMessage(game, "I don't know what that means.", "error");
+		return addMessage(
+			produce(game, (draft) => {
+				draft.player.lastCommandSucceeded = false;
+				draft.player.lastCommandTurn = draft.player.turns;
+			}),
+			"I don't know what that means.",
+			"error",
+		);
 	}
 
 	const gameWithCommandVariables = produce(game, (draft) => {
+		draft.player.lastCommandSucceeded = true;
+		draft.player.lastCommandTurn = draft.player.turns;
 		draft.variables.command = [
 			...chosenMatch.variables,
 			...(chosenMatch.match === "partial match" ? chosenMatch.failedVariables : []),

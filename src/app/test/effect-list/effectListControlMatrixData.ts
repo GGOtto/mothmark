@@ -40,9 +40,8 @@ const SETUPS = {
 		value: [
 			{type: "message", operation: "show", message: "The door opens."},
 			{
-				type: "flag",
-				"flag-type": "normal",
-				operation: "set",
+				type: "world",
+				operation: "set-flag",
 				flag: "foyer.doorUnlocked",
 				value: true,
 			},
@@ -65,31 +64,28 @@ const SETUPS = {
 		value: [
 			{
 				type: "message",
-				operation: "random",
+				operation: "show-random",
 				messages: [
 					"A deliberately long message checks that authored text wraps inside the effect editor.",
 					"A shorter alternative.",
 				],
 			},
 			{
-				type: "flag",
-				"flag-type": "item",
-				operation: "set",
-				roomId: toID("room", "foyer"),
+				type: "item",
+				operation: "set-flag",
 				itemId: toID("item", "brass-bell"),
 				flag: "canRing",
 				value: true,
 			},
-			{type: "counter", operation: "set", counter: "turnsSinceBell", value: 12},
+			{type: "world", operation: "set-counter", counter: "turnsSinceBell", value: 12},
 			{
 				type: "item",
 				operation: "move-to-room",
-				roomId: toID("room", "foyer"),
-				newRoomId: toID("room", "gallery"),
+				roomId: toID("room", "gallery"),
 				itemId: toID("item", "brass-bell"),
 			},
 			{
-				type: "room",
+				type: "navigation",
 				operation: "lock-exit",
 				roomId: toID("room", "foyer"),
 				direction: "n",
@@ -125,7 +121,7 @@ const SETUPS = {
 		},
 	},
 	collapsible: {
-		value: [{type: "counter", operation: "increase", counter: "turns", amount: 1}],
+		value: [{type: "world", operation: "increase-counter", counter: "turns", amount: 1}],
 		metadata: {
 			title: "Collapsible effects",
 			features: {...FEATURES, collapsibleItems: true},
@@ -141,9 +137,8 @@ const SETUPS = {
 	error: {
 		value: [
 			{
-				type: "flag",
-				"flag-type": "normal",
-				operation: "set",
+				type: "world",
+				operation: "set-flag",
 				flag: "",
 				value: true,
 			},

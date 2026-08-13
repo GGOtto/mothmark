@@ -42,14 +42,29 @@
 	"priority": 0,
 	"fallbacks": [
 		{
-			"blockId": {"type": "command-block", "id": "lock-target"},
+			"blockId": {
+				"type": "command-block",
+				"id": "lock-target"
+			},
 			"behavior": {
-				"id": {"type": "condition-branch", "id": "lock-target-fallback"},
+				"id": {
+					"type": "condition-branch",
+					"id": "lock-target-fallback"
+				},
 				"always": {
 					"name": "Cannot resolve item",
-					"id": {"type": "effect", "id": "lock-target-fallback-effects"},
+					"id": {
+						"type": "effect",
+						"id": "lock-target-fallback-effects"
+					},
 					"type": "group",
-					"effects": [{"type": "message", "operation": "show", "message": "You can't lock that."}],
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't lock that."
+						}
+					],
 					"allowMultipleUsesInWorld": true
 				}
 			}
@@ -69,8 +84,7 @@
 			"type": "group",
 			"effects": [
 				{
-					"type": "item-action",
-					"action": "lock",
+					"type": "player",
 					"itemId": {
 						"type": "item",
 						"id": "lock-item"
@@ -83,7 +97,8 @@
 							},
 							"field": "itemId"
 						}
-					]
+					],
+					"operation": "lock"
 				}
 			],
 			"allowMultipleUsesInWorld": true
