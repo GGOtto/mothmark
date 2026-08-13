@@ -292,7 +292,7 @@ describe("the v5 to v6 condition and effect migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(9);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(10);
 		expect(migrationFrom(5)).toBe(v5ToV6);
 		expect(migrationFrom(6)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 6, value});

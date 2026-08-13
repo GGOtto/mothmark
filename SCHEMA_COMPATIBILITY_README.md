@@ -125,3 +125,11 @@ The `v8-to-v9-name-saved-conditions` migration adds an empty name to retained sa
 definitions that predate the reusable logic-library naming field. Existing authored names and all
 condition logic remain unchanged. Game states and messages advance to version 9 without rewriting
 their JSON.
+
+## Indented room-listing replay in v10
+
+The `v9-to-v10-replay-indented-room-listings` migration preserves every retained draft and
+publication snapshot unchanged. It sequentially replays each playthrough's authoritative command
+history so turn snapshots, output messages, the current state, and the final transcript use the
+indented room-item presentation introduced by version 10. The release gate verifies the rebuilt
+records through exhaustive replay before committing the version advance.
