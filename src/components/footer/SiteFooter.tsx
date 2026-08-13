@@ -2,6 +2,7 @@ import {Camera, Cloud, MessageCircle} from "lucide-react";
 import Link from "next/link";
 
 import {MothmarkLogo} from "../brand/MothmarkLogo";
+import {NewsletterSignup} from "./NewsletterSignup";
 
 import "./SiteFooter.scss";
 
@@ -54,15 +55,9 @@ export function SiteFooter() {
 				<section className="siteFooter__newsletter" aria-labelledby="footer-newsletter-title">
 					<div>
 						<h2 id="footer-newsletter-title">Notes from Mothmark</h2>
-						<p>Occasional editor updates, new worlds, and tutorials.</p>
+						<p>Occasional news from the Mothmark workbench.</p>
 					</div>
-					<form action="/info/newsletter" method="get">
-						<label htmlFor="footer-email">Email address</label>
-						<div>
-							<input id="footer-email" type="email" placeholder="you@example.com" required />
-							<button type="submit">Subscribe</button>
-						</div>
-					</form>
+					<NewsletterSignup />
 				</section>
 			</div>
 

@@ -79,7 +79,7 @@ test("account entry uses the approved theme-aware logo", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await page.emulateMedia({colorScheme: "dark"});
 	await page.goto("/sign-in");
-	const accountLogo = page.locator(".authBrand img");
+	const accountLogo = page.getByRole("link", {name: "Mothmark home"}).locator("img");
 	await expect(accountLogo).toHaveAttribute("src", "/logo/dark/header-compact.png");
 	await expect(accountLogo).toBeVisible();
 

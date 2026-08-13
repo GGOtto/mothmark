@@ -7,8 +7,8 @@ jest.mock("../theme/ThemeProvider", () => ({
 }));
 
 describe("SiteFooter", () => {
-	it("provides the reusable site directory, social links, and newsletter stub", () => {
-		const {container} = render(<SiteFooter />);
+	it("provides the reusable site directory, social links, and newsletter signup", () => {
+		render(<SiteFooter />);
 
 		expect(
 			screen.getByRole("link", {name: "Mothmark footer home"}).querySelector("img"),
@@ -22,6 +22,6 @@ describe("SiteFooter", () => {
 		);
 		expect(screen.getByRole("link", {name: "Bluesky"})).toHaveAttribute("href", "/info/bluesky");
 		expect(screen.getByRole("textbox", {name: "Email address"})).toHaveAttribute("type", "email");
-		expect(container.querySelector("form")).toHaveAttribute("action", "/info/newsletter");
+		expect(screen.getByRole("button", {name: "Subscribe"})).toHaveAttribute("type", "submit");
 	});
 });

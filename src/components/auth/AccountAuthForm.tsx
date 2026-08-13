@@ -1,5 +1,6 @@
 "use client";
 
+import {Eye, EyeOff} from "lucide-react";
 import Link from "next/link";
 import {FormEvent, useEffect, useState} from "react";
 
@@ -25,15 +26,13 @@ const content: Record<
 	{title: string; intro: string; submit: string}
 > = {
 	register: {
-		title: "Create an account",
-		intro:
-			"Verify your email to make this temporary account—and every world already in it—available when you sign in on another browser.",
+		title: "Create your account",
+		intro: "Verify your email to keep the worlds already on this browser with your account.",
 		submit: "Send verification email",
 	},
 	"sign-in": {
-		title: "Sign in",
-		intro:
-			"Open your server-saved worlds on this browser. Signing in does not create a starter world or duplicate your account.",
+		title: "Welcome back",
+		intro: "Sign in to return to your worlds.",
 		submit: "Sign in",
 	},
 	forgot: {
@@ -77,6 +76,9 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmation, setConfirmation] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmation, setShowConfirmation] = useState(false);
+	const [subscribeToUpdates, setSubscribeToUpdates] = useState(false);
 	const [busy, setBusy] = useState(mode === "verify" && Boolean(token));
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState(
@@ -159,7 +161,7 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 
 	if (mode === "verify") {
 		return (
-			<AuthShell title="Verify your email">
+			<AuthShell mode="verify" title="Verify your email">
 				{busy ? <p role="status">Checking this link…</p> : null}
 				{error ? (
 					<p className="authError" role="alert">
@@ -184,7 +186,12 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 		}
 		try {
 			if (mode === "register") {
-				const result = await post("/api/auth/register", {email, password, username});
+				const result = await post("/api/auth/register", {
+					email,
+					password,
+					subscribeToUpdates,
+					username,
+				});
 				setMessage(String(result.data?.message ?? "Check your email for a verification link."));
 			} else if (mode === "sign-in") {
 				await post("/api/auth/sign-in", {email, password});
@@ -229,8 +236,8 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 	};
 
 	return (
-		<AuthShell title={copy.title}>
-			<p>{copy.intro}</p>
+		<AuthShell mode={mode} title={copy.title}>
+			<p className="authIntro">{copy.intro}</p>
 			<form className="authForm" onSubmit={onSubmit}>
 				{mode === "register" ? (
 					<>
@@ -277,36 +284,85 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				) : null}
 				{mode === "register" || mode === "sign-in" || mode === "reset" ? (
 					<>
-						<label htmlFor="account-password">{mode === "reset" ? "New password" : "Password"}</label>
-						<input
-							id="account-password"
-							name="password"
-							type="password"
-							minLength={12}
-							maxLength={128}
-							autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-							required
-							value={password}
-							onChange={(event) => setPassword(event.target.value)}
-						/>
+						<div className="authLabelRow">
+							<label htmlFor="account-password">{mode === "reset" ? "New password" : "Password"}</label>
+							{mode === "sign-in" ? <Link href="/forgot-password">Forgot password?</Link> : null}
+						</div>
+						<div className="authPasswordField">
+							<input
+								id="account-password"
+								name="password"
+								type={showPassword ? "text" : "password"}
+								minLength={12}
+								maxLength={128}
+								autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+								required
+								value={password}
+								onChange={(event) => setPassword(event.target.value)}
+							/>
+							<button
+								className="authPasswordToggle"
+								type="button"
+								aria-label={showPassword ? "Hide entered characters" : "Show entered characters"}
+								onClick={() => setShowPassword((shown) => !shown)}
+							>
+								{showPassword ? (
+									<EyeOff size={17} aria-hidden="true" />
+								) : (
+									<Eye size={17} aria-hidden="true" />
+								)}
+							</button>
+						</div>
 					</>
 				) : null}
 				{mode === "register" || mode === "reset" ? (
 					<>
 						<label htmlFor="account-password-confirmation">Confirm password</label>
-						<input
-							id="account-password-confirmation"
-							name="password-confirmation"
-							type="password"
-							minLength={12}
-							maxLength={128}
-							autoComplete="new-password"
-							required
-							value={confirmation}
-							onChange={(event) => setConfirmation(event.target.value)}
-						/>
+						<div className="authPasswordField">
+							<input
+								id="account-password-confirmation"
+								name="password-confirmation"
+								type={showConfirmation ? "text" : "password"}
+								minLength={12}
+								maxLength={128}
+								autoComplete="new-password"
+								required
+								value={confirmation}
+								onChange={(event) => setConfirmation(event.target.value)}
+							/>
+							<button
+								className="authPasswordToggle"
+								type="button"
+								aria-label={
+									showConfirmation ? "Hide confirmation characters" : "Show confirmation characters"
+								}
+								onClick={() => setShowConfirmation((shown) => !shown)}
+							>
+								{showConfirmation ? (
+									<EyeOff size={17} aria-hidden="true" />
+								) : (
+									<Eye size={17} aria-hidden="true" />
+								)}
+							</button>
+						</div>
 						<p className="authHint">Use 12–128 characters and avoid a commonly compromised password.</p>
 					</>
+				) : null}
+				{mode === "register" ? (
+					<label className="authSubscribe" htmlFor="account-subscribe">
+						<input
+							id="account-subscribe"
+							name="subscribeToUpdates"
+							type="checkbox"
+							aria-label="Subscribe to Notes from Mothmark"
+							checked={subscribeToUpdates}
+							onChange={(event) => setSubscribeToUpdates(event.target.checked)}
+						/>
+						<span>
+							<strong>Email me Notes from Mothmark.</strong> Occasional news from the workbench.
+							Unsubscribe anytime.
+						</span>
+					</label>
 				) : null}
 				{message ? (
 					<p className="authNotice" role="status">
@@ -343,28 +399,86 @@ export function AccountAuthForm({mode, token = ""}: {mode: AuthMode; token?: str
 				</button>
 			</form>
 			<nav className="authLinks" aria-label="Account links">
-				{mode !== "sign-in" ? <Link href="/sign-in">Sign in</Link> : null}
-				{mode === "sign-in" ? <Link href="/forgot-password">Forgot password?</Link> : null}
-				{mode !== "register" ? <Link href="/register">Create an account</Link> : null}
+				{mode !== "sign-in" ? (
+					<span>
+						Already have an account? <Link href="/sign-in">Sign in</Link>
+					</span>
+				) : null}
+				{mode === "sign-in" ? (
+					<span>
+						New to Mothmark? <Link href="/register">Create an account</Link>
+					</span>
+				) : null}
 			</nav>
+			{mode === "register" ? (
+				<p className="authTerms">
+					By creating an account, you agree to the <Link href="/info/terms">terms</Link> and{" "}
+					<Link href="/privacy">privacy policy</Link>.
+				</p>
+			) : null}
 		</AuthShell>
 	);
 }
 
-function AuthShell({children, title}: {children: React.ReactNode; title: string}) {
+const sideCopy: Record<AuthMode, {description: string; heading: string}> = {
+	"sign-in": {
+		heading: "Return to the worlds waiting for you.",
+		description: "Pick up where you left off in your Mothmark workbench.",
+	},
+	register: {
+		heading: "Make your dream world come to life.",
+		description: "Your workbench keeps the story close while you shape it.",
+	},
+	forgot: {
+		heading: "Find your way back.",
+		description: "A recovery link can return you to your saved worlds.",
+	},
+	reset: {
+		heading: "Choose a new key.",
+		description: "Your worlds will be ready after you sign in again.",
+	},
+	verify: {
+		heading: "Keep your worlds within reach.",
+		description: "Verification connects this browser's workbench to your account.",
+	},
+};
+
+function AuthShell({
+	children,
+	mode,
+	title,
+}: {
+	children: React.ReactNode;
+	mode: AuthMode;
+	title: string;
+}) {
+	const story = sideCopy[mode];
 	return (
-		<main className="authPage">
-			<section className="authPanel" aria-labelledby="auth-title">
-				<div className="authBrand">
-					<MothmarkLogo variant="headerCompact" />
-					<span>Account</span>
-				</div>
-				<h1 id="auth-title">{title}</h1>
-				{children}
-				<Link className="authHome" href="/">
-					Return to Mothmark
+		<main className={`authPage authPage-${mode}`}>
+			<aside className="authStory">
+				<Link className="authStoryBrand" href="/" aria-label="Mothmark home">
+					<MothmarkLogo variant="headerCompact" priority />
 				</Link>
-			</section>
+				<div>
+					<h2>{story.heading}</h2>
+					<p>{story.description}</p>
+				</div>
+				<small>A quiet workbench for living stories.</small>
+			</aside>
+			<div className="authContent">
+				<header className="authMobileBrand">
+					<Link href="/" aria-label="Mothmark home">
+						<MothmarkLogo variant="headerCompact" priority />
+					</Link>
+				</header>
+				<section className="authPanel" aria-labelledby="auth-title">
+					<h1 id="auth-title">{title}</h1>
+					{children}
+					<Link className="authHome" href="/">
+						Return to Mothmark
+					</Link>
+				</section>
+			</div>
 		</main>
 	);
 }

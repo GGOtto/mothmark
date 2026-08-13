@@ -20,6 +20,7 @@ export const runtime = "nodejs";
 const InputSchema = z.object({
 	email: EmailSchema,
 	password: PasswordSchema,
+	subscribeToUpdates: z.boolean().optional().default(false),
 	username: UsernameSchema,
 });
 
@@ -35,6 +36,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 			email: input.email,
 			network: requestNetwork(request),
 			password: input.password,
+			subscribeToUpdates: input.subscribeToUpdates,
 			username: input.username,
 			...(actor?.accountType === "anonymous" && {userId: actor.userId}),
 		});

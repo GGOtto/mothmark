@@ -89,6 +89,7 @@ test("a rejected account request preserves entered values and restores the submi
 	page,
 }) => {
 	const browserErrors = collectBrowserErrors(page);
+	let submitted: Record<string, unknown> | undefined;
 	await routeAvailableUsername(page);
 	await page.route("**/api/auth/csrf", (route) =>
 		route.fulfill({
@@ -98,19 +99,21 @@ test("a rejected account request preserves entered values and restores the submi
 			body: JSON.stringify({data: {csrfToken: "csrf"}}),
 		}),
 	);
-	await page.route("**/api/auth/register", (route) =>
-		route.fulfill({
+	await page.route("**/api/auth/register", (route) => {
+		submitted = route.request().postDataJSON() as Record<string, unknown>;
+		return route.fulfill({
 			status: 409,
 			contentType: "application/json",
 			body: JSON.stringify({error: {message: "Registration is temporarily unavailable."}}),
-		}),
-	);
+		});
+	});
 
 	await page.goto("/register");
 	await page.getByLabel("Username").fill("archivekeeper");
 	await page.getByLabel("Email").fill("author@example.com");
 	await page.getByLabel("Password", {exact: true}).fill("a durable password");
 	await page.getByLabel("Confirm password").fill("a durable password");
+	await page.getByRole("checkbox", {name: "Subscribe to Notes from Mothmark"}).check();
 	await page.getByRole("button", {name: "Send verification email"}).click();
 
 	await expect(page.locator("main").getByRole("alert")).toHaveText(
@@ -119,8 +122,45 @@ test("a rejected account request preserves entered values and restores the submi
 	await expect(page.getByLabel("Email")).toHaveValue("author@example.com");
 	await expect(page.getByLabel("Username")).toHaveValue("archivekeeper");
 	await expect(page.getByLabel("Password", {exact: true})).toHaveValue("a durable password");
+	expect(submitted).toMatchObject({
+		email: "author@example.com",
+		subscribeToUpdates: true,
+		username: "archivekeeper",
+	});
 	await expect(page.getByRole("button", {name: "Send verification email"})).toBeEnabled();
 	expect(browserErrors.filter((error) => !error.includes("status of 409"))).toEqual([]);
+});
+
+test("account entry pages keep their full desktop identity and reflow cleanly on mobile", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.setViewportSize({width: 1180, height: 820});
+	await page.goto("/sign-in");
+	await expect(
+		page.getByRole("heading", {name: "Return to the worlds waiting for you."}),
+	).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Welcome back"})).toBeVisible();
+
+	await page.goto("/register");
+	await expect(
+		page.getByRole("heading", {name: "Make your dream world come to life."}),
+	).toBeVisible();
+	await expect(
+		page.getByRole("checkbox", {name: "Subscribe to Notes from Mothmark"}),
+	).not.toBeChecked();
+
+	await page.setViewportSize({width: 390, height: 844});
+	await expect(
+		page.getByRole("heading", {name: "Make your dream world come to life."}),
+	).not.toBeVisible();
+	await expect(page.getByRole("heading", {name: "Create your account"})).toBeVisible();
+	await expectMobileLayoutIntegrity(page);
+
+	await page.goto("/admin/sign-in");
+	await expect(page.getByRole("heading", {name: "Sign in to admin"})).toBeVisible();
+	await expectMobileLayoutIntegrity(page);
+	expect(browserErrors).toEqual([]);
 });
 
 test("sign-in accepts an empty successful response", async ({page}) => {

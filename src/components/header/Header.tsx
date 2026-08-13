@@ -59,7 +59,12 @@ export function Header({account}: {account: HeaderAccount}) {
 						: pathname.startsWith("/admin")
 							? "Admin"
 							: "Home";
-	const hidden = pathname.startsWith("/admin") || /^\/play\/[^/]+/.test(pathname);
+	const hidden =
+		pathname.startsWith("/admin") ||
+		["/forgot-password", "/register", "/reset-password", "/sign-in", "/verify-email"].some(
+			(path) => pathname === path,
+		) ||
+		/^\/play\/[^/]+/.test(pathname);
 
 	if (hidden) return null;
 
