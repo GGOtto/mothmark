@@ -52,9 +52,9 @@ describe("the v9 to v10 indented-room-listing replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(10);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(11);
 		expect(migrationFrom(9)).toBe(v9ToV10);
-		expect(migrationFrom(10)).toBeUndefined();
+		expect(migrationFrom(10)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 10, value});
 		expect(skipped).toEqual({applied: false, schemaVersion: 10, value});
 	});
