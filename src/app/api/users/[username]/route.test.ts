@@ -18,6 +18,7 @@ describe("public user profile API", () => {
 				{
 					authorUsername: "archivekeeper",
 					id: "publication-id",
+					isOfficial: false,
 					release: {id: "release-id", number: 1, publishedAt: "2026-08-09T12:00:00.000Z"},
 					slug: "quiet-archive",
 					summary: "A compact world.",

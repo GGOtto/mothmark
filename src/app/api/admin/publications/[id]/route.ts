@@ -6,6 +6,7 @@ import {
 	PublicationError,
 	listAdminPublications,
 	setPublicationSuspension,
+	updateAdminPublicationCuration,
 } from "@/db/dbal/publicationRepository";
 import {adminRouteError, isResponse, requireAdminPermission} from "../../_shared";
 
@@ -36,6 +37,25 @@ const SuspensionSchema = z.discriminatedUnion("status", [
 	z.object({status: z.literal("suspended"), reason: z.string().trim().min(1).max(1_000)}),
 	z.object({status: z.literal("unpublished")}),
 ]);
+const CurationSchema = z
+	.object({
+		action: z.literal("update_curation"),
+		visibility: z.enum(["listed", "unlisted"]),
+		isOfficial: z.boolean(),
+		listedOnHomepage: z.boolean(),
+		homepagePosition: z.number().int().min(1).max(10_000).nullable(),
+		reason: z.string().trim().min(1).max(1_000),
+	})
+	.refine(
+		(value) =>
+			value.listedOnHomepage
+				? value.visibility === "listed" && value.isOfficial && value.homepagePosition !== null
+				: value.homepagePosition === null,
+		{
+			message: "A home page publication must be listed, official, and have a positive position.",
+		},
+	);
+const PublicationUpdateSchema = z.union([SuspensionSchema, CurationSchema]);
 
 export async function PUT(
 	request: Request,
@@ -45,13 +65,25 @@ export async function PUT(
 	if (securityError) return securityError;
 	const actor = await requireAdminPermission(request, "admin.publications.manage");
 	if (isResponse(actor)) return actor;
-	const parsed = SuspensionSchema.safeParse(await request.json().catch(() => undefined));
+	const parsed = PublicationUpdateSchema.safeParse(await request.json().catch(() => undefined));
 	if (!parsed.success)
 		return NextResponse.json(
-			{error: {code: "VALIDATION_ERROR", message: "Suspension requires a reason."}},
+			{error: {code: "VALIDATION_ERROR", message: "Check the publication controls and reason."}},
 			{status: 400},
 		);
 	try {
+		if ("action" in parsed.data)
+			return NextResponse.json({
+				data: await updateAdminPublicationCuration({
+					actorUserId: actor.userId,
+					publicationId: (await context.params).id,
+					visibility: parsed.data.visibility,
+					isOfficial: parsed.data.isOfficial,
+					listedOnHomepage: parsed.data.listedOnHomepage,
+					homepagePosition: parsed.data.homepagePosition,
+					reason: parsed.data.reason,
+				}),
+			});
 		return NextResponse.json({
 			data: await setPublicationSuspension({
 				actorUserId: actor.userId,

@@ -10,6 +10,7 @@ import "./play.scss";
 type Publication = {
 	authorUsername: string;
 	id: string;
+	isOfficial: boolean;
 	slug: string;
 	title: string;
 	summary: string;
@@ -92,9 +93,12 @@ export default function PlayCatalogPage() {
 								<li key={publication.id}>
 									<article>
 										<div>
-											<Link className="playCatalogWorldLink" href={`/play/${publication.slug}`}>
-												<h2>{publication.title}</h2>
-											</Link>
+											<div className="playCatalogTitle">
+												<Link className="playCatalogWorldLink" href={`/play/${publication.slug}`}>
+													<h2>{publication.title}</h2>
+												</Link>
+												{publication.isOfficial ? <span className="playCatalogOfficial">Official</span> : null}
+											</div>
 											<small className="playCatalogAuthor">
 												by{" "}
 												<Link href={`/users/${encodeURIComponent(publication.authorUsername)}`}>

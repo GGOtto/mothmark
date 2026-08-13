@@ -88,6 +88,18 @@
 		margin: 0;
 		font-size: 18px;
 	}
+	.playCatalogTitle {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+	}
+	.playCatalogOfficial {
+		padding: 1px 5px;
+		border: 1px solid var(--color-focus);
+		border-radius: var(--radius-control);
+		color: var(--color-focus);
+		font-size: 10px;
+	}
 	.playCatalogWorldLink {
 		color: var(--color-text);
 		text-decoration: none;

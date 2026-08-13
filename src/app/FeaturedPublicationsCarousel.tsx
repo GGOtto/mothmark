@@ -47,7 +47,7 @@ export function FeaturedPublicationsCarousel() {
 
 	useEffect(() => {
 		const controller = new AbortController();
-		fetch("/api/play/publications", {signal: controller.signal})
+		fetch("/api/play/publications?surface=homepage", {signal: controller.signal})
 			.then(async (response) => {
 				const body = (await response.json()) as {
 					data?: {publications?: FeaturedPublication[]};
@@ -55,7 +55,7 @@ export function FeaturedPublicationsCarousel() {
 				if (!response.ok) throw new Error("Published worlds could not be loaded.");
 				const featuredPublications = (body.data?.publications ?? []).slice(0, 8);
 				setPublications(featuredPublications);
-				setCurrentIndex(featuredPublications.length >= 3 ? 1 : 0);
+				setCurrentIndex(0);
 				setStatus("ready");
 			})
 			.catch((error: unknown) => {
@@ -129,7 +129,7 @@ export function FeaturedPublicationsCarousel() {
 										</small>
 										{isCurrent ? (
 											<Link href={`/play/${publication.slug}`}>
-												{playLabel(publication)} {publication.title}
+												{playLabel(publication)} &quot;{publication.title}&quot;
 											</Link>
 										) : null}
 									</div>
