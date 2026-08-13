@@ -5,19 +5,19 @@ import {GameStateSchema} from "@/schemas/states/gameStateSchemas";
 import {PERSISTED_SCHEMA_VERSION, migrationFrom} from ".";
 import {observableState} from "../replayCompatibility";
 import {applyVersionedTransform} from "./types";
-import {v10ToV11} from "./v10ToV11";
+import {v11ToV12} from "./v11ToV12";
 
-describe("the v10 to v11 deterministic-random-message replay migration", () => {
+describe("the v11 to v12 parent-item-listing replay migration", () => {
 	it("uses the final replayed turn as current state and rebuilds its transcript", () => {
 		const scenario = createPlayerTestScenario("navigation");
-		const current = applyVersionedTransform(v10ToV11, 10, v10ToV11.gameState, scenario.game, {
+		const current = applyVersionedTransform(v11ToV12, 11, v11ToV12.gameState, scenario.game, {
 			playthroughId: "playthrough-1",
 			sequence: null,
 			storage: "current",
 			world: scenario.world,
 			previousState: scenario.game,
 		});
-		const transcript = applyVersionedTransform(v10ToV11, 10, v10ToV11.messages, [], {
+		const transcript = applyVersionedTransform(v11ToV12, 11, v11ToV12.messages, [], {
 			playthroughId: "playthrough-1",
 			sequence: null,
 			storage: "transcript",
@@ -26,26 +26,26 @@ describe("the v10 to v11 deterministic-random-message replay migration", () => {
 		});
 		const parsed = GameStateSchema.parse(current.value);
 
-		expect(current.schemaVersion).toBe(11);
+		expect(current.schemaVersion).toBe(12);
 		expect(observableState(parsed)).toEqual(observableState(scenario.game));
 		expect(transcript.value).toEqual(parsed.messages);
 	});
 
-	it("is the final adjacent migration and applies only at v10", () => {
+	it("is the final adjacent migration and applies only at v11", () => {
 		const value = {retained: true};
-		const applied = applyVersionedTransform(v10ToV11, 10, v10ToV11.world, value, {
+		const applied = applyVersionedTransform(v11ToV12, 11, v11ToV12.world, value, {
 			id: "world-1",
 			storage: "editor",
 		});
-		const skipped = applyVersionedTransform(v10ToV11, 11, v10ToV11.world, value, {
+		const skipped = applyVersionedTransform(v11ToV12, 12, v11ToV12.world, value, {
 			id: "world-1",
 			storage: "editor",
 		});
 
 		expect(PERSISTED_SCHEMA_VERSION).toBe(12);
-		expect(migrationFrom(10)).toBe(v10ToV11);
-		expect(migrationFrom(11)).toBeDefined();
-		expect(applied).toEqual({applied: true, schemaVersion: 11, value});
-		expect(skipped).toEqual({applied: false, schemaVersion: 11, value});
+		expect(migrationFrom(11)).toBe(v11ToV12);
+		expect(migrationFrom(12)).toBeUndefined();
+		expect(applied).toEqual({applied: true, schemaVersion: 12, value});
+		expect(skipped).toEqual({applied: false, schemaVersion: 12, value});
 	});
 });

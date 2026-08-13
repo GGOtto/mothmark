@@ -48,7 +48,7 @@ describe("the v8 to v9 saved-condition name migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(11);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(12);
 		expect(migrationFrom(8)).toBe(v8ToV9);
 		expect(migrationFrom(9)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 9, value});
