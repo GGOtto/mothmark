@@ -101,5 +101,12 @@ appropriate. Item conditions are flattened from their former nested `test` objec
 
 The migration walks complete retained world documents, including commands, events, item hooks,
 saved condition definitions, and saved effect groups. It preserves unrelated authored fields and
-renames command-variable bindings whenever their target field moves or changes name. Game states
-and messages do not change shape, but their rows still advance from schema version 5 to 6.
+renames command-variable bindings whenever their target field moves or changes name. Retained game
+states replay their commands to populate the new player runtime fields; messages remain unchanged.
+
+## Empty legacy flags in v7
+
+The `v6-to-v7-name-empty-logic-flags` migration replaces blank flag names in retained condition and
+effect logic with the deterministic reserved key `legacy.empty-flag`. Using one key preserves the
+relationship between legacy effects that write the unnamed flag and conditions that read it. Game
+states and messages remain unchanged while their rows advance to schema version 7.

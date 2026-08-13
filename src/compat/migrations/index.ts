@@ -3,9 +3,10 @@ import {v2ToV3} from "./v2ToV3";
 import {v3ToV4} from "./v3ToV4";
 import {v4ToV5} from "./v4ToV5";
 import {v5ToV6} from "./v5ToV6";
+import {v6ToV7} from "./v6ToV7";
 import type {StorageMigration} from "./types";
 
-export const PERSISTED_SCHEMA_VERSION = 6;
+export const PERSISTED_SCHEMA_VERSION = 7;
 
 export const storageMigrations: readonly StorageMigration[] = [
 	v1ToV2,
@@ -13,6 +14,7 @@ export const storageMigrations: readonly StorageMigration[] = [
 	v3ToV4,
 	v4ToV5,
 	v5ToV6,
+	v6ToV7,
 ];
 
 export function validateStorageMigrationRegistry(
