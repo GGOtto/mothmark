@@ -47,6 +47,9 @@ describe("movement-related effects through the player path", () => {
 			text: expect.stringContaining("A plain foyer provides a dependable starting point."),
 		});
 		expect(nextGame.messages.at(-1)?.text).toContain("A small brass bell hangs beside the doorway.");
+		expect(nextGame.messages.at(-1)?.text).toContain(
+			"A plain foyer provides a dependable starting point.\n A small brass bell hangs beside the doorway.",
+		);
 	});
 
 	it("moves in a direction without producing movement output", () => {

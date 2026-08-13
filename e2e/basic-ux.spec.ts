@@ -780,8 +780,9 @@ test("the editor player uses unsaved world edits, preserves play state, and rest
 	await page.getByRole("tab", {name: "Play"}).click();
 	const commandInput = page.getByRole("textbox", {name: "Game command"});
 	await commandInput.fill("east");
-	await commandInput.press("Enter");
+	await page.getByRole("button", {name: "Send command"}).click();
 	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
+	await expect(commandInput).toBeFocused();
 
 	await page.getByRole("tab", {name: "Editor"}).click();
 	await page.getByRole("button", {name: "Stockroom"}).click();

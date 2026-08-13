@@ -67,7 +67,9 @@ export function PlayerTerminal({
 					event.preventDefault();
 					if (!command.trim() || disabled || busy) return;
 					setCurrentCommandInHistory(0);
-					restoreFocusAfterSubmitRef.current = document.activeElement === commandInputRef.current;
+					const submitter = (event.nativeEvent as SubmitEvent).submitter;
+					restoreFocusAfterSubmitRef.current =
+						document.activeElement === commandInputRef.current || submitter instanceof HTMLButtonElement;
 					const restoreSubmittedCommandFocus = () => {
 						window.requestAnimationFrame(() => {
 							if (restoreFocusAfterSubmitRef.current && !commandInputRef.current?.disabled) {

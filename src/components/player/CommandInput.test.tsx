@@ -5,9 +5,11 @@ import {CommandInput} from "./CommandInput";
 function CommandInputHarness({
 	busy = false,
 	commandList = [],
+	submitCommand = jest.fn(),
 }: {
 	busy?: boolean;
 	commandList?: string[];
+	submitCommand?: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
 	const [command, setCommand] = useState("");
 	const [currentCommandInHistory, setCurrentCommandInHistory] = useState(0);
@@ -23,7 +25,7 @@ function CommandInputHarness({
 				inputRef={inputRef}
 				setCurrentCommandInHistory={setCurrentCommandInHistory}
 				setCommand={setCommand}
-				submitCommand={jest.fn()}
+				submitCommand={submitCommand}
 			/>
 			<output data-testid="history-position">{currentCommandInHistory}</output>
 		</>
@@ -56,6 +58,22 @@ describe("CommandInput", () => {
 		fireEvent.keyDown(input, {key: "ArrowDown"});
 		expect(input).toHaveValue("");
 		expect(screen.getByTestId("history-position")).toHaveTextContent("0");
+	});
+
+	it("offers a visible submit button once a command has been entered", () => {
+		const submitCommand = jest.fn((event: React.FormEvent<HTMLFormElement>) =>
+			event.preventDefault(),
+		);
+		render(<CommandInputHarness submitCommand={submitCommand} />);
+		const input = screen.getByRole("textbox", {name: "Game command"});
+		const submit = screen.getByRole("button", {name: "Send command"});
+
+		expect(submit).toBeDisabled();
+		fireEvent.change(input, {target: {value: "look"}});
+		expect(submit).toBeEnabled();
+		fireEvent.click(submit);
+
+		expect(submitCommand).toHaveBeenCalledTimes(1);
 	});
 
 	it("offers touch-accessible command history controls and returns focus to the prompt", () => {
