@@ -143,3 +143,10 @@ data are preserved. Game states and messages remain unchanged while their rows a
 every recorded command. Each turn state and output, the final current state, and the transcript are
 regenerated so retained playthroughs match the indented room-item presentation. The authoritative
 command history and all authored content are preserved.
+
+### Version 10 to 11: replay deterministic random messages
+
+`v10-to-v11-replay-deterministic-random-messages` leaves retained worlds unchanged and rebuilds
+playthrough state and messages from each authoritative command log. Random-message effects consume
+the saved game seed instead of ambient process randomness, making their outcomes stable across live
+play and exhaustive replay. Authored choices, commands, and unrelated player state are preserved.

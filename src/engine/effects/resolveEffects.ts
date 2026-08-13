@@ -2,7 +2,6 @@ import type {GameMessage, GameState} from "@/schemas/states/gameStateSchemas";
 import type {Effect, EffectGroup, PlayerItemActionEffect} from "@/schemas/world/effectSchema";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
-import {choose} from "@/utils/choose";
 import {compareIds, generateUniqueId, idValue} from "@/utils/idUtils";
 import type {Direction, World} from "@/schemas/world/worldSchema";
 import type {UseTarget} from "@/schemas/world/itemSchema";
@@ -40,13 +39,20 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 	}
 
 	let message: GameMessage;
+	let messageGame = game;
 	switch (effect.operation) {
 		case "show":
 			message = createGameMessage(effect.message, "system");
 			break;
-		case "show-random":
-			message = createGameMessage(choose(effect.messages) ?? "", "system");
+		case "show-random": {
+			const random = effect.messages.length > 0 ? advanceRandom(game) : {game, value: 0};
+			messageGame = random.game;
+			message = createGameMessage(
+				effect.messages[Math.floor(random.value * effect.messages.length)] ?? "",
+				"system",
+			);
 			break;
+		}
 		case "append-to-last":
 			return appendLastMessage(game, effect.message, effect.format);
 		case "describe-current-room":
@@ -101,7 +107,7 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 			return game;
 	}
 
-	return produce(game, (draft) => {
+	return produce(messageGame, (draft) => {
 		draft.messages.push(message);
 	});
 }

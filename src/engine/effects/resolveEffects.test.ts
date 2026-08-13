@@ -7,7 +7,6 @@ import {
 } from "@/schemas/states/entityStateSchemas";
 import type {Effect} from "@/schemas/world/effectSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";
-import {choose} from "@/utils/choose";
 import {produce} from "immer";
 import {appendLastMessage, createGameMessage} from "../messages/createMessage";
 import {
@@ -18,16 +17,11 @@ import {
 } from "./resolveEffects";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 
-jest.mock("@/utils/choose", () => ({
-	choose: jest.fn(),
-}));
-
 jest.mock("../messages/createMessage", () => ({
 	createGameMessage: jest.fn(),
 	appendLastMessage: jest.fn(),
 }));
 
-const mockedChoose = jest.mocked(choose);
 const mockedCreateGameMessage = jest.mocked(createGameMessage);
 const mockedAppendLastMessage = jest.mocked(appendLastMessage);
 const world = createDefaultFieldObject(WorldSchema);
@@ -114,8 +108,8 @@ describe("resolveMessageEffect", () => {
 			type: "system",
 		};
 
-		mockedChoose.mockReturnValue("You hear footsteps.");
 		mockedCreateGameMessage.mockReturnValue(createdMessage);
+		const seededGame = createGameState({player: {...game.player, randomState: 67634689}});
 
 		const effect = {
 			type: "message",
@@ -123,15 +117,15 @@ describe("resolveMessageEffect", () => {
 			messages,
 		} as Effect;
 
-		const result = resolveMessageEffect(world, game, effect);
+		const result = resolveMessageEffect(world, seededGame, effect);
 
-		expect(mockedChoose).toHaveBeenCalledWith(messages);
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("You hear footsteps.", "system");
 		expect(result.messages).toEqual([createdMessage]);
+		expect(result.player.randomState).not.toBe(seededGame.player.randomState);
 		expect(game.messages).toEqual([]);
 	});
 
-	it("uses an empty string when choose returns undefined", () => {
+	it("uses an empty string without advancing randomness when no choices exist", () => {
 		const game = createGameState();
 
 		const createdMessage: GameMessage = {
@@ -140,19 +134,19 @@ describe("resolveMessageEffect", () => {
 			type: "system",
 		};
 
-		mockedChoose.mockReturnValue(undefined as never);
 		mockedCreateGameMessage.mockReturnValue(createdMessage);
 
 		const effect = {
 			type: "message",
 			operation: "show-random",
-			messages: ["Fallback"],
+			messages: [],
 		} as Effect;
 
 		const result = resolveMessageEffect(world, game, effect);
 
 		expect(mockedCreateGameMessage).toHaveBeenCalledWith("", "system");
 		expect(result.messages).toEqual([createdMessage]);
+		expect(result.player.randomState).toBe(game.player.randomState);
 	});
 
 	it("delegates append-last-message to appendLastMessage", () => {

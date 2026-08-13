@@ -133,3 +133,11 @@ publication snapshot unchanged. It sequentially replays each playthrough's autho
 history so turn snapshots, output messages, the current state, and the final transcript use the
 indented room-item presentation introduced by version 10. The release gate verifies the rebuilt
 records through exhaustive replay before committing the version advance.
+
+## Deterministic random-message replay in v11
+
+The `v10-to-v11-replay-deterministic-random-messages` migration preserves retained worlds and
+authoritative command logs. It replays every turn after random-message effects move from ambient
+process randomness to the game state's saved random seed, then regenerates turn output, the current
+state, and transcripts. Identical command histories now produce identical ambience during live play
+and compatibility validation.
