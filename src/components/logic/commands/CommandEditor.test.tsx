@@ -31,7 +31,10 @@ const commandEditorWorld = produce(baseWorld, (draft) => {
 	const sayTextId = toID("command-block", "say-message");
 	const defaultCommand = createDefaultFieldObject(CommandSchema);
 	const configuredBehavior = produce(defaultCommand.behavior, (behavior) => {
-		behavior.always = createDefaultFieldObject(EffectGroupSchema);
+		behavior.always = produce(createDefaultFieldObject(EffectGroupSchema), (group) => {
+			group.id = toID("effect", "say-always");
+			group.name = "Say always";
+		});
 	});
 	draft.commands = [
 		{
@@ -460,7 +463,7 @@ describe("command presentation", () => {
 		expect(screen.getByLabelText("shout")).toBeInTheDocument();
 	});
 
-	it("opens command scope settings from the toolbar gear", async () => {
+	it("opens command settings from the toolbar", async () => {
 		const user = userEvent.setup();
 		const command = initialWorld.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const onOpenSettings = jest.fn();
@@ -468,14 +471,13 @@ describe("command presentation", () => {
 		render(
 			<CommandToolbar
 				command={command}
-				updateWorld={jest.fn()}
 				onBack={jest.fn()}
 				onDelete={jest.fn()}
 				onOpenSettings={onOpenSettings}
 			/>,
 		);
 
-		await user.click(screen.getByRole("button", {name: "Global"}));
+		await user.click(screen.getByRole("button", {name: "Edit command"}));
 		expect(onOpenSettings).toHaveBeenCalledTimes(1);
 	});
 });
@@ -758,10 +760,11 @@ describe("CommandInspector", () => {
 });
 
 describe("CommandBehaviorEditor", () => {
-	it("opens a branch effect directly without changing the inspector selection", () => {
+	it("opens the full inline effect group without inserting a blank effect", () => {
 		let world = commandEditorWorld;
 		const command = world.commands.find((candidate) => idValue(candidate.id) === "say")!;
 		const onSelectionChange = jest.fn();
+		const onOpenLogicLibrary = jest.fn();
 		const updateWorld = (update: WorldUpdate) => {
 			world = typeof update === "function" ? produce(world, update) : update;
 		};
@@ -774,14 +777,29 @@ describe("CommandBehaviorEditor", () => {
 					command={command}
 					selection={{kind: "behavior", commandId: "say"}}
 					onSelectionChange={onSelectionChange}
+					onOpenLogicLibrary={onOpenLogicLibrary}
 				/>
 			</PopupProvider>,
 		);
 
 		fireEvent.click(screen.getByRole("button", {name: "Add an effect"}));
 
-		expect(screen.getByRole("dialog")).toBeInTheDocument();
-		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeInTheDocument();
+		expect(onOpenLogicLibrary).toHaveBeenCalledWith(
+			expect.objectContaining({
+				kind: "effect",
+				returnSection: "commands",
+				selectedId: null,
+				draftEditor: expect.objectContaining({
+					schema: expect.anything(),
+					commandVariableCatalog: expect.anything(),
+				}),
+			}),
+		);
+		const request = onOpenLogicLibrary.mock.calls[0][0];
+		const before = request.draftEditor.value.effects.length;
+		request.draftEditor.onDone(request.draftEditor.value);
+		const updatedCommand = world.commands.find((candidate) => idValue(candidate.id) === "say")!;
+		expect(updatedCommand.behavior.always?.effects).toHaveLength(before);
 		expect(onSelectionChange).not.toHaveBeenCalled();
 	});
 

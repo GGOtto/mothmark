@@ -1,0 +1,16 @@
+{
+	"name": "Mothmark",
+	"short_name": "Mothmark",
+	"description": "A room-and-command editor for text adventures.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#11100e",
+	"theme_color": "#090909",
+	"icons": [
+		{
+			"src": "/logo/light/app-icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
+}

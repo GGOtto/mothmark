@@ -1170,9 +1170,23 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(page.getByRole("heading", {name: "Logic"})).toBeVisible();
 	await expect(page.getByRole("button", {name: /Commands/})).toBeVisible();
 
+	await page.getByRole("button", {name: /Conditions/}).click();
+	await expect(page.getByRole("heading", {name: "Conditions", exact: true})).toBeVisible();
+	await expect(page.getByRole("searchbox", {name: "Search conditions"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
+	await page.locator(".logicLibraryBack").click();
+
+	await page.getByRole("button", {name: /Effects/}).click();
+	await expect(page.getByRole("heading", {name: "Effects", exact: true})).toBeVisible();
+	await expect(page.getByRole("searchbox", {name: "Search effects"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
+	await page.locator(".logicLibraryBack").click();
+
 	await page.getByRole("button", {name: /Commands/}).click();
 	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
 	await page.getByRole("button", {name: /Help/}).first().click();
+	await page.getByRole("button", {name: "Edit command"}).click();
+	const commandSettings = page.getByRole("dialog", {name: "Edit command settings"});
 	const playerHelp = page.getByRole("region", {name: "Player help"});
 	await expect(playerHelp).toBeVisible();
 	await expect(playerHelp.getByRole("checkbox", {name: "Show this command in help"})).toBeChecked();
@@ -1190,6 +1204,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	}
 
 	await page.setViewportSize({width: 447, height: 844});
+	await commandSettings.getByRole("button", {name: "Cancel"}).click();
 	await page.getByRole("button", {name: "Back to Commands"}).click();
 	await page
 		.getByRole("button", {name: /Travel/})
@@ -1198,6 +1213,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	const directionBlock = page.getByRole("button", {name: "Direction <direction>"});
 	await directionBlock.focus();
 	await page.keyboard.press("Enter");
+	const blockSettings = page.getByRole("dialog", {name: "Edit command block"});
 	const relativeDirectionsLabel = page.getByText("Allow relative directions");
 	await expect(relativeDirectionsLabel).toBeVisible();
 	for (const width of [447, 310]) {
@@ -1217,6 +1233,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(relativeDirections).toBeChecked();
 	await relativeDirections.click();
 	await expect(page.getByRole("switch", {name: "Off"})).not.toBeChecked();
+	await blockSettings.getByRole("button", {name: "Save"}).click();
 
 	await page.getByRole("button", {name: "Logic", expanded: false}).click();
 	await page.getByRole("menuitem", {name: "World settings"}).click();
@@ -1226,6 +1243,54 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(page).toHaveURL(
 		new RegExp(`/worlds/${editor.worldSlug}\\?view=map&room=shop-floor$`),
 	);
+	expect(browserErrors).toEqual([]);
+});
+
+test("map layers can be renamed", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+
+	await page.getByRole("button", {name: "Layers · Main floor"}).click();
+	const layerName = page.getByRole("textbox", {name: "Layer name"});
+	await expect(layerName).toHaveValue("Main floor");
+	await layerName.fill("Street level");
+	await page.getByRole("button", {name: "Close layer menu"}).click();
+
+	await expect(page.getByRole("button", {name: "Layers · Street level"})).toBeVisible();
+	await expect
+		.poll(() => editor.worlds()[0].world.metadata.layers.find((layer) => layer.layer === 0)?.name)
+		.toBe("Street level");
+	await page.reload();
+	await expect(page.getByRole("button", {name: "Layers · Street level"})).toBeVisible();
+	expect(browserErrors).toEqual([]);
+});
+
+test("events edit inline condition and effect groups on focused logic pages", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}`);
+
+	await page.getByRole("button", {name: "Logic"}).click();
+	await page.getByRole("button", {name: /Events Run effects/}).click();
+	await page.getByRole("button", {name: "New event"}).click();
+
+	await page.getByRole("button", {name: "Add effect to Always"}).click();
+	await expect(page.getByRole("heading", {name: "Always"})).toBeVisible();
+	await expect(page.getByRole("button", {name: /^Back/})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Cancel"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Save"})).toBeEnabled();
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await page.setViewportSize({width: 1280, height: 720});
+	await page.getByRole("button", {name: "Save"}).click();
+	await expect(page).toHaveURL(/\?view=logic&section=events&event=new-event$/);
+
+	await page.getByRole("button", {name: "If When a condition passes"}).click();
+	await expect(page.getByRole("heading", {name: "Edit condition group"})).toBeVisible();
+	await page.getByRole("button", {name: "Save"}).click();
+	await expect(page).toHaveURL(/\?view=logic&section=events&event=new-event$/);
+
 	expect(browserErrors).toEqual([]);
 });
 

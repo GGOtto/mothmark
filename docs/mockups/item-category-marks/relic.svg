@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+  <title>Relic item category mark</title>
+  <path d="m12 31 20-20 20 20v24H12Z" fill="currentColor" fill-opacity=".1"/>
+  <path d="M20 55V32h24v23M16 27h32M32 18v9"/>
+  <path d="m32 34 7 7-7 7-7-7Z" fill="currentColor" fill-opacity=".16"/>
+</svg>

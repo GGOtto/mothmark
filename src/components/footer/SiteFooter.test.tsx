@@ -2,10 +2,17 @@ import {render, screen} from "@testing-library/react";
 
 import {SiteFooter} from "./SiteFooter";
 
+jest.mock("../theme/ThemeProvider", () => ({
+	useTheme: () => ({setTheme: jest.fn(), theme: "dark", toggleTheme: jest.fn()}),
+}));
+
 describe("SiteFooter", () => {
 	it("provides the reusable site directory, social links, and newsletter stub", () => {
 		const {container} = render(<SiteFooter />);
 
+		expect(
+			screen.getByRole("link", {name: "Mothmark footer home"}).querySelector("img"),
+		).toHaveAttribute("src", "/logo/dark/header-primary.png");
 		expect(screen.getByRole("link", {name: "Games"})).toHaveAttribute("href", "/play");
 		expect(screen.getByRole("link", {name: "Create"})).toHaveAttribute("href", "/worlds");
 		expect(screen.getByRole("link", {name: "About the site"})).toHaveAttribute("href", "/info/about");

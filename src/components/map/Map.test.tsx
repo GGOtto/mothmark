@@ -634,6 +634,34 @@ describe("Map visual layers", () => {
 		expect(menu?.parentElement).toHaveClass("editorMapArea");
 	});
 
+	it("renames the active layer from the layer menu", () => {
+		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+
+		fireEvent.click(screen.getByRole("button", {name: "Layers · Main floor"}));
+		fireEvent.change(screen.getByRole("textbox", {name: "Layer name"}), {
+			target: {value: "Street level"},
+		});
+		fireEvent.click(screen.getByRole("button", {name: "Close layer menu"}));
+
+		expect(screen.getByRole("button", {name: "Layers · Street level"})).toBeInTheDocument();
+	});
+
+	it("persists a name when renaming a generated empty layer", () => {
+		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+
+		fireEvent.click(screen.getByRole("button", {name: "Switch to Upstairs"}));
+		fireEvent.click(screen.getByRole("button", {name: "Switch to Upper 2"}));
+		fireEvent.click(screen.getByRole("button", {name: "Layers · Upper 2"}));
+		fireEvent.change(screen.getByRole("textbox", {name: "Layer name"}), {
+			target: {value: "Attic"},
+		});
+		fireEvent.click(screen.getByRole("button", {name: "Close layer menu"}));
+
+		fireEvent.click(screen.getByRole("button", {name: "Switch to Upstairs"}));
+		fireEvent.click(screen.getByRole("button", {name: "Switch to Attic"}));
+		expect(screen.getByRole("button", {name: "Layers · Attic"})).toBeInTheDocument();
+	});
+
 	it("renders connection paths below stubs and rooms above both", () => {
 		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 		const connections = container.querySelector(".mapSvgConnections")!;

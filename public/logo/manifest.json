@@ -1,0 +1,21 @@
+{
+	"version": 3,
+	"format": "raster-only",
+	"source": "exec-faf08575-de8e-45e2-b072-93a91ad6bbbb.png",
+	"sourceSha256": "92d211f59583d407dd2bb077bb2f2236db0b0c24879e3cdeccf08d94fbb54a7a",
+	"transparentBackgrounds": true,
+	"palette": {
+		"lightArtwork": "#071C2C",
+		"darkArtwork": "#FAF7F0"
+	},
+	"variants": {
+		"header-primary": "Approved primary horizontal lockup, intact spacing",
+		"header-compact": "Approved compact website-header lockup, intact spacing",
+		"vertical": "Approved vertical lockup",
+		"basic": "Approved standalone master symbol",
+		"profile-512": "Approved light/dark circular profile treatments",
+		"app-icon-512": "Approved rounded-square app treatment in light/dark",
+		"favicon-full": "Complete moth/book master mark",
+		"favicon-optical": "Antenna-free optical favicon simplification"
+	}
+}

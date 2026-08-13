@@ -3,6 +3,11 @@ import "./page.scss";
 
 const CONTROL_TEST_PAGES = [
 	{
+		href: "/test/item-icons",
+		title: "Item icons",
+		description: "Every item category mark across themes and exported sizes.",
+	},
+	{
 		href: "/test/popup",
 		title: "Popup",
 		description: "Alert, confirmation, and text prompt dialogs.",

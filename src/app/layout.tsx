@@ -11,6 +11,36 @@ import {getOwnedAccountSummary} from "@/db/dbal/accountRepository";
 export const metadata: Metadata = {
 	title: "Mothmark",
 	description: "A room-and-command editor for text adventures.",
+	manifest: "/site.webmanifest",
+	icons: {
+		icon: [
+			{
+				url: "/logo/light/favicon-full-16.png",
+				media: "(prefers-color-scheme: light)",
+				sizes: "16x16",
+				type: "image/png",
+			},
+			{
+				url: "/logo/light/favicon-full-32.png",
+				media: "(prefers-color-scheme: light)",
+				sizes: "32x32",
+				type: "image/png",
+			},
+			{
+				url: "/logo/dark/favicon-full-16.png",
+				media: "(prefers-color-scheme: dark)",
+				sizes: "16x16",
+				type: "image/png",
+			},
+			{
+				url: "/logo/dark/favicon-full-32.png",
+				media: "(prefers-color-scheme: dark)",
+				sizes: "32x32",
+				type: "image/png",
+			},
+		],
+		apple: [{url: "/logo/light/app-icon-512.png", sizes: "512x512", type: "image/png"}],
+	},
 };
 
 export default async function RootLayout({

@@ -16,6 +16,8 @@ export type EditorContext = {
 	logicSelection: LogicSelection | null;
 	selectedCommandId: string | null;
 	commandSelection: CommandSelection | null;
+	selectedConditionId: string | null;
+	selectedEffectId: string | null;
 	selectedItemId: string | null;
 };
 
@@ -58,6 +60,8 @@ function baseContext(world: World): EditorContext {
 		logicSelection: null,
 		selectedCommandId: null,
 		commandSelection: null,
+		selectedConditionId: null,
+		selectedEffectId: null,
 		selectedItemId: null,
 	};
 }
@@ -162,6 +166,32 @@ export function resolveEditorContext(world: World, search: string): ResolvedEdit
 		};
 	}
 
+	if (context.logicSection === "conditions") {
+		const conditionId = params.get("condition");
+		if (!conditionId) return {context, notice: null};
+		if (world.conditions.some((condition) => idValue(condition.identity) === conditionId)) {
+			context.selectedConditionId = conditionId;
+			return {context, notice: null};
+		}
+		return {
+			context,
+			notice: "That condition is no longer available. Choose another condition to continue.",
+		};
+	}
+
+	if (context.logicSection === "effects") {
+		const effectId = params.get("effect");
+		if (!effectId) return {context, notice: null};
+		if (world.effects.some((effect) => idValue(effect.id) === effectId)) {
+			context.selectedEffectId = effectId;
+			return {context, notice: null};
+		}
+		return {
+			context,
+			notice: "That effect is no longer available. Choose another effect to continue.",
+		};
+	}
+
 	return {context, notice: null};
 }
 
@@ -185,6 +215,12 @@ export function buildEditorContextSearch(context: EditorContext): string {
 		}
 		if (context.logicSection === "commands" && context.selectedCommandId) {
 			params.set("command", context.selectedCommandId);
+		}
+		if (context.logicSection === "conditions" && context.selectedConditionId) {
+			params.set("condition", context.selectedConditionId);
+		}
+		if (context.logicSection === "effects" && context.selectedEffectId) {
+			params.set("effect", context.selectedEffectId);
 		}
 	}
 

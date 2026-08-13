@@ -52,10 +52,11 @@ const world = produce(createDefaultFieldObject(WorldSchema), (draft) => {
 		},
 	];
 	draft.conditions = [
-		{identity: passingConditionId, condition: passingCondition},
-		{identity: failingConditionId, condition: failingCondition},
+		{identity: passingConditionId, name: "Passing condition", condition: passingCondition},
+		{identity: failingConditionId, name: "Failing condition", condition: failingCondition},
 		{
 			identity: nestedConditionId,
+			name: "Nested condition",
 			condition: {
 				type: "group",
 				operation: "all",

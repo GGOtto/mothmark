@@ -142,6 +142,15 @@ export function Map({
 	}, [setConnectionDraft, updateStatus]);
 	const [currentLayer, setCurrentLayer] = useState<Layer>(initialLayer.current);
 	const [isLayerMenuOpen, setIsLayerMenuOpen] = useState<boolean>(false);
+	const renameLayer = useCallback(
+		(renamedLayer: Layer) => {
+			setCurrentLayer((layer) => (layer.layer === renamedLayer.layer ? renamedLayer : layer));
+			updateWorld((world) => {
+				upsertLayerDraft(world, renamedLayer);
+			});
+		},
+		[updateWorld],
+	);
 
 	const updateViewport = useCallback(
 		(nextViewport: Viewport) => {
@@ -773,6 +782,7 @@ export function Map({
 			selectedId={selectedId}
 			isConnectionSelected={isConnectionSelected}
 			setCurrentLayer={changeCurrentLayer}
+			renameLayer={renameLayer}
 		/>
 	);
 

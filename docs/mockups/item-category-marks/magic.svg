@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+  <title>Magic item category mark</title>
+  <circle cx="32" cy="17" r="8" fill="currentColor" fill-opacity=".14"/>
+  <path d="M19 55c0-12 1-21 4-21 3 0 3 8 3 11V30c0-3 1-5 3-5 3 0 3 3 3 5v14-17c0-3 1-5 3-5 3 0 3 3 3 5v17-13c0-3 1-5 3-5 3 0 3 3 3 5v16l3-4c2-3 5-3 7-1-5 9-8 13-14 17H27c-4-1-6-2-8-4Z" fill="currentColor" fill-opacity=".08"/>
+  <path d="m15 18-4-2m42 2 4-2M18 8l-3-3m31 3 3-3"/>
+</svg>

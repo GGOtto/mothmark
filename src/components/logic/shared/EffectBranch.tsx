@@ -41,7 +41,7 @@ type EffectBranchProps = {
 	onDelayTurnsChange?: (turns: number) => void;
 	onCancelIfConditionFailsChange?: (cancel: boolean) => void;
 	onSelectGroup: (effectId: string) => void;
-	onSelectInlineGroup?: () => void;
+	onSelectInlineEffect?: (index: number) => void;
 	onAddEffect: () => void;
 	onRemoveEffect: (index: number) => void;
 	onMoveEffect: (fromIndex: number, toIndex: number) => void;
@@ -61,7 +61,7 @@ export function EffectBranch({
 	onDelayTurnsChange,
 	onCancelIfConditionFailsChange,
 	onSelectGroup,
-	onSelectInlineGroup,
+	onSelectInlineEffect,
 	onAddEffect,
 	onRemoveEffect,
 	onMoveEffect,
@@ -188,8 +188,8 @@ export function EffectBranch({
 										<button
 											type="button"
 											className="logicEffectGroup__select"
-											onClick={onSelectInlineGroup}
-											disabled={!onSelectInlineGroup}
+											onClick={() => onSelectInlineEffect?.(index)}
+											disabled={!onSelectInlineEffect}
 										>
 											<span>{generateEffectSummary(entry.effect, EffectSchema)}</span>
 										</button>

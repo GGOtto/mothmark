@@ -204,6 +204,7 @@ Visual polish must not conceal missing product content.
 - Item-page candidate: [Mothmark authoring document](mockups/item-mothmark-document-v4.png)
 - Items candidate: [flat horizontal tags with category SVGs](mockups/items-flat-tag-svgs-v7.png)
 - Items candidate: [color-block category charms](mockups/items-color-block-charms-v7.png)
+- Item category marks: [all retained categories](mockups/item-category-marks-v1.svg)
 
 The mockups are design references, not pixel specifications. Responsive behavior, light-theme
 equivalence, accessible focus treatment, reduced motion, and real content states still require
