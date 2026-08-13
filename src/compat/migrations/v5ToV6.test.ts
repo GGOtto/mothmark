@@ -281,7 +281,7 @@ describe("the v5 to v6 condition and effect migration", () => {
 		).toEqual([]);
 	});
 
-	it("is the final adjacent migration and only applies at v5", () => {
+	it("is registered at v5 and only applies at v5", () => {
 		const value = {retained: true};
 		const applied = applyVersionedTransform(v5ToV6, 5, v5ToV6.world, value, {
 			id: "world-1",
@@ -292,9 +292,9 @@ describe("the v5 to v6 condition and effect migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(6);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(7);
 		expect(migrationFrom(5)).toBe(v5ToV6);
-		expect(migrationFrom(6)).toBeUndefined();
+		expect(migrationFrom(6)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 6, value});
 		expect(skipped).toEqual({applied: false, schemaVersion: 6, value});
 	});
