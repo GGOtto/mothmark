@@ -24,6 +24,8 @@ export type MessageMigrationContext = {
 	playthroughId: string;
 	sequence: number | null;
 	storage: "output" | "transcript" | "unknown";
+	gameState?: unknown;
+	previousState?: unknown;
 };
 
 export type StorageMigration = {

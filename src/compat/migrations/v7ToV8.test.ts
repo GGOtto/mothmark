@@ -45,6 +45,28 @@ describe("the v7 to v8 retained game-state replay migration", () => {
 		expect(observableState(GameStateSchema.parse(result.value))).toEqual(observableState(replayed));
 	});
 
+	it("rebuilds turn output and the final transcript from replayed states", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const replayed = resolveTurn(scenario.world, scenario.game, "east");
+		const parsedReplay = GameStateSchema.parse(replayed);
+		const output = applyVersionedTransform(v7ToV8, 7, v7ToV8.messages, [], {
+			playthroughId: "playthrough-1",
+			sequence: 1,
+			storage: "output",
+			gameState: replayed,
+			previousState: scenario.game,
+		});
+		const transcript = applyVersionedTransform(v7ToV8, 7, v7ToV8.messages, [], {
+			playthroughId: "playthrough-1",
+			sequence: null,
+			storage: "transcript",
+			gameState: replayed,
+		});
+
+		expect(output.value).toEqual(parsedReplay.messages.slice(scenario.game.messages.length));
+		expect(transcript.value).toEqual(parsedReplay.messages);
+	});
+
 	it("is the final adjacent migration and only applies at v7", () => {
 		const value = {retained: true};
 		const applied = applyVersionedTransform(v7ToV8, 7, v7ToV8.world, value, {

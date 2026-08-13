@@ -115,5 +115,6 @@ states and messages remain unchanged while their rows advance to schema version 
 
 The `v7-to-v8-replay-retained-game-states` migration rebuilds turn snapshots sequentially from each
 playthrough's pinned world and recorded command log. The final replayed turn becomes the current
-state. Stored commands and message lists remain unchanged, and the release gate verifies that every
-turn and final state exactly matches exhaustive replay before committing schema version 8.
+state. Each turn's output messages and the final transcript are regenerated from those replayed
+states. The release gate verifies that every turn, transcript, and final state exactly matches
+exhaustive replay before committing schema version 8.

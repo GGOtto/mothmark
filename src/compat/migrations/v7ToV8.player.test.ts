@@ -41,6 +41,20 @@ describe("the v7 to v8 migration through the player path", () => {
 				previousState: second,
 			}).value,
 		);
+		const firstOutput = applyVersionedTransform(v7ToV8, 7, v7ToV8.messages, [], {
+			playthroughId: "playthrough-1",
+			sequence: 1,
+			storage: "output",
+			gameState: first,
+			previousState: scenario.game,
+		}).value as typeof first.messages;
+		const secondOutput = applyVersionedTransform(v7ToV8, 7, v7ToV8.messages, [], {
+			playthroughId: "playthrough-1",
+			sequence: 2,
+			storage: "output",
+			gameState: second,
+			previousState: first,
+		}).value as typeof second.messages;
 
 		expect(
 			replayCompatibilityIssues(
@@ -49,18 +63,24 @@ describe("the v7 to v8 migration through the player path", () => {
 					{
 						sequence: 1,
 						command: "east",
-						outputMessages: firstReplay.messages.slice(scenario.game.messages.length),
+						outputMessages: firstOutput,
 						resultingState: first,
 					},
 					{
 						sequence: 2,
 						command: "west",
-						outputMessages: secondReplay.messages.slice(first.messages.length),
+						outputMessages: secondOutput,
 						resultingState: second,
 					},
 				],
 				current,
 			),
 		).toEqual([]);
+		expect(firstOutput.map(({text, type}) => ({text, type}))).toEqual(
+			firstReplay.messages.slice(scenario.game.messages.length).map(({text, type}) => ({text, type})),
+		);
+		expect(secondOutput.map(({text, type}) => ({text, type}))).toEqual(
+			secondReplay.messages.slice(first.messages.length).map(({text, type}) => ({text, type})),
+		);
 	});
 });
