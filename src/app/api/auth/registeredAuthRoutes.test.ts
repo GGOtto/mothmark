@@ -93,6 +93,7 @@ describe("registered account routes", () => {
 			email: "author@example.com",
 			network: "192.0.2.5",
 			password: "a durable registration password",
+			subscribeToUpdates: false,
 			username: "ArchiveKeeper",
 			userId,
 		});
@@ -102,6 +103,27 @@ describe("registered account routes", () => {
 			token: "secret-token",
 		});
 		expect(JSON.stringify(await response.json())).not.toContain("secret-token");
+	});
+
+	it("passes an explicit newsletter opt-in into the pending registration", async () => {
+		jest
+			.mocked(beginRegistration)
+			.mockResolvedValue({email: "reader@example.com", token: "secret-token"});
+		const response = await register(
+			request("/api/auth/register", {
+				email: "reader@example.com",
+				password: "a durable registration password",
+				subscribeToUpdates: true,
+				username: "StoryReader",
+			}),
+		);
+		expect(response.status).toBe(202);
+		expect(beginRegistration).toHaveBeenCalledWith(
+			expect.objectContaining({
+				email: "reader@example.com",
+				subscribeToUpdates: true,
+			}),
+		);
 	});
 
 	it("reports a public username conflict without starting email delivery", async () => {

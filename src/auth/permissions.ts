@@ -17,6 +17,7 @@ export const PERMISSIONS = [
 	"admin.playthroughs.view",
 	"admin.feedback.view",
 	"admin.feedback.reply",
+	"admin.subscribers.view",
 	"admin.audit.view",
 ] as const;
 

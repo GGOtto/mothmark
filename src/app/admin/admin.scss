@@ -111,6 +111,99 @@
 		font-size: 13px;
 	}
 }
+.adminSubscriberHeader {
+	align-items: center;
+}
+.adminSubscriberActions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 8px;
+
+	button {
+		display: inline-flex;
+		min-height: 36px;
+		align-items: center;
+		justify-content: center;
+		padding: 0 12px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface-raised);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 13px;
+		cursor: pointer;
+
+		&:disabled {
+			cursor: not-allowed;
+			opacity: 0.5;
+		}
+	}
+}
+.adminSubscriberActions .adminPrimaryButton,
+.adminPrimaryButton {
+	border-color: var(--color-action);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
+}
+.adminSubscriberCount {
+	margin: -12px 0 18px;
+	color: var(--color-text-faint);
+	font-size: 13px;
+}
+.adminSubscriberEmail {
+	overflow-wrap: anywhere;
+}
+.adminConfirmDialog {
+	width: min(100%, 480px);
+	padding: 24px;
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-dialog);
+	background: var(--color-surface-raised);
+	box-shadow: var(--shadow-dialog);
+	color: var(--color-text);
+
+	h2 {
+		margin: 0 0 12px;
+		font-size: 20px;
+	}
+
+	p {
+		margin: 10px 0 0;
+		color: var(--color-text-muted);
+		font-size: 14px;
+		line-height: 1.55;
+	}
+}
+.adminDialogActions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 22px;
+
+	button,
+	a {
+		display: inline-flex;
+		min-height: 38px;
+		box-sizing: border-box;
+		align-items: center;
+		justify-content: center;
+		padding: 0 13px;
+		border: 1px solid var(--color-control-border);
+		border-radius: var(--radius-control);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 13px;
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	a.adminPrimaryButton {
+		border-color: var(--color-action);
+		background: var(--color-action);
+		color: var(--color-action-contrast);
+	}
+}
 .adminBackLink {
 	display: inline-block;
 	margin-bottom: 18px;
@@ -722,25 +815,111 @@
 
 .adminSignIn {
 	display: grid;
-	place-items: center;
+	min-height: 0;
+	grid-template-columns: minmax(300px, 36%) minmax(0, 1fr);
+	overflow: hidden;
+}
+.adminSignInStory {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: clamp(28px, 4vw, 52px);
+	border-right: 1px solid var(--color-border);
+	background: var(--color-surface);
+
+	> a,
+	img {
+		display: block;
+		width: min(100%, 220px);
+		height: auto;
+	}
+
+	> div {
+		max-width: 330px;
+	}
+
+	h2 {
+		margin: 0;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: clamp(30px, 3.5vw, 48px);
+		font-weight: 400;
+		letter-spacing: -0.035em;
+		line-height: 1.08;
+	}
+
+	p {
+		max-width: 34ch;
+		margin: 18px 0 0;
+		color: var(--color-text-muted);
+		font-size: 15px;
+		line-height: 1.55;
+	}
+
+	small {
+		color: var(--color-text-faint);
+		font-size: 12px;
+	}
+}
+.adminSignInContent {
+	min-width: 0;
 	overflow: auto;
-	padding: 24px;
+	padding: clamp(34px, 6vw, 72px) clamp(24px, 8vw, 96px);
+}
+.adminSignInMobileBrand {
+	display: none;
 }
 .adminSignInPanel {
-	width: min(100%, 440px);
+	width: min(100%, 430px);
 	box-sizing: border-box;
-	padding: 28px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-panel);
-	background: var(--color-surface);
+	margin: 0 auto;
+
 	h1 {
-		margin: 22px 0 10px;
-		font-size: 24px;
+		margin: 0 0 8px;
+		font-family: Georgia, "Times New Roman", serif;
+		font-size: 32px;
+		font-weight: 400;
+		letter-spacing: -0.025em;
+		line-height: 1.12;
 	}
 	> p {
+		margin: 0;
 		color: var(--color-text-muted);
 		font-size: 14px;
 		line-height: 1.55;
+	}
+}
+.adminAccessNotice {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 24px;
+	padding: 11px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-panel);
+	background: var(--color-surface-raised);
+
+	> span {
+		display: grid;
+		width: 28px;
+		height: 28px;
+		flex: 0 0 auto;
+		place-items: center;
+		border: 1px solid var(--color-focus);
+		border-radius: 50%;
+		color: var(--color-focus);
+	}
+
+	p {
+		margin: 0;
+		color: var(--color-text-muted);
+		font-size: 13px;
+		line-height: 1.35;
+	}
+
+	strong {
+		color: var(--color-text);
+		font-weight: 600;
 	}
 }
 
@@ -757,7 +936,7 @@
 
 	input {
 		width: 100%;
-		height: 38px;
+		height: 43px;
 		box-sizing: border-box;
 		padding: 0 10px;
 		border: 1px solid var(--color-control-border);
@@ -766,6 +945,29 @@
 		color: var(--color-text);
 		font: inherit;
 	}
+}
+
+.adminPasswordField {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 43px;
+
+	input {
+		border-radius: var(--radius-control) 0 0 var(--radius-control);
+	}
+}
+
+.adminPasswordToggle {
+	display: grid;
+	width: 43px;
+	height: 43px;
+	padding: 0;
+	place-items: center;
+	border: 1px solid var(--color-control-border);
+	border-left: 0;
+	border-radius: 0 var(--radius-control) var(--radius-control) 0;
+	background: var(--color-surface-raised);
+	color: var(--color-text-muted);
+	cursor: pointer;
 }
 
 .adminQuietButton {
@@ -777,21 +979,9 @@
 	font-size: 13px;
 	cursor: pointer;
 }
-.adminBrand {
-	display: flex;
-	align-items: center;
-	gap: 9px;
-	color: var(--color-text-muted);
-	font-family: ui-monospace, monospace;
-	font-size: 13px;
-	img {
-		width: 32px;
-		height: auto;
-	}
-}
 .adminPrimaryAction {
 	display: flex;
-	height: 38px;
+	height: 43px;
 	align-items: center;
 	justify-content: center;
 	margin-top: 22px;
@@ -811,6 +1001,43 @@
 	text-decoration: none;
 }
 
+@media (max-width: 720px) {
+	.adminSignIn {
+		display: block;
+		overflow: auto;
+	}
+
+	.adminSignInStory {
+		display: none;
+	}
+
+	.adminSignInContent {
+		overflow: visible;
+		padding: 0 22px 36px;
+	}
+
+	.adminSignInMobileBrand {
+		display: flex;
+		height: 64px;
+		align-items: center;
+		margin: 0 -22px 34px;
+		padding: 0 22px;
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface);
+
+		a,
+		img {
+			display: block;
+			width: 154px;
+			height: auto;
+		}
+	}
+
+	.adminSignInPanel h1 {
+		font-size: 29px;
+	}
+}
+
 @media (max-width: 680px) {
 	.adminHeader {
 		align-items: stretch;
@@ -820,11 +1047,13 @@
 		}
 		nav {
 			min-height: 40px;
+			flex-wrap: wrap;
 			border-top: 1px solid var(--color-frame-border);
 		}
 		nav a,
 		nav button {
-			flex: 1;
+			min-height: 40px;
+			flex: 1 1 25%;
 			justify-content: center;
 		}
 	}
@@ -835,6 +1064,16 @@
 	.adminPageHeader {
 		flex-direction: column;
 		gap: 8px;
+	}
+	.adminSubscriberActions {
+		width: 100%;
+
+		button {
+			flex: 1;
+		}
+	}
+	.adminSubscriberCount {
+		margin-top: -2px;
 	}
 	.adminDefinitionGrid {
 		grid-template-columns: 1fr;

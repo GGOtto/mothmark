@@ -1877,10 +1877,10 @@ test("administrator sign-in and granular controls support deep links and back na
 	await page.route("**/api/admin/auth/sign-out", (route) => route.fulfill({status: 204}));
 
 	await page.goto("/admin/sign-in");
-	await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Sign in to admin"})).toBeVisible();
 	await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "username");
 	await expect(page.getByLabel("Password")).toHaveAttribute("autocomplete", "current-password");
-	await expect(page.getByRole("link", {name: "Mothmark home"})).not.toBeVisible();
+	await expect(page.getByRole("link", {name: "Mothmark home"})).toBeVisible();
 	await page.getByLabel("Email").fill("administrator@example.com");
 	await page.getByLabel("Password").fill("a strong administrator password");
 	await page.getByRole("button", {name: "Continue"}).click();
@@ -1969,6 +1969,6 @@ test("an expired administrator session returns a direct deep link to sign-in", a
 	);
 	await page.goto("/admin/users");
 	await expect(page).toHaveURL(/\/admin\/sign-in\?next=%2Fadmin%2Fusers$/);
-	await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Sign in to admin"})).toBeVisible();
 	expect(browserErrors.filter((error) => !error.includes("status of 401"))).toEqual([]);
 });

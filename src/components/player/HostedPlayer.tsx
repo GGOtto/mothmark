@@ -111,6 +111,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 	const [playthrough, setPlaythrough] = useState<Playthrough | null>(null);
 	const [csrf, setCsrf] = useState("");
 	const [command, setCommand] = useState("");
+	const [hasPendingCommands, setHasPendingCommands] = useState(false);
 	const [status, setStatus] = useState<"loading" | "saving" | "saved" | "failed">("loading");
 	const [blockingOperation, setBlockingOperation] = useState(false);
 	const [error, setError] = useState("");
@@ -193,7 +194,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			window.requestAnimationFrame(() => menuTitleRef.current?.focus({preventScroll: true}));
 	}, [menuOpen, menuView]);
 
-	const flushPendingCommands = useCallback(async () => {
+	async function flushPendingCommands() {
 		if (flushingCommandsRef.current || !csrf) return;
 		flushingCommandsRef.current = true;
 		setStatus("saving");
@@ -216,6 +217,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 					"The command could not be saved.",
 				);
 				pendingCommandsRef.current.shift();
+				setHasPendingCommands(pendingCommandsRef.current.length > 0);
 				if (body?.data) lastSavedPlaythrough = body.data;
 				else needsReconciliation = true;
 			}
@@ -247,7 +249,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			flushingCommandsRef.current = false;
 			if (!failed && pendingCommandsRef.current.length > 0) void flushPendingCommands();
 		}
-	}, [applyBootstrap, bootstrap, csrf, slug]);
+	}
 
 	const submitLegacy = async (value: string) => {
 		if (!playthrough || !csrf) return;
@@ -305,6 +307,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			command: value,
 			expectedRevision: currentPlaythrough.revision,
 		});
+		setHasPendingCommands(true);
 		playthroughRef.current = nextPlaythrough;
 		setPlaythrough(nextPlaythrough);
 		setCommand("");
@@ -547,7 +550,7 @@ export function HostedPlayer({slug}: {slug: string}) {
 			{error ? (
 				<div className="hostedPlayerError" role="alert">
 					<span>{error}</span>
-					{pendingCommandsRef.current.length > 0 ? (
+					{hasPendingCommands ? (
 						<button type="button" onClick={() => void flushPendingCommands()}>
 							Retry saving
 						</button>
