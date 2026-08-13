@@ -136,3 +136,10 @@ command history and player-visible output.
 `v8-to-v9-name-saved-conditions` adds the neutral empty-string name to retained saved-condition
 definitions that lack the new field. Existing names, condition logic, and unrelated authored world
 data are preserved. Game states and messages remain unchanged while their rows advance to version 9.
+
+### Version 9 to 10: replay indented room listings
+
+`v9-to-v10-replay-indented-room-listings` leaves retained worlds unchanged and sequentially replays
+every recorded command. Each turn state and output, the final current state, and the transcript are
+regenerated so retained playthroughs match the indented room-item presentation. The authoritative
+command history and all authored content are preserved.
