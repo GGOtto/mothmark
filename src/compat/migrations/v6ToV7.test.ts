@@ -67,9 +67,9 @@ describe("the v6 to v7 empty logic flag migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(7);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(8);
 		expect(migrationFrom(6)).toBe(v6ToV7);
-		expect(migrationFrom(7)).toBeUndefined();
+		expect(migrationFrom(7)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 7, value});
 		expect(skipped).toEqual({applied: false, schemaVersion: 7, value});
 	});
