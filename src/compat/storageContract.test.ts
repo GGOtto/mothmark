@@ -41,6 +41,44 @@ describe("persisted storage contract", () => {
 		expect(compareStorageContracts(previous, candidate)).toEqual([]);
 	});
 
+	it("allows additive optional fields nested beneath an unchanged stored default", () => {
+		const previous = createStorageContract();
+		previous.gameMessage = {
+			kind: "default",
+			defaultValue: [],
+			input: {
+				kind: "array",
+				element: {
+					kind: "object",
+					properties: {text: {kind: "string"}},
+				},
+			},
+		};
+		const candidate = structuredClone(previous);
+		candidate.gameMessage.input!.element!.properties!.source = {
+			kind: "optional",
+			input: {kind: "string"},
+		};
+
+		expect(compareStorageContracts(previous, candidate)).toEqual([]);
+	});
+
+	it("still rejects a changed stored default when its nested contract also changes", () => {
+		const previous = createStorageContract();
+		previous.gameMessage = {
+			kind: "default",
+			defaultValue: [],
+			input: {kind: "array", element: {kind: "string"}},
+		};
+		const candidate = structuredClone(previous);
+		candidate.gameMessage.defaultValue = ["changed"];
+		candidate.gameMessage.input!.element = {kind: "optional", input: {kind: "string"}};
+
+		expect(compareStorageContracts(previous, candidate)).toEqual([
+			"GameMessage changed its stored default.",
+		]);
+	});
+
 	it("treats PostgreSQL jsonb key reordering as the same reviewed contract", () => {
 		const contract = createStorageContract();
 		const reordered = reorderObjectKeys(contract) as StorageContract;

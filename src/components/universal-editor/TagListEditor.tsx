@@ -69,8 +69,9 @@ export function TagListEditor({
 		metadata.features?.suggestArticleless,
 		metadata.features?.suggestionFields !== undefined,
 	);
+	const normalizedValues = new Set(value.map((entry) => entry.trim().toLocaleLowerCase()));
 	const visibleSuggestions = generatedSuggestions.filter(
-		(suggestion) => !value.includes(suggestion),
+		(suggestion) => !normalizedValues.has(suggestion.trim().toLocaleLowerCase()),
 	);
 	const normalizedDraft = normalizeTag(draftValue);
 	const collisions = value.filter((tag) => collisionValues.has(tag));
@@ -84,7 +85,7 @@ export function TagListEditor({
 
 		const nextTag = normalizeTag(rawValue);
 		if (!nextTag) return;
-		if (!metadata.features?.allowDuplicates && value.includes(nextTag)) {
+		if (!metadata.features?.allowDuplicates && normalizedValues.has(nextTag.toLocaleLowerCase())) {
 			setDraftValue("");
 			return;
 		}

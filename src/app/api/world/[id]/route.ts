@@ -10,6 +10,10 @@ import {
 	permanentlyDeleteOwnedWorld,
 	updateOwnedWorld,
 } from "@/db/dbal/worldsRepository";
+import {
+	getOwnedItemActivitySnapshot,
+	recordItemActivity,
+} from "@/db/dbal/editorPreferencesRepository";
 
 import {
 	WorldIdSchema,
@@ -90,9 +94,28 @@ export async function PUT(request: Request, context: WorldRouteContext): Promise
 		const permissionError = await worldPermissionError(actor, "world.update_owned");
 		if (permissionError) return permissionError;
 		const {expectedRevision, ...update} = bodyResult.data;
+		const activitySnapshot = update.world
+			? await getOwnedItemActivitySnapshot(actor.userId, idResult.data)
+			: undefined;
 		const world = await updateOwnedWorld(actor.userId, idResult.data, update, expectedRevision);
 
-		if (world) return NextResponse.json({data: world});
+		if (world) {
+			if (update.world && activitySnapshot) {
+				try {
+					await recordItemActivity({
+						worldId: idResult.data,
+						previousWorld: activitySnapshot.world,
+						nextWorld: update.world,
+						worldCreatedAt: activitySnapshot.createdAt,
+						previousWorldUpdatedAt: activitySnapshot.updatedAt,
+					});
+				} catch (error) {
+					// Activity metadata must never turn an otherwise successful authored-world save into a failure.
+					console.error("Could not record editor item activity", error);
+				}
+			}
+			return NextResponse.json({data: world});
+		}
 
 		return expectedRevision === undefined ? worldNotFoundResponse() : worldRevisionConflictResponse();
 	} catch (error) {

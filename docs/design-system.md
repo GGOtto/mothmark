@@ -105,6 +105,144 @@ rail's established button geometry, compact label typography, and label-reveal i
 alone communicates the active state through its small blue indicator and icon. The right property
 inspector, toolbars, forms, and dialogs use the ordinary surface family.
 
+## Focused document workspaces
+
+The item page establishes Mothmark's focused document-workspace pattern. Apply this pattern to other
+important entity editors when authors need sustained room to work on one object. It is a compact
+workbench, not a dashboard, settings card, or enlarged property inspector.
+
+Use a purpose-built document workspace when all of the following are true:
+
+- the object is a primary authoring destination rather than a secondary property;
+- its fields form a small number of stable author tasks that deserve explicit grouping;
+- desktop and phone layouts materially improve when the form is composed by hand; and
+- specialized work can be handed to an existing focused workspace instead of embedded recursively.
+
+Continue using the schema-driven universal editor for generic coverage, rapidly changing schemas,
+administrative inspection, and secondary surfaces where a custom composition would only restyle the
+same field sequence. A purpose-built form must still use the production schemas for validation,
+defaults, and data shapes. Do not create a second business-model catalog in the view.
+
+### Workspace anatomy
+
+| Region           | Purpose                                                                      | Visual treatment                                                              |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Context bar      | Back navigation, 32px entity mark, title, compact state, and primary actions | One 54px neutral row with a bottom rule; no page introduction above it        |
+| Task tabs        | Switch between distinct author intents                                       | One 40–42px row; neutral inactive tabs and one action-blue selected underline |
+| Document body    | Holds the active task only                                                   | Uses the full remaining canvas and is the only vertical scroller              |
+| Optional utility | Play, preview, or another separate mode                                      | Collapsed or absent by default; opened explicitly from the context bar        |
+
+The context bar and tabs are pinned together. Scrolling content must never carry them away. Avoid a
+second title bar, repeated breadcrumb, descriptive page banner, or permanently reserved utility strip
+when the context bar already provides the same control.
+
+The context bar is deliberately dense:
+
+- keep the entity mark at 32px and use it as identification, not decoration;
+- keep the title on one line at approximately 17px on desktop and 15px on phones;
+- place location, state, or type beside or immediately beneath the title in 11–12px muted text;
+- expose one frequent action, such as Play, directly;
+- show the sole destructive action as a labeled danger button when it fits; use overflow only when
+  several genuinely secondary actions need it; and
+- truncate metadata before truncating the entity name.
+
+### Tabs and information architecture
+
+Tabs represent author tasks, not schema nesting. Each tab should answer one clear question—for
+example, what the object is, what it can do, where it begins, or what custom logic refers to it.
+
+- Keep one tab row at every supported width. Do not wrap tabs or replace them with a dropdown.
+- Use short visible labels on phones while preserving the full accessible name.
+- Show one task panel at a time. Do not repeat the entity header within each panel.
+- Use correct `tablist`, `tab`, and `tabpanel` semantics and support Left, Right, Home, and End keys.
+- Use action blue, surface change, and an underline together for selection. Never rely on a faint
+  text-color change alone.
+- Keep inactive tab text at normal-text contrast: at least 4.5:1 in both themes.
+
+### Desktop composition
+
+Use the available canvas. Do not center the document in a generic narrow card.
+
+- Arrange compatible tasks into two intentional columns when the container is wider than 720px.
+- Use unequal columns when one task contains long text and the other contains compact identity
+  fields; equal-width columns are not a default.
+- Separate columns with 24px spacing and, when useful, one passive vertical rule.
+- Keep sections continuous on the canvas. Do not wrap each section or field in its own card.
+- Constrain width only for genuinely short tasks such as placement or a command-reference list.
+
+### Phone composition
+
+At 720px and below, stack columns in reading order and replace the vertical division with one
+horizontal rule. At 520px and below, use the compact context bar, four equal tab columns, and roughly
+13–14px document padding.
+
+The focused document owns the phone viewport. Hide redundant global navigation and do not reserve a
+collapsed bottom utility region. An explicit context-bar action may open that utility temporarily;
+closing it returns the full canvas to editing. Forms must not introduce horizontal scrolling, and
+multi-column field groups must collapse to one column unless every control remains comfortably usable.
+
+### Form language
+
+The form should read as a document with controls embedded in it.
+
+- Use a 17px sentence-case section heading and a small 4px × 18px identity marker. Brass may mark
+  identity; action blue may mark player-facing text or the primary task. These are small cues, not
+  colored panels or repeated edge rails.
+- Use 12px semibold labels above 40px controls. Textareas begin around 82px high and remain vertically
+  resizable.
+- Use one visible `--color-control-border` around inputs and `--color-surface-raised` inside them.
+  Focus changes the border to action blue and adds a clear focus outline.
+- Keep aliases, tags, and other short repeatable values inside a single wrapping field. Individual
+  values may use restrained outlines or subtle 8–12% token tints; never turn the form into a field of
+  colorful pills.
+- Present simple booleans as aligned labeled toggles. Present repeated state such as flags as compact
+  ruled rows rather than cards.
+- Present a small set of mutually compatible capabilities as selectable tiles, then reveal the
+  selected capability's settings in restrained disclosures below. A tile describes and selects; it
+  is not a decorative summary card.
+- Collapse internal identifiers and rarely changed details behind a disclosure. Keep common authored
+  text visible.
+- Summarize complex condition and effect groups in compact ruled rows with an Add or Edit action.
+  Open the dedicated Logic workspace for the actual edit instead of nesting a second editor in the
+  document.
+- Keep short help behind an accessible information control. A floating explanation on desktop should
+  become inline content on phones.
+
+### Color and theme behavior
+
+Focused workspaces use only semantic tokens. The light and dark themes share identical geometry,
+spacing, typography, and meaning.
+
+- Neutral surface differences establish the shell, tab rail, body, and controls.
+- Action blue identifies interaction and active navigation.
+- Brass identifies focus and occasional authored identity.
+- Danger color appears only on destructive actions and their confirmations.
+- Small translucent mixes may tint selection or tags, but large regions stay neutral.
+- Do not add gradients, glow, ornamental textures, or broad monochrome color washes.
+
+Check normal text, muted metadata, inactive tabs, input borders, selected controls, and keyboard focus
+independently in both themes. A readable dark theme is not evidence that light mode is readable.
+
+### Adoption checklist
+
+Before applying this pattern to another editor, verify that:
+
+- the selector and document remain separate destinations with stable URL context;
+- the context bar replaces redundant page chrome instead of adding another layer;
+- every task tab is reachable without scrolling horizontally at 390px;
+- only the document body scrolls;
+- the primary fields are visible without opening cards or nested accordions;
+- advanced work has an explicit focused destination and a reliable return path;
+- the utility region consumes no phone space until opened;
+- labels, focus, selection, and boundaries are visible in light and dark mode; and
+- the layout has been inspected around 1280 × 720, 720px container width, and 390 × 844.
+
+The current reference implementation is `src/components/studio/ItemWorkspace.tsx`,
+`src/components/studio/ItemWorkspaceForm.tsx`, and `src/components/studio/ItemWorkspace.scss`. Treat
+the visual roles and responsive behavior as the contract; do not reuse item-specific class names for
+unrelated entities. When a second document workspace adopts the pattern, extract only the genuinely
+shared shell, tab, section-heading, and control primitives. Keep each entity's task composition local.
+
 ## Map palette
 
 The map remains a distinct authored canvas and currently uses the warm light drafting-paper palette

@@ -1,6 +1,7 @@
 import {z} from "zod";
 import {editor} from "@/schemas/utils/editorSchemaHelpers";
 import {docify} from "@/schemas/utils/docify";
+import {getEditorMetadata, withEditorMetadata} from "@/utils/editorMetadata";
 import {ConditionSchema, ConditionalTextSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
 import {ITEM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
@@ -33,7 +34,7 @@ export const ItemCapacitySchema = editor.object(
 	{
 		capacity: editor
 			.positiveInteger({
-				title: "Capacity",
+				title: "Total capacity",
 				description: "The total size units this item can hold.",
 			})
 			.default(8),
@@ -44,19 +45,33 @@ export const ItemCapacitySchema = editor.object(
 	{
 		title: "Capacity",
 		description: "Limits placement using the same size scale used by takeable items.",
+		features: {layout: "grid"},
 	},
 );
+
+export const ItemContentsListingTextSchema = editor
+	.textarea(
+		{
+			title: "Contents lead-in",
+			description: "Optional text shown before visible items inside or on this item.",
+			placeholder: "Inside the chest:",
+		},
+		"",
+	)
+	.optional();
+
+export const ItemTakeAllowedWhenSchema = editor
+	.conditionControl(ConditionSchema, {
+		title: "Take when",
+		description: "Optional additional condition for taking this item.",
+	})
+	.optional();
 
 export const TakeableBehaviorSchema = editor.object(
 	{
 		type: z.literal("takeable"),
 		size: ItemSizeSchema,
-		allowedWhen: editor
-			.conditionControl(ConditionSchema, {
-				title: "Take when",
-				description: "Optional additional condition for taking this item.",
-			})
-			.optional(),
+		allowedWhen: ItemTakeAllowedWhenSchema,
 		blockedMessage: editor
 			.message({title: "Blocked message"})
 			.default("You can't take that right now."),
@@ -77,6 +92,7 @@ export const ContainerBehaviorSchema = editor.object(
 	{
 		type: z.literal("container"),
 		capacity: ItemCapacitySchema,
+		contentsListingText: ItemContentsListingTextSchema,
 	},
 	{
 		title: "Container",
@@ -88,6 +104,7 @@ export const SurfaceBehaviorSchema = editor.object(
 	{
 		type: z.literal("surface"),
 		capacity: ItemCapacitySchema,
+		contentsListingText: ItemContentsListingTextSchema,
 	},
 	{
 		title: "Surface",
@@ -234,6 +251,20 @@ export const UseRecipeSchema = editor.object(
 	},
 );
 
+export const ItemParentConditionalTextSchema = editor
+	.array(ConditionalTextSchema, {
+		title: "Conditional parent-listing text",
+		description: "Extra listing text shown whenever its condition passes.",
+	})
+	.default([]);
+
+export const ItemExamineConditionalTextSchema = editor
+	.array(ConditionalTextSchema, {
+		title: "Conditional examine text",
+		description: "Extra examine text shown whenever its condition passes.",
+	})
+	.default([]);
+
 export const UsableBehaviorSchema = editor.object(
 	{
 		type: z.literal("usable"),
@@ -319,30 +350,30 @@ export const ItemExamineSchema = editor.object(
 			description: "The description shown by the standard examine action.",
 			placeholder: "Describe what the player notices...",
 		}),
-		conditionalText: editor
-			.array(ConditionalTextSchema, {
-				title: "Conditional examine text",
-				description: "Extra examine text shown whenever its condition passes.",
-			})
-			.default([]),
+		conditionalText: ItemExamineConditionalTextSchema,
 		afterExamine: EffectGroupSchema.optional(),
 	},
 	{
 		title: "Examine",
 		description: "Every item can be examined without authoring a custom command.",
 		childControls: {afterExamine: {title: "After examine"}},
+		layout: {group: "presentation", width: "full", order: 2},
 	},
 );
 
 export const ItemInitialStateSchema = editor.object(
 	{
-		location: ItemLocationSchema,
+		location: withEditorMetadata(ItemLocationSchema, {
+			...getEditorMetadata(ItemLocationSchema)!,
+			layout: {group: "placement", width: "full", order: 1},
+		}),
 		open: editor.hidden(z.boolean().default(false)),
 		locked: editor.hidden(z.boolean().default(false)),
 		flags: editor
 			.objectFlags({
 				title: "Flags",
-				description: "Boolean state attached to this item and its initial values.",
+				description: "Item state used by conditions and effects, with its initial values.",
+				layout: {group: "flags", width: "full", order: 1},
 				features: {
 					flags: ITEM_FLAG_DEFINITIONS,
 					linkedFlags: [
@@ -368,6 +399,24 @@ export const ItemInitialStateSchema = editor.object(
 	{
 		title: "Start state",
 		description: "Initial placement, open and locked state, and item flags.",
+		layout: {group: "placement", width: "full", order: 1},
+		features: {
+			layout: "section",
+			groups: [
+				{
+					id: "placement",
+					title: "Starting position",
+					description: "Choose the single authoritative place where this item begins.",
+					order: 10,
+				},
+				{
+					id: "flags",
+					title: "Flags",
+					description: "Define item state used by conditions and effects.",
+					order: 20,
+				},
+			],
+		},
 	},
 );
 
@@ -392,11 +441,17 @@ export const ItemSchema = editor
 			aliases: editor.aliasList({
 				title: "Aliases",
 				description: "Alternative names the player can use for this item.",
+				features: {
+					autoSuggestFrom: "title",
+					suggestionFields: undefined,
+					suggestArticleless: true,
+				},
 				layout: {group: "identity", width: "full", order: 3},
 			}),
 			tags: editor.tagList("items", {
 				title: "Tags",
 				description: "Author-defined tags used for grouping, targeting, and logic.",
+				features: {suggestionFields: []},
 				layout: {group: "identity", width: "full", order: 4},
 			}),
 			presentation: editor.object(
@@ -414,12 +469,7 @@ export const ItemSchema = editor
 								"Optional shorter text shown beneath the item's room or containing item instead of examine text.",
 						})
 						.default(""),
-					conditionalText: editor
-						.array(ConditionalTextSchema, {
-							title: "Conditional parent-listing text",
-							description: "Extra listing text shown whenever its condition passes.",
-						})
-						.default([]),
+					conditionalText: ItemParentConditionalTextSchema,
 				},
 				{
 					title: "Presentation",
@@ -433,6 +483,8 @@ export const ItemSchema = editor
 				features: {
 					selectionControl: "multi-select",
 					selectionTitle: "Available behaviors",
+					reorderable: false,
+					duplicateable: false,
 				},
 				emptyState: {
 					emptyTitle: "Fixed item",
@@ -453,9 +505,30 @@ export const ItemSchema = editor
 			features: {
 				layout: "section",
 				groups: [
-					{id: "identity", title: "Identity", order: 10},
-					{id: "presentation", title: "Presentation and examine", order: 20},
-					{id: "behavior", title: "Behaviors and actions", order: 30},
+					{
+						id: "identity",
+						title: "Identity",
+						description: "Name the item and add the words authors can use to target and organize it.",
+						order: 10,
+					},
+					{
+						id: "presentation",
+						title: "Player-facing text",
+						description: "Control how the item appears in its parent and when examined.",
+						order: 20,
+					},
+					{
+						id: "behavior",
+						title: "Behaviors",
+						description: "Add standard capabilities without writing a custom command.",
+						order: 30,
+					},
+					{
+						id: "placement",
+						title: "Where it begins",
+						description: "Set the item's initial location, containment, and state.",
+						order: 40,
+					},
 				],
 			},
 			duplicate: {

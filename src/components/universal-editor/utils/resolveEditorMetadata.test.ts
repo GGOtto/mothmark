@@ -150,11 +150,11 @@ describe("resolveEditorMetadata object fields", () => {
 			"id",
 			"presentation",
 			"behaviors",
+			"initialState",
 			"name",
+			"examine",
 			"aliases",
 			"tags",
-			"examine",
-			"initialState",
 		]);
 		expect(fields[0].metadata).toMatchObject({
 			type: "hidden",

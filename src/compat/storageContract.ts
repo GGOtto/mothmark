@@ -202,9 +202,6 @@ function compatibleNode(
 	if (canonicalJson(previous) === canonicalJson(candidate)) return [];
 
 	if (candidate.kind === "optional") return compatibleNode(previous, candidate.input!, path);
-	if (candidate.kind === "default" || candidate.kind === "prefault") {
-		return compatibleNode(previous, candidate.input!, path);
-	}
 	if (previous.kind === "optional") {
 		if (!acceptsMissing(candidate)) return [`${path} no longer accepts an omitted value.`];
 		return compatibleNode(previous.input!, candidate.input!, path);
@@ -216,6 +213,9 @@ function compatibleNode(
 		)
 			return [`${path} changed its stored default.`];
 		return compatibleNode(previous.input!, candidate.input!, path);
+	}
+	if (candidate.kind === "default" || candidate.kind === "prefault") {
+		return compatibleNode(previous, candidate.input!, path);
 	}
 	if (previous.kind !== candidate.kind)
 		return [`${path} changed from ${previous.kind} to ${candidate.kind}.`];

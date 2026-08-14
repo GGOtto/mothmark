@@ -39,10 +39,9 @@ describe("room messages through the player path", () => {
 		const chest = produce(
 			createPlayerTestItem("chest", "Chest", "A chest rests here.", "foyer"),
 			(draft) => {
-				draft.behaviors = [
-					createDefaultFieldObject(ContainerBehaviorSchema),
-					createDefaultFieldObject(OpenableBehaviorSchema),
-				];
+				const container = createDefaultFieldObject(ContainerBehaviorSchema);
+				container.contentsListingText = "Inside the chest:";
+				draft.behaviors = [container, createDefaultFieldObject(OpenableBehaviorSchema)];
 			},
 		);
 		const key = produce(
@@ -58,7 +57,9 @@ describe("room messages through the player path", () => {
 		const table = produce(
 			createPlayerTestItem("table", "Table", "A table stands nearby.", "foyer"),
 			(draft) => {
-				draft.behaviors = [createDefaultFieldObject(SurfaceBehaviorSchema)];
+				const surface = createDefaultFieldObject(SurfaceBehaviorSchema);
+				surface.contentsListingText = "On the table:";
+				draft.behaviors = [surface];
 			},
 		);
 		const map = produce(
@@ -79,7 +80,7 @@ describe("room messages through the player path", () => {
 
 		const beforeOpening = resolveTurn(world, game, "look");
 		expect(beforeOpening.messages.at(-1)?.text).toContain(
-			" A table stands nearby.\n  A map is spread across it.",
+			" A table stands nearby.\n  On the table:\n  A map is spread across it.",
 		);
 		expect(beforeOpening.messages.at(-1)?.text).not.toContain("A small key lies inside.");
 
@@ -88,7 +89,9 @@ describe("room messages through the player path", () => {
 
 		expect(afterOpening.messages.at(-1)).toMatchObject({
 			type: "room",
-			text: expect.stringContaining(" A chest rests here.\n  A small key lies inside."),
+			text: expect.stringContaining(
+				" A chest rests here.\n  Inside the chest:\n  A small key lies inside.",
+			),
 		});
 	});
 });

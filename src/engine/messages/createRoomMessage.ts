@@ -73,6 +73,7 @@ function createItemListingLines(
 		.filter(Boolean)
 		.flatMap((itemText) => itemText.split("\n"))
 		.map((line) => `${indent}${line}`);
+	const announcedPlacements = new Set<"inside" | "on">();
 
 	for (const childState of gameState.itemStates) {
 		if (
@@ -82,7 +83,31 @@ function createItemListingLines(
 		) {
 			continue;
 		}
-		lines.push(...createItemListingLines(world, gameState, childState, depth + 1));
+
+		const childLines = createItemListingLines(world, gameState, childState, depth + 1);
+		if (childLines.length === 0) continue;
+
+		const placement = childState.location.placement;
+		if (!announcedPlacements.has(placement)) {
+			const behaviorType = placement === "inside" ? "container" : "surface";
+			const contentsBehavior = authored?.behaviors.find((behavior) => behavior.type === behaviorType);
+			const contentsListingText =
+				contentsBehavior?.type === "container" || contentsBehavior?.type === "surface"
+					? contentsBehavior.contentsListingText
+					: undefined;
+			if (contentsListingText?.trim()) {
+				const childIndent = " ".repeat(depth + 1);
+				lines.push(
+					...contentsListingText
+						.split("\n")
+						.filter(Boolean)
+						.map((line) => `${childIndent}${line}`),
+				);
+			}
+			announcedPlacements.add(placement);
+		}
+
+		lines.push(...childLines);
 	}
 
 	return lines;

@@ -14,7 +14,7 @@ import {
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {ItemCatalog} from "@/components/studio/ItemCatalog";
-import {ItemEditor} from "@/components/studio/editors/ItemEditor";
+import {ItemWorkspace} from "@/components/studio/ItemWorkspace";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {Map, type ConnectionDraft} from "@/components/map/Map";
@@ -202,6 +202,8 @@ export default function EditorPage() {
 
 	const applyEditorContext = useCallback((context: EditorContext, notice: string | null) => {
 		setActiveTab(context.activeTab);
+		setUtilityView(context.activeTab === "map" ? "editor" : "play");
+		setUtilityCollapsed(context.activeTab === "map" ? null : true);
 		setSelection(context.selection);
 		setLogicSection(context.logicSection);
 		setSelectedEventId(context.selectedEventId);
@@ -341,8 +343,8 @@ export default function EditorPage() {
 			beginEditorNavigation();
 			setIsAddingRoom(false);
 			setActiveTab(tab);
-			setUtilityView(tab === "logic" ? "play" : "editor");
-			setUtilityCollapsed(tab === "logic" ? true : mobileEditorLayout);
+			setUtilityView(tab === "map" ? "editor" : "play");
+			setUtilityCollapsed(tab === "map" ? null : true);
 			if (tab !== "logic") return;
 
 			setLogicSection("home");
@@ -354,7 +356,7 @@ export default function EditorPage() {
 			setSelectedEffectId(null);
 			setLogicLibraryReturn(null);
 		},
-		[beginEditorNavigation, mobileEditorLayout],
+		[beginEditorNavigation],
 	);
 
 	const activateUtilityView = useCallback((view: EditorUtilityView) => {
@@ -444,10 +446,6 @@ export default function EditorPage() {
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
-	const selectedItem = useMemo(
-		() => editorWorld.items.find((item) => idValue(item.id) === selectedItemId) ?? null,
-		[editorWorld.items, selectedItemId],
-	);
 	const selectedCommand = useMemo(
 		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
 		[editorWorld.commands, selectedCommandId],
@@ -455,9 +453,20 @@ export default function EditorPage() {
 	useCommandCopyRegistration(
 		activeTab === "logic" && logicSection === "commands" ? selectedCommand : null,
 	);
+	const itemDocumentOpen = activeTab === "world" && selectedItemId !== null;
+
+	function returnFromLogicLibrary(request: OpenLogicLibraryRequest) {
+		if (request.returnSection === "items") {
+			setActiveTab("world");
+			setUtilityView("play");
+			setUtilityCollapsed(true);
+			return;
+		}
+		setLogicSection(request.returnSection);
+	}
 
 	return (
-		<main className="editorPage">
+		<main className={`editorPage ${itemDocumentOpen ? "editorPage--itemDocument" : ""}`}>
 			<LeftSideBar activeTab={activeTab} onTabChange={handleTabChange} />
 
 			<div className="editorPageBody">
@@ -512,6 +521,7 @@ export default function EditorPage() {
 					onOpenLogicLibrary={(request) => {
 						beginEditorNavigation();
 						setLogicLibraryReturn(request);
+						setActiveTab("logic");
 						setLogicSection(request.kind === "condition" ? "conditions" : "effects");
 						if (request.kind === "condition") setSelectedConditionId(request.selectedId ?? null);
 						else setSelectedEffectId(request.selectedId ?? null);
@@ -521,21 +531,21 @@ export default function EditorPage() {
 						if (!request) return;
 						request.onCancel?.();
 						setLogicLibraryReturn(null);
-						setLogicSection(request.returnSection);
+						returnFromLogicLibrary(request);
 					}}
 					onDoneLogicLibrary={(selectedId) => {
 						const request = logicLibraryReturn;
 						if (!request) return;
 						request.onDone?.(selectedId);
 						setLogicLibraryReturn(null);
-						setLogicSection(request.returnSection);
+						returnFromLogicLibrary(request);
 					}}
 					onDoneLogicLibraryDraft={(value) => {
 						const request = logicLibraryReturn;
 						if (!request?.draftEditor) return;
 						request.draftEditor.onDone(value);
 						setLogicLibraryReturn(null);
-						setLogicSection(request.returnSection);
+						returnFromLogicLibrary(request);
 					}}
 					onOpenLogicUsage={(usage) => {
 						beginEditorNavigation();
@@ -561,6 +571,8 @@ export default function EditorPage() {
 						} else if (usage.kind === "item") {
 							setActiveTab("world");
 							setSelectedItemId(usage.id);
+							setUtilityView("play");
+							setUtilityCollapsed(true);
 						} else {
 							setActiveTab("map");
 							setSelection({selectedId: usage.id, isConnectionSelected: false});
@@ -572,6 +584,10 @@ export default function EditorPage() {
 						beginEditorNavigation();
 						setSelectedItemId(itemId);
 					}}
+					replaceSelectedItemId={(itemId) => {
+						replaceEditorContext();
+						setSelectedItemId(itemId);
+					}}
 					editorContextNotice={editorContextNotice}
 					onDismissEditorContextNotice={() => setEditorContextNotice(null)}
 					onEditorContextRecovery={(message) => {
@@ -581,138 +597,134 @@ export default function EditorPage() {
 					persistedWorldId={persistedWorldId}
 					persistedWorldRevision={persistedWorldRevision}
 					worldName={worldName}
+					onOpenPlay={() => activateUtilityView("play")}
 					onMapRecenter={() => {
 						setMapZoom(1);
 						setMapRecenterRequest((request) => request + 1);
 					}}
 				/>
 
-				<aside
-					className={`editorUtilityPanel editorUtilityPanel--${utilityView} ${utilityCollapsed ? "editorUtilityPanel--collapsed" : ""}`}
-					aria-label="Editor utility panel"
-					style={
-						{
-							"--editor-utility-height": `${mobileUtilityHeight}px`,
-							"--editor-utility-width": `${desktopUtilityWidth}px`,
-						} as React.CSSProperties
-					}
-				>
-					{!utilityCollapsed ? (
-						<div
-							className="editorUtilityResizeHandle"
-							role="separator"
-							aria-label="Resize editor utility panel"
-							aria-orientation={mobileEditorLayout ? "horizontal" : "vertical"}
-							aria-valuemin={mobileEditorLayout ? 140 : 310}
-							aria-valuemax={mobileEditorLayout ? Math.round(window.innerHeight * 0.72) : 640}
-							aria-valuenow={mobileEditorLayout ? mobileUtilityHeight : desktopUtilityWidth}
-							tabIndex={0}
-							onKeyDown={handleUtilityResizeKeyDown}
-							onPointerDown={handleUtilityResizeStart}
-							onPointerMove={handleUtilityResizeMove}
-							onPointerUp={handleUtilityResizeEnd}
-							onPointerCancel={handleUtilityResizeEnd}
-						/>
-					) : null}
-					<div className="editorUtilityTabBar">
-						<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
-							{activeTab === "map" || activeTab === "world" ? (
+				{!itemDocumentOpen || !utilityCollapsed || !mobileEditorLayout ? (
+					<aside
+						className={`editorUtilityPanel editorUtilityPanel--${utilityView} ${utilityCollapsed ? "editorUtilityPanel--collapsed" : ""} ${itemDocumentOpen && utilityCollapsed ? "editorUtilityPanel--itemDocumentHidden" : ""}`}
+						aria-label="Editor utility panel"
+						style={
+							{
+								"--editor-utility-height": `${mobileUtilityHeight}px`,
+								"--editor-utility-width": `${desktopUtilityWidth}px`,
+							} as React.CSSProperties
+						}
+					>
+						{!utilityCollapsed ? (
+							<div
+								className="editorUtilityResizeHandle"
+								role="separator"
+								aria-label="Resize editor utility panel"
+								aria-orientation={mobileEditorLayout ? "horizontal" : "vertical"}
+								aria-valuemin={mobileEditorLayout ? 140 : 310}
+								aria-valuemax={mobileEditorLayout ? Math.round(window.innerHeight * 0.72) : 640}
+								aria-valuenow={mobileEditorLayout ? mobileUtilityHeight : desktopUtilityWidth}
+								tabIndex={0}
+								onKeyDown={handleUtilityResizeKeyDown}
+								onPointerDown={handleUtilityResizeStart}
+								onPointerMove={handleUtilityResizeMove}
+								onPointerUp={handleUtilityResizeEnd}
+								onPointerCancel={handleUtilityResizeEnd}
+							/>
+						) : null}
+						<div className="editorUtilityTabBar">
+							<div className="editorUtilityTabs" role="tablist" aria-label="Editor utility view">
+								{activeTab === "map" ? (
+									<button
+										type="button"
+										role="tab"
+										id="editor-utility-editor-tab"
+										aria-controls="editor-utility-editor-panel"
+										aria-selected={utilityView === "editor"}
+										aria-expanded={utilityView === "editor" && !utilityCollapsed}
+										onClick={() => activateUtilityView("editor")}
+									>
+										Editor
+									</button>
+								) : null}
 								<button
 									type="button"
 									role="tab"
-									id="editor-utility-editor-tab"
-									aria-controls="editor-utility-editor-panel"
-									aria-selected={utilityView === "editor"}
-									aria-expanded={utilityView === "editor" && !utilityCollapsed}
-									onClick={() => activateUtilityView("editor")}
+									id="editor-utility-play-tab"
+									aria-controls="editor-utility-play-panel"
+									aria-selected={utilityView === "play"}
+									aria-expanded={utilityView === "play" && !utilityCollapsed}
+									onClick={() => activateUtilityView("play")}
 								>
-									Editor
+									Play
+								</button>
+							</div>
+							{!utilityCollapsed ? (
+								<button
+									type="button"
+									className="editorUtilityCollapse"
+									aria-label="Collapse editor utility panel"
+									onClick={() => setUtilityCollapsed(true)}
+								>
+									<X size={15} aria-hidden="true" />
 								</button>
 							) : null}
-							<button
-								type="button"
-								role="tab"
-								id="editor-utility-play-tab"
-								aria-controls="editor-utility-play-panel"
-								aria-selected={utilityView === "play"}
-								aria-expanded={utilityView === "play" && !utilityCollapsed}
-								onClick={() => activateUtilityView("play")}
-							>
-								Play
-							</button>
 						</div>
-						{!utilityCollapsed ? (
-							<button
-								type="button"
-								className="editorUtilityCollapse"
-								aria-label="Collapse editor utility panel"
-								onClick={() => setUtilityCollapsed(true)}
+
+						{activeTab === "map" ? (
+							<div
+								ref={editorUtilityContentRef}
+								className="editorUtilityContent"
+								role="tabpanel"
+								id="editor-utility-editor-panel"
+								aria-labelledby="editor-utility-editor-tab"
+								hidden={utilityCollapsed || utilityView !== "editor"}
 							>
-								<X size={15} aria-hidden="true" />
-							</button>
+								<EditorInspector
+									activeTab={activeTab}
+									world={editorWorld}
+									selectedRoom={selectedRoom}
+									selectedConnection={selectedConnection}
+									updateWorld={updateWorld}
+									onSelectedIdChange={(selectedId) => {
+										replaceEditorContext();
+										setSelection((current) => ({...current, selectedId}));
+									}}
+									onOpenItem={(itemId) => {
+										beginEditorNavigation();
+										setSelectedItemId(itemId);
+										setActiveTab("world");
+										setUtilityView("play");
+										setUtilityCollapsed(true);
+									}}
+									onSelectionDeleted={(entity) => {
+										replaceEditorContext();
+										if (entity === "room") {
+											setSelection({selectedId: null, isConnectionSelected: false});
+											setEditorContextNotice("The room was deleted. Showing the map without a selection.");
+										}
+										if (entity === "connection") {
+											setSelection({selectedId: null, isConnectionSelected: false});
+											setEditorContextNotice(
+												"The connection was deleted. Showing the map without a selection.",
+											);
+										}
+									}}
+								/>
+							</div>
 						) : null}
-					</div>
 
-					{activeTab === "map" || activeTab === "world" ? (
 						<div
-							ref={editorUtilityContentRef}
-							className="editorUtilityContent"
+							className="editorUtilityContent editorUtilityPlay"
 							role="tabpanel"
-							id="editor-utility-editor-panel"
-							aria-labelledby="editor-utility-editor-tab"
-							hidden={utilityCollapsed || utilityView !== "editor"}
+							id="editor-utility-play-panel"
+							aria-labelledby="editor-utility-play-tab"
+							hidden={utilityCollapsed || utilityView !== "play"}
 						>
-							<EditorInspector
-								activeTab={activeTab}
-								world={editorWorld}
-								selectedRoom={selectedRoom}
-								selectedConnection={selectedConnection}
-								updateWorld={updateWorld}
-								onSelectedIdChange={(selectedId) => {
-									replaceEditorContext();
-									setSelection((current) => ({...current, selectedId}));
-								}}
-								onOpenItem={(itemId) => {
-									beginEditorNavigation();
-									setSelectedItemId(itemId);
-									setActiveTab("world");
-								}}
-								selectedItem={selectedItem}
-								setSelectedItemId={(itemId) => {
-									replaceEditorContext();
-									setSelectedItemId(itemId);
-								}}
-								onSelectionDeleted={(entity) => {
-									replaceEditorContext();
-									if (entity === "room") {
-										setSelection({selectedId: null, isConnectionSelected: false});
-										setEditorContextNotice("The room was deleted. Showing the map without a selection.");
-									}
-									if (entity === "connection") {
-										setSelection({selectedId: null, isConnectionSelected: false});
-										setEditorContextNotice(
-											"The connection was deleted. Showing the map without a selection.",
-										);
-									}
-									if (entity === "item") {
-										setSelectedItemId(null);
-										setEditorContextNotice("The item was deleted. Choose another item to continue.");
-									}
-								}}
-							/>
+							<CommandLine contained isLoading={!worldIsLoaded} world={editorWorld} />
 						</div>
-					) : null}
-
-					<div
-						className="editorUtilityContent editorUtilityPlay"
-						role="tabpanel"
-						id="editor-utility-play-panel"
-						aria-labelledby="editor-utility-play-tab"
-						hidden={utilityCollapsed || utilityView !== "play"}
-					>
-						<CommandLine contained isLoading={!worldIsLoaded} world={editorWorld} />
-					</div>
-				</aside>
+					</aside>
+				) : null}
 			</div>
 		</main>
 	);
@@ -757,12 +769,14 @@ type EditorMainPanelProps = {
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	replaceSelectedItemId: (itemId: string | null) => void;
 	editorContextNotice: string | null;
 	onDismissEditorContextNotice: () => void;
 	onEditorContextRecovery: (message: string) => void;
 	persistedWorldId: string | null;
 	persistedWorldRevision: number | null;
 	worldName: string;
+	onOpenPlay: () => void;
 };
 
 function EditorMainPanel({
@@ -804,91 +818,95 @@ function EditorMainPanel({
 	onOpenCommandInspector,
 	selectedItemId,
 	setSelectedItemId,
+	replaceSelectedItemId,
 	editorContextNotice,
 	onDismissEditorContextNotice,
 	onEditorContextRecovery,
 	persistedWorldId,
 	persistedWorldRevision,
 	worldName,
+	onOpenPlay,
 }: EditorMainPanelProps) {
 	const {hoverStatus, noticeStatus, updateStatus} = useToolBarStatus();
 
 	return (
 		<section className="editorMainPanel">
 			<div className="editorMapArea">
-				<EditorToolbar
-					activeTab={activeTab}
-					rooms={isLoading ? [] : rooms}
-					isAddingRoom={isAddingRoom}
-					onAddingRoomChange={onAddingRoomChange}
-					mapZoom={mapZoom}
-					onMapRecenter={onMapRecenter}
-					connectionDraft={connectionDraft}
-					hoverStatus={hoverStatus}
-					noticeStatus={noticeStatus}
-					world={world}
-					updateWorld={updateWorld}
-					logicSection={logicSection}
-					selectedEventId={selectedEventId}
-					selectedCommandId={selectedCommandId}
-					onLogicBack={() => {
-						setLogicSection("home");
-						setLogicSelection(null);
-						setCommandSelection(null);
-					}}
-					onCommandBack={() => {
-						if (selectedCommandId) {
-							setSelectedCommandId(null);
-							setCommandSelection(null);
-						} else {
+				{activeTab !== "world" || !selectedItemId ? (
+					<EditorToolbar
+						activeTab={activeTab}
+						rooms={isLoading ? [] : rooms}
+						isAddingRoom={isAddingRoom}
+						onAddingRoomChange={onAddingRoomChange}
+						mapZoom={mapZoom}
+						onMapRecenter={onMapRecenter}
+						connectionDraft={connectionDraft}
+						hoverStatus={hoverStatus}
+						noticeStatus={noticeStatus}
+						world={world}
+						updateWorld={updateWorld}
+						logicSection={logicSection}
+						selectedEventId={selectedEventId}
+						selectedCommandId={selectedCommandId}
+						onLogicBack={() => {
 							setLogicSection("home");
-						}
-					}}
-					onCommandSettings={() => {
-						if (selectedCommandId) {
-							onOpenCommandInspector({kind: "command", commandId: selectedCommandId});
-						}
-					}}
-					onDeleteEvent={() => {
-						if (!selectedEventId) return;
-						const events = world.events ?? [];
-						const index = events.findIndex((event) => idValue(event.id) === selectedEventId);
-						const nextEvent = events[index + 1] ?? events[index - 1] ?? null;
-						updateWorld((draft) => {
-							const target = draft.events?.findIndex((event) => idValue(event.id) === selectedEventId);
-							if (target != null && target >= 0) draft.events?.splice(target, 1);
-						});
-						setSelectedEventId(nextEvent ? idValue(nextEvent.id) : null);
-						setLogicSelection(nextEvent ? {kind: "event", eventId: idValue(nextEvent.id)} : null);
-						onEditorContextRecovery(
-							"The event was deleted. " +
-								(nextEvent ? "The next available event is open." : "Choose another event to continue."),
-						);
-					}}
-					onDeleteCommand={() => {
-						if (!selectedCommandId) return;
-						const index = world.commands.findIndex(
-							(command) => idValue(command.id) === selectedCommandId,
-						);
-						const nextCommand = world.commands[index + 1] ?? world.commands[index - 1] ?? null;
-						updateWorld((draft) => {
-							const target = draft.commands.findIndex(
+							setLogicSelection(null);
+							setCommandSelection(null);
+						}}
+						onCommandBack={() => {
+							if (selectedCommandId) {
+								setSelectedCommandId(null);
+								setCommandSelection(null);
+							} else {
+								setLogicSection("home");
+							}
+						}}
+						onCommandSettings={() => {
+							if (selectedCommandId) {
+								onOpenCommandInspector({kind: "command", commandId: selectedCommandId});
+							}
+						}}
+						onDeleteEvent={() => {
+							if (!selectedEventId) return;
+							const events = world.events ?? [];
+							const index = events.findIndex((event) => idValue(event.id) === selectedEventId);
+							const nextEvent = events[index + 1] ?? events[index - 1] ?? null;
+							updateWorld((draft) => {
+								const target = draft.events?.findIndex((event) => idValue(event.id) === selectedEventId);
+								if (target != null && target >= 0) draft.events?.splice(target, 1);
+							});
+							setSelectedEventId(nextEvent ? idValue(nextEvent.id) : null);
+							setLogicSelection(nextEvent ? {kind: "event", eventId: idValue(nextEvent.id)} : null);
+							onEditorContextRecovery(
+								"The event was deleted. " +
+									(nextEvent ? "The next available event is open." : "Choose another event to continue."),
+							);
+						}}
+						onDeleteCommand={() => {
+							if (!selectedCommandId) return;
+							const index = world.commands.findIndex(
 								(command) => idValue(command.id) === selectedCommandId,
 							);
-							if (target >= 0) draft.commands.splice(target, 1);
-						});
-						setSelectedCommandId(nextCommand ? idValue(nextCommand.id) : null);
-						setCommandSelection(
-							nextCommand ? {kind: "command", commandId: idValue(nextCommand.id)} : null,
-						);
-						onEditorContextRecovery(
-							"The command was deleted. " +
-								(nextCommand
-									? "The next available command is open."
-									: "Showing the command library instead."),
-						);
-					}}
-				/>
+							const nextCommand = world.commands[index + 1] ?? world.commands[index - 1] ?? null;
+							updateWorld((draft) => {
+								const target = draft.commands.findIndex(
+									(command) => idValue(command.id) === selectedCommandId,
+								);
+								if (target >= 0) draft.commands.splice(target, 1);
+							});
+							setSelectedCommandId(nextCommand ? idValue(nextCommand.id) : null);
+							setCommandSelection(
+								nextCommand ? {kind: "command", commandId: idValue(nextCommand.id)} : null,
+							);
+							onEditorContextRecovery(
+								"The command was deleted. " +
+									(nextCommand
+										? "The next available command is open."
+										: "Showing the command library instead."),
+							);
+						}}
+					/>
+				) : null}
 				{editorContextNotice ? (
 					<div className="editorContextNotice" role="status">
 						<span>{editorContextNotice}</span>
@@ -940,9 +958,12 @@ function EditorMainPanel({
 						onOpenCommandInspector={onOpenCommandInspector}
 						selectedItemId={selectedItemId}
 						setSelectedItemId={setSelectedItemId}
+						replaceSelectedItemId={replaceSelectedItemId}
+						onEditorContextRecovery={onEditorContextRecovery}
 						persistedWorldId={persistedWorldId}
 						persistedWorldRevision={persistedWorldRevision}
 						worldName={worldName}
+						onOpenPlay={onOpenPlay}
 					/>
 				</div>
 			</div>
@@ -1089,9 +1110,12 @@ type EditorWorkspaceProps = {
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	setSelectedItemId: (itemId: string | null) => void;
+	replaceSelectedItemId: (itemId: string | null) => void;
+	onEditorContextRecovery: (message: string) => void;
 	persistedWorldId: string | null;
 	persistedWorldRevision: number | null;
 	worldName: string;
+	onOpenPlay: () => void;
 };
 
 function EditorWorkspace({
@@ -1131,9 +1155,12 @@ function EditorWorkspace({
 	onOpenCommandInspector,
 	selectedItemId,
 	setSelectedItemId,
+	replaceSelectedItemId,
+	onEditorContextRecovery,
 	persistedWorldId,
 	persistedWorldRevision,
 	worldName,
+	onOpenPlay,
 }: EditorWorkspaceProps) {
 	if (activeTab === "map") {
 		return (
@@ -1249,9 +1276,38 @@ function EditorWorkspace({
 	}
 
 	if (activeTab === "world") {
+		const selectedItem = world.items.find((item) => idValue(item.id) === selectedItemId) ?? null;
+		if (selectedItem) {
+			return (
+				<ItemWorkspace
+					item={selectedItem}
+					world={world}
+					updateWorld={updateWorld}
+					onOpenLogicLibrary={onOpenLogicLibrary}
+					onOpenPlay={onOpenPlay}
+					onBack={() => setSelectedItemId(null)}
+					onItemIdChange={(itemId) => replaceSelectedItemId(itemId)}
+					onItemDeleted={() => {
+						replaceSelectedItemId(null);
+						onEditorContextRecovery("The item was deleted. Choose another item to continue.");
+					}}
+					onOpenCommand={(commandId) => {
+						const command = world.commands.find((candidate) => idValue(candidate.id) === commandId);
+						onOpenLogicUsage({
+							key: `command:${commandId}`,
+							kind: "command",
+							id: commandId,
+							label: command?.name || "Unnamed command",
+							detail: "Command",
+						});
+					}}
+				/>
+			);
+		}
 		return (
 			<ItemCatalog
 				world={world}
+				worldId={persistedWorldId}
 				updateWorld={updateWorld}
 				selectedItemId={selectedItemId}
 				onSelectItem={setSelectedItemId}
@@ -1379,9 +1435,7 @@ type EditorInspectorProps = {
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
 	onOpenItem: (itemId: string) => void;
-	selectedItem: World["items"][number] | null;
-	setSelectedItemId: (itemId: string | null) => void;
-	onSelectionDeleted: (entity: "room" | "connection" | "item") => void;
+	onSelectionDeleted: (entity: "room" | "connection") => void;
 };
 
 function EditorInspector({
@@ -1392,8 +1446,6 @@ function EditorInspector({
 	updateWorld,
 	onSelectedIdChange,
 	onOpenItem,
-	selectedItem,
-	setSelectedItemId,
 	onSelectionDeleted,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
@@ -1409,35 +1461,6 @@ function EditorInspector({
 				onSelectionDeleted={() => onSelectionDeleted("room")}
 				onConnectionDeleted={() => onSelectionDeleted("connection")}
 			/>
-		);
-	}
-
-	if (activeTab === "world") {
-		return (
-			<RightSideBar
-				contained
-				world={world}
-				updateWorld={updateWorld}
-				selectedRoom={null}
-				selectedConnection={null}
-			>
-				{selectedItem ? (
-					<ItemEditor
-						selectedItem={selectedItem}
-						world={world}
-						updateWorld={updateWorld}
-						onSelectedIdChange={setSelectedItemId}
-						onDelete={() => onSelectionDeleted("item")}
-					/>
-				) : (
-					<div className="rightSideBarEmptyPanel">
-						<p className="rightSideBarEmptyTitle">Items</p>
-						<p className="rightSideBarEmptyDescription">
-							Select an item to edit its identity, behavior, and start state.
-						</p>
-					</div>
-				)}
-			</RightSideBar>
 		);
 	}
 
