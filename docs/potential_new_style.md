@@ -114,17 +114,17 @@ consistent.
 
 ## Item presentation
 
-Items use a two-surface flow: a full-workspace object selector followed by a dedicated, vertically
-flowing item page. The selector should borrow the tactile act of pulling a tag from an archive rack,
-but item names remain horizontal and consistently visible. The item page is an authoring document,
-not a right-inspector form or a grid of settings cards.
+Items use a two-surface flow: a full-workspace object selector followed by a dedicated tabbed item
+page. The selector should borrow the tactile act of pulling a tag from an archive rack, but item
+names remain horizontal and consistently visible. The item page is an authoring document organized
+as Details, Behaviors, Placement, and Commands, not a right-inspector form or a grid of settings
+cards. Its reusable shell and form-composition rules are documented as the
+[focused document-workspace pattern](design-system.md#focused-document-workspaces).
 
-Mothmark does not require or infer bespoke item illustrations. Instead, a maintained library of 20
-flat, stylized category SVGs may be selected from author-supplied tags. The agreed subjects are
-Generic, Structure, Door, Furniture, Container, Mechanism, Tool, Key, Weapon, Wearable, Light,
-Document, Food, Nature, Remains, Art, Relic, Treasure, Music, and Magic. Generic is the fallback.
-Exact tag mappings and conflict behavior are recorded in
-`docs/constrained-card-page-audit.md`.
+Mothmark does not require or infer bespoke item illustrations. Instead, the maintained 100-category
+Hugeicons library is selected by corroborating item names, aliases, and tags. Generic is the
+fallback. The exact vocabulary and conflict behavior are recorded in
+[`item-icon-system.md`](./item-icon-system.md).
 
 The category marks should feel drawn and graphic rather than metallic, realistic, or like RPG
 inventory art. They communicate broad author-chosen presentation only; item names remain the primary
@@ -204,7 +204,7 @@ Visual polish must not conceal missing product content.
 - Item-page candidate: [Mothmark authoring document](mockups/item-mothmark-document-v4.png)
 - Items candidate: [flat horizontal tags with category SVGs](mockups/items-flat-tag-svgs-v7.png)
 - Items candidate: [color-block category charms](mockups/items-color-block-charms-v7.png)
-- Item category marks: [all retained categories](mockups/item-category-marks-v1.svg)
+- Item category marks: [live 100-mark gallery](/test/item-icons)
 
 The mockups are design references, not pixel specifications. Responsive behavior, light-theme
 equivalence, accessible focus treatment, reduced motion, and real content states still require

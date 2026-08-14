@@ -5,6 +5,10 @@ import {PERSISTED_SCHEMA_VERSION} from "@/compat/migrations";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
 import {userHasPermission} from "@/db/dbal/permissionRepository";
 import {
+	getOwnedItemActivitySnapshot,
+	recordItemActivity,
+} from "@/db/dbal/editorPreferencesRepository";
+import {
 	createOwnedWorld,
 	deleteOwnedWorld,
 	duplicateOwnedWorld,
@@ -30,6 +34,10 @@ import {GET as getBySlug} from "./slug/[slug]/route";
 
 jest.mock("@/auth/currentActor", () => ({resolveCurrentActor: jest.fn()}));
 jest.mock("@/db/dbal/permissionRepository", () => ({userHasPermission: jest.fn()}));
+jest.mock("@/db/dbal/editorPreferencesRepository", () => ({
+	getOwnedItemActivitySnapshot: jest.fn(),
+	recordItemActivity: jest.fn(),
+}));
 jest.mock("@/db/dbal/worldsRepository", () => ({
 	deleteOwnedWorld: jest.fn(),
 	duplicateOwnedWorld: jest.fn(),
@@ -225,6 +233,31 @@ describe("private world API", () => {
 		);
 		expect(response.status).toBe(409);
 		expect(updateOwnedWorld).toHaveBeenCalledWith(userId, worldId, {world: initialWorld}, 3);
+	});
+
+	it("records item activity after a successful authored-world save", async () => {
+		jest.mocked(getOwnedItemActivitySnapshot).mockResolvedValue({
+			world: initialWorld,
+			createdAt: storedWorld.createdAt,
+			updatedAt: storedWorld.updatedAt,
+		});
+		jest.mocked(updateOwnedWorld).mockResolvedValue({...storedWorld, revision: 2});
+		const nextWorld = structuredClone(initialWorld);
+		nextWorld.items[0]!.name = "Changed counter";
+
+		const response = await PUT(
+			request(`/api/world/${worldId}`, "PUT", {world: nextWorld, expectedRevision: 1}),
+			{params: Promise.resolve({id: worldId})},
+		);
+
+		expect(response.status).toBe(200);
+		expect(recordItemActivity).toHaveBeenCalledWith({
+			worldId,
+			previousWorld: initialWorld,
+			nextWorld,
+			worldCreatedAt: storedWorld.createdAt,
+			previousWorldUpdatedAt: storedWorld.updatedAt,
+		});
 	});
 
 	it("soft-deletes only within the owner scope", async () => {

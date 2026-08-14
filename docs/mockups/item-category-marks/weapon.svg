@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
-  <title>Weapon item category mark</title>
-  <path d="m14 10 8 4 26 31-5 5-31-26Z" fill="currentColor" fill-opacity=".1"/>
-  <path d="m50 10-8 4-26 31 5 5 31-26Z" fill="currentColor" fill-opacity=".1"/>
-  <path d="m11 48 6 6m30-6-6 6M14 10l34 40M50 10 16 50"/>
-</svg>

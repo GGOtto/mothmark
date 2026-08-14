@@ -189,6 +189,13 @@
 	}
 }
 
+@media (max-width: 760px), (max-height: 700px) {
+	.map .layerClearButton {
+		right: auto;
+		left: 20px;
+	}
+}
+
 /* Retained for a future explicit palette choice; no production map applies this class. */
 .map.map--dark-palette {
 	--map-surface: #25272c;

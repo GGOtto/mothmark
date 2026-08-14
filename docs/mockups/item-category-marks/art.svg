@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
-  <title>Art item category mark</title>
-  <circle cx="32" cy="17" r="8" fill="currentColor" fill-opacity=".1"/>
-  <path d="M22 42V30c0-4 4-7 10-7s10 3 10 7v12" fill="currentColor" fill-opacity=".1"/>
-  <path d="M17 42h30v7H17Zm-4 7h38v7H13ZM28 15h8M26 31h12"/>
-</svg>

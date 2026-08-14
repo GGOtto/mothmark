@@ -2,6 +2,9 @@ import {expect, test, type Page} from "@playwright/test";
 
 import {PERSISTED_SCHEMA_VERSION} from "../src/compat/migrations";
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
+import {ItemSchema} from "../src/schemas/world/itemSchema";
+import {createDefaultFieldObject} from "../src/utils/createDefaultFieldObject";
+import {toID} from "../src/utils/idUtils";
 import {createUniqueWorldSlug} from "../src/utils/worldSlug";
 import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
@@ -34,6 +37,37 @@ function collectBrowserErrors(page: Page) {
 	});
 
 	return errors;
+}
+
+async function itemWorkspaceTextContrast(page: Page) {
+	return page.evaluate(() => {
+		const toRgb = (value: string) =>
+			(value.match(/[\d.]+/g) ?? []).slice(0, 3).map((channel) => Number(channel) / 255);
+		const luminance = (value: string) => {
+			const channels = toRgb(value).map((channel) =>
+				channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+			);
+			return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+		};
+		const ratio = (foreground: Element, background: Element) => {
+			const foregroundLuminance = luminance(getComputedStyle(foreground).color);
+			const backgroundLuminance = luminance(getComputedStyle(background).backgroundColor);
+			return (
+				(Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+				(Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+			);
+		};
+		const inactiveTab = document.querySelector(
+			'.itemWorkspaceTabs [role="tab"][aria-selected="false"]',
+		)!;
+		const tabRail = document.querySelector(".itemWorkspaceTabs")!;
+		const fieldLabel = document.querySelector(".itemFormField > span")!;
+		const body = document.querySelector(".itemWorkspaceBody")!;
+		return {
+			inactiveTab: ratio(inactiveTab, tabRail),
+			fieldLabel: ratio(fieldLabel, body),
+		};
+	});
 }
 
 async function useHomePublications(page: Page) {
@@ -121,6 +155,8 @@ async function useDeterministicEditorWorld(
 	let bootstrapCount = 0;
 	let saveCount = 0;
 	let saveFailuresRemaining = 0;
+	let preferenceSaveCount = 0;
+	let editorPreferences = {itemListView: "cards", itemListSort: "updated-desc"};
 	const bootstrapRequests: BootstrapRequest[] = [];
 	await page.route("**/api/auth/csrf", async (route) => {
 		await route.fulfill({
@@ -141,6 +177,27 @@ async function useDeterministicEditorWorld(
 			status: 200,
 			contentType: "application/json",
 			body: JSON.stringify({data: storedWorlds.get(worldId), meta: {userId: ownerUserId}}),
+		});
+	});
+	await page.route(/\/api\/editor\/preferences(?:\?.*)?$/, async (route) => {
+		if (route.request().method() === "PATCH") {
+			editorPreferences = {...editorPreferences, ...route.request().postDataJSON()};
+			preferenceSaveCount += 1;
+		}
+		const selectedWorld = storedWorlds.get(worldId)?.world;
+		const itemActivity = Object.fromEntries(
+			(selectedWorld?.items ?? []).map((item, index) => [
+				item.id.id,
+				{
+					createdAt: new Date(Date.UTC(2026, 7, 1, 12, index)).toISOString(),
+					updatedAt: new Date(Date.UTC(2026, 7, 12, 12, index)).toISOString(),
+				},
+			]),
+		);
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({data: {preferences: editorPreferences, itemActivity}}),
 		});
 	});
 	await page.route(/\/api\/world(?:\?.*)?$/, async (route) => {
@@ -370,6 +427,8 @@ async function useDeterministicEditorWorld(
 		failNextSave: () => {
 			saveFailuresRemaining += 1;
 		},
+		preferenceSaveCount: () => preferenceSaveCount,
+		preferences: () => ({...editorPreferences}),
 		saveCount: () => saveCount,
 		worlds: () => [...storedWorlds.values()],
 		worldStore: storedWorlds,
@@ -1167,7 +1226,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 
 	await page.getByRole("button", {name: "Items"}).click();
 	await expect(page.getByRole("heading", {name: "Items"})).toBeVisible();
-	await expect(page.getByPlaceholder("Search items, aliases, and tags")).toBeVisible();
+	await expect(page.getByPlaceholder("Search names, aliases, and tags")).toBeVisible();
 	await expect(page.getByRole("button", {name: "Add item"})).toBeVisible();
 
 	await page.getByRole("button", {name: "Logic"}).click();
@@ -1250,6 +1309,212 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	expect(browserErrors).toEqual([]);
 });
 
+test("the Items selector keeps its controls pinned and restores compact view preferences", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const worldId = "57c635aa-7792-4a13-9595-58cd1ef05fd6";
+	const ownerUserId = "3e816c4d-b957-45dc-8523-d53ec04c8d0f";
+	const largeWorld = structuredClone(initialWorld);
+	for (let index = 0; index < 24; index += 1) {
+		const nextItem = createDefaultFieldObject(ItemSchema);
+		nextItem.id = toID("item", `archive-object-${index + 1}`);
+		nextItem.name = `Archive object ${String(index + 1).padStart(2, "0")}`;
+		nextItem.aliases = [`catalogue-${index + 1}`];
+		nextItem.tags = index % 2 === 0 ? ["document", "archive"] : ["key", "iron"];
+		nextItem.examine.text = `A catalogued object numbered ${index + 1}.`;
+		nextItem.initialState.location = {type: "room", roomId: largeWorld.rooms[0]!.id};
+		largeWorld.items.push(nextItem);
+	}
+	const sharedWorlds = new Map<string, DeterministicWorld>([
+		[
+			worldId,
+			{
+				editorSlug: "private-test-world",
+				id: worldId,
+				name: "Private test world",
+				ownerUserId,
+				world: largeWorld,
+				revision: 1,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
+				updatedAt: "2026-08-13T12:00:00.000Z",
+				lastOpenedAt: "2026-08-13T12:00:00.000Z",
+			},
+		],
+	]);
+	const editor = await useDeterministicEditorWorld(page, worldId, 5, sharedWorlds);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	const header = page.locator(".itemCatalogHeader");
+	const body = page.locator(".itemCatalogBody");
+	await expect(header).toHaveCSS("position", "sticky");
+	await expect(body).toHaveCSS("overflow-y", "auto");
+	const headerTop = (await header.boundingBox())!.y;
+	await body.evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
+	});
+	expect((await header.boundingBox())!.y).toBe(headerTop);
+	await body.evaluate((element) => {
+		element.scrollTop = 0;
+	});
+
+	const cardMark = page.locator('.itemCatalogResults[data-view="cards"] .itemCatalogMark').first();
+	expect((await cardMark.boundingBox())!.width).toBe(128);
+	await expect(cardMark.locator("svg")).toHaveAttribute("width", "128");
+
+	await page.getByRole("button", {name: "Rows"}).click();
+	const rowItem = page.locator('.itemCatalogResults[data-view="rows"] .itemCatalogItem').first();
+	expect((await rowItem.boundingBox())!.height).toBeGreaterThanOrEqual(80);
+	const rowMark = rowItem.locator(".itemCatalogMark");
+	expect((await rowMark.boundingBox())!.width).toBe(64);
+	await expect(rowMark.locator("svg")).toHaveAttribute("width", "64");
+	await expect(rowItem.locator(".itemCatalogName")).toHaveCSS("font-size", "14px");
+
+	await page.getByRole("button", {name: "Marks"}).click();
+	const mark = page.locator('.itemCatalogResults[data-view="marks"] .itemCatalogMark').first();
+	expect((await mark.boundingBox())!.width).toBe(128);
+	await expect(mark.locator("svg")).toHaveAttribute("width", "128");
+
+	await page.getByRole("button", {name: "Index"}).click();
+	const indexItem = page.locator('.itemCatalogResults[data-view="index"] .itemCatalogItem').first();
+	await expect(indexItem.locator(".itemCatalogName")).toHaveCSS("font-size", "13px");
+	const indexBackground = await indexItem.evaluate(
+		(element) => getComputedStyle(element).backgroundColor,
+	);
+	await indexItem.hover();
+	await expect
+		.poll(() => indexItem.evaluate((element) => getComputedStyle(element).backgroundColor))
+		.not.toBe(indexBackground);
+
+	await page.getByRole("button", {name: "Marks"}).click();
+	await page.getByRole("combobox", {name: "Sort items"}).selectOption("name-desc");
+	await expect.poll(editor.preferenceSaveCount).toBe(5);
+	expect(editor.preferences()).toEqual({itemListView: "marks", itemListSort: "name-desc"});
+
+	await page.reload();
+	await expect(page.getByRole("button", {name: "Marks"})).toHaveAttribute("aria-pressed", "true");
+	await expect(page.getByRole("combobox", {name: "Sort items"})).toHaveValue("name-desc");
+	await page.getByRole("searchbox", {name: "Search items"}).fill("catalogue-12");
+	await expect(page.getByText("1 of 26 objects")).toBeVisible();
+
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(page.getByRole("button", {name: "Cards"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Rows"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Marks"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Index"})).toBeVisible();
+	expect(browserErrors).toEqual([]);
+});
+
+test("an item opens as a full-workspace document and keeps its URL context", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.addInitScript(() => window.localStorage.setItem("mothmark-theme", "light"));
+	const editor = await useDeterministicEditorWorld(page);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	await page.getByRole("button", {name: /Shop Counter/}).click();
+	await expect(page).toHaveURL(
+		new RegExp(`/worlds/${editor.worldSlug}\\?view=items&item=shop-counter$`),
+	);
+
+	await expect(page.getByRole("heading", {name: "Shop Counter", level: 1})).toBeVisible();
+	await expect(page.locator(".itemWorkspaceMark svg")).toHaveAttribute("width", "32");
+	await expect(page.locator(".itemWorkspaceMark svg")).toHaveAttribute(
+		"data-icon-category",
+		"table",
+	);
+	expect((await page.locator(".itemWorkspaceMark").boundingBox())!.width).toBe(32);
+	const itemBody = page.locator(".itemWorkspaceBody");
+	const itemHeader = page.locator(".itemWorkspaceHeader");
+	await expect(itemBody).toHaveCSS("overflow-y", "auto");
+	const itemHeaderTop = (await itemHeader.boundingBox())!.y;
+	await itemBody.evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
+	});
+	expect((await itemHeader.boundingBox())!.y).toBe(itemHeaderTop);
+	await itemBody.evaluate((element) => {
+		element.scrollTop = 0;
+	});
+	await expect(page.locator(".editorUtilityPanel")).toHaveClass(/editorUtilityPanel--collapsed/);
+	await expect(page.locator(".editorUtilityPanel")).toHaveClass(
+		/editorUtilityPanel--itemDocumentHidden/,
+	);
+	await expect(page.getByRole("tab", {name: "Details"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tab", {name: "Behavior"})).toHaveCSS("font-size", "13px");
+	await expect(page.getByRole("heading", {name: "Identity"})).toBeVisible();
+	await expect(page.locator(".universalEditor")).toHaveCount(0);
+	const lightContrast = await itemWorkspaceTextContrast(page);
+	expect(lightContrast.inactiveTab).toBeGreaterThanOrEqual(4.5);
+	expect(lightContrast.fieldLabel).toBeGreaterThanOrEqual(4.5);
+	await expect(page.getByRole("heading", {name: "Player-facing text"})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Behavior"})).toBeVisible();
+	await page.getByRole("tab", {name: "Behavior"}).click();
+	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Flags"})).toBeVisible();
+	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toHaveCount(0);
+	await page.getByRole("checkbox", {name: /Surface/}).check();
+	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
+	await page.getByRole("textbox", {name: "Contents lead-in"}).fill("On the counter:");
+	await page.getByRole("tab", {name: "Placement"}).click();
+	await expect(page.getByRole("heading", {name: "Starting position"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Flags"})).toHaveCount(0);
+	await page.getByRole("tab", {name: "Commands"}).click();
+	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
+	await expect(page.getByText("No direct commands")).toBeVisible();
+
+	await page.getByRole("tab", {name: "Details"}).click();
+	await page.getByRole("textbox", {name: "Name"}).fill("Front Counter");
+	await expect(page.getByRole("heading", {name: "Front Counter", level: 1})).toBeVisible();
+	await expect.poll(editor.saveCount, {timeout: 15_000}).toBeGreaterThanOrEqual(1);
+
+	await page.reload();
+	await expect(page.getByRole("heading", {name: "Front Counter", level: 1})).toBeVisible();
+	await page.locator(".itemWorkspaceBack").click();
+	await expect(page).toHaveURL(new RegExp(`/worlds/${editor.worldSlug}\\?view=items$`));
+	await expect(page.getByRole("heading", {name: "Items", level: 1})).toBeVisible();
+	await page.goBack();
+	await expect(page.getByRole("heading", {name: "Front Counter", level: 1})).toBeVisible();
+	await page.getByRole("button", {name: "Delete", exact: true}).click();
+	const deleteDialog = page.getByRole("dialog", {name: "Delete Front Counter?"});
+	await expect(deleteDialog).toBeVisible();
+	await deleteDialog.getByRole("button", {name: "Cancel"}).click();
+	await expect(page.getByRole("heading", {name: "Front Counter", level: 1})).toBeVisible();
+
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(page.locator(".header")).toBeHidden();
+	await expect(page.locator(".mobileEditorNavigation")).toBeHidden();
+	await expect(page.locator(".editorUtilityPanel")).toHaveCount(0);
+	await expect(page.getByRole("button", {name: "Play"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Delete", exact: true})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Details"})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Commands"})).toBeVisible();
+	const tabTops = await page
+		.locator('.itemWorkspaceTabs [role="tab"]')
+		.evaluateAll((tabs) => tabs.map((tab) => Math.round(tab.getBoundingClientRect().top)));
+	expect(new Set(tabTops).size).toBe(1);
+	await page.getByRole("button", {name: "Play"}).click();
+	await expect(page.locator(".editorUtilityPanel")).toHaveCount(1);
+	await page.getByRole("button", {name: "Collapse editor utility panel"}).click();
+	await expect(page.locator(".editorUtilityPanel")).toHaveCount(0);
+	expect(browserErrors).toEqual([]);
+});
+
+test("the item document remains legible in dark mode", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	await page.addInitScript(() => window.localStorage.setItem("mothmark-theme", "dark"));
+	const editor = await useDeterministicEditorWorld(page);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
+	await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+	await expect(page.getByRole("heading", {name: "Shop Counter", level: 1})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Identity"})).toBeVisible();
+	const darkContrast = await itemWorkspaceTextContrast(page);
+	expect(darkContrast.inactiveTab).toBeGreaterThanOrEqual(4.5);
+	expect(darkContrast.fieldLabel).toBeGreaterThanOrEqual(4.5);
+	expect(browserErrors).toEqual([]);
+});
+
 test("map layers can be renamed", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
@@ -1305,7 +1570,6 @@ test("editor URLs restore context through reload, history, and invalid selection
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
 
-	await expect(page.getByRole("heading", {name: "Items"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Shop Counter"})).toBeVisible();
 	await page.reload();
 	await expect(page.getByRole("heading", {name: "Shop Counter"})).toBeVisible();
@@ -1410,6 +1674,12 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	await page.getByRole("menuitem", {name: "Items"}).click();
 	await expect(page.getByRole("button", {name: "Items", expanded: false})).toBeVisible();
 	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(page.getByRole("tab", {name: "Editor"})).toHaveCount(0);
+	await expect(page.getByRole("tab", {name: "Play"})).toHaveAttribute("aria-selected", "true");
+
+	await page.getByRole("button", {name: "Items", expanded: false}).click();
+	await page.getByRole("menuitem", {name: "Map"}).click();
+	await expect(page.getByRole("button", {name: "Map", expanded: false})).toBeVisible();
 	await expect(page.getByRole("tab", {name: "Editor"})).toHaveAttribute("aria-selected", "true");
 
 	await page.getByRole("tab", {name: "Play"}).click();
@@ -1425,7 +1695,7 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	expect(playSurfaceColors.tab).toBe(playSurfaceColors.body);
 	await commandInput.fill("look at lantern");
 	await page.getByRole("tab", {name: "Editor"}).click();
-	await expect(page.getByPlaceholder("Search items, aliases, and tags")).toBeVisible();
+	await expect(page.locator(".rightSideBar")).toBeVisible();
 	const editorSurfaceColors = await page
 		.getByRole("complementary", {name: "Editor utility panel"})
 		.evaluate((panel) => ({

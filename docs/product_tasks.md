@@ -551,6 +551,8 @@ the full task definitions but do not imply a different sequence.
 
   - Keep the selector content-led, with horizontal visible names, keyboard navigation, search, Add
     item, compact starting-location context, and the maintained category marks in the appendix.
+  - Offer Cards, Rows, Marks, and Index views; keep the selector header and controls pinned while its
+    results scroll, and persist each user's view and sort choices as editor preferences.
   - Do not show the map, use an RPG inventory grid, infer item art, or make the right inspector the
     primary editor.
   - The item page uses the whole workspace and groups player-facing text, behavior, commands,
@@ -1050,51 +1052,38 @@ the full task definitions but do not imply a different sequence.
 
 ## Retained item category contract
 
-This contract survives the old page audit and is the shared input to E05 and G03. It defines
-presentation categories and recommendations, not automatic player behavior.
-
-| Category  | Maintained mark              | Recognized ordinary tags                                                                        |
-| --------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| Generic   | Curious objects and sparkle  | `generic`, `misc`, `miscellaneous`, `other`; fallback for unmatched items                       |
-| Structure | Stone watchtower             | `structure`, `architecture`, `wall`, `pillar`, `column`, `arch`, `bridge`, `platform`, `stairs` |
-| Door      | Arched dungeon door          | `door`, `gate`, `hatch`, `portal`, `portcullis`, `barrier`, `entrance`, `exit`                  |
-| Furniture | High-backed wooden chair     | `furniture`, `chair`, `table`, `desk`, `bed`, `bench`, `shelf`, `cabinet`, `counter`, `rack`    |
-| Container | Bound chest                  | `container`, `chest`, `box`, `crate`, `barrel`, `bag`, `pouch`, `locker`, `vessel`              |
-| Mechanism | Clockwork gears              | `mechanism`, `machine`, `device`, `gear`, `lever`, `switch`, `wheel`, `trap`, `clockwork`       |
-| Tool      | Pickaxe                      | `tool`, `implement`, `utensil`, `crafting`, `hammer`, `pick`, `shovel`, `rope`, `training`      |
-| Key       | Old iron key                 | `key`, `lockpick`, `access`, `pass`, `permit`                                                   |
-| Weapon    | Fuller-lined crossed swords  | `weapon`, `sword`, `dagger`, `axe`, `bow`, `spear`, `club`, `firearm`                           |
-| Wearable  | Bent adventurer hat          | `wearable`, `clothing`, `garment`, `armor`, `helmet`, `boots`, `gloves`                         |
-| Light     | Handled lantern              | `light`, `fire`, `torch`, `lantern`, `lamp`, `candle`, `brazier`                                |
-| Document  | Vertical parchment scroll    | `document`, `book`, `note`, `letter`, `scroll`, `map`, `journal`, `record`                      |
-| Food      | Grouped fruit and carrot     | `food`, `drink`, `edible`, `consumable`, `ingredient`, `fruit`, `meal`                          |
-| Nature    | Leaf sprig and acorn         | `nature`, `plant`, `flora`, `fungus`, `tree`, `herb`, `flower`, `rock`, `mineral`               |
-| Remains   | Skull                        | `remains`, `corpse`, `body`, `bone`, `bones`, `skull`, `skeleton`, `grave`                      |
-| Art       | Carved masks                 | `art`, `statue`, `sculpture`, `painting`, `portrait`, `mural`, `tapestry`, `carving`            |
-| Relic     | Gothic reliquary             | `relic`, `ritual`, `sacred`, `holy`, `shrine`, `altar`, `idol`, `ceremonial`                    |
-| Treasure  | Faceted gem                  | `treasure`, `valuable`, `gem`, `coin`, `currency`, `gold`, `jewel`, `precious`                  |
-| Music     | Traveling lute               | `music`, `musical`, `instrument`, `sound`, `bell`, `horn`, `chime`                              |
-| Magic     | Side-profile palm with flame | `magic`, `magical`, `arcane`, `enchanted`, `spell`, `sorcery`                                   |
-
-The earlier draft SVG exploration remains in [item category mark mockups](mockups/item-category-marks-v1.svg)
-and [`mockups/item-category-marks`](mockups/item-category-marks/), but it does not define the current
-visual direction.
-Current transparent PNG exports live in [`public/item-icons`](../public/item-icons/).
+The production contract is the 100-category typed catalog and its 100 distinct official Hugeicons
+marks, documented in [`item-icon-catalog-v2.md`](./item-icon-catalog-v2.md). It defines presentation
+categories only and does not add automatic player behavior.
 
 Matching rules:
 
 1. An explicit `icon:<category>` tag selects that category.
-2. Otherwise, trim and case-normalize tags and rank matches by concrete identity, broad category,
-   descriptive trait, then behavior. Behavior tags may select a mark, but only at the lowest priority.
-3. Break equal-priority matches by saved tag order, then by a stable catalog order.
-4. Never inspect the item name, description, or other authored prose to infer a category.
+2. Otherwise, normalize the item name, aliases, and tags and treat those as three independent
+   evidence fields. Each field contributes at most one support unit to a candidate.
+3. More corroborating fields outrank isolated matches. Break remaining ties by phrase length,
+   directness, term strength, source priority, category relationship, and stable catalog order.
+   Match whole words and phrases rather than substrings.
+4. Never inspect the item description or other long-form authored prose to infer a category.
 5. Use Generic when no tag matches.
-6. Category marks remain optional, flat, stylized, reusable transparent raster assets. The item name
-   stays visible and accessible when a mark is absent or fails.
+6. Category marks are reusable Hugeicons vectors rendered through the shared `ItemIcon` component.
+   The item name stays visible and accessible.
 7. Keep the shared icon vocabulary adventurous and fantasy-leaning without adding ornamental RPG
    chrome; contemporary imagery belongs only to categories that specifically require it.
-8. Keep one canonical geometry per category at the restrained 32px detail level. Reuse that same
-   design at every export size so details do not appear or disappear as the mark scales.
+8. Render the same Hugeicons geometry with a `0.75` stroke width at every supported size.
+
+**Progress (2026-08-14):** The full-workspace selector now has pinned search, starting-place and sort
+controls; Cards, Rows, Marks, and Index views; accessible visible tag lists; corroborated 100-category
+Hugeicons marks; and user-level persistence for view and sort.
+Editor-only item activity supports created/updated sorting without changing authored world schemas.
+The dedicated item document now opens from the selector and through stable item URLs, keeps its own
+pinned identity header, and separates Details, Behaviors, Placement, and Commands into focused tabs.
+Its purpose-built form exposes every schema-backed item field by author intent without embedding the
+universal editor, and hands condition and effect work to the focused Logic workspace. It lists
+commands with direct item references, keeps flags with behavior state, gives containers and surfaces
+an optional visible-contents lead-in, and opens Play from the compact item header without reserving
+phone space for a collapsed utility strip.
+Taxonomy-aware tag suggestions and the author-facing icon chooser remain open as separate work.
 
 ## Additional tasks added during this reorganization
 

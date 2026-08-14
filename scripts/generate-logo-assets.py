@@ -15,6 +15,8 @@ from PIL import Image, ImageDraw
 INK = (5, 28, 44)
 PARCHMENT = (250, 247, 240)
 SIZES = (16, 32, 48, 180, 192, 512)
+OPTICAL_FAVICON_OCCUPANCY = 0.94
+OPTICAL_FAVICON_BOUNDS_ALPHA = 32
 
 
 def smooth_alpha(values: np.ndarray) -> np.ndarray:
@@ -69,8 +71,14 @@ def save_scaled(image: Image.Image, path: Path, scale: int = 1) -> None:
     image.save(path, optimize=True)
 
 
-def square_mark(mask: Image.Image, size: int, occupancy: float) -> Image.Image:
-    bbox = mask.getbbox()
+def square_mark(
+    mask: Image.Image,
+    size: int,
+    occupancy: float,
+    bounds_alpha: int = 1,
+) -> Image.Image:
+    bounds_mask = mask.point(lambda value: 255 if value >= bounds_alpha else 0)
+    bbox = bounds_mask.getbbox()
     if bbox is None:
         raise ValueError("Artwork crop produced an empty mask")
     mark = mask.crop(bbox)
@@ -189,18 +197,42 @@ def build(mockup: Path, output: Path) -> None:
 
     for theme, color in (("light", INK), ("dark", PARCHMENT)):
         folder = output / theme
-        for family, occupancy in (("full", 0.88), ("optical", 0.78)):
+        for family, occupancy in (
+            ("full", 0.88),
+            ("optical", OPTICAL_FAVICON_OCCUPANCY),
+        ):
             source_mask = masks[f"favicon-{family}"] if family == "full" else masks["favicon-optical-32"]
             for size in SIZES:
+                bounds_alpha = (
+                    OPTICAL_FAVICON_BOUNDS_ALPHA
+                    if family == "optical" and size <= 48
+                    else 1
+                )
                 if family == "optical" and size == 16:
-                    favicon_mask = square_mark(masks["favicon-optical-16"], size, 0.72)
+                    favicon_mask = square_mark(
+                        masks["favicon-optical-16"],
+                        size,
+                        OPTICAL_FAVICON_OCCUPANCY,
+                        bounds_alpha,
+                    )
                 else:
-                    favicon_mask = square_mark(source_mask, size, occupancy)
+                    favicon_mask = square_mark(
+                        source_mask,
+                        size,
+                        occupancy,
+                        bounds_alpha,
+                    )
                 colorize(favicon_mask, color).save(
                     folder / f"favicon-{family}-{size}.png", optimize=True
                 )
 
-            master = colorize(square_mark(source_mask, 512, occupancy), color)
+            master_bounds_alpha = (
+                OPTICAL_FAVICON_BOUNDS_ALPHA if family == "optical" else 1
+            )
+            master = colorize(
+                square_mark(source_mask, 512, occupancy, master_bounds_alpha),
+                color,
+            )
             master.save(
                 folder / f"favicon-{family}.ico",
                 format="ICO",
@@ -211,7 +243,7 @@ def build(mockup: Path, output: Path) -> None:
         (folder / "favicon.ico").write_bytes((folder / "favicon-full.ico").read_bytes())
 
     manifest = {
-        "version": 3,
+        "version": 4,
         "format": "raster-only",
         "source": mockup.name,
         "sourceSha256": hashlib.sha256(mockup.read_bytes()).hexdigest(),
@@ -225,7 +257,7 @@ def build(mockup: Path, output: Path) -> None:
             "profile-512": "Approved light/dark circular profile treatments",
             "app-icon-512": "Approved rounded-square app treatment in light/dark",
             "favicon-full": "Complete moth/book master mark",
-            "favicon-optical": "Antenna-free optical favicon simplification",
+            "favicon-optical": "Antenna-free optical favicon simplification sized for browser tabs",
         },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

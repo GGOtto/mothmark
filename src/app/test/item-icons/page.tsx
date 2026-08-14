@@ -1,38 +1,30 @@
-import {readdir} from "node:fs/promises";
-import path from "node:path";
 import type {Metadata} from "next";
-import Image from "next/image";
 import Link from "next/link";
+import {ITEM_ICON_CATALOG} from "@/itemIcons";
+import {HugeIconGallery, type ItemIconSpecEntry} from "./HugeIconGallery";
 import "./page.scss";
 
 export const metadata: Metadata = {
 	title: "Item icon gallery — Mothmark",
 };
 
-const ICON_SIZES = [24, 32, 48, 64, 128] as const;
-const ICON_THEMES = ["light", "dark"] as const;
-
-function iconLabel(filename: string) {
-	return filename
-		.replace(/\.png$/, "")
-		.split("-")
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(" ");
+function categoryLabel(category: string) {
+	const label = category.replaceAll("-", " ");
+	return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-async function getIconFilenames() {
-	const iconDirectory = path.join(process.cwd(), "public", "item-icons", "light", "64");
-	const entries = await readdir(iconDirectory, {withFileTypes: true});
-
-	return entries
-		.filter((entry) => entry.isFile() && entry.name.endsWith(".png"))
-		.map((entry) => entry.name)
-		.sort((left, right) => left.localeCompare(right));
+function getCatalogEntries(): ItemIconSpecEntry[] {
+	return ITEM_ICON_CATALOG.map((entry, index) => ({
+		category: entry.id,
+		index: index + 1,
+		label: categoryLabel(entry.id),
+		mainCategory: entry.parents.map(categoryLabel).join(" · ") || "Universal",
+		terms: [...entry.identityTerms, ...entry.categoryTerms, ...(entry.descriptorTerms ?? [])],
+	}));
 }
 
 export default async function ItemIconGalleryPage() {
-	const iconFilenames = await getIconFilenames();
-	const imageCount = iconFilenames.length * ICON_SIZES.length * ICON_THEMES.length;
+	const entries = getCatalogEntries();
 
 	return (
 		<main className="itemIconGallery">
@@ -41,58 +33,18 @@ export default async function ItemIconGalleryPage() {
 					<Link className="itemIconGallery__back" href="/test">
 						Back to test pages
 					</Link>
-					<h1>Item icons</h1>
-					<p>Compare every category at its exported sizes on the light and dark editor surfaces.</p>
+					<h1>Hugeicons item catalog</h1>
+					<p>
+						Every category in the 100-mark specification, rendered from the free Stroke Rounded set at
+						64px and 128px. The Nature leaf sets the reduced line-weight benchmark. Every item has at
+						least three actual library choices. Unavailable and duplicate marks have been folded into
+						surviving vocabulary, and the freed positions contain new proposed categories.
+					</p>
 				</div>
-				<p className="itemIconGallery__count">
-					{iconFilenames.length} categories · {imageCount} PNG files
-				</p>
 			</header>
 
 			<div className="itemIconGallery__body">
-				<section className="itemIconGallery__grid" aria-label="Item icon categories">
-					{iconFilenames.map((filename) => {
-						const category = filename.replace(/\.png$/, "");
-						const label = iconLabel(filename);
-
-						return (
-							<article className="itemIconGallery__category" data-category={category} key={filename}>
-								<header className="itemIconGallery__categoryHeader">
-									<h2>{label}</h2>
-									<code>{filename}</code>
-								</header>
-
-								<div className="itemIconGallery__themes">
-									{ICON_THEMES.map((theme) => (
-										<section
-											aria-label={`${label}, ${theme} editor theme`}
-											className={`itemIconGallery__theme itemIconGallery__theme--${theme}`}
-											key={theme}
-										>
-											<h3>{theme === "light" ? "Light editor" : "Dark editor"}</h3>
-											<div className="itemIconGallery__sizes">
-												{ICON_SIZES.map((size) => (
-													<figure key={size}>
-														<span className="itemIconGallery__imageFrame">
-															<Image
-																alt={`${label} at ${size} pixels for the ${theme} editor theme`}
-																height={size}
-																src={`/item-icons/${theme}/${size}/${filename}`}
-																unoptimized
-																width={size}
-															/>
-														</span>
-														<figcaption>{size}px</figcaption>
-													</figure>
-												))}
-											</div>
-										</section>
-									))}
-								</div>
-							</article>
-						);
-					})}
-				</section>
+				<HugeIconGallery entries={entries} />
 			</div>
 		</main>
 	);

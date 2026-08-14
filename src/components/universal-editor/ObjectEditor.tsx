@@ -192,10 +192,16 @@ export function ObjectEditor({
 	const isDisabled = disabled || metadata.disabled;
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
-	const configuredGroups = useMemo(
-		() => metadata.features?.groups ?? [],
-		[metadata.features?.groups],
-	);
+	const configuredGroups = useMemo(() => {
+		const groups = metadata.features?.groups ?? [];
+		const visibleRootSectionIds = isEditorRoot
+			? context.editorChrome?.visibleRootSectionIds
+			: undefined;
+		return visibleRootSectionIds
+			? groups.filter((group) => visibleRootSectionIds.includes(group.id))
+			: groups;
+	}, [context.editorChrome?.visibleRootSectionIds, isEditorRoot, metadata.features?.groups]);
+	const filtersRootSections = Boolean(isEditorRoot && context.editorChrome?.visibleRootSectionIds);
 	const shouldRenderSections = configuredGroups.length > 0;
 	const searchable = Boolean(metadata.features?.searchable || fields.length >= 8);
 	const visibleSearchTerm = searchTerm.trim().toLowerCase();
@@ -233,6 +239,7 @@ export function ObjectEditor({
 	const ungroupedFields = useMemo(
 		() =>
 			fields.filter((field) => {
+				if (filtersRootSections) return false;
 				const groupId = resolveFieldGroupId(field);
 				return (
 					!groupId ||
@@ -241,7 +248,7 @@ export function ObjectEditor({
 					)
 				);
 			}),
-		[configuredGroups, fields],
+		[configuredGroups, fields, filtersRootSections],
 	);
 
 	const matchingSections = useMemo(
@@ -412,7 +419,9 @@ export function ObjectEditor({
 					<summary className="universalField__cardHeader">
 						<div className="universalField__header">
 							<div className="universalField__titleRow">
-								<div className="universalField__title">{subgroup.group.title}</div>
+								<div className="universalField__title" role="heading" aria-level={3}>
+									{subgroup.group.title}
+								</div>
 							</div>
 							{subgroup.group.description ? (
 								<div className="universalField__description">{subgroup.group.description}</div>
@@ -465,7 +474,9 @@ export function ObjectEditor({
 				<summary className="universalField__cardHeader">
 					<div className="universalField__header">
 						<div className="universalField__titleRow">
-							<div className="universalField__title">{section.group.title}</div>
+							<div className="universalField__title" role="heading" aria-level={isEditorRoot ? 2 : 3}>
+								{section.group.title}
+							</div>
 						</div>
 						{countLabel ? (
 							<div className="universalField__headerAction">
