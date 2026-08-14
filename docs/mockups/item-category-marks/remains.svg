@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
-  <title>Remains item category mark</title>
-  <path d="M14 31c0-13 8-21 18-21s18 8 18 21c0 8-4 13-9 16v8H23v-8c-5-3-9-8-9-16Z" fill="currentColor" fill-opacity=".1"/>
-  <circle cx="24" cy="32" r="4"/>
-  <circle cx="40" cy="32" r="4"/>
-  <path d="m32 37-3 6h6Zm-3 12v6m6-6v6"/>
-</svg>

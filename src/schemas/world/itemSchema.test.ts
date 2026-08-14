@@ -5,6 +5,7 @@ import {
 	ItemSchema,
 	LockableBehaviorSchema,
 	OpenableBehaviorSchema,
+	SurfaceBehaviorSchema,
 	TakeableBehaviorSchema,
 	UsableBehaviorSchema,
 } from "./itemSchema";
@@ -48,5 +49,13 @@ describe("ItemSchema", () => {
 			});
 		});
 		expect(ItemSchema.safeParse(validItem).success).toBe(true);
+	});
+
+	it("accepts legacy surface behaviors without a contents lead-in", () => {
+		const legacySurface = createDefaultFieldObject(SurfaceBehaviorSchema);
+		Reflect.deleteProperty(legacySurface, "contentsListingText");
+
+		expect(SurfaceBehaviorSchema.parse(legacySurface)).toMatchObject({type: "surface"});
+		expect(SurfaceBehaviorSchema.parse(legacySurface).contentsListingText).toBeUndefined();
 	});
 });

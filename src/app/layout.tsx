@@ -27,25 +27,25 @@ export const metadata: Metadata = {
 	icons: {
 		icon: [
 			{
-				url: "/logo/light/favicon-full-16.png",
+				url: "/logo/light/favicon-optical-16.png?v=4",
 				media: "(prefers-color-scheme: light)",
 				sizes: "16x16",
 				type: "image/png",
 			},
 			{
-				url: "/logo/light/favicon-full-32.png",
+				url: "/logo/light/favicon-optical-32.png?v=4",
 				media: "(prefers-color-scheme: light)",
 				sizes: "32x32",
 				type: "image/png",
 			},
 			{
-				url: "/logo/dark/favicon-full-16.png",
+				url: "/logo/dark/favicon-optical-16.png?v=4",
 				media: "(prefers-color-scheme: dark)",
 				sizes: "16x16",
 				type: "image/png",
 			},
 			{
-				url: "/logo/dark/favicon-full-32.png",
+				url: "/logo/dark/favicon-optical-32.png?v=4",
 				media: "(prefers-color-scheme: dark)",
 				sizes: "32x32",
 				type: "image/png",

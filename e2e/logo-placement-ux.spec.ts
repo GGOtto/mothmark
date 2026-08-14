@@ -44,16 +44,16 @@ test("the approved logo suite is used in the site shell and metadata", async ({p
 
 	await expect(
 		page.locator('link[rel="icon"][sizes="16x16"][media="(prefers-color-scheme: light)"]'),
-	).toHaveAttribute("href", "/logo/light/favicon-full-16.png");
+	).toHaveAttribute("href", "/logo/light/favicon-optical-16.png?v=4");
 	await expect(
 		page.locator('link[rel="icon"][sizes="32x32"][media="(prefers-color-scheme: light)"]'),
-	).toHaveAttribute("href", "/logo/light/favicon-full-32.png");
+	).toHaveAttribute("href", "/logo/light/favicon-optical-32.png?v=4");
 	await expect(
 		page.locator('link[rel="icon"][sizes="16x16"][media="(prefers-color-scheme: dark)"]'),
-	).toHaveAttribute("href", "/logo/dark/favicon-full-16.png");
+	).toHaveAttribute("href", "/logo/dark/favicon-optical-16.png?v=4");
 	await expect(
 		page.locator('link[rel="icon"][sizes="32x32"][media="(prefers-color-scheme: dark)"]'),
-	).toHaveAttribute("href", "/logo/dark/favicon-full-32.png");
+	).toHaveAttribute("href", "/logo/dark/favicon-optical-32.png?v=4");
 	await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/site.webmanifest");
 	expect(browserErrors).toEqual([]);
 });

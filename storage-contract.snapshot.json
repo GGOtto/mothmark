@@ -16171,7 +16171,7 @@
 			}
 		}
 	},
-	"schemaSourceDigest": "45dcb4b473cecf26865c73f0afdfcbf4a5c09818ba166193494b36e716e85501",
+	"schemaSourceDigest": "dd37f31394de12f31d016030b96be54a2fae5edf80751d2a23fd767dfb9ac1ec",
 	"world": {
 		"kind": "object",
 		"checks": [
@@ -50081,6 +50081,12 @@
 															}
 														}
 													},
+													"contentsListingText": {
+														"kind": "optional",
+														"input": {
+															"kind": "string"
+														}
+													},
 													"type": {
 														"kind": "literal",
 														"values": ["container"]
@@ -50125,6 +50131,12 @@
 																},
 																"defaultValue": "medium"
 															}
+														}
+													},
+													"contentsListingText": {
+														"kind": "optional",
+														"input": {
+															"kind": "string"
 														}
 													},
 													"type": {

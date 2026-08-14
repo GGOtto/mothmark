@@ -5,7 +5,7 @@ const CONTROL_TEST_PAGES = [
 	{
 		href: "/test/item-icons",
 		title: "Item icons",
-		description: "Every item category mark across themes and exported sizes.",
+		description: "Every official library mark across themes and primary sizes.",
 	},
 	{
 		href: "/test/popup",

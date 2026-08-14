@@ -102,6 +102,11 @@
 - Let primary page and workspace content use the available canvas. Do not place catalogs, settings,
   detail views, or other substantial content in an arbitrarily narrow centered card or max-width
   wrapper; constrain width only when a deliberately short reading measure or compact form requires it.
+- Apply the focused document-workspace pattern in `docs/design-system.md` to dedicated primary-entity
+  editors: compact context bar, one directly reachable task-tab row, full-canvas purpose-built form,
+  and no reserved phone utility space until the utility is opened.
+- Keep a focused document's sole Delete action visible as a labeled danger button when it fits; do not
+  hide it behind an otherwise unnecessary overflow menu.
 - When a page or workspace can grow vertically, keep its title, search, filters, and primary actions
   in a non-scrolling header region and scroll only the content body. Do not use one outer scroller that
   carries page-level controls out of view with the content.
@@ -109,18 +114,34 @@
   do not reduce worlds to table or list rows.
 - Treat Items as a two-surface workflow: a full-workspace object selector followed by a dedicated
   full-workspace item page. Do not bring the map into the Items view or make the right property
-  inspector the primary item editor. Do not assume, generate, or infer item imagery that authors have
+  inspector the primary item editor. Organize the item page as Details, Behaviors, Placement, and
+  Commands tabs with one focused task visible at a time; keep every tab directly reachable on phones.
+  Keep its main editing canvas purpose-built instead of embedding or skinning the UniversalEditor;
+  hand condition and effect editing to the focused Logic workspace.
+  Do not assume, generate, or infer item imagery that authors have
   not supplied, and do not fall back to dashboard grids or decorative fields of names. The selector's
-  visual identity may use a maintained library of flat, stylized, reusable category marks selected by
-  recognized item tags; never create bespoke or inferred artwork for each item. Explicit icon tags
-  take precedence, followed by concrete identity, broad category, and descriptive tags. Behavior tags
-  may participate only at the lowest matching priority. Keep the icon vocabulary adventurous and
+  visual identity may use a maintained library of flat, stylized, reusable category marks selected from
+  recognized item names, aliases, and tags; never create bespoke artwork for each item. Explicit icon
+  tags take precedence, followed by concrete identity and broad category matches. Keep the automatic
+  matcher isolated from the view so its vocabulary and artwork can be replaced without redesigning the
+  selector; an author-facing icon chooser is a separate task. Keep the icon vocabulary adventurous and
   fantasy-leaning through its object choices while remaining simple, restrained UI iconography; avoid
-  contemporary office or device imagery unless a category specifically requires it. Give every
-  raster size the same restrained geometry and detail level established at 32px; scale and recolor
-  that canonical design without adding or removing details at other sizes. Keep item names horizontal and visible, avoid
-  realistic or metallic rendering, and avoid RPG inventory conventions or ornamental fantasy chrome.
+  contemporary office or device imagery unless a category specifically requires it. Use the
+  maintained Hugeicons Stroke Rounded library at a 0.75-unit stroke width and render the same vector
+  geometry at every size. Keep item names horizontal and visible, avoid realistic or metallic
+  rendering, and avoid RPG inventory conventions or ornamental fantasy chrome.
+- Resolve automatic item icons by corroborating Name, Aliases, and Tags as independent evidence
+  fields, with at most one support unit from each field. More corroborating fields outrank an
+  isolated match; descriptor terms may corroborate but never initiate a category, and behavior or
+  state tags never participate.
+- Keep the maintained item-icon catalog at exactly 100 distinct official marks. Fold unavailable or
+  duplicate marks into the nearest surviving category's name, alias, and tag vocabulary, then use
+  each freed position for a distinct useful category. Treat the crossed-out mark only as a request
+  for new options, never as an official selection.
+- Keep item flags in Behaviors and starting location in Placement. A contents-listing lead-in belongs
+  only to Container or Surface behavior and appears only when that capability lists visible contents.
 - Color may distinguish entity types, but apply it to small identification cues such as icons, markers, badge outlines, and subtle selection tints rather than filling entire rows or panels. Avoid repeating colored edge rails across controls and results.
+- In the light theme, do not rely on subtle beige surface shifts alone to communicate hierarchy. Keep inactive tabs, helper text, and control boundaries clearly legible against their immediate backgrounds.
 - Use action blue for interaction, brass for focus and rare identity emphasis, and semantic colors only
   for their named statuses. Do not introduce another primary-action color.
 - Keep the header and activity rail in one compact, neutral, theme-aware shell family. Use subtle

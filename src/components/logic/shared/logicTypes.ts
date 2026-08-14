@@ -12,7 +12,7 @@ export type LogicLibraryDraftEditor = {
 
 export type OpenLogicLibraryRequest = {
 	kind: "condition" | "effect";
-	returnSection: "events" | "commands";
+	returnSection: "events" | "commands" | "items";
 	selectedId?: string | null;
 	returnLabel: string;
 	onDone?: (selectedId: string) => void;

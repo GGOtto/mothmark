@@ -31,10 +31,9 @@ describe("createRoomMessage", () => {
 			createPlayerTestItem("chest", "Chest", "An open chest rests here.", "foyer"),
 			(draft) => {
 				draft.initialState.open = true;
-				draft.behaviors = [
-					createDefaultFieldObject(ContainerBehaviorSchema),
-					createDefaultFieldObject(OpenableBehaviorSchema),
-				];
+				const container = createDefaultFieldObject(ContainerBehaviorSchema);
+				container.contentsListingText = "Inside the chest:";
+				draft.behaviors = [container, createDefaultFieldObject(OpenableBehaviorSchema)];
 			},
 		);
 		const satchel = produce(
@@ -46,10 +45,9 @@ describe("createRoomMessage", () => {
 					placement: "inside",
 				};
 				draft.initialState.open = true;
-				draft.behaviors = [
-					createDefaultFieldObject(ContainerBehaviorSchema),
-					createDefaultFieldObject(OpenableBehaviorSchema),
-				];
+				const container = createDefaultFieldObject(ContainerBehaviorSchema);
+				container.contentsListingText = "Inside the satchel:";
+				draft.behaviors = [container, createDefaultFieldObject(OpenableBehaviorSchema)];
 			},
 		);
 		const coin = produce(
@@ -73,7 +71,9 @@ describe("createRoomMessage", () => {
 		expect(message.text).toContain(
 			"You are back in the test foyer.\n" +
 				" An open chest rests here.\n" +
+				"  Inside the chest:\n" +
 				"  A satchel sits inside it.\n" +
+				"   Inside the satchel:\n" +
 				"   A coin glints.\n" +
 				"   Its face is worn.",
 		);
@@ -84,7 +84,9 @@ describe("createRoomMessage", () => {
 		const table = produce(
 			createPlayerTestItem("table", "Table", "A stone table stands here.", "foyer"),
 			(draft) => {
-				draft.behaviors = [createDefaultFieldObject(SurfaceBehaviorSchema)];
+				const surface = createDefaultFieldObject(SurfaceBehaviorSchema);
+				surface.contentsListingText = "On the table:";
+				draft.behaviors = [surface];
 			},
 		);
 		const map = produce(
@@ -104,7 +106,9 @@ describe("createRoomMessage", () => {
 
 		const message = createRoomMessage(surfaceWorld, surfaceWorld.rooms[0], game);
 
-		expect(message.text).toContain(" A stone table stands here.\n  A map is spread across it.");
+		expect(message.text).toContain(
+			" A stone table stands here.\n  On the table:\n  A map is spread across it.",
+		);
 	});
 
 	it("omits listed descendants of closed or unlisted parents", () => {

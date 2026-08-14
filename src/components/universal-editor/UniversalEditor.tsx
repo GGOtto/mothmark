@@ -52,6 +52,7 @@ export type UniversalEditorProps<TValue> = {
 	world?: World;
 	updateWorld?: UpdateWorld;
 	path?: EditorPath;
+	rootValuePath?: EditorPath;
 	appearance?: EditorControlAppearance;
 	readonly?: boolean;
 	disabled?: boolean;
@@ -62,6 +63,7 @@ export type UniversalEditorProps<TValue> = {
 	commandVariableCatalog?: CommandVariableCatalog;
 	logicEditorPresentation?: "popup" | "inline";
 	hideRootShellHeader?: boolean;
+	visibleRootSectionIds?: readonly string[];
 };
 
 type UniversalEditorView = {
@@ -374,6 +376,7 @@ export function UniversalEditor<TValue>({
 	world,
 	updateWorld,
 	path = [],
+	rootValuePath,
 	appearance,
 	readonly,
 	disabled,
@@ -384,10 +387,13 @@ export function UniversalEditor<TValue>({
 	commandVariableCatalog,
 	logicEditorPresentation,
 	hideRootShellHeader = false,
+	visibleRootSectionIds,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
-	const previousRootPathKeyRef = useRef(JSON.stringify(path));
+	const configuredRootPath = rootValuePath ?? path;
+	const rootPathKey = JSON.stringify(configuredRootPath);
+	const previousRootPathKeyRef = useRef(rootPathKey);
 	const previousSchemaRef = useRef(schema);
 	const emittedValueRef = useRef<TValue | undefined>(undefined);
 	const pendingBackScrollPositionRef = useRef<EditorScrollPosition | undefined>(undefined);
@@ -397,13 +403,19 @@ export function UniversalEditor<TValue>({
 		[world],
 	);
 	const metadata = useMemo(() => resolveEditorMetadata(schema), [schema]);
+	const focusedRootSchema = rootValuePath
+		? (getSchemaAtPath(schema, rootValuePath) ?? schema)
+		: schema;
+	const focusedRootMetadata = useMemo(
+		() => resolveEditorMetadata(focusedRootSchema),
+		[focusedRootSchema],
+	);
 	const activeView = viewStack[viewStack.length - 1];
-	const rootPathKey = JSON.stringify(path);
 	const activeViewPathKey = activeView ? JSON.stringify(activeView.path) : "root";
 	const [showJsonPreview, setShowJsonPreview] = useState(false);
 	const [activeSection, setActiveSection] = useState<EditorActiveSection | undefined>(undefined);
 	const [sectionDisclosure, setSectionDisclosure] = useState<EditorSectionDisclosureState>({});
-	const currentEditorRootPath = activeView?.path ?? path;
+	const currentEditorRootPath = activeView?.path ?? configuredRootPath;
 	const setEditorActiveSection = useCallback((nextSection?: EditorActiveSection) => {
 		setActiveSection((currentSection) => {
 			if (!currentSection && !nextSection) return currentSection;
@@ -832,6 +844,7 @@ export function UniversalEditor<TValue>({
 			},
 			editorChrome: {
 				rootPath: currentEditorRootPath,
+				visibleRootSectionIds: activeView ? undefined : visibleRootSectionIds,
 				activeSection,
 				setActiveSection: setEditorActiveSection,
 				getSectionDisclosure: getEditorSectionDisclosure,
@@ -840,6 +853,7 @@ export function UniversalEditor<TValue>({
 			commandVariables,
 		}),
 		[
+			activeView,
 			activeSection,
 			appearance,
 			logicEditorPresentation,
@@ -864,13 +878,18 @@ export function UniversalEditor<TValue>({
 			setEditorActiveSection,
 			value,
 			viewStack,
+			visibleRootSectionIds,
 			world,
 		],
 	);
 
-	const renderedMetadata = activeView?.metadata ?? metadata;
-	const renderedPath = activeView?.path ?? path;
-	const renderedValue = activeView ? viewValue(value, world, activeView) : value;
+	const renderedMetadata = activeView?.metadata ?? focusedRootMetadata;
+	const renderedPath = activeView?.path ?? configuredRootPath;
+	const renderedValue = activeView
+		? viewValue(value, world, activeView)
+		: rootValuePath
+			? getValueAtPath(value, rootValuePath)
+			: value;
 	const shellMetadata = renderedMetadata.shell;
 	const activeViewTitle = activeView
 		? (labelFromValue(renderedValue) ?? activeView.title)
@@ -1013,7 +1032,9 @@ export function UniversalEditor<TValue>({
 						return;
 					}
 
-					emitChange(nextValue as TValue);
+					emitChange(
+						(rootValuePath ? setValueAtPath(value, rootValuePath, nextValue) : nextValue) as TValue,
+					);
 				}}
 				metadata={renderedMetadata}
 				path={renderedPath}
