@@ -14,7 +14,6 @@ type RightSideBarProps = {
 	selectedRoom: Room | null;
 	selectedConnection: Connection | null;
 	onSelectedIdChange?: (selectedId: string) => void;
-	onOpenItem?: (itemId: string) => void;
 	onSelectionDeleted?: () => void;
 	onConnectionDeleted?: () => void;
 	title?: string;
@@ -29,7 +28,6 @@ export function RightSideBar({
 	selectedRoom,
 	selectedConnection,
 	onSelectedIdChange,
-	onOpenItem,
 	onSelectionDeleted,
 	onConnectionDeleted,
 	title,
@@ -52,7 +50,6 @@ export function RightSideBar({
 					world={world}
 					updateWorld={updateWorld}
 					onSelectedIdChange={onSelectedIdChange}
-					onOpenItem={onOpenItem}
 					onDelete={onSelectionDeleted}
 				/>
 			) : selectedConnection ? (

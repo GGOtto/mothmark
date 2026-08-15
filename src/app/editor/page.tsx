@@ -13,6 +13,7 @@ import {
 } from "@/components/studio/ToolBar";
 import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
+import {RoomItemsPanel} from "@/components/studio/editors/RoomItemsPanel";
 import {ItemCatalog} from "@/components/studio/ItemCatalog";
 import {ItemWorkspace} from "@/components/studio/ItemWorkspace";
 import {CommandLine} from "@/components/player/CommandLine";
@@ -55,9 +56,50 @@ import {getConnectionDraftStatus} from "./utils/editorPageUtils";
 import {loadEditorWorld as loadAuthorizedEditorWorld} from "./loadMainWorld";
 import "./page.scss";
 
-type EditorUtilityView = "editor" | "play";
+type EditorUtilityView = "edit" | "items" | "play";
+
+type StoredEditorUtilityLayout = {
+	desktopWidth: number;
+	mobileHeight: number;
+};
 
 const MOBILE_EDITOR_QUERY = "(max-width: 900px)";
+const EDITOR_UTILITY_LAYOUT_STORAGE_KEY = "mothmark-editor-utility-layout";
+const DEFAULT_DESKTOP_UTILITY_WIDTH = 380;
+const DEFAULT_MOBILE_UTILITY_HEIGHT = 280;
+
+function readStoredEditorUtilityLayout(): StoredEditorUtilityLayout {
+	const fallback = {
+		desktopWidth: DEFAULT_DESKTOP_UTILITY_WIDTH,
+		mobileHeight: DEFAULT_MOBILE_UTILITY_HEIGHT,
+	};
+	if (typeof window === "undefined") return fallback;
+	try {
+		const value = window.localStorage.getItem(EDITOR_UTILITY_LAYOUT_STORAGE_KEY);
+		if (!value) return fallback;
+		const parsed = JSON.parse(value) as Partial<StoredEditorUtilityLayout>;
+		return {
+			desktopWidth:
+				typeof parsed.desktopWidth === "number" && Number.isFinite(parsed.desktopWidth)
+					? parsed.desktopWidth
+					: fallback.desktopWidth,
+			mobileHeight:
+				typeof parsed.mobileHeight === "number" && Number.isFinite(parsed.mobileHeight)
+					? parsed.mobileHeight
+					: fallback.mobileHeight,
+		};
+	} catch {
+		return fallback;
+	}
+}
+
+function storeEditorUtilityLayout(layout: StoredEditorUtilityLayout): void {
+	try {
+		window.localStorage.setItem(EDITOR_UTILITY_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+	} catch {
+		// A blocked or full browser store should not interrupt editing or resizing.
+	}
+}
 
 function subscribeToMobileEditorLayout(onStoreChange: () => void) {
 	if (typeof window.matchMedia !== "function") return () => undefined;
@@ -148,14 +190,12 @@ export default function EditorPage() {
 		getServerMobileEditorLayoutSnapshot,
 	);
 	const [utilityViewOverride, setUtilityView] = useState<EditorUtilityView | null>(null);
-	const utilityView =
-		activeTab === "logic"
-			? "play"
-			: (utilityViewOverride ?? (mobileEditorLayout ? "play" : "editor"));
+	const requestedUtilityView =
+		activeTab === "logic" ? "play" : (utilityViewOverride ?? (mobileEditorLayout ? "play" : "edit"));
 	const [utilityCollapsedOverride, setUtilityCollapsed] = useState<boolean | null>(null);
 	const utilityCollapsed = utilityCollapsedOverride ?? mobileEditorLayout;
-	const [desktopUtilityWidth, setDesktopUtilityWidth] = useState(380);
-	const [mobileUtilityHeight, setMobileUtilityHeight] = useState(280);
+	const [desktopUtilityWidth, setDesktopUtilityWidth] = useState(DEFAULT_DESKTOP_UTILITY_WIDTH);
+	const [mobileUtilityHeight, setMobileUtilityHeight] = useState(DEFAULT_MOBILE_UTILITY_HEIGHT);
 	const utilityResizeRef = useRef<{
 		pointerId: number;
 		startPosition: number;
@@ -167,6 +207,14 @@ export default function EditorPage() {
 	const [worldName, setWorldName] = useState("");
 	const [persistedWorldRevision, setPersistedWorldRevision] = useState<number | null>(null);
 	const [worldIsLoaded, setWorldIsLoaded] = useState(false);
+
+	useEffect(() => {
+		const stored = readStoredEditorUtilityLayout();
+		queueMicrotask(() => {
+			setDesktopUtilityWidth(Math.max(310, Math.min(640, stored.desktopWidth)));
+			setMobileUtilityHeight(Math.max(140, Math.min(window.innerHeight * 0.72, stored.mobileHeight)));
+		});
+	}, []);
 
 	const [selection, setSelection] = useState<EditorSelection>({
 		selectedId: null,
@@ -202,7 +250,7 @@ export default function EditorPage() {
 
 	const applyEditorContext = useCallback((context: EditorContext, notice: string | null) => {
 		setActiveTab(context.activeTab);
-		setUtilityView(context.activeTab === "map" ? "editor" : "play");
+		setUtilityView(context.activeTab === "map" ? "edit" : "play");
 		setUtilityCollapsed(context.activeTab === "map" ? null : true);
 		setSelection(context.selection);
 		setLogicSection(context.logicSection);
@@ -343,7 +391,7 @@ export default function EditorPage() {
 			beginEditorNavigation();
 			setIsAddingRoom(false);
 			setActiveTab(tab);
-			setUtilityView(tab === "map" ? "editor" : "play");
+			setUtilityView(tab === "map" ? "edit" : "play");
 			setUtilityCollapsed(tab === "map" ? null : true);
 			if (tab !== "logic") return;
 
@@ -373,8 +421,13 @@ export default function EditorPage() {
 
 	function resizeUtility(size: number): void {
 		const nextSize = clampUtilitySize(size);
-		if (mobileEditorLayout) setMobileUtilityHeight(nextSize);
-		else setDesktopUtilityWidth(nextSize);
+		if (mobileEditorLayout) {
+			setMobileUtilityHeight(nextSize);
+			storeEditorUtilityLayout({desktopWidth: desktopUtilityWidth, mobileHeight: nextSize});
+		} else {
+			setDesktopUtilityWidth(nextSize);
+			storeEditorUtilityLayout({desktopWidth: nextSize, mobileHeight: mobileUtilityHeight});
+		}
 	}
 
 	function handleUtilityResizeStart(event: React.PointerEvent<HTMLDivElement>): void {
@@ -440,12 +493,15 @@ export default function EditorPage() {
 
 		return rooms.find((room) => idValue(room.id) === selection.selectedId) ?? null;
 	}, [rooms, selection]);
+	const utilityView =
+		requestedUtilityView === "items" && !selectedRoom ? "edit" : requestedUtilityView;
 
 	const selectedConnection = useMemo(() => {
 		if (!selection.isConnectionSelected) return null;
 
 		return connections.find((connection) => idValue(connection.id) === selection.selectedId) ?? null;
 	}, [connections, selection]);
+
 	const selectedCommand = useMemo(
 		() => editorWorld.commands.find((command) => idValue(command.id) === selectedCommandId) ?? null,
 		[editorWorld.commands, selectedCommandId],
@@ -638,13 +694,26 @@ export default function EditorPage() {
 									<button
 										type="button"
 										role="tab"
-										id="editor-utility-editor-tab"
-										aria-controls="editor-utility-editor-panel"
-										aria-selected={utilityView === "editor"}
-										aria-expanded={utilityView === "editor" && !utilityCollapsed}
-										onClick={() => activateUtilityView("editor")}
+										id="editor-utility-edit-tab"
+										aria-controls="editor-utility-edit-panel"
+										aria-selected={utilityView === "edit"}
+										aria-expanded={utilityView === "edit" && !utilityCollapsed}
+										onClick={() => activateUtilityView("edit")}
 									>
-										Editor
+										Edit
+									</button>
+								) : null}
+								{activeTab === "map" && selectedRoom ? (
+									<button
+										type="button"
+										role="tab"
+										id="editor-utility-items-tab"
+										aria-controls="editor-utility-items-panel"
+										aria-selected={utilityView === "items"}
+										aria-expanded={utilityView === "items" && !utilityCollapsed}
+										onClick={() => activateUtilityView("items")}
+									>
+										Items
 									</button>
 								) : null}
 								<button
@@ -676,9 +745,9 @@ export default function EditorPage() {
 								ref={editorUtilityContentRef}
 								className="editorUtilityContent"
 								role="tabpanel"
-								id="editor-utility-editor-panel"
-								aria-labelledby="editor-utility-editor-tab"
-								hidden={utilityCollapsed || utilityView !== "editor"}
+								id="editor-utility-edit-panel"
+								aria-labelledby="editor-utility-edit-tab"
+								hidden={utilityCollapsed || utilityView !== "edit"}
 							>
 								<EditorInspector
 									activeTab={activeTab}
@@ -689,13 +758,6 @@ export default function EditorPage() {
 									onSelectedIdChange={(selectedId) => {
 										replaceEditorContext();
 										setSelection((current) => ({...current, selectedId}));
-									}}
-									onOpenItem={(itemId) => {
-										beginEditorNavigation();
-										setSelectedItemId(itemId);
-										setActiveTab("world");
-										setUtilityView("play");
-										setUtilityCollapsed(true);
 									}}
 									onSelectionDeleted={(entity) => {
 										replaceEditorContext();
@@ -711,6 +773,31 @@ export default function EditorPage() {
 										}
 									}}
 								/>
+							</div>
+						) : null}
+
+						{activeTab === "map" && selectedRoom && utilityView === "items" && !utilityCollapsed ? (
+							<div
+								className="editorUtilityContent"
+								role="tabpanel"
+								id="editor-utility-items-panel"
+								aria-labelledby="editor-utility-items-tab"
+								hidden={utilityCollapsed || utilityView !== "items"}
+							>
+								<RightSideBar contained selectedRoom={null} selectedConnection={null}>
+									<RoomItemsPanel
+										room={selectedRoom}
+										world={editorWorld}
+										updateWorld={updateWorld}
+										onOpenItem={(itemId) => {
+											beginEditorNavigation();
+											setSelectedItemId(itemId);
+											setActiveTab("world");
+											setUtilityView("play");
+											setUtilityCollapsed(true);
+										}}
+									/>
+								</RightSideBar>
 							</div>
 						) : null}
 
@@ -1434,7 +1521,6 @@ type EditorInspectorProps = {
 	selectedConnection: World["connections"][number] | null;
 	updateWorld: UpdateWorld;
 	onSelectedIdChange: (selectedId: string) => void;
-	onOpenItem: (itemId: string) => void;
 	onSelectionDeleted: (entity: "room" | "connection") => void;
 };
 
@@ -1445,7 +1531,6 @@ function EditorInspector({
 	selectedConnection,
 	updateWorld,
 	onSelectedIdChange,
-	onOpenItem,
 	onSelectionDeleted,
 }: EditorInspectorProps) {
 	if (activeTab === "map") {
@@ -1457,7 +1542,6 @@ function EditorInspector({
 				selectedRoom={selectedRoom}
 				selectedConnection={selectedConnection}
 				onSelectedIdChange={onSelectedIdChange}
-				onOpenItem={onOpenItem}
 				onSelectionDeleted={() => onSelectionDeleted("room")}
 				onConnectionDeleted={() => onSelectionDeleted("connection")}
 			/>

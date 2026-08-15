@@ -45,7 +45,6 @@ import {LayoutControl} from "./LayoutControl";
 import {LayerMenu} from "./LayerMenu";
 import {MAP_ROOM_HEIGHT, MAP_ROOM_WIDTH, MapLayerContent} from "./MapLayerContent";
 import {initializeConnectionStubPoints, type ConnectionStubPointField} from "./Connection";
-import {Trash} from "lucide-react";
 import {usePopup} from "../popup/Popup";
 
 type DragState = {
@@ -136,6 +135,15 @@ export function Map({
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
+	const [layerControlHost, setLayerControlHost] = useState<HTMLElement | null>(null);
+	const bindMapRef = useCallback((element: HTMLDivElement | null) => {
+		mapRef.current = element;
+		const host =
+			element
+				?.closest<HTMLElement>(".editorMapArea")
+				?.querySelector<HTMLElement>("[data-map-layer-control-host]") ?? null;
+		setLayerControlHost((current) => (current === host ? current : host));
+	}, []);
 	const cancelConnectionDraft = useCallback(() => {
 		setConnectionDraft({state: "idle"});
 		updateStatus({kind: "cancelled", label: "Cancelled"}, {channel: "notice"});
@@ -252,7 +260,7 @@ export function Map({
 			const layerDirection = getLayerNavigationDirection(event.key);
 			if (layerDirection) {
 				event.preventDefault();
-				mapRef.current
+				(mapRef.current?.closest<HTMLElement>(".editorMapArea") ?? mapRef.current)
 					?.querySelector<HTMLButtonElement>(
 						layerDirection === 1 ? ".layoutControl--up" : ".layoutControl--down",
 					)
@@ -752,11 +760,9 @@ export function Map({
 		setConnectionDraft({...connectionDraft, state: "choosing-return", toRoomId: idValue(room.id)});
 	}
 
-	async function handleLayerClear(event: React.MouseEvent<HTMLButtonElement>) {
-		event.stopPropagation();
-
+	async function handleLayerClear(layer: Layer) {
 		const userResponse = await popup.confirm({
-			title: `Clear ${currentLayer.name}?`,
+			title: `Clear ${layer.name}?`,
 			message: "Delete every room on this layer? This action cannot be undone.",
 			confirmLabel: "Clear layer",
 			danger: true,
@@ -765,11 +771,12 @@ export function Map({
 		if (userResponse) {
 			let updatedWorld = world;
 			for (const room of world.rooms) {
-				if (isRoomInLayer(currentLayer, room.id)) {
+				if (isRoomInLayer(layer, room.id)) {
 					updatedWorld = deleteWorldEntity(updatedWorld, room.id);
 				}
 			}
 			updateWorld(updatedWorld);
+			setIsLayerMenuOpen(false);
 		}
 	}
 
@@ -783,12 +790,22 @@ export function Map({
 			isConnectionSelected={isConnectionSelected}
 			setCurrentLayer={changeCurrentLayer}
 			renameLayer={renameLayer}
+			onClearLayer={(layer) => void handleLayerClear(layer)}
+		/>
+	);
+	const layerControl = (
+		<LayoutControl
+			world={world}
+			setCurrentLayer={changeCurrentLayer}
+			currentLayer={currentLayer}
+			isLayerMenuOpen={isLayerMenuOpen}
+			setIsLayerMenuOpen={setIsLayerMenuOpen}
 		/>
 	);
 
 	return (
 		<div
-			ref={mapRef}
+			ref={bindMapRef}
 			data-map
 			aria-label={ariaLabel}
 			className={`map ${readOnly ? "map--read-only" : ""} ${isAddingRoom ? "map--placing-room" : ""} ${isSpacePanActive ? "map--space-pan" : ""} ${panState?.hasDragged ? "map--panning" : ""}`}
@@ -874,25 +891,11 @@ export function Map({
 							</div>
 						) : null}
 					</div>
-					{readOnly ? null : (
-						<>
-							<LayoutControl
-								world={world}
-								setCurrentLayer={changeCurrentLayer}
-								currentLayer={currentLayer}
-								isLayerMenuOpen={isLayerMenuOpen}
-								setIsLayerMenuOpen={setIsLayerMenuOpen}
-							/>
-							<button
-								type="button"
-								className="layerClearButton"
-								onClick={handleLayerClear}
-								aria-label={`Clear ${currentLayer.name} layer`}
-							>
-								<Trash className="layerClearButton--icon" />
-							</button>
-						</>
-					)}
+					{readOnly
+						? null
+						: layerControlHost
+							? createPortal(layerControl, layerControlHost)
+							: layerControl}
 				</>
 			)}
 		</div>

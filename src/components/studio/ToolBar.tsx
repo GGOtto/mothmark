@@ -107,6 +107,7 @@ export function ToolBar({
 				<StatusIcon size={14} strokeWidth={2} aria-hidden="true" />
 				<span>{status.label}</span>
 			</div>
+			<div className="toolbarLayerControlHost" data-map-layer-control-host />
 		</div>
 	);
 }

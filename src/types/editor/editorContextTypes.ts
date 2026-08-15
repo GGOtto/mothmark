@@ -126,6 +126,7 @@ export type EditorActiveSection = {
 export type EditorChromeContext = {
 	rootPath?: EditorPath;
 	visibleRootSectionIds?: readonly string[];
+	rootSectionsCollapsible?: boolean;
 	activeSection?: EditorActiveSection;
 	setActiveSection?: (section?: EditorActiveSection) => void;
 	getSectionDisclosure?: (path: EditorPath, sectionId: string) => boolean | undefined;

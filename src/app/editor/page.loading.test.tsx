@@ -169,7 +169,7 @@ describe("EditorPage loading", () => {
 		expect(screen.getByRole("heading", {name: "Commands"})).toBeInTheDocument();
 		expect(screen.getByRole("searchbox", {name: "Find a command"})).toBeInTheDocument();
 		expect(container.querySelector(".rightSideBar")).not.toBeInTheDocument();
-		expect(screen.queryByRole("tab", {name: "Editor"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("tab", {name: "Edit"})).not.toBeInTheDocument();
 		expect(screen.getByRole("tab", {name: "Play"})).toBeInTheDocument();
 		const travelCommand = screen.getByRole("button", {name: /Travel/});
 		expect(travelCommand).toBeInTheDocument();

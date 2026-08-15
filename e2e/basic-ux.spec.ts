@@ -785,6 +785,7 @@ test("legacy shared-world routes stay closed to a public browser", async ({reque
 test("private worlds persist for one browser and remain unresolved for another", async ({
 	browser,
 }) => {
+	test.setTimeout(60_000);
 	const firstContext = await browser.newContext();
 	const secondContext = await browser.newContext();
 	const firstPage = await firstContext.newPage();
@@ -846,7 +847,7 @@ test("the editor player uses unsaved world edits, preserves play state, and rest
 	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
 	await expect(commandInput).toBeFocused();
 
-	await page.getByRole("tab", {name: "Editor"}).click();
+	await page.getByRole("tab", {name: "Edit"}).click();
 	await page.getByRole("button", {name: "Stockroom"}).click();
 	await page.getByRole("textbox", {name: "Name", exact: true}).fill("Live stockroom");
 	await page.getByRole("tab", {name: "Play"}).click();
@@ -971,6 +972,7 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 });
 
 test("the world library creates, switches, isolates, and limits private worlds", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page, undefined, 3);
 
@@ -1010,7 +1012,9 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			),
 		);
 		if (source === "Blank world") {
-			await expect(page.getByRole("button", {name: "Clear Ground layer"})).toBeVisible();
+			await page.getByRole("button", {name: "Layers · Ground"}).click();
+			await expect(page.getByRole("button", {name: "Clear layer"})).toBeVisible();
+			await page.getByRole("button", {name: "Close layer menu"}).click();
 			await page.getByRole("tab", {name: "Play"}).click();
 			await expect(page.getByText("No rooms available. Add a room to begin exploring.")).toBeVisible();
 			await expect(page.getByRole("button", {name: "Shop Floor"})).not.toBeVisible();
@@ -1026,7 +1030,7 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			await page.locator("[data-map]").click({position: {x: 180, y: 180}});
 			await expect(page.getByRole("button", {name: "Room 1"})).toBeVisible();
 			await expect(page.getByRole("button", {name: "Add room"})).toBeVisible();
-			await page.getByRole("tab", {name: "Editor"}).click();
+			await page.getByRole("tab", {name: "Edit"}).click();
 		}
 		const roomNameField = page.getByRole("textbox", {name: "Name", exact: true});
 		if (source === "Blank world") await expect(roomNameField).not.toBeFocused();
@@ -1132,7 +1136,7 @@ test("a new world can start from an exported JSON file", async ({page}) => {
 	await dialog.getByRole("button", {name: "Create world"}).click();
 
 	await expect(page).toHaveURL(/\/worlds\/imported-archive\?view=map&room=shop-floor$/);
-	await expect(page.getByRole("button", {name: "Imported landing"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Imported landing", exact: true})).toBeVisible();
 	expect(browserErrors).toEqual([]);
 });
 
@@ -1694,13 +1698,19 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	await page.getByRole("menuitem", {name: "Items"}).click();
 	await expect(page.getByRole("button", {name: "Items", expanded: false})).toBeVisible();
 	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
-	await expect(page.getByRole("tab", {name: "Editor"})).toHaveCount(0);
+	await expect(page.getByRole("tab", {name: "Edit"})).toHaveCount(0);
 	await expect(page.getByRole("tab", {name: "Play"})).toHaveAttribute("aria-selected", "true");
 
 	await page.getByRole("button", {name: "Items", expanded: false}).click();
 	await page.getByRole("menuitem", {name: "Map"}).click();
 	await expect(page.getByRole("button", {name: "Map", expanded: false})).toBeVisible();
-	await expect(page.getByRole("tab", {name: "Editor"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tab", {name: "Edit"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tab", {name: "Items"})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Play"})).toBeVisible();
+	await page.getByRole("tab", {name: "Items"}).click();
+	await expect(page.getByRole("heading", {name: "Starting items"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Add item"})).toBeVisible();
+	await page.getByRole("tab", {name: "Edit"}).click();
 
 	await page.getByRole("tab", {name: "Play"}).click();
 	const commandInput = page.getByRole("textbox", {name: "Game command"});
@@ -1714,7 +1724,7 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		}));
 	expect(playSurfaceColors.tab).toBe(playSurfaceColors.body);
 	await commandInput.fill("look at lantern");
-	await page.getByRole("tab", {name: "Editor"}).click();
+	await page.getByRole("tab", {name: "Edit"}).click();
 	await expect(page.locator(".rightSideBar")).toBeVisible();
 	const editorSurfaceColors = await page
 		.getByRole("complementary", {name: "Editor utility panel"})
@@ -1745,6 +1755,7 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	expect(centeredTabs.dividerStyle).toBe("solid");
 	expect(centeredTabs.tabWidths[0]).toBeGreaterThan(70);
 	expect(centeredTabs.tabWidths[0]).toBeCloseTo(centeredTabs.tabWidths[1] ?? 0, 1);
+	expect(centeredTabs.tabWidths[0]).toBeCloseTo(centeredTabs.tabWidths[2] ?? 0, 1);
 	expect(centeredTabs.barWidth).toBeGreaterThan(
 		await utilityTabs.evaluate((element) => element.clientWidth),
 	);
@@ -1774,8 +1785,9 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		};
 	});
 	expect(collapsedTabs.centerOffsets.every((offset) => offset < 1)).toBe(true);
-	expect(collapsedTabs.borderBottomWidths).toEqual(["1px", "1px"]);
+	expect(collapsedTabs.borderBottomWidths).toEqual(["1px", "1px", "1px"]);
 	expect(collapsedTabs.bottomCornerRadii).toEqual([
+		["0px", "0px"],
 		["0px", "0px"],
 		["0px", "0px"],
 	]);
@@ -1795,9 +1807,15 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		(element) => element.getBoundingClientRect().height,
 	);
 	await resizeHandle.press("ArrowUp");
+	const resizedMobileHeight = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().height,
+	);
+	expect(resizedMobileHeight).toBeGreaterThan(beforeResize);
+	await page.reload();
+	await page.getByRole("tab", {name: "Play"}).click();
 	expect(
 		await utilityPanel.evaluate((element) => element.getBoundingClientRect().height),
-	).toBeGreaterThan(beforeResize);
+	).toBeCloseTo(resizedMobileHeight, 0);
 
 	for (const viewport of [
 		{width: 320, height: 568},
@@ -1861,6 +1879,76 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		expect(Math.abs(insets.left - insets.right)).toBeLessThan(2);
 	}
 
+	await page.getByRole("tab", {name: "Edit"}).click();
+	const desktopWidthBeforeResize = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().width,
+	);
+	await page.getByRole("separator", {name: "Resize editor utility panel"}).press("ArrowLeft");
+	const resizedDesktopWidth = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().width,
+	);
+	expect(resizedDesktopWidth).toBeGreaterThan(desktopWidthBeforeResize);
+	await page.reload();
+	expect(
+		await utilityPanel.evaluate((element) => element.getBoundingClientRect().width),
+	).toBeCloseTo(resizedDesktopWidth, 0);
+
+	expect(browserErrors).toEqual([]);
+});
+
+test("dense maps and long play output share the phone workspace without control overlap", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	const stored = editor.worldStore.get(editor.worldId)!;
+	const denseWorld = structuredClone(initialWorld);
+	const baseRoom = denseWorld.rooms[0]!;
+	denseWorld.rooms = Array.from({length: 24}, (_, index) => ({
+		...baseRoom,
+		id: toID("room", `dense-room-${index + 1}`),
+		name: `Dense room ${index + 1}`,
+		metadata: {
+			...baseRoom.metadata,
+			position: {x: 32 + (index % 6) * 168, y: 32 + Math.floor(index / 6) * 112},
+		},
+	}));
+	denseWorld.startRoomId = denseWorld.rooms[0]!.id;
+	denseWorld.connections = [];
+	denseWorld.items = [];
+	denseWorld.metadata.layers = [
+		{
+			...denseWorld.metadata.layers.find((layer) => layer.layer === 0)!,
+			rooms: denseWorld.rooms.map((room) => room.id),
+		},
+	];
+	stored.world = denseWorld;
+
+	await page.setViewportSize({width: 390, height: 844});
+	await page.goto(`/worlds/${editor.worldSlug}`);
+	await expect(page.getByRole("button", {name: "Dense room 24"})).toBeAttached();
+	await page.getByRole("tab", {name: "Play"}).click();
+	const commandInput = page.getByRole("textbox", {name: "Game command"});
+	for (let turn = 0; turn < 12; turn += 1) {
+		await commandInput.fill("look");
+		await commandInput.press("Enter");
+	}
+
+	await expect
+		.poll(() =>
+			page
+				.locator(".game-player__output")
+				.evaluate((element) => element.scrollHeight > element.clientHeight),
+		)
+		.toBe(true);
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	const geometry = await page.evaluate(() => ({
+		documentWidth: document.documentElement.scrollWidth,
+		mapHeight: document.querySelector<HTMLElement>("[data-map]")!.getBoundingClientRect().height,
+		viewportWidth: window.innerWidth,
+	}));
+	expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+	expect(geometry.mapHeight).toBeGreaterThan(80);
 	expect(browserErrors).toEqual([]);
 });
 

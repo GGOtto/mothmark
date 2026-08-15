@@ -2,7 +2,7 @@
 
 Status: active implementation backlog.
 
-Last updated: 2026-08-11.
+Last updated: 2026-08-15.
 
 This replaces the old page-by-page constrained-layout audit. The plan is organized around user
 tasks and product outcomes so that each checkbox can be implemented, reviewed, tested, and closed
@@ -191,9 +191,10 @@ the full task definitions but do not imply a different sequence.
   - Preserve the activity-rail geometry and label reveal on desktop. On phones, move the editor
     destinations into a compact top navigator that identifies the current destination and exposes
     every destination without hover or horizontal clipping.
-  - Give Editor and Play one shared utility region. On desktop it occupies the right side of the
-    workspace; on phones it becomes a bottom region with an explicit Editor/Play toggle. Switching
-    views preserves the current selection, form state, transcript, and command input.
+  - Give authoring and Play one shared utility region. On desktop it occupies the right side of the
+    workspace; on phones it becomes a bottom region with directly reachable contextual tabs. Map
+    exposes Edit, Items, and Play; other workspaces expose Play. Switching views preserves the
+    current selection, form state, transcript, and command input.
   - Keep the primary editor workspace visible above the mobile utility region, respect safe areas and
     software keyboards, and never squeeze the desktop activity rail, workspace, inspector, and
     terminal into simultaneous phone-width columns.
@@ -462,7 +463,7 @@ the full task definitions but do not imply a different sequence.
 
 ## Workstream — Editor shell, map, and authoring layouts
 
-- [ ] **E01 — Overhaul the Map workspace and reclaim map space.**
+- [x] **E01 — Overhaul the Map workspace and reclaim map space.**
 
   **Outcome:** Mapping is the editor's clearest spatial task on desktop and mobile, with testing
   available without permanently consuming vertical map space.
@@ -482,29 +483,34 @@ the full task definitions but do not imply a different sequence.
   - Validate the design with realistic dense maps and long terminal output, not only the starter
     world.
 
-- [ ] **E02 — Restyle and clarify the Layers workspace on Map.**
+  **Completed (2026-08-15):** Consolidated room Edit, Items, and Play into the shared responsive
+  utility region while keeping Play directly reachable elsewhere. The utility collapses and resizes
+  on desktop and mobile, persists its reversible size, and keeps the map usable above the phone
+  panel. Layer navigation now sits in the map toolbar, Clear layer lives in the layer menu, and the
+  authored map retains its light palette and direct-manipulation behavior. Focused and browser tests
+  cover keyboard controls, 310px/390px layouts, persisted sizing, dense maps, and long transcripts.
 
-  **Outcome:** Authors can understand, select, reorder, add, rename, and remove layers without the
-  layer UI feeling like an unfinished utility panel.
+- [x] **E02 — Restyle and clarify the Layers workspace on Map.**
+
+  **Outcome:** Authors can understand, preview, select, and rename layers without the layer UI
+  feeling like an unfinished utility panel.
 
   **Depends on:** F02, F04. It does not require the broader E01 layout experiment.
 
   **Scope and acceptance:**
 
-  - Use clear layer identity, selected state, room count, starting-layer cue, visibility if supported,
-    and scoped actions.
-  - Keep add/rename/reorder/delete operations discoverable without repeating colored rails or turning
-    every layer into a card.
-  - Confirm destructive deletion consequences for rooms/connections and move focus to a sensible
-    surviving layer.
+  - Use clear layer identity, selected state, room count, and starting-layer cue.
+  - Preserve the existing centered layer selector and rename flow without repeating colored rails or
+    turning every layer into a card.
+  - Keep the displayed layer preview static, with no zoom or pan, and open that layer when the preview
+    is selected.
   - Keep layer controls usable at the 310px inspector minimum and as a mobile sheet/full task.
   - Preserve authored layer geometry and the existing layer preview behavior used by world folios.
 
-  **Progress (2026-08-14):** Restyled the existing centered layer selector without replacing its
+  **Completed (2026-08-14):** Restyled the existing centered layer selector without replacing its
   navigation model. Layer rows now show room counts and the starting-layer cue, the displayed map is
   a static framed preview, and selecting that preview opens the layer. Focused map tests and browser
   coverage verify the click-to-open behavior and layout integrity at 390px and the 310px minimum.
-  Add, reorder, destructive removal, and the broader layer-management flow remain in this task.
 
 - [x] **E03 — Make room placement an explicit two-step action.**
 

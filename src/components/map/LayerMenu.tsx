@@ -4,7 +4,7 @@ import {getLayer, isRoomInLayer} from "./utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {X} from "lucide-react";
+import {Trash, X} from "lucide-react";
 import {CenteredScrollSelector} from "../ui/CenteredScrollSelector";
 
 export const LAYER_MENU_SCROLL_BUFFER_ROWS = 50;
@@ -45,6 +45,7 @@ export type LayerMenuProps = {
 	isConnectionSelected: boolean;
 	setCurrentLayer: (layer: Layer) => void;
 	renameLayer: (layer: Layer) => void;
+	onClearLayer: (layer: Layer) => void;
 };
 
 export function LayerMenu({
@@ -55,6 +56,7 @@ export function LayerMenu({
 	isConnectionSelected,
 	setCurrentLayer,
 	renameLayer,
+	onClearLayer,
 }: LayerMenuProps) {
 	const [displayedLayer, setDisplayedLayer] = useState<Layer>(currentLayer);
 	const displayedLayerRef = useRef(displayedLayer);
@@ -191,6 +193,14 @@ export function LayerMenu({
 						</span>
 						{isStartingLayer ? <span className="layerMenu--starting">Starting layer</span> : null}
 					</div>
+					<button
+						type="button"
+						className="layerMenu--clear"
+						onClick={() => onClearLayer(displayedLayer)}
+					>
+						<Trash size={15} aria-hidden="true" />
+						Clear layer
+					</button>
 				</div>
 				<div className="layerMenu--preview">
 					<LayerPreview

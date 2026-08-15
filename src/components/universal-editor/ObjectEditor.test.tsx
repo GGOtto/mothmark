@@ -1,4 +1,4 @@
-import {render} from "@testing-library/react";
+import {fireEvent, render} from "@testing-library/react";
 import type {EditorControlContext} from "@/types/universalEditorTypes";
 import type {EditorRegistries} from "@/types/editor/editorRegistryTypes";
 import {ObjectEditor, type ObjectControlMetadata} from "./ObjectEditor";
@@ -74,5 +74,31 @@ describe("ObjectEditor group disclosure", () => {
 		const [group, subgroup] = container.querySelectorAll("details");
 		expect(group).toHaveAttribute("open");
 		expect(subgroup).toHaveAttribute("open");
+	});
+
+	it("keeps root sections and subgroups open when disclosure is disabled", () => {
+		const lockedContext = context();
+		lockedContext.editorChrome = {
+			...lockedContext.editorChrome,
+			rootPath: [],
+			rootSectionsCollapsible: false,
+		};
+		const {container} = render(
+			<ObjectEditor
+				value={{value: "test"}}
+				onChange={() => undefined}
+				metadata={metadata}
+				path={[]}
+				context={lockedContext}
+			/>,
+		);
+
+		const [group, subgroup] = container.querySelectorAll("details");
+		expect(group).toHaveAttribute("open");
+		expect(subgroup).toHaveAttribute("open");
+
+		group.open = false;
+		fireEvent(group, new Event("toggle"));
+		expect(group).toHaveAttribute("open");
 	});
 });

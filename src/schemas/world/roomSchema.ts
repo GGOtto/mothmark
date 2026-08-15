@@ -105,7 +105,7 @@ export const RoomSchema = editor.object(
 
 		shortDescription: editor
 			.textarea({
-				title: "Short Description",
+				title: "Short description",
 				description: "Optional shorter description used after the room has already been visited.",
 				placeholder: "You are back in the kitchen.",
 				layout: {
@@ -114,8 +114,7 @@ export const RoomSchema = editor.object(
 					order: 4,
 				},
 				appearance: {
-					chrome: "collapse",
-					defaultCollapsed: true,
+					chrome: "field",
 				},
 			})
 			.default(""),

@@ -95,6 +95,13 @@
 	}
 }
 
+.toolbarLayerControlHost {
+	display: flex;
+	min-width: 0;
+	flex: 0 0 auto;
+	align-items: center;
+}
+
 .toolbarAddRoom {
 	border-color: var(--panel-border);
 	color: var(--panel-text);

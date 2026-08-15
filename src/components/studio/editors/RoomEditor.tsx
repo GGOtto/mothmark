@@ -5,16 +5,14 @@ import {RoomSchema, type Room} from "../../../schemas/world/roomSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {replaceRoomDraft} from "@/app/editor/utils/worldDraftUtils";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
-import {compareIds, idValue, toID, updateWorldEntityId} from "@/utils/idUtils";
+import {compareIds, deleteWorldEntity, idValue, toID, updateWorldEntityId} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
-import {RoomStartingItems} from "./RoomStartingItems";
 
 type RoomEditorProps = {
 	selectedRoom: Room;
 	world?: World;
 	updateWorld?: UpdateWorld;
 	onSelectedIdChange?: (selectedId: string) => void;
-	onOpenItem?: (itemId: string) => void;
 	onDelete?: () => void;
 };
 
@@ -23,7 +21,6 @@ export function RoomEditor({
 	world,
 	updateWorld,
 	onSelectedIdChange,
-	onOpenItem,
 	onDelete,
 }: RoomEditorProps) {
 	const {theme} = useTheme();
@@ -57,11 +54,26 @@ export function RoomEditor({
 		});
 	}
 
+	function deleteRoom() {
+		if (!world || !updateWorld) return;
+		const nextWorld = deleteWorldEntity(world, selectedRoom.id);
+		if (nextWorld === world) return;
+		updateWorld(nextWorld);
+		onDelete?.();
+	}
+
 	return (
 		<div className="rightSideBarSection roomEditor">
-			<div className="roomEditorHeader">
-				<p className="roomEditorEyebrow">Selected Room</p>
-				<h2 className="roomEditorTitle">{selectedRoom.name || "Unnamed Room"}</h2>
+			<div className="roomEditorHeader roomEditorHeader--withAction">
+				<div>
+					<p className="roomEditorEyebrow">Selected room</p>
+					<h2 className="roomEditorTitle">{selectedRoom.name || "Unnamed room"}</h2>
+				</div>
+				{world && updateWorld ? (
+					<button type="button" className="roomEditorDelete" onClick={deleteRoom}>
+						Delete room
+					</button>
+				) : null}
 			</div>
 
 			{duplicateRoomId ? (
@@ -81,18 +93,9 @@ export function RoomEditor({
 					scheme: theme,
 				}}
 				className="roomEditorUniversal"
-				allowDelete={true}
-				onDelete={onDelete}
+				hideRootShellHeader
+				rootSectionsCollapsible={false}
 			/>
-
-			{world && updateWorld ? (
-				<RoomStartingItems
-					room={selectedRoom}
-					world={world}
-					updateWorld={updateWorld}
-					onOpenItem={onOpenItem}
-				/>
-			) : null}
 		</div>
 	);
 }
