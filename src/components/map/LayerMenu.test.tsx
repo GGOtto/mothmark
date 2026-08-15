@@ -20,6 +20,7 @@ function renderLayerMenu(
 	setIsLayerMenuOpen = jest.fn(),
 	sourceWorld = world,
 	renameLayer = jest.fn(),
+	setCurrentLayer = jest.fn(),
 ) {
 	return render(
 		<LayerMenu
@@ -28,7 +29,7 @@ function renderLayerMenu(
 			setIsLayerMenuOpen={setIsLayerMenuOpen}
 			selectedId={null}
 			isConnectionSelected={false}
-			setCurrentLayer={jest.fn()}
+			setCurrentLayer={setCurrentLayer}
 			renameLayer={renameLayer}
 		/>,
 	);
@@ -98,16 +99,20 @@ describe("LayerMenu", () => {
 		);
 	});
 
-	it("zooms the preview without changing the displayed layer", () => {
-		const {container} = renderLayerMenu();
-		const preview = screen.getByLabelText("Main floor preview");
+	it("keeps the preview static and opens its displayed layer when clicked", () => {
+		const setIsLayerMenuOpen = jest.fn();
+		const setCurrentLayer = jest.fn();
+		const {container} = renderLayerMenu(setIsLayerMenuOpen, world, jest.fn(), setCurrentLayer);
+		const preview = screen.getByRole("button", {name: "Open Main floor"});
 		const viewport = container.querySelector<HTMLElement>(".layerPreviewViewport")!;
 		const initialTransform = viewport.style.transform;
 
 		fireEvent.wheel(preview, {clientX: 100, clientY: 100, deltaY: -100});
 
-		expect(screen.getByLabelText("Main floor preview")).toBeInTheDocument();
-		expect(viewport.style.transform).not.toBe(initialTransform);
+		expect(viewport.style.transform).toBe(initialTransform);
+		fireEvent.click(preview);
+		expect(setCurrentLayer).toHaveBeenCalledWith(expect.objectContaining({name: "Main floor"}));
+		expect(setIsLayerMenuOpen).toHaveBeenCalledWith(false);
 	});
 
 	it("renders the layer stack with upper layers above lower layers", () => {
@@ -155,7 +160,7 @@ describe("LayerMenu", () => {
 
 		fireEvent.scroll(layerList);
 
-		expect(screen.getByLabelText("Upstairs preview")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Open Upstairs"})).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: "Upstairs"})).toHaveClass("layerMenu--left__selected");
 	});
 
@@ -167,7 +172,7 @@ describe("LayerMenu", () => {
 
 		fireEvent.click(upperLayerButton);
 
-		expect(screen.getByLabelText("Main floor preview")).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: "Open Main floor"})).toBeInTheDocument();
 		expect(scrollIntoView).toHaveBeenCalledWith({
 			behavior: "smooth",
 			block: "center",
