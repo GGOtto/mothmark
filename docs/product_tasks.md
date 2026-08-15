@@ -500,6 +500,12 @@ the full task definitions but do not imply a different sequence.
   - Keep layer controls usable at the 310px inspector minimum and as a mobile sheet/full task.
   - Preserve authored layer geometry and the existing layer preview behavior used by world folios.
 
+  **Progress (2026-08-14):** Restyled the existing centered layer selector without replacing its
+  navigation model. Layer rows now show room counts and the starting-layer cue, the displayed map is
+  a static framed preview, and selecting that preview opens the layer. Focused map tests and browser
+  coverage verify the click-to-open behavior and layout integrity at 390px and the 310px minimum.
+  Add, reorder, destructive removal, and the broader layer-management flow remain in this task.
+
 - [x] **E03 — Make room placement an explicit two-step action.**
 
   **Outcome:** A normal map click selects or pans; it never unexpectedly creates a room.

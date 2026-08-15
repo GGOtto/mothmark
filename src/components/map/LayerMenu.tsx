@@ -1,6 +1,6 @@
 import type {Layer, World} from "@/schemas/world/worldSchema";
 import {getLayerNavigationDirection} from "./utils/layerNavigation";
-import {getLayer} from "./utils/layerUtils";
+import {getLayer, isRoomInLayer} from "./utils/layerUtils";
 import "./LayerMenu.scss";
 import {LayerPreview} from "./LayerPreview";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
@@ -64,6 +64,8 @@ export function LayerMenu({
 			getLayer(world, currentLayer.layer + LAYER_MENU_SCROLL_BUFFER_ROWS - index),
 		);
 	}, [currentLayer.layer, world]);
+	const isStartingLayer = isRoomInLayer(displayedLayer, world.startRoomId);
+	const roomCount = displayedLayer.rooms.length;
 
 	const showLayer = useCallback((layer: Layer) => {
 		displayedLayerRef.current = layer;
@@ -129,29 +131,49 @@ export function LayerMenu({
 			onPointerCancel={(event) => event.stopPropagation()}
 			onWheel={(event) => event.stopPropagation()}
 		>
-			<button type="button" onClick={() => setIsLayerMenuOpen(false)} aria-label="Close layer menu">
+			<button
+				type="button"
+				className="layerMenu--close"
+				onClick={() => setIsLayerMenuOpen(false)}
+				aria-label="Close layer menu"
+			>
 				<X aria-hidden="true" />
 			</button>
-			<CenteredScrollSelector
-				items={displayedLayers}
-				activeId={String(displayedLayer.layer)}
-				onActiveChange={showLayer}
-				getId={(layer) => String(layer.layer)}
-				renderLabel={(layer) => layer.name}
-				ariaLabel="Layers"
-				className="layerMenu--leftShell"
-				listClassName="layerMenu--left"
-				indicatorClassName="layerMenu--left__centerIndicator"
-				itemClassName={(_, isActive) =>
-					isActive ? "layerMenu--left__button layerMenu--left__selected" : "layerMenu--left__button"
-				}
-				getItemProps={(layer, index) => ({
-					"data-layer-index": index,
-					"data-layer-value": layer.layer,
-				})}
-				deferClickActivationUntilScroll={true}
-				listRef={layerListRef}
-			/>
+			<div className="layerMenu--leftPane">
+				<div className="layerMenu--title">
+					<strong>Layers</strong>
+					<span>Scroll to preview another layer.</span>
+				</div>
+				<CenteredScrollSelector
+					items={displayedLayers}
+					activeId={String(displayedLayer.layer)}
+					onActiveChange={showLayer}
+					getId={(layer) => String(layer.layer)}
+					renderLabel={(layer) => (
+						<>
+							<span className="layerMenu--left__name">{layer.name}</span>
+							<span className="layerMenu--left__meta">
+								{layer.rooms.length} {layer.rooms.length === 1 ? "room" : "rooms"}
+								{isRoomInLayer(layer, world.startRoomId) ? " · Starting layer" : ""}
+							</span>
+						</>
+					)}
+					ariaLabel="Layers"
+					className="layerMenu--leftShell"
+					listClassName="layerMenu--left"
+					indicatorClassName="layerMenu--left__centerIndicator"
+					itemClassName={(_, isActive) =>
+						isActive ? "layerMenu--left__button layerMenu--left__selected" : "layerMenu--left__button"
+					}
+					getItemProps={(layer, index) => ({
+						"aria-label": layer.name,
+						"data-layer-index": index,
+						"data-layer-value": layer.layer,
+					})}
+					deferClickActivationUntilScroll={true}
+					listRef={layerListRef}
+				/>
+			</div>
 			<div className="layerMenu--right">
 				<div className="layerMenu--header">
 					<label className="layerMenu--nameField">
@@ -162,25 +184,30 @@ export function LayerMenu({
 							onChange={(event) => handleLayerNameChange(event.target.value)}
 						/>
 					</label>
-					<div className="layerMenu--header__info">Layer {displayedLayer.layer}</div>
+					<div className="layerMenu--header__info">
+						<span>Layer {displayedLayer.layer}</span>
+						<span>
+							{roomCount} {roomCount === 1 ? "room" : "rooms"}
+						</span>
+						{isStartingLayer ? <span className="layerMenu--starting">Starting layer</span> : null}
+					</div>
 				</div>
 				<div className="layerMenu--preview">
 					<LayerPreview
 						world={world}
 						layer={displayedLayer}
 						isFramed={true}
-						mode="zoom-pan"
+						mode="static"
+						onClick={handleOpenLayer}
 						selectedId={selectedId}
 						isConnectionSelected={isConnectionSelected}
 						className="layerMenu--preview__card"
 					/>
+					<span className="layerMenu--preview__action" aria-hidden="true">
+						Open layer
+					</span>
 				</div>
-				<div className="layerMenu--controls">
-					<div className="layerMenu--info">Drag to pan · Scroll to zoom</div>
-					<button className="layerMenu--open" onClick={handleOpenLayer}>
-						Open Layer
-					</button>
-				</div>
+				<div className="layerMenu--previewHint">Static preview · Select it to open this layer</div>
 			</div>
 		</div>
 	);

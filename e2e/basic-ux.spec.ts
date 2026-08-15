@@ -1535,6 +1535,26 @@ test("map layers can be renamed", async ({page}) => {
 	expect(browserErrors).toEqual([]);
 });
 
+test("a static layer preview opens the displayed layer", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+
+	await page.getByRole("button", {name: "Layers · Main floor"}).click();
+	const preview = page.getByRole("button", {name: "Open Main floor"});
+	await expect(preview).toBeVisible();
+	await expect(page.getByText("Starting layer", {exact: true}).first()).toBeVisible();
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".layerMenu"});
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".layerMenu"});
+	await preview.click();
+
+	await expect(page.getByRole("button", {name: "Layers · Main floor"})).toBeVisible();
+	await expect(page.getByRole("textbox", {name: "Layer name"})).toHaveCount(0);
+	expect(browserErrors).toEqual([]);
+});
+
 test("events edit inline condition and effect groups on focused logic pages", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
