@@ -287,16 +287,18 @@ export const UsableBehaviorSchema = editor.object(
 	},
 );
 
+export const ITEM_BEHAVIOR_SCHEMAS = [
+	TakeableBehaviorSchema,
+	ContainerBehaviorSchema,
+	SurfaceBehaviorSchema,
+	OpenableBehaviorSchema,
+	LockableBehaviorSchema,
+	DoorBehaviorSchema,
+	UsableBehaviorSchema,
+] as const;
+
 export const ItemBehaviorSchema = editor.discriminatedUnion(
-	z.discriminatedUnion("type", [
-		TakeableBehaviorSchema,
-		ContainerBehaviorSchema,
-		SurfaceBehaviorSchema,
-		OpenableBehaviorSchema,
-		LockableBehaviorSchema,
-		DoorBehaviorSchema,
-		UsableBehaviorSchema,
-	]),
+	z.discriminatedUnion("type", ITEM_BEHAVIOR_SCHEMAS),
 	{
 		title: "Behavior",
 		description: "A player-facing capability added to this item.",

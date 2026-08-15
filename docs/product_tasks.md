@@ -533,7 +533,7 @@ the full task definitions but do not imply a different sequence.
     start automatically.
   - Add focused map tests and a browser workflow proving ordinary clicks do not add rooms.
 
-- [ ] **E04 — Audit every entity editor as a complete authoring task.**
+- [x] **E04 — Audit every entity editor as a complete authoring task.**
 
   **Outcome:** Room, connection, item, event, command, condition, effect, world, and future NPC
   editors use space, grouping, and actions that make sense for their schema and author workflow.
@@ -551,6 +551,69 @@ the full task definitions but do not imply a different sequence.
   - Show reference impact before destructive changes to shared entities or command blocks.
   - Verify all inspectors at 447px and 310px and all dedicated editors on phone widths.
   - Produce a short checked inventory in this task's Progress note so no editor is implicitly skipped.
+
+  **Implementation progress (2026-08-15):** Reviewed the current editor routes, schemas, controls,
+  destructive actions, scroll ownership, and browser coverage, then implemented the audited editor
+  cleanup. Conditions and effects now derive live source and usage relationships from commands,
+  events, items, and rooms; item command pages derive every command that can target, reference,
+  query, or affect the selected item, including through saved logic. The editor schemas now drive
+  item behavior/size controls, command block catalogs and labels, and event settings. Room and
+  connection deletes report affected records, the connection inspector is purpose-built, stale
+  duplicate editor paths and the placeholder NPC destination are removed, and browser coverage now
+  asserts the dynamic item-command relationship. Condition and effect libraries now switch between
+  parent and all-group views, combining inline groups with saved reusable groups so used and unused
+  logic remain discoverable. They sort by name, parent type, usage, or document recency and open each
+  parent as an in-place usage detail before any explicit parent navigation. Inline groups and saved
+  entries open their correct focused editors directly, and item-origin logic edits return to the item
+  tab that launched them. The World editor remains intentionally assigned to P02 as described below.
+
+  - [x] **Room:** Keep Edit, Items, and Play as the room's directly reachable utility tasks. Keep the
+        schema-driven room fields expanded, put the internal ID in the final Advanced section,
+        organize visible fields as Player-facing text, Identification, and State, and remove the
+        empty Availability group until it has schema-backed fields. Before Delete, show affected
+        connections, item placements, starting-room state, and logic references.
+  - [x] **Connection:** Replace the generic editor shell with one compact inspector derived from
+        `ConnectionSchema`: Identity, Route, and Travel behavior. Keep the two room endpoints and
+        paired directions readable together, keep Delete as a labeled action, and show affected door
+        items and logic references before deletion. Remove the duplicate generic root header/action
+        treatment.
+  - [x] **Item:** Preserve the dedicated Details, Behaviors, Placement, and Commands workspace. Move
+        the parallel `ITEM_SIZES`, `BEHAVIOR_OPTIONS`, labels, and default-construction switches into
+        item-schema metadata/introspection so the purpose-built controls do not become a second
+        schema catalog. Keep advanced conditions/effects in the focused Logic workspace. Add exact
+        reference impact to item deletion and remove the unused legacy `ItemEditor` component.
+  - [x] **Event:** Preserve the event rail and branch canvas. Add complete editor metadata to
+        `EventSchema` and derive the settings fields from it instead of maintaining the manual field
+        list in `EventSettingsDialog`; keep runtime-only `lastSuccess` hidden. Keep branch creation
+        controls pinned, clarify draft/commit behavior when entering focused condition/effect pages,
+        and add reference-aware event deletion where future references exist. Remove the unused
+        `EventInspector` path rather than maintaining a second event editor.
+  - [x] **Command:** Keep the command library, one-pattern-at-a-time canvas, pinned behavior/pattern
+        controls, and focused settings popup. Move `COMMAND_BLOCKS`, block labels, descriptions,
+        structural classification, defaults, and inspector field choices into command-schema
+        metadata/introspection. Consolidate the hand-built general settings and UniversalEditor block
+        fragments behind shared schema-driven field primitives. Show every shared occurrence before
+        changing or deleting a repeated block, while preserving pattern-specific ordering.
+  - [x] **Condition:** Preserve the searchable library and focused Back/Cancel/Save editor. Keep the
+        situation-phrase search metadata as the source for picker discovery. Upgrade Delete from a
+        generic warning to an exact usage summary with links, and prevent leaving silently broken
+        references. Keep inline groups and saved references on the same schema-driven control path.
+  - [x] **Effect:** Apply the same focused-library and exact-usage treatment as Conditions. Keep
+        ordered effect editing and command-variable bindings schema-driven, show all consumers before
+        destructive changes, and eliminate any remaining editor-only operation catalogs.
+  - [x] **World:** The current World settings surface is only a reset/publishing placeholder. Build
+        the eventual editor as the full-canvas Identity, Starting experience, Publication, World
+        data, and Danger zone document already specified by P02, derived from world and publication
+        schemas rather than embedding `WorldSchema` in UniversalEditor. Do not duplicate that build
+        inside E04.
+  - [x] **Future NPC:** No NPC schema-backed entity editor exists. Hide the exposed NPC/Story
+        destination until its runtime model and author task exist; when introduced, require the same
+        dedicated-workspace, URL-state, reference-impact, and responsive-editor contract.
+  - [x] **Cross-editor cleanup and coverage:** Add shared schema-driven field primitives for
+        purpose-built forms without reskinning UniversalEditor. Keep headers and primary actions
+        pinned with one content scroller, preserve draft/selection state across task changes, and add
+        focused browser coverage for every destructive flow, 447px and 310px inspectors, phone
+        keyboards, long values, empty states, and invalid or deleted URL selections.
 
 - [ ] **E05 — Finish the two-surface Items workflow and working suggestions.**
 

@@ -189,6 +189,8 @@ export type SchemaLogicOption = {
 	searchText: string;
 };
 
+const schemaLogicOptionsCache = new WeakMap<z.ZodTypeAny, SchemaLogicOption[]>();
+
 const LOGIC_INTERNAL_FIELDS = new Set([
 	"type",
 	"operation",
@@ -219,7 +221,10 @@ function mergeDiscovery(
  * The active schema controls availability, while metadata on its type, object,
  * operation, and input fields controls author-facing discovery.
  */
-export function schemaLogicOptions(schema: z.ZodTypeAny): SchemaLogicOption[] {
+function cachedSchemaLogicOptions(schema: z.ZodTypeAny): SchemaLogicOption[] {
+	const cached = schemaLogicOptionsCache.get(schema);
+	if (cached) return cached;
+
 	const typeOptions = new Map(schemaTypeOptions(schema).map((option) => [option.value, option]));
 	const options = new Map<string, SchemaLogicOption>();
 
@@ -295,13 +300,30 @@ export function schemaLogicOptions(schema: z.ZodTypeAny): SchemaLogicOption[] {
 		}
 	}
 
-	return [...options.values()];
+	const result = [...options.values()];
+	schemaLogicOptionsCache.set(schema, result);
+	return result;
+}
+
+/** Returns safe working copies backed by one cached schema-introspection result. */
+export function schemaLogicOptions(schema: z.ZodTypeAny): SchemaLogicOption[] {
+	return cachedSchemaLogicOptions(schema).map((option) => ({
+		...option,
+		keywords: [...option.keywords],
+		situations: [...option.situations],
+		requires: [...option.requires],
+		fields: [...option.fields],
+		defaultValue:
+			typeof structuredClone === "function"
+				? structuredClone(option.defaultValue)
+				: (JSON.parse(JSON.stringify(option.defaultValue)) as Record<string, unknown>),
+	}));
 }
 
 export function schemaLogicOptionForValue(schema: z.ZodTypeAny, value: Record<string, unknown>) {
 	const type = String(value.type ?? "");
 	const operation = value.operation ?? value.messageType;
-	return schemaLogicOptions(schema).find(
+	return cachedSchemaLogicOptions(schema).find(
 		(option) => option.type === type && option.operation === operation,
 	);
 }

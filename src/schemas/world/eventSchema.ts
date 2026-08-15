@@ -2,46 +2,55 @@ import {z} from "zod";
 import {editor} from "../utils/editorSchemaHelpers";
 import {ConditionBranchSchema} from "./conditionBranchSchemas";
 
-export const EventSchema = z.object({
-	id: editor.id("event"),
-	name: editor.string(),
+export const EventSchema = editor.object(
+	{
+		id: editor.id("event", {title: "Event ID", hidden: true}),
+		name: editor.input({title: "Name", description: "The author-facing name of this event."}),
 
-	enabled: editor
-		.boolean({
-			title: "Enabled",
-			description: "Whether the event can currently be evaluated.",
-		})
-		.default(true),
+		enabled: editor
+			.boolean({
+				title: "Enabled",
+				description: "Whether the event can currently be evaluated.",
+			})
+			.default(true),
 
-	branch: ConditionBranchSchema,
+		branch: editor.hidden(ConditionBranchSchema, {title: "Branches"}),
 
-	disposable: editor
-		.boolean({
-			title: "Run Once",
-			description: "Remove or disable the event after it successfully runs.",
-		})
-		.default(false),
+		disposable: editor
+			.boolean({
+				title: "Run once",
+				description: "Remove or disable the event after it successfully runs.",
+			})
+			.default(false),
 
-	wait: editor
-		.number({
-			title: "Wait",
-			description:
-				"Wait this many turns after the last attempt, or the start of the game, before trying the event.",
-		})
-		.int()
-		.nonnegative()
-		.default(0),
+		wait: editor
+			.number({
+				title: "Wait (turns)",
+				description:
+					"Wait this many turns after the last attempt, or the start of the game, before trying the event.",
+			})
+			.int()
+			.nonnegative()
+			.default(0),
 
-	lastSuccess: z.number().int().default(0),
+		lastSuccess: editor.hidden(z.number().int().default(0), {
+			title: "Last successful turn",
+		}),
 
-	priority: editor
-		.number({
-			title: "Priority",
-			description:
-				"Determines which eligible events are checked first. Higher-priority events, represented with a higher number, run first.",
-		})
-		.int()
-		.default(0),
-});
+		priority: editor
+			.number({
+				title: "Priority",
+				description:
+					"Determines which eligible events are checked first. Higher-priority events run first.",
+			})
+			.int()
+			.default(0),
+	},
+	{
+		title: "Event settings",
+		description: "Control when this event can run. Branch logic stays in the event workspace.",
+		features: {layout: "section"},
+	},
+);
 
 export type Event = z.infer<typeof EventSchema>;

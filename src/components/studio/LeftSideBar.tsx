@@ -1,13 +1,12 @@
 "use client";
 
 import type {LucideIcon} from "lucide-react";
-import {Map, Key, Puzzle, Bug, ScrollText, Settings, VenetianMask, ChevronDown} from "lucide-react";
+import {Map, Key, Puzzle, Bug, ScrollText, Settings, ChevronDown} from "lucide-react";
 import {useRef, useState} from "react";
 import {AnchoredLayer} from "@/components/overlay/Overlay";
 import "./LeftSideBar.scss";
 
-export type EditorTab =
-	"map" | "world" | "logic" | "npcs" | "debug" | "world-settings" | "editor-settings";
+export type EditorTab = "map" | "world" | "logic" | "debug" | "world-settings" | "editor-settings";
 
 type NavItem = {
 	id: EditorTab;
@@ -25,11 +24,6 @@ const editorNavItems: NavItem[] = [
 		id: "world",
 		label: "Items",
 		icon: Key,
-	},
-	{
-		id: "npcs",
-		label: "NPCs",
-		icon: VenetianMask,
 	},
 	{
 		id: "logic",

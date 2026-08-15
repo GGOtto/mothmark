@@ -1,11 +1,23 @@
 import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {produce} from "immer";
+import {useState, type ComponentProps} from "react";
 import {createInitialWorld} from "@/data/worlds/initialWorld";
 import {SurfaceBehaviorSchema} from "@/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {ItemWorkspace} from "./ItemWorkspace";
+
+type TestItemWorkspaceProps = Omit<
+	ComponentProps<typeof ItemWorkspace>,
+	"activeTab" | "onActiveTabChange"
+>;
+
+function TestItemWorkspace(props: TestItemWorkspaceProps) {
+	const [activeTab, setActiveTab] =
+		useState<ComponentProps<typeof ItemWorkspace>["activeTab"]>("details");
+	return <ItemWorkspace {...props} activeTab={activeTab} onActiveTabChange={setActiveTab} />;
+}
 
 beforeAll(() => {
 	Object.defineProperty(window, "scrollTo", {configurable: true, value: jest.fn()});
@@ -19,7 +31,7 @@ describe("ItemWorkspace", () => {
 		const onBack = jest.fn();
 
 		const {container} = render(
-			<ItemWorkspace
+			<TestItemWorkspace
 				item={item}
 				world={world}
 				updateWorld={jest.fn()}
@@ -79,7 +91,7 @@ describe("ItemWorkspace", () => {
 		});
 
 		render(
-			<ItemWorkspace
+			<TestItemWorkspace
 				item={world.items[0]!}
 				world={world}
 				updateWorld={jest.fn()}
@@ -103,7 +115,7 @@ describe("ItemWorkspace", () => {
 		expect(screen.queryByRole("heading", {name: "Flags"})).not.toBeInTheDocument();
 	});
 
-	it("lists commands that directly reference the item and opens them", async () => {
+	it("lists commands that can target or directly reference the item and opens them", async () => {
 		const user = userEvent.setup();
 		const sourceWorld = createInitialWorld();
 		const item = sourceWorld.items[0]!;
@@ -128,7 +140,7 @@ describe("ItemWorkspace", () => {
 		const onOpenCommand = jest.fn();
 
 		render(
-			<ItemWorkspace
+			<TestItemWorkspace
 				item={world.items[0]!}
 				world={world}
 				updateWorld={jest.fn()}
@@ -142,8 +154,9 @@ describe("ItemWorkspace", () => {
 		);
 
 		await user.click(screen.getByRole("tab", {name: "Commands"}));
-		expect(screen.getByText(attachedCommand.name)).toBeVisible();
-		await user.click(screen.getByRole("button", {name: "Open command"}));
+		const commandRow = screen.getByText(attachedCommand.name).closest("li");
+		expect(commandRow).not.toBeNull();
+		await user.click(within(commandRow as HTMLElement).getByRole("button", {name: "Open command"}));
 		expect(onOpenCommand).toHaveBeenCalledWith(idValue(attachedCommand.id));
 	});
 
@@ -154,7 +167,7 @@ describe("ItemWorkspace", () => {
 		const onOpenPlay = jest.fn();
 
 		render(
-			<ItemWorkspace
+			<TestItemWorkspace
 				item={world.items[0]!}
 				world={world}
 				updateWorld={jest.fn()}

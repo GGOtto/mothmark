@@ -135,14 +135,8 @@ export function Map({
 	const viewportRef = useRef(viewport);
 	const lastRecenterRequest = useRef(recenterRequest);
 	const mapRef = useRef<HTMLDivElement | null>(null);
-	const [layerControlHost, setLayerControlHost] = useState<HTMLElement | null>(null);
 	const bindMapRef = useCallback((element: HTMLDivElement | null) => {
 		mapRef.current = element;
-		const host =
-			element
-				?.closest<HTMLElement>(".editorMapArea")
-				?.querySelector<HTMLElement>("[data-map-layer-control-host]") ?? null;
-		setLayerControlHost((current) => (current === host ? current : host));
 	}, []);
 	const cancelConnectionDraft = useCallback(() => {
 		setConnectionDraft({state: "idle"});
@@ -891,11 +885,7 @@ export function Map({
 							</div>
 						) : null}
 					</div>
-					{readOnly
-						? null
-						: layerControlHost
-							? createPortal(layerControl, layerControlHost)
-							: layerControl}
+					{readOnly ? null : layerControl}
 				</>
 			)}
 		</div>

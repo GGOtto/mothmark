@@ -101,42 +101,6 @@
 	}
 }
 
-.toolbarLayerControlHost .layoutControl {
-	position: static;
-	width: auto;
-	flex-direction: row;
-	border-color: var(--panel-border);
-	box-shadow: none;
-
-	.layoutControl--up,
-	.layoutControl--menu,
-	.layoutControl--down {
-		width: 32px;
-		height: 32px;
-	}
-
-	.layoutControl--up {
-		border-radius: var(--radius-control) 0 0 var(--radius-control);
-	}
-
-	.layoutControl--menu {
-		border-top: 0;
-		border-right: 1px solid var(--color-border);
-		border-bottom: 0;
-		border-left: 1px solid var(--color-border);
-	}
-
-	.layoutControl--down {
-		border-radius: 0 var(--radius-control) var(--radius-control) 0;
-	}
-
-	.layoutControl--scrollIndicator {
-		top: calc(100% + 8px);
-		right: 0;
-		transform: none;
-	}
-}
-
 @keyframes layerScrollIndicatorIn {
 	from {
 		opacity: 0;
@@ -163,12 +127,21 @@
 	}
 }
 
-@media (max-width: 360px) {
-	.toolbarLayerControlHost .layoutControl {
+@container editor-main (max-width: 420px) {
+	.layoutControl {
+		top: 10px;
+		right: 10px;
+		width: 38px;
+
 		.layoutControl--up,
 		.layoutControl--menu,
 		.layoutControl--down {
-			width: 29px;
+			width: 36px;
+			height: 34px;
+		}
+
+		.layoutControl--menu {
+			height: 38px;
 		}
 	}
 }

@@ -11,8 +11,9 @@ export type LogicUsage =
 	| {key: string; kind: "item"; id: string; label: string; detail: string}
 	| {key: string; kind: "room"; id: string; label: string; detail: string};
 
-function containsReference(value: unknown, kind: LogicLibraryKind, id: string) {
+function containsReference(world: World, value: unknown, kind: LogicLibraryKind, id: string) {
 	const seen = new Set<object>();
+	const followedReferences = new Set<string>();
 
 	function visit(candidate: unknown): boolean {
 		if (!candidate || typeof candidate !== "object" || seen.has(candidate)) return false;
@@ -28,6 +29,26 @@ function containsReference(value: unknown, kind: LogicLibraryKind, id: string) {
 			idValue(record[referenceField]) === id
 		) {
 			return true;
+		}
+		if (record.type === "condition-ref" && isID(record.conditionId)) {
+			const referenceId = idValue(record.conditionId);
+			const key = `condition:${referenceId}`;
+			if (!followedReferences.has(key)) {
+				followedReferences.add(key);
+				const condition = world.conditions.find(
+					(candidate) => idValue(candidate.identity) === referenceId,
+				);
+				if (condition && visit(condition.condition)) return true;
+			}
+		}
+		if (record.type === "effect-ref" && isID(record.effectId)) {
+			const referenceId = idValue(record.effectId);
+			const key = `effect:${referenceId}`;
+			if (!followedReferences.has(key)) {
+				followedReferences.add(key);
+				const effect = world.effects.find((candidate) => idValue(candidate.id) === referenceId);
+				if (effect && visit(effect)) return true;
+			}
 		}
 		return Object.values(record).some(visit);
 	}
@@ -49,18 +70,18 @@ export function findLogicUsages(world: World, kind: LogicLibraryKind, id: string
 	const usages: LogicUsage[] = [];
 
 	for (const command of world.commands) {
-		if (containsReference(command, kind, id)) {
+		if (containsReference(world, command, kind, id)) {
 			addUsage(usages, "command", idValue(command.id), command.name || "Unnamed command", "Command");
 		}
 	}
 	for (const event of world.events ?? []) {
-		if (containsReference(event, kind, id)) {
+		if (containsReference(world, event, kind, id)) {
 			addUsage(usages, "event", idValue(event.id), event.name || "Unnamed event", "Event");
 		}
 	}
 	for (const condition of world.conditions) {
 		const conditionId = idValue(condition.identity);
-		if (conditionId !== id && containsReference(condition.condition, kind, id)) {
+		if (conditionId !== id && containsReference(world, condition.condition, kind, id)) {
 			addUsage(
 				usages,
 				"condition",
@@ -72,17 +93,17 @@ export function findLogicUsages(world: World, kind: LogicLibraryKind, id: string
 	}
 	for (const effect of world.effects) {
 		const effectId = idValue(effect.id);
-		if (effectId !== id && containsReference(effect, kind, id)) {
+		if (effectId !== id && containsReference(world, effect, kind, id)) {
 			addUsage(usages, "effect", effectId, effect.name || "Unnamed effect", "Reusable effect");
 		}
 	}
 	for (const item of world.items) {
-		if (containsReference(item, kind, id)) {
+		if (containsReference(world, item, kind, id)) {
 			addUsage(usages, "item", idValue(item.id), item.name || "Unnamed item", "Item");
 		}
 	}
 	for (const room of world.rooms) {
-		if (containsReference(room, kind, id)) {
+		if (containsReference(world, room, kind, id)) {
 			addUsage(usages, "room", idValue(room.id), room.name || "Unnamed room", "Room");
 		}
 	}

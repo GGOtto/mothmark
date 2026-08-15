@@ -22,4 +22,32 @@ describe("findLogicUsages", () => {
 			expect.objectContaining({kind: "command", id: "help"}),
 		]);
 	});
+
+	it("follows nested saved logic back to commands and events", () => {
+		const inner = {
+			...createDefaultFieldObject(EffectGroupSchema),
+			id: toID("effect", "inner-effect"),
+			name: "Inner effect",
+		};
+		const outer = {
+			...createDefaultFieldObject(EffectGroupSchema),
+			id: toID("effect", "outer-effect"),
+			name: "Outer effect",
+			effects: [{type: "effect-ref" as const, effectId: inner.id}],
+		};
+		const world = produce(initialWorld, (draft) => {
+			draft.effects = [inner, outer];
+			draft.commands[0].behavior.always?.effects.push({
+				type: "effect-ref",
+				effectId: outer.id,
+			});
+		});
+
+		expect(findLogicUsages(world, "effect", "inner-effect")).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({kind: "command", id: "help"}),
+				expect.objectContaining({kind: "effect", id: "outer-effect"}),
+			]),
+		);
+	});
 });

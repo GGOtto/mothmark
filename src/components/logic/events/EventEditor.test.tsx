@@ -385,13 +385,17 @@ describe("EventToolbar", () => {
 		);
 
 		expect(screen.queryByText("test-event")).not.toBeInTheDocument();
-		await user.click(screen.getByRole("button", {name: "Delete"}));
+		await user.click(screen.getByRole("button", {name: "Delete event"}));
 
 		expect(screen.getByRole("dialog")).toBeInTheDocument();
 		expect(screen.getByText("Delete event?")).toBeInTheDocument();
 		expect(onDelete).not.toHaveBeenCalled();
 
-		await user.click(screen.getByRole("button", {name: "Delete event"}));
+		await user.click(
+			within(screen.getByRole("dialog", {name: "Delete event?"})).getByRole("button", {
+				name: "Delete event",
+			}),
+		);
 
 		expect(onDelete).toHaveBeenCalledTimes(1);
 	});

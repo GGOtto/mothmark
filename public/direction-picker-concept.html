@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Mothmark direction picker concept</title>
+		<style>
+			:root {
+				color-scheme: dark;
+				--color-canvas: #11100e;
+				--color-workspace: #151411;
+				--color-surface: #1b1915;
+				--color-surface-raised: #24211c;
+				--color-surface-strong: #2e2a23;
+				--color-border: #3a352c;
+				--color-border-strong: #746a58;
+				--color-control-border: #746a58;
+				--color-text: #f0e9da;
+				--color-text-muted: #b6ac99;
+				--color-text-faint: #8c8272;
+				--color-frame: #090909;
+				--color-frame-raised: #161616;
+				--color-frame-strong: #242424;
+				--color-frame-border: #414141;
+				--color-frame-text: #f7f7f5;
+				--color-frame-muted: #c5c5c1;
+				--color-action: #8fb8ce;
+				--color-action-hover: #a5cade;
+				--color-action-contrast: #10202a;
+				--color-focus: #c7a96a;
+				--color-danger: #e07b6c;
+				--color-backdrop: rgb(5 7 8 / 72%);
+				--shadow-float: 0 16px 38px rgb(0 0 0 / 38%);
+			}
+
+			:root[data-theme="light"] {
+				color-scheme: light;
+				--color-canvas: #e8dfd0;
+				--color-workspace: #d8cdbc;
+				--color-surface: #f6eee0;
+				--color-surface-raised: #fffaf0;
+				--color-surface-strong: #e1d4c1;
+				--color-border: #b7a992;
+				--color-border-strong: #766a58;
+				--color-control-border: #968671;
+				--color-text: #211e19;
+				--color-text-muted: #5c5347;
+				--color-text-faint: #756a5a;
+				--color-frame: #ede4d5;
+				--color-frame-raised: #f6eee0;
+				--color-frame-strong: #ddd0bd;
+				--color-frame-border: #b7a992;
+				--color-frame-text: #211e19;
+				--color-frame-muted: #62594d;
+				--color-action: #285a75;
+				--color-action-hover: #1f4961;
+				--color-action-contrast: #fff9ee;
+				--color-focus: #80601f;
+				--color-danger: #a33b30;
+				--color-backdrop: rgb(20 24 26 / 54%);
+				--shadow-float: 0 16px 38px rgb(48 40 28 / 20%);
+			}
+
+			* { box-sizing: border-box; }
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--color-canvas);
+				color: var(--color-text);
+				font-family: Arial, Helvetica, sans-serif;
+				overflow: hidden;
+			}
+			button { font: inherit; }
+
+			.app-shell {
+				display: grid;
+				grid-template: 48px minmax(0, 1fr) / 48px minmax(0, 1fr) 320px;
+				min-height: 100vh;
+			}
+			.header {
+				grid-column: 1 / -1;
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 0 16px;
+				background: var(--color-frame);
+				border-bottom: 1px solid var(--color-frame-border);
+				color: var(--color-frame-text);
+			}
+			.brand-mark {
+				display: grid;
+				place-items: center;
+				width: 25px;
+				height: 25px;
+				border: 1px solid var(--color-focus);
+				border-radius: 4px;
+				color: var(--color-focus);
+				font-size: 15px;
+			}
+			.header strong { font-size: 14px; }
+			.header span { color: var(--color-frame-muted); font-size: 12px; }
+			.header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+			.theme-button {
+				border: 1px solid var(--color-frame-border);
+				border-radius: 4px;
+				background: var(--color-frame-raised);
+				color: var(--color-frame-text);
+				padding: 6px 10px;
+				cursor: pointer;
+			}
+			.rail {
+				background: var(--color-frame);
+				border-right: 1px solid var(--color-frame-border);
+				padding: 10px 7px;
+			}
+			.rail-item {
+				width: 34px;
+				height: 34px;
+				margin-bottom: 6px;
+				border: 0;
+				border-radius: 4px;
+				background: transparent;
+				color: var(--color-frame-muted);
+			}
+			.rail-item.active { background: var(--color-frame-strong); color: var(--color-action); box-shadow: inset 2px 0 var(--color-action); }
+			.workspace {
+				position: relative;
+				background: var(--color-workspace);
+				padding: 24px 28px;
+			}
+			.workspace h1 { margin: 0 0 6px; font-size: 20px; font-weight: 650; }
+			.workspace p { margin: 0; color: var(--color-text-muted); font-size: 13px; }
+			.map-canvas {
+				position: absolute;
+				inset: 76px 28px 28px;
+				border: 1px solid var(--color-border);
+				border-radius: 6px;
+				background-color: #a79c86;
+				background-image: linear-gradient(rgb(81 73 89 / 16%) 1px, transparent 1px), linear-gradient(90deg, rgb(81 73 89 / 16%) 1px, transparent 1px);
+				background-size: 24px 24px;
+			}
+			.room {
+				position: absolute;
+				padding: 12px 16px;
+				border: 1px solid #766a58;
+				border-radius: 4px;
+				background: #eee3ca;
+				color: #211e19;
+				font-weight: 650;
+				font-size: 13px;
+			}
+			.room.one { left: 18%; top: 30%; }
+			.room.two { right: 20%; top: 26%; }
+			.room.three { right: 34%; bottom: 20%; }
+			.inspector {
+				background: var(--color-surface);
+				border-left: 1px solid var(--color-border);
+				padding: 20px;
+			}
+			.inspector h2 { margin: 0 0 20px; font-size: 16px; }
+			.field { margin-bottom: 18px; }
+			.field label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 650; }
+			.fake-input {
+				height: 40px;
+				padding: 11px 12px;
+				border: 1px solid var(--color-control-border);
+				border-radius: 4px;
+				background: var(--color-surface-raised);
+				font-size: 13px;
+			}
+			.backdrop { position: fixed; inset: 48px 0 0 48px; background: var(--color-backdrop); }
+			.picker {
+				position: fixed;
+				left: calc(50% - 136px);
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: min(420px, calc(100vw - 28px));
+				padding: 18px;
+				border: 1px solid var(--color-border-strong);
+				border-radius: 6px;
+				background: var(--color-surface);
+				box-shadow: var(--shadow-float);
+			}
+			.picker-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 8px; }
+			.picker h2 { margin: 0; font-size: 17px; font-weight: 650; }
+			.picker-intro { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.4; }
+			.close-button {
+				width: 30px;
+				height: 30px;
+				border: 1px solid transparent;
+				border-radius: 4px;
+				background: transparent;
+				color: var(--color-text-muted);
+				font-size: 20px;
+				cursor: pointer;
+			}
+			.close-button:hover { background: var(--color-surface-strong); color: var(--color-text); }
+			.compass-wrap { display: grid; place-items: center; padding: 8px 0 6px; }
+			.compass { width: min(100%, 310px); height: auto; overflow: visible; }
+			.compass .sector { fill: var(--color-surface-raised); stroke: var(--color-border-strong); stroke-width: 1.25; cursor: pointer; transition: fill 120ms ease, stroke 120ms ease; }
+			.compass .direction:hover .sector { fill: var(--color-surface-strong); stroke: var(--color-action); }
+			.compass .direction:focus { outline: none; }
+			.compass .direction:focus .sector { stroke: var(--color-focus); stroke-width: 3; }
+			.compass .direction.selected .sector { fill: var(--color-action); stroke: var(--color-action-hover); stroke-width: 2; }
+			.compass text { fill: var(--color-text); font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+			.compass .direction.selected text { fill: var(--color-action-contrast); }
+			.compass .axis { stroke: var(--color-focus); stroke-width: 1; opacity: 0.52; pointer-events: none; }
+			.compass .center { fill: var(--color-surface); stroke: var(--color-border-strong); stroke-width: 1.5; cursor: pointer; }
+			.compass .center-button:hover .center { fill: var(--color-surface-strong); stroke: var(--color-action); }
+			.compass .center-label { font-size: 10px; font-weight: 650; fill: var(--color-text-muted); }
+			.vertical-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border); }
+			.direction-button {
+				height: 40px;
+				border: 1px solid var(--color-control-border);
+				border-radius: 4px;
+				background: var(--color-surface-raised);
+				color: var(--color-text);
+				cursor: pointer;
+				font-weight: 650;
+			}
+			.direction-button:hover { background: var(--color-surface-strong); border-color: var(--color-action); }
+			.direction-button.selected { background: var(--color-action); border-color: var(--color-action-hover); color: var(--color-action-contrast); }
+			.arrow { display: inline-block; margin-right: 8px; font-size: 18px; line-height: 0; transform: translateY(1px); }
+			.picker-footer { display: flex; align-items: center; gap: 8px; min-height: 34px; padding-top: 12px; }
+			.selection-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--color-action); }
+			.selection-text { font-size: 12px; color: var(--color-text-muted); }
+			.selection-text strong { color: var(--color-text); }
+			.key-hint { margin-left: auto; color: var(--color-text-faint); font-size: 11px; }
+			kbd { padding: 2px 5px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface-raised); font: 10px ui-monospace, monospace; }
+
+			@media (max-width: 760px) {
+				.app-shell { grid-template-columns: 48px minmax(0, 1fr); }
+				.inspector { display: none; }
+				.picker { left: 50%; }
+			}
+			@media (max-width: 460px) {
+				.app-shell { grid-template-columns: minmax(0, 1fr); }
+				.rail { display: none; }
+				.header { grid-column: 1; }
+				.backdrop { left: 0; }
+				.picker { width: calc(100vw - 24px); padding: 15px; }
+				.compass { width: 270px; }
+				.key-hint { display: none; }
+			}
+		</style>
+	</head>
+	<body>
+		<div class="app-shell" aria-hidden="true">
+			<header class="header">
+				<div class="brand-mark">✦</div>
+				<strong>Mothmark</strong><span> / The quiet house / Map</span>
+				<div class="header-actions"><button class="theme-button" id="theme-toggle" type="button">Light theme</button></div>
+			</header>
+			<nav class="rail">
+				<button class="rail-item active">◇</button><button class="rail-item">□</button><button class="rail-item">⌘</button>
+			</nav>
+			<main class="workspace">
+				<h1>Map</h1><p>Arrange rooms and describe how they connect.</p>
+				<div class="map-canvas">
+					<div class="room one">Entrance hall</div><div class="room two">North gallery</div><div class="room three">Cellar stair</div>
+				</div>
+			</main>
+			<aside class="inspector">
+				<h2>Connection</h2>
+				<div class="field"><label>From</label><div class="fake-input">Entrance hall</div></div>
+				<div class="field"><label>Direction</label><div class="fake-input">North</div></div>
+				<div class="field"><label>To</label><div class="fake-input">North gallery</div></div>
+			</aside>
+		</div>
+
+		<div class="backdrop"></div>
+		<section class="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+			<div class="picker-header">
+				<div><h2 id="picker-title">Choose direction</h2><p class="picker-intro">Pick a compass point, or use a vertical direction.</p></div>
+				<button class="close-button" type="button" aria-label="Close direction picker">×</button>
+			</div>
+			<div class="compass-wrap">
+				<svg class="compass" viewBox="0 0 360 360" role="group" aria-label="Compass directions">
+					<g id="compass-sectors"></g>
+					<line class="axis" x1="180" y1="12" x2="180" y2="40"></line>
+					<line class="axis" x1="180" y1="320" x2="180" y2="348"></line>
+					<line class="axis" x1="12" y1="180" x2="40" y2="180"></line>
+					<line class="axis" x1="320" y1="180" x2="348" y2="180"></line>
+					<g class="center-button" role="button" tabindex="0" aria-label="Clear direction" data-value="None">
+						<circle class="center" cx="180" cy="180" r="48"></circle><text class="center-label" x="180" y="180">Clear</text>
+					</g>
+				</svg>
+			</div>
+			<div class="vertical-actions">
+				<button class="direction-button" type="button" data-value="Up"><span class="arrow">↑</span>Up</button>
+				<button class="direction-button" type="button" data-value="Down"><span class="arrow">↓</span>Down</button>
+			</div>
+			<div class="picker-footer" aria-live="polite">
+				<span class="selection-mark"></span><span class="selection-text"><strong>North</strong> selected</span>
+				<span class="key-hint"><kbd>Arrow keys</kbd> move · <kbd>Enter</kbd> choose · <kbd>Esc</kbd> close</span>
+			</div>
+		</section>
+
+		<script>
+			const directions = [
+				{ short: "N", value: "North", angle: -90 }, { short: "NE", value: "Northeast", angle: -45 },
+				{ short: "E", value: "East", angle: 0 }, { short: "SE", value: "Southeast", angle: 45 },
+				{ short: "S", value: "South", angle: 90 }, { short: "SW", value: "Southwest", angle: 135 },
+				{ short: "W", value: "West", angle: 180 }, { short: "NW", value: "Northwest", angle: 225 },
+			];
+			const ns = "http://www.w3.org/2000/svg";
+			const center = 180, inner = 58, outer = 148, gap = 1.4;
+			const polar = (radius, degrees) => {
+				const radians = degrees * Math.PI / 180;
+				return [center + radius * Math.cos(radians), center + radius * Math.sin(radians)];
+			};
+			const sectors = document.querySelector("#compass-sectors");
+			directions.forEach((direction, index) => {
+				const start = direction.angle - 22.5 + gap;
+				const end = direction.angle + 22.5 - gap;
+				const [osx, osy] = polar(outer, start), [oex, oey] = polar(outer, end);
+				const [iex, iey] = polar(inner, end), [isx, isy] = polar(inner, start);
+				const group = document.createElementNS(ns, "g");
+				group.setAttribute("class", `direction${index === 0 ? " selected" : ""}`);
+				group.setAttribute("role", "button"); group.setAttribute("tabindex", index === 0 ? "0" : "-1");
+				group.setAttribute("aria-label", direction.value); group.dataset.value = direction.value; group.dataset.index = index;
+				const path = document.createElementNS(ns, "path"); path.setAttribute("class", "sector");
+				path.setAttribute("d", `M ${osx} ${osy} A ${outer} ${outer} 0 0 1 ${oex} ${oey} L ${iex} ${iey} A ${inner} ${inner} 0 0 0 ${isx} ${isy} Z`);
+				const [tx, ty] = polar(104, direction.angle);
+				const text = document.createElementNS(ns, "text"); text.setAttribute("x", tx); text.setAttribute("y", ty); text.textContent = direction.short;
+				group.append(path, text); sectors.append(group);
+			});
+
+			let selected = "North";
+			const selectionText = document.querySelector(".selection-text");
+			const selectValue = (value) => {
+				selected = value;
+				document.querySelectorAll("[data-value]").forEach(el => el.classList.toggle("selected", el.dataset.value === value));
+				selectionText.innerHTML = value === "None" ? "No direction selected" : `<strong>${value}</strong> selected`;
+			};
+			document.querySelectorAll("[data-value]").forEach(el => {
+				el.addEventListener("click", () => selectValue(el.dataset.value));
+				el.addEventListener("keydown", event => {
+					if ((event.key === "Enter" || event.key === " ") && el.dataset.value === "None") { event.preventDefault(); selectValue("None"); }
+				});
+			});
+			document.querySelectorAll(".direction").forEach(el => el.addEventListener("keydown", event => {
+				const keySteps = { ArrowRight: 1, ArrowDown: 2, ArrowLeft: -1, ArrowUp: -2 };
+				if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectValue(el.dataset.value); return; }
+				if (!(event.key in keySteps)) return;
+				event.preventDefault();
+				const next = (Number(el.dataset.index) + keySteps[event.key] + 8) % 8;
+				document.querySelectorAll(".direction").forEach(item => item.setAttribute("tabindex", "-1"));
+				const target = document.querySelector(`.direction[data-index="${next}"]`); target.setAttribute("tabindex", "0"); target.focus();
+			}));
+			document.querySelector("#theme-toggle").addEventListener("click", event => {
+				const root = document.documentElement; const light = root.dataset.theme === "light";
+				root.dataset.theme = light ? "dark" : "light"; event.currentTarget.textContent = light ? "Light theme" : "Dark theme";
+			});
+		</script>
+	</body>
+</html>

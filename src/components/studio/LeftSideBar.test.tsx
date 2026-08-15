@@ -17,7 +17,7 @@ describe("LeftSideBar", () => {
 			within(menu)
 				.getAllByRole("menuitem")
 				.map((item) => item.textContent),
-		).toEqual(["Map", "Items", "NPCs", "Logic", "Debug", "World settings", "Settings"]);
+		).toEqual(["Map", "Items", "Logic", "Debug", "World settings", "Settings"]);
 
 		await user.click(within(menu).getByRole("menuitem", {name: "Items"}));
 		expect(onTabChange).toHaveBeenCalledWith("world");

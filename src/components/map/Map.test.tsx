@@ -82,6 +82,17 @@ function MapHarness({
 }
 
 describe("Map layer viewports", () => {
+	it("keeps the layer control inside the map surface", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const control = screen
+			.getByRole("button", {name: "Layers · Main floor"})
+			.closest(".layoutControl") as HTMLElement | null;
+
+		expect(control).not.toBeNull();
+		expect(map).toContainElement(control);
+	});
+
 	it("locks a preview map to pan and zoom without editor controls", () => {
 		const {container} = render(
 			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} readOnly />,

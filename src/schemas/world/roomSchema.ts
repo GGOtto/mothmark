@@ -14,13 +14,13 @@ export const PathwaySchema = editor.select(
 		description: "Controls whether travel is allowed through a connection, and in which direction.",
 		options: [
 			{
-				label: "No Way",
+				label: "No way",
 				value: "no-way",
 				description: "The connection exists, but travel is not allowed.",
 				tone: "danger",
 			},
 			{
-				label: "Two Way",
+				label: "Two way",
 				value: "two-way",
 				description: "Travel is allowed in both directions.",
 				tone: "success",
@@ -62,9 +62,9 @@ export const RoomSchema = editor.object(
 			description: "The unique id used to identify this room.",
 			required: true,
 			layout: {
-				group: "details",
-				width: "half",
-				order: -1,
+				group: "advanced",
+				width: "full",
+				order: 100,
 			},
 		}),
 
@@ -162,7 +162,7 @@ export const RoomSchema = editor.object(
 			groups: [
 				{
 					id: "details",
-					title: "Presentation",
+					title: "Player-facing text",
 					description: "Control what the player will see when interacting with this room.",
 					order: 10,
 					groups: [
@@ -182,11 +182,11 @@ export const RoomSchema = editor.object(
 					defaultCollapsed: true,
 				},
 				{
-					id: "availability",
-					title: "Availability",
-					description: "Block passages into this room until these conditions are met.",
-					order: 40,
-					defaultCollapsed: true,
+					id: "advanced",
+					title: "Advanced",
+					description: "Internal identity used by links and authored logic.",
+					order: 100,
+					importance: "internal",
 				},
 			],
 		},

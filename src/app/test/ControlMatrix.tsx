@@ -269,9 +269,13 @@ const SAMPLE_FLAG_REGISTRY: FlagRegistry = {
 const SAMPLE_OPTION_LISTS: Record<string, EditorSelectOption[]> = {
 	"schema.world.directions": [
 		{label: "North", value: "n", description: "Compass north."},
+		{label: "Northeast", value: "ne", description: "Compass northeast."},
 		{label: "East", value: "e", description: "Compass east."},
+		{label: "Southeast", value: "se", description: "Compass southeast."},
 		{label: "South", value: "s", description: "Compass south."},
+		{label: "Southwest", value: "sw", description: "Compass southwest."},
 		{label: "West", value: "w", description: "Compass west."},
+		{label: "Northwest", value: "nw", description: "Compass northwest."},
 		{label: "Up", value: "up", description: "Vertical movement upward."},
 		{label: "Down", value: "down", description: "Vertical movement downward."},
 		{label: "In", value: "in", description: "Contextual inward movement."},

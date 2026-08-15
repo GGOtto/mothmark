@@ -15,7 +15,7 @@ import {LeftSideBar, type EditorTab} from "@/components/studio/LeftSideBar";
 import {RightSideBar} from "@/components/studio/RightSideBar";
 import {RoomItemsPanel} from "@/components/studio/editors/RoomItemsPanel";
 import {ItemCatalog} from "@/components/studio/ItemCatalog";
-import {ItemWorkspace} from "@/components/studio/ItemWorkspace";
+import {ItemWorkspace, type ItemWorkspaceTab} from "@/components/studio/ItemWorkspace";
 import {CommandLine} from "@/components/player/CommandLine";
 import {PublishingPanel} from "@/components/publication/PublishingPanel";
 import {Map, type ConnectionDraft} from "@/components/map/Map";
@@ -146,10 +146,6 @@ const EDITOR_TAB_METADATA: Record<EditorTab, EditorTabMetadata> = {
 		title: "Settings",
 		description: "Configure editor preferences.",
 	},
-	npcs: {
-		title: "Story",
-		description: "Examine the text connection to world entities.",
-	},
 };
 
 async function loadEditorWorld(signal: AbortSignal, requestedWorldId?: string) {
@@ -178,6 +174,7 @@ export default function EditorPage() {
 	const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
 	const [logicLibraryReturn, setLogicLibraryReturn] = useState<OpenLogicLibraryRequest | null>(null);
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+	const [itemWorkspaceTab, setItemWorkspaceTab] = useState<ItemWorkspaceTab>("details");
 	const [editorSlug, setEditorSlug] = useState<string | null>(null);
 	const [editorContextReady, setEditorContextReady] = useState(false);
 	const [editorContextNotice, setEditorContextNotice] = useState<string | null>(null);
@@ -636,6 +633,8 @@ export default function EditorPage() {
 					}}
 					onOpenCommandInspector={(nextSelection) => void openCommandInspector(nextSelection)}
 					selectedItemId={selectedItemId}
+					itemWorkspaceTab={itemWorkspaceTab}
+					setItemWorkspaceTab={setItemWorkspaceTab}
 					setSelectedItemId={(itemId) => {
 						beginEditorNavigation();
 						setSelectedItemId(itemId);
@@ -855,6 +854,8 @@ type EditorMainPanelProps = {
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
+	itemWorkspaceTab: ItemWorkspaceTab;
+	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;
 	setSelectedItemId: (itemId: string | null) => void;
 	replaceSelectedItemId: (itemId: string | null) => void;
 	editorContextNotice: string | null;
@@ -904,6 +905,8 @@ function EditorMainPanel({
 	onOpenLogicUsage,
 	onOpenCommandInspector,
 	selectedItemId,
+	itemWorkspaceTab,
+	setItemWorkspaceTab,
 	setSelectedItemId,
 	replaceSelectedItemId,
 	editorContextNotice,
@@ -1044,6 +1047,8 @@ function EditorMainPanel({
 						onOpenLogicUsage={onOpenLogicUsage}
 						onOpenCommandInspector={onOpenCommandInspector}
 						selectedItemId={selectedItemId}
+						itemWorkspaceTab={itemWorkspaceTab}
+						setItemWorkspaceTab={setItemWorkspaceTab}
 						setSelectedItemId={setSelectedItemId}
 						replaceSelectedItemId={replaceSelectedItemId}
 						onEditorContextRecovery={onEditorContextRecovery}
@@ -1196,6 +1201,8 @@ type EditorWorkspaceProps = {
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
+	itemWorkspaceTab: ItemWorkspaceTab;
+	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;
 	setSelectedItemId: (itemId: string | null) => void;
 	replaceSelectedItemId: (itemId: string | null) => void;
 	onEditorContextRecovery: (message: string) => void;
@@ -1241,6 +1248,8 @@ function EditorWorkspace({
 	onOpenLogicUsage,
 	onOpenCommandInspector,
 	selectedItemId,
+	itemWorkspaceTab,
+	setItemWorkspaceTab,
 	setSelectedItemId,
 	replaceSelectedItemId,
 	onEditorContextRecovery,
@@ -1370,6 +1379,8 @@ function EditorWorkspace({
 					item={selectedItem}
 					world={world}
 					updateWorld={updateWorld}
+					activeTab={itemWorkspaceTab}
+					onActiveTabChange={setItemWorkspaceTab}
 					onOpenLogicLibrary={onOpenLogicLibrary}
 					onOpenPlay={onOpenPlay}
 					onBack={() => setSelectedItemId(null)}

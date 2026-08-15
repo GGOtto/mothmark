@@ -7,6 +7,8 @@ import {replaceRoomDraft} from "@/app/editor/utils/worldDraftUtils";
 import {UniversalEditor} from "../../universal-editor/UniversalEditor";
 import {compareIds, deleteWorldEntity, idValue, toID, updateWorldEntityId} from "@/utils/idUtils";
 import {useTheme} from "@/components/theme/ThemeProvider";
+import {useOptionalPopup} from "@/components/popup/Popup";
+import {findEntityReferenceUsages} from "@/components/logic/shared/editorRelationships";
 
 type RoomEditorProps = {
 	selectedRoom: Room;
@@ -24,6 +26,7 @@ export function RoomEditor({
 	onDelete,
 }: RoomEditorProps) {
 	const {theme} = useTheme();
+	const popup = useOptionalPopup();
 	const duplicateRoomId = useMemo(() => {
 		return world
 			? world.rooms.filter((room) => compareIds(room.id, selectedRoom.id)).length > 1
@@ -54,8 +57,31 @@ export function RoomEditor({
 		});
 	}
 
-	function deleteRoom() {
+	async function deleteRoom() {
 		if (!world || !updateWorld) return;
+		const usages = findEntityReferenceUsages(world, selectedRoom.id);
+		const confirmed = popup
+			? await popup.confirm({
+					title: `Delete ${selectedRoom.name || "this room"}?`,
+					message: (
+						<div>
+							<p>This removes the room and repairs or removes records that depend on it.</p>
+							{usages.length ? (
+								<ul>
+									{usages.map((usage) => (
+										<li key={usage.key}>
+											{usage.label} · {usage.detail}
+										</li>
+									))}
+								</ul>
+							) : null}
+						</div>
+					),
+					confirmLabel: "Delete room",
+					danger: true,
+				})
+			: globalThis.confirm(`Delete ${selectedRoom.name || "this room"}?`);
+		if (!confirmed) return;
 		const nextWorld = deleteWorldEntity(world, selectedRoom.id);
 		if (nextWorld === world) return;
 		updateWorld(nextWorld);
@@ -70,7 +96,7 @@ export function RoomEditor({
 					<h2 className="roomEditorTitle">{selectedRoom.name || "Unnamed room"}</h2>
 				</div>
 				{world && updateWorld ? (
-					<button type="button" className="roomEditorDelete" onClick={deleteRoom}>
+					<button type="button" className="roomEditorDelete" onClick={() => void deleteRoom()}>
 						Delete room
 					</button>
 				) : null}

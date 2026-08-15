@@ -28,6 +28,7 @@ import {generateUniqueId, idValue, toID} from "@/utils/idUtils";
 import {
 	BooleanBlockSchema,
 	ChoiceBlockSchema,
+	COMMAND_BLOCK_SCHEMAS,
 	DirectionBlockSchema,
 	NumberBlockSchema,
 	PhraseBlockSchema,
@@ -40,6 +41,7 @@ import {
 import type {CommandConditionBranch} from "@/schemas/world/commandLogicSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
+import {getEditorMetadata} from "@/utils/editorMetadata";
 import type {CommandSelection, OpenLogicLibraryRequest} from "../shared";
 import {CommandBehaviorEditor} from "./CommandBehaviorEditor";
 import {commandBlockWord, commandPatternText} from "./CommandSummary";
@@ -55,67 +57,32 @@ type BlockDefinition = {
 	structural: boolean;
 };
 
-export const COMMAND_BLOCKS = [
-	{
-		type: "phrase",
-		label: "Phrase",
-		description: "Accepted words or phrases.",
-		icon: Quote,
-		structural: true,
-	},
-	{
-		type: "relation",
-		label: "Relation",
-		description: "A relationship such as on, with, or to.",
-		icon: Link2,
-		structural: true,
-	},
-	{
-		type: "target",
-		label: "Target",
-		description: "A room or visible feature.",
-		icon: Crosshair,
-		structural: false,
-	},
-	{
-		type: "number",
-		label: "Number",
-		description: "An integer or decimal value.",
-		icon: Hash,
-		structural: false,
-	},
-	{
-		type: "direction",
-		label: "Direction",
-		description: "A compass or vertical direction.",
-		icon: Compass,
-		structural: false,
-	},
-	{
-		type: "boolean",
-		label: "Boolean",
-		description: "An affirmative or negative value.",
-		icon: CheckSquare,
-		structural: false,
-	},
-	{
-		type: "choice",
-		label: "Choice",
-		description: "One value from an authored list.",
-		icon: ListChecks,
-		structural: false,
-	},
-	{
-		type: "text",
-		label: "Text",
-		description: "Words supplied by the player.",
-		icon: TextCursorInput,
-		structural: false,
-	},
-] satisfies BlockDefinition[];
+const COMMAND_BLOCK_ICONS: Record<BlockType, LucideIcon> = {
+	phrase: Quote,
+	relation: Link2,
+	target: Crosshair,
+	number: Hash,
+	direction: Compass,
+	boolean: CheckSquare,
+	choice: ListChecks,
+	text: TextCursorInput,
+};
+
+export const COMMAND_BLOCKS: BlockDefinition[] = COMMAND_BLOCK_SCHEMAS.map((schema) => {
+	const value = createDefaultFieldObject(schema);
+	const metadata = getEditorMetadata(schema);
+	const commandBlock = metadata?.features?.commandBlock as {structural?: boolean} | undefined;
+	return {
+		type: value.type,
+		label: metadata?.title ?? value.type,
+		description: metadata?.description ?? "Command value",
+		icon: COMMAND_BLOCK_ICONS[value.type],
+		structural: commandBlock?.structural ?? false,
+	};
+});
 
 export function isStructuralBlock(block: Pick<CommandBlock, "type">) {
-	return block.type === "phrase" || block.type === "relation";
+	return blockDefinition(block.type).structural;
 }
 
 export function blockDefinition(type: BlockType) {
@@ -801,13 +768,23 @@ export function CommandToolbar({
 				<p>{command.name || "Unnamed command"}</p>
 				<span>{command.enabled ? "Enabled" : "Disabled"}</span>
 			</div>
-			<button type="button" className="commandToolbar__scope" onClick={onOpenSettings}>
+			<button
+				type="button"
+				className="commandToolbar__scope"
+				onClick={onOpenSettings}
+				aria-label="Edit command"
+			>
 				<Settings size={14} aria-hidden="true" />
-				Edit command
+				<span>Edit command</span>
 			</button>
-			<button type="button" className="logicToolbar__delete" onClick={() => void requestDelete()}>
+			<button
+				type="button"
+				className="logicToolbar__delete"
+				onClick={() => void requestDelete()}
+				aria-label="Delete command"
+			>
 				<Trash2 size={15} aria-hidden="true" />
-				Delete
+				<span>Delete</span>
 			</button>
 		</div>
 	);

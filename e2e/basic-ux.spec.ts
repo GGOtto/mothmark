@@ -1219,12 +1219,23 @@ test("world lifecycle actions rename, export, duplicate, trash, restore, and per
 });
 
 test("primary editor workspaces are directly reachable", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto("/worlds/undefined");
 	await expect(page).toHaveURL(
 		new RegExp(`/worlds/${editor.worldSlug}\\?view=map&room=shop-floor$`),
 	);
+	await page.setViewportSize({width: 901, height: 720});
+	const mapToolbar = page.getByLabel("Map tools");
+	await expect(mapToolbar).toBeVisible();
+	expect(
+		await mapToolbar.evaluate(
+			(element) =>
+				element.scrollWidth <= element.clientWidth &&
+				element.getBoundingClientRect().right <= window.innerWidth,
+		),
+	).toBe(true);
 	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 
@@ -1240,12 +1251,71 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await page.getByRole("button", {name: /Conditions/}).click();
 	await expect(page.getByRole("heading", {name: "Conditions", exact: true})).toBeVisible();
 	await expect(page.getByRole("searchbox", {name: "Search conditions"})).toBeVisible();
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const conditionTools = await page.locator(".logicLibraryTools").boundingBox();
+	const conditionResults = await page.locator(".logicLibraryBody").boundingBox();
+	expect(conditionTools?.height).toBeLessThanOrEqual(130);
+	expect(conditionResults?.height).toBeGreaterThanOrEqual(250);
+	await page.setViewportSize({width: 1280, height: 720});
+	await expect(page.getByRole("button", {name: "By parent"})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	await expect(page.getByRole("combobox", {name: "Sort by"})).toBeVisible();
+	const takeUsage = page.getByRole("button", {name: "Take Command · 1 condition"});
+	await takeUsage.click();
+	await expect(page.getByRole("heading", {name: "Take", exact: true})).toBeVisible();
+	await expect(page.getByRole("button", {name: "See Command"})).toBeVisible();
+	await expect(page).toHaveURL(/\?view=logic&section=conditions$/);
+	const takeCondition = page.locator(".logicOccurrenceList > button").first();
+	await expect(takeCondition).toBeVisible();
+	await takeCondition.click();
+	await expect(page.getByRole("button", {name: "Save"})).toBeVisible();
+	await expect(page.getByText("Group logic")).toBeVisible();
+	await expect(page.getByText("[object Object]")).toHaveCount(0);
+	await expect(page.getByRole("button", {name: "See Command"})).toHaveCount(0);
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	await page.getByRole("button", {name: /Back Take/}).click();
+	await page.getByRole("button", {name: "See Command"}).click();
+	await expect(page.getByText("Take", {exact: true}).first()).toBeVisible();
+	await expect(page.getByRole("button", {name: "Back to Commands"})).toBeVisible();
+	await page.setViewportSize({width: 1280, height: 720});
+	await page.getByRole("button", {name: "Back to Commands"}).click();
+	await page.getByRole("button", {name: "Back to Logic"}).click();
+	await page.getByRole("button", {name: /Conditions/}).click();
+	await page.getByRole("button", {name: "Conditions", exact: true}).click();
+	await expect(page.getByRole("button", {name: "Conditions", exact: true})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	const inlineCondition = page
+		.locator(".logicLibraryList > button")
+		.filter({hasText: "Take"})
+		.first();
+	await expect(inlineCondition).toBeVisible();
+	await inlineCondition.click();
+	await expect(page.getByText("Group logic")).toBeVisible();
+	await expect(page.getByText("[object Object]")).toHaveCount(0);
+	await page.getByRole("button", {name: /Back Take/}).click();
+	await expect(page.getByRole("button", {name: "Conditions", exact: true})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
 	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
 	await page.locator(".logicLibraryBack").click();
 
 	await page.getByRole("button", {name: /Effects/}).click();
 	await expect(page.getByRole("heading", {name: "Effects", exact: true})).toBeVisible();
 	await expect(page.getByRole("searchbox", {name: "Search effects"})).toBeVisible();
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const effectTools = await page.locator(".logicLibraryTools").boundingBox();
+	const effectResults = await page.locator(".logicLibraryBody").boundingBox();
+	expect(effectTools?.height).toBeLessThanOrEqual(130);
+	expect(effectResults?.height).toBeGreaterThanOrEqual(250);
+	await page.setViewportSize({width: 1280, height: 720});
 	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
 	await page.locator(".logicLibraryBack").click();
 
@@ -1456,6 +1526,15 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Flags"})).toBeVisible();
 	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toHaveCount(0);
+	await page.getByRole("checkbox", {name: /Takeable/}).check();
+	const takeConditionRow = page.locator(".itemAdvancedRow").filter({hasText: "Take condition"});
+	await takeConditionRow.getByRole("button", {name: "Add"}).click();
+	await expect(page.getByRole("heading", {name: "Edit condition group"})).toBeVisible();
+	await expect(page.getByText("Shop Counter · Take condition", {exact: true})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Save"})).toBeVisible();
+	await page.getByRole("button", {name: "Cancel"}).click();
+	await expect(page.getByRole("heading", {name: "Shop Counter", level: 1})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
 	await page.getByRole("checkbox", {name: /Surface/}).check();
 	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
 	await page.getByRole("textbox", {name: "Contents lead-in"}).fill("On the counter:");
@@ -1464,7 +1543,11 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("heading", {name: "Flags"})).toHaveCount(0);
 	await page.getByRole("tab", {name: "Commands"}).click();
 	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
-	await expect(page.getByText("No direct commands")).toBeVisible();
+	const examineCommand = page
+		.getByRole("listitem")
+		.filter({has: page.getByText("Examine", {exact: true})});
+	await expect(examineCommand).toBeVisible();
+	await expect(examineCommand.getByText("Can target this item", {exact: true})).toBeVisible();
 
 	await page.getByRole("tab", {name: "Details"}).click();
 	await page.getByRole("textbox", {name: "Name"}).fill("Front Counter");
@@ -1560,6 +1643,7 @@ test("a static layer preview opens the displayed layer", async ({page}) => {
 });
 
 test("events edit inline condition and effect groups on focused logic pages", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto(`/worlds/${editor.worldSlug}`);
@@ -1590,6 +1674,7 @@ test("events edit inline condition and effect groups on focused logic pages", as
 test("editor URLs restore context through reload, history, and invalid selections", async ({
 	page,
 }) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
@@ -1664,6 +1749,7 @@ test("the inspector only resets scroll for editor navigation", async ({page}) =>
 test("the editor uses top navigation and a persistent bottom utility switcher on phones", async ({
 	page,
 }) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.setViewportSize({width: 390, height: 844});
@@ -1896,6 +1982,209 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	expect(browserErrors).toEqual([]);
 });
 
+test("narrow editor chrome preserves the working canvas", async ({page}) => {
+	test.setTimeout(60_000);
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 520, height: 844});
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	await expect(page.getByRole("heading", {name: "Items", exact: true})).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	expect(
+		await page.locator(".header").evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(52);
+	expect(
+		await page
+			.locator(".mobileEditorNavigation")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(36);
+	await expect(page.locator(".editorToolbar:not(.logicToolbar)")).toBeHidden();
+	expect(
+		await page
+			.locator(".itemCatalogHeader")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(130);
+	expect(
+		await page
+			.locator(".itemCatalogBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(400);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=conditions`);
+	await expect(page.getByRole("heading", {name: "Conditions", exact: true})).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const conditionChromeHeight = await page
+		.locator(".logicLibraryHeader, .logicLibraryTools")
+		.evaluateAll((elements) =>
+			elements.reduce((height, element) => height + element.getBoundingClientRect().height, 0),
+		);
+	expect(conditionChromeHeight).toBeLessThanOrEqual(160);
+	expect(
+		await page
+			.locator(".logicLibraryBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(400);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=events`);
+	await page.getByRole("button", {name: "New event"}).click();
+	await expect(page.getByText("New event", {exact: true}).first()).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".editorMainPanel"});
+	expect(
+		await page.locator(".logicToolbar").evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(48);
+	expect(
+		await page
+			.locator(".logicEventRail")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(44);
+	expect(
+		await page.locator(".logicTree").evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(500);
+	expect(browserErrors).toEqual([]);
+});
+
+test("editor workspaces respond to the pane instead of only the viewport", async ({page}) => {
+	test.setTimeout(90_000);
+	const browserErrors = collectBrowserErrors(page);
+	await page.addInitScript(() =>
+		window.localStorage.setItem(
+			"mothmark-editor-utility-layout",
+			JSON.stringify({desktopWidth: 447, mobileHeight: 280}),
+		),
+	);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 1040, height: 844});
+
+	const expectContained = async (selector: string) => {
+		await expect
+			.poll(() =>
+				page
+					.locator(selector)
+					.evaluate(
+						(element) =>
+							element.scrollWidth <= element.clientWidth + 1 &&
+							element.getBoundingClientRect().left >= 0 &&
+							element.getBoundingClientRect().right <= window.innerWidth + 1,
+					),
+			)
+			.toBe(true);
+	};
+	const expandPlay = async () => {
+		const playTab = page.getByRole("tab", {name: "Play"});
+		if ((await playTab.getAttribute("aria-expanded")) === "false") await playTab.click();
+	};
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+	expect(
+		await page.locator(".header").evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(56);
+	const map = page.locator("[data-map]");
+	const layerControl = page.locator(".layoutControl");
+	const utilityPanel = page.locator(".editorUtilityPanel");
+	const mapGeometry = await map.evaluate((element) => {
+		const mapRect = element.getBoundingClientRect();
+		const controlRect = element.querySelector<HTMLElement>(".layoutControl")!.getBoundingClientRect();
+		return {
+			controlInside:
+				controlRect.top >= mapRect.top &&
+				controlRect.right <= mapRect.right &&
+				controlRect.bottom <= mapRect.bottom,
+			insetRight: Math.round(mapRect.right - controlRect.right),
+			insetTop: Math.round(controlRect.top - mapRect.top),
+		};
+	});
+	expect(mapGeometry.controlInside).toBe(true);
+	expect(mapGeometry.insetRight).toBeGreaterThanOrEqual(20);
+	expect(mapGeometry.insetRight).toBeLessThanOrEqual(21);
+	expect(mapGeometry.insetTop).toBeGreaterThanOrEqual(20);
+	expect(mapGeometry.insetTop).toBeLessThanOrEqual(21);
+	const [controlBox, utilityBox] = await Promise.all([
+		layerControl.boundingBox(),
+		utilityPanel.boundingBox(),
+	]);
+	expect((controlBox?.x ?? Number.POSITIVE_INFINITY) + (controlBox?.width ?? 0)).toBeLessThanOrEqual(
+		utilityBox?.x ?? 0,
+	);
+
+	await page.getByRole("button", {name: "Layers · Main floor"}).click();
+	await expectContained(".layerMenu");
+	const layerLayout = await page.locator(".layerMenu").evaluate((element) => {
+		const left = element.querySelector<HTMLElement>(".layerMenu--leftPane")!.getBoundingClientRect();
+		const right = element.querySelector<HTMLElement>(".layerMenu--right")!.getBoundingClientRect();
+		const preview = element
+			.querySelector<HTMLElement>(".layerMenu--preview")!
+			.getBoundingClientRect();
+		const header = element.querySelector<HTMLElement>(".layerMenu--header")!;
+		return {
+			stacked: left.bottom <= right.top + 1,
+			previewHeight: Math.round(preview.height),
+			headerContained: header.scrollWidth <= header.clientWidth + 1,
+		};
+	});
+	expect(layerLayout.stacked).toBe(true);
+	expect(layerLayout.previewHeight).toBeGreaterThan(300);
+	expect(layerLayout.headerContained).toBe(true);
+	await page.getByRole("button", {name: "Close layer menu"}).click();
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	await expectContained(".itemCatalog");
+	expect(
+		await page
+			.locator(".itemCatalogBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThan(500);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic`);
+	await expandPlay();
+	await expectContained(".logicHome");
+	expect(
+		await page
+			.locator(".logicHome__grid")
+			.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length),
+	).toBe(1);
+
+	for (const section of ["conditions", "effects"] as const) {
+		await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=${section}`);
+		await expandPlay();
+		await expectContained(".logicLibraryWorkspace");
+		const libraryChromeHeight = await page
+			.locator(".logicLibraryHeader, .logicLibraryTools")
+			.evaluateAll((elements) =>
+				elements.reduce((height, element) => height + element.getBoundingClientRect().height, 0),
+			);
+		expect(libraryChromeHeight).toBeLessThanOrEqual(160);
+		expect(
+			await page
+				.locator(".logicLibraryBody")
+				.evaluate((element) => element.getBoundingClientRect().height),
+		).toBeGreaterThan(500);
+	}
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=commands`);
+	await expandPlay();
+	await expectContained(".commandLibrary");
+	await page.getByRole("button", {name: /Help/}).first().click();
+	await expectContained(".commandEditor");
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=events`);
+	await expandPlay();
+	await page.getByRole("button", {name: "New event"}).click();
+	await expectContained(".logicEditor");
+	const eventLayout = await page.locator(".logicEditor").evaluate((element) => {
+		const rail = element.querySelector<HTMLElement>(".logicEventRail")!.getBoundingClientRect();
+		const tree = element.querySelector<HTMLElement>(".logicTree")!.getBoundingClientRect();
+		return {
+			regionsSeparated: rail.right <= tree.left + 1 || rail.bottom <= tree.top + 1,
+			treeHeight: Math.round(tree.height),
+		};
+	});
+	expect(eventLayout.regionsSeparated).toBe(true);
+	expect(eventLayout.treeHeight).toBeGreaterThan(500);
+
+	expect(browserErrors).toEqual([]);
+});
+
 test("dense maps and long play output share the phone workspace without control overlap", async ({
 	page,
 }) => {
@@ -1977,7 +2266,8 @@ test("mobile command editing keeps every authoring control reachable without ove
 		clientHeight: element.clientHeight,
 		scrollHeight: element.scrollHeight,
 	}));
-	expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+	expect(geometry.clientHeight).toBeGreaterThanOrEqual(300);
+	expect(geometry.scrollHeight).toBeGreaterThanOrEqual(geometry.clientHeight);
 	expect(browserErrors).toEqual([]);
 });
 

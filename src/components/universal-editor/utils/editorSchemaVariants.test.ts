@@ -5,10 +5,19 @@ import {
 	createSchemaVariantDefault,
 	findEditorSchemaVariant,
 	schemaFieldOptions,
+	schemaLogicOptions,
 	schemaTypeOptions,
 } from "./editorSchemaVariants";
 
 describe("editor schema variants", () => {
+	it("returns isolated working values from the schema-derived logic catalog", () => {
+		const first = schemaLogicOptions(EffectSchema);
+		const second = schemaLogicOptions(EffectSchema);
+		expect(first).not.toBe(second);
+		expect(first.map((option) => option.key)).toEqual(second.map((option) => option.key));
+		expect(first[0]?.defaultValue).not.toBe(second[0]?.defaultValue);
+	});
+
 	it("derives every effect choice and operation from EffectSchema", () => {
 		expect(schemaTypeOptions(EffectSchema).map((option) => option.value)).toEqual([
 			"message",

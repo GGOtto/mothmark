@@ -65,6 +65,7 @@
 ## Schema-driven editors
 
 - Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
+- Cache schema-derived condition/effect option catalogs and build library search indexes once per world and visible view. Do not repeatedly introspect schemas for every occurrence, rebuild a rich index on each search keystroke, or eagerly index hidden library views.
 - Give every concrete condition and effect operation several hidden, natural-language situation phrases in schema metadata. Include varied author intents such as traps, discoveries, puzzles, transformations, and state changes; keep these phrases searchable but out of visible picker copy, and enforce their presence with metadata-completeness tests.
 - Reuse the existing typed-field command-variable path for condition and effect inputs. Expose ordinary schema fields such as `itemId`, then bind command blocks through `commandVariables` so the shared variable UI and runtime resolver handle them; do not introduce parallel source selectors or command-target resolution systems.
 
@@ -147,6 +148,10 @@
 - Keep the header and activity rail in one compact, neutral, theme-aware shell family. Use subtle
   borders, surface hover states, and a single action-blue selected indicator instead of a saturated
   frame around the workspace.
+- Treat narrow editor chrome as one shared vertical budget across the site header, destination bar,
+  workspace context, and local controls. Do not repeat the active destination's title/description,
+  stack secondary controls into permanent header rows, or let chrome displace the primary canvas;
+  keep at least 400px of working content visible in a 520×844 viewport.
 - Preserve the established left activity-rail button geometry, spacing, compact typography, and
   label-reveal behavior when changing site styling. Color migrations may retheme it but must not
   redesign its controls.
@@ -175,6 +180,10 @@
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
   bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
   viewport.
+- Size editor workspace content from its actual pane with container queries; reserve viewport media
+  queries for truly global chrome. Verify every workspace at intermediate desktop widths with the
+  447px utility panel open as well as at phone width, since a wide viewport can still leave a narrow
+  editing canvas.
 - Build production dialogs, menus, pickers, and popovers with the shared overlay primitives. Keep
   them inside the visual viewport, promote complex phone popovers to sheets, trap and return focus,
   lock background scrolling, and keep scrollable content and actions usable above onscreen keyboards.

@@ -2,22 +2,21 @@
 
 import {ArrowLeft, ExternalLink, Play, Trash2} from "lucide-react";
 import {produce, type Draft} from "immer";
-import {useMemo, useState, type KeyboardEvent} from "react";
+import {useMemo, type KeyboardEvent} from "react";
 import {replaceItemDraft} from "@/app/editor/utils/worldDraftUtils";
 import type {OpenLogicLibraryRequest} from "@/components/logic/shared";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import {ItemIcon, resolveItemIcon} from "@/itemIcons";
-import type {Item, ItemBehavior} from "@/schemas/world/itemSchema";
+import {
+	findEntityReferenceUsages,
+	findItemCommandRelationships,
+} from "@/components/logic/shared/editorRelationships";
+import {ITEM_BEHAVIOR_SCHEMAS, type Item} from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
-import {
-	compareIds,
-	deleteWorldEntity,
-	idValue,
-	isID,
-	toID,
-	updateWorldEntityId,
-} from "@/utils/idUtils";
+import {compareIds, deleteWorldEntity, idValue, toID, updateWorldEntityId} from "@/utils/idUtils";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {getEditorMetadata} from "@/utils/editorMetadata";
 import {
 	ItemBehaviorsPanel,
 	ItemDetailsPanel,
@@ -36,9 +35,11 @@ type ItemWorkspaceProps = {
 	onOpenCommand: (commandId: string) => void;
 	onOpenLogicLibrary: (request: OpenLogicLibraryRequest) => void;
 	onOpenPlay: () => void;
+	activeTab: ItemWorkspaceTab;
+	onActiveTabChange: (tab: ItemWorkspaceTab) => void;
 };
 
-type ItemWorkspaceTab = "details" | "behaviors" | "placement" | "commands";
+export type ItemWorkspaceTab = "details" | "behaviors" | "placement" | "commands";
 
 const ITEM_WORKSPACE_TABS: ReadonlyArray<{
 	id: ItemWorkspaceTab;
@@ -51,15 +52,12 @@ const ITEM_WORKSPACE_TABS: ReadonlyArray<{
 	{id: "commands", label: "Commands"},
 ];
 
-const BEHAVIOR_LABELS: Record<ItemBehavior["type"], string> = {
-	takeable: "Takeable",
-	container: "Container",
-	surface: "Surface",
-	openable: "Openable",
-	lockable: "Lockable",
-	door: "Door",
-	usable: "Usable",
-};
+const BEHAVIOR_LABELS = Object.fromEntries(
+	ITEM_BEHAVIOR_SCHEMAS.map((schema) => {
+		const behavior = createDefaultFieldObject(schema);
+		return [behavior.type, getEditorMetadata(schema)?.title ?? behavior.type];
+	}),
+) as Record<Item["behaviors"][number]["type"], string>;
 
 function compactLocationLabel(item: Item, world: World): string {
 	const location = item.initialState.location;
@@ -89,15 +87,6 @@ function behaviorSummary(item: Item): string {
 		: `${labels.slice(0, 2).join(" · ")} · +${labels.length - 2}`;
 }
 
-function valueReferencesItem(value: unknown, itemId: string, seen = new Set<object>()): boolean {
-	if (!value || typeof value !== "object") return false;
-	if (seen.has(value)) return false;
-	seen.add(value);
-	if (isID(value)) return value.type === "item" && idValue(value) === itemId;
-	if (Array.isArray(value)) return value.some((child) => valueReferencesItem(child, itemId, seen));
-	return Object.values(value).some((child) => valueReferencesItem(child, itemId, seen));
-}
-
 export function ItemWorkspace({
 	item,
 	world,
@@ -108,16 +97,17 @@ export function ItemWorkspace({
 	onOpenCommand,
 	onOpenLogicLibrary,
 	onOpenPlay,
+	activeTab,
+	onActiveTabChange,
 }: ItemWorkspaceProps) {
 	const popup = useOptionalPopup();
-	const [activeTab, setActiveTab] = useState<ItemWorkspaceTab>("details");
 	const itemId = idValue(item.id);
 	const category = resolveItemIcon(item).category;
 	const duplicateItemId =
 		world.items.filter((candidate) => compareIds(candidate.id, item.id)).length > 1;
-	const attachedCommands = useMemo(
-		() => world.commands.filter((command) => valueReferencesItem(command, itemId)),
-		[itemId, world.commands],
+	const commandRelationships = useMemo(
+		() => findItemCommandRelationships(world, item),
+		[item, world],
 	);
 
 	function handleItemChange(updatedItem: Item) {
@@ -160,11 +150,34 @@ export function ItemWorkspace({
 	}
 
 	async function deleteItem() {
+		const directUsages = findEntityReferenceUsages(world, item.id);
 		const confirmed = popup
 			? await popup.confirm({
 					title: `Delete ${item.name || "this item"}?`,
-					message:
-						"This removes the item and clears references to it from rooms, commands, and other authored logic.",
+					message: (
+						<div>
+							<p>This removes the item and repairs or removes records that directly depend on it.</p>
+							{commandRelationships.length || directUsages.length ? (
+								<ul>
+									{commandRelationships.map(({command}) => (
+										<li key={`command:${idValue(command.id)}`}>{command.name} · Command</li>
+									))}
+									{directUsages
+										.filter(
+											(usage) =>
+												!commandRelationships.some(
+													({command}) => usage.key === `command:${idValue(command.id)}`,
+												),
+										)
+										.map((usage) => (
+											<li key={usage.key}>
+												{usage.label} · {usage.detail}
+											</li>
+										))}
+								</ul>
+							) : null}
+						</div>
+					),
 					confirmLabel: "Delete item",
 					danger: true,
 				})
@@ -189,7 +202,7 @@ export function ItemWorkspace({
 
 		event.preventDefault();
 		const nextTab = ITEM_WORKSPACE_TABS[nextIndex]!;
-		setActiveTab(nextTab.id);
+		onActiveTabChange(nextTab.id);
 		document.getElementById(`item-workspace-tab-${nextTab.id}`)?.focus();
 	}
 
@@ -241,7 +254,7 @@ export function ItemWorkspace({
 							aria-label={tab.label}
 							aria-selected={activeTab === tab.id}
 							tabIndex={activeTab === tab.id ? 0 : -1}
-							onClick={() => setActiveTab(tab.id)}
+							onClick={() => onActiveTabChange(tab.id)}
 							onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
 						>
 							<span className="itemWorkspaceTabLabel">{tab.label}</span>
@@ -288,9 +301,9 @@ export function ItemWorkspace({
 							<div className="itemFormSectionHeading itemFormSectionHeading--text">
 								<h2 id="item-workspace-commands-title">Commands</h2>
 							</div>
-							{attachedCommands.length ? (
+							{commandRelationships.length ? (
 								<ul>
-									{attachedCommands.map((command) => (
+									{commandRelationships.map(({command, reasons}) => (
 										<li key={idValue(command.id)}>
 											<div>
 												<strong>{command.name || "Unnamed command"}</strong>
@@ -298,6 +311,7 @@ export function ItemWorkspace({
 													{command.helpPattern || "No player-facing command example"} ·{" "}
 													{command.enabled ? "Enabled" : "Disabled"}
 												</span>
+												<small>{reasons.join(" · ")}</small>
 											</div>
 											<button type="button" onClick={() => onOpenCommand(idValue(command.id))}>
 												Open command <ExternalLink size={14} aria-hidden="true" />
@@ -307,8 +321,8 @@ export function ItemWorkspace({
 								</ul>
 							) : (
 								<div className="itemFormEmpty">
-									<strong>No direct commands</strong>
-									<span>Standard behavior does not require custom commands.</span>
+									<strong>No matching commands</strong>
+									<span>No command currently targets, references, queries, or changes this item.</span>
 								</div>
 							)}
 						</section>

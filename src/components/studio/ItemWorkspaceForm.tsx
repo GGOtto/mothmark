@@ -13,16 +13,13 @@ import {
 } from "@/schemas/world/conditionSchema";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {
-	ContainerBehaviorSchema,
-	DoorBehaviorSchema,
+	ITEM_BEHAVIOR_SCHEMAS,
+	ITEM_SIZE_UNITS,
+	ItemBehaviorSchema,
 	ItemExamineConditionalTextSchema,
 	ItemParentConditionalTextSchema,
 	ItemTakeAllowedWhenSchema,
-	LockableBehaviorSchema,
-	OpenableBehaviorSchema,
-	SurfaceBehaviorSchema,
-	TakeableBehaviorSchema,
-	UsableBehaviorSchema,
+	ItemSizeSchema,
 	UseRecipeSchema,
 	type Item,
 	type ItemBehavior,
@@ -30,6 +27,7 @@ import {
 	type ItemSize,
 } from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
+import {getEditorMetadata} from "@/utils/editorMetadata";
 
 export type ItemAdvancedEditOptions = {
 	kind: "condition" | "effect";
@@ -48,45 +46,28 @@ type ItemPanelProps = {
 	onEditAdvanced: (options: ItemAdvancedEditOptions) => void;
 };
 
-const ITEM_SIZES: ReadonlyArray<{label: string; value: ItemSize}> = [
-	{label: "Tiny · 1 unit", value: "tiny"},
-	{label: "Small · 2 units", value: "small"},
-	{label: "Medium · 4 units", value: "medium"},
-	{label: "Large · 8 units", value: "large"},
-	{label: "Huge · 16 units", value: "huge"},
-];
+const ITEM_SIZES: ReadonlyArray<{label: string; value: ItemSize}> =
+	getEditorMetadata(ItemSizeSchema)?.options?.map((option) => {
+		const value = option.value as ItemSize;
+		const units = ITEM_SIZE_UNITS[value];
+		return {label: `${option.label} · ${units} ${units === 1 ? "unit" : "units"}`, value};
+	}) ?? [];
 
-const BEHAVIOR_OPTIONS: ReadonlyArray<{
-	description: string;
-	label: string;
-	type: ItemBehavior["type"];
-}> = [
-	{type: "takeable", label: "Takeable", description: "Carry and drop"},
-	{type: "container", label: "Container", description: "Holds items inside"},
-	{type: "surface", label: "Surface", description: "Holds items on top"},
-	{type: "openable", label: "Openable", description: "Open and close"},
-	{type: "lockable", label: "Lockable", description: "Unlock with keys"},
-	{type: "door", label: "Door", description: "Blocks a connection"},
-	{type: "usable", label: "Usable", description: "Custom use recipes"},
-];
+const BEHAVIOR_OPTIONS = ITEM_BEHAVIOR_SCHEMAS.map((schema) => {
+	const value = createDefaultFieldObject(schema);
+	const metadata = getEditorMetadata(schema);
+	return {
+		type: value.type,
+		label: metadata?.title ?? value.type,
+		description: metadata?.description ?? "Item capability",
+		schema,
+	};
+});
 
 function createBehavior(type: ItemBehavior["type"]): ItemBehavior {
-	switch (type) {
-		case "takeable":
-			return createDefaultFieldObject(TakeableBehaviorSchema);
-		case "container":
-			return createDefaultFieldObject(ContainerBehaviorSchema);
-		case "surface":
-			return createDefaultFieldObject(SurfaceBehaviorSchema);
-		case "openable":
-			return createDefaultFieldObject(OpenableBehaviorSchema);
-		case "lockable":
-			return createDefaultFieldObject(LockableBehaviorSchema);
-		case "door":
-			return createDefaultFieldObject(DoorBehaviorSchema);
-		case "usable":
-			return createDefaultFieldObject(UsableBehaviorSchema);
-	}
+	const option = BEHAVIOR_OPTIONS.find((candidate) => candidate.type === type);
+	if (!option) throw new Error(`Unknown item behavior: ${type}`);
+	return ItemBehaviorSchema.parse(createDefaultFieldObject(option.schema));
 }
 
 function SectionHeading({
