@@ -42,7 +42,7 @@ describe("the v10 to v11 deterministic-random-message replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(12);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(13);
 		expect(migrationFrom(10)).toBe(v10ToV11);
 		expect(migrationFrom(11)).toBeDefined();
 		expect(applied).toEqual({applied: true, schemaVersion: 11, value});

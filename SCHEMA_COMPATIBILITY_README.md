@@ -148,3 +148,10 @@ The `v11-to-v12-replay-parent-item-listings` migration preserves retained worlds
 command logs. It replays every turn after listed items begin nesting beneath their room, open
 container, or surface parent, then regenerates turn output, the current state, and transcripts.
 Stored item presentation field names remain unchanged.
+
+## Item behavior discovery metadata in v13
+
+The `v12-to-v13-record-item-behavior-discovery-contract` migration records the reviewed source
+contract for schema-backed item behavior discovery metadata. The metadata affects authoring
+recommendations only, so retained worlds, game states, messages, and player-visible history remain
+unchanged while their rows advance to schema version 13.

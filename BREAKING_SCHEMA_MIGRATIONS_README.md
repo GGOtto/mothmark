@@ -150,3 +150,10 @@ command history and all authored content are preserved.
 playthrough state and messages from each authoritative command log. Random-message effects consume
 the saved game seed instead of ambient process randomness, making their outcomes stable across live
 play and exhaustive replay. Authored choices, commands, and unrelated player state are preserved.
+
+### Version 12 to 13: item behavior discovery metadata
+
+`v12-to-v13-record-item-behavior-discovery-contract` is an opt-out migration that records the
+reviewed schema-source change for item behavior discovery metadata. It advances every retained row
+without rewriting worlds, game states, or messages because the metadata affects authoring
+recommendations rather than persisted representation or player behavior.
