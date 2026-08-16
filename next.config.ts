@@ -3,7 +3,7 @@ import type {NextConfig} from "next";
 const nextConfig: NextConfig = {
 	devIndicators: false,
 	productionBrowserSourceMaps: false,
-	serverExternalPackages: ["knex", "pg"],
+	serverExternalPackages: ["knex", "pg", "wordnet-db"],
 	async headers() {
 		return [
 			{

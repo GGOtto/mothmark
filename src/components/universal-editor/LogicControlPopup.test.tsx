@@ -144,7 +144,7 @@ describe("LogicControlPopup", () => {
 		expect(screen.getByRole("heading", {name: "Edit effect"})).toBeVisible();
 
 		const directionField = within(screen.getByRole("dialog"))
-			.getByRole("combobox", {name: "Direction"})
+			.getByRole("button", {name: "North N"})
 			.closest(".variableFieldEditor");
 		expect(directionField).not.toBeNull();
 		fireEvent.click(

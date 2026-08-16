@@ -398,25 +398,43 @@ export function ObjectEditor({
 			.join(" · ");
 		const shouldCollapse =
 			!visibleSearchTerm && (section.group.defaultCollapsed || metadata.appearance?.defaultCollapsed);
+		const sectionCollapsible =
+			!isEditorRoot || context.editorChrome?.rootSectionsCollapsible !== false;
 		const savedOpenState = context.editorChrome?.getSectionDisclosure?.(path, section.group.id);
-		const isOpen = Boolean(visibleSearchTerm) || (savedOpenState ?? !shouldCollapse);
+		const isOpen =
+			!sectionCollapsible || Boolean(visibleSearchTerm) || (savedOpenState ?? !shouldCollapse);
 		function renderSubgroup(subgroup: (typeof section.subgroups)[number]) {
 			const disclosureId = `${section.group.id}/${subgroup.group.id}`;
+			const subgroupCollapsible =
+				!isEditorRoot || context.editorChrome?.rootSectionsCollapsible !== false;
 			const savedSubgroupState = context.editorChrome?.getSectionDisclosure?.(path, disclosureId);
 			const subgroupOpen =
-				Boolean(visibleSearchTerm) || (savedSubgroupState ?? !subgroup.group.defaultCollapsed);
+				!subgroupCollapsible ||
+				Boolean(visibleSearchTerm) ||
+				(savedSubgroupState ?? !subgroup.group.defaultCollapsed);
 
 			return (
 				<details
 					key={subgroup.group.id}
-					className="objectEditor__subgroup universalField--chrome-collapse"
+					className={`objectEditor__subgroup universalField--chrome-collapse ${subgroupCollapsible ? "" : "objectEditor__section--fixed"}`}
 					open={subgroupOpen}
 					onToggle={(event) => {
+						if (!subgroupCollapsible) {
+							event.currentTarget.open = true;
+							return;
+						}
 						if (visibleSearchTerm) return;
 						context.editorChrome?.setSectionDisclosure?.(path, disclosureId, event.currentTarget.open);
 					}}
 				>
-					<summary className="universalField__cardHeader">
+					<summary
+						className="universalField__cardHeader"
+						aria-disabled={!subgroupCollapsible || undefined}
+						tabIndex={subgroupCollapsible ? undefined : -1}
+						onClick={(event) => {
+							if (!subgroupCollapsible) event.preventDefault();
+						}}
+					>
 						<div className="universalField__header">
 							<div className="universalField__titleRow">
 								<div className="universalField__title" role="heading" aria-level={3}>
@@ -463,15 +481,27 @@ export function ObjectEditor({
 				className={[
 					"objectEditor__section",
 					"universalField--chrome-collapse",
+					sectionCollapsible ? "" : "objectEditor__section--fixed",
 					`objectEditor__section--${section.group.importance ?? "secondary"}`,
 				].join(" ")}
 				open={isOpen}
 				onToggle={(event) => {
+					if (!sectionCollapsible) {
+						event.currentTarget.open = true;
+						return;
+					}
 					if (visibleSearchTerm) return;
 					context.editorChrome?.setSectionDisclosure?.(path, section.group.id, event.currentTarget.open);
 				}}
 			>
-				<summary className="universalField__cardHeader">
+				<summary
+					className="universalField__cardHeader"
+					aria-disabled={!sectionCollapsible || undefined}
+					tabIndex={sectionCollapsible ? undefined : -1}
+					onClick={(event) => {
+						if (!sectionCollapsible) event.preventDefault();
+					}}
+				>
 					<div className="universalField__header">
 						<div className="universalField__titleRow">
 							<div className="universalField__title" role="heading" aria-level={isEditorRoot ? 2 : 3}>

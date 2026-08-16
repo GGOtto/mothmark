@@ -161,7 +161,7 @@ describe("the v4 to v5 player-facing migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(12);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(13);
 		expect(migrationFrom(4)).toBe(v4ToV5);
 		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();
 		expect(result).toEqual({

@@ -65,6 +65,7 @@
 ## Schema-driven editors
 
 - Treat the effect and condition schemas as the sole source of truth for their editors. Derive supported types, operations, field controls, labels, and default values from schema structure and metadata; do not maintain parallel editor catalogs or type-specific fixtures in editor code.
+- Cache schema-derived condition/effect option catalogs and build library search indexes once per world and visible view. Do not repeatedly introspect schemas for every occurrence, rebuild a rich index on each search keystroke, or eagerly index hidden library views.
 - Give every concrete condition and effect operation several hidden, natural-language situation phrases in schema metadata. Include varied author intents such as traps, discoveries, puzzles, transformations, and state changes; keep these phrases searchable but out of visible picker copy, and enforce their presence with metadata-completeness tests.
 - Reuse the existing typed-field command-variable path for condition and effect inputs. Expose ordinary schema fields such as `itemId`, then bind command blocks through `commandVariables` so the shared variable UI and runtime resolver handle them; do not introduce parallel source selectors or command-target resolution systems.
 
@@ -78,6 +79,29 @@
 
 - Model scenery and former room features as global items. A fixed item is simply an item without the `takeable` important tag; do not reintroduce a separate feature entity.
 - Use one `size` value for carrying, container, and surface capacity. Containers and surfaces limit their contents by size, but their own external size stays fixed when filled.
+- Render every editable alias or tag list with the shared token-list component, including dedicated
+  item forms and schema-driven editors, so entry, removal, suggestions, and narrow layouts remain
+  consistent.
+- Keep item suggestions deterministic and AI-free with exactly two modes. Alias suggestions may use
+  general player wording but must exclude broad classification terms, exact collisions, and
+  similar-name collisions. Tag suggestions must be
+  limited to the resolved item's branch of the maintained taxonomy, tags already connected in the world, and real schema
+  capabilities. Treat capability tags as behavior changes, show the commands, logic, items, and
+  behavior each tag connects or enables, and require a separate author action for every change.
+- Keep alias and tag suggestions always visible beneath their matching shared token editor. Use
+  compact one-action alias choices and compact explanatory tag rows; do not require opening a panel
+  or switching suggestion modes, and keep both usable within the initial phone editing viewport.
+- Keep generic player nouns, canonical tag spellings, and taxonomy relationships in maintained data.
+  Derive ordinary aliases from trailing object phrases of up to three words before lexical lookup;
+  never enumerate arbitrary word combinations from a name.
+  Do not add curated synonym-pair exceptions or item-name conditionals to the suggester, admit
+  vocabulary merely because it occurs in an unrelated catalog branch, or show spelling variants of
+  one concept as separate tags.
+- Treat each schema-backed item behavior and its exact canonical tag as one bidirectional authoring
+  state. Display capability tags in the shared tag editor, store their configuration only in
+  `behaviors`, and let classification tags recommend capabilities without silently enabling them.
+- Build the item suggestion collision index and world tag graph once when suggestions open. Do not
+  rescan a large world on every item render or keystroke.
 
 ## Immutable object updates
 
@@ -147,6 +171,10 @@
 - Keep the header and activity rail in one compact, neutral, theme-aware shell family. Use subtle
   borders, surface hover states, and a single action-blue selected indicator instead of a saturated
   frame around the workspace.
+- Treat narrow editor chrome as one shared vertical budget across the site header, destination bar,
+  workspace context, and local controls. Do not repeat the active destination's title/description,
+  stack secondary controls into permanent header rows, or let chrome displace the primary canvas;
+  keep at least 400px of working content visible in a 520×844 viewport.
 - Preserve the established left activity-rail button geometry, spacing, compact typography, and
   label-reveal behavior when changing site styling. Color migrations may retheme it but must not
   redesign its controls.
@@ -175,6 +203,10 @@
 - Verify inspector control layouts at both the normal 447px width and the 310px minimum. Fields,
   bound-variable controls, and floating menus must not introduce horizontal overflow or leave the
   viewport.
+- Size editor workspace content from its actual pane with container queries; reserve viewport media
+  queries for truly global chrome. Verify every workspace at intermediate desktop widths with the
+  447px utility panel open as well as at phone width, since a wide viewport can still leave a narrow
+  editing canvas.
 - Build production dialogs, menus, pickers, and popovers with the shared overlay primitives. Keep
   them inside the visual viewport, promote complex phone popovers to sheets, trap and return focus,
   lock background scrolling, and keep scrollable content and actions usable above onscreen keyboards.

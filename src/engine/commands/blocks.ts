@@ -424,15 +424,18 @@ export function matchTarget(
 	const eligible = (context.targets ?? []).filter((candidate) =>
 		targetMatchesFilters(candidate, block),
 	);
-	const normalizedText = normalize(text).replace(/^(?:a|an|my|the)\s+/, "");
+	const normalizeTargetText = (value: string) => normalize(value).replace(/^(?:a|an|my|the)\s+/, "");
+	const normalizedText = normalizeTargetText(text);
 	const directMatches = eligible.filter((candidate) =>
-		[candidate.name, ...(candidate.aliases ?? [])].some((name) => normalize(name) === normalizedText),
+		[candidate.name, ...(candidate.aliases ?? [])].some(
+			(name) => normalizeTargetText(name) === normalizedText,
+		),
 	);
 	const matches =
 		directMatches.length > 0
 			? directMatches
 			: eligible.length === 1 &&
-				  block.extraAliases.some((alias) => normalize(alias) === normalizedText)
+				  block.extraAliases.some((alias) => normalizeTargetText(alias) === normalizedText)
 				? eligible
 				: [];
 

@@ -38,6 +38,8 @@
 		border-left: 1px solid var(--panel-border);
 		background: var(--panel-bg);
 		color: var(--panel-text);
+		container-name: editor-utility;
+		container-type: inline-size;
 	}
 
 	.editorUtilityPanel--play {
@@ -906,7 +908,11 @@
 
 	@container editor-main (max-width: 620px) {
 		.itemCatalogHeader {
-			padding: 12px;
+			padding: 8px 10px;
+		}
+
+		.itemCatalogHeading h1 {
+			font-size: 18px;
 		}
 
 		.itemCatalogAdd {
@@ -919,12 +925,14 @@
 		}
 
 		.itemCatalogToolbar {
-			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-columns: minmax(100px, 1fr) minmax(78px, 0.45fr) minmax(78px, 0.45fr);
+			gap: 6px;
+			margin-top: 7px;
 		}
 
 		.itemCatalogViewSwitcher {
 			grid-row: 2;
-			grid-column: 1 / -1;
+			grid-column: 1 / 4;
 
 			button span {
 				display: inline;
@@ -932,7 +940,7 @@
 		}
 
 		.itemCatalogSelectLabel {
-			grid-row: 3;
+			grid-row: 1;
 		}
 
 		.itemCatalogBody {
@@ -1071,14 +1079,12 @@
 			}
 		}
 
-		.editorToolbar {
-			height: 44px;
-			padding-right: 10px;
-			padding-left: 10px;
+		.editorToolbar:not(.logicToolbar) {
+			display: none;
 		}
 
 		.itemCatalog {
-			padding: 18px 14px 28px;
+			padding: 0;
 		}
 
 		.itemCatalogIntro {

@@ -625,7 +625,7 @@ describe("variable-aware editors", () => {
 	])("binds available direction variables inside a %s", (_, Harness, outputTestId) => {
 		render(<Harness />);
 		const directionField = screen
-			.getByRole("combobox", {name: "Direction"})
+			.getByRole("button", {name: "North N"})
 			.closest(".variableFieldEditor");
 		expect(directionField).not.toBeNull();
 
@@ -639,11 +639,12 @@ describe("variable-aware editors", () => {
 		expect(screen.getByTestId(outputTestId)).toHaveTextContent(
 			'"commandVariables":[{"blockId":{"type":"command-block","id":"direction-block"},"field":"direction"}]',
 		);
-		expect(screen.getByRole("combobox", {name: "Direction"})).toHaveValue("");
-
-		fireEvent.change(screen.getByRole("combobox", {name: "Direction"}), {
-			target: {value: "e"},
-		});
+		fireEvent.click(screen.getByRole("button", {name: "Choose direction"}));
+		fireEvent.click(
+			within(screen.getByRole("dialog", {name: "Choose direction"})).getByRole("button", {
+				name: "East",
+			}),
+		);
 		expect(screen.getByTestId(outputTestId)).toHaveTextContent('"direction":"e"');
 		expect(screen.getByTestId(outputTestId)).not.toHaveTextContent("commandVariables");
 	});

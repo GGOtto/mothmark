@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor, within} from "@testing-library/react";
 import {useCallback, useState} from "react";
 import {produce, type Draft} from "immer";
 import {world as initialWorld} from "@/data/worlds/initialWorld";
@@ -82,6 +82,17 @@ function MapHarness({
 }
 
 describe("Map layer viewports", () => {
+	it("keeps the layer control inside the map surface", () => {
+		const {container} = render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
+		const map = container.querySelector<HTMLElement>("[data-map]")!;
+		const control = screen
+			.getByRole("button", {name: "Layers · Main floor"})
+			.closest(".layoutControl") as HTMLElement | null;
+
+		expect(control).not.toBeNull();
+		expect(map).toContainElement(control);
+	});
+
 	it("locks a preview map to pan and zoom without editor controls", () => {
 		const {container} = render(
 			<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} readOnly />,
@@ -426,8 +437,9 @@ describe("Map visual layers", () => {
 			<MapHarness initialWorld={configuredWorld} onZoomChange={jest.fn()} />,
 		);
 
-		fireEvent.click(screen.getByRole("button", {name: "Clear Main floor layer"}));
+		fireEvent.click(screen.getByRole("button", {name: "Layers · Main floor"}));
 		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
+		fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", {name: "Clear layer"}));
 		await waitFor(() =>
 			expect(screen.queryByRole("button", {name: onlyRoom.name})).not.toBeInTheDocument(),
 		);
@@ -453,9 +465,10 @@ describe("Map visual layers", () => {
 
 		render(<MapHarness initialWorld={initialWorld} onZoomChange={jest.fn()} />);
 
-		fireEvent.click(screen.getByRole("button", {name: `Clear ${groundLayer.name} layer`}));
-		expect(screen.getByRole("dialog")).toHaveTextContent(`Clear ${groundLayer.name}?`);
+		fireEvent.click(screen.getByRole("button", {name: `Layers · ${groundLayer.name}`}));
 		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
+		expect(screen.getByRole("dialog")).toHaveTextContent(`Clear ${groundLayer.name}?`);
+		fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", {name: "Clear layer"}));
 
 		await waitFor(() => {
 			for (const roomName of groundRoomNames) {

@@ -20,6 +20,7 @@ import {
 	TextBlockSchema,
 	type Command,
 	type CommandBlock,
+	CommandSchema,
 } from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
@@ -29,6 +30,7 @@ import {blockDefinition, isStructuralBlock} from "./CommandEditor";
 import {createBlockFallbackBehavior} from "./commandFallback";
 import {buildCommandVariableCatalog} from "@/features/command-variables";
 import {CommandConditionEditorSchema} from "../shared/logicEditorSchemas";
+import {resolveEditorMetadata} from "@/components/universal-editor/utils/resolveEditorMetadata";
 
 const TargetTagsSchema = editor.object(
 	{
@@ -146,6 +148,14 @@ export function CommandInspector({
 			? toID("command-block", selection.blockId)
 			: undefined;
 	const commandVariableCatalog = buildCommandVariableCatalog(command, failedBlockId);
+	const commandFieldMetadata = {
+		name: resolveEditorMetadata(CommandSchema.shape.name),
+		enabled: resolveEditorMetadata(CommandSchema.shape.enabled),
+		showInHelp: resolveEditorMetadata(CommandSchema.shape.showInHelp),
+		helpPattern: resolveEditorMetadata(CommandSchema.shape.helpPattern),
+		helpDescription: resolveEditorMetadata(CommandSchema.shape.helpDescription),
+		priority: resolveEditorMetadata(CommandSchema.shape.priority),
+	};
 
 	function updateCommand(recipe: (command: Command) => void) {
 		updateWorld((draft) => {
@@ -165,7 +175,7 @@ export function CommandInspector({
 				</header>
 				<section className="commandInspector__basics" aria-label="General command settings">
 					<label>
-						<span>Name</span>
+						<span>{commandFieldMetadata.name.title}</span>
 						<input
 							type="text"
 							value={command.name}
@@ -178,7 +188,7 @@ export function CommandInspector({
 							checked={command.enabled}
 							onChange={(event) => updateCommand((target) => void (target.enabled = event.target.checked))}
 						/>
-						<span>Enabled</span>
+						<span>{commandFieldMetadata.enabled.title}</span>
 					</label>
 				</section>
 				<section className="commandInspector__help" aria-labelledby="command-help-heading">
@@ -197,7 +207,7 @@ export function CommandInspector({
 								});
 							}}
 						/>
-						<span>Show this command in help</span>
+						<span>{commandFieldMetadata.showInHelp.title}</span>
 					</label>
 					<p>
 						Help appears only while the command is enabled and available in the current scope. Use wording
@@ -206,7 +216,7 @@ export function CommandInspector({
 					{command.showInHelp ? (
 						<div className="commandInspector__helpFields">
 							<label>
-								<span>Player command</span>
+								<span>{commandFieldMetadata.helpPattern.title}</span>
 								<input
 									type="text"
 									placeholder="read <document>"
@@ -217,7 +227,7 @@ export function CommandInspector({
 								/>
 							</label>
 							<label>
-								<span>Help description</span>
+								<span>{commandFieldMetadata.helpDescription.title}</span>
 								<input
 									type="text"
 									placeholder="Read a visible document."
@@ -299,8 +309,8 @@ export function CommandInspector({
 					) : null}
 				</div>
 				<label className="commandInspector__priority">
-					<span>Priority</span>
-					<small>An advanced tie-breaker between equally specific commands.</small>
+					<span>{commandFieldMetadata.priority.title}</span>
+					<small>{commandFieldMetadata.priority.description}</small>
 					<input
 						type="number"
 						value={command.priority}

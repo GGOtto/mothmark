@@ -1,5 +1,6 @@
 import type {
 	AliasSuggestionsMetadata,
+	DirectionMultiPickerMetadata,
 	DirectionPickerMetadata,
 	IdControlMetadata,
 	JsonInspectorMetadata,
@@ -126,6 +127,23 @@ export const directionPickerControlMatrixVariants: Array<
 			type: "direction-picker",
 			title: "Direction",
 			features: {optionSource: "schema.world.directions", mode: "compact", showOpposite: true},
+		},
+	},
+];
+
+export const directionMultiPickerControlMatrixVariants: Array<
+	ControlMatrixVariant<string[], DirectionMultiPickerMetadata>
+> = [
+	{
+		id: "allowed-directions",
+		description: "Compact multi-direction control used by command direction blocks.",
+		value: ["n", "out"],
+		appearance: FIELD_MD,
+		metadata: {
+			type: "direction-multi-picker",
+			title: "Allowed directions",
+			description: "Leave empty to accept every direction.",
+			features: {optionSource: "schema.world.directions"},
 		},
 	},
 ];

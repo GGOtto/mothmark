@@ -83,7 +83,7 @@
 	}
 }
 
-@media (max-width: 700px) {
+@container logic-workspace (max-width: 700px) {
 	.logicHome__grid {
 		grid-template-columns: minmax(0, 1fr);
 	}

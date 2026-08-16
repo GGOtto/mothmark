@@ -274,7 +274,13 @@ function buildFeatures(
 	if (type === "object") return buildObjectFeatures(schema, metadata);
 	if (type === "array") return buildArrayFeatures(schema, metadata);
 	if (type === "discriminated-union") return buildDiscriminatedUnionFeatures(schema, metadata);
-	if (type === "select" || type === "multi-select" || type === "scope-picker") {
+	if (
+		type === "select" ||
+		type === "multi-select" ||
+		type === "scope-picker" ||
+		type === "direction-picker" ||
+		type === "direction-multi-picker"
+	) {
 		return buildSelectFeatures(schema, metadata);
 	}
 	if (
