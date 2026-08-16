@@ -6,6 +6,7 @@ import {PERSISTED_SCHEMA_VERSION, migrationFrom} from ".";
 import {observableState} from "../replayCompatibility";
 import {applyVersionedTransform} from "./types";
 import {v11ToV12} from "./v11ToV12";
+import {v12ToV13} from "./v12ToV13";
 
 describe("the v11 to v12 parent-item-listing replay migration", () => {
 	it("uses the final replayed turn as current state and rebuilds its transcript", () => {
@@ -42,9 +43,9 @@ describe("the v11 to v12 parent-item-listing replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(12);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(13);
 		expect(migrationFrom(11)).toBe(v11ToV12);
-		expect(migrationFrom(12)).toBeUndefined();
+		expect(migrationFrom(12)).toBe(v12ToV13);
 		expect(applied).toEqual({applied: true, schemaVersion: 12, value});
 		expect(skipped).toEqual({applied: false, schemaVersion: 12, value});
 	});
