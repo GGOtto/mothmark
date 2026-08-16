@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {TokenListEditor} from "@/components/token-list/TokenListEditor";
 import type {EditorControlMetadata, EditorControlProps} from "../../types/universalEditorTypes";
 import {resolveEditorControlAppearance} from "../../types/universalEditorTypes";
 import {applyTextTransform} from "./utils/universalEditorUtils";
@@ -52,7 +53,6 @@ export function TagListEditor({
 	const isReadonly = readonly || metadata.readonly;
 	const canEdit = !isDisabled && !isReadonly;
 	const maxItems = metadata.features?.maxItems;
-	const canAdd = canEdit && (typeof maxItems !== "number" || value.length < maxItems);
 	const collisionValues = new Set(metadata.features?.collisionValues ?? []);
 	const suggestionSourceText =
 		metadata.features?.sourceText ??
@@ -69,35 +69,11 @@ export function TagListEditor({
 		metadata.features?.suggestArticleless,
 		metadata.features?.suggestionFields !== undefined,
 	);
-	const normalizedValues = new Set(value.map((entry) => entry.trim().toLocaleLowerCase()));
-	const visibleSuggestions = generatedSuggestions.filter(
-		(suggestion) => !normalizedValues.has(suggestion.trim().toLocaleLowerCase()),
-	);
 	const normalizedDraft = normalizeTag(draftValue);
 	const collisions = value.filter((tag) => collisionValues.has(tag));
 
 	function normalizeTag(rawValue: string) {
 		return applyTextTransform(rawValue.trim(), metadata.features?.transform);
-	}
-
-	function addTag(rawValue = draftValue) {
-		if (!canAdd) return;
-
-		const nextTag = normalizeTag(rawValue);
-		if (!nextTag) return;
-		if (!metadata.features?.allowDuplicates && normalizedValues.has(nextTag.toLocaleLowerCase())) {
-			setDraftValue("");
-			return;
-		}
-
-		onChange([...value, nextTag]);
-		setDraftValue("");
-	}
-
-	function removeTag(index: number) {
-		if (!canEdit) return;
-
-		onChange(value.filter((_, valueIndex) => valueIndex !== index));
 	}
 
 	return (
@@ -110,90 +86,40 @@ export function TagListEditor({
 			className={metadata.className}
 			testId={metadata.testId}
 		>
-			<div className="tagListEditor">
-				<div className="tagListEditor__tags">
-					{value.map((tag, index) => (
-						<span key={`${tag}-${index}`} className="tagListEditor__tag">
-							<span className="tagListEditor__tagText">{tag}</span>
-							<button
-								className="tagListEditor__removeButton"
-								type="button"
-								aria-label={`Remove ${tag}`}
-								disabled={!canEdit}
-								onClick={() => removeTag(index)}
-							>
-								x
-							</button>
-						</span>
-					))}
-
-					<input
-						className="tagListEditor__input"
-						value={draftValue}
-						placeholder={metadata.placeholder ?? "Add tag"}
-						disabled={!canAdd}
-						readOnly={isReadonly}
-						autoFocus={autoFocus}
-						list={
-							visibleSuggestions.length > 0 ? `${metadata.testId ?? "tag-list"}-suggestions` : undefined
-						}
-						onBlur={() => {
-							if (metadata.features?.addOnBlur) addTag();
-						}}
-						onChange={(event) => {
-							const nextValue = event.target.value;
-
-							if (metadata.features?.addOnComma && nextValue.includes(",")) {
-								const [firstTag] = nextValue.split(",");
-								addTag(firstTag);
-								return;
-							}
-
-							setDraftValue(nextValue);
-						}}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								event.preventDefault();
-								addTag();
-							}
-						}}
-					/>
-				</div>
-
-				{visibleSuggestions.length > 0 ? (
-					<datalist id={`${metadata.testId ?? "tag-list"}-suggestions`}>
-						{visibleSuggestions.map((suggestion) => (
-							<option key={suggestion} value={suggestion} />
-						))}
-					</datalist>
-				) : null}
-
-				{visibleSuggestions.length > 0 ? (
-					<div className="tagListEditor__suggestions">
-						{visibleSuggestions.slice(0, 8).map((suggestion) => (
-							<button key={suggestion} type="button" disabled={!canAdd} onClick={() => addTag(suggestion)}>
-								{suggestion}
-							</button>
-						))}
-					</div>
-				) : null}
-
-				{metadata.features?.showNormalization && draftValue.trim() ? (
-					<div className="tagListEditor__meta">Normalizes to {normalizedDraft || "(empty)"}</div>
-				) : null}
-
-				{metadata.features?.showCollisions && collisions.length > 0 ? (
-					<div className="tagListEditor__warning">
-						Collides with existing aliases: {collisions.join(", ")}
-					</div>
-				) : null}
-
-				{typeof maxItems === "number" ? (
-					<div className="tagListEditor__meta">
-						{value.length} / {maxItems}
-					</div>
-				) : null}
-			</div>
+			<TokenListEditor
+				addLabel={metadata.placeholder ?? "Add tag"}
+				addOnBlur={metadata.features?.addOnBlur ?? false}
+				addOnComma={metadata.features?.addOnComma ?? false}
+				allowDuplicates={metadata.features?.allowDuplicates}
+				autoFocus={autoFocus}
+				disabled={!canEdit}
+				inputListId={`${metadata.testId ?? "tag-list"}-suggestions`}
+				maxItems={maxItems}
+				normalizeValue={normalizeTag}
+				onChange={onChange}
+				onDraftChange={setDraftValue}
+				readonly={isReadonly}
+				suggestions={generatedSuggestions}
+				tone={metadata.title?.toLocaleLowerCase().includes("alias") ? "aliases" : "tags"}
+				values={value}
+				footer={
+					<>
+						{metadata.features?.showNormalization && draftValue.trim() ? (
+							<div className="tagListEditor__meta">Normalizes to {normalizedDraft || "(empty)"}</div>
+						) : null}
+						{metadata.features?.showCollisions && collisions.length > 0 ? (
+							<div className="tagListEditor__warning">
+								Collides with existing aliases: {collisions.join(", ")}
+							</div>
+						) : null}
+						{typeof maxItems === "number" ? (
+							<div className="tagListEditor__meta">
+								{value.length} / {maxItems}
+							</div>
+						) : null}
+					</>
+				}
+			/>
 		</FieldShell>
 	);
 }

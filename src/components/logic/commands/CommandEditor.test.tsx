@@ -483,7 +483,7 @@ describe("command presentation", () => {
 });
 
 describe("CommandInspector", () => {
-	it("lets authors disable relative wording for a direction block", () => {
+	it("uses a compact direction chooser and lets authors disable relative wording", () => {
 		let latestWorld = initialWorld;
 		const updateWorld = (update: WorldUpdate) => {
 			latestWorld = typeof update === "function" ? produce(latestWorld, update) : update;
@@ -506,6 +506,11 @@ describe("CommandInspector", () => {
 		);
 
 		expect(screen.getByText("Allow relative directions")).toBeVisible();
+		expect(screen.getByRole("button", {name: "All directions"})).toBeVisible();
+		expect(screen.getByRole("button", {name: "North"})).toBeVisible();
+		expect(screen.queryByText("{name}")).not.toBeInTheDocument();
+		expect(screen.queryByText("{id}")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Duplicate"})).not.toBeInTheDocument();
 		const toggle = screen.getByRole("switch", {name: "On"});
 		expect(toggle).toBeChecked();
 		fireEvent.click(toggle);
@@ -517,6 +522,39 @@ describe("CommandInspector", () => {
 			(candidate) => idValue(candidate.id) === "travel-direction-value",
 		);
 		expect(block).toMatchObject({type: "direction", allowRelative: false});
+	});
+
+	it("updates allowed directions without generic array item chrome", () => {
+		let latestWorld = initialWorld;
+		const updateWorld = (update: WorldUpdate) => {
+			latestWorld = typeof update === "function" ? produce(latestWorld, update) : update;
+		};
+
+		render(
+			<ThemeProvider>
+				<CommandInspector
+					world={latestWorld}
+					updateWorld={updateWorld}
+					selection={{
+						kind: "block",
+						commandId: "travel-direction",
+						patternIndex: 0,
+						blockId: "travel-direction-value",
+					}}
+					onSelectionChange={jest.fn()}
+				/>
+			</ThemeProvider>,
+		);
+
+		fireEvent.click(screen.getByRole("button", {name: "North"}));
+
+		const command = latestWorld.commands.find(
+			(candidate) => idValue(candidate.id) === "travel-direction",
+		)!;
+		const block = command.patterns[0].blocks.find(
+			(candidate) => idValue(candidate.id) === "travel-direction-value",
+		);
+		expect(block).toMatchObject({type: "direction", allowed: ["n"]});
 	});
 
 	it("suggests a safe player pattern when help is enabled", () => {

@@ -27,6 +27,7 @@ import {
 	ConnectionPickerEditor,
 	DiffPreviewEditor,
 	DirectionPickerEditor,
+	DirectionMultiPickerEditor,
 	FlagEditor,
 	IdEditor,
 	JsonInspectorEditor,
@@ -39,6 +40,7 @@ import {
 	ValidationSummaryEditor,
 	type AliasSuggestionsProps,
 	type DirectionPickerProps,
+	type DirectionMultiPickerProps,
 	type IdEditorProps,
 	type JsonInspectorProps,
 	type PriorityControlProps,
@@ -206,6 +208,9 @@ function renderControl(props: EditorControlProps<unknown, EditorControlMetadata>
 
 		case "direction-picker":
 			return <DirectionPickerEditor {...(props as DirectionPickerProps)} />;
+
+		case "direction-multi-picker":
+			return <DirectionMultiPickerEditor {...(props as DirectionMultiPickerProps)} />;
 
 		case "scope-picker":
 			return <ScopePickerEditor {...(props as ScopePickerProps)} />;

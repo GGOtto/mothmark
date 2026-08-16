@@ -1,12 +1,13 @@
 "use client";
 
-import {ArrowLeft, CalendarClock, Plus, Trash2} from "lucide-react";
+import {ArrowLeft, CalendarClock, Plus, Settings, Trash2} from "lucide-react";
 import {produce} from "immer";
 import {type CSSProperties, useLayoutEffect, useRef, useState} from "react";
 import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
 import {useOptionalPopup} from "@/components/popup/Popup";
 import {PopupTemplate} from "@/components/popup/template/PopupTemplate";
-import type {Event} from "@/schemas/world/eventSchema";
+import {EventSchema, type Event} from "@/schemas/world/eventSchema";
+import {resolveEditorMetadata} from "@/components/universal-editor/utils/resolveEditorMetadata";
 import {EffectGroupSchema, type EffectGroup} from "@/schemas/world/effectSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
@@ -673,12 +674,23 @@ export function EventToolbar({
 				<p>{event.name || "Unnamed event"}</p>
 				<span>{event.enabled ? "Enabled" : "Disabled"}</span>
 			</div>
-			<button type="button" className="commandToolbar__scope" onClick={() => void openSettings()}>
-				Edit event
+			<button
+				type="button"
+				className="commandToolbar__scope"
+				onClick={() => void openSettings()}
+				aria-label="Edit event"
+			>
+				<Settings size={14} aria-hidden="true" />
+				<span>Edit event</span>
 			</button>
-			<button type="button" className="logicToolbar__delete" onClick={() => void requestDelete()}>
+			<button
+				type="button"
+				className="logicToolbar__delete"
+				onClick={() => void requestDelete()}
+				aria-label="Delete event"
+			>
 				<Trash2 size={15} aria-hidden="true" />
-				Delete
+				<span>Delete</span>
 			</button>
 		</div>
 	);
@@ -694,10 +706,11 @@ function EventSettingsDialog({
 	onSave: (event: Event) => void;
 }) {
 	const [draft, setDraft] = useState<Event>(() => produce(event, () => undefined));
-	function updateField<K extends "name" | "enabled" | "disposable" | "wait" | "priority">(
-		field: K,
-		value: Event[K],
-	) {
+	const fields = Object.entries(EventSchema.shape).filter(([, schema]) => {
+		return resolveEditorMetadata(schema).type !== "hidden";
+	});
+
+	function updateField(field: string, value: string | number | boolean) {
 		setDraft((current) => ({...current, [field]: value}));
 	}
 
@@ -716,48 +729,47 @@ function EventSettingsDialog({
 				</>
 			}
 		>
-			<div className="logicSettingsForm">
-				<label>
-					<span>Name</span>
-					<input value={draft.name} onChange={(change) => updateField("name", change.target.value)} />
-				</label>
-				<div className="logicSettingsForm__toggles">
-					<label>
-						<input
-							type="checkbox"
-							checked={draft.enabled}
-							onChange={(change) => updateField("enabled", change.target.checked)}
-						/>
-						<span>Enabled</span>
-					</label>
-					<label>
-						<input
-							type="checkbox"
-							checked={draft.disposable}
-							onChange={(change) => updateField("disposable", change.target.checked)}
-						/>
-						<span>Run once</span>
-					</label>
-				</div>
-				<div className="logicSettingsForm__columns">
-					<label>
-						<span>Wait (turns)</span>
-						<input
-							type="number"
-							min={0}
-							value={draft.wait}
-							onChange={(change) => updateField("wait", Math.max(0, Number(change.target.value)))}
-						/>
-					</label>
-					<label>
-						<span>Priority</span>
-						<input
-							type="number"
-							value={draft.priority}
-							onChange={(change) => updateField("priority", Number(change.target.value))}
-						/>
-					</label>
-				</div>
+			<div className="logicSettingsForm logicSettingsForm--schema">
+				{fields.map(([field, schema]) => {
+					const metadata = resolveEditorMetadata(schema);
+					const value = draft[field as keyof Event];
+					const title = metadata?.title ?? field;
+					if (typeof value === "boolean") {
+						return (
+							<label className="logicSettingsForm__toggle" key={field}>
+								<input
+									type="checkbox"
+									aria-label={title}
+									checked={value}
+									onChange={(change) => updateField(field, change.target.checked)}
+								/>
+								<span>{title}</span>
+							</label>
+						);
+					}
+					return (
+						<label key={field}>
+							<span>{title}</span>
+							<input
+								aria-label={title}
+								type={typeof value === "number" ? "number" : "text"}
+								min={field === "wait" ? 0 : undefined}
+								value={String(value)}
+								onChange={(change) =>
+									updateField(
+										field,
+										typeof value === "number"
+											? field === "wait"
+												? Math.max(0, Number(change.target.value))
+												: Number(change.target.value)
+											: change.target.value,
+									)
+								}
+							/>
+							{metadata?.description ? <small>{metadata.description}</small> : null}
+						</label>
+					);
+				})}
 			</div>
 		</PopupTemplate>
 	);

@@ -1,7 +1,11 @@
 import {render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import {produce} from "immer";
 
 import {createInitialWorld} from "@/data/worlds/initialWorld";
+import {ItemSchema} from "@/schemas/world/itemSchema";
+import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {toID} from "@/utils/idUtils";
 
 import {ItemCatalog} from "./ItemCatalog";
 
@@ -83,5 +87,47 @@ describe("ItemCatalog", () => {
 			"data-icon-name",
 			"Book02Icon",
 		);
+	});
+
+	it("labels and filters nested and unplaced items while preserving the generic fallback", async () => {
+		const user = userEvent.setup();
+		const world = produce(createInitialWorld(), (draft) => {
+			const nested = createDefaultFieldObject(ItemSchema);
+			nested.id = toID("item", "wax-apple");
+			nested.name = "Wax Apple";
+			nested.initialState.location = {
+				type: "item",
+				itemId: draft.items[0]!.id,
+				placement: "inside",
+			};
+			const unplaced = createDefaultFieldObject(ItemSchema);
+			unplaced.id = toID("item", "cerulean-whatsit");
+			unplaced.name = "Cerulean whatsit";
+			unplaced.initialState.location = {type: "hidden"};
+			draft.items.push(nested, unplaced);
+		});
+
+		render(
+			<ItemCatalog
+				world={world}
+				worldId={null}
+				updateWorld={jest.fn()}
+				selectedItemId={null}
+				onSelectItem={jest.fn()}
+			/>,
+		);
+
+		expect(screen.getByText("Inside Shop Counter")).toBeVisible();
+		const unplacedButton = screen.getByRole("button", {
+			name: /Cerulean whatsit\. Unplaced\./,
+		});
+		expect(unplacedButton.querySelector('[data-icon-category="generic"]')).not.toBeNull();
+
+		await user.selectOptions(screen.getByRole("combobox", {name: "Starting place"}), "nested");
+		expect(screen.getByText("Wax Apple")).toBeVisible();
+		expect(screen.queryByText("Cerulean whatsit")).not.toBeInTheDocument();
+		await user.selectOptions(screen.getByRole("combobox", {name: "Starting place"}), "unplaced");
+		expect(screen.getByText("Cerulean whatsit")).toBeVisible();
+		expect(screen.queryByText("Wax Apple")).not.toBeInTheDocument();
 	});
 });

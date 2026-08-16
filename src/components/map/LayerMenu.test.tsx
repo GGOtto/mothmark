@@ -21,6 +21,7 @@ function renderLayerMenu(
 	sourceWorld = world,
 	renameLayer = jest.fn(),
 	setCurrentLayer = jest.fn(),
+	onClearLayer = jest.fn(),
 ) {
 	return render(
 		<LayerMenu
@@ -31,6 +32,7 @@ function renderLayerMenu(
 			isConnectionSelected={false}
 			setCurrentLayer={setCurrentLayer}
 			renameLayer={renameLayer}
+			onClearLayer={onClearLayer}
 		/>,
 	);
 }
@@ -58,6 +60,7 @@ describe("LayerMenu", () => {
 					isConnectionSelected={false}
 					setCurrentLayer={jest.fn()}
 					renameLayer={jest.fn()}
+					onClearLayer={jest.fn()}
 				/>
 			</div>,
 		);
@@ -97,6 +100,15 @@ describe("LayerMenu", () => {
 		expect(renameLayer).toHaveBeenLastCalledWith(
 			expect.objectContaining({layer: 0, name: "Street level"}),
 		);
+	});
+
+	it("keeps the clear action inside the layer menu", () => {
+		const onClearLayer = jest.fn();
+		renderLayerMenu(jest.fn(), world, jest.fn(), jest.fn(), onClearLayer);
+
+		fireEvent.click(screen.getByRole("button", {name: "Clear layer"}));
+
+		expect(onClearLayer).toHaveBeenCalledWith(expect.objectContaining({name: "Main floor"}));
 	});
 
 	it("keeps the preview static and opens its displayed layer when clicked", () => {

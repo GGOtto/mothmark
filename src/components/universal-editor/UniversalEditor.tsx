@@ -64,6 +64,7 @@ export type UniversalEditorProps<TValue> = {
 	logicEditorPresentation?: "popup" | "inline";
 	hideRootShellHeader?: boolean;
 	visibleRootSectionIds?: readonly string[];
+	rootSectionsCollapsible?: boolean;
 };
 
 type UniversalEditorView = {
@@ -388,6 +389,7 @@ export function UniversalEditor<TValue>({
 	logicEditorPresentation,
 	hideRootShellHeader = false,
 	visibleRootSectionIds,
+	rootSectionsCollapsible = true,
 }: UniversalEditorProps<TValue>) {
 	const rootRef = useRef<HTMLDivElement | null>(null);
 	const previousValueRef = useRef(value);
@@ -845,6 +847,7 @@ export function UniversalEditor<TValue>({
 			editorChrome: {
 				rootPath: currentEditorRootPath,
 				visibleRootSectionIds: activeView ? undefined : visibleRootSectionIds,
+				rootSectionsCollapsible: activeView ? true : rootSectionsCollapsible,
 				activeSection,
 				setActiveSection: setEditorActiveSection,
 				getSectionDisclosure: getEditorSectionDisclosure,
@@ -879,6 +882,7 @@ export function UniversalEditor<TValue>({
 			value,
 			viewStack,
 			visibleRootSectionIds,
+			rootSectionsCollapsible,
 			world,
 		],
 	);

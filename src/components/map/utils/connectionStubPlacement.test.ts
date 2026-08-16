@@ -32,14 +32,14 @@ describe("default connection stub points", () => {
 		expect(getDefault(direction)).toEqual(expected);
 	});
 
-	it("centers up and out above the room", () => {
+	it("centers up and in above the room", () => {
 		expect(getDefault("up")).toEqual({x: 100, y: -13});
-		expect(getDefault("out")).toEqual({x: 100, y: -13});
+		expect(getDefault("in")).toEqual({x: 100, y: -13});
 	});
 
-	it("centers down and in below the room", () => {
+	it("centers down and out below the room", () => {
 		expect(getDefault("down")).toEqual({x: 100, y: 213});
-		expect(getDefault("in")).toEqual({x: 100, y: 213});
+		expect(getDefault("out")).toEqual({x: 100, y: 213});
 	});
 
 	it("moves diagonally by the same amount on both axes", () => {

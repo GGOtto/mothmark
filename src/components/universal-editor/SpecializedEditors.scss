@@ -77,6 +77,370 @@
 	font-weight: 700;
 }
 
+.specializedEditor--direction-picker {
+	gap: 6px;
+}
+
+.directionPickerTrigger {
+	display: grid;
+	width: 100%;
+	min-width: 0;
+	height: 40px;
+	grid-template-columns: max-content minmax(0, 1fr) max-content max-content;
+	align-items: center;
+	gap: 8px;
+	padding: 0 10px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	cursor: pointer;
+	font: inherit;
+	text-align: left;
+}
+
+.directionPickerTrigger:hover:not(:disabled),
+.directionPickerTrigger[aria-expanded="true"] {
+	border-color: var(--color-action);
+	background: var(--color-surface-strong);
+}
+
+.directionPickerTrigger:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 2px;
+}
+
+.directionPickerTrigger:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.directionPickerTrigger > svg:first-child {
+	color: var(--color-focus);
+}
+
+.directionPickerTrigger__label {
+	overflow: hidden;
+	font-size: 13px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.directionPickerTrigger__value {
+	color: var(--color-text-muted);
+	font:
+		10px/1 ui-monospace,
+		SFMono-Regular,
+		Consolas,
+		monospace;
+	letter-spacing: 0.06em;
+}
+
+.directionPickerPopover {
+	width: min(420px, 100%);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-panel);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-float);
+	color: var(--color-text);
+}
+
+.directionPickerPanel {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 8px;
+	padding: 18px;
+}
+
+.directionPickerPanel__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.directionPickerPanel__header h2 {
+	margin: 0;
+	font-size: 17px;
+	font-weight: 650;
+	line-height: 1.25;
+}
+
+.directionPickerPanel__header p {
+	margin: 4px 0 0;
+	color: var(--color-text-muted);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.directionPickerPanel__close {
+	display: grid;
+	width: 30px;
+	height: 30px;
+	flex: 0 0 auto;
+	place-items: center;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.directionPickerPanel__close:hover {
+	background: var(--color-surface-strong);
+	color: var(--color-text);
+}
+
+.directionPickerPanel__close:focus-visible {
+	border-color: var(--color-focus);
+	outline: 2px solid var(--color-focus);
+	outline-offset: 1px;
+}
+
+.directionPickerCompassWrap {
+	display: grid;
+	place-items: center;
+	padding: 8px 0 6px;
+}
+
+.directionPickerCompass {
+	display: block;
+	width: min(100%, 310px);
+	height: auto;
+	overflow: visible;
+}
+
+.directionPickerCompass__direction {
+	cursor: pointer;
+}
+
+.directionPickerCompass__sector {
+	fill: var(--color-surface-raised);
+	stroke: var(--color-border-strong);
+	stroke-width: 1.25;
+	transition:
+		fill 120ms ease,
+		stroke 120ms ease;
+}
+
+.directionPickerCompass__direction:hover .directionPickerCompass__sector {
+	fill: var(--color-surface-strong);
+	stroke: var(--color-action);
+}
+
+.directionPickerCompass__direction:focus {
+	outline: none;
+}
+
+.directionPickerCompass__direction:focus .directionPickerCompass__sector {
+	stroke: var(--color-focus);
+	stroke-width: 3;
+}
+
+.directionPickerCompass__direction--selected .directionPickerCompass__sector {
+	fill: var(--color-action);
+	stroke: var(--color-action-hover);
+	stroke-width: 2;
+}
+
+.directionPickerCompass__direction[aria-disabled="true"] {
+	cursor: not-allowed;
+	opacity: 0.42;
+}
+
+.directionPickerCompass text {
+	fill: var(--color-text);
+	font-family: inherit;
+	font-size: 15px;
+	font-weight: 700;
+	pointer-events: none;
+	text-anchor: middle;
+	dominant-baseline: middle;
+}
+
+.directionPickerCompass__direction--selected text {
+	fill: var(--color-action-contrast);
+}
+
+.directionPickerCompass__axis {
+	stroke: var(--color-focus);
+	stroke-width: 1;
+	opacity: 0.52;
+	pointer-events: none;
+}
+
+.directionPickerCompass__center {
+	fill: var(--color-surface);
+	stroke: var(--color-border-strong);
+	stroke-width: 1.5;
+}
+
+.directionPickerCompass__centerMark {
+	color: var(--color-focus);
+	pointer-events: none;
+}
+
+.directionPickerSpatial {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--color-border);
+}
+
+.directionPickerSpatial button {
+	display: inline-flex;
+	min-width: 0;
+	height: 40px;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 0 10px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 650;
+}
+
+.directionPickerSpatial button:hover:not(:disabled) {
+	border-color: var(--color-action);
+	background: var(--color-surface-strong);
+}
+
+.directionPickerSpatial button:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 2px;
+}
+
+.directionPickerSpatial button.directionPickerSpatial__selected {
+	border-color: var(--color-action-hover);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
+}
+
+.directionPickerSpatial button:disabled {
+	cursor: not-allowed;
+	opacity: 0.42;
+}
+
+.directionPickerSpatial__icon {
+	flex: 0 0 auto;
+}
+
+.directionPickerPanel__status {
+	display: flex;
+	min-height: 18px;
+	align-items: center;
+	gap: 6px;
+	color: var(--color-text-muted);
+	font-size: 12px;
+	padding-top: 4px;
+}
+
+.directionPickerPanel__selectionMark {
+	width: 6px;
+	height: 6px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	background: var(--color-action);
+}
+
+.directionPickerPanel__status strong {
+	color: var(--color-text);
+}
+
+.directionMultiPicker {
+	display: grid;
+	min-width: 0;
+	gap: 7px;
+}
+
+.directionMultiPicker > button,
+.directionMultiPicker__compass button,
+.directionMultiPicker__spatial button {
+	min-width: 0;
+	height: 34px;
+	padding: 0 8px;
+	border: 1px solid var(--color-control-border);
+	border-radius: var(--radius-control);
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 650;
+}
+
+.directionMultiPicker > button:hover:not(:disabled),
+.directionMultiPicker__compass button:hover:not(:disabled),
+.directionMultiPicker__spatial button:hover:not(:disabled) {
+	border-color: var(--color-action);
+	background: var(--color-surface-strong);
+}
+
+.directionMultiPicker > button:focus-visible,
+.directionMultiPicker__compass button:focus-visible,
+.directionMultiPicker__spatial button:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 1px;
+}
+
+.directionMultiPicker > button:disabled,
+.directionMultiPicker__compass button:disabled,
+.directionMultiPicker__spatial button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.directionMultiPicker > button.directionMultiPicker__all--selected,
+.directionMultiPicker__compass button.directionMultiPicker__option--selected,
+.directionMultiPicker__spatial button.directionMultiPicker__option--selected {
+	border-color: var(--color-action-hover);
+	background: var(--color-action);
+	color: var(--color-action-contrast);
+}
+
+.directionMultiPicker__compass {
+	display: grid;
+	grid-template-columns: repeat(8, minmax(0, 1fr));
+	gap: 5px;
+}
+
+.directionMultiPicker__compass button {
+	padding: 0;
+}
+
+.directionMultiPicker__spatial {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 5px;
+}
+
+.directionMultiPicker__spatial button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+}
+
+.directionMultiPicker__spatial button svg {
+	flex: 0 0 auto;
+}
+
+.directionMultiPicker__status {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: 11px;
+	line-height: 1.35;
+}
+
 .specializedEditor__templateGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -153,5 +517,26 @@
 	.specializedEditor__grid,
 	.specializedEditor__diff--side-by-side {
 		grid-template-columns: 1fr;
+	}
+
+	.directionPickerPopover {
+		border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+	}
+
+	.directionPickerPanel {
+		gap: 10px;
+		padding: 14px;
+	}
+
+	.directionPickerCompass {
+		width: min(80vw, 270px);
+	}
+
+	.directionMultiPicker__compass {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.directionMultiPicker__spatial {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }

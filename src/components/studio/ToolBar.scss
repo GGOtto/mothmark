@@ -100,7 +100,7 @@
 	color: var(--panel-text);
 }
 
-@media (max-width: 600px) {
+@container editor-main (max-width: 600px) {
 	.toolbar {
 		height: 44px;
 		gap: 4px;
@@ -153,7 +153,7 @@
 	}
 }
 
-@media (max-width: 360px) {
+@container editor-main (max-width: 360px) {
 	.toolbarStatus {
 		flex: 0 0 auto;
 

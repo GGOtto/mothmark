@@ -30,7 +30,6 @@ const TAB_TO_VIEW: Record<EditorTab, string> = {
 	map: "map",
 	world: "items",
 	logic: "logic",
-	npcs: "story",
 	debug: "issues",
 	"world-settings": "world-settings",
 	"editor-settings": "settings",

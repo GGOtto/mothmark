@@ -7,6 +7,7 @@ import type {
 } from "@/features/command-variables/model";
 import {editor} from "../utils/editorSchemaHelpers";
 import {CommandConditionBranchSchema} from "./commandLogicSchemas";
+import {DIRECTION_OPTIONS} from "./directionSchema";
 import {DirectionSchema} from "./roomSchema";
 import {ConditionSchema} from "./conditionSchema";
 
@@ -124,7 +125,11 @@ export const PhraseBlockSchema = editor.object(
 			PhraseListSchema,
 		),
 	},
-	{title: "Phrase", description: "Matches one of a fixed set of words or phrases."},
+	{
+		title: "Phrase",
+		description: "Matches one of a fixed set of words or phrases.",
+		features: {commandBlock: {structural: true}},
+	},
 );
 
 export const RelationBlockSchema = editor.object(
@@ -147,7 +152,11 @@ export const RelationBlockSchema = editor.object(
 		}),
 		role: RoleSchema.optional(),
 	},
-	{title: "Relation", description: "Matches a relationship such as on, in, with, or to."},
+	{
+		title: "Relation",
+		description: "Matches a relationship such as on, in, with, or to.",
+		features: {commandBlock: {structural: true}},
+	},
 );
 
 export const TargetBlockSchema = editor.object(
@@ -191,7 +200,11 @@ export const TargetBlockSchema = editor.object(
 			description: "Extra names accepted only for this command target.",
 		}),
 	},
-	{title: "Target", description: "Resolves player wording to a typed world entity."},
+	{
+		title: "Target",
+		description: "Resolves player wording to a typed world entity.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
 export const NumberBlockSchema = editor.object(
@@ -214,7 +227,11 @@ export const NumberBlockSchema = editor.object(
 			})
 			.default(true),
 	},
-	{title: "Number", description: "Parses a numeric value from the player's command."},
+	{
+		title: "Number",
+		description: "Parses a numeric value from the player's command.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
 export const BooleanBlockSchema = editor.object(
@@ -237,7 +254,11 @@ export const BooleanBlockSchema = editor.object(
 			PhraseListSchema.default(DEFAULT_FALSE_MATCHES),
 		),
 	},
-	{title: "Boolean", description: "Parses player wording into true or false."},
+	{
+		title: "Boolean",
+		description: "Parses player wording into true or false.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
 export const DirectionBlockSchema = editor.object(
@@ -245,9 +266,10 @@ export const DirectionBlockSchema = editor.object(
 		id: editor.id("command-block"),
 		type: z.literal("direction"),
 		role: RoleSchema,
-		allowed: editor.array(DirectionSchema, {
+		allowed: editor.directionMulti(z.array(DirectionSchema).default([]), {
 			title: "Allowed directions",
 			description: "Leave empty to accept every direction.",
+			options: [...DIRECTION_OPTIONS],
 		}),
 		allowRelative: editor
 			.boolean({
@@ -257,7 +279,11 @@ export const DirectionBlockSchema = editor.object(
 			})
 			.default(true),
 	},
-	{title: "Direction", description: "Resolves direction names and abbreviations."},
+	{
+		title: "Direction",
+		description: "Resolves direction names and abbreviations.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
 export const ChoiceBlockSchema = editor.object(
@@ -272,7 +298,11 @@ export const ChoiceBlockSchema = editor.object(
 			})
 			.refine((choices) => choices.length > 0, "Add at least one choice."),
 	},
-	{title: "Choice", description: "Resolves authored wording to one of several stable values."},
+	{
+		title: "Choice",
+		description: "Resolves authored wording to one of several stable values.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
 export const TextBlockSchema = editor.object(
@@ -289,20 +319,26 @@ export const TextBlockSchema = editor.object(
 		minLength: editor.nonNegativeInteger({title: "Minimum length"}).optional(),
 		maxLength: editor.positiveInteger({title: "Maximum length"}).optional(),
 	},
-	{title: "Text", description: "Captures arbitrary words supplied by the player."},
+	{
+		title: "Text",
+		description: "Captures arbitrary words supplied by the player.",
+		features: {commandBlock: {structural: false}},
+	},
 );
 
+export const COMMAND_BLOCK_SCHEMAS = [
+	PhraseBlockSchema,
+	RelationBlockSchema,
+	TargetBlockSchema,
+	NumberBlockSchema,
+	BooleanBlockSchema,
+	DirectionBlockSchema,
+	ChoiceBlockSchema,
+	TextBlockSchema,
+] as const;
+
 const BlockValueSchema = z
-	.discriminatedUnion("type", [
-		PhraseBlockSchema,
-		RelationBlockSchema,
-		TargetBlockSchema,
-		NumberBlockSchema,
-		BooleanBlockSchema,
-		DirectionBlockSchema,
-		ChoiceBlockSchema,
-		TextBlockSchema,
-	])
+	.discriminatedUnion("type", COMMAND_BLOCK_SCHEMAS)
 	.superRefine((block, ctx) => {
 		if (block.type === "relation" && block.aliasMode === "replace" && !block.aliases.length) {
 			ctx.addIssue({
@@ -516,7 +552,7 @@ export const CommandSchema = editor
 				.optional(),
 			showInHelp: editor
 				.boolean({
-					title: "Show in help",
+					title: "Show this command in help",
 					description: "Include this command in player help while it is enabled and in scope.",
 				})
 				.default(false),

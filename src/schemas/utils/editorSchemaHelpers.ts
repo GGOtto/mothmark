@@ -618,18 +618,48 @@ export function editorTextKey(metadata: EditorMetadataWithoutControl = {}) {
 	});
 }
 
-export function editorDirection(metadata: EditorMetadataWithoutControl = {}) {
-	return withEditorMetadata(z.string().min(1), {
-		control: "direction-picker",
-		required: true,
-		picker: {
-			searchable: true,
-			showDescriptions: false,
-			clearable: false,
-			...metadata.picker,
+export function editorDirection<TSchema extends z.ZodTypeAny>(
+	schema: TSchema,
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		schema,
+		{
+			control: "direction-picker",
+			required: true,
+			picker: {
+				searchable: false,
+				showDescriptions: false,
+				clearable: false,
+				...metadata.picker,
+			},
+			...metadata,
 		},
-		...metadata,
-	});
+		defaultFieldValue,
+	);
+}
+
+export function editorDirectionMulti<TSchema extends z.ZodTypeAny>(
+	schema: TSchema,
+	metadata: EditorMetadataWithoutControl = {},
+	defaultFieldValue?: unknown,
+) {
+	return withEditorMetadata(
+		schema,
+		{
+			control: "direction-multi-picker",
+			required: true,
+			picker: {
+				searchable: false,
+				showDescriptions: false,
+				clearable: true,
+				...metadata.picker,
+			},
+			...metadata,
+		},
+		defaultFieldValue,
+	);
 }
 
 export function editorScope<TSchema extends z.ZodTypeAny>(
@@ -1077,6 +1107,7 @@ export const editor = {
 	textKey: editorTextKey,
 	diffPreview: editorDiffPreview,
 	direction: editorDirection,
+	directionMulti: editorDirectionMulti,
 	discriminatedUnion: editorDiscriminatedUnion,
 	effectControl: editorEffectControl,
 	effects: editorEffects,

@@ -204,6 +204,10 @@
 	scroll-margin-top: calc(var(--universal-editor-section-sticky-top, 0px) + 8px);
 }
 
+.objectEditor__section--fixed > .universalField__cardHeader {
+	cursor: default;
+}
+
 .objectEditor__subgroup {
 	min-width: 0;
 	grid-column: 1 / -1;

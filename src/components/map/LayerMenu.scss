@@ -151,19 +151,45 @@
 }
 
 .layerMenu--header {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(160px, 1fr) auto auto;
 	align-items: end;
-	justify-content: space-between;
-	gap: 16px;
+	gap: 12px;
 	min-height: 40px;
-	padding-right: clamp(120px, 18vw, 160px);
+	padding-right: 48px;
+}
+
+.layerMenu--clear {
+	display: inline-flex;
+	min-height: 32px;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 6px;
+	padding: 0 9px;
+	border: 1px solid var(--color-danger);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--color-danger);
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 700;
+
+	&:hover {
+		background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
 }
 
 .layerMenu--nameField {
 	display: grid;
 	gap: 5px;
 	min-width: 0;
-	width: min(420px, 100%);
+	width: 100%;
 	color: var(--color-text-muted);
 	font-size: 12px;
 
@@ -188,9 +214,8 @@
 
 .layerMenu--header__info {
 	display: flex;
-	flex: 0 0 auto;
 	flex-wrap: wrap;
-	justify-content: flex-end;
+	justify-content: flex-start;
 	gap: 4px 10px;
 	padding-bottom: 8px;
 	color: var(--color-text-muted);
@@ -241,54 +266,89 @@
 	font-size: 12px;
 }
 
-@media (max-width: 640px) {
+@container editor-main (max-width: 820px) {
 	.layerMenu {
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: 190px minmax(0, 1fr);
+		grid-template-columns: clamp(170px, 30%, 220px) minmax(0, 1fr);
 		gap: 12px;
 		padding: 14px;
 	}
 
 	.layerMenu--leftPane {
-		grid-template-columns: minmax(0, 1fr) 36px;
+		padding-right: 12px;
+	}
+
+	.layerMenu--header {
+		grid-template-columns: minmax(0, 1fr) auto;
+		padding-right: 42px;
+	}
+
+	.layerMenu--header__info {
+		grid-column: 1;
+		padding-bottom: 0;
+	}
+
+	.layerMenu--clear {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: end;
+	}
+}
+
+@container editor-main (max-width: 620px) {
+	.layerMenu {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: 148px minmax(0, 1fr);
+		gap: 10px;
+		padding: 10px;
+
+		.layerMenu--close {
+			top: 10px;
+			right: 10px;
+		}
+	}
+
+	.layerMenu--leftPane {
 		grid-template-rows: auto minmax(0, 1fr);
-		gap: 6px 10px;
-		padding: 0 0 12px;
+		gap: 4px;
+		padding: 0 0 8px;
 		border-right: 0;
 		border-bottom: 1px solid var(--color-border);
 	}
 
-	.layerMenu--title {
-		align-content: center;
-		padding: 6px 2px;
-	}
-
-	.layerMenu--leftShell {
-		grid-column: 1 / -1;
-		width: 100%;
-		height: 132px;
-		max-height: 132px;
-	}
-
 	.layerMenu--header {
-		align-items: stretch;
-		flex-direction: column;
-		gap: 6px;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 8px;
 		padding-right: 0;
 	}
 
 	.layerMenu--header__info {
-		justify-content: flex-start;
-		padding-bottom: 0;
+		display: none;
+	}
+
+	.layerMenu--clear {
+		grid-column: 2;
+		grid-row: 1;
+		align-self: end;
+	}
+
+	.layerMenu--title {
+		align-content: center;
+		padding: 2px 44px 2px 2px;
+	}
+
+	.layerMenu--leftShell {
+		width: 100%;
+		height: 96px;
+		max-height: 96px;
 	}
 }
 
-@media (max-width: 420px) {
-	.layerMenu--right {
-		padding-top: 40px;
+@container editor-main (max-width: 420px) {
+	.layerMenu--title span {
+		display: none;
 	}
 
-	.layerMenu--title span {
+	.layerMenu--previewHint {
 		display: none;
 	}
 

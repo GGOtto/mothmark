@@ -123,6 +123,11 @@ const CONTROL_TEST_PAGES = [
 		description: "Schema-backed direction controls.",
 	},
 	{
+		href: "/test/direction-multi-picker",
+		title: "Direction Multi Picker",
+		description: "Compact allowed-direction controls.",
+	},
+	{
 		href: "/test/scope-picker",
 		title: "Scope Picker",
 		description: "Command scope selector controls.",

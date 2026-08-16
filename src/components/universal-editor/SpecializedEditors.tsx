@@ -1,5 +1,9 @@
 "use client";
 
+import {ArrowDown, ArrowUp, ChevronDown, Compass, LogIn, LogOut, X} from "lucide-react";
+import {useRef, useState, type KeyboardEvent} from "react";
+import {ModalLayer} from "@/components/overlay/Overlay";
+import {TokenListEditor} from "@/components/token-list/TokenListEditor";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -63,6 +67,14 @@ export type DirectionPickerMetadata = EditorControlMetadata & {
 		includeDiagonals?: boolean;
 		showOpposite?: boolean;
 		clearButton?: boolean;
+	};
+};
+
+export type DirectionMultiPickerMetadata = EditorControlMetadata & {
+	type: "direction-multi-picker";
+	features?: {
+		options?: DirectionPickerOption[];
+		optionSource?: string;
 	};
 };
 
@@ -133,6 +145,7 @@ export type AliasSuggestionsMetadata = EditorControlMetadata & {
 export type SpecializedEditorProps = EditorControlProps<unknown, SpecializedControlMetadata>;
 export type IdEditorProps = EditorControlProps<string, IdControlMetadata>;
 export type DirectionPickerProps = EditorControlProps<string, DirectionPickerMetadata>;
+export type DirectionMultiPickerProps = EditorControlProps<string[], DirectionMultiPickerMetadata>;
 export type ScopePickerProps = EditorControlProps<string, ScopePickerMetadata>;
 export type PriorityControlProps = EditorControlProps<number, PriorityControlMetadata>;
 export type RoomPickerProps = EditorControlProps<string, RoomPickerMetadata>;
@@ -149,7 +162,48 @@ const FALLBACK_DIRECTIONS: DirectionPickerOption[] = [
 	{label: "Southwest", value: "sw", opposite: "ne", diagonal: true},
 	{label: "West", value: "w", opposite: "e"},
 	{label: "Northwest", value: "nw", opposite: "se", diagonal: true},
+	{label: "Up", value: "up", opposite: "down"},
+	{label: "Down", value: "down", opposite: "up"},
+	{label: "In", value: "in", opposite: "out"},
+	{label: "Out", value: "out", opposite: "in"},
 ];
+
+const COMPASS_DIRECTION_VALUES = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+const DIAGONAL_DIRECTION_VALUES = new Set(["ne", "se", "sw", "nw"]);
+const SPATIAL_DIRECTION_VALUES = ["up", "down", "in", "out"];
+const SPATIAL_DIRECTION_ICONS = {
+	up: ArrowUp,
+	down: ArrowDown,
+	in: LogIn,
+	out: LogOut,
+};
+const COMPASS_CENTER = 180;
+const COMPASS_INNER_RADIUS = 58;
+const COMPASS_OUTER_RADIUS = 148;
+const COMPASS_SECTOR_GAP = 1.4;
+
+function compassPoint(radius: number, degrees: number): [number, number] {
+	const radians = (degrees * Math.PI) / 180;
+	return [COMPASS_CENTER + radius * Math.cos(radians), COMPASS_CENTER + radius * Math.sin(radians)];
+}
+
+function compassSectorPath(directionValue: string): string {
+	const index = COMPASS_DIRECTION_VALUES.indexOf(directionValue);
+	const angle = -90 + index * 45;
+	const start = angle - 22.5 + COMPASS_SECTOR_GAP;
+	const end = angle + 22.5 - COMPASS_SECTOR_GAP;
+	const [outerStartX, outerStartY] = compassPoint(COMPASS_OUTER_RADIUS, start);
+	const [outerEndX, outerEndY] = compassPoint(COMPASS_OUTER_RADIUS, end);
+	const [innerEndX, innerEndY] = compassPoint(COMPASS_INNER_RADIUS, end);
+	const [innerStartX, innerStartY] = compassPoint(COMPASS_INNER_RADIUS, start);
+
+	return `M ${outerStartX} ${outerStartY} A ${COMPASS_OUTER_RADIUS} ${COMPASS_OUTER_RADIUS} 0 0 1 ${outerEndX} ${outerEndY} L ${innerEndX} ${innerEndY} A ${COMPASS_INNER_RADIUS} ${COMPASS_INNER_RADIUS} 0 0 0 ${innerStartX} ${innerStartY} Z`;
+}
+
+function compassLabelPoint(directionValue: string): [number, number] {
+	const index = COMPASS_DIRECTION_VALUES.indexOf(directionValue);
+	return compassPoint(104, -90 + index * 45);
+}
 
 const FALLBACK_SCOPE_OPTIONS: EditorSelectOption[] = [
 	{label: "Global", value: "global", description: "Available everywhere."},
@@ -246,7 +300,10 @@ function featureOptionList(
 	);
 }
 
-function resolveDirectionOptions(metadata: DirectionPickerMetadata, context: EditorControlContext) {
+function resolveDirectionOptions(
+	metadata: DirectionPickerMetadata | DirectionMultiPickerMetadata,
+	context: EditorControlContext,
+) {
 	const options = optionList(
 		context,
 		metadata.features?.optionSource,
@@ -255,7 +312,9 @@ function resolveDirectionOptions(metadata: DirectionPickerMetadata, context: Edi
 	) as DirectionPickerOption[];
 
 	return options.filter(
-		(direction) => metadata.features?.includeDiagonals !== false || !direction.diagonal,
+		(direction) =>
+			metadata.features?.includeDiagonals !== false ||
+			(!direction.diagonal && !DIAGONAL_DIRECTION_VALUES.has(direction.value)),
 	);
 }
 
@@ -355,56 +414,269 @@ export function RichTextEditor(props: RichTextProps) {
 }
 
 export function DirectionPickerEditor(props: DirectionPickerProps) {
-	const {value, onChange, metadata, path, error, warnings, disabled, readonly, context} = props;
+	const {value, onChange, metadata, error, warnings, disabled, readonly, context} = props;
 	const options = resolveDirectionOptions(metadata, context);
 	const selected = options.find((direction) => direction.value === value);
-	const mode = metadata.features?.mode ?? "compact";
+	const triggerRef = useRef<HTMLButtonElement>(null);
+	const compassButtonRefs = useRef<Array<SVGGElement | null>>([]);
+	const [open, setOpen] = useState(false);
+	const unavailable = disabled || readonly || metadata.disabled || metadata.readonly;
+	const compassOptions = COMPASS_DIRECTION_VALUES.flatMap((directionValue) => {
+		const direction = options.find((option) => option.value === directionValue);
+		return direction ? [direction] : [];
+	});
+	const spatialOptions = SPATIAL_DIRECTION_VALUES.flatMap((directionValue) => {
+		const direction = options.find((option) => option.value === directionValue);
+		return direction ? [direction] : [];
+	});
+
+	function choose(direction: DirectionPickerOption): void {
+		if (direction.disabled) return;
+		onChange(direction.value);
+		setOpen(false);
+	}
+
+	function handleCompassKeyDown(
+		event: KeyboardEvent<SVGGElement>,
+		index: number,
+		direction: DirectionPickerOption,
+	): void {
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			choose(direction);
+			return;
+		}
+		const stepByKey: Partial<Record<string, number>> = {
+			ArrowRight: 1,
+			ArrowDown: 2,
+			ArrowLeft: -1,
+			ArrowUp: -2,
+		};
+		let nextIndex: number | undefined;
+		if (event.key === "Home") nextIndex = 0;
+		else if (event.key === "End") nextIndex = compassOptions.length - 1;
+		else if (stepByKey[event.key] !== undefined) {
+			nextIndex =
+				(index + (stepByKey[event.key] ?? 0) + compassOptions.length) % compassOptions.length;
+		}
+		if (nextIndex === undefined) return;
+		event.preventDefault();
+		compassButtonRefs.current[nextIndex]?.focus();
+	}
 
 	return (
 		<FieldShell {...shellProps(metadata, context, error, warnings)}>
-			<div className={`specializedEditor specializedEditor--direction-${mode}`}>
-				<div className="specializedEditor__buttonGrid">
-					{options.map((direction) => (
-						<button
-							key={direction.value}
-							type="button"
-							className={value === direction.value ? "specializedEditor__button--selected" : ""}
-							disabled={disabled || readonly || metadata.disabled || metadata.readonly}
-							onClick={() => onChange(direction.value)}
-						>
-							{direction.value.toUpperCase()}
-						</button>
-					))}
-				</div>
-				{renderChildControl({
-					type: "select",
-					childKey: "direction",
-					value,
-					onChange,
-					metadata: {
-						title: "Direction",
-						appearance: {chrome: "inline", size: "sm"},
-						features: {
-							options: options.map((direction) => ({
-								label: direction.label,
-								value: direction.value,
-								description:
-									direction.description ??
-									(direction.opposite ? `Opposite: ${direction.opposite}` : undefined),
-							})),
-							clearButton: metadata.features?.clearButton,
-							showDescriptions: true,
-						},
-					},
-					parentMetadata: metadata,
-					path,
-					disabled,
-					readonly,
-					context,
-				})}
-				{metadata.features?.showOpposite && selected ? (
+			<div className="specializedEditor specializedEditor--direction-picker">
+				<button
+					ref={triggerRef}
+					type="button"
+					className="directionPickerTrigger"
+					aria-expanded={open}
+					disabled={unavailable}
+					onClick={() => setOpen((current) => !current)}
+				>
+					<Compass size={17} strokeWidth={1.75} aria-hidden="true" />
+					<span className="directionPickerTrigger__label">{selected?.label ?? "Choose direction"}</span>
+					{selected ? (
+						<span className="directionPickerTrigger__value">{selected.value.toUpperCase()}</span>
+					) : null}
+					<ChevronDown size={15} aria-hidden="true" />
+				</button>
+				{open ? (
+					<ModalLayer
+						ariaLabel="Choose direction"
+						className="directionPickerPopover"
+						mobilePresentation="sheet"
+						onClose={() => setOpen(false)}
+						returnFocusRef={triggerRef}
+					>
+						<div className="directionPickerPanel">
+							<header className="directionPickerPanel__header">
+								<div>
+									<h2>Choose direction</h2>
+									<p>Pick a compass point or another spatial direction.</p>
+								</div>
+								<button
+									type="button"
+									className="directionPickerPanel__close"
+									aria-label="Close direction picker"
+									onClick={() => setOpen(false)}
+								>
+									<X size={18} aria-hidden="true" />
+								</button>
+							</header>
+
+							<div className="directionPickerCompassWrap">
+								<svg
+									className="directionPickerCompass"
+									viewBox="0 0 360 360"
+									role="group"
+									aria-label="Compass directions"
+								>
+									{compassOptions.map((direction, index) => {
+										const [labelX, labelY] = compassLabelPoint(direction.value);
+										return (
+											<g
+												ref={(element) => {
+													compassButtonRefs.current[index] = element;
+												}}
+												key={direction.value}
+												className={[
+													"directionPickerCompass__direction",
+													value === direction.value && "directionPickerCompass__direction--selected",
+												]
+													.filter(Boolean)
+													.join(" ")}
+												role="button"
+												tabIndex={index === 0 ? 0 : -1}
+												aria-label={direction.label}
+												aria-pressed={value === direction.value}
+												aria-disabled={direction.disabled || undefined}
+												onClick={() => choose(direction)}
+												onKeyDown={(event) => handleCompassKeyDown(event, index, direction)}
+											>
+												<path
+													className="directionPickerCompass__sector"
+													d={compassSectorPath(direction.value)}
+												/>
+												<text x={labelX} y={labelY}>
+													{direction.value.toUpperCase()}
+												</text>
+											</g>
+										);
+									})}
+									<line className="directionPickerCompass__axis" x1="180" y1="12" x2="180" y2="40" />
+									<line className="directionPickerCompass__axis" x1="180" y1="320" x2="180" y2="348" />
+									<line className="directionPickerCompass__axis" x1="12" y1="180" x2="40" y2="180" />
+									<line className="directionPickerCompass__axis" x1="320" y1="180" x2="348" y2="180" />
+									<circle className="directionPickerCompass__center" cx="180" cy="180" r="48" />
+									<Compass
+										className="directionPickerCompass__centerMark"
+										x={166}
+										y={166}
+										width={28}
+										height={28}
+										strokeWidth={1.25}
+										aria-hidden="true"
+									/>
+								</svg>
+							</div>
+
+							{spatialOptions.length ? (
+								<div className="directionPickerSpatial" role="group" aria-label="Spatial directions">
+									{spatialOptions.map((direction) => {
+										const Icon =
+											SPATIAL_DIRECTION_ICONS[direction.value as keyof typeof SPATIAL_DIRECTION_ICONS];
+										return (
+											<button
+												key={direction.value}
+												type="button"
+												className={value === direction.value ? "directionPickerSpatial__selected" : ""}
+												aria-label={direction.label}
+												aria-pressed={value === direction.value}
+												disabled={direction.disabled}
+												onClick={() => choose(direction)}
+											>
+												{Icon ? (
+													<Icon
+														className="directionPickerSpatial__icon"
+														size={19}
+														strokeWidth={1.75}
+														aria-hidden="true"
+													/>
+												) : null}
+												{direction.label}
+											</button>
+										);
+									})}
+								</div>
+							) : null}
+
+							<div className="directionPickerPanel__status" aria-live="polite">
+								<span className="directionPickerPanel__selectionMark" aria-hidden="true" />
+								<span>
+									<strong>{selected?.label ?? "No direction"}</strong> selected
+								</span>
+							</div>
+						</div>
+					</ModalLayer>
+				) : null}
+				{metadata.features?.showOpposite && selected?.opposite ? (
 					<div className="specializedEditor__meta">Opposite exit: {selected.opposite}</div>
 				) : null}
+			</div>
+		</FieldShell>
+	);
+}
+
+export function DirectionMultiPickerEditor(props: DirectionMultiPickerProps) {
+	const {value, onChange, metadata, error, warnings, disabled, readonly, context} = props;
+	const options = resolveDirectionOptions(metadata, context);
+	const unavailable = disabled || readonly || metadata.disabled || metadata.readonly;
+	const selectedValues = new Set(value);
+	const compassOptions = COMPASS_DIRECTION_VALUES.flatMap((directionValue) => {
+		const direction = options.find((option) => option.value === directionValue);
+		return direction ? [direction] : [];
+	});
+	const spatialOptions = SPATIAL_DIRECTION_VALUES.flatMap((directionValue) => {
+		const direction = options.find((option) => option.value === directionValue);
+		return direction ? [direction] : [];
+	});
+
+	function toggle(direction: DirectionPickerOption): void {
+		if (unavailable || direction.disabled) return;
+		if (selectedValues.has(direction.value)) {
+			onChange(value.filter((selectedValue) => selectedValue !== direction.value));
+			return;
+		}
+		onChange([...value, direction.value]);
+	}
+
+	function directionButton(direction: DirectionPickerOption, compact: boolean) {
+		const selected = selectedValues.has(direction.value);
+		const Icon = SPATIAL_DIRECTION_ICONS[direction.value as keyof typeof SPATIAL_DIRECTION_ICONS];
+		return (
+			<button
+				key={direction.value}
+				type="button"
+				className={selected ? "directionMultiPicker__option--selected" : ""}
+				aria-label={direction.label}
+				aria-pressed={selected}
+				title={direction.label}
+				disabled={unavailable || direction.disabled}
+				onClick={() => toggle(direction)}
+			>
+				{Icon ? <Icon size={16} strokeWidth={1.75} aria-hidden="true" /> : null}
+				{compact ? direction.value.toUpperCase() : direction.label}
+			</button>
+		);
+	}
+
+	return (
+		<FieldShell {...shellProps(metadata, context, error, warnings)}>
+			<div className="directionMultiPicker">
+				<button
+					type="button"
+					className={value.length === 0 ? "directionMultiPicker__all--selected" : ""}
+					aria-pressed={value.length === 0}
+					disabled={unavailable}
+					onClick={() => onChange([])}
+				>
+					All directions
+				</button>
+				<div className="directionMultiPicker__compass" role="group" aria-label="Compass directions">
+					{compassOptions.map((direction) => directionButton(direction, true))}
+				</div>
+				{spatialOptions.length ? (
+					<div className="directionMultiPicker__spatial" role="group" aria-label="Spatial directions">
+						{spatialOptions.map((direction) => directionButton(direction, false))}
+					</div>
+				) : null}
+				<p className="directionMultiPicker__status" aria-live="polite">
+					{value.length === 0
+						? "Every direction is accepted."
+						: `${value.length} ${value.length === 1 ? "direction" : "directions"} accepted.`}
+				</p>
 			</div>
 		</FieldShell>
 	);
@@ -579,18 +851,16 @@ export function AliasSuggestionsEditor(props: AliasSuggestionsProps) {
 	return (
 		<FieldShell {...shellProps(metadata, context, error, warnings)}>
 			<div className="specializedEditor">
-				<div className="specializedEditor__buttonGrid">
-					{suggestions.map((suggestion) => (
-						<button
-							key={suggestion}
-							type="button"
-							disabled={disabled || readonly || value.includes(suggestion)}
-							onClick={() => onChange([...value, suggestion])}
-						>
-							{suggestion}
-						</button>
-					))}
-				</div>
+				<TokenListEditor
+					addLabel="Add alias"
+					addOnBlur={false}
+					addOnComma
+					disabled={disabled}
+					onChange={onChange}
+					readonly={readonly}
+					suggestions={suggestions}
+					values={value}
+				/>
 				{metadata.features?.showCollisionWarnings && collisions.length > 0 ? (
 					<div className="specializedEditor__warning">Colliding aliases: {collisions.join(", ")}</div>
 				) : null}

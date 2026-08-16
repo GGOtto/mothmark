@@ -97,6 +97,8 @@ export async function expectMobileLayoutIntegrity(
 				return (
 					visible(element) &&
 					!element.closest("[hidden], [aria-hidden='true']") &&
+					// Authored map entities intentionally move through the clipped, pannable canvas.
+					!element.closest(".mapViewport") &&
 					painted.width > 1 &&
 					painted.height > 1
 				);

@@ -1,4 +1,5 @@
 import {produce} from "immer";
+import {examineCommand} from "@/data/commands/initialCommands";
 import {
 	CommandSchema,
 	NumberBlockSchema,
@@ -10,7 +11,8 @@ import {CommandConditionBranchSchema} from "@/schemas/world/commandLogicSchemas"
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {resolveTurn} from "../player/resolveTurn";
-import {createPlayerTestScenario} from "../utils/testUtils";
+import {createInitialGameState} from "../states/createInitialState";
+import {createPlayerTestItem, createPlayerTestScenario} from "../utils/testUtils";
 
 function numberCommand() {
 	const verb: CommandBlock = {
@@ -84,5 +86,25 @@ describe("number blocks through the player path", () => {
 
 		expect(nextGame.variables.counters).toContainEqual({"matched-number": expected});
 		expect(nextGame.variables.command).toEqual([]);
+	});
+});
+
+describe("target articles through the player path", () => {
+	it("lets a player omit an article authored as part of an item name", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const world = produce(scenario.world, (draft) => {
+			draft.items.push(
+				createPlayerTestItem("brass-key", "The brass key", "A small brass key.", "foyer"),
+			);
+			draft.commands = [examineCommand];
+		});
+
+		const nextGame = resolveTurn(
+			world,
+			createInitialGameState(world, world.startRoomId),
+			"examine brass key",
+		);
+
+		expect(nextGame.messages.at(-1)?.text).toBe("A small brass key.");
 	});
 });
