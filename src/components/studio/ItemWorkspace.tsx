@@ -277,6 +277,7 @@ export function ItemWorkspace({
 				>
 					{activeTab === "details" ? (
 						<ItemDetailsPanel
+							key={idValue(item.id)}
 							item={item}
 							world={world}
 							onUpdate={updateItem}

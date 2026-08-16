@@ -79,6 +79,29 @@
 
 - Model scenery and former room features as global items. A fixed item is simply an item without the `takeable` important tag; do not reintroduce a separate feature entity.
 - Use one `size` value for carrying, container, and surface capacity. Containers and surfaces limit their contents by size, but their own external size stays fixed when filled.
+- Render every editable alias or tag list with the shared token-list component, including dedicated
+  item forms and schema-driven editors, so entry, removal, suggestions, and narrow layouts remain
+  consistent.
+- Keep item suggestions deterministic and AI-free with exactly two modes. Alias suggestions may use
+  general player wording but must exclude broad classification terms, exact collisions, and
+  similar-name collisions. Tag suggestions must be
+  limited to the resolved item's branch of the maintained taxonomy, tags already connected in the world, and real schema
+  capabilities. Treat capability tags as behavior changes, show the commands, logic, items, and
+  behavior each tag connects or enables, and require a separate author action for every change.
+- Keep alias and tag suggestions always visible beneath their matching shared token editor. Use
+  compact one-action alias choices and compact explanatory tag rows; do not require opening a panel
+  or switching suggestion modes, and keep both usable within the initial phone editing viewport.
+- Keep generic player nouns, canonical tag spellings, and taxonomy relationships in maintained data.
+  Derive ordinary aliases from trailing object phrases of up to three words before lexical lookup;
+  never enumerate arbitrary word combinations from a name.
+  Do not add curated synonym-pair exceptions or item-name conditionals to the suggester, admit
+  vocabulary merely because it occurs in an unrelated catalog branch, or show spelling variants of
+  one concept as separate tags.
+- Treat each schema-backed item behavior and its exact canonical tag as one bidirectional authoring
+  state. Display capability tags in the shared tag editor, store their configuration only in
+  `behaviors`, and let classification tags recommend capabilities without silently enabling them.
+- Build the item suggestion collision index and world tag graph once when suggestions open. Do not
+  rescan a large world on every item render or keystroke.
 
 ## Immutable object updates
 

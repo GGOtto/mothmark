@@ -514,7 +514,17 @@ const itemIconCatalog = [
 	{
 		id: "produce",
 		parents: ["food"],
-		identityTerms: ["fruit", "vegetable", "berry", "apple", "carrot", "grain", "produce"],
+		identityTerms: [
+			"fruit",
+			"vegetable",
+			"berry",
+			"apple",
+			"carrot",
+			"grain",
+			"melon",
+			"watermelon",
+			"produce",
+		],
 		categoryTerms: [],
 	},
 	{

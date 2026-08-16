@@ -47,8 +47,9 @@ Unless a task says otherwise, it is complete only when:
 - Public worlds have an explicit administrator-controlled `Official` or `Community` designation.
 - Publication artwork is author-supplied or assembled from bounded author choices. Mothmark never
   infers or generates a world's art from its content.
-- Item tags may drive presentation and command recommendations, but adding a tag must not silently
-  change runtime behavior. Authors explicitly add suggested commands.
+- Classification tags may drive presentation and command recommendations, but must not silently
+  change runtime behavior. Exact canonical capability tags are the editable representation of item
+  behaviors and therefore stay synchronized with their behavior schemas.
 - “List exists” in the request is treated as `list exits`: a command that lists exits visible to the
   player. If a distinct `exists` command was intended, add it as a separate task.
 - Resetting a playthrough means creating a new playthrough record. The previous record remains
@@ -101,37 +102,39 @@ the full task definitions but do not imply a different sequence.
 | 11       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.     |
 | 12       | E04  | Audit the remaining editors before polishing individual complex workflows.                               |
 | 13       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.  |
-| 14       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
-| 15       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
-| 16       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
-| 17       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
-| 18       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.     |
-| 19       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable. |
-| 20       | E09  | Logic should open directly into the working authoring subsection and preserve its context.               |
-| 21       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.          |
-| 22       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.              |
-| 23       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                        |
-| 24       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                  |
-| 25       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.             |
-| 26       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                   |
-| 27       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.     |
-| 28       | A05  | Profile images improve public identity after the player and publication surfaces are stable.             |
-| 29       | A01  | Likes and follows build on finished public publication cards and profiles.                               |
-| 30       | A02  | Real notifications depend on likes/follows and Official publication events.                              |
-| 31       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.           |
-| 32       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.              |
-| 33       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.               |
-| 34       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.         |
-| 35       | T02  | Template creation/application follows the versioned template domain.                                     |
-| 36       | T03  | Template discovery and profile presence follow creation, application, and likes.                         |
-| 37       | T04  | Issues can then validate real template provenance as well as the rest of the world.                      |
-| 38       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                           |
-| 39       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                   |
-| 40       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.            |
-| 41       | R06  | Audit becomes useful after the product actions it must investigate exist.                                |
-| 42       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                  |
-| 43       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.       |
-| 44       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.    |
+| 14       | E05A | Bootstrap broad alias vocabulary from versioned non-AI lexical datasets without curated exceptions.      |
+| 15       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
+| 16       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
+| 17       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
+| 18       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
+| 19       | E05B | Expand standard object behaviors once their command and logic foundations are ready.                     |
+| 20       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.     |
+| 21       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable. |
+| 22       | E09  | Logic should open directly into the working authoring subsection and preserve its context.               |
+| 23       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.          |
+| 24       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.              |
+| 25       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                        |
+| 26       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                  |
+| 27       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.             |
+| 28       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                   |
+| 29       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.     |
+| 30       | A05  | Profile images improve public identity after the player and publication surfaces are stable.             |
+| 31       | A01  | Likes and follows build on finished public publication cards and profiles.                               |
+| 32       | A02  | Real notifications depend on likes/follows and Official publication events.                              |
+| 33       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.           |
+| 34       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.              |
+| 35       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.               |
+| 36       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.         |
+| 37       | T02  | Template creation/application follows the versioned template domain.                                     |
+| 38       | T03  | Template discovery and profile presence follow creation, application, and likes.                         |
+| 39       | T04  | Issues can then validate real template provenance as well as the rest of the world.                      |
+| 40       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                           |
+| 41       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                   |
+| 42       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.            |
+| 43       | R06  | Audit becomes useful after the product actions it must investigate exist.                                |
+| 44       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                  |
+| 45       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.       |
+| 46       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.    |
 
 ---
 
@@ -615,7 +618,7 @@ the full task definitions but do not imply a different sequence.
         focused browser coverage for every destructive flow, 447px and 310px inspectors, phone
         keyboards, long values, empty states, and invalid or deleted URL selections.
 
-- [ ] **E05 — Finish the two-surface Items workflow and working suggestions.**
+- [x] **E05 — Finish the two-surface Items workflow and working suggestions.**
 
   **Outcome:** Authors first choose an item from a full-workspace collection, then edit it in a
   dedicated full-workspace item page; aliases and tags are genuinely helpful.
@@ -633,12 +636,62 @@ the full task definitions but do not imply a different sequence.
   - The item page uses the whole workspace and groups player-facing text, behavior, commands,
     placement, containment, important tags, and identity.
   - Alias suggestions use the actual item name and existing aliases, are deterministic, avoid
-    collisions, and require author acceptance.
+    collisions, and require author acceptance. Keep them visible directly beneath the alias editor
+    without an opener or mode switch.
   - Tag suggestions come from the supported taxonomy and real schema capabilities, explain what each
-    suggestion enables, and require author acceptance.
+    suggestion enables, and require author acceptance. Keep them visible directly beneath the tag
+    editor in compact rows whose actions remain reachable without excessive phone scrolling.
   - Provide a dedicated Commands section that preserves existing attached commands and can later
     host G03 recommendations; do not add placeholder templates before G03.
   - Handle unplaced items, nested items, similar names, large collections, and no-icon fallback.
+
+- [ ] **E05A — Bootstrap broad alias vocabulary from versioned lexical data.**
+
+  **Outcome:** Authors receive useful ordinary player references for a wide range of objects without
+  AI, item-name conditionals, or a manually curated synonym-pair catalog.
+
+  **Depends on:** E05.
+
+  **Scope and acceptance:**
+
+  - Generate a pinned, server-only lexical index from licensed external datasets rather than relying
+    on live third-party requests. Record the source version and required attribution with the build.
+  - Prefer explicit same-sense synonyms and alternative forms. Admit broader player nouns and related
+    words only when independent lexical evidence and the resolved item taxonomy corroborate them.
+  - Keep every learned edge directional, normalized, language-scoped, and traceable to its sources;
+    never add a special case for a particular authored item name.
+  - Preserve author approval, collision filtering, ambiguity rejection, deterministic ordering, and
+    the five-result limit already established by E05.
+  - Cover sparse entries, compound nouns, plural forms, polysemous words, offensive or obsolete
+    vocabulary, non-Latin text, deterministic snapshot upgrades, and large-index performance.
+  - Treat future author-derived synonym learning as an optional ranking and gap-filling layer. Do not
+    require community volume for the initial vocabulary and never let accepted suggestions train
+    themselves into higher confidence.
+
+- [ ] **E05B — Expand standard object behaviors and player affordances.**
+
+  **Outcome:** Items can represent the broad set of ordinary actions a player would reasonably try,
+  without turning every verb into bespoke engine code or an unconfigurable tag.
+
+  **Depends on:** E05, E06, E07, G03.
+
+  **Scope and acceptance:**
+
+  - Expand beyond the current Takeable, Container, Surface, Openable, Lockable, Door, and Usable
+    behaviors only when each addition has meaningful runtime semantics, author controls, and clear
+    player feedback.
+  - Cover common affordance families such as eating and drinking, wearing, reading, lighting,
+    switching and operating, pushing and pulling, climbing, sitting and lying, entering, breaking,
+    cutting, tying, filling and pouring, cleaning, repairing, giving and showing, throwing, and
+    sensory inspection where those actions are useful to authored worlds.
+  - Keep the behavior catalog schema-derived so adding a behavior automatically supplies its editor
+    label, explanation, discovery vocabulary, defaults, and canonical capability tag.
+  - Preserve bidirectional behavior-tag synchronization and deterministic suggestions as the catalog
+    grows. Classification tags may recommend a behavior but must never silently enable one.
+  - Compose standard player commands from reusable conditions and effects. Each behavior requires
+    focused tests and a companion player-path test through `resolveTurn` before it is offered.
+  - Keep world-specific interactions in authored commands and use recipes when they do not justify a
+    reusable standard behavior.
 
 - [ ] **E06 — Rebuild condition and effect selection/editing.**
 

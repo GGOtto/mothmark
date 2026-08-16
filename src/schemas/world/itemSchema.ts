@@ -81,6 +81,30 @@ export const TakeableBehaviorSchema = editor.object(
 	{
 		title: "Takeable",
 		description: "Lets the player take, carry, place, and drop this item.",
+		discovery: {
+			keywords: [
+				"portable",
+				"carry",
+				"book",
+				"clothing",
+				"coin",
+				"document",
+				"edible-fruit",
+				"food",
+				"fruit",
+				"garment",
+				"instrument",
+				"key",
+				"produce",
+				"tool",
+				"toy",
+				"treasure",
+				"wearable",
+				"footwear",
+				"jewelry",
+				"weapon",
+			],
+		},
 		childControls: {
 			afterTake: {title: "After take"},
 			afterDrop: {title: "After drop"},
@@ -97,6 +121,19 @@ export const ContainerBehaviorSchema = editor.object(
 	{
 		title: "Container",
 		description: "Lets other takeable items be placed inside this item.",
+		discovery: {
+			keywords: [
+				"bag",
+				"barrel",
+				"bottle",
+				"box",
+				"cage",
+				"chest",
+				"container",
+				"receptacle",
+				"vessel",
+			],
+		},
 	},
 );
 
@@ -109,6 +146,7 @@ export const SurfaceBehaviorSchema = editor.object(
 	{
 		title: "Surface",
 		description: "Lets other takeable items be placed on this item.",
+		discovery: {keywords: ["counter", "desk", "furniture", "shelf", "surface", "table"]},
 	},
 );
 
@@ -126,6 +164,9 @@ export const OpenableBehaviorSchema = editor.object(
 	{
 		title: "Openable",
 		description: "Gives this item an open or closed state.",
+		discovery: {
+			keywords: ["bottle", "box", "cabinet", "chest", "container", "door", "gate", "hatch", "jar"],
+		},
 		childControls: {
 			afterOpen: {title: "After open"},
 			afterClose: {title: "After close"},
@@ -179,7 +220,10 @@ export const LockableBehaviorSchema = editor.object(
 	{
 		title: "Lockable",
 		description: "Lets matching items or item tags unlock this openable item.",
-		discovery: {requires: ["openable"]},
+		discovery: {
+			keywords: ["box", "chest", "container", "door", "gate", "lock"],
+			requires: ["openable"],
+		},
 		childControls: {
 			afterUnlock: {title: "After unlock"},
 			afterLock: {title: "After lock"},
@@ -206,7 +250,7 @@ export const DoorBehaviorSchema = editor.object(
 	{
 		title: "Door",
 		description: "Makes this openable item block a connection while closed.",
-		discovery: {requires: ["openable"]},
+		discovery: {keywords: ["door", "gate", "hatch", "portal"], requires: ["openable"]},
 	},
 );
 
@@ -284,6 +328,7 @@ export const UsableBehaviorSchema = editor.object(
 	{
 		title: "Usable",
 		description: "Adds manageable use recipes for this item and optional targets.",
+		discovery: {keywords: ["device", "instrument", "instrumentality", "mechanism", "tool"]},
 	},
 );
 

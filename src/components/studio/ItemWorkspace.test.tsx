@@ -7,6 +7,7 @@ import {SurfaceBehaviorSchema} from "@/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {ItemWorkspace} from "./ItemWorkspace";
+import type {WorldUpdate} from "@/types/worldUpdaterTypes";
 
 type TestItemWorkspaceProps = Omit<
 	ComponentProps<typeof ItemWorkspace>,
@@ -19,11 +20,56 @@ function TestItemWorkspace(props: TestItemWorkspaceProps) {
 	return <ItemWorkspace {...props} activeTab={activeTab} onActiveTabChange={setActiveTab} />;
 }
 
+function StatefulItemWorkspace() {
+	const [world, setWorld] = useState(createInitialWorld);
+	const [activeTab, setActiveTab] =
+		useState<ComponentProps<typeof ItemWorkspace>["activeTab"]>("details");
+	function updateWorld(update: WorldUpdate) {
+		setWorld((current) => (typeof update === "function" ? produce(current, update) : update));
+	}
+	return (
+		<ItemWorkspace
+			item={world.items[0]!}
+			world={world}
+			updateWorld={updateWorld}
+			activeTab={activeTab}
+			onActiveTabChange={setActiveTab}
+			onBack={jest.fn()}
+			onItemIdChange={jest.fn()}
+			onItemDeleted={jest.fn()}
+			onOpenCommand={jest.fn()}
+			onOpenLogicLibrary={jest.fn()}
+			onOpenPlay={jest.fn()}
+		/>
+	);
+}
+
 beforeAll(() => {
 	Object.defineProperty(window, "scrollTo", {configurable: true, value: jest.fn()});
 });
 
 describe("ItemWorkspace", () => {
+	it("uses one bidirectional tag and behavior capability state", async () => {
+		const user = userEvent.setup();
+		render(<StatefulItemWorkspace />);
+
+		await user.type(screen.getByRole("textbox", {name: "Add tag"}), "takeable{Enter}");
+		expect(screen.getByRole("button", {name: "Remove takeable"})).toBeVisible();
+
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		const takeable = screen.getByRole("checkbox", {name: /^Takeable /i});
+		expect(takeable).toBeChecked();
+		await user.click(takeable);
+
+		await user.click(screen.getByRole("tab", {name: "Details"}));
+		expect(screen.queryByRole("button", {name: "Remove takeable"})).not.toBeInTheDocument();
+
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		await user.click(screen.getByRole("checkbox", {name: /^Surface /i}));
+		await user.click(screen.getByRole("tab", {name: "Details"}));
+		expect(screen.getByRole("button", {name: "Remove surface"})).toBeVisible();
+	});
+
 	it("renders the schema-backed item document and returns to the selector", async () => {
 		const user = userEvent.setup();
 		const world = createInitialWorld();

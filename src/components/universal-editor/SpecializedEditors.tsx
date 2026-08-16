@@ -3,6 +3,7 @@
 import {ArrowDown, ArrowUp, ChevronDown, Compass, LogIn, LogOut, X} from "lucide-react";
 import {useRef, useState, type KeyboardEvent} from "react";
 import {ModalLayer} from "@/components/overlay/Overlay";
+import {TokenListEditor} from "@/components/token-list/TokenListEditor";
 import type {
 	EditorControlContext,
 	EditorControlMetadata,
@@ -850,18 +851,16 @@ export function AliasSuggestionsEditor(props: AliasSuggestionsProps) {
 	return (
 		<FieldShell {...shellProps(metadata, context, error, warnings)}>
 			<div className="specializedEditor">
-				<div className="specializedEditor__buttonGrid">
-					{suggestions.map((suggestion) => (
-						<button
-							key={suggestion}
-							type="button"
-							disabled={disabled || readonly || value.includes(suggestion)}
-							onClick={() => onChange([...value, suggestion])}
-						>
-							{suggestion}
-						</button>
-					))}
-				</div>
+				<TokenListEditor
+					addLabel="Add alias"
+					addOnBlur={false}
+					addOnComma
+					disabled={disabled}
+					onChange={onChange}
+					readonly={readonly}
+					suggestions={suggestions}
+					values={value}
+				/>
 				{metadata.features?.showCollisionWarnings && collisions.length > 0 ? (
 					<div className="specializedEditor__warning">Colliding aliases: {collisions.join(", ")}</div>
 				) : null}

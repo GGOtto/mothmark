@@ -424,6 +424,31 @@ describe("matchBlock", () => {
 		}
 	});
 
+	it("ignores leading articles in both authored target names and player wording", () => {
+		const block = {
+			...createDefaultFieldObject(TargetBlockSchema),
+			id: toID("command-block", "target"),
+			role: "target",
+			source: "visible" as const,
+		};
+		const key = toID("item", "brass-key");
+		const targets: TargetMatchCandidate[] = [
+			{
+				reference: key,
+				name: "The brass key",
+				sources: ["visible"],
+			},
+		];
+
+		for (const wording of ["brass key", "the brass key", "my brass key"]) {
+			expectVariable(matchBlock(wording, block, {targets}), {
+				blockId: block.id,
+				type: "target",
+				value: key,
+			});
+		}
+	});
+
 	it("does not resolve an ambiguous target", () => {
 		const block = {
 			...createDefaultFieldObject(TargetBlockSchema),

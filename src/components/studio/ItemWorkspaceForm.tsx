@@ -1,11 +1,23 @@
 "use client";
 
 import {Info, Plus, Trash2} from "lucide-react";
-import {useState, type KeyboardEvent, type ReactNode} from "react";
+import {useState, type ReactNode} from "react";
 import type {Draft} from "immer";
 import type {z} from "zod";
+import {useOptionalPopup} from "@/components/popup/Popup";
+import {TokenListEditor} from "@/components/token-list/TokenListEditor";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {generateUniqueId, idValue, toID} from "@/utils/idUtils";
+import {
+	addItemBehaviorDraft,
+	behaviorDependents,
+	effectiveItemTags,
+	isDefaultItemBehavior,
+	itemBehaviorTypeForTag,
+	ITEM_BEHAVIOR_DEFINITIONS,
+	removeItemBehaviorDraft,
+	replaceItemTagsAndBehaviorsDraft,
+} from "@/features/items/itemBehaviors";
 import {
 	DefaultConditionGroup,
 	ConditionGroupSchema,
@@ -13,9 +25,7 @@ import {
 } from "@/schemas/world/conditionSchema";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {
-	ITEM_BEHAVIOR_SCHEMAS,
 	ITEM_SIZE_UNITS,
-	ItemBehaviorSchema,
 	ItemExamineConditionalTextSchema,
 	ItemParentConditionalTextSchema,
 	ItemTakeAllowedWhenSchema,
@@ -28,6 +38,7 @@ import {
 } from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {getEditorMetadata} from "@/utils/editorMetadata";
+import {ItemSuggestionList, useItemSuggestions} from "./ItemSuggestionPanel";
 
 export type ItemAdvancedEditOptions = {
 	kind: "condition" | "effect";
@@ -53,22 +64,7 @@ const ITEM_SIZES: ReadonlyArray<{label: string; value: ItemSize}> =
 		return {label: `${option.label} · ${units} ${units === 1 ? "unit" : "units"}`, value};
 	}) ?? [];
 
-const BEHAVIOR_OPTIONS = ITEM_BEHAVIOR_SCHEMAS.map((schema) => {
-	const value = createDefaultFieldObject(schema);
-	const metadata = getEditorMetadata(schema);
-	return {
-		type: value.type,
-		label: metadata?.title ?? value.type,
-		description: metadata?.description ?? "Item capability",
-		schema,
-	};
-});
-
-function createBehavior(type: ItemBehavior["type"]): ItemBehavior {
-	const option = BEHAVIOR_OPTIONS.find((candidate) => candidate.type === type);
-	if (!option) throw new Error(`Unknown item behavior: ${type}`);
-	return ItemBehaviorSchema.parse(createDefaultFieldObject(option.schema));
-}
+const BEHAVIOR_OPTIONS = ITEM_BEHAVIOR_DEFINITIONS;
 
 function SectionHeading({
 	accent = "identity",
@@ -103,61 +99,6 @@ function Field({children, label}: {children: ReactNode; label: string}) {
 	);
 }
 
-function ChipEditor({
-	addLabel,
-	className = "",
-	onChange,
-	values,
-}: {
-	addLabel: string;
-	className?: string;
-	onChange: (values: string[]) => void;
-	values: string[];
-}) {
-	const [draft, setDraft] = useState("");
-
-	function addValue() {
-		const nextValue = draft.trim();
-		if (!nextValue) return;
-		if (!values.some((value) => value.toLocaleLowerCase() === nextValue.toLocaleLowerCase())) {
-			onChange([...values, nextValue]);
-		}
-		setDraft("");
-	}
-
-	function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-		if (event.key !== "Enter" && event.key !== ",") return;
-		event.preventDefault();
-		addValue();
-	}
-
-	return (
-		<div className={`itemChipEditor ${className}`}>
-			{values.map((value, index) => (
-				<span className="itemChipEditorChip" key={`${value}-${index}`}>
-					{value}
-					<button
-						type="button"
-						aria-label={`Remove ${value}`}
-						onClick={() => onChange(values.filter((_, candidateIndex) => candidateIndex !== index))}
-					>
-						×
-					</button>
-				</span>
-			))}
-			<input
-				type="text"
-				value={draft}
-				aria-label={addLabel}
-				placeholder={addLabel}
-				onBlur={addValue}
-				onChange={(event) => setDraft(event.target.value)}
-				onKeyDown={handleKeyDown}
-			/>
-		</div>
-	);
-}
-
 function AdvancedRow({
 	count,
 	label,
@@ -180,7 +121,39 @@ function AdvancedRow({
 	);
 }
 
-export function ItemDetailsPanel({item, onUpdate, onEditAdvanced}: ItemPanelProps) {
+export function ItemDetailsPanel({item, world, onUpdate, onEditAdvanced}: ItemPanelProps) {
+	const popup = useOptionalPopup();
+	const suggestions = useItemSuggestions(item, world);
+
+	async function replaceTags(values: string[]) {
+		const requested = new Set(values.map(itemBehaviorTypeForTag).filter(Boolean));
+		for (const behavior of item.behaviors) {
+			if (requested.has(behavior.type)) continue;
+			const dependents = behaviorDependents(item, behavior.type);
+			if (dependents.length) {
+				if (popup) {
+					await popup.alert({
+						title: `Keep ${behavior.type}`,
+						message: `${dependents.join(" and ")} requires this capability. Remove the dependent capability first.`,
+						buttonLabel: "Done",
+					});
+				}
+				return;
+			}
+			if (isDefaultItemBehavior(behavior)) continue;
+			const confirmed = popup
+				? await popup.confirm({
+						title: `Remove ${behavior.type}?`,
+						message: "This capability has custom settings. Removing its tag also removes those settings.",
+						confirmLabel: "Remove capability",
+						danger: true,
+					})
+				: globalThis.confirm(`Remove ${behavior.type} and its custom settings?`);
+			if (!confirmed) return;
+		}
+		onUpdate((draft) => replaceItemTagsAndBehaviorsDraft(draft, values));
+	}
+
 	return (
 		<div className="itemDetailsForm">
 			<section className="itemFormSection">
@@ -197,19 +170,21 @@ export function ItemDetailsPanel({item, onUpdate, onEditAdvanced}: ItemPanelProp
 				</Field>
 				<div className="itemFormField">
 					<span>Aliases</span>
-					<ChipEditor
+					<TokenListEditor
 						addLabel="Add alias"
+						footer={<ItemSuggestionList mode="aliases" onUpdate={onUpdate} suggestions={suggestions} />}
 						values={item.aliases}
 						onChange={(aliases) => onUpdate((draft) => void (draft.aliases = aliases))}
 					/>
 				</div>
 				<div className="itemFormField">
 					<span>Tags</span>
-					<ChipEditor
+					<TokenListEditor
 						addLabel="Add tag"
-						className="itemChipEditor--tags"
-						values={item.tags}
-						onChange={(tags) => onUpdate((draft) => void (draft.tags = tags))}
+						footer={<ItemSuggestionList mode="tags" onUpdate={onUpdate} suggestions={suggestions} />}
+						tone="tags"
+						values={[...effectiveItemTags(item)]}
+						onChange={(tags) => void replaceTags(tags)}
 					/>
 				</div>
 				<details className="itemFormDisclosure">
@@ -793,27 +768,31 @@ function BehaviorSettings({
 }
 
 export function ItemBehaviorsPanel({item, world, onUpdate, onEditAdvanced}: ItemPanelProps) {
+	const popup = useOptionalPopup();
 	const [expandedBehavior, setExpandedBehavior] = useState<ItemBehavior["type"] | null>(
 		item.behaviors[0]?.type ?? null,
 	);
 	const selectedTypes = new Set(item.behaviors.map((behavior) => behavior.type));
 
-	function toggleBehavior(type: ItemBehavior["type"], checked: boolean) {
+	async function toggleBehavior(type: ItemBehavior["type"], checked: boolean) {
+		const behavior = item.behaviors.find((entry) => entry.type === type);
+		if (!checked && behavior && !isDefaultItemBehavior(behavior)) {
+			const confirmed = popup
+				? await popup.confirm({
+						title: `Remove ${type}?`,
+						message: "This capability has custom settings. Removing it also removes those settings.",
+						confirmLabel: "Remove capability",
+						danger: true,
+					})
+				: globalThis.confirm(`Remove ${type} and its custom settings?`);
+			if (!confirmed) return;
+		}
 		onUpdate((draft) => {
 			if (checked) {
-				if (
-					(type === "lockable" || type === "door") &&
-					!draft.behaviors.some((behavior) => behavior.type === "openable")
-				) {
-					draft.behaviors.push(createBehavior("openable"));
-				}
-				if (!draft.behaviors.some((behavior) => behavior.type === type))
-					draft.behaviors.push(createBehavior(type));
+				addItemBehaviorDraft(draft, type);
 				return;
 			}
-			draft.behaviors = draft.behaviors.filter((behavior) => behavior.type !== type);
-			if (type === "openable") draft.initialState.open = false;
-			if (type === "lockable") draft.initialState.locked = false;
+			removeItemBehaviorDraft(draft, type);
 		});
 		if (checked) setExpandedBehavior(type);
 		else if (expandedBehavior === type) setExpandedBehavior(null);
@@ -844,7 +823,7 @@ export function ItemBehaviorsPanel({item, world, onUpdate, onEditAdvanced}: Item
 									type="checkbox"
 									checked={checked}
 									disabled={openableRequired}
-									onChange={(event) => toggleBehavior(option.type, event.target.checked)}
+									onChange={(event) => void toggleBehavior(option.type, event.target.checked)}
 								/>
 								<span>
 									<strong>{option.label}</strong>

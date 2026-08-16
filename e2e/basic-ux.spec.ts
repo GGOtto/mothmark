@@ -200,6 +200,27 @@ async function useDeterministicEditorWorld(
 			body: JSON.stringify({data: {preferences: editorPreferences, itemActivity}}),
 		});
 	});
+	await page.route("**/api/editor/item-suggestions", async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					aliases: [{value: "countertop", relation: "synonym", evidence: "WordNet synonym."}],
+					concepts: [
+						{
+							tag: "furniture",
+							label: "furniture",
+							depth: 1,
+							evidence: "The item belongs to this WordNet category.",
+							synsetId: "n:1",
+						},
+					],
+					version: "e2e-test",
+				},
+			}),
+		});
+	});
 	await page.route(/\/api\/world(?:\?.*)?$/, async (route) => {
 		if (new URL(route.request().url()).searchParams.get("view") === "trash") {
 			await route.fulfill({
@@ -1517,6 +1538,25 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("tab", {name: "Behavior"})).toHaveCSS("font-size", "13px");
 	await expect(page.getByRole("heading", {name: "Identity"})).toBeVisible();
 	await expect(page.locator(".universalEditor")).toHaveCount(0);
+	await expect(page.getByRole("region", {name: "Suggested aliases"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested tags"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Suggest aliases and tags"})).toHaveCount(0);
+	const aliasSuggestion = page.getByRole("listitem").filter({hasText: "countertop"});
+	const surfaceSuggestion = page.getByRole("listitem").filter({hasText: "#surface"});
+	await expect(aliasSuggestion).toBeVisible();
+	await expect(surfaceSuggestion).toBeVisible();
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(aliasSuggestion.getByRole("button", {name: "Add alias countertop"})).toBeVisible();
+	await expect(surfaceSuggestion.getByRole("button", {name: "Enable surface"})).toBeVisible();
+	expect(await itemBody.evaluate((element) => element.scrollTop)).toBe(0);
+	await page.setViewportSize({width: 1280, height: 720});
+	await expect(page.getByRole("button", {name: "Remove countertop"})).toHaveCount(0);
+	await aliasSuggestion.getByRole("button", {name: "Add alias countertop"}).click();
+	await expect(page.getByRole("button", {name: "Remove countertop"})).toBeVisible();
+	await expect(surfaceSuggestion.getByText(/placed on (?:this item|it)/i)).toBeVisible();
+	await surfaceSuggestion.getByRole("button", {name: "Enable surface"}).click();
+	await expect(page.getByRole("button", {name: "Remove surface"})).toBeVisible();
 	const lightContrast = await itemWorkspaceTextContrast(page);
 	expect(lightContrast.inactiveTab).toBeGreaterThanOrEqual(4.5);
 	expect(lightContrast.fieldLabel).toBeGreaterThanOrEqual(4.5);
@@ -1525,8 +1565,9 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await page.getByRole("tab", {name: "Behavior"}).click();
 	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Flags"})).toBeVisible();
-	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toHaveCount(0);
-	await page.getByRole("checkbox", {name: /Takeable/}).check();
+	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
+	await expect(page.getByRole("checkbox", {name: /^Surface /})).toBeChecked();
+	await page.getByRole("checkbox", {name: /^Takeable /}).check();
 	const takeConditionRow = page.locator(".itemAdvancedRow").filter({hasText: "Take condition"});
 	await takeConditionRow.getByRole("button", {name: "Add"}).click();
 	await expect(page.getByRole("heading", {name: "Edit condition group"})).toBeVisible();
@@ -1576,6 +1617,9 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("button", {name: "Delete", exact: true})).toBeVisible();
 	await expect(page.getByRole("tab", {name: "Details"})).toBeVisible();
 	await expect(page.getByRole("tab", {name: "Commands"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested aliases"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested tags"})).toBeVisible();
+	await expect(page.locator(".itemSuggestionTags > li > button").first()).toBeVisible();
 	const tabTops = await page
 		.locator('.itemWorkspaceTabs [role="tab"]')
 		.evaluateAll((tabs) => tabs.map((tab) => Math.round(tab.getBoundingClientRect().top)));

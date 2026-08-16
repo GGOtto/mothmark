@@ -11,6 +11,7 @@ import type {z} from "zod";
 import {produce} from "immer";
 import {compareIds, idValue, isID} from "@/utils/idUtils";
 import type {ID} from "@/utils/idUtils";
+import {effectiveItemTags} from "@/features/items/itemBehaviors";
 import type {LogicLibraryKind, LogicUsage} from "./logicLibraryUsage";
 import {CommandConditionEditorSchema, EventConditionEditorSchema} from "./logicEditorSchemas";
 
@@ -256,7 +257,7 @@ function containsItemReference(value: unknown, item: Item, seen = new Set<object
 }
 
 function itemTargetTags(item: Item): Set<string> {
-	return new Set([...item.tags, ...item.behaviors.map((behavior) => behavior.type)]);
+	return effectiveItemTags(item);
 }
 
 function targetCanResolveItem(block: Extract<CommandBlock, {type: "target"}>, item: Item): boolean {
