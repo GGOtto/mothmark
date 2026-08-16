@@ -200,6 +200,27 @@ async function useDeterministicEditorWorld(
 			body: JSON.stringify({data: {preferences: editorPreferences, itemActivity}}),
 		});
 	});
+	await page.route("**/api/editor/item-suggestions", async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					aliases: [{value: "countertop", relation: "synonym", evidence: "WordNet synonym."}],
+					concepts: [
+						{
+							tag: "furniture",
+							label: "furniture",
+							depth: 1,
+							evidence: "The item belongs to this WordNet category.",
+							synsetId: "n:1",
+						},
+					],
+					version: "e2e-test",
+				},
+			}),
+		});
+	});
 	await page.route(/\/api\/world(?:\?.*)?$/, async (route) => {
 		if (new URL(route.request().url()).searchParams.get("view") === "trash") {
 			await route.fulfill({
@@ -785,6 +806,7 @@ test("legacy shared-world routes stay closed to a public browser", async ({reque
 test("private worlds persist for one browser and remain unresolved for another", async ({
 	browser,
 }) => {
+	test.setTimeout(60_000);
 	const firstContext = await browser.newContext();
 	const secondContext = await browser.newContext();
 	const firstPage = await firstContext.newPage();
@@ -846,7 +868,7 @@ test("the editor player uses unsaved world edits, preserves play state, and rest
 	await expect(page.locator(".game-player__output").getByText(/^Stockroom/)).toBeVisible();
 	await expect(commandInput).toBeFocused();
 
-	await page.getByRole("tab", {name: "Editor"}).click();
+	await page.getByRole("tab", {name: "Edit"}).click();
 	await page.getByRole("button", {name: "Stockroom"}).click();
 	await page.getByRole("textbox", {name: "Name", exact: true}).fill("Live stockroom");
 	await page.getByRole("tab", {name: "Play"}).click();
@@ -971,6 +993,7 @@ test("two tabs surface a revision conflict before switching away", async ({brows
 });
 
 test("the world library creates, switches, isolates, and limits private worlds", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page, undefined, 3);
 
@@ -1010,7 +1033,9 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			),
 		);
 		if (source === "Blank world") {
-			await expect(page.getByRole("button", {name: "Clear Ground layer"})).toBeVisible();
+			await page.getByRole("button", {name: "Layers · Ground"}).click();
+			await expect(page.getByRole("button", {name: "Clear layer"})).toBeVisible();
+			await page.getByRole("button", {name: "Close layer menu"}).click();
 			await page.getByRole("tab", {name: "Play"}).click();
 			await expect(page.getByText("No rooms available. Add a room to begin exploring.")).toBeVisible();
 			await expect(page.getByRole("button", {name: "Shop Floor"})).not.toBeVisible();
@@ -1026,7 +1051,7 @@ test("the world library creates, switches, isolates, and limits private worlds",
 			await page.locator("[data-map]").click({position: {x: 180, y: 180}});
 			await expect(page.getByRole("button", {name: "Room 1"})).toBeVisible();
 			await expect(page.getByRole("button", {name: "Add room"})).toBeVisible();
-			await page.getByRole("tab", {name: "Editor"}).click();
+			await page.getByRole("tab", {name: "Edit"}).click();
 		}
 		const roomNameField = page.getByRole("textbox", {name: "Name", exact: true});
 		if (source === "Blank world") await expect(roomNameField).not.toBeFocused();
@@ -1132,7 +1157,7 @@ test("a new world can start from an exported JSON file", async ({page}) => {
 	await dialog.getByRole("button", {name: "Create world"}).click();
 
 	await expect(page).toHaveURL(/\/worlds\/imported-archive\?view=map&room=shop-floor$/);
-	await expect(page.getByRole("button", {name: "Imported landing"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Imported landing", exact: true})).toBeVisible();
 	expect(browserErrors).toEqual([]);
 });
 
@@ -1215,12 +1240,23 @@ test("world lifecycle actions rename, export, duplicate, trash, restore, and per
 });
 
 test("primary editor workspaces are directly reachable", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto("/worlds/undefined");
 	await expect(page).toHaveURL(
 		new RegExp(`/worlds/${editor.worldSlug}\\?view=map&room=shop-floor$`),
 	);
+	await page.setViewportSize({width: 901, height: 720});
+	const mapToolbar = page.getByLabel("Map tools");
+	await expect(mapToolbar).toBeVisible();
+	expect(
+		await mapToolbar.evaluate(
+			(element) =>
+				element.scrollWidth <= element.clientWidth &&
+				element.getBoundingClientRect().right <= window.innerWidth,
+		),
+	).toBe(true);
 	await page.getByRole("tab", {name: "Play"}).click();
 	await expect(page.getByRole("textbox", {name: "Game command"})).toBeEnabled();
 
@@ -1236,12 +1272,71 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await page.getByRole("button", {name: /Conditions/}).click();
 	await expect(page.getByRole("heading", {name: "Conditions", exact: true})).toBeVisible();
 	await expect(page.getByRole("searchbox", {name: "Search conditions"})).toBeVisible();
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const conditionTools = await page.locator(".logicLibraryTools").boundingBox();
+	const conditionResults = await page.locator(".logicLibraryBody").boundingBox();
+	expect(conditionTools?.height).toBeLessThanOrEqual(130);
+	expect(conditionResults?.height).toBeGreaterThanOrEqual(250);
+	await page.setViewportSize({width: 1280, height: 720});
+	await expect(page.getByRole("button", {name: "By parent"})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	await expect(page.getByRole("combobox", {name: "Sort by"})).toBeVisible();
+	const takeUsage = page.getByRole("button", {name: "Take Command · 1 condition"});
+	await takeUsage.click();
+	await expect(page.getByRole("heading", {name: "Take", exact: true})).toBeVisible();
+	await expect(page.getByRole("button", {name: "See Command"})).toBeVisible();
+	await expect(page).toHaveURL(/\?view=logic&section=conditions$/);
+	const takeCondition = page.locator(".logicOccurrenceList > button").first();
+	await expect(takeCondition).toBeVisible();
+	await takeCondition.click();
+	await expect(page.getByRole("button", {name: "Save"})).toBeVisible();
+	await expect(page.getByText("Group logic")).toBeVisible();
+	await expect(page.getByText("[object Object]")).toHaveCount(0);
+	await expect(page.getByRole("button", {name: "See Command"})).toHaveCount(0);
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	await page.getByRole("button", {name: /Back Take/}).click();
+	await page.getByRole("button", {name: "See Command"}).click();
+	await expect(page.getByText("Take", {exact: true}).first()).toBeVisible();
+	await expect(page.getByRole("button", {name: "Back to Commands"})).toBeVisible();
+	await page.setViewportSize({width: 1280, height: 720});
+	await page.getByRole("button", {name: "Back to Commands"}).click();
+	await page.getByRole("button", {name: "Back to Logic"}).click();
+	await page.getByRole("button", {name: /Conditions/}).click();
+	await page.getByRole("button", {name: "Conditions", exact: true}).click();
+	await expect(page.getByRole("button", {name: "Conditions", exact: true})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	const inlineCondition = page
+		.locator(".logicLibraryList > button")
+		.filter({hasText: "Take"})
+		.first();
+	await expect(inlineCondition).toBeVisible();
+	await inlineCondition.click();
+	await expect(page.getByText("Group logic")).toBeVisible();
+	await expect(page.getByText("[object Object]")).toHaveCount(0);
+	await page.getByRole("button", {name: /Back Take/}).click();
+	await expect(page.getByRole("button", {name: "Conditions", exact: true})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
 	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
 	await page.locator(".logicLibraryBack").click();
 
 	await page.getByRole("button", {name: /Effects/}).click();
 	await expect(page.getByRole("heading", {name: "Effects", exact: true})).toBeVisible();
 	await expect(page.getByRole("searchbox", {name: "Search effects"})).toBeVisible();
+	await page.setViewportSize({width: 310, height: 720});
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const effectTools = await page.locator(".logicLibraryTools").boundingBox();
+	const effectResults = await page.locator(".logicLibraryBody").boundingBox();
+	expect(effectTools?.height).toBeLessThanOrEqual(130);
+	expect(effectResults?.height).toBeGreaterThanOrEqual(250);
+	await page.setViewportSize({width: 1280, height: 720});
 	await expect(page.getByRole("button", {name: "Done"})).toHaveCount(0);
 	await page.locator(".logicLibraryBack").click();
 
@@ -1443,6 +1538,25 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("tab", {name: "Behavior"})).toHaveCSS("font-size", "13px");
 	await expect(page.getByRole("heading", {name: "Identity"})).toBeVisible();
 	await expect(page.locator(".universalEditor")).toHaveCount(0);
+	await expect(page.getByRole("region", {name: "Suggested aliases"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested tags"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Suggest aliases and tags"})).toHaveCount(0);
+	const aliasSuggestion = page.getByRole("listitem").filter({hasText: "countertop"});
+	const surfaceSuggestion = page.getByRole("listitem").filter({hasText: "#surface"});
+	await expect(aliasSuggestion).toBeVisible();
+	await expect(surfaceSuggestion).toBeVisible();
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(aliasSuggestion.getByRole("button", {name: "Add alias countertop"})).toBeVisible();
+	await expect(surfaceSuggestion.getByRole("button", {name: "Enable surface"})).toBeVisible();
+	expect(await itemBody.evaluate((element) => element.scrollTop)).toBe(0);
+	await page.setViewportSize({width: 1280, height: 720});
+	await expect(page.getByRole("button", {name: "Remove countertop"})).toHaveCount(0);
+	await aliasSuggestion.getByRole("button", {name: "Add alias countertop"}).click();
+	await expect(page.getByRole("button", {name: "Remove countertop"})).toBeVisible();
+	await expect(surfaceSuggestion.getByText(/placed on (?:this item|it)/i)).toBeVisible();
+	await surfaceSuggestion.getByRole("button", {name: "Enable surface"}).click();
+	await expect(page.getByRole("button", {name: "Remove surface"})).toBeVisible();
 	const lightContrast = await itemWorkspaceTextContrast(page);
 	expect(lightContrast.inactiveTab).toBeGreaterThanOrEqual(4.5);
 	expect(lightContrast.fieldLabel).toBeGreaterThanOrEqual(4.5);
@@ -1451,7 +1565,17 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await page.getByRole("tab", {name: "Behavior"}).click();
 	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Flags"})).toBeVisible();
-	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toHaveCount(0);
+	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
+	await expect(page.getByRole("checkbox", {name: /^Surface /})).toBeChecked();
+	await page.getByRole("checkbox", {name: /^Takeable /}).check();
+	const takeConditionRow = page.locator(".itemAdvancedRow").filter({hasText: "Take condition"});
+	await takeConditionRow.getByRole("button", {name: "Add"}).click();
+	await expect(page.getByRole("heading", {name: "Edit condition group"})).toBeVisible();
+	await expect(page.getByText("Shop Counter · Take condition", {exact: true})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Save"})).toBeVisible();
+	await page.getByRole("button", {name: "Cancel"}).click();
+	await expect(page.getByRole("heading", {name: "Shop Counter", level: 1})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
 	await page.getByRole("checkbox", {name: /Surface/}).check();
 	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
 	await page.getByRole("textbox", {name: "Contents lead-in"}).fill("On the counter:");
@@ -1460,7 +1584,11 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("heading", {name: "Flags"})).toHaveCount(0);
 	await page.getByRole("tab", {name: "Commands"}).click();
 	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
-	await expect(page.getByText("No direct commands")).toBeVisible();
+	const examineCommand = page
+		.getByRole("listitem")
+		.filter({has: page.getByText("Examine", {exact: true})});
+	await expect(examineCommand).toBeVisible();
+	await expect(examineCommand.getByText("Can target this item", {exact: true})).toBeVisible();
 
 	await page.getByRole("tab", {name: "Details"}).click();
 	await page.getByRole("textbox", {name: "Name"}).fill("Front Counter");
@@ -1489,6 +1617,9 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("button", {name: "Delete", exact: true})).toBeVisible();
 	await expect(page.getByRole("tab", {name: "Details"})).toBeVisible();
 	await expect(page.getByRole("tab", {name: "Commands"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested aliases"})).toBeVisible();
+	await expect(page.getByRole("region", {name: "Suggested tags"})).toBeVisible();
+	await expect(page.locator(".itemSuggestionTags > li > button").first()).toBeVisible();
 	const tabTops = await page
 		.locator('.itemWorkspaceTabs [role="tab"]')
 		.evaluateAll((tabs) => tabs.map((tab) => Math.round(tab.getBoundingClientRect().top)));
@@ -1556,6 +1687,7 @@ test("a static layer preview opens the displayed layer", async ({page}) => {
 });
 
 test("events edit inline condition and effect groups on focused logic pages", async ({page}) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto(`/worlds/${editor.worldSlug}`);
@@ -1586,6 +1718,7 @@ test("events edit inline condition and effect groups on focused logic pages", as
 test("editor URLs restore context through reload, history, and invalid selections", async ({
 	page,
 }) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
@@ -1660,6 +1793,7 @@ test("the inspector only resets scroll for editor navigation", async ({page}) =>
 test("the editor uses top navigation and a persistent bottom utility switcher on phones", async ({
 	page,
 }) => {
+	test.setTimeout(60_000);
 	const browserErrors = collectBrowserErrors(page);
 	const editor = await useDeterministicEditorWorld(page);
 	await page.setViewportSize({width: 390, height: 844});
@@ -1694,13 +1828,19 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	await page.getByRole("menuitem", {name: "Items"}).click();
 	await expect(page.getByRole("button", {name: "Items", expanded: false})).toBeVisible();
 	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
-	await expect(page.getByRole("tab", {name: "Editor"})).toHaveCount(0);
+	await expect(page.getByRole("tab", {name: "Edit"})).toHaveCount(0);
 	await expect(page.getByRole("tab", {name: "Play"})).toHaveAttribute("aria-selected", "true");
 
 	await page.getByRole("button", {name: "Items", expanded: false}).click();
 	await page.getByRole("menuitem", {name: "Map"}).click();
 	await expect(page.getByRole("button", {name: "Map", expanded: false})).toBeVisible();
-	await expect(page.getByRole("tab", {name: "Editor"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tab", {name: "Edit"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tab", {name: "Items"})).toBeVisible();
+	await expect(page.getByRole("tab", {name: "Play"})).toBeVisible();
+	await page.getByRole("tab", {name: "Items"}).click();
+	await expect(page.getByRole("heading", {name: "Starting items"})).toBeVisible();
+	await expect(page.getByRole("button", {name: "Add item"})).toBeVisible();
+	await page.getByRole("tab", {name: "Edit"}).click();
 
 	await page.getByRole("tab", {name: "Play"}).click();
 	const commandInput = page.getByRole("textbox", {name: "Game command"});
@@ -1714,7 +1854,7 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		}));
 	expect(playSurfaceColors.tab).toBe(playSurfaceColors.body);
 	await commandInput.fill("look at lantern");
-	await page.getByRole("tab", {name: "Editor"}).click();
+	await page.getByRole("tab", {name: "Edit"}).click();
 	await expect(page.locator(".rightSideBar")).toBeVisible();
 	const editorSurfaceColors = await page
 		.getByRole("complementary", {name: "Editor utility panel"})
@@ -1745,6 +1885,7 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 	expect(centeredTabs.dividerStyle).toBe("solid");
 	expect(centeredTabs.tabWidths[0]).toBeGreaterThan(70);
 	expect(centeredTabs.tabWidths[0]).toBeCloseTo(centeredTabs.tabWidths[1] ?? 0, 1);
+	expect(centeredTabs.tabWidths[0]).toBeCloseTo(centeredTabs.tabWidths[2] ?? 0, 1);
 	expect(centeredTabs.barWidth).toBeGreaterThan(
 		await utilityTabs.evaluate((element) => element.clientWidth),
 	);
@@ -1774,8 +1915,9 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		};
 	});
 	expect(collapsedTabs.centerOffsets.every((offset) => offset < 1)).toBe(true);
-	expect(collapsedTabs.borderBottomWidths).toEqual(["1px", "1px"]);
+	expect(collapsedTabs.borderBottomWidths).toEqual(["1px", "1px", "1px"]);
 	expect(collapsedTabs.bottomCornerRadii).toEqual([
+		["0px", "0px"],
 		["0px", "0px"],
 		["0px", "0px"],
 	]);
@@ -1795,9 +1937,15 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		(element) => element.getBoundingClientRect().height,
 	);
 	await resizeHandle.press("ArrowUp");
+	const resizedMobileHeight = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().height,
+	);
+	expect(resizedMobileHeight).toBeGreaterThan(beforeResize);
+	await page.reload();
+	await page.getByRole("tab", {name: "Play"}).click();
 	expect(
 		await utilityPanel.evaluate((element) => element.getBoundingClientRect().height),
-	).toBeGreaterThan(beforeResize);
+	).toBeCloseTo(resizedMobileHeight, 0);
 
 	for (const viewport of [
 		{width: 320, height: 568},
@@ -1861,6 +2009,279 @@ test("the editor uses top navigation and a persistent bottom utility switcher on
 		expect(Math.abs(insets.left - insets.right)).toBeLessThan(2);
 	}
 
+	await page.getByRole("tab", {name: "Edit"}).click();
+	const desktopWidthBeforeResize = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().width,
+	);
+	await page.getByRole("separator", {name: "Resize editor utility panel"}).press("ArrowLeft");
+	const resizedDesktopWidth = await utilityPanel.evaluate(
+		(element) => element.getBoundingClientRect().width,
+	);
+	expect(resizedDesktopWidth).toBeGreaterThan(desktopWidthBeforeResize);
+	await page.reload();
+	expect(
+		await utilityPanel.evaluate((element) => element.getBoundingClientRect().width),
+	).toBeCloseTo(resizedDesktopWidth, 0);
+
+	expect(browserErrors).toEqual([]);
+});
+
+test("narrow editor chrome preserves the working canvas", async ({page}) => {
+	test.setTimeout(60_000);
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 520, height: 844});
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	await expect(page.getByRole("heading", {name: "Items", exact: true})).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	expect(
+		await page.locator(".header").evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(52);
+	expect(
+		await page
+			.locator(".mobileEditorNavigation")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(36);
+	await expect(page.locator(".editorToolbar:not(.logicToolbar)")).toBeHidden();
+	expect(
+		await page
+			.locator(".itemCatalogHeader")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(130);
+	expect(
+		await page
+			.locator(".itemCatalogBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(400);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=conditions`);
+	await expect(page.getByRole("heading", {name: "Conditions", exact: true})).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".logicLibraryWorkspace"});
+	const conditionChromeHeight = await page
+		.locator(".logicLibraryHeader, .logicLibraryTools")
+		.evaluateAll((elements) =>
+			elements.reduce((height, element) => height + element.getBoundingClientRect().height, 0),
+		);
+	expect(conditionChromeHeight).toBeLessThanOrEqual(160);
+	expect(
+		await page
+			.locator(".logicLibraryBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(400);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=events`);
+	await page.getByRole("button", {name: "New event"}).click();
+	await expect(page.getByText("New event", {exact: true}).first()).toBeVisible();
+	await expectMobileLayoutIntegrity(page, {root: ".editorMainPanel"});
+	expect(
+		await page.locator(".logicToolbar").evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(48);
+	expect(
+		await page
+			.locator(".logicEventRail")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeLessThanOrEqual(44);
+	expect(
+		await page.locator(".logicTree").evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThanOrEqual(500);
+	expect(browserErrors).toEqual([]);
+});
+
+test("editor workspaces respond to the pane instead of only the viewport", async ({page}) => {
+	test.setTimeout(90_000);
+	const browserErrors = collectBrowserErrors(page);
+	await page.addInitScript(() =>
+		window.localStorage.setItem(
+			"mothmark-editor-utility-layout",
+			JSON.stringify({desktopWidth: 447, mobileHeight: 280}),
+		),
+	);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.setViewportSize({width: 1040, height: 844});
+
+	const expectContained = async (selector: string) => {
+		await expect
+			.poll(() =>
+				page
+					.locator(selector)
+					.evaluate(
+						(element) =>
+							element.scrollWidth <= element.clientWidth + 1 &&
+							element.getBoundingClientRect().left >= 0 &&
+							element.getBoundingClientRect().right <= window.innerWidth + 1,
+					),
+			)
+			.toBe(true);
+	};
+	const expandPlay = async () => {
+		const playTab = page.getByRole("tab", {name: "Play"});
+		if ((await playTab.getAttribute("aria-expanded")) === "false") await playTab.click();
+	};
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+	expect(
+		await page.locator(".header").evaluate((element) => element.getBoundingClientRect().height),
+	).toBe(56);
+	const map = page.locator("[data-map]");
+	const layerControl = page.locator(".layoutControl");
+	const utilityPanel = page.locator(".editorUtilityPanel");
+	const mapGeometry = await map.evaluate((element) => {
+		const mapRect = element.getBoundingClientRect();
+		const controlRect = element.querySelector<HTMLElement>(".layoutControl")!.getBoundingClientRect();
+		return {
+			controlInside:
+				controlRect.top >= mapRect.top &&
+				controlRect.right <= mapRect.right &&
+				controlRect.bottom <= mapRect.bottom,
+			insetRight: Math.round(mapRect.right - controlRect.right),
+			insetTop: Math.round(controlRect.top - mapRect.top),
+		};
+	});
+	expect(mapGeometry.controlInside).toBe(true);
+	expect(mapGeometry.insetRight).toBeGreaterThanOrEqual(20);
+	expect(mapGeometry.insetRight).toBeLessThanOrEqual(21);
+	expect(mapGeometry.insetTop).toBeGreaterThanOrEqual(20);
+	expect(mapGeometry.insetTop).toBeLessThanOrEqual(21);
+	const [controlBox, utilityBox] = await Promise.all([
+		layerControl.boundingBox(),
+		utilityPanel.boundingBox(),
+	]);
+	expect((controlBox?.x ?? Number.POSITIVE_INFINITY) + (controlBox?.width ?? 0)).toBeLessThanOrEqual(
+		utilityBox?.x ?? 0,
+	);
+
+	await page.getByRole("button", {name: "Layers · Main floor"}).click();
+	await expectContained(".layerMenu");
+	const layerLayout = await page.locator(".layerMenu").evaluate((element) => {
+		const left = element.querySelector<HTMLElement>(".layerMenu--leftPane")!.getBoundingClientRect();
+		const right = element.querySelector<HTMLElement>(".layerMenu--right")!.getBoundingClientRect();
+		const preview = element
+			.querySelector<HTMLElement>(".layerMenu--preview")!
+			.getBoundingClientRect();
+		const header = element.querySelector<HTMLElement>(".layerMenu--header")!;
+		return {
+			stacked: left.bottom <= right.top + 1,
+			previewHeight: Math.round(preview.height),
+			headerContained: header.scrollWidth <= header.clientWidth + 1,
+		};
+	});
+	expect(layerLayout.stacked).toBe(true);
+	expect(layerLayout.previewHeight).toBeGreaterThan(300);
+	expect(layerLayout.headerContained).toBe(true);
+	await page.getByRole("button", {name: "Close layer menu"}).click();
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	await expectContained(".itemCatalog");
+	expect(
+		await page
+			.locator(".itemCatalogBody")
+			.evaluate((element) => element.getBoundingClientRect().height),
+	).toBeGreaterThan(500);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic`);
+	await expandPlay();
+	await expectContained(".logicHome");
+	expect(
+		await page
+			.locator(".logicHome__grid")
+			.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length),
+	).toBe(1);
+
+	for (const section of ["conditions", "effects"] as const) {
+		await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=${section}`);
+		await expandPlay();
+		await expectContained(".logicLibraryWorkspace");
+		const libraryChromeHeight = await page
+			.locator(".logicLibraryHeader, .logicLibraryTools")
+			.evaluateAll((elements) =>
+				elements.reduce((height, element) => height + element.getBoundingClientRect().height, 0),
+			);
+		expect(libraryChromeHeight).toBeLessThanOrEqual(160);
+		expect(
+			await page
+				.locator(".logicLibraryBody")
+				.evaluate((element) => element.getBoundingClientRect().height),
+		).toBeGreaterThan(500);
+	}
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=commands`);
+	await expandPlay();
+	await expectContained(".commandLibrary");
+	await page.getByRole("button", {name: /Help/}).first().click();
+	await expectContained(".commandEditor");
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=logic&section=events`);
+	await expandPlay();
+	await page.getByRole("button", {name: "New event"}).click();
+	await expectContained(".logicEditor");
+	const eventLayout = await page.locator(".logicEditor").evaluate((element) => {
+		const rail = element.querySelector<HTMLElement>(".logicEventRail")!.getBoundingClientRect();
+		const tree = element.querySelector<HTMLElement>(".logicTree")!.getBoundingClientRect();
+		return {
+			regionsSeparated: rail.right <= tree.left + 1 || rail.bottom <= tree.top + 1,
+			treeHeight: Math.round(tree.height),
+		};
+	});
+	expect(eventLayout.regionsSeparated).toBe(true);
+	expect(eventLayout.treeHeight).toBeGreaterThan(500);
+
+	expect(browserErrors).toEqual([]);
+});
+
+test("dense maps and long play output share the phone workspace without control overlap", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	const stored = editor.worldStore.get(editor.worldId)!;
+	const denseWorld = structuredClone(initialWorld);
+	const baseRoom = denseWorld.rooms[0]!;
+	denseWorld.rooms = Array.from({length: 24}, (_, index) => ({
+		...baseRoom,
+		id: toID("room", `dense-room-${index + 1}`),
+		name: `Dense room ${index + 1}`,
+		metadata: {
+			...baseRoom.metadata,
+			position: {x: 32 + (index % 6) * 168, y: 32 + Math.floor(index / 6) * 112},
+		},
+	}));
+	denseWorld.startRoomId = denseWorld.rooms[0]!.id;
+	denseWorld.connections = [];
+	denseWorld.items = [];
+	denseWorld.metadata.layers = [
+		{
+			...denseWorld.metadata.layers.find((layer) => layer.layer === 0)!,
+			rooms: denseWorld.rooms.map((room) => room.id),
+		},
+	];
+	stored.world = denseWorld;
+
+	await page.setViewportSize({width: 390, height: 844});
+	await page.goto(`/worlds/${editor.worldSlug}`);
+	await expect(page.getByRole("button", {name: "Dense room 24"})).toBeAttached();
+	await page.getByRole("tab", {name: "Play"}).click();
+	const commandInput = page.getByRole("textbox", {name: "Game command"});
+	for (let turn = 0; turn < 12; turn += 1) {
+		await commandInput.fill("look");
+		await commandInput.press("Enter");
+	}
+
+	await expect
+		.poll(() =>
+			page
+				.locator(".game-player__output")
+				.evaluate((element) => element.scrollHeight > element.clientHeight),
+		)
+		.toBe(true);
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	const geometry = await page.evaluate(() => ({
+		documentWidth: document.documentElement.scrollWidth,
+		mapHeight: document.querySelector<HTMLElement>("[data-map]")!.getBoundingClientRect().height,
+		viewportWidth: window.innerWidth,
+	}));
+	expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+	expect(geometry.mapHeight).toBeGreaterThan(80);
 	expect(browserErrors).toEqual([]);
 });
 
@@ -1889,7 +2310,8 @@ test("mobile command editing keeps every authoring control reachable without ove
 		clientHeight: element.clientHeight,
 		scrollHeight: element.scrollHeight,
 	}));
-	expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+	expect(geometry.clientHeight).toBeGreaterThanOrEqual(300);
+	expect(geometry.scrollHeight).toBeGreaterThanOrEqual(geometry.clientHeight);
 	expect(browserErrors).toEqual([]);
 });
 

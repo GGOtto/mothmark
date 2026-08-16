@@ -150,50 +150,6 @@
 		stroke-width: 2;
 		filter: drop-shadow(0 0 2px var(--map-node-surface));
 	}
-
-	.layerClearButton {
-		--layer-control-hover: var(--color-action);
-		position: absolute;
-		bottom: 20px;
-		right: 20px;
-		z-index: 10;
-		width: 42px;
-		height: 42px;
-		display: block;
-		background: var(--color-surface-raised);
-		border: 1px solid var(--color-border-strong);
-		border-radius: var(--radius-panel);
-		box-shadow: var(--shadow-float);
-		cursor: default;
-		touch-action: manipulation;
-		user-select: none;
-		color: var(--color-text);
-		display: grid;
-		place-items: center;
-
-		&:hover {
-			background: var(--color-surface-strong);
-			color: var(--layer-control-hover);
-		}
-
-		&:active {
-			transform: translateY(1px);
-			background: color-mix(in srgb, var(--color-action) 14%, transparent);
-		}
-
-		&:focus-visible {
-			z-index: 1;
-			outline: 2px solid var(--color-focus);
-			outline-offset: -3px;
-		}
-	}
-}
-
-@media (max-width: 760px), (max-height: 700px) {
-	.map .layerClearButton {
-		right: auto;
-		left: 20px;
-	}
 }
 
 /* Retained for a future explicit palette choice; no production map applies this class. */

@@ -131,6 +131,13 @@
 		border-bottom: 1px solid var(--color-border);
 	}
 
+	.roomEditorHeader--withAction {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
 	.roomEditorEyebrow {
 		margin: 0;
 		color: var(--panel-muted);
@@ -146,6 +153,138 @@
 		font-size: 18px;
 		font-weight: 700;
 		line-height: 1.2;
+	}
+
+	.roomEditorDelete {
+		flex: 0 0 auto;
+		padding: 6px 8px;
+		border: 1px solid var(--color-danger);
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: var(--color-danger);
+		cursor: pointer;
+		font: inherit;
+		font-size: 11px;
+		font-weight: 700;
+	}
+
+	.roomEditorDelete:hover {
+		background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+	}
+
+	.roomEditorDelete:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+
+	.roomEditorUniversal {
+		--field-text: var(--color-text);
+		--field-muted: var(--color-text-muted);
+		--field-soft: var(--color-text-faint);
+		--field-border: var(--color-control-border);
+		--field-border-strong: var(--color-action);
+		--field-bg: var(--color-surface-raised);
+		--field-bg-raised: var(--color-surface);
+		--field-bg-strong: var(--color-surface-strong);
+
+		margin-top: 14px;
+
+		.objectEditor,
+		.objectEditor__fields--section {
+			gap: 14px;
+		}
+
+		.objectEditor__section {
+			border: 0;
+			border-bottom: 1px solid var(--color-border);
+			background: transparent;
+		}
+
+		.objectEditor__section:last-child {
+			border-bottom: 0;
+		}
+
+		.objectEditor__section > .universalField__cardHeader {
+			padding: 9px 0;
+			background: transparent;
+		}
+
+		.objectEditor__section > .universalField__cardHeader:hover {
+			background: transparent;
+		}
+
+		.objectEditor__section > .universalField__cardHeader .universalField__title {
+			font-size: 13px;
+		}
+
+		.objectEditor__sectionFields {
+			gap: 13px;
+			padding: 4px 0 16px;
+		}
+
+		.objectEditor__subgroup {
+			overflow: hidden;
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-panel);
+			background: var(--color-surface);
+		}
+
+		.objectEditor__subgroup > .universalField__cardHeader {
+			padding: 9px 10px;
+			background: var(--color-surface);
+		}
+
+		.objectEditor__subgroup > .objectEditor__sectionFields {
+			padding: 10px;
+		}
+
+		.universalField {
+			gap: 6px;
+		}
+
+		.universalField__title {
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.universalField__description {
+			font-size: 11px;
+			line-height: 1.4;
+		}
+
+		.textField__input,
+		.textareaEditor__input,
+		.stringListEditor__textarea,
+		select {
+			border-radius: var(--radius-control);
+			background: var(--color-surface-raised);
+		}
+
+		.textField__input,
+		.textareaEditor__input {
+			padding: 9px 10px;
+		}
+
+		.textField__input:focus,
+		.textareaEditor__input:focus,
+		.stringListEditor__textarea:focus,
+		select:focus {
+			background: var(--color-surface-raised);
+			box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-focus) 32%, transparent);
+		}
+
+		.textareaEditor__actions,
+		.textareaEditor__preview {
+			background: var(--color-surface);
+		}
+
+		button {
+			border-radius: var(--radius-control);
+		}
+	}
+
+	.roomItemsPanel .roomEditorStartingItems {
+		margin-top: 14px;
 	}
 
 	.roomEditorStartingItems {

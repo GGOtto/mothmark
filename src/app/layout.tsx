@@ -1,4 +1,5 @@
 import type {Metadata} from "next";
+import Script from "next/script";
 import "./globals.css";
 import {Header} from "../components/header/Header";
 import {ThemeProvider} from "../components/theme/ThemeProvider";
@@ -68,10 +69,10 @@ export default async function RootLayout({
 
 	return (
 		<html lang="en" className="h-full antialiased" data-theme="dark" suppressHydrationWarning>
-			<head>
-				<script dangerouslySetInnerHTML={{__html: initializeTheme}} />
-			</head>
 			<body className="flex h-dvh flex-col overflow-hidden">
+				<Script id="initialize-theme" strategy="beforeInteractive">
+					{initializeTheme}
+				</Script>
 				<ThemeProvider>
 					<PopupProvider>
 						<WorldAutosaveProvider>

@@ -126,3 +126,22 @@
 		}
 	}
 }
+
+@container editor-main (max-width: 420px) {
+	.layoutControl {
+		top: 10px;
+		right: 10px;
+		width: 38px;
+
+		.layoutControl--up,
+		.layoutControl--menu,
+		.layoutControl--down {
+			width: 36px;
+			height: 34px;
+		}
+
+		.layoutControl--menu {
+			height: 38px;
+		}
+	}
+}

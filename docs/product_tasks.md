@@ -2,7 +2,7 @@
 
 Status: active implementation backlog.
 
-Last updated: 2026-08-11.
+Last updated: 2026-08-15.
 
 This replaces the old page-by-page constrained-layout audit. The plan is organized around user
 tasks and product outcomes so that each checkbox can be implemented, reviewed, tested, and closed
@@ -47,8 +47,9 @@ Unless a task says otherwise, it is complete only when:
 - Public worlds have an explicit administrator-controlled `Official` or `Community` designation.
 - Publication artwork is author-supplied or assembled from bounded author choices. Mothmark never
   infers or generates a world's art from its content.
-- Item tags may drive presentation and command recommendations, but adding a tag must not silently
-  change runtime behavior. Authors explicitly add suggested commands.
+- Classification tags may drive presentation and command recommendations, but must not silently
+  change runtime behavior. Exact canonical capability tags are the editable representation of item
+  behaviors and therefore stay synchronized with their behavior schemas.
 - “List exists” in the request is treated as `list exits`: a command that lists exits visible to the
   player. If a distinct `exists` command was intended, add it as a separate task.
 - Resetting a playthrough means creating a new playthrough record. The previous record remains
@@ -101,37 +102,39 @@ the full task definitions but do not imply a different sequence.
 | 11       | E01  | The broader Map layout can then reclaim space and choose the correct terminal/inspector arrangement.     |
 | 12       | E04  | Audit the remaining editors before polishing individual complex workflows.                               |
 | 13       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.  |
-| 14       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
-| 15       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
-| 16       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
-| 17       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
-| 18       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.     |
-| 19       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable. |
-| 20       | E09  | Logic should open directly into the working authoring subsection and preserve its context.               |
-| 21       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.          |
-| 22       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.              |
-| 23       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                        |
-| 24       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                  |
-| 25       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.             |
-| 26       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                   |
-| 27       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.     |
-| 28       | A05  | Profile images improve public identity after the player and publication surfaces are stable.             |
-| 29       | A01  | Likes and follows build on finished public publication cards and profiles.                               |
-| 30       | A02  | Real notifications depend on likes/follows and Official publication events.                              |
-| 31       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.           |
-| 32       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.              |
-| 33       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.               |
-| 34       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.         |
-| 35       | T02  | Template creation/application follows the versioned template domain.                                     |
-| 36       | T03  | Template discovery and profile presence follow creation, application, and likes.                         |
-| 37       | T04  | Issues can then validate real template provenance as well as the rest of the world.                      |
-| 38       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                           |
-| 39       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                   |
-| 40       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.            |
-| 41       | R06  | Audit becomes useful after the product actions it must investigate exist.                                |
-| 42       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                  |
-| 43       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.       |
-| 44       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.    |
+| 14       | E05A | Bootstrap broad alias vocabulary from versioned non-AI lexical datasets without curated exceptions.      |
+| 15       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
+| 16       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
+| 17       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
+| 18       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
+| 19       | E05B | Expand standard object behaviors once their command and logic foundations are ready.                     |
+| 20       | G04  | Deterministic random conditions add a strong visible feature without making playthroughs untestable.     |
+| 21       | G05  | NPCs are the next major playable feature after commands, conditions, effects, and randomness are stable. |
+| 22       | E09  | Logic should open directly into the working authoring subsection and preserve its context.               |
+| 23       | P01  | Publication presentation/readiness provides the data needed by publishing and public discovery.          |
+| 24       | P02  | World settings should make preparing and publishing the demonstrated world straightforward.              |
+| 25       | P03  | Publishing from `/worlds` removes unnecessary navigation during normal authoring.                        |
+| 26       | P05  | Administrator Official/Community curation must exist before discovery can depend on it.                  |
+| 27       | P04  | Home and `/play` can then show correct Official and Community catalogs on phone and desktop.             |
+| 28       | E08  | Editor settings should be added after the layout behaviors they configure are settled.                   |
+| 29       | A06  | Anonymous and registered theme/account behavior matters on shared demo devices but is not core play.     |
+| 30       | A05  | Profile images improve public identity after the player and publication surfaces are stable.             |
+| 31       | A01  | Likes and follows build on finished public publication cards and profiles.                               |
+| 32       | A02  | Real notifications depend on likes/follows and Official publication events.                              |
+| 33       | A03  | Notification email and the shared Mothmark email template follow durable in-app notifications.           |
+| 34       | A04  | Mailing-list subscription is separate from transactional notifications and can follow them.              |
+| 35       | A07  | Account-entry layouts finish after their theme, email, and subscription behavior is known.               |
+| 36       | T01  | The template domain depends on stable editors, tag commands, likes, and publication conventions.         |
+| 37       | T02  | Template creation/application follows the versioned template domain.                                     |
+| 38       | T03  | Template discovery and profile presence follow creation, application, and likes.                         |
+| 39       | T04  | Issues can then validate real template provenance as well as the rest of the world.                      |
+| 40       | R03  | The shared administrator shell/list pattern follows the user-facing demo work.                           |
+| 41       | R04  | Administrator user detail builds on the shell, notifications, and playthrough lineage.                   |
+| 42       | R05  | Administrator world detail builds on the shell, publication records, and playthrough lineage.            |
+| 43       | R06  | Audit becomes useful after the product actions it must investigate exist.                                |
+| 44       | R07  | Maintained tutorials/videos should document the settled player and authoring workflows.                  |
+| 45       | R08  | Footer destinations and obsolete routes finish after subscription and tutorials have real targets.       |
+| 46       | Q02  | The final release/compatibility gate runs after all retained-data and production behavior is settled.    |
 
 ---
 
@@ -191,9 +194,10 @@ the full task definitions but do not imply a different sequence.
   - Preserve the activity-rail geometry and label reveal on desktop. On phones, move the editor
     destinations into a compact top navigator that identifies the current destination and exposes
     every destination without hover or horizontal clipping.
-  - Give Editor and Play one shared utility region. On desktop it occupies the right side of the
-    workspace; on phones it becomes a bottom region with an explicit Editor/Play toggle. Switching
-    views preserves the current selection, form state, transcript, and command input.
+  - Give authoring and Play one shared utility region. On desktop it occupies the right side of the
+    workspace; on phones it becomes a bottom region with directly reachable contextual tabs. Map
+    exposes Edit, Items, and Play; other workspaces expose Play. Switching views preserves the
+    current selection, form state, transcript, and command input.
   - Keep the primary editor workspace visible above the mobile utility region, respect safe areas and
     software keyboards, and never squeeze the desktop activity rail, workspace, inspector, and
     terminal into simultaneous phone-width columns.
@@ -462,7 +466,7 @@ the full task definitions but do not imply a different sequence.
 
 ## Workstream — Editor shell, map, and authoring layouts
 
-- [ ] **E01 — Overhaul the Map workspace and reclaim map space.**
+- [x] **E01 — Overhaul the Map workspace and reclaim map space.**
 
   **Outcome:** Mapping is the editor's clearest spatial task on desktop and mobile, with testing
   available without permanently consuming vertical map space.
@@ -482,29 +486,34 @@ the full task definitions but do not imply a different sequence.
   - Validate the design with realistic dense maps and long terminal output, not only the starter
     world.
 
-- [ ] **E02 — Restyle and clarify the Layers workspace on Map.**
+  **Completed (2026-08-15):** Consolidated room Edit, Items, and Play into the shared responsive
+  utility region while keeping Play directly reachable elsewhere. The utility collapses and resizes
+  on desktop and mobile, persists its reversible size, and keeps the map usable above the phone
+  panel. Layer navigation now sits in the map toolbar, Clear layer lives in the layer menu, and the
+  authored map retains its light palette and direct-manipulation behavior. Focused and browser tests
+  cover keyboard controls, 310px/390px layouts, persisted sizing, dense maps, and long transcripts.
 
-  **Outcome:** Authors can understand, select, reorder, add, rename, and remove layers without the
-  layer UI feeling like an unfinished utility panel.
+- [x] **E02 — Restyle and clarify the Layers workspace on Map.**
+
+  **Outcome:** Authors can understand, preview, select, and rename layers without the layer UI
+  feeling like an unfinished utility panel.
 
   **Depends on:** F02, F04. It does not require the broader E01 layout experiment.
 
   **Scope and acceptance:**
 
-  - Use clear layer identity, selected state, room count, starting-layer cue, visibility if supported,
-    and scoped actions.
-  - Keep add/rename/reorder/delete operations discoverable without repeating colored rails or turning
-    every layer into a card.
-  - Confirm destructive deletion consequences for rooms/connections and move focus to a sensible
-    surviving layer.
+  - Use clear layer identity, selected state, room count, and starting-layer cue.
+  - Preserve the existing centered layer selector and rename flow without repeating colored rails or
+    turning every layer into a card.
+  - Keep the displayed layer preview static, with no zoom or pan, and open that layer when the preview
+    is selected.
   - Keep layer controls usable at the 310px inspector minimum and as a mobile sheet/full task.
   - Preserve authored layer geometry and the existing layer preview behavior used by world folios.
 
-  **Progress (2026-08-14):** Restyled the existing centered layer selector without replacing its
+  **Completed (2026-08-14):** Restyled the existing centered layer selector without replacing its
   navigation model. Layer rows now show room counts and the starting-layer cue, the displayed map is
   a static framed preview, and selecting that preview opens the layer. Focused map tests and browser
   coverage verify the click-to-open behavior and layout integrity at 390px and the 310px minimum.
-  Add, reorder, destructive removal, and the broader layer-management flow remain in this task.
 
 - [x] **E03 — Make room placement an explicit two-step action.**
 
@@ -527,7 +536,7 @@ the full task definitions but do not imply a different sequence.
     start automatically.
   - Add focused map tests and a browser workflow proving ordinary clicks do not add rooms.
 
-- [ ] **E04 — Audit every entity editor as a complete authoring task.**
+- [x] **E04 — Audit every entity editor as a complete authoring task.**
 
   **Outcome:** Room, connection, item, event, command, condition, effect, world, and future NPC
   editors use space, grouping, and actions that make sense for their schema and author workflow.
@@ -546,7 +555,70 @@ the full task definitions but do not imply a different sequence.
   - Verify all inspectors at 447px and 310px and all dedicated editors on phone widths.
   - Produce a short checked inventory in this task's Progress note so no editor is implicitly skipped.
 
-- [ ] **E05 — Finish the two-surface Items workflow and working suggestions.**
+  **Implementation progress (2026-08-15):** Reviewed the current editor routes, schemas, controls,
+  destructive actions, scroll ownership, and browser coverage, then implemented the audited editor
+  cleanup. Conditions and effects now derive live source and usage relationships from commands,
+  events, items, and rooms; item command pages derive every command that can target, reference,
+  query, or affect the selected item, including through saved logic. The editor schemas now drive
+  item behavior/size controls, command block catalogs and labels, and event settings. Room and
+  connection deletes report affected records, the connection inspector is purpose-built, stale
+  duplicate editor paths and the placeholder NPC destination are removed, and browser coverage now
+  asserts the dynamic item-command relationship. Condition and effect libraries now switch between
+  parent and all-group views, combining inline groups with saved reusable groups so used and unused
+  logic remain discoverable. They sort by name, parent type, usage, or document recency and open each
+  parent as an in-place usage detail before any explicit parent navigation. Inline groups and saved
+  entries open their correct focused editors directly, and item-origin logic edits return to the item
+  tab that launched them. The World editor remains intentionally assigned to P02 as described below.
+
+  - [x] **Room:** Keep Edit, Items, and Play as the room's directly reachable utility tasks. Keep the
+        schema-driven room fields expanded, put the internal ID in the final Advanced section,
+        organize visible fields as Player-facing text, Identification, and State, and remove the
+        empty Availability group until it has schema-backed fields. Before Delete, show affected
+        connections, item placements, starting-room state, and logic references.
+  - [x] **Connection:** Replace the generic editor shell with one compact inspector derived from
+        `ConnectionSchema`: Identity, Route, and Travel behavior. Keep the two room endpoints and
+        paired directions readable together, keep Delete as a labeled action, and show affected door
+        items and logic references before deletion. Remove the duplicate generic root header/action
+        treatment.
+  - [x] **Item:** Preserve the dedicated Details, Behaviors, Placement, and Commands workspace. Move
+        the parallel `ITEM_SIZES`, `BEHAVIOR_OPTIONS`, labels, and default-construction switches into
+        item-schema metadata/introspection so the purpose-built controls do not become a second
+        schema catalog. Keep advanced conditions/effects in the focused Logic workspace. Add exact
+        reference impact to item deletion and remove the unused legacy `ItemEditor` component.
+  - [x] **Event:** Preserve the event rail and branch canvas. Add complete editor metadata to
+        `EventSchema` and derive the settings fields from it instead of maintaining the manual field
+        list in `EventSettingsDialog`; keep runtime-only `lastSuccess` hidden. Keep branch creation
+        controls pinned, clarify draft/commit behavior when entering focused condition/effect pages,
+        and add reference-aware event deletion where future references exist. Remove the unused
+        `EventInspector` path rather than maintaining a second event editor.
+  - [x] **Command:** Keep the command library, one-pattern-at-a-time canvas, pinned behavior/pattern
+        controls, and focused settings popup. Move `COMMAND_BLOCKS`, block labels, descriptions,
+        structural classification, defaults, and inspector field choices into command-schema
+        metadata/introspection. Consolidate the hand-built general settings and UniversalEditor block
+        fragments behind shared schema-driven field primitives. Show every shared occurrence before
+        changing or deleting a repeated block, while preserving pattern-specific ordering.
+  - [x] **Condition:** Preserve the searchable library and focused Back/Cancel/Save editor. Keep the
+        situation-phrase search metadata as the source for picker discovery. Upgrade Delete from a
+        generic warning to an exact usage summary with links, and prevent leaving silently broken
+        references. Keep inline groups and saved references on the same schema-driven control path.
+  - [x] **Effect:** Apply the same focused-library and exact-usage treatment as Conditions. Keep
+        ordered effect editing and command-variable bindings schema-driven, show all consumers before
+        destructive changes, and eliminate any remaining editor-only operation catalogs.
+  - [x] **World:** The current World settings surface is only a reset/publishing placeholder. Build
+        the eventual editor as the full-canvas Identity, Starting experience, Publication, World
+        data, and Danger zone document already specified by P02, derived from world and publication
+        schemas rather than embedding `WorldSchema` in UniversalEditor. Do not duplicate that build
+        inside E04.
+  - [x] **Future NPC:** No NPC schema-backed entity editor exists. Hide the exposed NPC/Story
+        destination until its runtime model and author task exist; when introduced, require the same
+        dedicated-workspace, URL-state, reference-impact, and responsive-editor contract.
+  - [x] **Cross-editor cleanup and coverage:** Add shared schema-driven field primitives for
+        purpose-built forms without reskinning UniversalEditor. Keep headers and primary actions
+        pinned with one content scroller, preserve draft/selection state across task changes, and add
+        focused browser coverage for every destructive flow, 447px and 310px inspectors, phone
+        keyboards, long values, empty states, and invalid or deleted URL selections.
+
+- [x] **E05 — Finish the two-surface Items workflow and working suggestions.**
 
   **Outcome:** Authors first choose an item from a full-workspace collection, then edit it in a
   dedicated full-workspace item page; aliases and tags are genuinely helpful.
@@ -564,12 +636,62 @@ the full task definitions but do not imply a different sequence.
   - The item page uses the whole workspace and groups player-facing text, behavior, commands,
     placement, containment, important tags, and identity.
   - Alias suggestions use the actual item name and existing aliases, are deterministic, avoid
-    collisions, and require author acceptance.
+    collisions, and require author acceptance. Keep them visible directly beneath the alias editor
+    without an opener or mode switch.
   - Tag suggestions come from the supported taxonomy and real schema capabilities, explain what each
-    suggestion enables, and require author acceptance.
+    suggestion enables, and require author acceptance. Keep them visible directly beneath the tag
+    editor in compact rows whose actions remain reachable without excessive phone scrolling.
   - Provide a dedicated Commands section that preserves existing attached commands and can later
     host G03 recommendations; do not add placeholder templates before G03.
   - Handle unplaced items, nested items, similar names, large collections, and no-icon fallback.
+
+- [ ] **E05A — Bootstrap broad alias vocabulary from versioned lexical data.**
+
+  **Outcome:** Authors receive useful ordinary player references for a wide range of objects without
+  AI, item-name conditionals, or a manually curated synonym-pair catalog.
+
+  **Depends on:** E05.
+
+  **Scope and acceptance:**
+
+  - Generate a pinned, server-only lexical index from licensed external datasets rather than relying
+    on live third-party requests. Record the source version and required attribution with the build.
+  - Prefer explicit same-sense synonyms and alternative forms. Admit broader player nouns and related
+    words only when independent lexical evidence and the resolved item taxonomy corroborate them.
+  - Keep every learned edge directional, normalized, language-scoped, and traceable to its sources;
+    never add a special case for a particular authored item name.
+  - Preserve author approval, collision filtering, ambiguity rejection, deterministic ordering, and
+    the five-result limit already established by E05.
+  - Cover sparse entries, compound nouns, plural forms, polysemous words, offensive or obsolete
+    vocabulary, non-Latin text, deterministic snapshot upgrades, and large-index performance.
+  - Treat future author-derived synonym learning as an optional ranking and gap-filling layer. Do not
+    require community volume for the initial vocabulary and never let accepted suggestions train
+    themselves into higher confidence.
+
+- [ ] **E05B — Expand standard object behaviors and player affordances.**
+
+  **Outcome:** Items can represent the broad set of ordinary actions a player would reasonably try,
+  without turning every verb into bespoke engine code or an unconfigurable tag.
+
+  **Depends on:** E05, E06, E07, G03.
+
+  **Scope and acceptance:**
+
+  - Expand beyond the current Takeable, Container, Surface, Openable, Lockable, Door, and Usable
+    behaviors only when each addition has meaningful runtime semantics, author controls, and clear
+    player feedback.
+  - Cover common affordance families such as eating and drinking, wearing, reading, lighting,
+    switching and operating, pushing and pulling, climbing, sitting and lying, entering, breaking,
+    cutting, tying, filling and pouring, cleaning, repairing, giving and showing, throwing, and
+    sensory inspection where those actions are useful to authored worlds.
+  - Keep the behavior catalog schema-derived so adding a behavior automatically supplies its editor
+    label, explanation, discovery vocabulary, defaults, and canonical capability tag.
+  - Preserve bidirectional behavior-tag synchronization and deterministic suggestions as the catalog
+    grows. Classification tags may recommend a behavior but must never silently enable one.
+  - Compose standard player commands from reusable conditions and effects. Each behavior requires
+    focused tests and a companion player-path test through `resolveTurn` before it is offered.
+  - Keep world-specific interactions in authored commands and use recipes when they do not justify a
+    reusable standard behavior.
 
 - [ ] **E06 — Rebuild condition and effect selection/editing.**
 

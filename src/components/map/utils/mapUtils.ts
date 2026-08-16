@@ -32,7 +32,7 @@ export const DIRECTION_LABELS: Record<Direction, string> = {
 
 export function getRoomNodePosition(direction: Direction, width: number, height: number): Point {
 	if (direction === "in" || direction === "out" || direction === "up" || direction === "down") {
-		const isTopNode = direction === "out" || direction === "up";
+		const isTopNode = direction === "in" || direction === "up";
 		const isLeftNode = direction === "out" || direction === "in";
 
 		return {
@@ -49,8 +49,8 @@ export function getRoomNodePosition(direction: Direction, width: number, height:
 }
 
 export function getRoomNodeAnchorVector(direction: Direction): Point {
-	if (direction === "out" || direction === "up") return {x: 0, y: -1};
-	if (direction === "in" || direction === "down") return {x: 0, y: 1};
+	if (direction === "in" || direction === "up") return {x: 0, y: -1};
+	if (direction === "out" || direction === "down") return {x: 0, y: 1};
 
 	return DIRECTION_VECTORS[direction];
 }
