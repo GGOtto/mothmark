@@ -18,11 +18,7 @@ import {
 	removeItemBehaviorDraft,
 	replaceItemTagsAndBehaviorsDraft,
 } from "@/features/items/itemBehaviors";
-import {
-	DefaultConditionGroup,
-	ConditionGroupSchema,
-	ConditionSchema,
-} from "@/schemas/world/conditionSchema";
+import {DefaultConditionGroup, ConditionGroupSchema} from "@/schemas/world/conditionSchema";
 import {EffectGroupSchema} from "@/schemas/world/effectSchema";
 import {
 	ITEM_SIZE_UNITS,
@@ -151,7 +147,11 @@ export function ItemDetailsPanel({item, world, onUpdate, onEditAdvanced}: ItemPa
 				: globalThis.confirm(`Remove ${behavior.type} and its custom settings?`);
 			if (!confirmed) return;
 		}
-		onUpdate((draft) => replaceItemTagsAndBehaviorsDraft(draft, values));
+		onUpdate((draft) =>
+			replaceItemTagsAndBehaviorsDraft(draft, values, {
+				connectionId: world.connections[0]?.id,
+			}),
+		);
 	}
 
 	return (
@@ -181,7 +181,14 @@ export function ItemDetailsPanel({item, world, onUpdate, onEditAdvanced}: ItemPa
 					<span>Tags</span>
 					<TokenListEditor
 						addLabel="Add tag"
-						footer={<ItemSuggestionList mode="tags" onUpdate={onUpdate} suggestions={suggestions} />}
+						footer={
+							<ItemSuggestionList
+								connectionId={world.connections[0]?.id}
+								mode="tags"
+								onUpdate={onUpdate}
+								suggestions={suggestions}
+							/>
+						}
 						tone="tags"
 						values={[...effectiveItemTags(item)]}
 						onChange={(tags) => void replaceTags(tags)}
@@ -709,7 +716,7 @@ function BehaviorSettings({
 											onEditAdvanced({
 												kind: "condition",
 												title: `${item.name} · Recipe ${index + 1} condition`,
-												schema: ConditionSchema,
+												schema: ConditionGroupSchema,
 												value: recipe.when ?? DefaultConditionGroup,
 												onDone: (value) => {
 													const recipes = [...behavior.recipes];
@@ -764,6 +771,233 @@ function BehaviorSettings({
 					</Field>
 				</div>
 			);
+		default: {
+			if (!("actions" in behavior)) return null;
+			return (
+				<div className="itemBehaviorFields">
+					{"startsEquipped" in behavior ? (
+						<label className="itemBehaviorActionToggle">
+							<input
+								type="checkbox"
+								checked={behavior.startsEquipped}
+								onChange={(event) => onChange({...behavior, startsEquipped: event.target.checked})}
+							/>
+							Starts equipped when it starts in inventory
+						</label>
+					) : null}
+					{"startsOn" in behavior ? (
+						<label className="itemBehaviorActionToggle">
+							<input
+								type="checkbox"
+								checked={behavior.startsOn}
+								onChange={(event) => onChange({...behavior, startsOn: event.target.checked})}
+							/>
+							Starts on
+						</label>
+					) : null}
+					{"startsLit" in behavior ? (
+						<label className="itemBehaviorActionToggle">
+							<input
+								type="checkbox"
+								checked={behavior.startsLit}
+								onChange={(event) => onChange({...behavior, startsLit: event.target.checked})}
+							/>
+							Starts lit
+						</label>
+					) : null}
+					{"startsBroken" in behavior ? (
+						<label className="itemBehaviorActionToggle">
+							<input
+								type="checkbox"
+								checked={behavior.startsBroken}
+								onChange={(event) => onChange({...behavior, startsBroken: event.target.checked})}
+							/>
+							Starts broken
+						</label>
+					) : null}
+					{"startsDirty" in behavior ? (
+						<label className="itemBehaviorActionToggle">
+							<input
+								type="checkbox"
+								checked={behavior.startsDirty}
+								onChange={(event) => onChange({...behavior, startsDirty: event.target.checked})}
+							/>
+							Starts dirty
+						</label>
+					) : null}
+					{"capacity" in behavior && "startingAmount" in behavior ? (
+						<div className="itemFormFieldGrid">
+							<Field label="Liquid capacity">
+								<input
+									type="number"
+									min={1}
+									value={behavior.capacity}
+									onChange={(event) => {
+										const capacity = Math.max(1, Number(event.target.value) || 1);
+										onChange({
+											...behavior,
+											capacity,
+											startingAmount: Math.min(behavior.startingAmount, capacity),
+										});
+									}}
+								/>
+							</Field>
+							<Field label="Starting amount">
+								<input
+									type="number"
+									min={0}
+									max={behavior.capacity}
+									value={behavior.startingAmount}
+									onChange={(event) =>
+										onChange({
+											...behavior,
+											startingAmount: Math.min(
+												behavior.capacity,
+												Math.max(0, Number(event.target.value) || 0),
+											),
+										})
+									}
+								/>
+							</Field>
+						</div>
+					) : null}
+					{"startingText" in behavior ? (
+						<Field label="Starting writing">
+							<textarea
+								value={behavior.startingText}
+								onChange={(event) => onChange({...behavior, startingText: event.target.value})}
+							/>
+						</Field>
+					) : null}
+					{behavior.actions.map((action, index) => {
+						const updateAction = (next: typeof action) =>
+							onChange({
+								...behavior,
+								actions: behavior.actions.map((candidate, candidateIndex) =>
+									candidateIndex === index ? next : candidate,
+								),
+							});
+						const targetType = action.target?.type ?? "unrestricted";
+						return (
+							<fieldset className="itemBehaviorAction" key={action.action}>
+								<legend>{action.action.replaceAll("-", " ")}</legend>
+								<label className="itemBehaviorActionToggle">
+									<input
+										type="checkbox"
+										checked={action.enabled}
+										onChange={(event) => updateAction({...action, enabled: event.target.checked})}
+									/>
+									Available to players
+								</label>
+								<div className="itemFormFieldGrid">
+									<Field label="Success message">
+										<input
+											value={action.message}
+											onChange={(event) => updateAction({...action, message: event.target.value})}
+										/>
+									</Field>
+									<Field label="Blocked message">
+										<input
+											value={action.blockedMessage}
+											onChange={(event) => updateAction({...action, blockedMessage: event.target.value})}
+										/>
+									</Field>
+								</div>
+								<Field label="Target requirement">
+									<select
+										value={targetType}
+										onChange={(event) => {
+											const type = event.target.value;
+											updateAction({
+												...action,
+												target:
+													type === "unrestricted"
+														? undefined
+														: type === "item"
+															? {type, itemId: world.items[0]?.id ?? item.id}
+															: type === "tag"
+																? {type, tag: "tool"}
+																: {type: type as "none" | "any"},
+											});
+										}}
+									>
+										<option value="unrestricted">No target requirement</option>
+										<option value="none">Must not have a target</option>
+										<option value="any">Any reachable item</option>
+										<option value="item">Specific item</option>
+										<option value="tag">Item with tag</option>
+									</select>
+								</Field>
+								{action.target?.type === "item" ? (
+									<Field label="Required item">
+										<select
+											value={idValue(action.target.itemId)}
+											onChange={(event) =>
+												updateAction({
+													...action,
+													target: {type: "item", itemId: toID("item", event.target.value)},
+												})
+											}
+										>
+											{world.items.map((candidate) => (
+												<option value={idValue(candidate.id)} key={idValue(candidate.id)}>
+													{candidate.name || "Unnamed item"}
+												</option>
+											))}
+										</select>
+									</Field>
+								) : null}
+								{action.target?.type === "tag" ? (
+									<Field label="Required item tag">
+										<input
+											value={action.target.tag}
+											onChange={(event) =>
+												updateAction({
+													...action,
+													target: {type: "tag", tag: event.target.value},
+												})
+											}
+										/>
+									</Field>
+								) : null}
+								{behavior.type === "edible" || behavior.type === "drinkable" ? (
+									<label className="itemBehaviorActionToggle">
+										<input
+											type="checkbox"
+											checked={action.consumeItem}
+											onChange={(event) => updateAction({...action, consumeItem: event.target.checked})}
+										/>
+										Consume the item after this action
+									</label>
+								) : null}
+								<div className="itemAdvancedRows">
+									<AdvancedRow
+										label={`${item.name} · ${action.action} condition`}
+										count={action.allowedWhen ? 1 : 0}
+										onClick={() =>
+											onEditAdvanced({
+												kind: "condition",
+												title: `${item.name} · ${action.action} condition`,
+												schema: ConditionGroupSchema,
+												value: action.allowedWhen ?? DefaultConditionGroup,
+												onDone: (value) =>
+													updateAction({...action, allowedWhen: ConditionGroupSchema.parse(value)}),
+											})
+										}
+									/>
+									<EffectRow
+										label={`${item.name} · After ${action.action}`}
+										group={action.after}
+										onDone={(after) => updateAction({...action, after})}
+										onEditAdvanced={onEditAdvanced}
+									/>
+								</div>
+							</fieldset>
+						);
+					})}
+				</div>
+			);
+		}
 	}
 }
 
@@ -789,7 +1023,7 @@ export function ItemBehaviorsPanel({item, world, onUpdate, onEditAdvanced}: Item
 		}
 		onUpdate((draft) => {
 			if (checked) {
-				addItemBehaviorDraft(draft, type);
+				addItemBehaviorDraft(draft, type, {connectionId: world.connections[0]?.id});
 				return;
 			}
 			removeItemBehaviorDraft(draft, type);
@@ -812,6 +1046,7 @@ export function ItemBehaviorsPanel({item, world, onUpdate, onEditAdvanced}: Item
 				<div className="itemBehaviorOptions">
 					{BEHAVIOR_OPTIONS.map((option) => {
 						const checked = selectedTypes.has(option.type);
+						const doorUnavailable = option.type === "door" && world.connections.length === 0;
 						const openableRequired =
 							option.type === "openable" && (selectedTypes.has("lockable") || selectedTypes.has("door"));
 						return (
@@ -822,12 +1057,18 @@ export function ItemBehaviorsPanel({item, world, onUpdate, onEditAdvanced}: Item
 								<input
 									type="checkbox"
 									checked={checked}
-									disabled={openableRequired}
+									disabled={openableRequired || doorUnavailable}
 									onChange={(event) => void toggleBehavior(option.type, event.target.checked)}
 								/>
 								<span>
 									<strong>{option.label}</strong>
-									<small>{openableRequired ? "Required by another capability" : option.description}</small>
+									<small>
+										{openableRequired
+											? "Required by another capability"
+											: doorUnavailable
+												? "Add a connection on the map before enabling this capability."
+												: option.description}
+									</small>
 								</span>
 							</label>
 						);

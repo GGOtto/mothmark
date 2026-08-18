@@ -23,6 +23,7 @@ import {
 	findAuthoredItem,
 	findBehavior,
 	findItemState,
+	findStandardActionBehavior,
 	itemAccess,
 	keyUnlocks,
 	playerCanCarry,
@@ -625,7 +626,7 @@ function runItemHook(
 	return group ? resolveEffects(world, game, group, context) : game;
 }
 
-function useTargetMatches(
+function itemUseTargetMatches(
 	game: GameState,
 	target: UseTarget,
 	targetId: import("@/utils/idUtils").ID<"item"> | undefined,
@@ -636,6 +637,256 @@ function useTargetMatches(
 	if (target.type === "item") return Boolean(target.itemId && compareIds(target.itemId, targetId));
 	const state = findItemState(game, targetId);
 	return Boolean(target.tag && state?.tags.includes(target.tag));
+}
+
+function standardActionTargetMatches(
+	game: GameState,
+	target: UseTarget | undefined,
+	targetId: import("@/utils/idUtils").ID<"item"> | undefined,
+): boolean {
+	if (!target) return true;
+	return itemUseTargetMatches(game, target, targetId);
+}
+
+function resolveStandardPlayerItemAction(
+	world: World,
+	game: GameState,
+	effect: Extract<PlayerItemActionEffect, {operation: "perform-item-action"}>,
+	context: EffectResolutionContext,
+): GameState {
+	const item = findItemState(game, effect.itemId);
+	const authored = findAuthoredItem(world, effect.itemId, game);
+	const found = findStandardActionBehavior(authored, effect.action);
+	if (!item || !authored || !found || !itemAccess(game, effect.itemId).reachable) return game;
+	const {behavior, settings} = found;
+	if (
+		!settings.enabled ||
+		(settings.allowedWhen && !evaluateCondition(world, game, settings.allowedWhen)) ||
+		!standardActionTargetMatches(game, settings.target, effect.targetItemId)
+	) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+
+	const equipped = (game.player.equippedItemIds ?? []).some((candidate) =>
+		compareIds(candidate, effect.itemId),
+	);
+	const interactionMatches = Boolean(
+		game.player.itemInteraction && compareIds(game.player.itemInteraction.itemId, effect.itemId),
+	);
+	const flag = (name: string) => Boolean(item.flags[`behavior.${name}`]);
+	if (
+		(effect.action === "wear" || effect.action === "wield") &&
+		!itemAccess(game, effect.itemId).carried
+	) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (
+		["throw", "give", "show"].includes(effect.action) &&
+		!itemAccess(game, effect.itemId).carried
+	) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if ((effect.action === "wear" || effect.action === "wield") && equipped) {
+		return withSystemMessage(game, "You're already using it.");
+	}
+	if ((effect.action === "remove" || effect.action === "unequip") && !equipped) {
+		return withSystemMessage(game, "You're not using it.");
+	}
+	if ((effect.action === "switch-on" || effect.action === "activate") && flag("on")) {
+		return withSystemMessage(game, "It's already on.");
+	}
+	if ((effect.action === "switch-off" || effect.action === "deactivate") && !flag("on")) {
+		return withSystemMessage(game, "It's already off.");
+	}
+	if (effect.action === "light" && flag("lit")) {
+		return withSystemMessage(game, "It's already lit.");
+	}
+	if (effect.action === "extinguish" && !flag("lit")) {
+		return withSystemMessage(game, "It isn't lit.");
+	}
+	if ((effect.action === "break" || effect.action === "smash") && flag("broken")) {
+		return withSystemMessage(game, "It's already broken.");
+	}
+	if (["cut", "slice", "chop"].includes(effect.action) && flag("cut")) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (["clean", "wash", "wipe"].includes(effect.action) && !flag("dirty")) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (["repair", "fix", "mend"].includes(effect.action) && !flag("broken")) {
+		return withSystemMessage(game, "It doesn't need repairing.");
+	}
+	if (effect.action === "tie" && item.boundToItemId) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (effect.action === "untie" && !item.boundToItemId) {
+		return withSystemMessage(game, "It isn't tied to anything.");
+	}
+	if (["stand", "exit", "dismount", "get-down"].includes(effect.action) && !interactionMatches) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (["write", "draw", "mark"].includes(effect.action) && !effect.text?.trim()) {
+		return withSystemMessage(game, "What do you want to write?");
+	}
+	if (effect.action === "erase" && !item.writtenText) {
+		return withSystemMessage(game, settings.blockedMessage);
+	}
+	if (behavior.type === "liquid-container") {
+		const amount = item.behaviorAmounts?.liquid ?? 0;
+		if (effect.action === "fill" && amount >= behavior.capacity) {
+			return withSystemMessage(game, settings.blockedMessage);
+		}
+		if ((effect.action === "pour" || effect.action === "empty-liquid") && amount <= 0) {
+			return withSystemMessage(game, settings.blockedMessage);
+		}
+	}
+
+	const next = produce(game, (draft) => {
+		const state = draft.itemStates.find((candidate) => compareIds(candidate.id, effect.itemId));
+		if (!state) return;
+		const setFlag = (name: string, value: boolean) => {
+			state.flags[`behavior.${name}`] = value;
+		};
+		switch (effect.action) {
+			case "wear":
+			case "wield":
+				draft.player.equippedItemIds ??= [];
+				if (!draft.player.equippedItemIds.some((candidate) => compareIds(candidate, effect.itemId))) {
+					draft.player.equippedItemIds.push(effect.itemId);
+				}
+				break;
+			case "remove":
+			case "unequip":
+				draft.player.equippedItemIds = (draft.player.equippedItemIds ?? []).filter(
+					(candidate) => !compareIds(candidate, effect.itemId),
+				);
+				break;
+			case "read":
+			case "search":
+			case "smell":
+			case "listen":
+			case "touch":
+			case "taste":
+				setFlag(effect.action, true);
+				break;
+			case "switch-on":
+			case "activate":
+				setFlag("on", true);
+				break;
+			case "switch-off":
+			case "deactivate":
+				setFlag("on", false);
+				break;
+			case "light":
+				setFlag("lit", true);
+				break;
+			case "extinguish":
+				setFlag("lit", false);
+				break;
+			case "climb":
+				draft.player.itemInteraction = {type: "climbing", itemId: effect.itemId};
+				break;
+			case "sit":
+				draft.player.itemInteraction = {type: "sitting", itemId: effect.itemId};
+				break;
+			case "lie":
+				draft.player.itemInteraction = {type: "lying", itemId: effect.itemId};
+				break;
+			case "enter":
+				draft.player.itemInteraction = {type: "inside", itemId: effect.itemId};
+				break;
+			case "mount":
+			case "ride":
+				draft.player.itemInteraction = {type: "riding", itemId: effect.itemId};
+				break;
+			case "get-down":
+			case "stand":
+			case "exit":
+			case "dismount":
+				draft.player.itemInteraction = undefined;
+				break;
+			case "tie":
+				state.boundToItemId = effect.targetItemId;
+				break;
+			case "untie":
+				state.boundToItemId = undefined;
+				break;
+			case "break":
+			case "smash":
+				setFlag("broken", true);
+				break;
+			case "cut":
+			case "slice":
+			case "chop":
+				setFlag("cut", true);
+				break;
+			case "fill":
+				state.behaviorAmounts ??= {};
+				state.behaviorAmounts.liquid = behavior.type === "liquid-container" ? behavior.capacity : 1;
+				break;
+			case "pour": {
+				const sourceAmount = state.behaviorAmounts?.liquid ?? 0;
+				state.behaviorAmounts ??= {};
+				state.behaviorAmounts.liquid = 0;
+				if (effect.targetItemId) {
+					const targetState = draft.itemStates.find((candidate) =>
+						compareIds(candidate.id, effect.targetItemId),
+					);
+					const targetAuthored = findAuthoredItem(world, effect.targetItemId, game);
+					const targetBehavior = targetAuthored
+						? findBehavior(targetAuthored, "liquid-container")
+						: undefined;
+					if (targetState && targetBehavior) {
+						targetState.behaviorAmounts ??= {};
+						targetState.behaviorAmounts.liquid = Math.min(
+							targetBehavior.capacity,
+							(targetState.behaviorAmounts.liquid ?? 0) + sourceAmount,
+						);
+					}
+				}
+				break;
+			}
+			case "empty-liquid":
+				state.behaviorAmounts ??= {};
+				state.behaviorAmounts.liquid = 0;
+				break;
+			case "clean":
+			case "wash":
+			case "wipe":
+				setFlag("dirty", false);
+				break;
+			case "repair":
+			case "fix":
+			case "mend":
+				setFlag("broken", false);
+				break;
+			case "write":
+			case "draw":
+			case "mark":
+				state.writtenText = effect.text?.trim();
+				break;
+			case "erase":
+				state.writtenText = undefined;
+				break;
+			case "throw":
+				state.location = {type: "room", roomId: draft.player.currentRoom};
+				draft.player.equippedItemIds = (draft.player.equippedItemIds ?? []).filter(
+					(candidate) => !compareIds(candidate, effect.itemId),
+				);
+				break;
+			case "give":
+			case "show":
+				break;
+		}
+		if (effect.targetItemId) state.lastActionTargetItemId = effect.targetItemId;
+		if (settings.consumeItem) state.location = {type: "destroyed"};
+		state.flags[`behavior.${behavior.type}.${effect.action}`] = true;
+	});
+	const message =
+		effect.action === "read" && item.writtenText
+			? `${settings.message}\n${item.writtenText}`
+			: settings.message;
+	return runItemHook(world, withSystemMessage(next, message), settings.after, context);
 }
 
 export function resolvePlayerItemAction(
@@ -811,13 +1062,15 @@ export function resolvePlayerItemAction(
 			const targetId = effect.targetItemId;
 			const recipe = behavior.recipes.find(
 				(candidate) =>
-					useTargetMatches(game, candidate.target, targetId) &&
+					itemUseTargetMatches(game, candidate.target, targetId) &&
 					(!candidate.when || evaluateCondition(world, game, candidate.when)),
 			);
 			return recipe
 				? resolveEffects(world, game, recipe.outcome, context)
 				: withSystemMessage(game, behavior.fallbackMessage);
 		}
+		case "perform-item-action":
+			return resolveStandardPlayerItemAction(world, game, effect, context);
 		default:
 			return game;
 	}
@@ -1149,6 +1402,7 @@ export function resolveEffect(
 					"put-on",
 					"unlock",
 					"use",
+					"perform-item-action",
 				].includes(effect.operation)
 					? resolvePlayerItemAction(
 							world,

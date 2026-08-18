@@ -1,0 +1,160 @@
+{
+	"id": {
+		"type": "command",
+		"id": "rest-on-item"
+	},
+	"name": "Rest",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "sit on <item>",
+	"helpDescription": "Sit, lie, or stand up from a resting place.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "rest-on-item-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "sit",
+							"label": "sit",
+							"matches": ["sit", "sit on", "sit in", "take a seat on", "take a seat in"]
+						},
+						{
+							"value": "lie",
+							"label": "lie",
+							"matches": ["lie", "lie on", "lie in", "lie down on", "lie down in", "recline on"]
+						},
+						{
+							"value": "stand",
+							"label": "stand",
+							"matches": ["stand from", "stand up from", "get up from", "rise from"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "rest-on-item-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["restable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "rest-on-item-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "rest-on-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "rest-on-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "rest-on-item-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "rest-on-item-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "rest-on-item-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't rest that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "rest-on-item-branch"
+		},
+		"always": {
+			"name": "Rest",
+			"id": {
+				"type": "effect",
+				"id": "rest-on-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "sit",
+					"itemId": {
+						"type": "item",
+						"id": "rest-on-item-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "rest-on-item-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "rest-on-item-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

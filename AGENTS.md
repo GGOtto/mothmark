@@ -97,6 +97,11 @@
   Do not add curated synonym-pair exceptions or item-name conditionals to the suggester, admit
   vocabulary merely because it occurs in an unrelated catalog branch, or show spelling variants of
   one concept as separate tags.
+- Treat the generated Wiktionary alias snapshot as licensed build output. Never edit its edges by
+  hand. Change the general extractor or taxonomy policy, add a regression example, run
+  `pnpm lexicon:update`, and review the new source-revision digest. Explicit synonyms must pass
+  canonical taxonomy filtering; broader definition references must also agree with the selected
+  WordNet sense. Preserve the attribution in `docs/third-party-lexical-data.md`.
 - Treat each schema-backed item behavior and its exact canonical tag as one bidirectional authoring
   state. Display capability tags in the shared tag editor, store their configuration only in
   `behaviors`, and let classification tags recommend capabilities without silently enabling them.

@@ -12,9 +12,12 @@ import {
 	itemBehaviorTypeForTag,
 } from "@/features/items/itemBehaviors";
 import type {Item, ItemBehavior} from "@/schemas/world/itemSchema";
+import type {StandardItemAction} from "@/schemas/world/itemActionSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, idValue} from "@/utils/idUtils";
+import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import type {LexicalAliasCandidate, LexicalConceptCandidate} from "./lexicalSchemas";
+import {aliasInflections} from "./aliasInflections";
+import {trailingObjectPhrases} from "./lexicalLookupTerms";
 import {normalizeSuggestedTag, normalizeSuggestionText} from "./suggestionText";
 
 export type AliasSuggestion = {
@@ -37,7 +40,13 @@ export type TagSuggestion = {
 	reason: string;
 	enables: string;
 	connections: TagConnection[];
-	change: {type: "tag"} | {type: "behavior"; behavior: ItemBehavior["type"]};
+	change:
+		| {type: "tag"}
+		| {
+				type: "behavior";
+				behavior: ItemBehavior["type"];
+				enabledActions?: StandardItemAction[];
+		  };
 	warning?: string;
 };
 
@@ -227,12 +236,12 @@ export function buildAliasCollisionIndex(world: World, currentItem: Item): Map<s
 	const index = new Map<string, Item[]>();
 	for (const item of world.items) {
 		if (compareIds(item.id, currentItem.id)) continue;
+		const iconCategory = resolveItemIcon(item).category;
 		for (const phrase of [item.name, ...item.aliases]) {
 			const normalized = normalizeSuggestionText(phrase);
 			if (!normalized) continue;
-			const keys = new Set([normalized]);
-			const words = normalized.split(" ");
-			if (words.length > 1) keys.add(words.at(-1)!);
+			const baseKeys = [normalized, ...trailingObjectPhrases(phrase, iconCategory)];
+			const keys = new Set(baseKeys.flatMap((key) => [key, ...aliasInflections(key)]));
 			for (const key of keys) {
 				const matches = index.get(key) ?? [];
 				if (!matches.some((match) => compareIds(match.id, item.id))) matches.push(item);
@@ -245,17 +254,16 @@ export function buildAliasCollisionIndex(world: World, currentItem: Item): Map<s
 
 function phraseCandidates(item: Item): LexicalAliasCandidate[] {
 	const candidates: LexicalAliasCandidate[] = [];
+	const iconCategory = resolveItemIcon(item).category;
 	for (const source of [item.name, ...item.aliases]) {
 		const normalized = normalizeSuggestionText(source);
 		if (!normalized) continue;
 		if (normalized !== source.trim().toLowerCase()) {
 			candidates.push({value: normalized, relation: "phrase", evidence: `Simplifies “${source}”.`});
 		}
-		const words = normalized.split(" ");
-		if (words.length > 1) {
-			const maximumPhraseWords = Math.min(3, words.length - 1);
-			for (let wordCount = maximumPhraseWords; wordCount >= 1; wordCount -= 1) {
-				const value = words.slice(-wordCount).join(" ");
+		for (const value of trailingObjectPhrases(source, iconCategory)) {
+			if (value !== normalized) {
+				const wordCount = value.split(" ").length;
 				candidates.push({
 					value,
 					relation: "phrase",
@@ -306,11 +314,88 @@ function taxonomyAliasCandidates(item: Item): LexicalAliasCandidate[] {
 	return candidates;
 }
 
+function modifiedLexicalCandidates(
+	item: Item,
+	lexical: readonly LexicalAliasCandidate[],
+): LexicalAliasCandidate[] {
+	const candidates: LexicalAliasCandidate[] = [];
+	const iconCategory = resolveItemIcon(item).category;
+	const taxonomy = itemTaxonomyContext(item);
+	for (const source of [item.name, ...item.aliases]) {
+		const objectPhrase = trailingObjectPhrases(source, iconCategory)[0];
+		if (!objectPhrase) continue;
+		if (
+			taxonomy.leaf?.identityTerms.some((term) => {
+				const normalizedTerm = normalizeSuggestionText(term);
+				return normalizedTerm.includes(" ") && objectPhrase.endsWith(normalizedTerm);
+			})
+		) {
+			continue;
+		}
+		const sourceWords = objectPhrase.split(" ");
+		if (sourceWords.length < 2) continue;
+		const sourceHead = sourceWords.at(-1)!;
+		const modifiers = sourceWords.slice(0, -1);
+		for (const candidate of lexical) {
+			if (candidate.relation === "broader" || candidate.relation === "phrase") continue;
+			const normalizedCandidate = normalizeSuggestionText(candidate.value);
+			if (!normalizedCandidate || normalizedCandidate.includes(" ")) continue;
+			if (!taxonomy.branchTerms.has(normalizeSuggestedTag(normalizedCandidate))) {
+				continue;
+			}
+			if (sourceHead.endsWith("s") !== normalizedCandidate.endsWith("s")) continue;
+			for (const prefix of [modifiers.slice(-1), modifiers.slice(-2)]) {
+				if (!prefix.length) continue;
+				candidates.push({
+					value: [...prefix, normalizedCandidate].join(" "),
+					relation: candidate.relation,
+					evidence: `Keeps a recognizable detail from “${source}” with a verified player word.`,
+				});
+			}
+		}
+	}
+	return candidates;
+}
+
+function authoredInflectionCandidates(item: Item): LexicalAliasCandidate[] {
+	const iconCategory = resolveItemIcon(item).category;
+	return [item.name, ...item.aliases].flatMap((source) => {
+		const objectPhrase = trailingObjectPhrases(source, iconCategory)[0];
+		if (!objectPhrase) return [];
+		return aliasInflections(objectPhrase).map((value) => ({
+			value,
+			relation: "inflection" as const,
+			evidence: `Uses the other common noun form of “${source}”.`,
+		}));
+	});
+}
+
 function allAliasCandidates(
 	item: Item,
 	lexical: readonly LexicalAliasCandidate[],
 ): LexicalAliasCandidate[] {
-	return [...phraseCandidates(item), ...taxonomyAliasCandidates(item), ...lexical];
+	const candidates = [
+		...phraseCandidates(item),
+		...taxonomyAliasCandidates(item),
+		...lexical,
+		...modifiedLexicalCandidates(item, lexical),
+	];
+	return [
+		...candidates,
+		...authoredInflectionCandidates(item),
+		...candidates.flatMap((candidate): LexicalAliasCandidate[] => {
+			const inflectionSource =
+				candidate.relation === "phrase"
+					? (trailingObjectPhrases(candidate.value, resolveItemIcon(item).category)[0] ??
+						candidate.value)
+					: candidate.value;
+			return aliasInflections(inflectionSource).map((value) => ({
+				value,
+				relation: "inflection",
+				evidence: `Uses the other common noun form of “${inflectionSource.replaceAll("_", " ")}”.`,
+			}));
+		}),
+	];
 }
 
 export function createAliasSuggestions(
@@ -340,7 +425,7 @@ export function createAliasSuggestions(
 			});
 		}
 	}
-	return [...suggestions.values()].slice(0, 5);
+	return [...suggestions.values()];
 }
 
 export function emptyAliasSuggestionMessage(
@@ -430,6 +515,24 @@ export function createTagSuggestions(
 		behaviorSignals.add(normalizeSuggestedTag(category));
 	for (const concept of groundedConcepts) behaviorSignals.add(concept.tag);
 	const suggestions: Array<TagSuggestion & {score: number}> = [];
+	const behaviorActionPreset = (
+		behavior: ItemBehavior["type"],
+	): StandardItemAction[] | undefined => {
+		if (behavior === "equippable") {
+			if (taxonomy.branchCategories.has("wearable")) return ["wear", "remove"];
+			if (taxonomy.branchCategories.has("weapon")) return ["wield", "unequip"];
+		}
+		if (behavior === "sound-making") {
+			if (taxonomy.branchCategories.has("bell-and-chime")) return ["ring"];
+			if (taxonomy.branchCategories.has("wind-instrument")) return ["play", "blow"];
+			if (taxonomy.branchCategories.has("percussion")) return ["play", "strike"];
+			if (taxonomy.branchCategories.has("music")) return ["play"];
+		}
+		if (behavior === "restable") {
+			if (taxonomy.branchCategories.has("bed")) return ["sit", "lie", "stand"];
+			if (taxonomy.branchCategories.has("seat")) return ["sit", "stand"];
+		}
+	};
 
 	for (const concept of groundedConcepts) {
 		if (normalizedExisting.has(concept.tag) || itemBehaviorTypeForTag(concept.tag)) continue;
@@ -452,16 +555,34 @@ export function createTagSuggestions(
 		const evidence = [...behaviorSignals].find((signal) => definition.discoveryTerms.has(signal));
 		if (!evidence) continue;
 		const connections = graph.connections.get(behavior) ?? [];
+		const enabledActions = behaviorActionPreset(behavior);
+		const commandSummary = (enabledActions ?? definition.actions)
+			.map((action) => action.replaceAll("-", " "))
+			.join(", ");
 		suggestions.push({
 			tag: behavior,
 			label: behavior,
 			reason: `Its name or supported taxonomy identifies it as ${evidence.replaceAll("-", " ")}.`,
-			enables: `${definition.description} ${connectionExplanation(connections)}`,
+			enables: `${definition.description}${commandSummary ? ` Player commands: ${commandSummary}.` : ""} ${connectionExplanation(connections)}`,
 			connections,
-			change: {type: "behavior", behavior},
+			change: {
+				type: "behavior",
+				behavior,
+				...(enabledActions ? {enabledActions} : {}),
+			},
 			warning:
 				"This adds a real capability with schema defaults, which you can configure in Behavior.",
-			score: 200 + connections.length * 300,
+			score:
+				(definition.type === "takeable" ||
+				definition.type === "container" ||
+				definition.type === "surface" ||
+				definition.type === "openable" ||
+				definition.type === "lockable" ||
+				definition.type === "door" ||
+				definition.type === "usable"
+					? 200
+					: 75) +
+				connections.length * 300,
 		});
 	}
 
@@ -486,9 +607,21 @@ export function applyAliasSuggestionDraft(draft: Draft<Item>, suggestion: AliasS
 	}
 }
 
-export function applyTagSuggestionDraft(draft: Draft<Item>, suggestion: TagSuggestion): void {
+export function applyTagSuggestionDraft(
+	draft: Draft<Item>,
+	suggestion: TagSuggestion,
+	connectionId?: ID<"connection">,
+): void {
 	if (suggestion.change.type === "behavior") {
-		addItemBehaviorDraft(draft, suggestion.change.behavior);
+		const {behavior: behaviorType, enabledActions} = suggestion.change;
+		addItemBehaviorDraft(draft, behaviorType, {connectionId});
+		if (enabledActions) {
+			const enabled = new Set(enabledActions);
+			const behavior = draft.behaviors.find((candidate) => candidate.type === behaviorType);
+			if (behavior && "actions" in behavior) {
+				for (const action of behavior.actions) action.enabled = enabled.has(action.action);
+			}
+		}
 		return;
 	}
 	const normalized = normalizeSuggestedTag(suggestion.tag);

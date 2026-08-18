@@ -1,0 +1,214 @@
+{
+	"id": {
+		"type": "command",
+		"id": "pour-into"
+	},
+	"name": "Pour into",
+	"enabled": true,
+	"showInHelp": false,
+	"helpPattern": "pour <container> into <target>",
+	"helpDescription": "Pour from a liquid container into another reachable item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "pour-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "pour",
+							"label": "pour",
+							"matches": ["pour", "pour out"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "pour-container"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["liquid-container"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "pour-into"
+					},
+					"type": "relation",
+					"relation": "in",
+					"aliasMode": "defaults",
+					"aliases": [],
+					"role": "relation"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "pour-target"
+					},
+					"type": "target",
+					"role": "indirect-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": [],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 1,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "pour-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "pour-into-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "pour-into-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "pour-container"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "pour-into-pour-container-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "pour-into-pour-container-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't pour from that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "pour-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "pour-into-pour-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "pour-into-pour-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't pour it there."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "pour-into-branch"
+		},
+		"always": {
+			"name": "Pour liquid",
+			"id": {
+				"type": "effect",
+				"id": "pour-into-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "pour",
+					"itemId": {
+						"type": "item",
+						"id": "pour-container-item"
+					},
+					"targetItemId": {
+						"type": "item",
+						"id": "pour-target-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "pour-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "pour-container"
+							},
+							"field": "itemId"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "pour-target"
+							},
+							"field": "targetItemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

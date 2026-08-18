@@ -15,6 +15,7 @@
 		"release": "node --import tsx scripts/deploy.ts",
 		"storage:contract": "node --import tsx scripts/updateStorageContract.ts",
 		"cleanup:anonymous": "node --conditions=react-server --import tsx scripts/anonymousCleanup.ts",
+		"lexicon:update": "node --import tsx scripts/buildItemLexicon.ts",
 		"admin:add": "phase run 'node --conditions=react-server --import tsx scripts/adminAdd.ts'",
 		"admin:add:prod": "phase run --env production 'node --conditions=react-server --import tsx scripts/adminAdd.ts'",
 		"admin:create": "phase run 'node --conditions=react-server --import tsx scripts/adminCreate.ts'",

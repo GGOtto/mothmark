@@ -6,6 +6,7 @@ import {getAvailableExits} from "./move";
 import {evaluateCondition} from "../conditions/evaluateCondition";
 
 const HELP_GROUP_SIZE = 6;
+const MAX_HELP_GROUPS = 3;
 
 export function availableExitsMessage(world: World, game: GameState): string {
 	const exits = getAvailableExits(world, game).map((exit) => DIRECTION_NAMES[exit.direction]);
@@ -39,10 +40,12 @@ export function commandHelpMessage(world: World, game: GameState): string {
 		return "No commands are currently listed. Try commands again when your surroundings change.";
 	}
 
+	const groupCount = Math.min(MAX_HELP_GROUPS, Math.ceil(entries.length / HELP_GROUP_SIZE));
+	const groupSize = Math.ceil(entries.length / groupCount);
 	const groups: string[] = [];
-	for (let index = 0; index < entries.length; index += HELP_GROUP_SIZE) {
+	for (let index = 0; index < entries.length; index += groupSize) {
 		const title = index === 0 ? "Useful commands:" : "More commands:";
-		groups.push(`${title}\n${entries.slice(index, index + HELP_GROUP_SIZE).join("\n")}`);
+		groups.push(`${title}\n${entries.slice(index, index + groupSize).join("\n")}`);
 	}
 	return groups.join("\n\n");
 }

@@ -8,6 +8,7 @@ import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {resolveItemIcon} from "@/itemIcons";
 import type {Item} from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
+import type {ID} from "@/utils/idUtils";
 import {
 	LexicalSuggestionResponseSchema,
 	type LexicalSuggestionResponse,
@@ -37,6 +38,7 @@ type ItemSuggestions = {
 };
 
 type ItemSuggestionListProps = {
+	connectionId?: ID<"connection">;
 	mode: SuggestionMode;
 	onUpdate: (recipe: (draft: Draft<Item>) => void) => void;
 	suggestions: ItemSuggestions;
@@ -123,8 +125,14 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 		[currentResult?.aliases, item, world, worldContext.aliasCollisions],
 	);
 	const tagSuggestions = useMemo(
-		() => createTagSuggestions(item, currentResult?.concepts ?? [], worldContext.tagGraph),
-		[currentResult?.concepts, item, worldContext.tagGraph],
+		() =>
+			createTagSuggestions(item, currentResult?.concepts ?? [], worldContext.tagGraph).filter(
+				(suggestion) =>
+					suggestion.change.type !== "behavior" ||
+					suggestion.change.behavior !== "door" ||
+					world.connections.length > 0,
+			),
+		[currentResult?.concepts, item, world.connections.length, worldContext.tagGraph],
 	);
 	const emptyAliasMessage = useMemo(
 		() =>
@@ -213,7 +221,12 @@ function TagSuggestions({
 	);
 }
 
-export function ItemSuggestionList({mode, onUpdate, suggestions}: ItemSuggestionListProps) {
+export function ItemSuggestionList({
+	connectionId,
+	mode,
+	onUpdate,
+	suggestions,
+}: ItemSuggestionListProps) {
 	const visibleSuggestions =
 		mode === "aliases" ? suggestions.aliasSuggestions : suggestions.tagSuggestions;
 	const label = mode === "aliases" ? "Suggested aliases" : "Suggested tags";
@@ -256,7 +269,9 @@ export function ItemSuggestionList({mode, onUpdate, suggestions}: ItemSuggestion
 			{mode === "tags" && suggestions.tagSuggestions.length ? (
 				<TagSuggestions
 					suggestions={suggestions.tagSuggestions}
-					onAdd={(accepted) => onUpdate((draft) => applyTagSuggestionDraft(draft, accepted))}
+					onAdd={(accepted) =>
+						onUpdate((draft) => applyTagSuggestionDraft(draft, accepted, connectionId))
+					}
 				/>
 			) : null}
 		</section>

@@ -1,0 +1,165 @@
+{
+	"id": {
+		"type": "command",
+		"id": "make-sound"
+	},
+	"name": "Make sound",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "play <item>",
+	"helpDescription": "Play, ring, blow, or strike a sound-making item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "make-sound-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "play",
+							"label": "play",
+							"matches": ["play", "perform with"]
+						},
+						{
+							"value": "ring",
+							"label": "ring",
+							"matches": ["ring", "chime"]
+						},
+						{
+							"value": "blow",
+							"label": "blow",
+							"matches": ["blow", "blow into"]
+						},
+						{
+							"value": "strike",
+							"label": "strike",
+							"matches": ["strike", "hit", "beat"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "make-sound-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["sound-making"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "make-sound-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "make-sound-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "make-sound-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "make-sound-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "make-sound-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "make-sound-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't make sound that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "make-sound-branch"
+		},
+		"always": {
+			"name": "Make sound",
+			"id": {
+				"type": "effect",
+				"id": "make-sound-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "play",
+					"itemId": {
+						"type": "item",
+						"id": "make-sound-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "make-sound-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "make-sound-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

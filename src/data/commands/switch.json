@@ -1,0 +1,165 @@
+{
+	"id": {
+		"type": "command",
+		"id": "switch-item"
+	},
+	"name": "Switch",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "switch on <item>",
+	"helpDescription": "Switch or activate a mechanism.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "switch-item-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "switch-on",
+							"label": "switch on",
+							"matches": ["switch on", "turn on", "power on", "start", "enable"]
+						},
+						{
+							"value": "switch-off",
+							"label": "switch off",
+							"matches": ["switch off", "turn off", "power off", "stop", "disable"]
+						},
+						{
+							"value": "activate",
+							"label": "activate",
+							"matches": ["activate", "engage"]
+						},
+						{
+							"value": "deactivate",
+							"label": "deactivate",
+							"matches": ["deactivate", "disengage"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "switch-item-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["switchable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "switch-item-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "switch-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "switch-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "switch-item-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "switch-item-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "switch-item-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't switch that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "switch-item-branch"
+		},
+		"always": {
+			"name": "Switch",
+			"id": {
+				"type": "effect",
+				"id": "switch-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "switch-on",
+					"itemId": {
+						"type": "item",
+						"id": "switch-item-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "switch-item-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "switch-item-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

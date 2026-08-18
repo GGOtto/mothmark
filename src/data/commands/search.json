@@ -1,0 +1,158 @@
+{
+	"id": {
+		"type": "command",
+		"id": "search-item"
+	},
+	"name": "Search",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "search <item>",
+	"helpDescription": "Search a reachable item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "search-item-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "search",
+							"label": "search",
+							"matches": [
+								"search",
+								"search through",
+								"look in",
+								"look inside",
+								"look under",
+								"look behind",
+								"rummage through"
+							]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "search-item-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["searchable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "search-item-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "search-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "search-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "search-item-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "search-item-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "search-item-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't search that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "search-item-branch"
+		},
+		"always": {
+			"name": "Search",
+			"id": {
+				"type": "effect",
+				"id": "search-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "search",
+					"itemId": {
+						"type": "item",
+						"id": "search-item-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "search-item-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "search-item-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

@@ -4,6 +4,7 @@ import {produce} from "immer";
 import {useState, type ComponentProps} from "react";
 import {createInitialWorld} from "@/data/worlds/initialWorld";
 import {SurfaceBehaviorSchema} from "@/schemas/world/itemSchema";
+import type {World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {idValue} from "@/utils/idUtils";
 import {ItemWorkspace} from "./ItemWorkspace";
@@ -20,8 +21,8 @@ function TestItemWorkspace(props: TestItemWorkspaceProps) {
 	return <ItemWorkspace {...props} activeTab={activeTab} onActiveTabChange={setActiveTab} />;
 }
 
-function StatefulItemWorkspace() {
-	const [world, setWorld] = useState(createInitialWorld);
+function StatefulItemWorkspace({initialWorld = createInitialWorld()}: {initialWorld?: World}) {
+	const [world, setWorld] = useState(initialWorld);
 	const [activeTab, setActiveTab] =
 		useState<ComponentProps<typeof ItemWorkspace>["activeTab"]>("details");
 	function updateWorld(update: WorldUpdate) {
@@ -68,6 +69,56 @@ describe("ItemWorkspace", () => {
 		await user.click(screen.getByRole("checkbox", {name: /^Surface /i}));
 		await user.click(screen.getByRole("tab", {name: "Details"}));
 		expect(screen.getByRole("button", {name: "Remove surface"})).toBeVisible();
+	});
+
+	it("customizes every action exposed by a schema-backed behavior", async () => {
+		const user = userEvent.setup();
+		render(<StatefulItemWorkspace />);
+
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		await user.click(screen.getByRole("checkbox", {name: /^Readable /i}));
+		const readAction = screen.getByRole("group", {name: "read"});
+		const success = within(readAction).getByRole("textbox", {name: "Success message"});
+		await user.clear(success);
+		await user.type(success, "The inscription names the moth king.");
+		await user.click(within(readAction).getByRole("checkbox", {name: "Available to players"}));
+
+		await user.click(screen.getByRole("tab", {name: "Details"}));
+		expect(screen.getByRole("button", {name: "Remove readable"})).toBeVisible();
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		expect(screen.getByRole("textbox", {name: "Success message"})).toHaveValue(
+			"The inscription names the moth king.",
+		);
+		expect(screen.getByRole("checkbox", {name: "Available to players"})).not.toBeChecked();
+	});
+
+	it("adds a door with the first available connection without crashing", async () => {
+		const user = userEvent.setup();
+		const world = createInitialWorld();
+		render(<StatefulItemWorkspace initialWorld={world} />);
+
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		await user.click(screen.getByRole("checkbox", {name: /^Door /i}));
+
+		expect(screen.getByRole("checkbox", {name: /^Door /i})).toBeChecked();
+		expect(screen.getByRole("checkbox", {name: /^Openable /i})).toBeChecked();
+		expect(screen.getByRole("combobox", {name: "Connection"})).toHaveValue(
+			idValue(world.connections[0]!.id),
+		);
+	});
+
+	it("keeps Door unavailable until the map has a connection", async () => {
+		const user = userEvent.setup();
+		const world = produce(createInitialWorld(), (draft) => {
+			draft.connections = [];
+		});
+		render(<StatefulItemWorkspace initialWorld={world} />);
+
+		await user.click(screen.getByRole("tab", {name: "Behavior"}));
+		expect(screen.getByRole("checkbox", {name: /^Door /i})).toBeDisabled();
+		expect(
+			screen.getByText("Add a connection on the map before enabling this capability."),
+		).toBeVisible();
 	});
 
 	it("renders the schema-backed item document and returns to the selector", async () => {

@@ -1,0 +1,160 @@
+{
+	"id": {
+		"type": "command",
+		"id": "liquid-container-action"
+	},
+	"name": "Handle liquid",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "fill <item>",
+	"helpDescription": "Fill, pour, or empty a liquid container.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "liquid-container-action-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "fill",
+							"label": "fill",
+							"matches": ["fill", "fill up"]
+						},
+						{
+							"value": "pour",
+							"label": "pour",
+							"matches": ["pour", "pour out"]
+						},
+						{
+							"value": "empty-liquid",
+							"label": "empty liquid",
+							"matches": ["empty", "empty out", "drain"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "liquid-container-action-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["liquid-container"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "liquid-container-action-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "liquid-container-action-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "liquid-container-action-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "liquid-container-action-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "liquid-container-action-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "liquid-container-action-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't handle liquid that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "liquid-container-action-branch"
+		},
+		"always": {
+			"name": "Handle liquid",
+			"id": {
+				"type": "effect",
+				"id": "liquid-container-action-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "fill",
+					"itemId": {
+						"type": "item",
+						"id": "liquid-container-action-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "liquid-container-action-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "liquid-container-action-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

@@ -8,18 +8,18 @@ import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {toID} from "@/utils/idUtils";
 import {ItemSuggestionList, useItemSuggestions} from "./ItemSuggestionPanel";
 
-function createWorld(): World {
+function createWorld(name = "Apple"): World {
 	const apple = produce(createDefaultFieldObject(ItemSchema), (draft) => {
 		draft.id = toID("item", "apple");
-		draft.name = "Apple";
+		draft.name = name;
 	});
 	return produce(createDefaultFieldObject(WorldSchema), (draft) => {
 		draft.items = [apple];
 	});
 }
 
-function Harness() {
-	const [world, setWorld] = useState(createWorld);
+function Harness({initialName = "Apple"}: {initialName?: string}) {
+	const [world, setWorld] = useState(() => createWorld(initialName));
 	const item = world.items[0]!;
 	const suggestions = useItemSuggestions(item, world);
 	function onUpdate(recipe: (draft: Draft<Item>) => void) {
@@ -161,7 +161,7 @@ describe("ItemSuggestionPanel", () => {
 				.fn()
 				.mockResolvedValue(JSON.stringify({data: {aliases: [], concepts: [], version: "test"}})),
 		} as unknown as Response);
-		render(<Harness />);
+		render(<Harness initialName="Equipment" />);
 
 		expect(
 			await screen.findByText("The current name already covers the safe player wording found."),
