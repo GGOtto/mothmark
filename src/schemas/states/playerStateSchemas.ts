@@ -13,6 +13,12 @@ export const PlayerStateSchemas = z.object({
 	randomState: z.number().int().nonnegative().optional(),
 	carryingCapacity: z.number().int().nonnegative().optional(),
 	equippedItemIds: z.array(editor.id("item")).optional(),
+	itemInteraction: z
+		.object({
+			type: z.enum(["climbing", "sitting", "lying", "inside", "riding"]),
+			itemId: editor.id("item"),
+		})
+		.optional(),
 	isDead: z.boolean().optional(),
 	customDeathMessage: z.string().optional(),
 	hasWon: z.boolean().optional(),

@@ -7,6 +7,11 @@ import {
 } from "@/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {getEditorMetadata} from "@/utils/editorMetadata";
+import type {ID} from "@/utils/idUtils";
+
+type ItemBehaviorDefaults = {
+	connectionId?: ID<"connection">;
+};
 
 export const ITEM_BEHAVIOR_DEFINITIONS = ITEM_BEHAVIOR_SCHEMAS.map((schema) => {
 	const value = createDefaultFieldObject(schema);
@@ -21,6 +26,7 @@ export const ITEM_BEHAVIOR_DEFINITIONS = ITEM_BEHAVIOR_SCHEMAS.map((schema) => {
 				(candidate) => createDefaultFieldObject(candidate).type === requirement,
 			),
 		) as ItemBehavior["type"][],
+		actions: "actions" in value ? value.actions.map((action) => action.action) : [],
 		schema,
 	};
 });
@@ -30,20 +36,35 @@ export function itemBehaviorTypeForTag(value: string): ItemBehavior["type"] | un
 	return ITEM_BEHAVIOR_DEFINITIONS.find((definition) => definition.type === normalized)?.type;
 }
 
-export function createItemBehavior(type: ItemBehavior["type"]): ItemBehavior {
+export function createItemBehavior(
+	type: ItemBehavior["type"],
+	defaults: ItemBehaviorDefaults = {},
+): ItemBehavior {
 	const schema = ITEM_BEHAVIOR_SCHEMAS.find(
 		(candidate) => createDefaultFieldObject(candidate).type === type,
 	);
 	if (!schema) throw new Error(`Unknown item behavior: ${type}`);
-	return ItemBehaviorSchema.parse(createDefaultFieldObject(schema));
+	const value = createDefaultFieldObject(schema);
+	if (type === "door") {
+		if (!defaults.connectionId) throw new Error("Door behavior requires a connection.");
+		return ItemBehaviorSchema.parse({...value, connectionId: defaults.connectionId});
+	}
+	return ItemBehaviorSchema.parse(value);
 }
 
-export function addItemBehaviorDraft(draft: Draft<Item>, type: ItemBehavior["type"]): void {
+export function addItemBehaviorDraft(
+	draft: Draft<Item>,
+	type: ItemBehavior["type"],
+	defaults: ItemBehaviorDefaults = {},
+): boolean {
 	draft.tags = draft.tags.filter((tag) => itemBehaviorTypeForTag(tag) !== type);
-	if (draft.behaviors.some((behavior) => behavior.type === type)) return;
+	if (draft.behaviors.some((behavior) => behavior.type === type)) return true;
+	if (type === "door" && !defaults.connectionId) return false;
 	const definition = ITEM_BEHAVIOR_DEFINITIONS.find((candidate) => candidate.type === type);
-	for (const requirement of definition?.requires ?? []) addItemBehaviorDraft(draft, requirement);
-	draft.behaviors.push(createItemBehavior(type));
+	for (const requirement of definition?.requires ?? [])
+		addItemBehaviorDraft(draft, requirement, defaults);
+	draft.behaviors.push(createItemBehavior(type, defaults));
+	return true;
 }
 
 export function removeItemBehaviorDraft(draft: Draft<Item>, type: ItemBehavior["type"]): void {
@@ -63,16 +84,27 @@ export function behaviorDependents(
 }
 
 export function isDefaultItemBehavior(behavior: ItemBehavior): boolean {
-	return JSON.stringify(behavior) === JSON.stringify(createItemBehavior(behavior.type));
+	return (
+		JSON.stringify(behavior) ===
+		JSON.stringify(
+			createItemBehavior(behavior.type, {
+				connectionId: behavior.type === "door" ? behavior.connectionId : undefined,
+			}),
+		)
+	);
 }
 
-export function replaceItemTagsAndBehaviorsDraft(draft: Draft<Item>, values: string[]): void {
+export function replaceItemTagsAndBehaviorsDraft(
+	draft: Draft<Item>,
+	values: string[],
+	defaults: ItemBehaviorDefaults = {},
+): void {
 	const requestedBehaviors = new Set(
 		values
 			.map(itemBehaviorTypeForTag)
 			.filter((value): value is ItemBehavior["type"] => Boolean(value)),
 	);
-	for (const type of requestedBehaviors) addItemBehaviorDraft(draft, type);
+	for (const type of requestedBehaviors) addItemBehaviorDraft(draft, type, defaults);
 	for (const behavior of [...draft.behaviors]) {
 		if (
 			!requestedBehaviors.has(behavior.type) &&

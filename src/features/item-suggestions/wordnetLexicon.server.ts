@@ -3,12 +3,18 @@ import "server-only";
 import {open, readFile, type FileHandle} from "node:fs/promises";
 import {join} from "node:path";
 import wordNetDatabase from "wordnet-db";
+import {ITEM_ICON_CATALOG} from "@/itemIcons/itemIconCatalog";
 import type {
 	LexicalAliasCandidate,
 	LexicalConceptCandidate,
 	LexicalSuggestionRequest,
 } from "./lexicalSchemas";
+import {lexicalLookupTerms, wordNetLookupTerms} from "./lexicalLookupTerms";
 import {normalizeSuggestionText} from "./suggestionText";
+import {
+	wiktionaryAliasesForTerm,
+	WIKTIONARY_ALIAS_LEXICON_VERSION,
+} from "./wiktionaryLexicon.server";
 
 type WordNetPointer = {
 	pointerSymbol: string;
@@ -48,8 +54,92 @@ const GENERIC_CONCEPTS = new Set([
 	"thing",
 	"unit",
 ]);
+const BROAD_ALIAS_CONCEPTS = new Set([
+	"abstraction",
+	"arrangement",
+	"artifact",
+	"artefact",
+	"container",
+	"covering",
+	"creation",
+	"device",
+	"equipment",
+	"furniture",
+	"group",
+	"grouping",
+	"implement",
+	"instrumentality",
+	"instrumentation",
+	"mechanism",
+	"physical-object",
+	"representation",
+	"structure",
+	"system",
+	"tool",
+	"weapon-system",
+]);
 
-export const ITEM_LEXICON_VERSION = `wordnet-${wordNetDatabase.version}`;
+function taxonomyAliasTerms(iconCategory?: string): Set<string> | undefined {
+	if (!iconCategory || iconCategory === "generic") return undefined;
+	const terms = new Set<string>();
+	const pending = [iconCategory];
+	const seen = new Set<string>();
+	while (pending.length) {
+		const category = pending.shift()!;
+		if (seen.has(category)) continue;
+		seen.add(category);
+		const definition = ITEM_ICON_CATALOG.find(({id}) => id === category);
+		if (!definition) continue;
+		for (const value of [definition.id, ...definition.identityTerms, ...definition.categoryTerms]) {
+			const normalized = normalizeSuggestionText(value);
+			terms.add(normalized);
+			for (const key of lookupKeys(normalized)) terms.add(key.replaceAll("_", " "));
+		}
+		pending.push(...definition.parents);
+	}
+	return terms;
+}
+
+function taxonomyLeafAliasTerms(iconCategory?: string): Set<string> | undefined {
+	if (!iconCategory || iconCategory === "generic") return undefined;
+	const definition = ITEM_ICON_CATALOG.find(({id}) => id === iconCategory);
+	if (!definition) return undefined;
+	return new Set(
+		[definition.id, ...definition.identityTerms, ...definition.categoryTerms].flatMap((value) => {
+			const normalized = normalizeSuggestionText(value);
+			return [normalized, ...lookupKeys(normalized).map((key) => key.replaceAll("_", " "))];
+		}),
+	);
+}
+
+function taxonomySemanticAnchorTerms(iconCategory?: string): Set<string> | undefined {
+	if (!iconCategory || iconCategory === "generic") return undefined;
+	const leaf = ITEM_ICON_CATALOG.find(({id}) => id === iconCategory);
+	if (!leaf) return undefined;
+	const terms = new Set<string>();
+	const add = (value: string) => {
+		const normalized = normalizeSuggestionText(value);
+		terms.add(normalized);
+		for (const key of lookupKeys(normalized)) terms.add(key.replaceAll("_", " "));
+	};
+	for (const value of leaf.categoryTerms) add(value);
+	const pending = [...leaf.parents];
+	const seen = new Set<string>();
+	while (pending.length) {
+		const category = pending.shift()!;
+		if (seen.has(category)) continue;
+		seen.add(category);
+		const definition = ITEM_ICON_CATALOG.find(({id}) => id === category);
+		if (!definition) continue;
+		for (const value of [definition.id, ...definition.identityTerms, ...definition.categoryTerms]) {
+			add(value);
+		}
+		pending.push(...definition.parents);
+	}
+	return terms;
+}
+
+export const ITEM_LEXICON_VERSION = `wordnet-${wordNetDatabase.version}+${WIKTIONARY_ALIAS_LEXICON_VERSION}`;
 
 function displayLemma(value: string): string {
 	return value.replaceAll("_", " ").replace(/\s+/g, " ").trim();
@@ -185,11 +275,23 @@ function senseScore(
 	record: WordNetRecord,
 	concepts: ConceptRecord[],
 	context: Set<string>,
+	sourceTerm: string,
 ): number {
-	const terms = [...record.synonyms, ...concepts.flatMap((concept) => concept.synonyms)].map(
-		tagLemma,
+	const sourceKeys = new Set(lookupKeys(sourceTerm).map(tagLemma));
+	const recordScore = record.synonyms.reduce((score, synonym) => {
+		const term = tagLemma(synonym);
+		return score + (context.has(term) && !sourceKeys.has(term) ? 20 : 0);
+	}, 0);
+	return concepts.reduce(
+		(score, concept) =>
+			score +
+			concept.synonyms.reduce(
+				(conceptScore, synonym) =>
+					conceptScore + (context.has(tagLemma(synonym)) ? Math.max(12, 32 - concept.depth * 4) : 0),
+				0,
+			),
+		recordScore,
 	);
-	return terms.reduce((score, term) => score + (context.has(term) ? 20 : 0), 0);
 }
 
 async function selectedSense(term: string, context: Set<string>) {
@@ -197,7 +299,7 @@ async function selectedSense(term: string, context: Set<string>) {
 	const candidates = await Promise.all(
 		senses.map(async (record, index) => {
 			const concepts = await hypernyms(record);
-			return {record, concepts, index, score: senseScore(record, concepts, context)};
+			return {record, concepts, index, score: senseScore(record, concepts, context, term)};
 		}),
 	);
 	return candidates.sort(
@@ -208,17 +310,22 @@ async function selectedSense(term: string, context: Set<string>) {
 	)[0];
 }
 
-function lookupTerms(input: LexicalSuggestionRequest): string[] {
-	const values = [input.name, ...input.aliases];
-	const terms = new Set<string>();
-	for (const value of values) {
-		const normalized = normalizeSuggestionText(value);
-		if (!normalized) continue;
-		terms.add(normalized);
-		const words = normalized.split(" ");
-		if (words.length > 1) terms.add(words.at(-1)!);
-	}
-	return [...terms].slice(0, 12);
+function selectedSenseMatchesTaxonomy(
+	selected: Awaited<ReturnType<typeof selectedSense>>,
+	supportedTerms: Set<string> | undefined,
+	sourceTerm: string,
+): boolean {
+	if (!selected || !supportedTerms) return false;
+	const sourceKeys = new Set(
+		lookupKeys(sourceTerm).map((key) => normalizeSuggestionText(displayLemma(key))),
+	);
+	return [selected.record, ...selected.concepts].some((record) =>
+		record.synonyms.some(
+			(synonym) =>
+				!sourceKeys.has(normalizeSuggestionText(displayLemma(synonym))) &&
+				supportedTerms.has(normalizeSuggestionText(displayLemma(synonym))),
+		),
+	);
 }
 
 function addAlias(
@@ -256,11 +363,18 @@ function addConcept(
 
 export async function suggestFromWordNet(input: LexicalSuggestionRequest) {
 	const index = await indexPromise;
-	const sourceTerms = new Set(lookupTerms(input));
+	const wordNetTerms = new Set(wordNetLookupTerms(input));
+	const aliasTerms = new Set(lexicalLookupTerms(input));
+	const sourceTerms = new Set([...wordNetTerms, ...aliasTerms]);
+	const supportedAliasTerms = taxonomyAliasTerms(input.iconCategory);
+	const leafAliasTerms = taxonomyLeafAliasTerms(input.iconCategory);
+	const semanticAnchorTerms = taxonomySemanticAnchorTerms(input.iconCategory);
 	const context = new Set(
-		[...input.tags, ...(input.iconCategory ? [input.iconCategory] : [])].map((value) =>
-			tagLemma(value),
-		),
+		[
+			...input.tags,
+			...(input.iconCategory ? [input.iconCategory] : []),
+			...(supportedAliasTerms ?? []),
+		].map((value) => tagLemma(value)),
 	);
 	const aliases = new Map<string, LexicalAliasCandidate>();
 	const concepts = new Map<string, LexicalConceptCandidate>();
@@ -268,10 +382,65 @@ export async function suggestFromWordNet(input: LexicalSuggestionRequest) {
 	for (const term of sourceTerms) {
 		const selected = await selectedSense(term, context);
 		if (!selected) continue;
+		const matchesTaxonomy = selectedSenseMatchesTaxonomy(selected, supportedAliasTerms, term);
+		for (const candidate of aliasTerms.has(term) ? wiktionaryAliasesForTerm(term) : []) {
+			if (candidate.relation === "reference") {
+				if (!matchesTaxonomy) continue;
+				const normalizedCandidate = normalizeSuggestionText(candidate.value);
+				if (
+					supportedAliasTerms?.has(normalizedCandidate) &&
+					!leafAliasTerms?.has(normalizedCandidate)
+				) {
+					continue;
+				}
+				if (!leafAliasTerms?.has(normalizedCandidate)) {
+					const candidateSense = await selectedSense(candidate.value, context);
+					if (!selectedSenseMatchesTaxonomy(candidateSense, semanticAnchorTerms, candidate.value)) {
+						continue;
+					}
+				}
+			}
+			addAlias(aliases, candidate.value, candidate.relation, candidate.evidence);
+		}
+		if (!wordNetTerms.has(term)) continue;
 		for (const synonym of selected.record.synonyms) {
 			const synonymKey = normalizeSuggestionText(displayLemma(synonym)).replaceAll(" ", "_");
 			if ((index.get(synonymKey)?.taggedSenseCount ?? 0) === 0) continue;
+			if (
+				supportedAliasTerms &&
+				!matchesTaxonomy &&
+				!supportedAliasTerms.has(displayLemma(synonymKey))
+			) {
+				continue;
+			}
 			addAlias(aliases, synonym, "synonym", `A language reference lists it with “${term}”.`);
+		}
+		for (const concept of selected.concepts.filter(({depth}) => depth <= 2)) {
+			for (const synonym of concept.synonyms) {
+				const value = displayLemma(synonym);
+				const normalized = normalizeSuggestionText(value);
+				const synonymKey = normalized.replaceAll(" ", "_");
+				if (
+					(index.get(synonymKey)?.taggedSenseCount ?? 0) === 0 ||
+					GENERIC_CONCEPTS.has(tagLemma(value)) ||
+					BROAD_ALIAS_CONCEPTS.has(tagLemma(value)) ||
+					(supportedAliasTerms?.has(normalized) && !leafAliasTerms?.has(normalized))
+				) {
+					continue;
+				}
+				if (!leafAliasTerms?.has(normalized)) {
+					const candidateSense = await selectedSense(value, context);
+					if (!selectedSenseMatchesTaxonomy(candidateSense, semanticAnchorTerms, value)) {
+						continue;
+					}
+				}
+				addAlias(
+					aliases,
+					value,
+					"reference",
+					`The selected meaning of “${term}” is a kind of ${value}.`,
+				);
+			}
 		}
 		for (const concept of selected.concepts) {
 			addConcept(concepts, concept, `“${term}” belongs to this language category.`);
@@ -279,7 +448,7 @@ export async function suggestFromWordNet(input: LexicalSuggestionRequest) {
 	}
 
 	return {
-		aliases: [...aliases.values()].slice(0, 24),
+		aliases: [...aliases.values()],
 		concepts: [...concepts.values()]
 			.sort((left, right) => left.depth - right.depth || left.tag.localeCompare(right.tag))
 			.slice(0, 32),

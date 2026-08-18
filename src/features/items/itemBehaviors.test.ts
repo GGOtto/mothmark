@@ -1,8 +1,11 @@
 import {produce} from "immer";
-import {ITEM_BEHAVIOR_SCHEMAS, ItemSchema} from "@/schemas/world/itemSchema";
+import {ITEM_BEHAVIOR_SCHEMAS, ItemBehaviorSchema, ItemSchema} from "@/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
+import {toID} from "@/utils/idUtils";
 import {
+	addItemBehaviorDraft,
 	effectiveItemTags,
+	isDefaultItemBehavior,
 	ITEM_BEHAVIOR_DEFINITIONS,
 	replaceItemTagsAndBehaviorsDraft,
 } from "./itemBehaviors";
@@ -43,5 +46,32 @@ describe("item behavior tags", () => {
 			replaceItemTagsAndBehaviorsDraft(draft, ["lockable"]);
 		});
 		expect(attemptedRemoval.behaviors.map(({type}) => type)).toEqual(["openable", "lockable"]);
+	});
+
+	it("creates a door with an existing connection and its openable requirement", () => {
+		const connectionId = toID("connection", "hallway");
+		const withDoor = produce(createDefaultFieldObject(ItemSchema), (draft) => {
+			expect(addItemBehaviorDraft(draft, "door", {connectionId})).toBe(true);
+		});
+
+		expect(withDoor.behaviors).toEqual([
+			expect.objectContaining({type: "openable"}),
+			{type: "door", connectionId, controls: "both-directions"},
+		]);
+		expect(
+			withDoor.behaviors.every((behavior) => ItemBehaviorSchema.safeParse(behavior).success),
+		).toBe(true);
+		expect(isDefaultItemBehavior(withDoor.behaviors[1]!)).toBe(true);
+	});
+
+	it("does not create an invalid door when no connection exists", () => {
+		const source = createDefaultFieldObject(ItemSchema);
+		let added = true;
+		const unchanged = produce(source, (draft) => {
+			added = addItemBehaviorDraft(draft, "door");
+		});
+
+		expect(added).toBe(false);
+		expect(unchanged.behaviors).toEqual([]);
 	});
 });

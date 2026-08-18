@@ -15,6 +15,32 @@ function copyItemLocation(location: Item["initialState"]["location"]): ItemState
 }
 
 export function createItemState(item: Item): ItemState {
+	const flags = {...item.initialState.flags};
+	const behaviorAmounts: Record<string, number> = {};
+	let writtenText: string | undefined;
+	for (const behavior of item.behaviors) {
+		switch (behavior.type) {
+			case "switchable":
+				flags["behavior.on"] ??= behavior.startsOn;
+				break;
+			case "lightable":
+				flags["behavior.lit"] ??= behavior.startsLit;
+				break;
+			case "breakable":
+			case "repairable":
+				flags["behavior.broken"] ??= behavior.startsBroken;
+				break;
+			case "cleanable":
+				flags["behavior.dirty"] ??= behavior.startsDirty;
+				break;
+			case "liquid-container":
+				behaviorAmounts.liquid = Math.min(behavior.capacity, behavior.startingAmount);
+				break;
+			case "writable":
+				writtenText = behavior.startingText.trim() || undefined;
+				break;
+		}
+	}
 	return {
 		type: "item",
 		id: item.id,
@@ -28,7 +54,9 @@ export function createItemState(item: Item): ItemState {
 		location: copyItemLocation(item.initialState.location),
 		open: item.initialState.open,
 		locked: item.initialState.locked,
-		flags: {...item.initialState.flags},
+		flags,
+		...(Object.keys(behaviorAmounts).length > 0 ? {behaviorAmounts} : {}),
+		...(writtenText ? {writtenText} : {}),
 	};
 }
 
