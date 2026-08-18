@@ -1,11 +1,13 @@
 /** @jest-environment node */
 
 import {produce} from "immer";
+import {resolveTurn} from "@/engine/player/resolveTurn";
 import {createPlayerTestItem, createPlayerTestScenario} from "@/engine/utils/testUtils";
 import {addItemBehaviorDraft} from "@/features/items/itemBehaviors";
 import {GameMessageSchema, GameStateSchema} from "@/schemas/states/gameStateSchemas";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 
+import {observableState} from "../replayCompatibility";
 import {migrationFrom, PERSISTED_SCHEMA_VERSION} from ".";
 import {applyVersionedTransform} from "./types";
 import {v13ToV14} from "./v13ToV14";
@@ -56,16 +58,58 @@ describe("the v13 to v14 item-action and event-editor contract migration", () =>
 		expect(GameStateSchema.safeParse(result.value).success).toBe(true);
 	});
 
-	it("preserves retained messages while advancing their version", () => {
-		const value = structuredClone(createPlayerTestScenario("navigation").game.messages);
-		const result = applyVersionedTransform(v13ToV14, 13, v13ToV14.messages, value, {
+	it("replays retained turn states through the expanded command catalog", () => {
+		const {world, game} = createPlayerTestScenario("navigation");
+		const retained = resolveTurn(world, game, "look");
+		const result = applyVersionedTransform(v13ToV14, 13, v13ToV14.gameState, retained, {
+			playthroughId: "playthrough-1",
+			sequence: 1,
+			storage: "turn",
+			world,
+			command: "look",
+			previousState: game,
+		});
+
+		expect(result.applied).toBe(true);
+		expect(result.schemaVersion).toBe(14);
+		expect(observableState(GameStateSchema.parse(result.value))).toEqual(observableState(retained));
+	});
+
+	it("rebuilds turn output and the transcript from replayed states", () => {
+		const {world, game} = createPlayerTestScenario("navigation");
+		const state = resolveTurn(world, game, "look");
+		const output = state.messages.slice(game.messages.length);
+		const outputResult = applyVersionedTransform(v13ToV14, 13, v13ToV14.messages, [], {
+			playthroughId: "playthrough-1",
+			sequence: 1,
+			storage: "output",
+			gameState: state,
+			previousState: game,
+		});
+		const transcriptResult = applyVersionedTransform(v13ToV14, 13, v13ToV14.messages, [], {
 			playthroughId: "playthrough-1",
 			sequence: null,
 			storage: "transcript",
+			gameState: state,
+			previousState: state,
 		});
 
-		expect(result).toEqual({applied: true, schemaVersion: 14, value});
-		expect(GameMessageSchema.array().safeParse(result.value).success).toBe(true);
+		expect(outputResult.applied).toBe(true);
+		expect(outputResult.schemaVersion).toBe(14);
+		expect(
+			GameMessageSchema.array()
+				.parse(outputResult.value)
+				.map(({type, text}) => ({type, text})),
+		).toEqual(output.map(({type, text}) => ({type, text})));
+		expect(transcriptResult.applied).toBe(true);
+		expect(transcriptResult.schemaVersion).toBe(14);
+		expect(
+			GameMessageSchema.array()
+				.parse(transcriptResult.value)
+				.map(({type, text}) => ({type, text})),
+		).toEqual(state.messages.map(({type, text}) => ({type, text})));
+		expect(GameMessageSchema.array().safeParse(outputResult.value).success).toBe(true);
+		expect(GameMessageSchema.array().safeParse(transcriptResult.value).success).toBe(true);
 	});
 
 	it("is the final adjacent migration and cannot run twice", () => {
