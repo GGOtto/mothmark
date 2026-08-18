@@ -645,7 +645,7 @@ the full task definitions but do not imply a different sequence.
     host G03 recommendations; do not add placeholder templates before G03.
   - Handle unplaced items, nested items, similar names, large collections, and no-icon fallback.
 
-- [ ] **E05A — Bootstrap broad alias vocabulary from versioned lexical data.**
+- [x] **E05A — Bootstrap broad alias vocabulary from versioned lexical data.**
 
   **Outcome:** Authors receive useful ordinary player references for a wide range of objects without
   AI, item-name conditionals, or a manually curated synonym-pair catalog.
@@ -668,7 +668,7 @@ the full task definitions but do not imply a different sequence.
     require community volume for the initial vocabulary and never let accepted suggestions train
     themselves into higher confidence.
 
-- [ ] **E05B — Expand standard object behaviors and player affordances.**
+- [x] **E05B — Expand standard object behaviors and player affordances.**
 
   **Outcome:** Items can represent the broad set of ordinary actions a player would reasonably try,
   without turning every verb into bespoke engine code or an unconfigurable tag.
@@ -692,6 +692,14 @@ the full task definitions but do not imply a different sequence.
     focused tests and a companion player-path test through `resolveTurn` before it is offered.
   - Keep world-specific interactions in authored commands and use recipes when they do not justify a
     reusable standard behavior.
+
+  **Landed:** The catalog now contains 30 schema-derived behaviors, including 23 ordinary-action
+  capabilities beyond the original seven. Each new action has author-controlled availability,
+  messages, conditions, target rules, state, and after-action effects. Complete saved command
+  documents cover the maintained player vocabulary, deterministic tag suggestions preview the
+  commands and can apply taxonomy-specific action presets, and focused plus player-path coverage
+  exercises every maintained action and relation phrase. The broader category-by-category optional
+  command-template matrix and attachment states remain tracked in G03.
 
 - [ ] **E06 — Rebuild condition and effect selection/editing.**
 

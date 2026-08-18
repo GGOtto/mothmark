@@ -1,0 +1,165 @@
+{
+	"id": {
+		"type": "command",
+		"id": "equip-item"
+	},
+	"name": "Equip",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "wear <item>",
+	"helpDescription": "Wear, wield, remove, or put away a carried item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "equip-item-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "wear",
+							"label": "wear",
+							"matches": ["wear", "put on", "don"]
+						},
+						{
+							"value": "wield",
+							"label": "wield",
+							"matches": ["wield", "draw", "ready", "brandish"]
+						},
+						{
+							"value": "remove",
+							"label": "remove",
+							"matches": ["remove", "take off", "doff"]
+						},
+						{
+							"value": "unequip",
+							"label": "unequip",
+							"matches": ["unequip", "put away", "sheath", "stow"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "equip-item-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["equippable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "equip-item-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "equip-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "equip-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "equip-item-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "equip-item-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "equip-item-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't equip that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "equip-item-branch"
+		},
+		"always": {
+			"name": "Equip",
+			"id": {
+				"type": "effect",
+				"id": "equip-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "wear",
+					"itemId": {
+						"type": "item",
+						"id": "equip-item-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "equip-item-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "equip-item-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

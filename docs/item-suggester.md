@@ -4,16 +4,26 @@ The item suggester is deterministic, AI-free, and split into two author-facing m
 
 ## Alias mode
 
-Alias mode proposes player wording from the item name, existing aliases, and WordNet 3.1. It may
-offer corpus-attested direct synonyms or a useful head word from a longer name, but it does not turn broader
-classification terms into player aliases. Before display, candidates
-are normalized and checked against every other item's name and aliases. Head-word collisions are
-also indexed, so an `Apple` alias is not offered when another item is named `Green Apple`.
+Alias mode proposes player wording from the item name, existing aliases, WordNet 3.1, and a compact
+generated snapshot of English Wiktionary noun relationships. It may offer a source-backed direct
+synonym, a taxonomy-corroborated generic player noun, or a useful object phrase from a longer name,
+but it does not turn broad classification terms into player aliases. Before display, candidates are
+normalized and checked against every other item's name and aliases. Head-word collisions are also
+indexed, so an `Apple` alias is not offered when another item is named `Green Apple`.
 
 Ordinary authored phrases also yield their trailing object phrases, up to three words. For example,
 `The old grandfather clock` yields `grandfather clock` and `clock`; a longer ornamental name does
-not produce every possible word combination. Compound-object recognition applies to the last word,
-so `The enormous striped watermelon` can also yield `melon`.
+not produce every possible word combination. In phrases such as `map of the northern coast` and
+`rope with an iron hook`, extraction stops at the connector so the subject or attached component is
+not mistaken for the item. The resolved taxonomy handles quantity constructions such as `coil of
+rope`. Compound-object recognition still allows `The enormous striped watermelon` to yield `melon`.
+When a verified alternate noun is available, the same phrase logic may retain a nearby identifying
+modifier, so `leather satchel` can also yield `leather bag` and `parchment map` can yield
+`parchment chart`. Only taxonomy-corroborated or direct-definition nouns are recombined.
+Every accepted noun phrase also contributes its ordinary singular or plural player form, including
+irregular pairs such as `knife`/`knives`. Inflection follows the resolved object phrase, so a map of
+the coast yields `maps`, never `coasts`. Atomic taxonomy compounds such as `baseball bat` keep their
+meaning and are not rewritten into combinations such as `baseball club`.
 
 Recognizable closed-compound heads already present in the matched item-taxonomy category, such as
 `melon` in `watermelon`, are eligible too. The suggester does not contain curated synonym pairs or
@@ -44,12 +54,36 @@ defaults; removing either removes the other. Canonical capability tags are not d
 stored freeform tag list. Classification tags such as `food` can support a recommendation but never
 enable a behavior by themselves.
 
+Behavior recommendations can narrow a multi-action capability to the actions supported by the
+resolved taxonomy. For example, footwear recommends Wear and Remove rather than also enabling Wield,
+while a bell recommends Ring. The recommendation explains the player commands it will enable, and
+the author still performs the one explicit Enable action before any behavior changes.
+
 ## Data and execution boundaries
 
 - The browser sends only the item's bounded name, aliases, tags, and resolved icon category to the
   authenticated editor endpoint.
 - The server reads the WordNet noun index and noun data supplied by `wordnet-db`. The index, record
-  reads, and completed lookups are cached for the server process.
+  reads, and completed lookups are cached for the server process. WordNet continues to own noun
+  sense selection and semantic parents for tag suggestions.
+- The server also reads the committed Wiktionary alias snapshot. `pnpm lexicon:update` queries the
+  maintained item-taxonomy terms, records every source page revision, filters to safe English noun
+  relationships, and emits a deterministic versioned index. Production builds and requests never
+  call Wiktionary. Attribution and licensing are recorded in `docs/third-party-lexical-data.md` and
+  in the generated file itself.
+- Explicit Wiktionary synonyms are admitted only through a canonical endpoint in the maintained
+  taxonomy. A broader definition reference additionally requires the selected WordNet sense and the
+  resolved item-taxonomy branch to corroborate one another. Every edge remains directional.
+- WordNet uses the full taxonomy lineage to choose a noun sense. Once a sense is corroborated, all
+  of that sense's established spellings remain eligible; when it is not, only spellings explicitly
+  present in the branch remain eligible. This preserves useful alternatives while keeping obscure
+  alternate senses such as `baseball bat → lumber` out of player wording.
+- Concrete nouns from the first two parents of the selected WordNet sense may become aliases after
+  an independent taxonomy check. This supplies general player nouns such as `case`, `box`, and
+  `lamp`, while a maintained broad-concept block keeps classifications such as `container`,
+  `furniture`, and `weapon system` in tag mode.
+- Expanded phrase lookup is reserved for aliases. WordNet tag lookup keeps a compact per-authored-
+  name budget, so descriptive phrases cannot crowd later authored aliases out of semantic tagging.
 - Word sense ranking uses authored tags and the maintained icon category as context. The browser
   then grounds results in that category's lineage and combines direct name terms and lineage terms
   with schema discovery metadata for behavior recommendations. Equal inputs and vocabulary versions
@@ -61,6 +95,10 @@ enable a behavior by themselves.
 - While the panel remains open, a short debounce reruns the bounded lexical request whenever the
   item name, aliases, effective tags, or behaviors change. Stale requests are cancelled and stale
   results are not shown.
+
+The generated snapshot is data, not an author-maintained synonym catalog. Do not edit its edges by
+hand. Change the general extractor or taxonomy policy, add a regression example, and generate a new
+reviewable source-version digest instead.
 
 ## Shared editing control
 

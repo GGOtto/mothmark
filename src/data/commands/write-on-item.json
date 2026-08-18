@@ -1,0 +1,283 @@
+{
+	"id": {
+		"type": "command",
+		"id": "write-on-item"
+	},
+	"name": "Write",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "write <text> on <item>",
+	"helpDescription": "Write, draw, or mark text on a writable item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "write",
+							"label": "write",
+							"matches": ["write", "inscribe"]
+						},
+						{
+							"value": "draw",
+							"label": "draw",
+							"matches": ["draw", "sketch"]
+						},
+						{
+							"value": "mark",
+							"label": "mark",
+							"matches": ["mark", "scribble"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-text"
+					},
+					"type": "text",
+					"role": "text",
+					"mode": "phrase",
+					"minLength": 1,
+					"maxLength": 500
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-on"
+					},
+					"type": "relation",
+					"relation": "on",
+					"aliasMode": "extend",
+					"aliases": ["in", "onto"],
+					"role": "relation"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["writable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		},
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "write",
+							"label": "write",
+							"matches": ["write", "inscribe"]
+						},
+						{
+							"value": "draw",
+							"label": "draw",
+							"matches": ["draw", "sketch"]
+						},
+						{
+							"value": "mark",
+							"label": "mark",
+							"matches": ["mark", "scribble"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-on"
+					},
+					"type": "relation",
+					"relation": "on",
+					"aliasMode": "extend",
+					"aliases": ["in", "onto"],
+					"role": "relation"
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-item"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["writable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "write-text"
+					},
+					"type": "text",
+					"role": "text",
+					"mode": "phrase",
+					"minLength": 1,
+					"maxLength": 500
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 1,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "write-text"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "write-on-item-text-fallback"
+				},
+				"always": {
+					"name": "Missing writing",
+					"id": {
+						"type": "effect",
+						"id": "write-on-item-text-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "What do you want to write?"
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "write-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "write-on-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "write-on-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "write-item"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "write-on-item-write-item-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "write-on-item-write-item-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't write on that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "write-on-item-branch"
+		},
+		"always": {
+			"name": "Write on item",
+			"id": {
+				"type": "effect",
+				"id": "write-on-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "write",
+					"itemId": {
+						"type": "item",
+						"id": "write-target-item"
+					},
+					"text": "text",
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "write-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "write-item"
+							},
+							"field": "itemId"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "write-text"
+							},
+							"field": "text"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

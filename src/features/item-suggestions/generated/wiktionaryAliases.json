@@ -1,0 +1,3614 @@
+{
+	"version": "enwiktionary-e48a110c9625be1c",
+	"language": "en",
+	"license": {
+		"name": "Creative Commons Attribution-ShareAlike 4.0 International",
+		"spdx": "CC-BY-SA-4.0",
+		"url": "https://creativecommons.org/licenses/by-sa/4.0/",
+		"attribution": "English Wiktionary contributors",
+		"sourceUrl": "https://en.wiktionary.org/"
+	},
+	"source": {
+		"apiUrl": "https://en.wiktionary.org/w/api.php",
+		"compilerVersion": 5,
+		"pageRevisions": {
+			"alarm bell": 90817658,
+			"alarm clock": 91991545,
+			"ale": 92031842,
+			"altar": 92014070,
+			"amulet": 91780273,
+			"animal": 91961249,
+			"antidote": 91376434,
+			"antler": 91576727,
+			"apparatus": 91456031,
+			"apparel": 91389544,
+			"apple": 91972823,
+			"arcane": 91848599,
+			"arm": 91818257,
+			"armament": 91757375,
+			"armor": 91957990,
+			"armour": 88337346,
+			"arms": 91387691,
+			"arrow": 91603913,
+			"art": 91721158,
+			"artwork": 90738951,
+			"astrolabe": 89276192,
+			"athame": 87896896,
+			"atlas": 91221351,
+			"attire": 91389545,
+			"axe": 91603834,
+			"backpack": 92039909,
+			"badge": 91800235,
+			"bag": 91818733,
+			"ball": 91963614,
+			"bandage": 90998573,
+			"banner": 91971520,
+			"barge": 91949342,
+			"bark": 91978908,
+			"barrel": 91616233,
+			"barricade": 91751858,
+			"barrier": 91738353,
+			"baseball bat": 91511079,
+			"basin": 91366266,
+			"baton": 92035304,
+			"battleaxe": 85292061,
+			"battlement": 91124367,
+			"beast": 91956271,
+			"bed": 91831636,
+			"bedroll": 89178616,
+			"beer": 91779952,
+			"bell": 91947686,
+			"bench": 91643986,
+			"berry": 92014110,
+			"beverage": 91628990,
+			"bird": 91979711,
+			"bird nest": 85327943,
+			"biscuit": 91831656,
+			"blade": 91068561,
+			"blaster": 91091906,
+			"blindfold": 89651782,
+			"blossom": 91831700,
+			"blueprint": 90364735,
+			"boat": 91972859,
+			"bobbin": 91620504,
+			"body": 92037786,
+			"bolt": 91831722,
+			"bomb": 91989924,
+			"bone": 91991575,
+			"bones": 91645266,
+			"bonfire": 91478953,
+			"book": 92014125,
+			"bookcase": 89867370,
+			"boot": 91943235,
+			"boots": 91596858,
+			"bottle": 91947608,
+			"boulder": 91775147,
+			"bounty": 90931428,
+			"bow": 91961903,
+			"bracelet": 91739442,
+			"bracer": 81946480,
+			"bracers": 80765392,
+			"branch": 91837451,
+			"brand": 91952439,
+			"brazier": 91980650,
+			"bread": 92041387,
+			"breastplate": 91695166,
+			"brew": 91853255,
+			"bridge": 91831824,
+			"brooch": 89271644,
+			"buckler": 91981187,
+			"building": 91633669,
+			"bulkhead": 92013787,
+			"bunk": 91774155,
+			"bush": 91923509,
+			"bust": 91983870,
+			"butcher knife": 91528781,
+			"button": 91923548,
+			"cabinet": 91923636,
+			"cable": 91587031,
+			"cadaver": 91725346,
+			"cage": 91685496,
+			"cake": 91923697,
+			"campfire": 91110913,
+			"can": 91837749,
+			"candelabra": 88806408,
+			"candle": 92013220,
+			"candlestick": 91923756,
+			"cannon": 91019195,
+			"canoe": 91972853,
+			"canteen": 91807159,
+			"canvas": 91758154,
+			"cap": 91990084,
+			"cape": 91791175,
+			"carcass": 91644300,
+			"card": 91675665,
+			"cards": 88668080,
+			"carpet": 91680207,
+			"carriage": 91343166,
+			"carrot": 91919771,
+			"cart": 91953410,
+			"carving": 91981239,
+			"cask": 89277425,
+			"cat": 92013814,
+			"cauldron": 91848258,
+			"causeway": 91624662,
+			"cell": 91924215,
+			"cellar door": 89291058,
+			"censer": 91136026,
+			"certificate": 91562987,
+			"chain": 91979076,
+			"chainmail": 89552084,
+			"chair": 92018417,
+			"chalice": 89279387,
+			"chalk": 91547257,
+			"chariot": 91915382,
+			"chart": 91924445,
+			"chest": 91924629,
+			"chime": 91354557,
+			"cistern": 91568725,
+			"cleaver": 91991158,
+			"cloak": 91979008,
+			"clock": 91925078,
+			"clockwork": 90564761,
+			"clothing": 92011768,
+			"club": 91932867,
+			"coat": 91694361,
+			"codex": 91981346,
+			"coffer": 91124782,
+			"coffin": 91932885,
+			"coin": 91932889,
+			"combination lock": 91005982,
+			"compass": 91932924,
+			"container": 91932962,
+			"control": 91932963,
+			"control panel": 91316813,
+			"cookware": 90610926,
+			"cord": 91988908,
+			"coronet": 91971188,
+			"corpse": 91144285,
+			"correspondence": 91981441,
+			"costume": 91224322,
+			"cot": 91717652,
+			"couch": 92030943,
+			"counter": 91793955,
+			"crank": 91328516,
+			"crate": 92012073,
+			"creature": 91643066,
+			"credential": 90506407,
+			"crossbow": 89518326,
+			"crossing": 91786590,
+			"crown": 91982351,
+			"crypt": 89421118,
+			"crystal": 91933075,
+			"crystal ball": 91403186,
+			"cudgel": 91652461,
+			"cuirass": 89228052,
+			"cupboard": 91969434,
+			"currency": 91739976,
+			"cymbal": 91588497,
+			"dagger": 91445422,
+			"deadbolt": 90591456,
+			"deceased": 90374750,
+			"decree": 90912246,
+			"defender": 91933251,
+			"desk": 91755478,
+			"device": 91933323,
+			"diadem": 91508854,
+			"diagram": 91939734,
+			"dial": 91830482,
+			"diamond": 91639529,
+			"diary": 91125156,
+			"dice": 91342695,
+			"die": 91969173,
+			"dining table": 90308385,
+			"dirk": 89635610,
+			"dirt": 91939796,
+			"disguise": 90362385,
+			"dish": 91939816,
+			"document": 91673743,
+			"dog": 92031197,
+			"dog bed": 89769426,
+			"doll": 91729727,
+			"door": 91939874,
+			"doormat": 91779016,
+			"doorway": 91571249,
+			"draught": 91699757,
+			"drawbridge": 91661688,
+			"drawing": 91800284,
+			"dresser": 91977426,
+			"driftwood": 90747906,
+			"drink": 91989543,
+			"drum": 91949814,
+			"dynamite": 91214664,
+			"earth": 92038547,
+			"edifice": 91125334,
+			"effigy": 89225165,
+			"egg": 91949913,
+			"eggs": 82871675,
+			"eggshell": 91527168,
+			"elixir": 91631682,
+			"ember": 91583006,
+			"embroidery": 90759221,
+			"emerald": 91145081,
+			"enclosure": 91893263,
+			"engine": 91221134,
+			"entrance": 91703714,
+			"equipment": 90937279,
+			"escalator": 91773392,
+			"exit": 91827957,
+			"explosive": 90482842,
+			"face covering": 70927707,
+			"fang": 91805753,
+			"fauna": 92031424,
+			"fence": 91504203,
+			"fetish": 91746620,
+			"fiddle": 90292784,
+			"fire": 91955568,
+			"fire hydrant": 90035609,
+			"firearm": 91780114,
+			"fireplace": 91762975,
+			"fireplug": 85841646,
+			"firework": 91759840,
+			"fish": 91979505,
+			"fish trap": 91942670,
+			"fishing hook": 44451434,
+			"fishing line": 91011694,
+			"fishing rod": 89861533,
+			"fixture": 91538252,
+			"flag": 91955576,
+			"flail": 91656494,
+			"flare": 91800871,
+			"flashlight": 91560906,
+			"flask": 91918649,
+			"flora": 91643840,
+			"flower": 91955603,
+			"flute": 91803937,
+			"focus": 91362758,
+			"food": 91955624,
+			"footbridge": 91815450,
+			"footwear": 92011351,
+			"fortification": 90091995,
+			"fortress": 91547368,
+			"fountain": 91290082,
+			"fountain pen": 91380349,
+			"fresco": 91247277,
+			"fruit": 91960961,
+			"fungus": 91430513,
+			"furnishing": 91814872,
+			"furniture": 91830345,
+			"game piece": 89294405,
+			"gangway": 91117765,
+			"garden hose": 85563110,
+			"garment": 91453402,
+			"gate": 92031412,
+			"gateway": 89284443,
+			"gauntlet": 91956582,
+			"gauntlets": 55328895,
+			"gavel": 91968304,
+			"gear": 92010697,
+			"gem": 91775200,
+			"gemstone": 91982405,
+			"generator": 91955733,
+			"generic": 91955736,
+			"glove": 91592850,
+			"gloves": 80766086,
+			"glyph": 91415415,
+			"goblet": 90553238,
+			"goggle": 91955804,
+			"goggles": 91107351,
+			"gong": 91830831,
+			"grain": 91806359,
+			"grass": 92015693,
+			"grate": 91618049,
+			"grave": 91788944,
+			"greave": 91768791,
+			"greaves": 89240499,
+			"grenade": 91790799,
+			"grille": 91957000,
+			"grimoire": 90837992,
+			"ground": 91810776,
+			"guard": 91955874,
+			"guitar": 91918826,
+			"gun": 91964317,
+			"halberd": 90127958,
+			"hammer": 91728957,
+			"hammock": 91738478,
+			"handaxe": 85310233,
+			"handbell": 89639416,
+			"handwear": 92011355,
+			"harp": 91798612,
+			"hat": 92031845,
+			"hatch": 91383305,
+			"hatchet": 91642924,
+			"hatchling": 91967828,
+			"hazard": 91446742,
+			"headstone": 84551492,
+			"headwear": 92011357,
+			"hearth": 91481723,
+			"hedge": 91717418,
+			"helmet": 91970825,
+			"herb": 91603410,
+			"hood": 91967456,
+			"hopscotch": 91803190,
+			"horn": 91984625,
+			"hose": 91612298,
+			"hourglass": 91479262,
+			"hydrant": 90456984,
+			"idol": 91718912,
+			"illustration": 91969312,
+			"implement": 91930121,
+			"incantation": 91082551,
+			"ingredient": 91126413,
+			"ink": 91735366,
+			"inkwell": 91771725,
+			"instrument": 91365832,
+			"invitation": 91040100,
+			"jail": 91571114,
+			"jar": 91583580,
+			"javelin": 90114172,
+			"jewel": 91962778,
+			"jewellery": 91847084,
+			"jewelry": 85184614,
+			"journal": 91795630,
+			"jug": 91432296,
+			"juice": 91967734,
+			"keg": 89761735,
+			"kennel": 91721216,
+			"key": 91795976,
+			"keycard": 91680667,
+			"keyring": 89888223,
+			"kitchen knife": 91151878,
+			"kite shield": 89866737,
+			"knife": 91812168,
+			"ladder": 91751056,
+			"ladle": 90918999,
+			"lamp": 91976662,
+			"lance": 91806306,
+			"lantern": 90898636,
+			"latch": 89984148,
+			"latchkey": 91577943,
+			"leaf": 91976687,
+			"letter": 91976712,
+			"lever": 91663952,
+			"lichen": 91976728,
+			"light": 91976733,
+			"link": 91679772,
+			"loaf": 89454424,
+			"lock": 91976812,
+			"lockbox": 88658979,
+			"lockpick": 85278840,
+			"log": 91765065,
+			"longsword": 92010546,
+			"loot": 91977495,
+			"lute": 91813227,
+			"lyre": 91126796,
+			"mace": 91980711,
+			"machine": 91976795,
+			"magic": 91976798,
+			"magic wand": 91814554,
+			"mail": 91976802,
+			"mallet": 91126910,
+			"manacle": 91330905,
+			"manhole": 91666875,
+			"mantle": 91930582,
+			"manual": 91653195,
+			"manuscript": 91776012,
+			"map": 91784888,
+			"marker": 91195633,
+			"mask": 91971761,
+			"mat": 91959866,
+			"mattress": 91572053,
+			"maul": 91126947,
+			"meal": 91991113,
+			"meat": 92037573,
+			"mechanism": 90998645,
+			"medallion": 90539257,
+			"medicine": 91799235,
+			"melody": 91547705,
+			"melon": 92040299,
+			"memo": 91248285,
+			"memorial": 90320454,
+			"message": 91989874,
+			"mitten": 91028351,
+			"mittens": 83562863,
+			"mold": 91989915,
+			"money": 92013224,
+			"monument": 91719968,
+			"morning star": 91324782,
+			"morningstar": 85293246,
+			"mortal remains": 91376662,
+			"mosaic": 91984031,
+			"motor": 92013258,
+			"mummy": 89635203,
+			"mural": 91810352,
+			"mushroom": 91663291,
+			"music": 91988863,
+			"musical": 92013291,
+			"musket": 91740567,
+			"nature": 91726868,
+			"necklace": 91002305,
+			"needle": 91563271,
+			"nest": 91802004,
+			"net": 92031396,
+			"noisemaker": 90605233,
+			"note": 92013484,
+			"nourishment": 89325840,
+			"ocarina": 90670868,
+			"offering": 91133945,
+			"oil drum": 89328419,
+			"orb": 89218557,
+			"outfit": 91958400,
+			"packet": 92013617,
+			"padlock": 91005976,
+			"painting": 92016581,
+			"palisade": 91977359,
+			"pan": 92041597,
+			"paper": 92039425,
+			"papyrus": 91715459,
+			"parchment": 91819893,
+			"pass": 92039458,
+			"pastry": 91388378,
+			"pebble": 91934804,
+			"pen": 92039484,
+			"pennant": 90333542,
+			"percussion": 92039492,
+			"permit": 91942218,
+			"pet": 91820939,
+			"philter": 89743815,
+			"picture": 92027835,
+			"pie": 92040725,
+			"pike": 91414568,
+			"pipe": 92039557,
+			"pistol": 91127426,
+			"pitfall": 91324202,
+			"plan": 91945126,
+			"plant": 91950946,
+			"plate": 92039571,
+			"plaything": 86756585,
+			"pocketknife": 89280932,
+			"poison": 92039596,
+			"polearm": 89287157,
+			"portal": 91982295,
+			"portcullis": 89627922,
+			"portrait": 91142610,
+			"pot": 92039658,
+			"potion": 91591238,
+			"pouch": 89885933,
+			"powder keg": 91014780,
+			"power unit": 82012668,
+			"proclamation": 91488335,
+			"produce": 91127654,
+			"pump": 92039733,
+			"purse": 92039752,
+			"quill": 91289415,
+			"quiver": 91789395,
+			"rabbit": 92039787,
+			"raft": 91981505,
+			"railing": 91121676,
+			"ramp": 91680590,
+			"rampart": 91127755,
+			"rapier": 90533958,
+			"ration": 91982385,
+			"rattle": 89277671,
+			"rawhide": 91372283,
+			"receptacle": 91451909,
+			"record": 91221727,
+			"regalia": 91222105,
+			"relic": 91127848,
+			"relief": 91501840,
+			"reliquary": 91787120,
+			"remain": 91828852,
+			"remains": 91653759,
+			"rifle": 91657036,
+			"rift": 90313707,
+			"ring": 91807398,
+			"robe": 91991784,
+			"rod": 92010596,
+			"root": 91913939,
+			"rope": 91658590,
+			"ruby": 91667954,
+			"rug": 91398694,
+			"rune": 91022393,
+			"rushlight": 87762956,
+			"saber": 91832252,
+			"sack": 91700440,
+			"salve": 91941979,
+			"sanctuary": 91128051,
+			"sandal": 91586416,
+			"sandals": 73696095,
+			"sarcophagus": 91128061,
+			"satchel": 91958423,
+			"scepter": 90289170,
+			"schematic": 87888950,
+			"scimitar": 91177722,
+			"scroll": 91983059,
+			"scrying": 89639824,
+			"sculpture": 91128135,
+			"seal": 91813843,
+			"seat": 91790591,
+			"seed": 91401418,
+			"seeing stone": 65597658,
+			"sewing": 91956983,
+			"sextant": 90022364,
+			"shackle": 91122364,
+			"shawl": 91915396,
+			"shelf": 91916269,
+			"shell": 91977545,
+			"shelves": 80865970,
+			"shield": 91411109,
+			"ship": 91786048,
+			"shoe": 91735645,
+			"shoes": 85559891,
+			"shortsword": 89266567,
+			"shrine": 89776971,
+			"sigil": 91733726,
+			"sign": 91529324,
+			"signpost": 90749140,
+			"skeletal": 91748463,
+			"skeleton key": 91142770,
+			"skiff": 89469559,
+			"sledge": 91673514,
+			"sleigh bell": 85230335,
+			"sling": 91977034,
+			"slingshot": 91147028,
+			"slipper": 91544489,
+			"slippers": 85767589,
+			"snare": 91554519,
+			"sofa": 91703613,
+			"soil": 91814276,
+			"sorcery": 90931833,
+			"sound": 91325085,
+			"soup": 91415883,
+			"spatula": 91549464,
+			"spear": 91374711,
+			"spell": 91672730,
+			"spellbook": 91510143,
+			"sphere": 91623365,
+			"spool": 90912951,
+			"spore": 91619440,
+			"spray bottle": 90747695,
+			"spring": 91960194,
+			"sprinkler": 92013172,
+			"spyglass": 88035111,
+			"squirrel": 91743708,
+			"staff": 91415969,
+			"stair": 91392770,
+			"staircase": 91715762,
+			"stairs": 89877166,
+			"standard": 91651797,
+			"statue": 91773824,
+			"statuette": 91414094,
+			"stave": 91533221,
+			"step": 91757662,
+			"steps": 88684082,
+			"stew": 90308096,
+			"stick": 91565743,
+			"stitching": 91800745,
+			"stool": 91669405,
+			"storage": 91678709,
+			"storm drain": 91407120,
+			"string": 91775705,
+			"string instrument": 87850109,
+			"strings": 91609330,
+			"structure": 91416028,
+			"stylus": 91356606,
+			"sundial": 91830399,
+			"switch": 92040869,
+			"sword": 92041307,
+			"syringe": 92012273,
+			"table": 91991758,
+			"tackle": 91247774,
+			"taper": 91693034,
+			"tapestry": 91414184,
+			"tea": 91797694,
+			"telegram": 91438146,
+			"teleporter": 90536960,
+			"telescope": 91984404,
+			"tennis ball": 91810105,
+			"tether": 91308214,
+			"text": 91978951,
+			"textile": 92020247,
+			"thimble": 91322054,
+			"thread": 92012736,
+			"threshold": 91775309,
+			"throne": 91991751,
+			"tiara": 91159476,
+			"ticket": 91377330,
+			"timber": 91590138,
+			"timepiece": 91078947,
+			"timer": 91222668,
+			"toadstool": 90898920,
+			"token": 92032744,
+			"tomahawk": 91001556,
+			"tomb": 91950934,
+			"tome": 90821088,
+			"tonic": 91579641,
+			"tool": 91775351,
+			"tooth": 91959764,
+			"torch": 91768066,
+			"totem": 91569723,
+			"tower": 91742019,
+			"tower shield": 89866748,
+			"toy": 91987828,
+			"trap": 92040058,
+			"trapdoor": 90275291,
+			"treasure": 91732283,
+			"treasure chest": 89542129,
+			"tree": 91942558,
+			"trident": 91347011,
+			"trigger": 91621956,
+			"tripwire": 91354452,
+			"truck": 91646761,
+			"trumpet": 91389861,
+			"trunk": 92014711,
+			"tub": 91730143,
+			"tunic": 90983675,
+			"turbine": 91128766,
+			"turnstile": 91215516,
+			"twine": 91985590,
+			"unlocker": 81184450,
+			"urn": 91982725,
+			"utensil": 91968022,
+			"valve": 92039879,
+			"van": 92039966,
+			"vat": 91847321,
+			"vegetable": 91524885,
+			"vehicle": 91415465,
+			"veil": 91646876,
+			"vessel": 91546176,
+			"vial": 91662331,
+			"vine": 91989705,
+			"violin": 90484475,
+			"volume": 91802634,
+			"votive": 89959309,
+			"wagon": 91969617,
+			"wall": 91817183,
+			"wall hanging": 89245709,
+			"wand": 90374960,
+			"ward": 91726645,
+			"wardrobe": 91760538,
+			"watch": 91987930,
+			"watchtower": 91724545,
+			"water pump": 90510962,
+			"watercraft": 90998380,
+			"watermelon": 92015321,
+			"waygate": 81299696,
+			"weapon": 91808707,
+			"wearable": 91304135,
+			"well": 91973525,
+			"whistle": 91660718,
+			"wicket": 91170940,
+			"wilderness": 90749924,
+			"wind instrument": 91773253,
+			"wine": 91980221,
+			"wire": 91806136,
+			"wood": 91987804,
+			"workbench": 91491352,
+			"wormhole": 91116825,
+			"writing": 91336893,
+			"yarn": 91117334
+		}
+	},
+	"entries": {
+		"alarm clock": [
+			{
+				"value": "clock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “alarm clock” using this player word.",
+				"sourceRevision": 91991545
+			}
+		],
+		"ale": [
+			{
+				"value": "beer",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ale” using this player word.",
+				"sourceRevision": 92031842
+			}
+		],
+		"altar": [
+			{
+				"value": "sanctuary",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “altar” using this player word.",
+				"sourceRevision": 92014070
+			}
+		],
+		"apparatus": [
+			{
+				"value": "mechanism",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “apparatus”.",
+				"sourceRevision": 91456031
+			},
+			{
+				"value": "machine",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “apparatus” using this player word.",
+				"sourceRevision": 91456031
+			}
+		],
+		"apparel": [
+			{
+				"value": "clothing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “apparel” using this player word.",
+				"sourceRevision": 91389544
+			}
+		],
+		"apple": [
+			{
+				"value": "fruit",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “apple” using this player word.",
+				"sourceRevision": 91972823
+			}
+		],
+		"arm": [
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “arm” using this player word.",
+				"sourceRevision": 91818257
+			}
+		],
+		"arrow": [
+			{
+				"value": "bow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “arrow” using this player word.",
+				"sourceRevision": 91603913
+			}
+		],
+		"art": [
+			{
+				"value": "artwork",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “art” using this player word.",
+				"sourceRevision": 91721158
+			}
+		],
+		"athame": [
+			{
+				"value": "dagger",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “athame” using this player word.",
+				"sourceRevision": 87896896
+			},
+			{
+				"value": "knife",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “athame” using this player word.",
+				"sourceRevision": 87896896
+			}
+		],
+		"atlas": [
+			{
+				"value": "map",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “atlas” using this player word.",
+				"sourceRevision": 91221351
+			}
+		],
+		"badge": [
+			{
+				"value": "token",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “badge” using this player word.",
+				"sourceRevision": 91800235
+			}
+		],
+		"bag": [
+			{
+				"value": "sack",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “bag”.",
+				"sourceRevision": 91818733
+			}
+		],
+		"banner": [
+			{
+				"value": "flag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “banner” using this player word.",
+				"sourceRevision": 91971520
+			},
+			{
+				"value": "sign",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “banner” using this player word.",
+				"sourceRevision": 91971520
+			},
+			{
+				"value": "standard",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “banner” using this player word.",
+				"sourceRevision": 91971520
+			}
+		],
+		"barge": [
+			{
+				"value": "boat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “barge” using this player word.",
+				"sourceRevision": 91949342
+			}
+		],
+		"bark": [
+			{
+				"value": "tree",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bark” using this player word.",
+				"sourceRevision": 91978908
+			}
+		],
+		"baton": [
+			{
+				"value": "club",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “baton” using this player word.",
+				"sourceRevision": 92035304
+			}
+		],
+		"battlement": [
+			{
+				"value": "fortification",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “battlement” using this player word.",
+				"sourceRevision": 91124367
+			},
+			{
+				"value": "wall",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “battlement” using this player word.",
+				"sourceRevision": 91124367
+			}
+		],
+		"beer": [
+			{
+				"value": "drink",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “beer” using this player word.",
+				"sourceRevision": 91779952
+			}
+		],
+		"bench": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bench” using this player word.",
+				"sourceRevision": 91643986
+			}
+		],
+		"berry": [
+			{
+				"value": "fruit",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “berry” using this player word.",
+				"sourceRevision": 92014110
+			}
+		],
+		"beverage": [
+			{
+				"value": "drink",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “beverage” using this player word.",
+				"sourceRevision": 91628990
+			}
+		],
+		"bird": [
+			{
+				"value": "animal",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bird” using this player word.",
+				"sourceRevision": 91979711
+			}
+		],
+		"biscuit": [
+			{
+				"value": "bread",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “biscuit” using this player word.",
+				"sourceRevision": 91831656
+			}
+		],
+		"blade": [
+			{
+				"value": "sword",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “blade” using this player word.",
+				"sourceRevision": 91068561
+			}
+		],
+		"blossom": [
+			{
+				"value": "flower",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “blossom” using this player word.",
+				"sourceRevision": 91831700
+			}
+		],
+		"blueprint": [
+			{
+				"value": "plan",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “blueprint” using this player word.",
+				"sourceRevision": 90364735
+			}
+		],
+		"bobbin": [
+			{
+				"value": "spool",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bobbin” using this player word.",
+				"sourceRevision": 91620504
+			},
+			{
+				"value": "thread",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bobbin” using this player word.",
+				"sourceRevision": 91620504
+			}
+		],
+		"bomb": [
+			{
+				"value": "explosive",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bomb” using this player word.",
+				"sourceRevision": 91989924
+			}
+		],
+		"bonfire": [
+			{
+				"value": "fire",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bonfire” using this player word.",
+				"sourceRevision": 91478953
+			}
+		],
+		"book": [
+			{
+				"value": "tome",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “book”.",
+				"sourceRevision": 92014125
+			},
+			{
+				"value": "volume",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “book”.",
+				"sourceRevision": 92014125
+			}
+		],
+		"boot": [
+			{
+				"value": "shoe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “boot” using this player word.",
+				"sourceRevision": 91943235
+			}
+		],
+		"bow": [
+			{
+				"value": "arrow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bow” using this player word.",
+				"sourceRevision": 91961903
+			}
+		],
+		"bracelet": [
+			{
+				"value": "jewellery",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bracelet” using this player word.",
+				"sourceRevision": 91739442
+			},
+			{
+				"value": "jewelry",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bracelet” using this player word.",
+				"sourceRevision": 91739442
+			}
+		],
+		"branch": [
+			{
+				"value": "tree",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “branch” using this player word.",
+				"sourceRevision": 91837451
+			}
+		],
+		"breastplate": [
+			{
+				"value": "armor",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “breastplate” using this player word.",
+				"sourceRevision": 91695166
+			},
+			{
+				"value": "cuirass",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “breastplate” using this player word.",
+				"sourceRevision": 91695166
+			}
+		],
+		"brooch": [
+			{
+				"value": "jewellery",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “brooch” using this player word.",
+				"sourceRevision": 89271644
+			}
+		],
+		"buckler": [
+			{
+				"value": "shield",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “buckler” using this player word.",
+				"sourceRevision": 91981187
+			}
+		],
+		"building": [
+			{
+				"value": "structure",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “building” using this player word.",
+				"sourceRevision": 91633669
+			}
+		],
+		"bunk": [
+			{
+				"value": "bed",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bunk” using this player word.",
+				"sourceRevision": 91774155
+			},
+			{
+				"value": "cot",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bunk” using this player word.",
+				"sourceRevision": 91774155
+			}
+		],
+		"bush": [
+			{
+				"value": "plant",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bush” using this player word.",
+				"sourceRevision": 91923509
+			},
+			{
+				"value": "wilderness",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “bush” using this player word.",
+				"sourceRevision": 91923509
+			}
+		],
+		"cabinet": [
+			{
+				"value": "cupboard",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cabinet” using this player word.",
+				"sourceRevision": 91923636
+			}
+		],
+		"cage": [
+			{
+				"value": "enclosure",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cage” using this player word.",
+				"sourceRevision": 91685496
+			}
+		],
+		"campfire": [
+			{
+				"value": "fire",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “campfire” using this player word.",
+				"sourceRevision": 91110913
+			}
+		],
+		"candlestick": [
+			{
+				"value": "candle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “candlestick” using this player word.",
+				"sourceRevision": 91923756
+			}
+		],
+		"cannon": [
+			{
+				"value": "gun",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cannon” using this player word.",
+				"sourceRevision": 91019195
+			}
+		],
+		"canoe": [
+			{
+				"value": "boat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “canoe” using this player word.",
+				"sourceRevision": 91972853
+			}
+		],
+		"canteen": [
+			{
+				"value": "bottle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “canteen” using this player word.",
+				"sourceRevision": 91807159
+			},
+			{
+				"value": "flask",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “canteen” using this player word.",
+				"sourceRevision": 91807159
+			}
+		],
+		"canvas": [
+			{
+				"value": "painting",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “canvas” using this player word.",
+				"sourceRevision": 91758154
+			}
+		],
+		"cap": [
+			{
+				"value": "hat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cap” using this player word.",
+				"sourceRevision": 91990084
+			}
+		],
+		"carcass": [
+			{
+				"value": "body",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “carcass” using this player word.",
+				"sourceRevision": 91644300
+			},
+			{
+				"value": "corpse",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “carcass” using this player word.",
+				"sourceRevision": 91644300
+			}
+		],
+		"carrot": [
+			{
+				"value": "vegetable",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “carrot” using this player word.",
+				"sourceRevision": 91919771
+			}
+		],
+		"cart": [
+			{
+				"value": "vehicle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cart” using this player word.",
+				"sourceRevision": 91953410
+			}
+		],
+		"cauldron": [
+			{
+				"value": "pot",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cauldron” using this player word.",
+				"sourceRevision": 91848258
+			}
+		],
+		"causeway": [
+			{
+				"value": "bridge",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “causeway” using this player word.",
+				"sourceRevision": 91624662
+			}
+		],
+		"cell": [
+			{
+				"value": "jail",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cell” using this player word.",
+				"sourceRevision": 91924215
+			}
+		],
+		"certificate": [
+			{
+				"value": "document",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “certificate” using this player word.",
+				"sourceRevision": 91562987
+			}
+		],
+		"chain": [
+			{
+				"value": "link",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chain” using this player word.",
+				"sourceRevision": 91979076
+			}
+		],
+		"chair": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chair” using this player word.",
+				"sourceRevision": 92018417
+			}
+		],
+		"chariot": [
+			{
+				"value": "carriage",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chariot” using this player word.",
+				"sourceRevision": 91915382
+			},
+			{
+				"value": "cart",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chariot” using this player word.",
+				"sourceRevision": 91915382
+			}
+		],
+		"chart": [
+			{
+				"value": "map",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chart” using this player word.",
+				"sourceRevision": 91924445
+			}
+		],
+		"chime": [
+			{
+				"value": "bell",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “chime” using this player word.",
+				"sourceRevision": 91354557
+			}
+		],
+		"cleaver": [
+			{
+				"value": "knife",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cleaver” using this player word.",
+				"sourceRevision": 91991158
+			}
+		],
+		"cloak": [
+			{
+				"value": "cape",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cloak” using this player word.",
+				"sourceRevision": 91979008
+			}
+		],
+		"clockwork": [
+			{
+				"value": "device",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “clockwork” using this player word.",
+				"sourceRevision": 90564761
+			},
+			{
+				"value": "mechanism",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “clockwork” using this player word.",
+				"sourceRevision": 90564761
+			}
+		],
+		"codex": [
+			{
+				"value": "book",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “codex” using this player word.",
+				"sourceRevision": 91981346
+			}
+		],
+		"coffer": [
+			{
+				"value": "chest",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “coffer” using this player word.",
+				"sourceRevision": 91124782
+			}
+		],
+		"coin": [
+			{
+				"value": "currency",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “coin” using this player word.",
+				"sourceRevision": 91932889
+			}
+		],
+		"combination lock": [
+			{
+				"value": "lock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “combination lock” using this player word.",
+				"sourceRevision": 91005982
+			}
+		],
+		"control panel": [
+			{
+				"value": "control",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “control panel” using this player word.",
+				"sourceRevision": 91316813
+			}
+		],
+		"cord": [
+			{
+				"value": "rope",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cord” using this player word.",
+				"sourceRevision": 91988908
+			}
+		],
+		"corpse": [
+			{
+				"value": "body",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “corpse” using this player word.",
+				"sourceRevision": 91144285
+			},
+			{
+				"value": "carcass",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “corpse” using this player word.",
+				"sourceRevision": 91144285
+			}
+		],
+		"costume": [
+			{
+				"value": "disguise",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “costume” using this player word.",
+				"sourceRevision": 91224322
+			}
+		],
+		"cot": [
+			{
+				"value": "bed",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cot” using this player word.",
+				"sourceRevision": 91717652
+			}
+		],
+		"couch": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “couch” using this player word.",
+				"sourceRevision": 92030943
+			},
+			{
+				"value": "sofa",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “couch” using this player word.",
+				"sourceRevision": 92030943
+			}
+		],
+		"crossbow": [
+			{
+				"value": "arrow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “crossbow” using this player word.",
+				"sourceRevision": 89518326
+			},
+			{
+				"value": "bolt",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “crossbow” using this player word.",
+				"sourceRevision": 89518326
+			},
+			{
+				"value": "bow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “crossbow” using this player word.",
+				"sourceRevision": 89518326
+			}
+		],
+		"crown": [
+			{
+				"value": "diadem",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “crown” using this player word.",
+				"sourceRevision": 91982351
+			}
+		],
+		"cudgel": [
+			{
+				"value": "club",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cudgel” using this player word.",
+				"sourceRevision": 91652461
+			}
+		],
+		"cuirass": [
+			{
+				"value": "armor",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cuirass” using this player word.",
+				"sourceRevision": 89228052
+			}
+		],
+		"cupboard": [
+			{
+				"value": "cabinet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cupboard” using this player word.",
+				"sourceRevision": 91969434
+			},
+			{
+				"value": "shelves",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “cupboard” using this player word.",
+				"sourceRevision": 91969434
+			}
+		],
+		"currency": [
+			{
+				"value": "money",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “currency” using this player word.",
+				"sourceRevision": 91739976
+			}
+		],
+		"dagger": [
+			{
+				"value": "knife",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “dagger”.",
+				"sourceRevision": 91445422
+			}
+		],
+		"deadbolt": [
+			{
+				"value": "lock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “deadbolt” using this player word.",
+				"sourceRevision": 90591456
+			}
+		],
+		"desk": [
+			{
+				"value": "table",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “desk” using this player word.",
+				"sourceRevision": 91755478
+			}
+		],
+		"diadem": [
+			{
+				"value": "crown",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “diadem” using this player word.",
+				"sourceRevision": 91508854
+			}
+		],
+		"diagram": [
+			{
+				"value": "chart",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “diagram” using this player word.",
+				"sourceRevision": 91939734
+			},
+			{
+				"value": "plan",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “diagram” using this player word.",
+				"sourceRevision": 91939734
+			}
+		],
+		"diamond": [
+			{
+				"value": "gemstone",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “diamond” using this player word.",
+				"sourceRevision": 91639529
+			}
+		],
+		"dice": [
+			{
+				"value": "die",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dice” using this player word.",
+				"sourceRevision": 91342695
+			}
+		],
+		"die": [
+			{
+				"value": "dice",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “die” using this player word.",
+				"sourceRevision": 91969173
+			}
+		],
+		"dirk": [
+			{
+				"value": "dagger",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dirk” using this player word.",
+				"sourceRevision": 89635610
+			}
+		],
+		"dirt": [
+			{
+				"value": "earth",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dirt” using this player word.",
+				"sourceRevision": 91939796
+			},
+			{
+				"value": "soil",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dirt” using this player word.",
+				"sourceRevision": 91939796
+			}
+		],
+		"document": [
+			{
+				"value": "text",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “document” using this player word.",
+				"sourceRevision": 91673743
+			}
+		],
+		"dog bed": [
+			{
+				"value": "bed",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dog bed” using this player word.",
+				"sourceRevision": 89769426
+			}
+		],
+		"doll": [
+			{
+				"value": "toy",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “doll” using this player word.",
+				"sourceRevision": 91729727
+			}
+		],
+		"door": [
+			{
+				"value": "barrier",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “door” using this player word.",
+				"sourceRevision": 91939874
+			}
+		],
+		"doormat": [
+			{
+				"value": "mat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “doormat” using this player word.",
+				"sourceRevision": 91779016
+			}
+		],
+		"doorway": [
+			{
+				"value": "door",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “doorway” using this player word.",
+				"sourceRevision": 91571249
+			},
+			{
+				"value": "entrance",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “doorway” using this player word.",
+				"sourceRevision": 91571249
+			}
+		],
+		"draught": [
+			{
+				"value": "brew",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “draught” using this player word.",
+				"sourceRevision": 91699757
+			}
+		],
+		"drawbridge": [
+			{
+				"value": "bridge",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “drawbridge” using this player word.",
+				"sourceRevision": 91661688
+			}
+		],
+		"dresser": [
+			{
+				"value": "cabinet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dresser” using this player word.",
+				"sourceRevision": 91977426
+			},
+			{
+				"value": "wardrobe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dresser” using this player word.",
+				"sourceRevision": 91977426
+			}
+		],
+		"driftwood": [
+			{
+				"value": "wood",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “driftwood” using this player word.",
+				"sourceRevision": 90747906
+			}
+		],
+		"drink": [
+			{
+				"value": "beverage",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “drink” using this player word.",
+				"sourceRevision": 91989543
+			}
+		],
+		"dynamite": [
+			{
+				"value": "explosive",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “dynamite” using this player word.",
+				"sourceRevision": 91214664
+			}
+		],
+		"earth": [
+			{
+				"value": "ground",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “earth” using this player word.",
+				"sourceRevision": 92038547
+			},
+			{
+				"value": "soil",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “earth” using this player word.",
+				"sourceRevision": 92038547
+			}
+		],
+		"edifice": [
+			{
+				"value": "building",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “edifice” using this player word.",
+				"sourceRevision": 91125334
+			},
+			{
+				"value": "structure",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “edifice” using this player word.",
+				"sourceRevision": 91125334
+			}
+		],
+		"eggshell": [
+			{
+				"value": "egg",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “eggshell” using this player word.",
+				"sourceRevision": 91527168
+			},
+			{
+				"value": "shell",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “eggshell” using this player word.",
+				"sourceRevision": 91527168
+			}
+		],
+		"emerald": [
+			{
+				"value": "gemstone",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “emerald” using this player word.",
+				"sourceRevision": 91145081
+			}
+		],
+		"engine": [
+			{
+				"value": "motor",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “engine”.",
+				"sourceRevision": 91221134
+			}
+		],
+		"escalator": [
+			{
+				"value": "step",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “escalator” using this player word.",
+				"sourceRevision": 91773392
+			}
+		],
+		"fang": [
+			{
+				"value": "tooth",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fang” using this player word.",
+				"sourceRevision": 91805753
+			}
+		],
+		"fauna": [
+			{
+				"value": "animal",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fauna” using this player word.",
+				"sourceRevision": 92031424
+			}
+		],
+		"fiddle": [
+			{
+				"value": "string",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fiddle” using this player word.",
+				"sourceRevision": 90292784
+			},
+			{
+				"value": "violin",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fiddle” using this player word.",
+				"sourceRevision": 90292784
+			}
+		],
+		"fireplace": [
+			{
+				"value": "fire",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fireplace” using this player word.",
+				"sourceRevision": 91762975
+			},
+			{
+				"value": "hearth",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fireplace” using this player word.",
+				"sourceRevision": 91762975
+			}
+		],
+		"fireplug": [
+			{
+				"value": "fire hydrant",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fireplug” using this player word.",
+				"sourceRevision": 85841646
+			}
+		],
+		"flashlight": [
+			{
+				"value": "torch",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “flashlight”.",
+				"sourceRevision": 91560906
+			}
+		],
+		"footbridge": [
+			{
+				"value": "bridge",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “footbridge” using this player word.",
+				"sourceRevision": 91815450
+			}
+		],
+		"footwear": [
+			{
+				"value": "sandal",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “footwear” using this player word.",
+				"sourceRevision": 92011351
+			},
+			{
+				"value": "shoe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “footwear” using this player word.",
+				"sourceRevision": 92011351
+			}
+		],
+		"fortress": [
+			{
+				"value": "fortification",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fortress” using this player word.",
+				"sourceRevision": 91547368
+			}
+		],
+		"fountain": [
+			{
+				"value": "spring",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “fountain” using this player word.",
+				"sourceRevision": 91290082
+			}
+		],
+		"garden hose": [
+			{
+				"value": "hose",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “garden hose” using this player word.",
+				"sourceRevision": 85563110
+			}
+		],
+		"garment": [
+			{
+				"value": "clothing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “garment” using this player word.",
+				"sourceRevision": 91453402
+			}
+		],
+		"gateway": [
+			{
+				"value": "gate",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gateway” using this player word.",
+				"sourceRevision": 89284443
+			}
+		],
+		"gauntlet": [
+			{
+				"value": "glove",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gauntlet” using this player word.",
+				"sourceRevision": 91956582
+			}
+		],
+		"gavel": [
+			{
+				"value": "mallet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gavel” using this player word.",
+				"sourceRevision": 91968304
+			},
+			{
+				"value": "maul",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gavel” using this player word.",
+				"sourceRevision": 91968304
+			}
+		],
+		"gear": [
+			{
+				"value": "equipment",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gear” using this player word.",
+				"sourceRevision": 92010697
+			}
+		],
+		"gem": [
+			{
+				"value": "ruby",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gem” using this player word.",
+				"sourceRevision": 91775200
+			}
+		],
+		"gemstone": [
+			{
+				"value": "gem",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gemstone” using this player word.",
+				"sourceRevision": 91982405
+			}
+		],
+		"gong": [
+			{
+				"value": "percussion",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gong” using this player word.",
+				"sourceRevision": 91830831
+			}
+		],
+		"grenade": [
+			{
+				"value": "bomb",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “grenade” using this player word.",
+				"sourceRevision": 91790799
+			},
+			{
+				"value": "explosive",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “grenade” using this player word.",
+				"sourceRevision": 91790799
+			}
+		],
+		"ground": [
+			{
+				"value": "earth",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ground” using this player word.",
+				"sourceRevision": 91810776
+			},
+			{
+				"value": "soil",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ground” using this player word.",
+				"sourceRevision": 91810776
+			}
+		],
+		"guitar": [
+			{
+				"value": "lute",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “guitar” using this player word.",
+				"sourceRevision": 91918826
+			},
+			{
+				"value": "string",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “guitar” using this player word.",
+				"sourceRevision": 91918826
+			}
+		],
+		"gun": [
+			{
+				"value": "cannon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gun” using this player word.",
+				"sourceRevision": 91964317
+			},
+			{
+				"value": "firearm",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gun” using this player word.",
+				"sourceRevision": 91964317
+			},
+			{
+				"value": "rifle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “gun” using this player word.",
+				"sourceRevision": 91964317
+			}
+		],
+		"halberd": [
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “halberd” using this player word.",
+				"sourceRevision": 90127958
+			}
+		],
+		"hammock": [
+			{
+				"value": "bed",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hammock” using this player word.",
+				"sourceRevision": 91738478
+			}
+		],
+		"handbell": [
+			{
+				"value": "bell",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “handbell” using this player word.",
+				"sourceRevision": 89639416
+			}
+		],
+		"harp": [
+			{
+				"value": "string",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “harp” using this player word.",
+				"sourceRevision": 91798612
+			}
+		],
+		"hatch": [
+			{
+				"value": "trapdoor",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hatch” using this player word.",
+				"sourceRevision": 91383305
+			}
+		],
+		"hatchet": [
+			{
+				"value": "axe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hatchet” using this player word.",
+				"sourceRevision": 91642924
+			},
+			{
+				"value": "tomahawk",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hatchet” using this player word.",
+				"sourceRevision": 91642924
+			}
+		],
+		"hatchling": [
+			{
+				"value": "egg",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hatchling” using this player word.",
+				"sourceRevision": 91967828
+			}
+		],
+		"hearth": [
+			{
+				"value": "brazier",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hearth” using this player word.",
+				"sourceRevision": 91481723
+			},
+			{
+				"value": "fire",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hearth” using this player word.",
+				"sourceRevision": 91481723
+			},
+			{
+				"value": "fireplace",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hearth” using this player word.",
+				"sourceRevision": 91481723
+			}
+		],
+		"herb": [
+			{
+				"value": "leaf",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “herb” using this player word.",
+				"sourceRevision": 91603410
+			},
+			{
+				"value": "seed",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “herb” using this player word.",
+				"sourceRevision": 91603410
+			}
+		],
+		"horn": [
+			{
+				"value": "wind instrument",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “horn” using this player word.",
+				"sourceRevision": 91984625
+			}
+		],
+		"hourglass": [
+			{
+				"value": "clock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “hourglass” using this player word.",
+				"sourceRevision": 91479262
+			}
+		],
+		"implement": [
+			{
+				"value": "tool",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “implement” using this player word.",
+				"sourceRevision": 91930121
+			}
+		],
+		"inkwell": [
+			{
+				"value": "pen",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “inkwell” using this player word.",
+				"sourceRevision": 91771725
+			}
+		],
+		"instrument": [
+			{
+				"value": "music",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “instrument” using this player word.",
+				"sourceRevision": 91365832
+			}
+		],
+		"javelin": [
+			{
+				"value": "spear",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “javelin” using this player word.",
+				"sourceRevision": 90114172
+			},
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “javelin” using this player word.",
+				"sourceRevision": 90114172
+			}
+		],
+		"jewel": [
+			{
+				"value": "gem",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “jewel” using this player word.",
+				"sourceRevision": 91962778
+			},
+			{
+				"value": "gemstone",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “jewel” using this player word.",
+				"sourceRevision": 91962778
+			}
+		],
+		"journal": [
+			{
+				"value": "diary",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “journal” using this player word.",
+				"sourceRevision": 91795630
+			}
+		],
+		"keg": [
+			{
+				"value": "barrel",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “keg” using this player word.",
+				"sourceRevision": 89761735
+			}
+		],
+		"key": [
+			{
+				"value": "keyring",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “key” using this player word.",
+				"sourceRevision": 91795976
+			}
+		],
+		"keyring": [
+			{
+				"value": "key",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “keyring” using this player word.",
+				"sourceRevision": 89888223
+			}
+		],
+		"kitchen knife": [
+			{
+				"value": "knife",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “kitchen knife” using this player word.",
+				"sourceRevision": 91151878
+			}
+		],
+		"knife": [
+			{
+				"value": "dagger",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “knife” using this player word.",
+				"sourceRevision": 91812168
+			}
+		],
+		"ladder": [
+			{
+				"value": "steps",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ladder” using this player word.",
+				"sourceRevision": 91751056
+			}
+		],
+		"lamp": [
+			{
+				"value": "light",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lamp” using this player word.",
+				"sourceRevision": 91976662
+			}
+		],
+		"lance": [
+			{
+				"value": "arm",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lance” using this player word.",
+				"sourceRevision": 91806306
+			},
+			{
+				"value": "spear",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lance” using this player word.",
+				"sourceRevision": 91806306
+			},
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lance” using this player word.",
+				"sourceRevision": 91806306
+			}
+		],
+		"lantern": [
+			{
+				"value": "light",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lantern” using this player word.",
+				"sourceRevision": 90898636
+			}
+		],
+		"latch": [
+			{
+				"value": "lock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “latch” using this player word.",
+				"sourceRevision": 89984148
+			}
+		],
+		"latchkey": [
+			{
+				"value": "key",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “latchkey” using this player word.",
+				"sourceRevision": 91577943
+			}
+		],
+		"letter": [
+			{
+				"value": "note",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “letter” using this player word.",
+				"sourceRevision": 91976712
+			}
+		],
+		"lever": [
+			{
+				"value": "button",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lever” using this player word.",
+				"sourceRevision": 91663952
+			},
+			{
+				"value": "control",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lever” using this player word.",
+				"sourceRevision": 91663952
+			},
+			{
+				"value": "switch",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lever” using this player word.",
+				"sourceRevision": 91663952
+			}
+		],
+		"link": [
+			{
+				"value": "chain",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “link” using this player word.",
+				"sourceRevision": 91679772
+			}
+		],
+		"loaf": [
+			{
+				"value": "bread",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “loaf” using this player word.",
+				"sourceRevision": 89454424
+			}
+		],
+		"log": [
+			{
+				"value": "timber",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “log” using this player word.",
+				"sourceRevision": 91765065
+			},
+			{
+				"value": "tree",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “log” using this player word.",
+				"sourceRevision": 91765065
+			}
+		],
+		"longsword": [
+			{
+				"value": "blade",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “longsword” using this player word.",
+				"sourceRevision": 92010546
+			},
+			{
+				"value": "sword",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “longsword” using this player word.",
+				"sourceRevision": 92010546
+			}
+		],
+		"lute": [
+			{
+				"value": "guitar",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lute” using this player word.",
+				"sourceRevision": 91813227
+			},
+			{
+				"value": "string",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “lute” using this player word.",
+				"sourceRevision": 91813227
+			}
+		],
+		"mace": [
+			{
+				"value": "baton",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mace” using this player word.",
+				"sourceRevision": 91980711
+			},
+			{
+				"value": "club",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mace” using this player word.",
+				"sourceRevision": 91980711
+			},
+			{
+				"value": "flail",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mace” using this player word.",
+				"sourceRevision": 91980711
+			}
+		],
+		"magic wand": [
+			{
+				"value": "wand",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “magic wand” using this player word.",
+				"sourceRevision": 91814554
+			}
+		],
+		"mail": [
+			{
+				"value": "armour",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mail” using this player word.",
+				"sourceRevision": 91976802
+			},
+			{
+				"value": "letter",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mail” using this player word.",
+				"sourceRevision": 91976802
+			},
+			{
+				"value": "message",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mail” using this player word.",
+				"sourceRevision": 91976802
+			},
+			{
+				"value": "plate",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mail” using this player word.",
+				"sourceRevision": 91976802
+			}
+		],
+		"mallet": [
+			{
+				"value": "hammer",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mallet” using this player word.",
+				"sourceRevision": 91126910
+			}
+		],
+		"manacle": [
+			{
+				"value": "shackle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “manacle” using this player word.",
+				"sourceRevision": 91330905
+			}
+		],
+		"mantle": [
+			{
+				"value": "cloak",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mantle” using this player word.",
+				"sourceRevision": 91930582
+			},
+			{
+				"value": "robe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mantle” using this player word.",
+				"sourceRevision": 91930582
+			}
+		],
+		"manuscript": [
+			{
+				"value": "document",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “manuscript” using this player word.",
+				"sourceRevision": 91776012
+			}
+		],
+		"map": [
+			{
+				"value": "chart",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “map”.",
+				"sourceRevision": 91784888
+			},
+			{
+				"value": "plan",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “map”.",
+				"sourceRevision": 91784888
+			}
+		],
+		"mask": [
+			{
+				"value": "disguise",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mask” using this player word.",
+				"sourceRevision": 91971761
+			}
+		],
+		"maul": [
+			{
+				"value": "hammer",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “maul” using this player word.",
+				"sourceRevision": 91126947
+			}
+		],
+		"mechanism": [
+			{
+				"value": "gear",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mechanism” using this player word.",
+				"sourceRevision": 90998645
+			},
+			{
+				"value": "machine",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mechanism” using this player word.",
+				"sourceRevision": 90998645
+			}
+		],
+		"memo": [
+			{
+				"value": "note",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “memo” using this player word.",
+				"sourceRevision": 91248285
+			}
+		],
+		"mitten": [
+			{
+				"value": "glove",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mitten” using this player word.",
+				"sourceRevision": 91028351
+			}
+		],
+		"mold": [
+			{
+				"value": "fungus",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mold” using this player word.",
+				"sourceRevision": 91989915
+			}
+		],
+		"money": [
+			{
+				"value": "coin",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “money” using this player word.",
+				"sourceRevision": 92013224
+			},
+			{
+				"value": "currency",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “money” using this player word.",
+				"sourceRevision": 92013224
+			}
+		],
+		"morning star": [
+			{
+				"value": "flail",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “morning star” using this player word.",
+				"sourceRevision": 91324782
+			}
+		],
+		"motor": [
+			{
+				"value": "engine",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “motor”.",
+				"sourceRevision": 92013258
+			}
+		],
+		"mummy": [
+			{
+				"value": "corpse",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mummy” using this player word.",
+				"sourceRevision": 89635203
+			}
+		],
+		"mural": [
+			{
+				"value": "painting",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “mural” using this player word.",
+				"sourceRevision": 91810352
+			}
+		],
+		"music": [
+			{
+				"value": "melody",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “music” using this player word.",
+				"sourceRevision": 91988863
+			}
+		],
+		"musket": [
+			{
+				"value": "firearm",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “musket” using this player word.",
+				"sourceRevision": 91740567
+			}
+		],
+		"necklace": [
+			{
+				"value": "jewelry",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “necklace” using this player word.",
+				"sourceRevision": 91002305
+			}
+		],
+		"nest": [
+			{
+				"value": "egg",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “nest” using this player word.",
+				"sourceRevision": 91802004
+			}
+		],
+		"nourishment": [
+			{
+				"value": "food",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “nourishment” using this player word.",
+				"sourceRevision": 89325840
+			}
+		],
+		"orb": [
+			{
+				"value": "sphere",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “orb” using this player word.",
+				"sourceRevision": 89218557
+			}
+		],
+		"outfit": [
+			{
+				"value": "clothing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “outfit” using this player word.",
+				"sourceRevision": 91958400
+			}
+		],
+		"padlock": [
+			{
+				"value": "lock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “padlock” using this player word.",
+				"sourceRevision": 91005976
+			}
+		],
+		"painting": [
+			{
+				"value": "illustration",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “painting” using this player word.",
+				"sourceRevision": 92016581
+			}
+		],
+		"palisade": [
+			{
+				"value": "wall",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “palisade” using this player word.",
+				"sourceRevision": 91977359
+			}
+		],
+		"paper": [
+			{
+				"value": "document",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “paper” using this player word.",
+				"sourceRevision": 92039425
+			},
+			{
+				"value": "manuscript",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “paper” using this player word.",
+				"sourceRevision": 92039425
+			},
+			{
+				"value": "writing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “paper” using this player word.",
+				"sourceRevision": 92039425
+			}
+		],
+		"papyrus": [
+			{
+				"value": "document",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “papyrus” using this player word.",
+				"sourceRevision": 91715459
+			},
+			{
+				"value": "paper",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “papyrus” using this player word.",
+				"sourceRevision": 91715459
+			},
+			{
+				"value": "scroll",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “papyrus” using this player word.",
+				"sourceRevision": 91715459
+			}
+		],
+		"parchment": [
+			{
+				"value": "document",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “parchment” using this player word.",
+				"sourceRevision": 91819893
+			},
+			{
+				"value": "paper",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “parchment” using this player word.",
+				"sourceRevision": 91819893
+			}
+		],
+		"pen": [
+			{
+				"value": "ink",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pen” using this player word.",
+				"sourceRevision": 92039484
+			}
+		],
+		"pennant": [
+			{
+				"value": "flag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pennant” using this player word.",
+				"sourceRevision": 90333542
+			}
+		],
+		"pet": [
+			{
+				"value": "animal",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pet” using this player word.",
+				"sourceRevision": 91820939
+			}
+		],
+		"philter": [
+			{
+				"value": "potion",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “philter” using this player word.",
+				"sourceRevision": 89743815
+			}
+		],
+		"picture": [
+			{
+				"value": "painting",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “picture” using this player word.",
+				"sourceRevision": 92027835
+			}
+		],
+		"pie": [
+			{
+				"value": "pastry",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pie” using this player word.",
+				"sourceRevision": 92040725
+			}
+		],
+		"pitfall": [
+			{
+				"value": "hazard",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pitfall” using this player word.",
+				"sourceRevision": 91324202
+			},
+			{
+				"value": "trap",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pitfall” using this player word.",
+				"sourceRevision": 91324202
+			}
+		],
+		"plant": [
+			{
+				"value": "soil",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “plant” using this player word.",
+				"sourceRevision": 91950946
+			}
+		],
+		"pocketknife": [
+			{
+				"value": "knife",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pocketknife” using this player word.",
+				"sourceRevision": 89280932
+			}
+		],
+		"polearm": [
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “polearm” using this player word.",
+				"sourceRevision": 89287157
+			}
+		],
+		"portcullis": [
+			{
+				"value": "gate",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “portcullis” using this player word.",
+				"sourceRevision": 89627922
+			},
+			{
+				"value": "gateway",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “portcullis” using this player word.",
+				"sourceRevision": 89627922
+			}
+		],
+		"pouch": [
+			{
+				"value": "bag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “pouch” using this player word.",
+				"sourceRevision": 89885933
+			}
+		],
+		"powder keg": [
+			{
+				"value": "explosive",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “powder keg” using this player word.",
+				"sourceRevision": 91014780
+			}
+		],
+		"purse": [
+			{
+				"value": "bag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “purse” using this player word.",
+				"sourceRevision": 92039752
+			}
+		],
+		"quill": [
+			{
+				"value": "pen",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “quill” using this player word.",
+				"sourceRevision": 91289415
+			}
+		],
+		"quiver": [
+			{
+				"value": "arrow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “quiver” using this player word.",
+				"sourceRevision": 91789395
+			},
+			{
+				"value": "bolt",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “quiver” using this player word.",
+				"sourceRevision": 91789395
+			},
+			{
+				"value": "crossbow",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “quiver” using this player word.",
+				"sourceRevision": 91789395
+			}
+		],
+		"rabbit": [
+			{
+				"value": "animal",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “rabbit” using this player word.",
+				"sourceRevision": 92039787
+			}
+		],
+		"railing": [
+			{
+				"value": "fence",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “railing” using this player word.",
+				"sourceRevision": 91121676
+			}
+		],
+		"ramp": [
+			{
+				"value": "staircase",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ramp” using this player word.",
+				"sourceRevision": 91680590
+			}
+		],
+		"rapier": [
+			{
+				"value": "sword",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “rapier” using this player word.",
+				"sourceRevision": 90533958
+			}
+		],
+		"receptacle": [
+			{
+				"value": "container",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “receptacle” using this player word.",
+				"sourceRevision": 91451909
+			}
+		],
+		"relief": [
+			{
+				"value": "sculpture",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “relief” using this player word.",
+				"sourceRevision": 91501840
+			}
+		],
+		"reliquary": [
+			{
+				"value": "relic",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “reliquary” using this player word.",
+				"sourceRevision": 91787120
+			}
+		],
+		"remains": [
+			{
+				"value": "corpse",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “remains” using this player word.",
+				"sourceRevision": 91653759
+			}
+		],
+		"rifle": [
+			{
+				"value": "firearm",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “rifle” using this player word.",
+				"sourceRevision": 91657036
+			}
+		],
+		"rod": [
+			{
+				"value": "staff",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “rod” using this player word.",
+				"sourceRevision": 92010596
+			}
+		],
+		"root": [
+			{
+				"value": "tree",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “root” using this player word.",
+				"sourceRevision": 91913939
+			}
+		],
+		"rope": [
+			{
+				"value": "cord",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “rope”.",
+				"sourceRevision": 91658590
+			},
+			{
+				"value": "twine",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “rope”.",
+				"sourceRevision": 91658590
+			}
+		],
+		"rune": [
+			{
+				"value": "magic",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “rune” using this player word.",
+				"sourceRevision": 91022393
+			}
+		],
+		"sack": [
+			{
+				"value": "bag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sack” using this player word.",
+				"sourceRevision": 91700440
+			}
+		],
+		"sanctuary": [
+			{
+				"value": "altar",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sanctuary” using this player word.",
+				"sourceRevision": 91128051
+			}
+		],
+		"sandal": [
+			{
+				"value": "shoe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sandal” using this player word.",
+				"sourceRevision": 91586416
+			}
+		],
+		"sarcophagus": [
+			{
+				"value": "coffin",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sarcophagus” using this player word.",
+				"sourceRevision": 91128061
+			}
+		],
+		"satchel": [
+			{
+				"value": "bag",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “satchel” using this player word.",
+				"sourceRevision": 91958423
+			}
+		],
+		"scimitar": [
+			{
+				"value": "sword",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “scimitar” using this player word.",
+				"sourceRevision": 91177722
+			}
+		],
+		"scroll": [
+			{
+				"value": "parchment",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “scroll” using this player word.",
+				"sourceRevision": 91983059
+			}
+		],
+		"scrying": [
+			{
+				"value": "crystal ball",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “scrying” using this player word.",
+				"sourceRevision": 89639824
+			}
+		],
+		"shelf": [
+			{
+				"value": "cabinet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “shelf” using this player word.",
+				"sourceRevision": 91916269
+			}
+		],
+		"shell": [
+			{
+				"value": "egg",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “shell” using this player word.",
+				"sourceRevision": 91977545
+			}
+		],
+		"ship": [
+			{
+				"value": "boat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “ship” using this player word.",
+				"sourceRevision": 91786048
+			}
+		],
+		"shortsword": [
+			{
+				"value": "sword",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “shortsword” using this player word.",
+				"sourceRevision": 89266567
+			}
+		],
+		"sign": [
+			{
+				"value": "banner",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sign” using this player word.",
+				"sourceRevision": 91529324
+			},
+			{
+				"value": "standard",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sign” using this player word.",
+				"sourceRevision": 91529324
+			}
+		],
+		"signpost": [
+			{
+				"value": "sign",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “signpost” using this player word.",
+				"sourceRevision": 90749140
+			}
+		],
+		"skeleton key": [
+			{
+				"value": "key",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “skeleton key” using this player word.",
+				"sourceRevision": 91142770
+			}
+		],
+		"skiff": [
+			{
+				"value": "boat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “skiff” using this player word.",
+				"sourceRevision": 89469559
+			}
+		],
+		"slingshot": [
+			{
+				"value": "sling",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “slingshot” using this player word.",
+				"sourceRevision": 91147028
+			}
+		],
+		"slipper": [
+			{
+				"value": "shoe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “slipper” using this player word.",
+				"sourceRevision": 91544489
+			}
+		],
+		"snare": [
+			{
+				"value": "trap",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “snare” using this player word.",
+				"sourceRevision": 91554519
+			}
+		],
+		"sofa": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “sofa” using this player word.",
+				"sourceRevision": 91703613
+			}
+		],
+		"spear": [
+			{
+				"value": "lance",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “spear” using this player word.",
+				"sourceRevision": 91374711
+			},
+			{
+				"value": "weapon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “spear” using this player word.",
+				"sourceRevision": 91374711
+			}
+		],
+		"sphere": [
+			{
+				"value": "orb",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “sphere”.",
+				"sourceRevision": 91623365
+			}
+		],
+		"spool": [
+			{
+				"value": "thread",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “spool” using this player word.",
+				"sourceRevision": 90912951
+			}
+		],
+		"spore": [
+			{
+				"value": "fungus",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “spore” using this player word.",
+				"sourceRevision": 91619440
+			}
+		],
+		"spyglass": [
+			{
+				"value": "telescope",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “spyglass” using this player word.",
+				"sourceRevision": 88035111
+			}
+		],
+		"staff": [
+			{
+				"value": "rod",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “staff” using this player word.",
+				"sourceRevision": 91415969
+			},
+			{
+				"value": "stave",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “staff” using this player word.",
+				"sourceRevision": 91415969
+			}
+		],
+		"stair": [
+			{
+				"value": "staircase",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stair” using this player word.",
+				"sourceRevision": 91392770
+			},
+			{
+				"value": "step",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stair” using this player word.",
+				"sourceRevision": 91392770
+			}
+		],
+		"stairs": [
+			{
+				"value": "step",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stairs” using this player word.",
+				"sourceRevision": 89877166
+			}
+		],
+		"statue": [
+			{
+				"value": "carving",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “statue” using this player word.",
+				"sourceRevision": 91773824
+			}
+		],
+		"stave": [
+			{
+				"value": "staff",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stave” using this player word.",
+				"sourceRevision": 91533221
+			}
+		],
+		"step": [
+			{
+				"value": "ladder",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “step” using this player word.",
+				"sourceRevision": 91757662
+			},
+			{
+				"value": "stair",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “step” using this player word.",
+				"sourceRevision": 91757662
+			}
+		],
+		"stew": [
+			{
+				"value": "dish",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stew” using this player word.",
+				"sourceRevision": 90308096
+			},
+			{
+				"value": "fish",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stew” using this player word.",
+				"sourceRevision": 90308096
+			}
+		],
+		"stool": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stool” using this player word.",
+				"sourceRevision": 91669405
+			}
+		],
+		"stylus": [
+			{
+				"value": "pen",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “stylus” using this player word.",
+				"sourceRevision": 91356606
+			}
+		],
+		"taper": [
+			{
+				"value": "candle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “taper” using this player word.",
+				"sourceRevision": 91693034
+			},
+			{
+				"value": "light",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “taper” using this player word.",
+				"sourceRevision": 91693034
+			}
+		],
+		"tea": [
+			{
+				"value": "drink",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tea” using this player word.",
+				"sourceRevision": 91797694
+			}
+		],
+		"telegram": [
+			{
+				"value": "message",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “telegram” using this player word.",
+				"sourceRevision": 91438146
+			}
+		],
+		"tether": [
+			{
+				"value": "rope",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tether” using this player word.",
+				"sourceRevision": 91308214
+			}
+		],
+		"text": [
+			{
+				"value": "writing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “text” using this player word.",
+				"sourceRevision": 91978951
+			}
+		],
+		"thimble": [
+			{
+				"value": "needle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “thimble” using this player word.",
+				"sourceRevision": 91322054
+			},
+			{
+				"value": "sewing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “thimble” using this player word.",
+				"sourceRevision": 91322054
+			}
+		],
+		"thread": [
+			{
+				"value": "yarn",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “thread” using this player word.",
+				"sourceRevision": 92012736
+			}
+		],
+		"threshold": [
+			{
+				"value": "door",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “threshold” using this player word.",
+				"sourceRevision": 91775309
+			},
+			{
+				"value": "doorway",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “threshold” using this player word.",
+				"sourceRevision": 91775309
+			},
+			{
+				"value": "entrance",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “threshold” using this player word.",
+				"sourceRevision": 91775309
+			}
+		],
+		"throne": [
+			{
+				"value": "seat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “throne” using this player word.",
+				"sourceRevision": 91991751
+			},
+			{
+				"value": "stool",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “throne” using this player word.",
+				"sourceRevision": 91991751
+			}
+		],
+		"tiara": [
+			{
+				"value": "coronet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tiara” using this player word.",
+				"sourceRevision": 91159476
+			},
+			{
+				"value": "crown",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tiara” using this player word.",
+				"sourceRevision": 91159476
+			}
+		],
+		"timber": [
+			{
+				"value": "wood",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “timber” using this player word.",
+				"sourceRevision": 91590138
+			}
+		],
+		"timepiece": [
+			{
+				"value": "clock",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “timepiece” using this player word.",
+				"sourceRevision": 91078947
+			}
+		],
+		"toadstool": [
+			{
+				"value": "mushroom",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “toadstool” using this player word.",
+				"sourceRevision": 90898920
+			}
+		],
+		"tomahawk": [
+			{
+				"value": "axe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tomahawk” using this player word.",
+				"sourceRevision": 91001556
+			}
+		],
+		"tomb": [
+			{
+				"value": "crypt",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tomb” using this player word.",
+				"sourceRevision": 91950934
+			}
+		],
+		"tome": [
+			{
+				"value": "book",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tome” using this player word.",
+				"sourceRevision": 90821088
+			},
+			{
+				"value": "volume",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tome” using this player word.",
+				"sourceRevision": 90821088
+			}
+		],
+		"torch": [
+			{
+				"value": "brand",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “torch”.",
+				"sourceRevision": 91768066
+			}
+		],
+		"trap": [
+			{
+				"value": "snare",
+				"relation": "synonym",
+				"evidence": "An English dictionary lists it as another name for “trap”.",
+				"sourceRevision": 92040058
+			}
+		],
+		"tree": [
+			{
+				"value": "branch",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tree” using this player word.",
+				"sourceRevision": 91942558
+			}
+		],
+		"trident": [
+			{
+				"value": "spear",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “trident” using this player word.",
+				"sourceRevision": 91347011
+			}
+		],
+		"truck": [
+			{
+				"value": "carriage",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “truck” using this player word.",
+				"sourceRevision": 91646761
+			}
+		],
+		"trumpet": [
+			{
+				"value": "pipe",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “trumpet” using this player word.",
+				"sourceRevision": 91389861
+			}
+		],
+		"tub": [
+			{
+				"value": "cask",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “tub” using this player word.",
+				"sourceRevision": 91730143
+			}
+		],
+		"van": [
+			{
+				"value": "truck",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “van” using this player word.",
+				"sourceRevision": 92039966
+			},
+			{
+				"value": "vehicle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “van” using this player word.",
+				"sourceRevision": 92039966
+			}
+		],
+		"vat": [
+			{
+				"value": "tub",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “vat” using this player word.",
+				"sourceRevision": 91847321
+			}
+		],
+		"vessel": [
+			{
+				"value": "container",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “vessel” using this player word.",
+				"sourceRevision": 91546176
+			}
+		],
+		"vial": [
+			{
+				"value": "bottle",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “vial” using this player word.",
+				"sourceRevision": 91662331
+			}
+		],
+		"violin": [
+			{
+				"value": "string",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “violin” using this player word.",
+				"sourceRevision": 90484475
+			}
+		],
+		"wall": [
+			{
+				"value": "rampart",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wall” using this player word.",
+				"sourceRevision": 91817183
+			}
+		],
+		"wall hanging": [
+			{
+				"value": "tapestry",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wall hanging” using this player word.",
+				"sourceRevision": 89245709
+			}
+		],
+		"wardrobe": [
+			{
+				"value": "cabinet",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wardrobe” using this player word.",
+				"sourceRevision": 91760538
+			},
+			{
+				"value": "cupboard",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wardrobe” using this player word.",
+				"sourceRevision": 91760538
+			}
+		],
+		"watch": [
+			{
+				"value": "timepiece",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “watch” using this player word.",
+				"sourceRevision": 91987930
+			}
+		],
+		"watchtower": [
+			{
+				"value": "tower",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “watchtower” using this player word.",
+				"sourceRevision": 91724545
+			}
+		],
+		"watercraft": [
+			{
+				"value": "boat",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “watercraft” using this player word.",
+				"sourceRevision": 90998380
+			},
+			{
+				"value": "ship",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “watercraft” using this player word.",
+				"sourceRevision": 90998380
+			}
+		],
+		"watermelon": [
+			{
+				"value": "melon",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “watermelon” using this player word.",
+				"sourceRevision": 92015321
+			}
+		],
+		"wearable": [
+			{
+				"value": "clothing",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wearable” using this player word.",
+				"sourceRevision": 91304135
+			}
+		],
+		"wicket": [
+			{
+				"value": "gate",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wicket” using this player word.",
+				"sourceRevision": 91170940
+			}
+		],
+		"wine": [
+			{
+				"value": "beverage",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wine” using this player word.",
+				"sourceRevision": 91980221
+			}
+		],
+		"wood": [
+			{
+				"value": "tree",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “wood” using this player word.",
+				"sourceRevision": 91987804
+			}
+		],
+		"workbench": [
+			{
+				"value": "table",
+				"relation": "reference",
+				"evidence": "An English dictionary defines “workbench” using this player word.",
+				"sourceRevision": 91491352
+			}
+		]
+	}
+}

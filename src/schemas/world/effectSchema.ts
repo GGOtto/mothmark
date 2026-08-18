@@ -4,6 +4,7 @@ import {entityFlagMutationError} from "./entityFlagDefinitions";
 import {CompassDirectionSchema, DirectionSchema} from "./directionSchema";
 import {ConditionSchema, ItemCollectionScopeSchema, type Condition} from "./conditionSchema";
 import type {ID} from "@/utils/idUtils";
+import {StandardItemActionSchema} from "./itemActionSchema";
 
 export const EffectReferenceSchema = editor.object(
 	{
@@ -1443,6 +1444,29 @@ export const PlayerEffectSchema = editor.discriminatedUnion(
 				targetItemId: editor.reference("item", {title: "Target"}).optional(),
 			},
 			{title: "Use"},
+		),
+		editor.object(
+			{
+				type: z.literal("player"),
+				operation: editor.logicOperation("perform-item-action", {
+					label: "Perform a standard item action",
+					description:
+						"Run a behavior-defined player action with its normal conditions, messages, state, and hooks.",
+					keywords: ["item", "behavior", "action", "command", "interact"],
+					situations: ["read a readable item", "eat an edible item", "switch a mechanism on"],
+				}),
+				action: editor.select(StandardItemActionSchema, {
+					title: "Action",
+					options: StandardItemActionSchema.options.map((value) => ({
+						label: value.replaceAll("-", " "),
+						value,
+					})),
+				}),
+				itemId: editor.reference("item", {title: "Item"}),
+				targetItemId: editor.reference("item", {title: "Target item"}).optional(),
+				text: editor.input({title: "Player text"}).optional(),
+			},
+			{title: "Standard item action"},
 		),
 		z.object({
 			type: z.literal("player"),

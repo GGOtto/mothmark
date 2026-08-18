@@ -49,17 +49,35 @@ describe("item suggestion policy", () => {
 		expect(createAliasSuggestions(clock, collection, []).map(({value}) => value)).toEqual([
 			"grandfather clock",
 			"clock",
+			"old grandfather clocks",
+			"grandfather clocks",
+			"clocks",
 		]);
 
 		const ornateClock = item("ornate-clock", "The ornate old wooden grandfather clock");
 		expect(
 			createAliasSuggestions(ornateClock, world([ornateClock]), []).map(({value}) => value),
-		).toEqual(["wooden grandfather clock", "grandfather clock", "clock"]);
+		).toEqual([
+			"wooden grandfather clock",
+			"grandfather clock",
+			"clock",
+			"wooden grandfather clocks",
+			"grandfather clocks",
+			"clocks",
+		]);
 
 		const watermelon = item("striped-watermelon", "The enormous striped watermelon");
 		expect(
 			createAliasSuggestions(watermelon, world([watermelon]), []).map(({value}) => value),
-		).toEqual(["striped watermelon", "watermelon", "melon"]);
+		).toEqual([
+			"striped watermelon",
+			"watermelon",
+			"melon",
+			"enormous striped watermelons",
+			"striped watermelons",
+			"watermelons",
+			"melons",
+		]);
 	});
 
 	it("grounds the screenshot examples in the matched taxonomy branch", () => {
@@ -67,7 +85,9 @@ describe("item suggestion policy", () => {
 		const ironKey = item("iron-key", "Iron key", ["key"]);
 		const keyWorld = world([brassKey, ironKey]);
 		const keyCollisions = buildAliasCollisionIndex(keyWorld, brassKey);
-		expect(createAliasSuggestions(brassKey, keyWorld, [], keyCollisions)).toEqual([]);
+		expect(createAliasSuggestions(brassKey, keyWorld, [], keyCollisions)).toEqual([
+			expect.objectContaining({value: "brass keys"}),
+		]);
 		expect(emptyAliasSuggestionMessage(brassKey, [], keyCollisions)).toContain(
 			"could also refer to Iron key",
 		);
@@ -95,7 +115,11 @@ describe("item suggestion policy", () => {
 
 		const boots = item("boots", "Mothglass Boots");
 		const bootsWorld = world([boots]);
-		expect(createAliasSuggestions(boots, bootsWorld, []).map(({value}) => value)).toEqual(["boots"]);
+		expect(createAliasSuggestions(boots, bootsWorld, []).map(({value}) => value)).toEqual([
+			"boots",
+			"mothglass boot",
+			"boot",
+		]);
 		expect(
 			createTagSuggestions(boots, [concept("footwear")], buildWorldTagGraph(bootsWorld, boots.id)).map(
 				(suggestion) => suggestion.tag,
@@ -132,7 +156,7 @@ describe("item suggestion policy", () => {
 				{value: "orchard apple", relation: "synonym", evidence: "Related wording."},
 				{value: "eating apple", relation: "synonym", evidence: "Common player wording."},
 			]).map((suggestion) => suggestion.value),
-		).toEqual(["eating apple"]);
+		).toEqual(["eating apple", "red apples", "red fruits", "eating apples"]);
 	});
 
 	it("keeps collision checks stable for accented and non-Latin authored aliases", () => {
@@ -143,7 +167,24 @@ describe("item suggestion policy", () => {
 			{value: "剣", relation: "synonym", evidence: "Translation."},
 		]);
 
-		expect(suggestions).toEqual([]);
+		expect(suggestions.map(({value}) => value)).toContain("swords");
+		expect(suggestions.map(({value}) => value)).not.toEqual(
+			expect.arrayContaining(["epee", "epees", "剣", "剣s"]),
+		);
+	});
+
+	it("does not truncate verified player vocabulary", () => {
+		const source = item("source", "Equipment");
+		const lexical = Array.from({length: 30}, (_, index) => ({
+			value: `alias${index}`,
+			relation: "synonym" as const,
+			evidence: "Verified player wording.",
+		}));
+
+		const suggestions = createAliasSuggestions(source, world([source]), lexical);
+
+		expect(suggestions).toHaveLength(30);
+		expect(suggestions.map(({value}) => value)).toContain("alias29");
 	});
 
 	it("indexes large collections once without depending on placement", () => {
@@ -190,6 +231,9 @@ describe("item suggestion policy", () => {
 		expect(createAliasSuggestions(satchel, world([satchel]), []).map(({value}) => value)).toEqual([
 			"leather satchel",
 			"satchel",
+			"battered leather satchels",
+			"leather satchels",
+			"satchels",
 		]);
 		const suggestions = createTagSuggestions(
 			satchel,
@@ -201,6 +245,71 @@ describe("item suggestion policy", () => {
 			expect.objectContaining({change: {type: "behavior", behavior: "container"}}),
 		]);
 		expect(new Set(suggestions.map((suggestion) => suggestion.tag)).size).toBe(suggestions.length);
+	});
+
+	it("progressively recommends specific behaviors from classification tags without enabling them", () => {
+		const apple = produce(item("apple", "Apple", [], ["food", "fruit"]), (draft) => {
+			applyTagSuggestionDraft(draft, {
+				tag: "takeable",
+				label: "Takeable",
+				reason: "Portable food.",
+				enables: "Allows take and drop.",
+				connections: [],
+				change: {type: "behavior", behavior: "takeable"},
+			});
+		});
+		const appleSuggestions = createTagSuggestions(
+			apple,
+			[concept("food"), concept("fruit")],
+			buildWorldTagGraph(world([apple]), apple.id),
+		);
+		expect(apple.behaviors.map((behavior) => behavior.type)).toEqual(["takeable"]);
+		expect(appleSuggestions).toContainEqual(
+			expect.objectContaining({change: {type: "behavior", behavior: "edible"}}),
+		);
+
+		const bottle = item("bottle", "Glass bottle");
+		expect(
+			createTagSuggestions(
+				bottle,
+				[concept("bottle")],
+				buildWorldTagGraph(world([bottle]), bottle.id),
+			).map((suggestion) => suggestion.tag),
+		).not.toContain("drinkable");
+
+		const boots = produce(item("boots", "Leather Boots", [], ["footwear"]), (draft) => {
+			applyTagSuggestionDraft(draft, {
+				tag: "takeable",
+				label: "Takeable",
+				reason: "Portable footwear.",
+				enables: "Allows take and drop.",
+				connections: [],
+				change: {type: "behavior", behavior: "takeable"},
+			});
+		});
+		const equippable = createTagSuggestions(
+			boots,
+			[concept("footwear")],
+			buildWorldTagGraph(world([boots]), boots.id),
+		).find(
+			(suggestion) =>
+				suggestion.change.type === "behavior" && suggestion.change.behavior === "equippable",
+		);
+		expect(equippable).toMatchObject({
+			change: {type: "behavior", behavior: "equippable", enabledActions: ["wear", "remove"]},
+			enables: expect.stringContaining("Player commands: wear, remove."),
+		});
+		const enabledBoots = produce(boots, (draft) => {
+			applyTagSuggestionDraft(draft, equippable!);
+		});
+		const equippedBehavior = enabledBoots.behaviors.find(
+			(behavior) => behavior.type === "equippable",
+		);
+		expect(
+			equippedBehavior && "actions" in equippedBehavior
+				? equippedBehavior.actions.filter((action) => action.enabled).map((action) => action.action)
+				: [],
+		).toEqual(["wear", "remove"]);
 	});
 
 	it("reports command tag connections, including targets that allow every entity type", () => {

@@ -7,13 +7,20 @@ import {createItemState, createRoomState} from "./createEntityState";
 
 export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
 	const startingRoom = getRoom(world, startingRoomId);
+	const initiallyEquippedItemIds = world.items
+		.filter(
+			(item) =>
+				item.initialState.location.type === "inventory" &&
+				item.behaviors.some((behavior) => behavior.type === "equippable" && behavior.startsEquipped),
+		)
+		.map((item) => item.id);
 	const game: GameState = {
 		player: {
 			currentRoom: startingRoomId,
 			facing: "n",
 			turns: 0,
 			randomState: 0x6d2b79f5,
-			equippedItemIds: [],
+			equippedItemIds: initiallyEquippedItemIds,
 			freezeState: {},
 		},
 		variables: {

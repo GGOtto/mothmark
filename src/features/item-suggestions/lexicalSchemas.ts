@@ -9,7 +9,7 @@ export const LexicalSuggestionRequestSchema = z.object({
 
 export const LexicalAliasCandidateSchema = z.object({
 	value: z.string(),
-	relation: z.enum(["phrase", "synonym", "broader"]),
+	relation: z.enum(["phrase", "synonym", "reference", "inflection", "broader"]),
 	evidence: z.string(),
 });
 

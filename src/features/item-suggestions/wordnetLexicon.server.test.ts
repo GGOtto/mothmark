@@ -43,7 +43,31 @@ describe("WordNet item suggestions", () => {
 		expect(result.concepts.map((candidate) => candidate.tag)).toContain("mammal");
 	});
 
-	it("leaves sparse lexical entries for the maintained taxonomy to enrich safely", async () => {
+	it.each([
+		["Oak table", "table", "furniture", "array"],
+		["Wooden chest", "chest", "container", "body-part"],
+	] as const)(
+		"uses the maintained taxonomy to choose the object sense for %s",
+		async (name, iconCategory, expectedTag, rejectedTag) => {
+			const result = await suggestFromWordNet({name, aliases: [], tags: [], iconCategory});
+
+			expect(result.concepts.map(({tag}) => tag)).toContain(expectedTag);
+			expect(result.concepts.map(({tag}) => tag)).not.toContain(rejectedTag);
+		},
+	);
+
+	it("keeps useful same-sense WordNet aliases after taxonomy disambiguation", async () => {
+		const result = await suggestFromWordNet({
+			name: "Diamond Ring",
+			aliases: [],
+			tags: [],
+			iconCategory: "jewelry",
+		});
+
+		expect(result.aliases.map(({value}) => value)).toEqual(expect.arrayContaining(["ring", "band"]));
+	});
+
+	it("fills a sparse WordNet entry from the pinned dictionary snapshot", async () => {
 		const result = await suggestFromWordNet({
 			name: "The battered leather satchel",
 			aliases: [],
@@ -51,7 +75,12 @@ describe("WordNet item suggestions", () => {
 			iconCategory: "bag",
 		});
 
-		expect(result.aliases).toEqual([]);
+		expect(result.aliases).toEqual(
+			expect.arrayContaining([expect.objectContaining({value: "bag", relation: "reference"})]),
+		);
+		expect(result.aliases.map(({value}) => value)).not.toEqual(
+			expect.arrayContaining(["backpack", "knapsack", "purse"]),
+		);
 	});
 
 	it.each([
