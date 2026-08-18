@@ -161,7 +161,8 @@ recommendations rather than persisted representation or player behavior.
 ### Version 13 to 14: item actions and focused event editing
 
 `v13-to-v14-record-item-actions-and-event-editor-contract` records the reviewed schema-source
-boundary for the expanded schema-derived item behavior catalog and the focused event editor. It is
-an opt-out migration because retained version-13 worlds, game states, and messages already parse and
-replay without rewriting authored content. Every retained row still advances to version 14 so future
-deployments compare against the correct accepted contract.
+boundary for the expanded schema-derived item behavior catalog and the focused event editor. Authored
+worlds remain unchanged, while retained game states and player messages are rebuilt from each
+authoritative command log because the expanded standard command catalog can intentionally change
+command resolution. Every retained row advances to version 14 so future deployments compare against
+the correct accepted contract.
