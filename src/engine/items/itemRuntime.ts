@@ -1,6 +1,7 @@
 import type {GameState} from "@/schemas/states/gameStateSchemas";
 import type {ItemState} from "@/schemas/states/entityStateSchemas";
 import type {Item, ItemBehavior} from "@/schemas/world/itemSchema";
+import type {StandardItemAction} from "@/schemas/world/itemActionSchema";
 import {ITEM_SIZE_UNITS} from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {compareIds, idValue, type ID} from "@/utils/idUtils";
@@ -24,6 +25,25 @@ export function findBehavior<TType extends ItemBehavior["type"]>(
 	return item?.behaviors.find(
 		(behavior): behavior is Extract<ItemBehavior, {type: TType}> => behavior.type === type,
 	);
+}
+
+export type StandardActionBehavior = Extract<ItemBehavior, {actions: unknown}>;
+
+export function findStandardActionBehavior(
+	item: Item | undefined,
+	action: StandardItemAction,
+):
+	| {
+			behavior: StandardActionBehavior;
+			settings: StandardActionBehavior["actions"][number];
+	  }
+	| undefined {
+	if (!item) return;
+	for (const behavior of item.behaviors) {
+		if (!("actions" in behavior)) continue;
+		const settings = behavior.actions.find((candidate) => candidate.action === action);
+		if (settings) return {behavior, settings};
+	}
 }
 
 export function itemAccess(game: GameState, id: ID<"item">) {

@@ -43,7 +43,7 @@ describe("the v11 to v12 parent-item-listing replay migration", () => {
 			storage: "editor",
 		});
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(13);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(14);
 		expect(migrationFrom(11)).toBe(v11ToV12);
 		expect(migrationFrom(12)).toBe(v12ToV13);
 		expect(applied).toEqual({applied: true, schemaVersion: 12, value});

@@ -1,0 +1,160 @@
+{
+	"id": {
+		"type": "command",
+		"id": "cut-item"
+	},
+	"name": "Cut",
+	"enabled": true,
+	"showInHelp": true,
+	"helpPattern": "cut <item>",
+	"helpDescription": "Cut, slice, or chop a cuttable item.",
+	"patterns": [
+		{
+			"blocks": [
+				{
+					"id": {
+						"type": "command-block",
+						"id": "cut-item-action"
+					},
+					"type": "choice",
+					"role": "action",
+					"choices": [
+						{
+							"value": "cut",
+							"label": "cut",
+							"matches": ["cut", "sever", "snip"]
+						},
+						{
+							"value": "slice",
+							"label": "slice",
+							"matches": ["slice", "carve"]
+						},
+						{
+							"value": "chop",
+							"label": "chop",
+							"matches": ["chop", "hack"]
+						}
+					]
+				},
+				{
+					"id": {
+						"type": "command-block",
+						"id": "cut-item-target"
+					},
+					"type": "target",
+					"role": "direct-object",
+					"entityTypes": ["item"],
+					"entityIds": [],
+					"tags": ["cuttable"],
+					"tagMode": "all",
+					"source": "reachable",
+					"extraAliases": []
+				}
+			]
+		}
+	],
+	"scope": {
+		"scope": "global"
+	},
+	"priority": 0,
+	"fallbacks": [
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "cut-item-action"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "cut-item-action-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve action",
+					"id": {
+						"type": "effect",
+						"id": "cut-item-action-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't do that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		},
+		{
+			"blockId": {
+				"type": "command-block",
+				"id": "cut-item-target"
+			},
+			"behavior": {
+				"id": {
+					"type": "condition-branch",
+					"id": "cut-item-target-fallback"
+				},
+				"always": {
+					"name": "Cannot resolve item",
+					"id": {
+						"type": "effect",
+						"id": "cut-item-target-fallback-effects"
+					},
+					"type": "group",
+					"effects": [
+						{
+							"type": "message",
+							"operation": "show",
+							"message": "You can't cut that."
+						}
+					],
+					"allowMultipleUsesInWorld": true
+				}
+			}
+		}
+	],
+	"behavior": {
+		"id": {
+			"type": "condition-branch",
+			"id": "cut-item-branch"
+		},
+		"always": {
+			"name": "Cut",
+			"id": {
+				"type": "effect",
+				"id": "cut-item-effects"
+			},
+			"type": "group",
+			"effects": [
+				{
+					"type": "player",
+					"operation": "perform-item-action",
+					"action": "cut",
+					"itemId": {
+						"type": "item",
+						"id": "cut-item-item"
+					},
+					"commandVariables": [
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "cut-item-action"
+							},
+							"field": "action"
+						},
+						{
+							"blockId": {
+								"type": "command-block",
+								"id": "cut-item-target"
+							},
+							"field": "itemId"
+						}
+					]
+				}
+			],
+			"allowMultipleUsesInWorld": true
+		}
+	}
+}

@@ -1541,7 +1541,9 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("region", {name: "Suggested aliases"})).toBeVisible();
 	await expect(page.getByRole("region", {name: "Suggested tags"})).toBeVisible();
 	await expect(page.getByRole("button", {name: "Suggest aliases and tags"})).toHaveCount(0);
-	const aliasSuggestion = page.getByRole("listitem").filter({hasText: "countertop"});
+	const aliasSuggestion = page
+		.getByRole("listitem")
+		.filter({has: page.getByRole("button", {name: "Add alias countertop", exact: true})});
 	const surfaceSuggestion = page.getByRole("listitem").filter({hasText: "#surface"});
 	await expect(aliasSuggestion).toBeVisible();
 	await expect(surfaceSuggestion).toBeVisible();
@@ -1576,9 +1578,22 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await page.getByRole("button", {name: "Cancel"}).click();
 	await expect(page.getByRole("heading", {name: "Shop Counter", level: 1})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Capabilities"})).toBeVisible();
-	await page.getByRole("checkbox", {name: /Surface/}).check();
-	await expect(page.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
-	await page.getByRole("textbox", {name: "Contents lead-in"}).fill("On the counter:");
+	await page.getByRole("checkbox", {name: /^Readable /}).check();
+	const readAction = page.getByRole("group", {name: "read", exact: true});
+	await expect(readAction.getByRole("textbox", {name: "Success message"})).toBeVisible();
+	await readAction.getByRole("textbox", {name: "Success message"}).fill("The ledger is blank.");
+	await readAction.getByRole("checkbox", {name: "Available to players"}).uncheck();
+	await expect(readAction.getByRole("checkbox", {name: "Available to players"})).not.toBeChecked();
+	const surfaceEditor = page
+		.locator("details.itemBehaviorEditor")
+		.filter({has: page.locator("summary").filter({hasText: /^Surface$/})});
+	await surfaceEditor.locator("summary").click();
+	await expect(surfaceEditor.getByRole("textbox", {name: "Contents lead-in"})).toBeVisible();
+	await surfaceEditor.getByRole("textbox", {name: "Contents lead-in"}).fill("On the counter:");
+	await page.getByRole("checkbox", {name: /^Door /}).check();
+	await expect(page.getByRole("checkbox", {name: /^Door /})).toBeChecked();
+	await expect(page.getByRole("checkbox", {name: /^Openable /})).toBeChecked();
+	await expect(page.getByRole("combobox", {name: "Connection"})).toHaveValue("shop-office");
 	await page.getByRole("tab", {name: "Placement"}).click();
 	await expect(page.getByRole("heading", {name: "Starting position"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Flags"})).toHaveCount(0);

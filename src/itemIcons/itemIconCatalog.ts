@@ -361,7 +361,16 @@ const itemIconCatalog = [
 	{
 		id: "blunt-weapon",
 		parents: ["weapon"],
-		identityTerms: ["club", "mace", "flail", "cudgel", "baton", "morning star", "morningstar"],
+		identityTerms: [
+			"club",
+			"mace",
+			"flail",
+			"cudgel",
+			"baton",
+			"baseball bat",
+			"morning star",
+			"morningstar",
+		],
 		categoryTerms: ["blunt weapon"],
 	},
 	{

@@ -5,6 +5,9 @@ import {getEditorMetadata, withEditorMetadata} from "@/utils/editorMetadata";
 import {ConditionSchema, ConditionalTextSchema} from "./conditionSchema";
 import {EffectGroupSchema} from "./effectSchema";
 import {ITEM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
+import {StandardItemActionSchema, type StandardItemAction} from "./itemActionSchema";
+
+export {StandardItemActionSchema, type StandardItemAction} from "./itemActionSchema";
 
 export const ItemSizeSchema = editor.select(
 	z.enum(["tiny", "small", "medium", "large", "huge"]).default("small"),
@@ -332,6 +335,426 @@ export const UsableBehaviorSchema = editor.object(
 	},
 );
 
+export const StandardItemActionSettingsSchema = editor.object(
+	{
+		action: editor.hidden(StandardItemActionSchema, {title: "Action"}),
+		enabled: editor.boolean({title: "Enabled"}).default(true),
+		message: editor.message({title: "Success message"}),
+		blockedMessage: editor
+			.message({title: "Blocked message"})
+			.default("You can't do that right now."),
+		allowedWhen: editor
+			.conditionControl(ConditionSchema, {
+				title: "Allowed when",
+				description: "Optional additional condition for this action.",
+			})
+			.optional(),
+		target: UseTargetSchema.optional(),
+		consumeItem: editor
+			.boolean({
+				title: "Consume item",
+				description: "Destroy this item after the action succeeds.",
+			})
+			.default(false),
+		after: EffectGroupSchema.optional(),
+	},
+	{
+		title: "Player action",
+		description: "Customizes one standard command supplied by this behavior.",
+		childControls: {after: {title: "After action"}},
+	},
+);
+
+type StandardActionDefault = {
+	action: StandardItemAction;
+	message: string;
+	target?: z.infer<typeof UseTargetSchema>;
+	consumeItem?: boolean;
+};
+
+function standardBehaviorSchema<
+	const TType extends string,
+	const TShape extends Record<string, z.ZodTypeAny> = Record<never, never>,
+>(
+	type: TType,
+	metadata: {
+		title: string;
+		description: string;
+		keywords: string[];
+		requires?: string[];
+	},
+	actions: StandardActionDefault[],
+	extraShape?: TShape,
+) {
+	return editor.object(
+		{
+			type: z.literal(type),
+			...(extraShape ?? ({} as TShape)),
+			actions: editor.array(
+				StandardItemActionSettingsSchema,
+				{
+					title: "Commands",
+					description: "The standard player actions supplied by this behavior.",
+					features: {reorderable: false, duplicateable: false},
+				},
+				actions.map((action) => ({
+					...action,
+					enabled: true,
+					blockedMessage: "You can't do that right now.",
+					consumeItem: action.consumeItem ?? false,
+				})),
+			),
+		},
+		{
+			title: metadata.title,
+			description: metadata.description,
+			discovery: {keywords: metadata.keywords, requires: metadata.requires},
+			features: {itemBehaviorActions: actions.map(({action}) => action)},
+		},
+	);
+}
+
+export const EquippableBehaviorSchema = standardBehaviorSchema(
+	"equippable",
+	{
+		title: "Equippable",
+		description: "Lets the player wear or wield a carried item and later remove it.",
+		keywords: ["wearable", "clothing", "armor", "weapon", "shield", "mask", "wield"],
+		requires: ["takeable"],
+	},
+	[
+		{action: "wear", message: "You wear it."},
+		{action: "wield", message: "You wield it."},
+		{action: "remove", message: "You remove it."},
+		{action: "unequip", message: "You put it away."},
+	],
+	{
+		startsEquipped: editor
+			.boolean({
+				title: "Starts equipped",
+				description: "Equip this item when a playthrough begins. The item must start in inventory.",
+			})
+			.default(false),
+	},
+);
+
+export const ReadableBehaviorSchema = standardBehaviorSchema(
+	"readable",
+	{
+		title: "Readable",
+		description: "Gives this item authored text that the player can read.",
+		keywords: ["document", "book", "map", "letter", "sign", "spellbook", "writing"],
+	},
+	[{action: "read", message: "There is nothing more written here."}],
+);
+
+export const SensoryBehaviorSchema = standardBehaviorSchema(
+	"sensory",
+	{
+		title: "Sensory",
+		description: "Adds authored responses for smelling, listening to, touching, or tasting an item.",
+		keywords: ["scent", "smell", "sound", "listen", "texture", "touch", "taste"],
+	},
+	[
+		{action: "smell", message: "You notice no particular smell."},
+		{action: "listen", message: "You hear nothing unusual."},
+		{action: "touch", message: "It feels much as you expected."},
+		{action: "taste", message: "It has no remarkable taste."},
+	],
+);
+
+export const SearchableBehaviorSchema = standardBehaviorSchema(
+	"searchable",
+	{
+		title: "Searchable",
+		description: "Lets the player deliberately search this item and run a discovery outcome.",
+		keywords: ["search", "hide", "hidden", "container", "furniture", "remains", "under"],
+	},
+	[{action: "search", message: "You search it carefully."}],
+);
+
+export const EdibleBehaviorSchema = standardBehaviorSchema(
+	"edible",
+	{
+		title: "Edible",
+		description: "Lets the player eat or bite this item with customizable outcomes.",
+		keywords: ["food", "produce", "fruit", "meal", "bread", "edible"],
+	},
+	[
+		{action: "eat", message: "You eat it.", consumeItem: true},
+		{action: "bite", message: "You take a bite."},
+	],
+);
+
+export const DrinkableBehaviorSchema = standardBehaviorSchema(
+	"drinkable",
+	{
+		title: "Drinkable",
+		description: "Lets the player drink or sip this item with customizable outcomes.",
+		keywords: ["drink", "beverage", "potion", "water", "wine", "drinkable"],
+	},
+	[
+		{action: "drink", message: "You drink it.", consumeItem: true},
+		{action: "sip", message: "You take a sip."},
+	],
+);
+
+export const SwitchableBehaviorSchema = standardBehaviorSchema(
+	"switchable",
+	{
+		title: "Switchable",
+		description: "Gives this item a persistent on or off state.",
+		keywords: ["switch", "button", "lever", "control", "engine", "device", "powered"],
+	},
+	[
+		{action: "switch-on", message: "You switch it on."},
+		{action: "switch-off", message: "You switch it off."},
+		{action: "activate", message: "You activate it."},
+		{action: "deactivate", message: "You deactivate it."},
+	],
+	{
+		startsOn: editor.boolean({title: "Starts on"}).default(false),
+	},
+);
+
+export const LightableBehaviorSchema = standardBehaviorSchema(
+	"lightable",
+	{
+		title: "Lightable",
+		description: "Gives this item a persistent lit or extinguished state.",
+		keywords: ["torch", "candle", "lamp", "lantern", "fire", "light", "ignite"],
+	},
+	[
+		{action: "light", message: "You light it."},
+		{action: "extinguish", message: "You extinguish it."},
+	],
+	{
+		startsLit: editor.boolean({title: "Starts lit"}).default(false),
+	},
+);
+
+export const SoundMakingBehaviorSchema = standardBehaviorSchema(
+	"sound-making",
+	{
+		title: "Sound-making",
+		description: "Lets the player play, ring, blow, or strike this item.",
+		keywords: ["music", "instrument", "bell", "chime", "horn", "drum", "sound"],
+	},
+	[
+		{action: "play", message: "You play it."},
+		{action: "ring", message: "You ring it."},
+		{action: "blow", message: "You blow into it."},
+		{action: "strike", message: "You strike it."},
+	],
+);
+
+export const MovableBehaviorSchema = standardBehaviorSchema(
+	"movable",
+	{
+		title: "Movable",
+		description: "Lets the player push, pull, or reposition a fixed item.",
+		keywords: ["push", "pull", "move", "crate", "boulder", "lever", "furniture"],
+	},
+	[
+		{action: "push", message: "You push it."},
+		{action: "pull", message: "You pull it."},
+		{action: "move-object", message: "You move it."},
+	],
+);
+
+export const ClimbableBehaviorSchema = standardBehaviorSchema(
+	"climbable",
+	{
+		title: "Climbable",
+		description: "Lets the player climb, descend, or get down from this item.",
+		keywords: ["stairs", "ladder", "rope", "tree", "wall", "climb"],
+	},
+	[
+		{action: "climb", message: "You climb it."},
+		{action: "descend", message: "You descend it."},
+		{action: "get-down", message: "You get down."},
+	],
+);
+
+export const RestableBehaviorSchema = standardBehaviorSchema(
+	"restable",
+	{
+		title: "Resting place",
+		description: "Lets the player sit or lie here and later stand up.",
+		keywords: ["seat", "chair", "bench", "bed", "hammock", "sit", "lie"],
+	},
+	[
+		{action: "sit", message: "You sit down."},
+		{action: "lie", message: "You lie down."},
+		{action: "stand", message: "You stand up."},
+	],
+);
+
+export const EnterableBehaviorSchema = standardBehaviorSchema(
+	"enterable",
+	{
+		title: "Enterable",
+		description: "Lets the player enter this item and later get out.",
+		keywords: ["vehicle", "boat", "portal", "enclosure", "enter", "inside"],
+	},
+	[
+		{action: "enter", message: "You get inside."},
+		{action: "exit", message: "You get out."},
+	],
+);
+
+export const RideableBehaviorSchema = standardBehaviorSchema(
+	"rideable",
+	{
+		title: "Rideable",
+		description: "Lets the player mount, ride, and dismount this item.",
+		keywords: ["vehicle", "boat", "mount", "ride", "saddle"],
+	},
+	[
+		{action: "mount", message: "You mount it."},
+		{action: "ride", message: "You ride it."},
+		{action: "dismount", message: "You dismount."},
+	],
+);
+
+export const BindingBehaviorSchema = standardBehaviorSchema(
+	"binding",
+	{
+		title: "Binding",
+		description: "Lets this item be tied or fastened to another reachable item.",
+		keywords: ["rope", "chain", "thread", "cord", "tie", "fasten"],
+	},
+	[
+		{action: "tie", message: "You tie it securely.", target: {type: "any"}},
+		{action: "untie", message: "You untie it."},
+	],
+);
+
+export const BreakableBehaviorSchema = standardBehaviorSchema(
+	"breakable",
+	{
+		title: "Breakable",
+		description: "Lets the player break or smash this item and records its broken state.",
+		keywords: ["break", "smash", "fragile", "glass", "brittle"],
+	},
+	[
+		{action: "break", message: "You break it."},
+		{action: "smash", message: "You smash it."},
+	],
+	{
+		startsBroken: editor.boolean({title: "Starts broken"}).default(false),
+	},
+);
+
+export const CuttableBehaviorSchema = standardBehaviorSchema(
+	"cuttable",
+	{
+		title: "Cuttable",
+		description: "Lets the player cut, slice, or chop this item, optionally with a required tool.",
+		keywords: ["cuttable", "cut", "slice", "chop", "sever"],
+	},
+	[
+		{action: "cut", message: "You cut it."},
+		{action: "slice", message: "You slice it."},
+		{action: "chop", message: "You chop it."},
+	],
+);
+
+export const LiquidContainerBehaviorSchema = standardBehaviorSchema(
+	"liquid-container",
+	{
+		title: "Liquid container",
+		description: "Lets the player fill, pour, or empty this item's liquid contents.",
+		keywords: ["liquid vessel", "liquid container", "fillable", "pourable", "fill", "pour"],
+	},
+	[
+		{action: "fill", message: "You fill it."},
+		{action: "pour", message: "You pour from it."},
+		{action: "empty-liquid", message: "You empty it."},
+	],
+	{
+		capacity: editor.positiveInteger({title: "Liquid capacity"}).default(1),
+		startingAmount: editor.nonNegativeInteger({title: "Starting amount"}).default(0),
+	},
+);
+
+export const CleanableBehaviorSchema = standardBehaviorSchema(
+	"cleanable",
+	{
+		title: "Cleanable",
+		description: "Lets the player clean, wash, or wipe this item and records its clean state.",
+		keywords: ["dirty", "stained", "soiled", "clean", "wash", "wipe"],
+	},
+	[
+		{action: "clean", message: "You clean it."},
+		{action: "wash", message: "You wash it."},
+		{action: "wipe", message: "You wipe it clean."},
+	],
+	{
+		startsDirty: editor.boolean({title: "Starts dirty"}).default(true),
+	},
+);
+
+export const RepairableBehaviorSchema = standardBehaviorSchema(
+	"repairable",
+	{
+		title: "Repairable",
+		description: "Lets the player repair, fix, or mend this item, optionally with a required tool.",
+		keywords: ["broken", "damaged", "torn", "repair", "fix", "mend"],
+	},
+	[
+		{action: "repair", message: "You repair it."},
+		{action: "fix", message: "You fix it."},
+		{action: "mend", message: "You mend it."},
+	],
+	{
+		startsBroken: editor.boolean({title: "Starts broken"}).default(true),
+	},
+);
+
+export const WritableBehaviorSchema = standardBehaviorSchema(
+	"writable",
+	{
+		title: "Writable",
+		description: "Lets the player write, draw, mark, or erase text on this item.",
+		keywords: ["writable", "blank", "write on", "draw on", "mark on", "erasable"],
+	},
+	[
+		{action: "write", message: "You write on it."},
+		{action: "draw", message: "You draw on it."},
+		{action: "mark", message: "You mark it."},
+		{action: "erase", message: "You erase the writing."},
+	],
+	{
+		startingText: editor.textarea({title: "Starting writing"}, "").default(""),
+	},
+);
+
+export const ThrowableBehaviorSchema = standardBehaviorSchema(
+	"throwable",
+	{
+		title: "Throwable",
+		description: "Lets the player throw or toss a carried item, optionally at another item.",
+		keywords: ["throwable", "throw", "toss", "ball", "stone", "projectile"],
+		requires: ["takeable"],
+	},
+	[{action: "throw", message: "You throw it."}],
+);
+
+export const PresentableBehaviorSchema = standardBehaviorSchema(
+	"presentable",
+	{
+		title: "Give or show",
+		description: "Lets the player give, offer, or show a carried item to another reachable item.",
+		keywords: ["presentable", "give", "offer", "show", "gift"],
+		requires: ["takeable"],
+	},
+	[
+		{action: "give", message: "You give it away.", target: {type: "any"}},
+		{action: "show", message: "You show it.", target: {type: "any"}},
+	],
+);
+
 export const ITEM_BEHAVIOR_SCHEMAS = [
 	TakeableBehaviorSchema,
 	ContainerBehaviorSchema,
@@ -340,6 +763,29 @@ export const ITEM_BEHAVIOR_SCHEMAS = [
 	LockableBehaviorSchema,
 	DoorBehaviorSchema,
 	UsableBehaviorSchema,
+	EquippableBehaviorSchema,
+	ReadableBehaviorSchema,
+	SensoryBehaviorSchema,
+	SearchableBehaviorSchema,
+	EdibleBehaviorSchema,
+	DrinkableBehaviorSchema,
+	SwitchableBehaviorSchema,
+	LightableBehaviorSchema,
+	SoundMakingBehaviorSchema,
+	MovableBehaviorSchema,
+	ClimbableBehaviorSchema,
+	RestableBehaviorSchema,
+	EnterableBehaviorSchema,
+	RideableBehaviorSchema,
+	BindingBehaviorSchema,
+	BreakableBehaviorSchema,
+	CuttableBehaviorSchema,
+	LiquidContainerBehaviorSchema,
+	CleanableBehaviorSchema,
+	RepairableBehaviorSchema,
+	WritableBehaviorSchema,
+	ThrowableBehaviorSchema,
+	PresentableBehaviorSchema,
 ] as const;
 
 export const ItemBehaviorSchema = editor.discriminatedUnion(
@@ -627,6 +1073,13 @@ export const ItemSchema = editor
 				code: "custom",
 				message: "An item cannot start both open and locked.",
 				path: ["initialState", "locked"],
+			});
+		}
+		if (behaviorTypes.has("equippable") && !behaviorTypes.has("takeable")) {
+			ctx.addIssue({
+				code: "custom",
+				message: "equippable items must also have the takeable behavior.",
+				path: ["behaviors"],
 			});
 		}
 	});
