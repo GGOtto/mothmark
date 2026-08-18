@@ -54,7 +54,7 @@ describe("the v12 to v13 item-behavior discovery contract migration", () => {
 			{id: "world-1", storage: "editor"},
 		);
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(13);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(14);
 		expect(migrationFrom(12)).toBe(v12ToV13);
 		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();
 		expect(result).toEqual({

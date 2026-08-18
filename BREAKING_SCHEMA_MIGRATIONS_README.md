@@ -157,3 +157,11 @@ play and exhaustive replay. Authored choices, commands, and unrelated player sta
 reviewed schema-source change for item behavior discovery metadata. It advances every retained row
 without rewriting worlds, game states, or messages because the metadata affects authoring
 recommendations rather than persisted representation or player behavior.
+
+### Version 13 to 14: item actions and focused event editing
+
+`v13-to-v14-record-item-actions-and-event-editor-contract` records the reviewed schema-source
+boundary for the expanded schema-derived item behavior catalog and the focused event editor. It is
+an opt-out migration because retained version-13 worlds, game states, and messages already parse and
+replay without rewriting authored content. Every retained row still advances to version 14 so future
+deployments compare against the correct accepted contract.
