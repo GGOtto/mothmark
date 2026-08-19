@@ -1,8 +1,12 @@
 "use client";
 
 import {ArrowLeft, ArrowRight, Plus, Trash2} from "lucide-react";
+import {useMemo} from "react";
+import {EntityPicker} from "@/components/entity-picker/EntityPicker";
+import type {EntityPickerEntry} from "@/components/entity-picker/entityPickerTypes";
 import {useTheme} from "@/components/theme/ThemeProvider";
 import {UniversalEditor} from "@/components/universal-editor/UniversalEditor";
+import {buildEditorRegistries} from "@/components/universal-editor/utils/buildEditorRegistries";
 import {
 	CommandEffectGroupSchema,
 	type CommandConditionBranch,
@@ -24,7 +28,7 @@ import {
 } from "@/schemas/world/commandSchemas";
 import type {World} from "@/schemas/world/worldSchema";
 import type {UpdateWorld} from "@/types/worldUpdaterTypes";
-import {idValue, toID} from "@/utils/idUtils";
+import {compareIds, idValue, toID, type ID} from "@/utils/idUtils";
 import type {CommandSelection} from "../shared";
 import {blockDefinition, isStructuralBlock} from "./CommandEditor";
 import {createBlockFallbackBehavior} from "./commandFallback";
@@ -43,7 +47,160 @@ const TargetTagsSchema = editor.object(
 	},
 );
 
-const TargetBlockDetailsSchema = TargetBlockSchema.omit({tags: true, tagMode: true});
+const TargetBlockDetailsSchema = TargetBlockSchema.omit({
+	tags: true,
+	tagMode: true,
+	entityIds: true,
+});
+const ItemCustomizedTargetBlockDetailsSchema = TargetBlockDetailsSchema.omit({entityTypes: true});
+
+type TargetBlock = Extract<CommandBlock, {type: "target"}>;
+type TargetEntityType = TargetBlock["entityTypes"][number];
+
+function targetPickerEntry(
+	option: ReturnType<typeof buildEditorRegistries>["items"][number],
+	type: TargetEntityType,
+): EntityPickerEntry {
+	return {
+		ref: toID(type, option.id),
+		entityType: type,
+		label: option.label,
+		description: option.description,
+		aliases: option.aliases ?? [],
+		tags: option.tags ?? [],
+		kind: option.kind,
+		hierarchy: option.hierarchy ?? [],
+		facts: option.facts,
+		relations: option.relations,
+		path: option.path,
+		parentId: option.parentId,
+		disabled: option.disabled,
+		deprecated: option.deprecated,
+	};
+}
+
+function targetTypeLabel(type: TargetEntityType) {
+	return type === "room" ? "Room" : "Item";
+}
+
+function readableTargetList(labels: string[]) {
+	if (labels.length < 2) return labels[0] ?? "";
+	if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
+	return `${labels.slice(0, -1).join(", ")}, or ${labels.at(-1)}`;
+}
+
+function SpecificTargetsEditor({
+	block,
+	world,
+	customizedItemId,
+	onChange,
+}: {
+	block: TargetBlock;
+	world: World;
+	customizedItemId?: ID<"item">;
+	onChange: (nextBlock: TargetBlock) => void;
+}) {
+	const registries = useMemo(() => buildEditorRegistries(world), [world]);
+	const allowedTypes: TargetEntityType[] = block.entityTypes.length
+		? block.entityTypes
+		: ["room", "item"];
+	const entries = [
+		...registries.rooms.map((option) => targetPickerEntry(option, "room")),
+		...registries.items.map((option) => targetPickerEntry(option, "item")),
+	];
+	const selectedTargets = block.entityIds.map((reference) => {
+		const entry = entries.find((candidate) => compareIds(candidate.ref, reference));
+		return {
+			reference,
+			entry,
+			label:
+				entry?.label ||
+				`Missing ${targetTypeLabel(reference.type).toLocaleLowerCase()}${idValue(reference) ? ` · ${idValue(reference)}` : ""}`,
+			allowed: allowedTypes.includes(reference.type),
+		};
+	});
+	const availableEntries = entries.filter(
+		(entry) =>
+			allowedTypes.includes(entry.ref.type as TargetEntityType) &&
+			!block.entityIds.some((reference) => compareIds(reference, entry.ref)),
+	);
+	const labels = selectedTargets.map(({label}) => label);
+	const customizedItem = customizedItemId
+		? selectedTargets.find(({reference}) => compareIds(reference, customizedItemId))
+		: undefined;
+
+	return (
+		<section className="commandInspector__specificTargets" aria-labelledby="specific-targets-heading">
+			<header>
+				<div>
+					<h3 id="specific-targets-heading">Specific targets</h3>
+					<p>
+						{selectedTargets.length
+							? `Only ${readableTargetList(labels)} can fill this target block.`
+							: "No named entity restriction. Any entity matching the type, tags, and availability rules can fill this target block."}
+					</p>
+				</div>
+				{customizedItem ? <span>Item-specific scope</span> : null}
+			</header>
+			{customizedItem ? (
+				<p className="commandInspector__specificTargetsNotice">
+					This customized command is limited to <strong>{customizedItem.label}</strong> here. The
+					remaining target rules still apply.
+				</p>
+			) : null}
+			{selectedTargets.length ? (
+				<ul>
+					{selectedTargets.map(({reference, entry, label, allowed}) => (
+						<li key={`${reference.type}:${idValue(reference)}`}>
+							<div>
+								<strong>{label}</strong>
+								<span>
+									{targetTypeLabel(reference.type)}
+									{!entry ? " · No longer in this world" : ""}
+									{!allowed ? " · Excluded by Entity types" : ""}
+								</span>
+							</div>
+							{customizedItemId && compareIds(reference, customizedItemId) ? (
+								<span className="commandInspector__specificTargetFixed">Fixed</span>
+							) : (
+								<button
+									type="button"
+									aria-label={`Remove ${label} from specific targets`}
+									onClick={() =>
+										onChange({
+											...block,
+											entityIds: block.entityIds.filter((candidate) => !compareIds(candidate, reference)),
+										})
+									}
+								>
+									<Trash2 size={14} aria-hidden="true" />
+								</button>
+							)}
+						</li>
+					))}
+				</ul>
+			) : null}
+			{customizedItem ? null : (
+				<EntityPicker
+					entries={availableEntries}
+					entityTypes={allowedTypes}
+					onChange={(selection) => {
+						if (!selection) return;
+						onChange({
+							...block,
+							entityIds: [...block.entityIds, selection.ref as TargetBlock["entityIds"][number]],
+						});
+					}}
+					title="Add a specific target"
+					placeholder={availableEntries.length ? "Add a specific target" : "No more eligible targets"}
+					presentation="popover"
+					showPreview
+					disabled={availableEntries.length === 0}
+				/>
+			)}
+		</section>
+	);
+}
 
 type CommandInspectorProps = {
 	world: World;
@@ -404,6 +561,14 @@ export function CommandInspector({
 		(fallback) => idValue(fallback.blockId) === idValue(block.id),
 	);
 	const fallback = fallbackIndex >= 0 ? command.fallbacks[fallbackIndex] : undefined;
+	const customizedItemId =
+		command.customization?.type === "item-command-customization" &&
+		block.type === "target" &&
+		(command.customization.targetBlockId
+			? compareIds(block.id, command.customization.targetBlockId)
+			: block.entityIds.some((reference) => compareIds(reference, command.customization?.itemId)))
+			? command.customization.itemId
+			: undefined;
 
 	function updateSharedBlock(nextBlock: CommandBlock) {
 		updateCommand((target) => {
@@ -537,17 +702,32 @@ export function CommandInspector({
 				</button>
 			</div>
 			{block.type === "target" ? (
-				<UniversalEditor
-					schema={TargetBlockDetailsSchema}
-					value={block}
-					onChange={(nextBlock) =>
-						updateSharedBlock({...block, ...nextBlock, tags: block.tags, tagMode: block.tagMode})
-					}
-					world={world}
-					updateWorld={updateWorld}
-					appearance={appearance}
-					scrollOnExternalValueChange={false}
-				/>
+				<>
+					<SpecificTargetsEditor
+						block={block}
+						world={world}
+						customizedItemId={customizedItemId}
+						onChange={updateSharedBlock}
+					/>
+					<UniversalEditor
+						schema={customizedItemId ? ItemCustomizedTargetBlockDetailsSchema : TargetBlockDetailsSchema}
+						value={block}
+						onChange={(nextBlock) =>
+							updateSharedBlock({
+								...block,
+								...nextBlock,
+								entityIds: block.entityIds,
+								entityTypes: block.entityTypes,
+								tags: block.tags,
+								tagMode: block.tagMode,
+							})
+						}
+						world={world}
+						updateWorld={updateWorld}
+						appearance={appearance}
+						scrollOnExternalValueChange={false}
+					/>
+				</>
 			) : (
 				<UniversalEditor
 					schema={schemaForBlock(block)}

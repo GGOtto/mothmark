@@ -7,6 +7,14 @@ export const LexicalSuggestionRequestSchema = z.object({
 	iconCategory: z.string().trim().max(80).optional(),
 });
 
+export const ItemIconInferenceBatchRequestSchema = z.object({
+	items: z.array(LexicalSuggestionRequestSchema).min(1).max(20),
+});
+
+export const ItemIconInferenceBatchResponseSchema = z.object({
+	data: z.object({categories: z.array(z.string())}),
+});
+
 export const LexicalAliasCandidateSchema = z.object({
 	value: z.string(),
 	relation: z.enum(["phrase", "synonym", "reference", "inflection", "broader"]),
@@ -30,6 +38,7 @@ export const LexicalSuggestionResponseSchema = z.object({
 });
 
 export type LexicalSuggestionRequest = z.infer<typeof LexicalSuggestionRequestSchema>;
+export type ItemIconInferenceBatchRequest = z.infer<typeof ItemIconInferenceBatchRequestSchema>;
 export type LexicalAliasCandidate = z.infer<typeof LexicalAliasCandidateSchema>;
 export type LexicalConceptCandidate = z.infer<typeof LexicalConceptCandidateSchema>;
 export type LexicalSuggestionResponse = z.infer<typeof LexicalSuggestionResponseSchema>;

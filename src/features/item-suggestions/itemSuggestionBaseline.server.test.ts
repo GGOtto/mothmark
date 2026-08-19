@@ -3,7 +3,7 @@
 jest.mock("server-only", () => ({}));
 
 import {produce} from "immer";
-import {resolveItemIcon} from "@/itemIcons";
+import {resolveItemIcon, resolveItemIconWithInferredTags} from "@/itemIcons";
 import {ItemSchema} from "@/schemas/world/itemSchema";
 import {WorldSchema} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -28,6 +28,10 @@ async function baseline(name: string) {
 	});
 	return {
 		iconCategory,
+		inferredIconCategory: resolveItemIconWithInferredTags(
+			item,
+			lexical.concepts.map(({tag}) => tag),
+		).category,
 		aliases: createAliasSuggestions(item, world, lexical.aliases).map(({value}) => value),
 		tags: createTagSuggestions(item, lexical.concepts, buildWorldTagGraph(world, item.id)).map(
 			({tag}) => tag,
@@ -100,6 +104,16 @@ describe("reviewed item suggestion baseline", () => {
 		);
 		expect(result.tags).toEqual(expect.arrayContaining(["bag", "container"]));
 	});
+
+	it.each(["Toast", "Sardines"])(
+		"uses inferred tag classifications to keep %s out of the generic icon category",
+		async (name) => {
+			const result = await baseline(name);
+
+			expect(result.iconCategory).toBe("generic");
+			expect(result.inferredIconCategory).not.toBe("generic");
+		},
+	);
 
 	it("keeps the object rather than the subject in an of-phrase", async () => {
 		const result = await baseline("A sealed parchment map of the northern coast");

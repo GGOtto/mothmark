@@ -8,6 +8,7 @@ export {
 export {
 	normalizeItemIconTerm,
 	resolveItemIcon,
+	resolveItemIconWithInferredTags,
 	type ItemIconCandidate,
 	type ItemIconEvidence,
 	type ItemIconEvidenceSource,

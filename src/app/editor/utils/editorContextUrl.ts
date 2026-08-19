@@ -16,6 +16,7 @@ export type EditorContext = {
 	logicSelection: LogicSelection | null;
 	selectedCommandId: string | null;
 	commandSelection: CommandSelection | null;
+	commandReturnItemId: string | null;
 	selectedConditionId: string | null;
 	selectedEffectId: string | null;
 	selectedItemId: string | null;
@@ -59,6 +60,7 @@ function baseContext(world: World): EditorContext {
 		logicSelection: null,
 		selectedCommandId: null,
 		commandSelection: null,
+		commandReturnItemId: null,
 		selectedConditionId: null,
 		selectedEffectId: null,
 		selectedItemId: null,
@@ -157,7 +159,15 @@ export function resolveEditorContext(world: World, search: string): ResolvedEdit
 		if (world.commands.some((command) => idValue(command.id) === commandId)) {
 			context.selectedCommandId = commandId;
 			context.commandSelection = {kind: "command", commandId};
-			return {context, notice: null};
+			const returnItemId = params.get("fromItem");
+			if (returnItemId && world.items.some((item) => idValue(item.id) === returnItemId)) {
+				context.commandReturnItemId = returnItemId;
+				return {context, notice: null};
+			}
+			return {
+				context,
+				notice: returnItemId ? "The item that opened this command is no longer available." : null,
+			};
 		}
 		return {
 			context,
@@ -214,6 +224,7 @@ export function buildEditorContextSearch(context: EditorContext): string {
 		}
 		if (context.logicSection === "commands" && context.selectedCommandId) {
 			params.set("command", context.selectedCommandId);
+			if (context.commandReturnItemId) params.set("fromItem", context.commandReturnItemId);
 		}
 		if (context.logicSection === "conditions" && context.selectedConditionId) {
 			params.set("condition", context.selectedConditionId);

@@ -536,10 +536,20 @@ export const CommandFallbackSchema = editor.object(
 	},
 );
 
+export const ItemCommandCustomizationSchema = z.object({
+	type: z.literal("item-command-customization"),
+	sourceCommandId: editor.id("command"),
+	itemId: editor.id("item"),
+	targetBlockId: editor.id("command-block").optional(),
+});
+
+export type ItemCommandCustomization = z.infer<typeof ItemCommandCustomizationSchema>;
+
 export const CommandSchema = editor
 	.object(
 		{
 			id: editor.id("command", {title: "Command ID"}),
+			customization: ItemCommandCustomizationSchema.optional(),
 			name: editor
 				.input({title: "Name", description: "The author-facing name of this command."})
 				.min(1),

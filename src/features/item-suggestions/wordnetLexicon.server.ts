@@ -1,8 +1,6 @@
 import "server-only";
 
 import {open, readFile, type FileHandle} from "node:fs/promises";
-import {join} from "node:path";
-import wordNetDatabase from "wordnet-db";
 import {ITEM_ICON_CATALOG} from "@/itemIcons/itemIconCatalog";
 import type {
 	LexicalAliasCandidate,
@@ -11,6 +9,7 @@ import type {
 } from "./lexicalSchemas";
 import {lexicalLookupTerms, wordNetLookupTerms} from "./lexicalLookupTerms";
 import {normalizeSuggestionText} from "./suggestionText";
+import {resolveWordNetDatabasePaths} from "./wordnetDatabasePaths.server";
 import {
 	wiktionaryAliasesForTerm,
 	WIKTIONARY_ALIAS_LEXICON_VERSION,
@@ -36,8 +35,9 @@ type ConceptRecord = WordNetRecord & {depth: number};
 type WordNetIndexEntry = {offsets: number[]; taggedSenseCount: number};
 type WordNetIndex = Map<string, WordNetIndexEntry>;
 
-const NOUN_INDEX_PATH = join(wordNetDatabase.path, "index.noun");
-const NOUN_DATA_PATH = join(wordNetDatabase.path, "data.noun");
+const wordNetDatabase = resolveWordNetDatabasePaths();
+const NOUN_INDEX_PATH = wordNetDatabase.nounIndexPath;
+const NOUN_DATA_PATH = wordNetDatabase.nounDataPath;
 const indexPromise = loadNounIndex();
 const dataFilePromise = open(NOUN_DATA_PATH, "r");
 const lookupCache = new Map<string, Promise<WordNetRecord[]>>();

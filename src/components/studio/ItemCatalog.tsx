@@ -17,6 +17,7 @@ import type {UpdateWorld} from "@/types/worldUpdaterTypes";
 import {addItemDraft} from "@/app/editor/utils/worldDraftUtils";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
 import {generateUniqueId, idValue} from "@/utils/idUtils";
+import {useInferredItemIconCategories} from "./useInferredItemIconCategories";
 
 type ItemCatalogProps = {
 	world: World;
@@ -168,6 +169,7 @@ export function ItemCatalog({
 	const [preferenceProblem, setPreferenceProblem] = useState<string | null>(null);
 	const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 	const itemSnapshotsRef = useRef<Map<string, string> | null>(null);
+	const inferredIconCategories = useInferredItemIconCategories(world.items);
 
 	useEffect(() => {
 		const stored = readStoredPreferences();
@@ -385,7 +387,7 @@ export function ItemCatalog({
 						const behavior = behaviorLabel(item);
 						const tags = item.tags.length ? item.tags.join(", ") : "No tags";
 						const updated = relativeTime(activity?.updatedAt);
-						const category = resolveItemIcon(item).category;
+						const category = inferredIconCategories.get(itemId) ?? resolveItemIcon(item).category;
 						const iconSize =
 							preferences.itemListView === "cards" || preferences.itemListView === "marks"
 								? 128

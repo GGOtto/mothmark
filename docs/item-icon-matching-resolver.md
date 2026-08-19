@@ -17,9 +17,10 @@ type ItemIconInput = {
 };
 ```
 
-`iconCategory` is the preferred future manual override. A valid `icon:<category>` tag remains a
-compatibility override. Invalid and conflicting overrides are reported as warnings; an invalid
-override does not prevent automatic matching.
+`iconCategory` is an internal resolver input retained for compatibility. The authoring surface does
+not expose a separate icon chooser. A valid `icon:<category>` tag is the sole explicit override.
+Invalid and conflicting overrides are reported as warnings; an invalid override does not prevent
+automatic matching.
 
 The result contains:
 
@@ -29,8 +30,10 @@ The result contains:
 - ordered alternative candidates for inspection;
 - invalid or conflicting override warnings.
 
-The automatic result is derived rather than persisted. A future icon chooser should store only a
-deliberate manual override.
+The automatic result is derived rather than persisted and updates as the item's name, aliases, or
+ordinary tags change. The tag suggester's deterministic lexical classifications may also be supplied
+as internal Tags evidence. Those classifications affect only the cosmetic result: they are not
+written to the item and do not enable behaviors.
 
 ## Evidence model
 
@@ -58,6 +61,11 @@ Terms have three roles:
 
 Known behavior and state tags such as `takeable`, `openable`, `surface`, and `goal-item` are removed
 before matching. They do not select or corroborate an icon.
+
+The item page reuses the classifications from its ordinary suggestion request. The item selector
+batches the same inference for its item set instead of maintaining a second item-name catalog. This
+lets broad results such as Food classify unfamiliar nouns while preserving the same ranking,
+normalization, and override rules.
 
 ## Category relationships
 

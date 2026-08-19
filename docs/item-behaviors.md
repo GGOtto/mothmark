@@ -46,3 +46,17 @@ The accepted words live in complete saved command documents under `src/data/comm
 tests execute every maintained action phrase and every maintained relation phrase through
 `resolveTurn`; lower-level tests cover conditions, targets, disabled actions, state transitions, and
 hooks.
+
+## Item-specific command logic
+
+The item Commands tab separates commands already specific to the item, shared commands supplied by
+its tags and behaviors, and indirectly related logic. Customizing a shared command duplicates the
+complete saved command, constrains the selected target block to the current item, and opens that copy
+in the full Logic editor. The shared command remains unchanged for every other item.
+
+Customized commands retain their source command and item provenance and are named
+`<original command name> (Customized for <item>)`. Their exact item target is more specific during
+normal command resolution, so the customized logic wins for that item without requiring an engine
+branch for a particular command name. The command pattern summary calls out the specific restriction,
+and the target inspector shows named rooms or items through the shared entity picker rather than raw
+typed IDs.

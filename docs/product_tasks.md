@@ -2,7 +2,7 @@
 
 Status: active implementation backlog.
 
-Last updated: 2026-08-15.
+Last updated: 2026-08-18.
 
 This replaces the old page-by-page constrained-layout audit. The plan is organized around user
 tasks and product outcomes so that each checkbox can be implemented, reviewed, tested, and closed
@@ -104,7 +104,7 @@ the full task definitions but do not imply a different sequence.
 | 13       | E05  | Finish the Items surface, alias suggestions, and tag suggestions before adding command recommendations.  |
 | 14       | E05A | Bootstrap broad alias vocabulary from versioned non-AI lexical datasets without curated exceptions.      |
 | 15       | Q01  | Run the complete guest phone-play audit after the item-page overhaul requested for the demonstration.    |
-| 16       | G03  | Add item command templates once the dedicated item page provides their durable authoring surface.        |
+| 16       | G03  | Make automatic icons and item-specific command customization useful from the dedicated item page.        |
 | 17       | E06  | Conditions and effects need a clear chooser/editor for the authoring demonstration.                      |
 | 18       | E07  | Complex AND/OR/NOT and multi-effect builders follow once ordinary conditions/effects work well.          |
 | 19       | E05B | Expand standard object behaviors once their command and logic foundations are ready.                     |
@@ -822,29 +822,33 @@ the full task definitions but do not imply a different sequence.
   - Cover no exits, hidden/conditional exits, ambiguous direction aliases, no opted-in commands, and
     mobile terminal wrapping through `resolveTurn` and hosted-player tests.
 
-- [ ] **G03 — Make the item tag taxonomy useful through command templates.**
+- [x] **G03 — Make item tags useful through automatic icons and command customization.**
 
-  **Outcome:** Every maintained item category has an understandable presentation effect and a useful
-  set of optional built-in command templates; no supported tag is inert or magical.
+  **Outcome:** Item identity evidence automatically chooses its cosmetic mark, and an author can
+  customize a behavior-backed command for one item without changing the shared command.
 
-  **Depends on:** G02, E05. Add the attachment/recommendation control to the dedicated item page
-  delivered by E05.
+  **Depends on:** G02, E05, E05B. Use the dedicated item page from E05 and the behavior-backed saved
+  commands from E05B.
 
   **Scope and acceptance:**
 
-  - Keep category matching deterministic according to the appendix and use it for the maintained SVG
-    mark and command-template recommendations.
-  - Create complete saved-command documents from reusable conditions/effects for appropriate actions,
-    including examples such as `eat <food>`, `drink <drink>`, `read <document>`, `wear <wearable>`,
-    `play <music>`, `light <light>`, `open <container/door>`, `unlock <lockable>`, and `use <item>`.
-  - Define a reviewed recommendation matrix for every category. A category may recommend a general
-    command such as Examine when a more specific action would invent behavior.
-  - Tags recommend; authors preview and explicitly attach. Removing a tag does not silently delete a
-    customized command.
-  - Show attached, available, unavailable, and customized states in the item editor and link to the
-    command editor.
-  - Load every built-in command from a complete JSON document through `initialCommands.ts`; add any
-    missing reusable condition/effect with focused and player-path tests first.
+  - Keep icon category matching deterministic across Name, Aliases, and Tags. Accepted ordinary tag
+    suggestions update the icon automatically; there is no separate icon chooser.
+  - Preserve `icon:<category>` as the only explicit icon override and keep behavior/state tags out of
+    icon evidence.
+  - Separate item-specific, shared behavior-backed, and indirectly related commands in the Commands
+    tab, with direct links into the full command editor.
+  - Customizing a shared command duplicates its complete document, adds the current item to the
+    selected matching target block, preserves all other target filters and logic, and leaves the
+    shared command unchanged.
+  - Name the fork `<original command name> (Customized for <item>)`, retain source/item provenance,
+    hide the duplicate from general player help by default, and reopen an existing item fork instead
+    of creating another one.
+  - Show the restriction in the command pattern summary and edit specific targets as named world
+    entities rather than exposing raw typed-ID array controls.
+  - Keep the item return context in the editor URL and return to the item's Commands tab after editing
+    or deleting the fork.
+  - Verify exact-item command precedence through `resolveTurn`, plus focused editor and browser tests.
 
 - [ ] **G04 — Add deterministic random conditions.**
 
@@ -1219,7 +1223,9 @@ universal editor, and hands condition and effect work to the focused Logic works
 commands with direct item references, keeps flags with behavior state, gives containers and surfaces
 an optional visible-contents lead-in, and opens Play from the compact item header without reserving
 phone space for a collapsed utility strip.
-Taxonomy-aware tag suggestions and the author-facing icon chooser remain open as separate work.
+Taxonomy-aware tag suggestions now feed the automatic icon resolver, and the Commands tab can fork a
+shared command into an item-scoped version for advanced Logic editing while preserving the global
+variant.
 
 ## Additional tasks added during this reorganization
 
