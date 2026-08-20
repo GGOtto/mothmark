@@ -1,4 +1,4 @@
-import {ArrowRight, Play} from "lucide-react";
+import {ArrowRight} from "lucide-react";
 import Link from "next/link";
 
 import {FeaturedPublicationsCarousel} from "./FeaturedPublicationsCarousel";
@@ -36,8 +36,8 @@ export default function HomePage() {
 				<FeaturedPublicationsCarousel />
 
 				<section className="homeGetStarted" aria-label="Get started with Mothmark">
-					<article className="homeTutorial">
-						<h2>Build your first room</h2>
+					<article className="homeTutorial" aria-labelledby="home-tutorial-title">
+						<h2 id="home-tutorial-title">Build your first room</h2>
 						<p>
 							Follow a short tutorial through the editor and make a playable scene while learning the parts
 							of a Mothmark world.
@@ -69,37 +69,6 @@ export default function HomePage() {
 							Open the editor <ArrowRight size={16} aria-hidden="true" />
 						</Link>
 					</article>
-
-					<section className="homeVideos" aria-labelledby="home-videos-title">
-						<h2 id="home-videos-title">Watch videos</h2>
-						<p>Short walkthroughs will show the editor in use. These lessons are still being prepared.</p>
-						<div className="homeVideoList">
-							<article className="homeVideoStub">
-								<div className="homeVideoPreview" aria-hidden="true">
-									<Play size={20} />
-								</div>
-								<div>
-									<h3>Map your first room</h3>
-									<small>Video coming soon</small>
-								</div>
-								<button type="button" disabled>
-									Watch video
-								</button>
-							</article>
-							<article className="homeVideoStub">
-								<div className="homeVideoPreview" aria-hidden="true">
-									<Play size={20} />
-								</div>
-								<div>
-									<h3>Build and test a command</h3>
-									<small>Video coming soon</small>
-								</div>
-								<button type="button" disabled>
-									Watch video
-								</button>
-							</article>
-						</div>
-					</section>
 				</section>
 			</main>
 

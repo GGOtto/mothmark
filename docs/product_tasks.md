@@ -1109,6 +1109,9 @@ the full task definitions but do not imply a different sequence.
   **Outcome:** The Home learning area and editor help lead to maintained material rather than disabled
   placeholders.
 
+  **Progress (2026-08-19):** Removed the disabled Home video placeholders so the learning area no
+  longer presents controls that cannot act. Maintained tutorials and videos remain to be published.
+
   **Scope and acceptance:**
 
   - Define a small initial curriculum: create a room, connect rooms, add/test an item command,

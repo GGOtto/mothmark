@@ -580,26 +580,21 @@ test("the home page example plays through the real command path", async ({page})
 		}),
 	).toBeVisible();
 	await expect(page.getByRole("link", {name: 'Continue "Corner Shop"'})).toBeVisible();
-	const videoButtons = page.getByRole("button", {name: "Watch video"});
-	await expect(videoButtons).toHaveCount(2);
-	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
+	await expect(page.getByRole("button", {name: "Watch video"})).toHaveCount(0);
+	await expect(page.getByText("Video coming soon")).toHaveCount(0);
 	expect(editor.bootstrapCount()).toBe(0);
 	expect(browserErrors).toEqual([]);
 });
 
-test("the home tutorial and videos share a desktop row and stack on mobile", async ({page}) => {
+test("the home tutorial uses the available canvas and remains usable on mobile", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await useHomePublications(page);
 
 	await page.setViewportSize({width: 1280, height: 900});
 	await page.goto("/");
-	const tutorial = page.locator(".homeTutorial");
-	const videos = page.locator(".homeVideos");
-	const [desktopTutorial, desktopVideos] = await Promise.all([
-		tutorial.boundingBox(),
-		videos.boundingBox(),
-	]);
-	expect(Math.abs((desktopTutorial?.y ?? 0) - (desktopVideos?.y ?? 0))).toBeLessThan(2);
+	const tutorial = page.getByRole("article", {name: "Build your first room"});
+	const desktopTutorial = await tutorial.boundingBox();
+	expect(desktopTutorial?.width ?? 0).toBeGreaterThan(1000);
 	const desktopPublication = await page.locator(".homeFeaturedPage--current").boundingBox();
 	expect(desktopPublication?.width ?? 0).toBeLessThanOrEqual(900);
 	await expect(page.getByRole("contentinfo").getByText("Notes from Mothmark")).toBeVisible();
@@ -616,13 +611,7 @@ test("the home tutorial and videos share a desktop row and stack on mobile", asy
 		.getByRole("textbox", {name: "Game command"})
 		.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 	expect(commandInputFontSize).toBeGreaterThanOrEqual(16);
-	const [mobileTutorial, mobileVideos] = await Promise.all([
-		tutorial.boundingBox(),
-		videos.boundingBox(),
-	]);
-	expect(mobileVideos?.y ?? 0).toBeGreaterThan(
-		(mobileTutorial?.y ?? 0) + (mobileTutorial?.height ?? 0) - 2,
-	);
+	await expect(tutorial).toBeVisible();
 	expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 	expect(browserErrors).toEqual([]);
 });
