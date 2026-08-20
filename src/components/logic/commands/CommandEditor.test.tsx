@@ -422,6 +422,23 @@ describe("command presentation", () => {
 		expect(commandPatternText(takePattern)).toBe("take <number> <target>");
 	});
 
+	it("makes a specific target restriction visible in command summaries", () => {
+		const pattern = {
+			...createDefaultFieldObject(PatternSchema),
+			blocks: [
+				{
+					...createDefaultFieldObject(TargetBlockSchema),
+					id: toID("command-block", "specific-target"),
+					role: "item",
+					tags: ["readable"],
+					entityIds: [toID("item", "shop-counter")],
+				},
+			],
+		};
+
+		expect(commandPatternText(pattern)).toBe("readable (1 specific target)");
+	});
+
 	it("shows the command library before editing a command", async () => {
 		const user = userEvent.setup();
 		const onOpenCommand = jest.fn();
@@ -681,6 +698,55 @@ describe("CommandInspector", () => {
 
 		expect(screen.getByRole("heading", {name: "Target tags"})).toBeInTheDocument();
 		expect(screen.getAllByText("Required tags")).toHaveLength(1);
+	});
+
+	it("shows an item customization as a fixed named target instead of a raw ID array", () => {
+		const item = initialWorld.items[0]!;
+		const latestWorld = produce(initialWorld, (draft) => {
+			const command = draft.commands.find((candidate) => idValue(candidate.id) === "touch-target")!;
+			const target = command.patterns[0].blocks.find((block) => block.type === "target")!;
+			target.entityTypes = ["item"];
+			target.entityIds = [item.id];
+			command.customization = {
+				type: "item-command-customization",
+				sourceCommandId: toID("command", "say"),
+				itemId: item.id,
+				targetBlockId: target.id,
+			};
+		});
+		const command = latestWorld.commands.find(
+			(candidate) => idValue(candidate.id) === "touch-target",
+		)!;
+		const target = command.patterns[0].blocks.find((block) => block.type === "target")!;
+		render(
+			<PopupProvider>
+				<ThemeProvider>
+					<CommandInspector
+						world={latestWorld}
+						updateWorld={jest.fn()}
+						selection={{
+							kind: "block",
+							commandId: "touch-target",
+							patternIndex: 0,
+							blockId: idValue(target.id),
+						}}
+						onSelectionChange={jest.fn()}
+					/>
+				</ThemeProvider>
+			</PopupProvider>,
+		);
+
+		expect(screen.getByText("Item-specific scope")).toBeVisible();
+		expect(screen.getByText(/Only Shop Counter can fill this target block/)).toBeVisible();
+		expect(screen.getByText(/limited to/)).toHaveTextContent("Shop Counter");
+		expect(screen.queryByText(idValue(item.id), {exact: true})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Add entry"})).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", {name: "Add a specific target"})).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", {name: "Remove Shop Counter from specific targets"}),
+		).not.toBeInTheDocument();
+		expect(screen.getByText("Fixed")).toBeVisible();
+		expect(screen.queryByText("Entity types")).not.toBeInTheDocument();
 	});
 
 	it("preserves the inspector scroll position when the selected block updates", () => {

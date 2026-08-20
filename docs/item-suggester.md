@@ -63,9 +63,14 @@ the author still performs the one explicit Enable action before any behavior cha
 
 - The browser sends only the item's bounded name, aliases, tags, and resolved icon category to the
   authenticated editor endpoint.
+- Item pages reuse returned classification concepts as internal cosmetic icon evidence. The item
+  selector sends bounded batches to the matching icon-inference endpoint. Neither path writes an
+  inferred tag or enables a capability.
 - The server reads the WordNet noun index and noun data supplied by `wordnet-db`. The index, record
   reads, and completed lookups are cached for the server process. WordNet continues to own noun
-  sense selection and semantic parents for tag suggestions.
+  sense selection and semantic parents for tag suggestions. The server resolves those files through
+  its runtime module loader, and the item-suggestion route explicitly traces the dictionary assets,
+  so a deployment never reuses an absolute package path from the build machine.
 - The server also reads the committed Wiktionary alias snapshot. `pnpm lexicon:update` queries the
   maintained item-taxonomy terms, records every source page revision, filters to safe English noun
   relationships, and emits a deterministic versioned index. Production builds and requests never

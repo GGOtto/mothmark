@@ -34,7 +34,7 @@ import {
 } from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {getEditorMetadata} from "@/utils/editorMetadata";
-import {ItemSuggestionList, useItemSuggestions} from "./ItemSuggestionPanel";
+import {ItemSuggestionList, type ItemSuggestions} from "./ItemSuggestionPanel";
 
 export type ItemAdvancedEditOptions = {
 	kind: "condition" | "effect";
@@ -52,6 +52,8 @@ type ItemPanelProps = {
 	onUpdate: UpdateItem;
 	onEditAdvanced: (options: ItemAdvancedEditOptions) => void;
 };
+
+type ItemDetailsPanelProps = ItemPanelProps & {suggestions: ItemSuggestions};
 
 const ITEM_SIZES: ReadonlyArray<{label: string; value: ItemSize}> =
 	getEditorMetadata(ItemSizeSchema)?.options?.map((option) => {
@@ -117,9 +119,14 @@ function AdvancedRow({
 	);
 }
 
-export function ItemDetailsPanel({item, world, onUpdate, onEditAdvanced}: ItemPanelProps) {
+export function ItemDetailsPanel({
+	item,
+	world,
+	onUpdate,
+	onEditAdvanced,
+	suggestions,
+}: ItemDetailsPanelProps) {
 	const popup = useOptionalPopup();
-	const suggestions = useItemSuggestions(item, world);
 
 	async function replaceTags(values: string[]) {
 		const requested = new Set(values.map(itemBehaviorTypeForTag).filter(Boolean));

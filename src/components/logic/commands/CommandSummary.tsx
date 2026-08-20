@@ -9,7 +9,11 @@ export function commandBlockWord(block: CommandBlock): string {
 		case "relation":
 			return block.aliasMode === "replace" && block.aliases[0] ? block.aliases[0] : block.relation;
 		case "target":
-			return block.tags[0] || `<${block.role || "target"}>`;
+			return `${block.tags[0] || `<${block.role || "target"}>`}${
+				block.entityIds.length
+					? ` (${block.entityIds.length} specific ${block.entityIds.length === 1 ? "target" : "targets"})`
+					: ""
+			}`;
 		case "number":
 			return "<number>";
 		case "boolean":

@@ -50,6 +50,7 @@ function Harness({initialName = "Apple"}: {initialName?: string}) {
 			<output aria-label="Enabled behaviors">
 				{item.behaviors.map((behavior) => behavior.type).join(", ")}
 			</output>
+			<output aria-label="Automatic icon">{suggestions.iconCategory}</output>
 		</>
 	);
 }
@@ -64,6 +65,7 @@ describe("ItemSuggestionPanel", () => {
 				const request = JSON.parse(String(init?.body)) as {name: string};
 				const isHammer = request.name === "Hammer";
 				const isSatchel = request.name === "The battered leather satchel";
+				const isFood = request.name === "Toast" || request.name === "Sardines";
 				const body = {
 					data: {
 						aliases: [
@@ -75,8 +77,8 @@ describe("ItemSuggestionPanel", () => {
 						],
 						concepts: [
 							{
-								tag: isHammer ? "tool" : isSatchel ? "container" : "fruit",
-								label: isHammer ? "tool" : isSatchel ? "container" : "fruit",
+								tag: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
+								label: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
 								depth: 1,
 								evidence: "Language category.",
 								synsetId: "n:1",
@@ -125,6 +127,16 @@ describe("ItemSuggestionPanel", () => {
 			headers: expect.objectContaining({"x-csrf-token": "csrf-token"}),
 		});
 	});
+
+	it.each(["Toast", "Sardines"])(
+		"uses the inferred food classification for the %s icon without authoring the tag",
+		async (name) => {
+			render(<Harness initialName={name} />);
+
+			expect(screen.getByRole("button", {name: "Add authored tag"})).toBeVisible();
+			await waitFor(() => expect(screen.getByLabelText("Automatic icon")).toHaveTextContent("food"));
+		},
+	);
 
 	it("refreshes suggestions after name, alias, tag, and behavior changes", async () => {
 		const user = userEvent.setup();

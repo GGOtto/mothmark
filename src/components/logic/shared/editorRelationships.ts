@@ -12,6 +12,11 @@ import {produce} from "immer";
 import {compareIds, idValue, isID} from "@/utils/idUtils";
 import type {ID} from "@/utils/idUtils";
 import {effectiveItemTags} from "@/features/items/itemBehaviors";
+import {
+	commandExplicitlyTargetsItem,
+	commandIsItemCustomization,
+	findItemMatchingTargetBlocks,
+} from "@/features/items/itemCommandCustomization";
 import type {LogicLibraryKind, LogicUsage} from "./logicLibraryUsage";
 import {CommandConditionEditorSchema, EventConditionEditorSchema} from "./logicEditorSchemas";
 
@@ -260,30 +265,8 @@ function itemTargetTags(item: Item): Set<string> {
 	return effectiveItemTags(item);
 }
 
-function targetCanResolveItem(block: Extract<CommandBlock, {type: "target"}>, item: Item): boolean {
-	if (block.entityTypes.length > 0 && !block.entityTypes.includes("item")) return false;
-	if (
-		block.entityIds.length > 0 &&
-		!block.entityIds.some((candidate) => compareIds(candidate, item.id))
-	) {
-		return false;
-	}
-	const tags = itemTargetTags(item);
-	return block.tagMode === "all"
-		? block.tags.every((tag) => tags.has(tag))
-		: block.tags.length === 0 || block.tags.some((tag) => tags.has(tag));
-}
-
 function matchingTargetBlocks(command: Command, item: Item) {
-	const matches = new Map<string, Extract<CommandBlock, {type: "target"}>>();
-	for (const pattern of command.patterns) {
-		for (const block of pattern.blocks) {
-			if (block.type === "target" && targetCanResolveItem(block, item)) {
-				matches.set(idValue(block.id), block);
-			}
-		}
-	}
-	return [...matches.values()];
+	return findItemMatchingTargetBlocks(command, item);
 }
 
 function collectionLogicCanMatchItem(
@@ -392,6 +375,7 @@ function referencedDefinitionsCanAffectItem(
 
 export type ItemCommandRelationship = {
 	command: Command;
+	kind: "specific" | "shared" | "related";
 	reasons: string[];
 };
 
@@ -399,7 +383,8 @@ export type ItemCommandRelationship = {
 export function findItemCommandRelationships(world: World, item: Item): ItemCommandRelationship[] {
 	return world.commands.flatMap((command) => {
 		const reasons = new Set<string>();
-		if (containsItemReference(command, item)) reasons.add("References this item directly");
+		const directlyReferencesItem = containsItemReference(command, item);
+		if (directlyReferencesItem) reasons.add("References this item directly");
 		const targets = matchingTargetBlocks(command, item);
 		if (targets.length > 0) {
 			const tagLabels = [...new Set(targets.flatMap((target) => target.tags))];
@@ -413,7 +398,12 @@ export function findItemCommandRelationships(world: World, item: Item): ItemComm
 			reasons.add("Can query or affect this item dynamically");
 		if (referencedDefinitionsCanAffectItem(world, command, item))
 			reasons.add("A saved condition or effect can use or affect this item");
-		return reasons.size > 0 ? [{command, reasons: [...reasons]}] : [];
+		const specific =
+			commandIsItemCustomization(command, item) ||
+			commandExplicitlyTargetsItem(command, item) ||
+			directlyReferencesItem;
+		const kind = specific ? "specific" : targets.length > 0 ? "shared" : "related";
+		return reasons.size > 0 ? [{command, kind, reasons: [...reasons]}] : [];
 	});
 }
 

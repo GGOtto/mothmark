@@ -461,7 +461,7 @@
 
 .homeGetStarted {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: minmax(0, 1fr);
 	gap: clamp(40px, 7vw, 96px);
 	background: var(--color-workspace);
 
@@ -529,59 +529,6 @@
 	.homePrimaryAction {
 		width: fit-content;
 	}
-}
-
-.homeVideos {
-	padding-left: clamp(0px, 3vw, 48px);
-	border-left: 1px solid var(--color-border);
-}
-
-.homeVideoList {
-	display: grid;
-	border-top: 1px solid var(--color-border);
-}
-
-.homeVideoStub {
-	display: grid;
-	grid-template-columns: 68px minmax(0, 1fr) auto;
-	gap: 13px;
-	align-items: center;
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-
-	h3 {
-		margin: 0 0 4px;
-		font-size: 14px;
-		font-weight: 600;
-	}
-
-	small {
-		color: var(--color-text-faint);
-		font-size: 12px;
-	}
-
-	button {
-		min-height: 34px;
-		padding: 7px 11px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-control);
-		background: var(--color-surface-raised);
-		color: var(--color-text-faint);
-		font: inherit;
-		font-size: 12px;
-		cursor: not-allowed;
-	}
-}
-
-.homeVideoPreview {
-	display: grid;
-	width: 68px;
-	height: 44px;
-	place-items: center;
-	border: 1px solid var(--color-control-border);
-	border-radius: var(--radius-control);
-	background: var(--color-surface);
-	color: var(--color-text-muted);
 }
 
 @media (max-width: 1060px) {
@@ -687,13 +634,6 @@
 			grid-column: 9 / span 4;
 		}
 	}
-
-	.homeVideos {
-		padding-top: 32px;
-		padding-left: 0;
-		border-top: 1px solid var(--color-border);
-		border-left: 0;
-	}
 }
 
 @media (max-width: 460px) {
@@ -713,19 +653,6 @@
 	.homeSectionHeader {
 		align-items: flex-end;
 		gap: 12px;
-	}
-
-	.homeVideoStub {
-		grid-template-columns: 58px minmax(0, 1fr);
-	}
-
-	.homeVideoPreview {
-		width: 58px;
-	}
-
-	.homeVideoStub button {
-		grid-column: 2;
-		justify-self: start;
 	}
 }
 

@@ -38,6 +38,39 @@ describe("editorContextUrl", () => {
 		).toMatchObject({activeTab: "logic", logicSection: "commands", selectedCommandId: commandId});
 	});
 
+	it("preserves an item return path for a command opened from the item workspace", () => {
+		const world = createInitialWorld();
+		const commandId = idValue(world.commands[0].id);
+		const itemId = idValue(world.items[0].id);
+		const search = `?view=logic&section=commands&command=${commandId}&fromItem=${itemId}`;
+
+		const resolved = resolveEditorContext(world, search);
+
+		expect(resolved.notice).toBeNull();
+		expect(resolved.context).toMatchObject({
+			selectedCommandId: commandId,
+			commandReturnItemId: itemId,
+		});
+		expect(buildEditorContextSearch(resolved.context)).toBe(search);
+	});
+
+	it("keeps a valid command but removes an invalid item return path", () => {
+		const world = createInitialWorld();
+		const commandId = idValue(world.commands[0].id);
+
+		const resolved = resolveEditorContext(
+			world,
+			`?view=logic&section=commands&command=${commandId}&fromItem=removed-item`,
+		);
+
+		expect(resolved.context.selectedCommandId).toBe(commandId);
+		expect(resolved.context.commandReturnItemId).toBeNull();
+		expect(resolved.notice).toContain("no longer available");
+		expect(buildEditorContextSearch(resolved.context)).toBe(
+			`?view=logic&section=commands&command=${commandId}`,
+		);
+	});
+
 	it("restores reusable condition and effect selections", () => {
 		const world = produce(createInitialWorld(), (draft) => {
 			const condition = createDefaultFieldObject(SavedConditionSchema);

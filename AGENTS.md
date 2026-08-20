@@ -107,6 +107,9 @@
   `behaviors`, and let classification tags recommend capabilities without silently enabling them.
 - Build the item suggestion collision index and world tag graph once when suggestions open. Do not
   rescan a large world on every item render or keystroke.
+- Resolve package-owned runtime data files from the running server's module loader. Never retain an
+  absolute package path exported on the build machine, and explicitly include non-code package data
+  in the owning route's output trace.
 
 ## Immutable object updates
 
@@ -153,7 +156,9 @@
   recognized item names, aliases, and tags; never create bespoke artwork for each item. Explicit icon
   tags take precedence, followed by concrete identity and broad category matches. Keep the automatic
   matcher isolated from the view so its vocabulary and artwork can be replaced without redesigning the
-  selector; an author-facing icon chooser is a separate task. Keep the icon vocabulary adventurous and
+  selector. Item icons are automatic cosmetic output; improve them through the existing name, alias,
+  and tag evidence system, and keep `icon:<category>` as the only explicit author override rather
+  than adding an icon chooser. Keep the icon vocabulary adventurous and
   fantasy-leaning through its object choices while remaining simple, restrained UI iconography; avoid
   contemporary office or device imagery unless a category specifically requires it. Use the
   maintained Hugeicons Stroke Rounded library at a 0.75-unit stroke width and render the same vector
@@ -162,7 +167,13 @@
 - Resolve automatic item icons by corroborating Name, Aliases, and Tags as independent evidence
   fields, with at most one support unit from each field. More corroborating fields outrank an
   isolated match; descriptor terms may corroborate but never initiate a category, and behavior or
-  state tags never participate.
+  state tags never participate. Feed deterministic classification tags inferred by the existing
+  tag suggester into the Tags evidence internally, without authoring those tags or requiring their
+  acceptance. Do not add item-name exceptions to repair missed automatic icons.
+- Let an item-specific command edit fork the matching shared command rather than mutate it. Scope the
+  fork's selected target block to the item, preserve the rest of the command for full Logic editing,
+  and name it `<original command name> (Customized for <item>)`. Keep the shared command available
+  for other items and return authors to the item's Commands tab after editing.
 - Keep the maintained item-icon catalog at exactly 100 distinct official marks. Fold unavailable or
   duplicate marks into the nearest surviving category's name, alias, and tag vocabulary, then use
   each freed position for a distinct useful category. Treat the crossed-out mark only as a request
@@ -221,6 +232,9 @@
   to every occurrence, while ordering remains pattern-specific. Single-pattern block changes are
   immediate; with alternatives, structural changes prompt for scope and value-block changes confirm
   their shared all-pattern impact.
+- Present command target restrictions as named world entities through the shared entity picker, not
+  as raw typed-ID arrays. Make exact-item restrictions visible in both the command pattern summary
+  and target inspector, including when an item-specific command fork supplied the restriction.
 - Use 4px control, 6px panel/popover, and 8px dialog radii. Use shadows only for floating layers.
 - Hard-coded production colors are limited to the authored map palettes, ordered entity palette, and
   deliberately bounded theme previews. All other production colors must use semantic tokens.
