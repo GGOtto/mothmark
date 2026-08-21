@@ -1,4 +1,4 @@
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {ConditionSchema} from "@/schemas/world/conditionSchema";
 import {EffectSchema} from "@/schemas/world/effectSchema";
@@ -7,6 +7,10 @@ import {LogicPicker} from "./LogicPicker";
 import {schemaLogicOptions} from "./utils/editorSchemaVariants";
 
 describe("LogicPicker", () => {
+	beforeEach(() => {
+		window.localStorage.clear();
+	});
+
 	it("finds effects by author intent rather than internal slugs", async () => {
 		const user = userEvent.setup();
 		const onChoose = jest.fn();
@@ -156,5 +160,113 @@ describe("LogicPicker", () => {
 		expect(schemaLogicOptions(ConditionSchema).some((option) => option.type === "comparison")).toBe(
 			false,
 		);
+	});
+
+	it("organizes schema choices by affected domain and keeps saved choices separate", () => {
+		const savedOption = {
+			key: "effect-ref:ring-bell",
+			type: "effect-ref",
+			title: "Ring the bell",
+			description: "Show a warning and start the bell event.",
+			category: "Reusable",
+			keywords: ["saved"],
+			situations: [],
+			requires: [],
+			fields: [],
+			defaultValue: {type: "effect-ref", effectId: {type: "effect", id: "ring-bell"}},
+			searchText: "ring the bell saved warning",
+		};
+		render(
+			<LogicPicker
+				kind="effect"
+				schema={EffectSchema}
+				additionalOptions={[savedOption]}
+				hiddenTypes={["effect-ref"]}
+				onChoose={jest.fn()}
+				onCancel={jest.fn()}
+			/>,
+		);
+
+		const categories = screen.getByRole("navigation", {name: "effect categories"});
+		expect(within(categories).getByRole("button", {name: /Item \d+/})).toBeVisible();
+		expect(within(categories).getByRole("button", {name: /Messaging \d+/})).toBeVisible();
+		expect(within(categories).getByRole("button", {name: /Time\/randomness \d+/})).toBeVisible();
+		expect(within(categories).getByRole("button", {name: "Saved 1"})).toBeVisible();
+		expect(
+			within(categories).queryByRole("button", {name: /Item collection/}),
+		).not.toBeInTheDocument();
+		expect(within(categories).queryByRole("button", {name: /Reusable/})).not.toBeInTheDocument();
+	});
+
+	it("opens on recent choices and records the chosen operation", async () => {
+		const user = userEvent.setup();
+		const options = schemaLogicOptions(ConditionSchema);
+		const recent = options.find((option) => option.key === "item:is-carried");
+		expect(recent).toBeDefined();
+		window.localStorage.setItem(
+			"mothmark.logic-picker.recent.condition",
+			JSON.stringify(["item:is-carried"]),
+		);
+		const onChoose = jest.fn();
+		render(
+			<LogicPicker
+				kind="condition"
+				schema={ConditionSchema}
+				hiddenTypes={["condition-ref", "group"]}
+				onChoose={onChoose}
+				onCancel={jest.fn()}
+			/>,
+		);
+
+		const recentCategory = await screen.findByRole("button", {name: "Recent 1"});
+		expect(recentCategory).toHaveAttribute("aria-pressed", "true");
+		expect(screen.getAllByRole("option")).toHaveLength(1);
+		await user.click(screen.getByRole("button", {name: "Use condition"}));
+
+		expect(onChoose).toHaveBeenCalledWith(expect.objectContaining({key: "item:is-carried"}));
+		expect(
+			JSON.parse(window.localStorage.getItem("mothmark.logic-picker.recent.condition") ?? "[]"),
+		).toEqual(["item:is-carried"]);
+	});
+
+	it("moves from search through results with the keyboard and chooses with Enter", async () => {
+		const user = userEvent.setup();
+		const onChoose = jest.fn();
+		render(
+			<LogicPicker
+				kind="condition"
+				schema={ConditionSchema}
+				hiddenTypes={["condition-ref", "group"]}
+				onChoose={onChoose}
+				onCancel={jest.fn()}
+			/>,
+		);
+
+		const results = screen.getAllByRole("option");
+		const expectedTitle = results[1]?.querySelector("strong")?.textContent;
+		const search = screen.getByRole("searchbox", {name: "Search conditions"});
+		await user.click(search);
+		await user.keyboard("{ArrowDown}");
+		expect(results[0]).toHaveFocus();
+		await user.keyboard("{ArrowDown}{Enter}");
+
+		expect(onChoose).toHaveBeenCalledWith(expect.objectContaining({title: expectedTitle}));
+	});
+
+	it("previews what the schema-derived choice will create", () => {
+		render(
+			<LogicPicker
+				kind="condition"
+				schema={ConditionSchema}
+				hiddenTypes={["condition-ref", "group"]}
+				onChoose={jest.fn()}
+				onCancel={jest.fn()}
+			/>,
+		);
+
+		const preview = document.querySelector(".logicPicker__creationPreview");
+		expect(preview).not.toBeNull();
+		expect(within(preview as HTMLElement).getByRole("heading", {name: "Creates"})).toBeVisible();
+		expect(within(preview as HTMLElement).getByText(/\[[^\]]+\]/)).toBeVisible();
 	});
 });

@@ -5,10 +5,10 @@ import type {Draft} from "immer";
 import {useEffect, useMemo, useState} from "react";
 import {readOptionalJson} from "@/auth/apiResponse";
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
-import {resolveItemIcon} from "@/itemIcons";
+import {resolveItemIcon, resolveItemIconWithInferredTags, type ItemIconCategory} from "@/itemIcons";
 import type {Item} from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
-import type {ID} from "@/utils/idUtils";
+import {idValue, type ID} from "@/utils/idUtils";
 import {
 	LexicalSuggestionResponseSchema,
 	type LexicalSuggestionResponse,
@@ -28,10 +28,11 @@ import "./ItemSuggestionPanel.scss";
 
 type SuggestionMode = "aliases" | "tags";
 
-type ItemSuggestions = {
+export type ItemSuggestions = {
 	aliasSuggestions: AliasSuggestion[];
 	emptyAliasMessage: string;
 	genericIcon: boolean;
+	iconCategory: ItemIconCategory;
 	loading: boolean;
 	problem: string | null;
 	tagSuggestions: TagSuggestion[];
@@ -73,10 +74,16 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 		data: LexicalSuggestionResponse["data"];
 	} | null>(null);
 	const [problem, setProblem] = useState<{key: string; message: string} | null>(null);
-	const [worldContext] = useState(() => ({
-		aliasCollisions: buildAliasCollisionIndex(world, item),
-		tagGraph: buildWorldTagGraph(world, item.id),
-	}));
+	const itemId = idValue(item.id);
+	const worldContext = useMemo(
+		() => ({
+			aliasCollisions: buildAliasCollisionIndex(world, item),
+			tagGraph: buildWorldTagGraph(world, item.id),
+		}),
+		// The indexes are snapshots for one opened item and rebuild only when item navigation changes.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[itemId],
+	);
 	const requestBody = useMemo(
 		() =>
 			JSON.stringify({
@@ -139,11 +146,16 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 			emptyAliasSuggestionMessage(item, currentResult?.aliases ?? [], worldContext.aliasCollisions),
 		[currentResult?.aliases, item, worldContext.aliasCollisions],
 	);
+	const iconCategory = resolveItemIconWithInferredTags(
+		item,
+		(currentResult?.concepts ?? []).map(({tag}) => tag),
+	).category;
 
 	return {
 		aliasSuggestions,
 		emptyAliasMessage,
-		genericIcon: resolveItemIcon(item).category === "generic",
+		genericIcon: iconCategory === "generic",
+		iconCategory,
 		loading: Boolean(item.name.trim()) && !currentResult && !currentProblem,
 		problem: currentProblem,
 		tagSuggestions,

@@ -148,6 +148,13 @@
 	font-size: 10px;
 }
 
+.logicPicker__categories .logicPicker__savedCategory {
+	margin-top: 8px;
+	padding-top: 11px;
+	border-top: 1px solid var(--chrome-border);
+	border-radius: 0 0 4px 4px;
+}
+
 .logicPicker__results {
 	padding: 8px;
 	border-right: 1px solid var(--chrome-border);
@@ -248,6 +255,21 @@
 	padding-top: 14px;
 }
 
+.logicPicker__detail .logicPicker__creationPreview {
+	margin-top: 14px;
+	padding: 10px;
+	border-left: 3px solid var(--color-focus);
+	background: var(--chrome-raised);
+}
+
+.logicPicker__creationPreview h4 {
+	margin-bottom: 4px;
+}
+
+.logicPicker__creationPreview p {
+	color: var(--chrome-text);
+}
+
 .logicPicker__detail ul {
 	margin: 0;
 	padding-left: 17px;
@@ -299,10 +321,13 @@
 
 	.logicPicker__workspace {
 		grid-template-columns: 120px minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
 	}
 
 	.logicPicker__detail {
-		display: none;
+		grid-column: 1 / -1;
+		max-height: 190px;
+		border-top: 1px solid var(--chrome-border);
 	}
 
 	.logicPicker__results {
@@ -322,7 +347,7 @@
 
 	.logicPicker__workspace {
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: auto minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr) auto;
 	}
 
 	.logicPicker__categories {
@@ -335,6 +360,17 @@
 	.logicPicker__categories button {
 		width: auto;
 		flex: 0 0 auto;
+	}
+
+	.logicPicker__categories .logicPicker__savedCategory {
+		margin-top: 0;
+		padding-top: 7px;
+		border-top: 0;
+		border-radius: 4px;
+	}
+
+	.logicPicker__detail {
+		max-height: 175px;
 	}
 
 	.logicPicker__footer > span {

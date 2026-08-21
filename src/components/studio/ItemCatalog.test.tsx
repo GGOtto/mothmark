@@ -89,6 +89,32 @@ describe("ItemCatalog", () => {
 		);
 	});
 
+	it("uses batched inferred tags for generic catalog items", async () => {
+		jest.mocked(global.fetch).mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			text: async () => JSON.stringify({data: {categories: ["food", "book"]}}),
+		} as Response);
+		const world = produce(createInitialWorld(), (draft) => {
+			draft.items[0]!.name = "Sardines";
+			draft.items[0]!.aliases = [];
+			draft.items[0]!.tags = [];
+		});
+		render(
+			<ItemCatalog
+				world={world}
+				worldId={null}
+				updateWorld={jest.fn()}
+				selectedItemId={null}
+				onSelectItem={jest.fn()}
+			/>,
+		);
+
+		const sardines = screen.getByRole("button", {name: /Sardines/});
+		await waitFor(() => expect(sardines.querySelector('[data-icon-category="food"]')).not.toBeNull());
+		expect(screen.queryByRole("list", {name: "Tags for Sardines"})).not.toBeInTheDocument();
+	});
+
 	it("labels and filters nested and unplaced items while preserving the generic fallback", async () => {
 		const user = userEvent.setup();
 		const world = produce(createInitialWorld(), (draft) => {

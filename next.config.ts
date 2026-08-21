@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
 	devIndicators: false,
 	productionBrowserSourceMaps: false,
 	serverExternalPackages: ["knex", "pg", "wordnet-db"],
+	outputFileTracingIncludes: {
+		"/api/editor/item-suggestions": ["./node_modules/wordnet-db/dict/**/*"],
+		"/api/editor/item-icon-suggestions": ["./node_modules/wordnet-db/dict/**/*"],
+	},
 	async headers() {
 		return [
 			{

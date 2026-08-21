@@ -34,7 +34,8 @@ fields.
 Specific physical identities discover specific categories. Broad parent terms may corroborate a
 specific category after it has been discovered, but cannot invent one. Descriptive words can only
 corroborate. Behavior and state tags such as `takeable`, `openable`, `surface`, and `goal-item` do
-not participate. Unmatched items use Generic.
+not participate. Deterministic classification tags inferred by the existing tag suggester are
+internal cosmetic evidence and do not need author acceptance. Unmatched items use Generic.
 
 The detailed ranking rules and examples are in
 [`item-icon-matching-resolver.md`](./item-icon-matching-resolver.md).
@@ -57,14 +58,17 @@ sewing, keeping the catalog at 100 distinct official marks.
 
 ## Production integration
 
-The item selector and dedicated item workspace both call `resolveItemIcon(item)` and render the
-result with `ItemIcon`. The resolver remains separate from React and from the persisted item schema,
-so automatic selections stay derived and deterministic. A future explicit chooser should persist
-only a deliberate override.
+The item selector and dedicated item workspace render the shared resolved result with `ItemIcon`.
+The workspace reuses its tag-suggestion response, while the selector batches the same inference for
+its item set. The resolver remains separate from React and from the persisted item schema, so
+selections stay derived and deterministic. Inferred classifications are never saved as authored
+tags. Authors do not choose icons through a separate control; the existing `icon:<category>` tag is
+the sole explicit override.
 
 ## Coverage
 
 Resolver tests cover field corroboration, hierarchy, folded vocabulary, normalization, invalid and
 conflicting overrides, and automatic reachability of all categories. Component tests verify that the
-item selector and workspace render the resolved official library marks. Browser coverage checks the
-primary icon sizes and the full 100-mark review gallery.
+item selector and workspace render the resolved official library marks and that an ordinary accepted
+tag can update the automatic mark. Browser coverage checks the primary icon sizes and the full
+100-mark review gallery.

@@ -1,8 +1,9 @@
-import {render, screen, within} from "@testing-library/react";
+import {render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {produce} from "immer";
 import {useState, type ComponentProps} from "react";
 import {createInitialWorld} from "@/data/worlds/initialWorld";
+import {addItemBehaviorDraft} from "@/features/items/itemBehaviors";
 import {SurfaceBehaviorSchema} from "@/schemas/world/itemSchema";
 import type {World} from "@/schemas/world/worldSchema";
 import {createDefaultFieldObject} from "@/utils/createDefaultFieldObject";
@@ -21,7 +22,13 @@ function TestItemWorkspace(props: TestItemWorkspaceProps) {
 	return <ItemWorkspace {...props} activeTab={activeTab} onActiveTabChange={setActiveTab} />;
 }
 
-function StatefulItemWorkspace({initialWorld = createInitialWorld()}: {initialWorld?: World}) {
+function StatefulItemWorkspace({
+	initialWorld = createInitialWorld(),
+	onOpenCommand = jest.fn(),
+}: {
+	initialWorld?: World;
+	onOpenCommand?: (commandId: string) => void;
+}) {
 	const [world, setWorld] = useState(initialWorld);
 	const [activeTab, setActiveTab] =
 		useState<ComponentProps<typeof ItemWorkspace>["activeTab"]>("details");
@@ -38,7 +45,7 @@ function StatefulItemWorkspace({initialWorld = createInitialWorld()}: {initialWo
 			onBack={jest.fn()}
 			onItemIdChange={jest.fn()}
 			onItemDeleted={jest.fn()}
-			onOpenCommand={jest.fn()}
+			onOpenCommand={onOpenCommand}
 			onOpenLogicLibrary={jest.fn()}
 			onOpenPlay={jest.fn()}
 		/>
@@ -177,6 +184,70 @@ describe("ItemWorkspace", () => {
 		expect(onBack).toHaveBeenCalledTimes(1);
 	});
 
+	it("updates the automatic icon when an ordinary tag provides stronger evidence", async () => {
+		const user = userEvent.setup();
+		const world = produce(createInitialWorld(), (draft) => {
+			draft.items[0]!.name = "Oddity";
+			draft.items[0]!.aliases = [];
+			draft.items[0]!.tags = [];
+		});
+		const {container} = render(<StatefulItemWorkspace initialWorld={world} />);
+
+		expect(container.querySelector(".itemWorkspaceMark svg")).not.toHaveAttribute(
+			"data-icon-category",
+			"book",
+		);
+		await user.type(screen.getByRole("textbox", {name: "Add tag"}), "book{Enter}");
+		expect(container.querySelector(".itemWorkspaceMark svg")).toHaveAttribute(
+			"data-icon-category",
+			"book",
+		);
+	});
+
+	it("updates the workspace icon from inferred tags without authoring them", async () => {
+		document.cookie = "mothmark_editor_csrf=csrf-token; Path=/";
+		Object.defineProperty(globalThis, "fetch", {
+			configurable: true,
+			writable: true,
+			value: jest.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
+				text: async () =>
+					JSON.stringify({
+						data: {
+							aliases: [],
+							concepts: [
+								{
+									tag: "food",
+									label: "food",
+									depth: 1,
+									evidence: "Language category.",
+									synsetId: "n:1",
+								},
+							],
+							version: "test",
+						},
+					}),
+			} as Response),
+		});
+		const world = produce(createInitialWorld(), (draft) => {
+			draft.items[0]!.name = "Sardines";
+			draft.items[0]!.aliases = [];
+			draft.items[0]!.tags = [];
+		});
+		const {container} = render(<StatefulItemWorkspace initialWorld={world} />);
+
+		await waitFor(() =>
+			expect(container.querySelector(".itemWorkspaceMark svg")).toHaveAttribute(
+				"data-icon-category",
+				"food",
+			),
+		);
+		expect(screen.queryByRole("button", {name: "Remove food"})).not.toBeInTheDocument();
+		Reflect.deleteProperty(globalThis, "fetch");
+		document.cookie = "mothmark_editor_csrf=; Max-Age=0; Path=/";
+	});
+
 	it("keeps contents copy and flags in Behaviors while Placement stays focused", async () => {
 		const user = userEvent.setup();
 		const world = produce(createInitialWorld(), (draft) => {
@@ -253,8 +324,31 @@ describe("ItemWorkspace", () => {
 		await user.click(screen.getByRole("tab", {name: "Commands"}));
 		const commandRow = screen.getByText(attachedCommand.name).closest("li");
 		expect(commandRow).not.toBeNull();
-		await user.click(within(commandRow as HTMLElement).getByRole("button", {name: "Open command"}));
+		await user.click(within(commandRow as HTMLElement).getByRole("button", {name: "Edit command"}));
 		expect(onOpenCommand).toHaveBeenCalledWith(idValue(attachedCommand.id));
+	});
+
+	it("forks a shared command for the current item and keeps the shared command intact", async () => {
+		const user = userEvent.setup();
+		const world = produce(createInitialWorld(), (draft) => {
+			addItemBehaviorDraft(draft.items[0]!, "edible");
+		});
+		const source = world.commands.find((command) => command.name === "Eat")!;
+		const onOpenCommand = jest.fn();
+		render(<StatefulItemWorkspace initialWorld={world} onOpenCommand={onOpenCommand} />);
+
+		await user.click(screen.getByRole("tab", {name: "Commands"}));
+		const sharedRow = screen.getByText("Eat").closest("li");
+		expect(sharedRow).not.toBeNull();
+		await user.click(
+			within(sharedRow as HTMLElement).getByRole("button", {
+				name: "Customize for Shop Counter",
+			}),
+		);
+
+		expect(screen.getByText("Eat (Customized for Shop Counter)")).toBeVisible();
+		expect(screen.getByText("Eat")).toBeVisible();
+		expect(onOpenCommand).toHaveBeenCalledWith(expect.not.stringMatching(idValue(source.id)));
 	});
 
 	it("opens Play locally and sends advanced logic to the focused workspace", async () => {

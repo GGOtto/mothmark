@@ -1,5 +1,9 @@
 import {ITEM_ICON_CATALOG, ITEM_ICON_CATEGORIES} from "./itemIconCatalog";
-import {normalizeItemIconTerm, resolveItemIcon} from "./resolveItemIcon";
+import {
+	normalizeItemIconTerm,
+	resolveItemIcon,
+	resolveItemIconWithInferredTags,
+} from "./resolveItemIcon";
 
 describe("corroborating item icon resolver", () => {
 	it("uses independent name, alias, and tag support instead of trusting one field", () => {
@@ -22,6 +26,24 @@ describe("corroborating item icon resolver", () => {
 		expect(resolveItemIcon({name: "rope", aliases: ["toy"], tags: ["toy"]}).category).toBe(
 			"toy-and-game",
 		);
+	});
+
+	it("uses inferred classification tags as cosmetic evidence without requiring authored tags", () => {
+		expect(
+			resolveItemIconWithInferredTags({name: "Toast", aliases: [], tags: []}, ["food"]),
+		).toMatchObject({category: "food", reason: "single-field-match"});
+		expect(
+			resolveItemIconWithInferredTags({name: "Sardines", aliases: [], tags: []}, ["fish", "food"]),
+		).toMatchObject({category: "meal", reason: "single-field-match"});
+	});
+
+	it("does not let inferred classifications act as icon overrides", () => {
+		expect(
+			resolveItemIconWithInferredTags({name: "Odd thing", tags: []}, ["icon:coin", "food"]),
+		).toMatchObject({category: "food", reason: "single-field-match"});
+		expect(
+			resolveItemIconWithInferredTags({name: "Odd thing", tags: ["icon:coin"]}, ["food"]),
+		).toMatchObject({category: "coin", reason: "manual-override"});
 	});
 
 	it("counts an alias collection once rather than treating repetition as votes", () => {

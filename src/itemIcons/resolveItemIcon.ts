@@ -287,3 +287,13 @@ export function resolveItemIcon(item: ItemIconInput): ItemIconResolution {
 		warnings: override.warnings,
 	};
 }
+
+export function resolveItemIconWithInferredTags(
+	item: ItemIconInput,
+	inferredTags: readonly string[],
+): ItemIconResolution {
+	return resolveItemIcon({
+		...item,
+		tags: [...(item.tags ?? []), ...inferredTags.filter((tag) => !/^\s*icon\s*:/i.test(tag))],
+	});
+}

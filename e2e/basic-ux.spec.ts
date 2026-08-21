@@ -201,22 +201,68 @@ async function useDeterministicEditorWorld(
 		});
 	});
 	await page.route("**/api/editor/item-suggestions", async (route) => {
+		const request = JSON.parse(route.request().postData() ?? "{}") as {name?: string};
+		const concepts =
+			request.name === "Toast"
+				? [
+						{
+							tag: "food",
+							label: "food",
+							depth: 1,
+							evidence: "The tag system classifies this as food.",
+							synsetId: "n:food",
+						},
+					]
+				: request.name === "Sardines"
+					? [
+							{
+								tag: "fish",
+								label: "fish",
+								depth: 1,
+								evidence: "The tag system classifies this as fish.",
+								synsetId: "n:fish",
+							},
+							{
+								tag: "food",
+								label: "food",
+								depth: 2,
+								evidence: "The tag system classifies this as food.",
+								synsetId: "n:food",
+							},
+						]
+					: [
+							{
+								tag: "furniture",
+								label: "furniture",
+								depth: 1,
+								evidence: "The item belongs to this WordNet category.",
+								synsetId: "n:1",
+							},
+						];
 		await route.fulfill({
 			status: 200,
 			contentType: "application/json",
 			body: JSON.stringify({
 				data: {
 					aliases: [{value: "countertop", relation: "synonym", evidence: "WordNet synonym."}],
-					concepts: [
-						{
-							tag: "furniture",
-							label: "furniture",
-							depth: 1,
-							evidence: "The item belongs to this WordNet category.",
-							synsetId: "n:1",
-						},
-					],
+					concepts,
 					version: "e2e-test",
+				},
+			}),
+		});
+	});
+	await page.route("**/api/editor/item-icon-suggestions", async (route) => {
+		const request = JSON.parse(route.request().postData() ?? "{}") as {
+			items?: Array<{name?: string; iconCategory?: string}>;
+		};
+		await route.fulfill({
+			status: 200,
+			contentType: "application/json",
+			body: JSON.stringify({
+				data: {
+					categories: (request.items ?? []).map(({name, iconCategory}) =>
+						name === "Toast" ? "food" : name === "Sardines" ? "meal" : (iconCategory ?? "generic"),
+					),
 				},
 			}),
 		});
@@ -534,26 +580,21 @@ test("the home page example plays through the real command path", async ({page})
 		}),
 	).toBeVisible();
 	await expect(page.getByRole("link", {name: 'Continue "Corner Shop"'})).toBeVisible();
-	const videoButtons = page.getByRole("button", {name: "Watch video"});
-	await expect(videoButtons).toHaveCount(2);
-	for (const button of await videoButtons.all()) await expect(button).toBeDisabled();
+	await expect(page.getByRole("button", {name: "Watch video"})).toHaveCount(0);
+	await expect(page.getByText("Video coming soon")).toHaveCount(0);
 	expect(editor.bootstrapCount()).toBe(0);
 	expect(browserErrors).toEqual([]);
 });
 
-test("the home tutorial and videos share a desktop row and stack on mobile", async ({page}) => {
+test("the home tutorial uses the available canvas and remains usable on mobile", async ({page}) => {
 	const browserErrors = collectBrowserErrors(page);
 	await useHomePublications(page);
 
 	await page.setViewportSize({width: 1280, height: 900});
 	await page.goto("/");
-	const tutorial = page.locator(".homeTutorial");
-	const videos = page.locator(".homeVideos");
-	const [desktopTutorial, desktopVideos] = await Promise.all([
-		tutorial.boundingBox(),
-		videos.boundingBox(),
-	]);
-	expect(Math.abs((desktopTutorial?.y ?? 0) - (desktopVideos?.y ?? 0))).toBeLessThan(2);
+	const tutorial = page.getByRole("article", {name: "Build your first room"});
+	const desktopTutorial = await tutorial.boundingBox();
+	expect(desktopTutorial?.width ?? 0).toBeGreaterThan(1000);
 	const desktopPublication = await page.locator(".homeFeaturedPage--current").boundingBox();
 	expect(desktopPublication?.width ?? 0).toBeLessThanOrEqual(900);
 	await expect(page.getByRole("contentinfo").getByText("Notes from Mothmark")).toBeVisible();
@@ -570,13 +611,7 @@ test("the home tutorial and videos share a desktop row and stack on mobile", asy
 		.getByRole("textbox", {name: "Game command"})
 		.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 	expect(commandInputFontSize).toBeGreaterThanOrEqual(16);
-	const [mobileTutorial, mobileVideos] = await Promise.all([
-		tutorial.boundingBox(),
-		videos.boundingBox(),
-	]);
-	expect(mobileVideos?.y ?? 0).toBeGreaterThan(
-		(mobileTutorial?.y ?? 0) + (mobileTutorial?.height ?? 0) - 2,
-	);
+	await expect(tutorial).toBeVisible();
 	expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 	expect(browserErrors).toEqual([]);
 });
@@ -1341,7 +1376,7 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await page.locator(".logicLibraryBack").click();
 
 	await page.getByRole("button", {name: /Commands/}).click();
-	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Commands", exact: true})).toBeVisible();
 	await page.getByRole("button", {name: /Help/}).first().click();
 	await page.getByRole("button", {name: "Edit command"}).click();
 	const commandSettings = page.getByRole("dialog", {name: "Edit command settings"});
@@ -1598,12 +1633,58 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.getByRole("heading", {name: "Starting position"})).toBeVisible();
 	await expect(page.getByRole("heading", {name: "Flags"})).toHaveCount(0);
 	await page.getByRole("tab", {name: "Commands"}).click();
-	await expect(page.getByRole("heading", {name: "Commands"})).toBeVisible();
+	await expect(page.getByRole("heading", {name: "Commands", exact: true})).toBeVisible();
 	const examineCommand = page
 		.getByRole("listitem")
 		.filter({has: page.getByText("Examine", {exact: true})});
 	await expect(examineCommand).toBeVisible();
 	await expect(examineCommand.getByText("Can target this item", {exact: true})).toBeVisible();
+	const readCommand = page
+		.getByRole("listitem")
+		.filter({has: page.getByText("Read", {exact: true})});
+	await readCommand.getByRole("button", {name: "Customize for Shop Counter"}).click();
+	await expect(page).toHaveURL(
+		new RegExp(
+			`/worlds/${editor.worldSlug}\\?view=logic&section=commands&command=[^&]+&fromItem=shop-counter$`,
+		),
+	);
+	await expect(
+		page.getByText("Read (Customized for Shop Counter)", {exact: true}).first(),
+	).toBeVisible();
+	await page.getByRole("button", {name: /Target readable \(1 specific target\)/}).click();
+	const targetSettings = page.getByRole("dialog", {name: "Edit command block"});
+	await expect(targetSettings.getByRole("heading", {name: "Specific targets"})).toBeVisible();
+	await expect(targetSettings.getByText("Item-specific scope")).toBeVisible();
+	await expect(
+		targetSettings.getByText(/Only Shop Counter can fill this target block/),
+	).toBeVisible();
+	await expect(targetSettings.getByText("shop-counter", {exact: true})).toHaveCount(0);
+	await expect(targetSettings.getByRole("button", {name: "Add entry"})).toHaveCount(0);
+	await expect(targetSettings.getByRole("button", {name: "Add a specific target"})).toHaveCount(0);
+	await expect(targetSettings.getByText("Fixed", {exact: true})).toBeVisible();
+	for (const width of [447, 310]) {
+		await page.setViewportSize({width, height: 844});
+		expect(
+			await targetSettings.evaluate(
+				(element) =>
+					element.scrollWidth <= element.clientWidth &&
+					document.documentElement.scrollWidth <= window.innerWidth,
+			),
+		).toBe(true);
+	}
+	await targetSettings.getByRole("button", {name: "Cancel"}).click();
+	await page.setViewportSize({width: 1280, height: 720});
+	await page.getByRole("button", {name: "Back to Commands"}).click();
+	await expect(page).toHaveURL(
+		new RegExp(`/worlds/${editor.worldSlug}\\?view=items&item=shop-counter$`),
+	);
+	await expect(page.getByRole("tab", {name: "Commands"})).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByText("Read (Customized for Shop Counter)", {exact: true})).toBeVisible();
+	await expect(readCommand.getByRole("button", {name: "Edit item version"})).toBeVisible();
+	await page.setViewportSize({width: 390, height: 844});
+	await expectMobileLayoutIntegrity(page, {root: ".editorPage"});
+	await expect(readCommand.getByRole("button", {name: "Edit item version"})).toBeVisible();
+	await page.setViewportSize({width: 1280, height: 720});
 
 	await page.getByRole("tab", {name: "Details"}).click();
 	await page.getByRole("textbox", {name: "Name"}).fill("Front Counter");
@@ -1643,6 +1724,46 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await expect(page.locator(".editorUtilityPanel")).toHaveCount(1);
 	await page.getByRole("button", {name: "Collapse editor utility panel"}).click();
 	await expect(page.locator(".editorUtilityPanel")).toHaveCount(0);
+	expect(browserErrors).toEqual([]);
+});
+
+test("tag inference supplies automatic icons without authoring classification tags", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const worldId = "d42d835a-f168-4ce6-bc66-c5934756ad8d";
+	const inferredWorld = structuredClone(initialWorld);
+	Object.assign(inferredWorld.items[0]!, {name: "Toast", aliases: [], tags: []});
+	Object.assign(inferredWorld.items[1]!, {name: "Sardines", aliases: [], tags: []});
+	const sharedWorlds = new Map<string, DeterministicWorld>([
+		[
+			worldId,
+			{
+				editorSlug: "inferred-icon-test",
+				id: worldId,
+				name: "Inferred icon test",
+				ownerUserId: "3e816c4d-b957-45dc-8523-d53ec04c8d0f",
+				world: inferredWorld,
+				revision: 1,
+				schemaVersion: PERSISTED_SCHEMA_VERSION,
+				updatedAt: "2026-08-18T12:00:00.000Z",
+				lastOpenedAt: "2026-08-18T12:00:00.000Z",
+			},
+		],
+	]);
+	const editor = await useDeterministicEditorWorld(page, worldId, 5, sharedWorlds);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items`);
+	const toast = page.getByRole("button", {name: /Toast/});
+	const sardines = page.getByRole("button", {name: /Sardines/});
+	await expect(toast.locator("svg")).toHaveAttribute("data-icon-category", "food");
+	await expect(sardines.locator("svg")).toHaveAttribute("data-icon-category", "meal");
+	await expect(page.getByRole("list", {name: "Tags for Toast"})).toHaveCount(0);
+	await expect(page.getByRole("list", {name: "Tags for Sardines"})).toHaveCount(0);
+
+	await toast.click();
+	await expect(page.locator(".itemWorkspaceMark svg")).toHaveAttribute("data-icon-category", "food");
+	await expect(page.getByRole("button", {name: "Remove food"})).toHaveCount(0);
 	expect(browserErrors).toEqual([]);
 });
 

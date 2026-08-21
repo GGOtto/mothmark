@@ -36,12 +36,11 @@ describe("home entry", () => {
 		expect(screen.getByRole("link", {name: "Find a world to play"})).toHaveAttribute("href", "/play");
 	});
 
-	it("marks unfinished video lessons as unavailable", () => {
+	it("does not expose unfinished video controls", () => {
 		render(<HomePage />);
 
-		for (const button of screen.getAllByRole("button", {name: "Watch video"})) {
-			expect(button).toBeDisabled();
-		}
+		expect(screen.queryByRole("button", {name: "Watch video"})).not.toBeInTheDocument();
+		expect(screen.queryByText("Video coming soon")).not.toBeInTheDocument();
 	});
 });
 

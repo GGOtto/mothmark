@@ -170,6 +170,7 @@ export default function EditorPage() {
 	const [logicSelection, setLogicSelection] = useState<LogicSelection | null>(null);
 	const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
 	const [commandSelection, setCommandSelection] = useState<CommandSelection | null>(null);
+	const [commandReturnItemId, setCommandReturnItemId] = useState<string | null>(null);
 	const [selectedConditionId, setSelectedConditionId] = useState<string | null>(null);
 	const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
 	const [logicLibraryReturn, setLogicLibraryReturn] = useState<OpenLogicLibraryRequest | null>(null);
@@ -255,6 +256,7 @@ export default function EditorPage() {
 		setLogicSelection(context.logicSelection);
 		setSelectedCommandId(context.selectedCommandId);
 		setCommandSelection(context.commandSelection);
+		setCommandReturnItemId(context.commandReturnItemId);
 		setSelectedConditionId(context.selectedConditionId);
 		setSelectedEffectId(context.selectedEffectId);
 		setSelectedItemId(context.selectedItemId);
@@ -312,6 +314,7 @@ export default function EditorPage() {
 			logicSelection,
 			selectedCommandId,
 			commandSelection,
+			commandReturnItemId,
 			selectedConditionId,
 			selectedEffectId,
 			selectedItemId,
@@ -319,6 +322,7 @@ export default function EditorPage() {
 		[
 			activeTab,
 			commandSelection,
+			commandReturnItemId,
 			logicSection,
 			logicSelection,
 			selectedConditionId,
@@ -375,6 +379,7 @@ export default function EditorPage() {
 		setLogicSelection(null);
 		setSelectedCommandId(null);
 		setCommandSelection(null);
+		setCommandReturnItemId(null);
 		setSelectedConditionId(null);
 		setSelectedEffectId(null);
 		setLogicLibraryReturn(null);
@@ -397,6 +402,7 @@ export default function EditorPage() {
 			setLogicSelection(null);
 			setSelectedCommandId(null);
 			setCommandSelection(null);
+			setCommandReturnItemId(null);
 			setSelectedConditionId(null);
 			setSelectedEffectId(null);
 			setLogicLibraryReturn(null);
@@ -554,6 +560,7 @@ export default function EditorPage() {
 					logicSelection={logicSelection}
 					setLogicSelection={setLogicSelection}
 					selectedCommandId={selectedCommandId}
+					commandReturnItemId={commandReturnItemId}
 					setSelectedCommandId={(commandId) => {
 						beginEditorNavigation();
 						setSelectedCommandId(commandId);
@@ -603,6 +610,7 @@ export default function EditorPage() {
 					onOpenLogicUsage={(usage) => {
 						beginEditorNavigation();
 						setLogicLibraryReturn(null);
+						setCommandReturnItemId(null);
 						if (usage.kind === "command") {
 							setActiveTab("logic");
 							setLogicSection("commands");
@@ -630,6 +638,27 @@ export default function EditorPage() {
 							setActiveTab("map");
 							setSelection({selectedId: usage.id, isConnectionSelected: false});
 						}
+					}}
+					onOpenItemCommand={(commandId, itemId) => {
+						beginEditorNavigation();
+						setLogicLibraryReturn(null);
+						setCommandReturnItemId(itemId);
+						setActiveTab("logic");
+						setLogicSection("commands");
+						setSelectedCommandId(commandId);
+						setCommandSelection({kind: "command", commandId});
+					}}
+					onReturnToItemCommands={() => {
+						if (!commandReturnItemId) return;
+						beginEditorNavigation();
+						setActiveTab("world");
+						setSelectedItemId(commandReturnItemId);
+						setItemWorkspaceTab("commands");
+						setSelectedCommandId(null);
+						setCommandSelection(null);
+						setCommandReturnItemId(null);
+						setUtilityView("play");
+						setUtilityCollapsed(true);
 					}}
 					onOpenCommandInspector={(nextSelection) => void openCommandInspector(nextSelection)}
 					selectedItemId={selectedItemId}
@@ -839,6 +868,7 @@ type EditorMainPanelProps = {
 	logicSelection: LogicSelection | null;
 	setLogicSelection: (selection: LogicSelection | null) => void;
 	selectedCommandId: string | null;
+	commandReturnItemId: string | null;
 	setSelectedCommandId: (commandId: string | null) => void;
 	commandSelection: CommandSelection | null;
 	setCommandSelection: (selection: CommandSelection | null) => void;
@@ -852,6 +882,8 @@ type EditorMainPanelProps = {
 	onDoneLogicLibrary: (selectedId: string) => void;
 	onDoneLogicLibraryDraft: (value: unknown) => void;
 	onOpenLogicUsage: (usage: LogicUsage) => void;
+	onOpenItemCommand: (commandId: string, itemId: string) => void;
+	onReturnToItemCommands: () => void;
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
@@ -890,6 +922,7 @@ function EditorMainPanel({
 	logicSelection,
 	setLogicSelection,
 	selectedCommandId,
+	commandReturnItemId,
 	setSelectedCommandId,
 	commandSelection,
 	setCommandSelection,
@@ -903,6 +936,8 @@ function EditorMainPanel({
 	onDoneLogicLibrary,
 	onDoneLogicLibraryDraft,
 	onOpenLogicUsage,
+	onOpenItemCommand,
+	onReturnToItemCommands,
 	onOpenCommandInspector,
 	selectedItemId,
 	itemWorkspaceTab,
@@ -944,6 +979,10 @@ function EditorMainPanel({
 							setCommandSelection(null);
 						}}
 						onCommandBack={() => {
+							if (commandReturnItemId) {
+								onReturnToItemCommands();
+								return;
+							}
 							if (selectedCommandId) {
 								setSelectedCommandId(null);
 								setCommandSelection(null);
@@ -974,6 +1013,7 @@ function EditorMainPanel({
 						}}
 						onDeleteCommand={() => {
 							if (!selectedCommandId) return;
+							const shouldReturnToItem = Boolean(commandReturnItemId);
 							const index = world.commands.findIndex(
 								(command) => idValue(command.id) === selectedCommandId,
 							);
@@ -984,6 +1024,11 @@ function EditorMainPanel({
 								);
 								if (target >= 0) draft.commands.splice(target, 1);
 							});
+							if (shouldReturnToItem) {
+								onReturnToItemCommands();
+								onEditorContextRecovery("The command was deleted.");
+								return;
+							}
 							setSelectedCommandId(nextCommand ? idValue(nextCommand.id) : null);
 							setCommandSelection(
 								nextCommand ? {kind: "command", commandId: idValue(nextCommand.id)} : null,
@@ -1045,6 +1090,7 @@ function EditorMainPanel({
 						onDoneLogicLibrary={onDoneLogicLibrary}
 						onDoneLogicLibraryDraft={onDoneLogicLibraryDraft}
 						onOpenLogicUsage={onOpenLogicUsage}
+						onOpenItemCommand={onOpenItemCommand}
 						onOpenCommandInspector={onOpenCommandInspector}
 						selectedItemId={selectedItemId}
 						itemWorkspaceTab={itemWorkspaceTab}
@@ -1199,6 +1245,7 @@ type EditorWorkspaceProps = {
 	onDoneLogicLibrary: (selectedId: string) => void;
 	onDoneLogicLibraryDraft: (value: unknown) => void;
 	onOpenLogicUsage: (usage: LogicUsage) => void;
+	onOpenItemCommand: (commandId: string, itemId: string) => void;
 	onOpenCommandInspector: (selection: CommandSelection) => void;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
@@ -1246,6 +1293,7 @@ function EditorWorkspace({
 	onDoneLogicLibrary,
 	onDoneLogicLibraryDraft,
 	onOpenLogicUsage,
+	onOpenItemCommand,
 	onOpenCommandInspector,
 	selectedItemId,
 	itemWorkspaceTab,
@@ -1390,14 +1438,7 @@ function EditorWorkspace({
 						onEditorContextRecovery("The item was deleted. Choose another item to continue.");
 					}}
 					onOpenCommand={(commandId) => {
-						const command = world.commands.find((candidate) => idValue(candidate.id) === commandId);
-						onOpenLogicUsage({
-							key: `command:${commandId}`,
-							kind: "command",
-							id: commandId,
-							label: command?.name || "Unnamed command",
-							detail: "Command",
-						});
+						onOpenItemCommand(commandId, idValue(selectedItem.id));
 					}}
 				/>
 			);
