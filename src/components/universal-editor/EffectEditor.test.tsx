@@ -122,7 +122,7 @@ describe("EffectEditor", () => {
 		fireEvent.click(screen.getByRole("button", {name: /^Add effect:/}));
 		fireEvent.click(screen.getByRole("button", {name: "Add effect"}));
 
-		expect(screen.getByRole("button", {name: /Message \d+/})).toBeInTheDocument();
+		expect(screen.getByRole("button", {name: /Messaging \d+/})).toBeInTheDocument();
 		expect(screen.getByRole("button", {name: /Player \d+/})).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("option", {name: /Show a message/}));
 		fireEvent.click(screen.getByRole("button", {name: "Use effect"}));
