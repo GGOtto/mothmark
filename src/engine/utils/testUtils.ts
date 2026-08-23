@@ -183,6 +183,7 @@ function createTurnEventWorld(): World {
 		],
 		(draft) => {
 			draft.disposable = true;
+			draft.wait = 1;
 		},
 	);
 

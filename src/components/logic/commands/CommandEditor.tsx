@@ -192,7 +192,7 @@ type CommandEditorProps = {
 	selection: CommandSelection | null;
 	onSelectionChange: (selection: CommandSelection | null) => void;
 	onOpenLogicLibrary?: (request: OpenLogicLibraryRequest) => void;
-	onOpenInspector?: (selection: CommandSelection, world: World) => void;
+	onOpenInspector?: (selection: CommandSelection, world: World) => Promise<boolean> | boolean;
 };
 
 export function CommandEditor({
@@ -363,15 +363,22 @@ export function CommandEditor({
 				command.patterns[activePatternIndex]?.blocks.push(block);
 			}
 		});
-		updateWorld(nextWorld);
 		const nextSelection: CommandSelection = {
 			kind: "block",
 			commandId: idValue(selectedCommand.id),
 			patternIndex: activePatternIndex,
 			blockId: idValue(block.id),
 		};
+		if (!onOpenInspector) {
+			updateWorld(nextWorld);
+			onSelectionChange(nextSelection);
+			return;
+		}
+
+		const previousSelection = selection;
 		onSelectionChange(nextSelection);
-		onOpenInspector?.(nextSelection, nextWorld);
+		const saved = await onOpenInspector(nextSelection, nextWorld);
+		if (!saved) onSelectionChange(previousSelection);
 	}
 
 	async function removeBlock(patternIndex: number, blockIndex: number) {
@@ -679,7 +686,7 @@ export function CommandEditor({
 																		blockId,
 																	};
 																	onSelectionChange(nextSelection);
-																	onOpenInspector?.(nextSelection, world);
+																	void onOpenInspector?.(nextSelection, world);
 																}}
 															>
 																<span>

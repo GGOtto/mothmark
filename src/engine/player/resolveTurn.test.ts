@@ -49,6 +49,7 @@ describe("resolveTurn", () => {
 			draft.id = toID("event", "turn-event");
 			draft.name = "Turn event";
 			draft.disposable = true;
+			draft.wait = 1;
 			draft.branch.always = eventEffect;
 		});
 		const configuredWorld = produce(world, (draft) => {

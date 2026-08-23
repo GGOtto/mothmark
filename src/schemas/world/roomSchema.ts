@@ -2,7 +2,7 @@ import {z} from "zod";
 import {docify} from "@/schemas/utils/docify";
 import {editor} from "../utils/editorSchemaHelpers";
 import {ROOM_FLAG_DEFINITIONS} from "./entityFlagDefinitions";
-import {DirectionSchema} from "./directionSchema";
+import {DIRECTION_OPTIONS, DirectionSchema} from "./directionSchema";
 import {ConditionalTextSchema} from "./conditionSchema";
 
 export {DirectionSchema} from "./directionSchema";
@@ -151,6 +151,26 @@ export const RoomSchema = editor.object(
 				features: {flags: ROOM_FLAG_DEFINITIONS},
 			})
 			.default({visited: false, active: true}),
+
+		initiallyBlockedExits: editor.directionMulti(z.array(DirectionSchema).default([]), {
+			title: "Blocked exits at game start",
+			description:
+				"Directions that begin blocked in this room. Events and other logic can unblock them during play.",
+			options: [...DIRECTION_OPTIONS],
+			features: {
+				emptySelectionLabel: "No blocked exits",
+				emptySelectionStatus: "No exits are blocked.",
+				allSelectionLabel: "All exits blocked",
+				allSelectionStatus: "All exits are blocked.",
+				selectionNoun: {singular: "exit", plural: "exits"},
+				selectionVerb: "blocked",
+			},
+			layout: {
+				group: "state",
+				width: "full",
+				order: 9,
+			},
+		}),
 
 		metadata: RoomMetadataSchema,
 	},

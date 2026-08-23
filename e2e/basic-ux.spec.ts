@@ -4,7 +4,7 @@ import {PERSISTED_SCHEMA_VERSION} from "../src/compat/migrations";
 import {world as initialWorld} from "../src/data/worlds/initialWorld";
 import {ItemSchema} from "../src/schemas/world/itemSchema";
 import {createDefaultFieldObject} from "../src/utils/createDefaultFieldObject";
-import {toID} from "../src/utils/idUtils";
+import {idValue, toID} from "../src/utils/idUtils";
 import {createUniqueWorldSlug} from "../src/utils/worldSlug";
 import {expectMobileLayoutIntegrity} from "./mobile-layout";
 
@@ -1428,6 +1428,11 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(newBlockSettings.getByText("Block not found", {exact: true})).toHaveCount(0);
 	await expect(newBlockSettings.getByRole("textbox", {name: /Use as/})).toBeVisible();
 	await newBlockSettings.getByRole("button", {name: "Cancel"}).click();
+	await expect(page.getByRole("button", {name: "Number <number>", exact: true})).toHaveCount(0);
+	await page.getByRole("button", {name: "Number", exact: true}).click();
+	await addNumberDialog.getByRole("button", {name: "Add to all patterns"}).click();
+	await newBlockSettings.getByRole("button", {name: "Save"}).click();
+	await expect(page.getByRole("button", {name: "Number <number>", exact: true})).toBeVisible();
 	const directionBlock = page.getByRole("button", {name: "Direction <direction>"});
 	await directionBlock.focus();
 	await page.keyboard.press("Enter");
@@ -1837,6 +1842,55 @@ test("map layers can be renamed", async ({page}) => {
 		.toBe("Street level");
 	await page.reload();
 	await expect(page.getByRole("button", {name: "Layers · Street level"})).toBeVisible();
+	expect(browserErrors).toEqual([]);
+});
+
+test("rooms begin with no blocked exits and can author their starting exit state", async ({
+	page,
+}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	await page.goto(`/worlds/${editor.worldSlug}?view=map&room=shop-floor`);
+
+	const blockedExits = page
+		.locator(".universalField")
+		.filter({has: page.getByText("Blocked exits at game start", {exact: true})})
+		.last();
+	await expect(blockedExits.getByRole("button", {name: "No blocked exits"})).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	await expect(blockedExits.getByText("No exits are blocked.")).toBeVisible();
+	await blockedExits.getByRole("button", {name: "All exits blocked"}).click();
+	await expect(blockedExits.getByText("All exits are blocked.")).toBeVisible();
+	await expect
+		.poll(
+			() =>
+				editor.worlds()[0].world.rooms.find((room) => idValue(room.id) === "shop-floor")
+					?.initiallyBlockedExits.length,
+		)
+		.toBe(12);
+	await blockedExits.getByRole("button", {name: "No blocked exits"}).click();
+	await expect(blockedExits.getByText("No exits are blocked.")).toBeVisible();
+
+	await blockedExits.getByRole("button", {name: "East", exact: true}).click();
+	await expect(blockedExits.getByText("1 exit blocked.")).toBeVisible();
+	await expect
+		.poll(
+			() =>
+				editor.worlds()[0].world.rooms.find((room) => idValue(room.id) === "shop-floor")
+					?.initiallyBlockedExits,
+		)
+		.toEqual(["e"]);
+
+	await page.reload();
+	const reloadedBlockedExits = page
+		.locator(".universalField")
+		.filter({has: page.getByText("Blocked exits at game start", {exact: true})})
+		.last();
+	await expect(
+		reloadedBlockedExits.getByRole("button", {name: "East", exact: true}),
+	).toHaveAttribute("aria-pressed", "true");
 	expect(browserErrors).toEqual([]);
 });
 

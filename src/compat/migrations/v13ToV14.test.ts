@@ -122,7 +122,7 @@ describe("the v13 to v14 item-action and event-editor contract migration", () =>
 			{id: "world-1", storage: "editor"},
 		);
 
-		expect(PERSISTED_SCHEMA_VERSION).toBe(14);
+		expect(PERSISTED_SCHEMA_VERSION).toBe(15);
 		expect(migrationFrom(13)).toBe(v13ToV14);
 		expect(migrationFrom(PERSISTED_SCHEMA_VERSION)).toBeUndefined();
 		expect(result).toEqual({
