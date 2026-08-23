@@ -224,12 +224,12 @@ export default function EditorPage() {
 	}, []);
 
 	const openCommandInspector = useCallback(
-		async (nextSelection: CommandSelection) => {
+		async (nextSelection: CommandSelection, sourceWorld = editorWorld) => {
 			if (!popup) return;
 			const nextWorld = await popup.open<World>(
 				({resolve, cancel}) => (
 					<CommandInspectorDialog
-						world={editorWorld}
+						world={sourceWorld}
 						selection={nextSelection}
 						onCancel={cancel}
 						onSave={resolve}
@@ -660,7 +660,9 @@ export default function EditorPage() {
 						setUtilityView("play");
 						setUtilityCollapsed(true);
 					}}
-					onOpenCommandInspector={(nextSelection) => void openCommandInspector(nextSelection)}
+					onOpenCommandInspector={(nextSelection, sourceWorld) =>
+						void openCommandInspector(nextSelection, sourceWorld)
+					}
 					selectedItemId={selectedItemId}
 					itemWorkspaceTab={itemWorkspaceTab}
 					setItemWorkspaceTab={setItemWorkspaceTab}
@@ -884,7 +886,7 @@ type EditorMainPanelProps = {
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenItemCommand: (commandId: string, itemId: string) => void;
 	onReturnToItemCommands: () => void;
-	onOpenCommandInspector: (selection: CommandSelection) => void;
+	onOpenCommandInspector: (selection: CommandSelection, world?: World) => void;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
 	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;
@@ -1246,7 +1248,7 @@ type EditorWorkspaceProps = {
 	onDoneLogicLibraryDraft: (value: unknown) => void;
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenItemCommand: (commandId: string, itemId: string) => void;
-	onOpenCommandInspector: (selection: CommandSelection) => void;
+	onOpenCommandInspector: (selection: CommandSelection, world?: World) => void;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
 	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;
