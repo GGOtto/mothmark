@@ -159,6 +159,7 @@ describe("audited logic through the player turn path", () => {
 			draft.id = toID("event", "learn-movement");
 			draft.name = "Learn movement";
 			draft.disposable = true;
+			draft.wait = 1;
 			draft.branch.always = createPlayerTestEffectGroup("learn", [
 				EffectSchema.parse({
 					type: "world",

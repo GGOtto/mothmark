@@ -11,4 +11,6 @@ NPC-oriented UI controls and registry slots remain dormant.
 - Restore NPC conditions/effects together with their runtime resolver tests.
 - Reconnect existing NPC picker UI after the schema exists again.
 
-`TODO`: Restore NPC schemas and engine support as a cohesive vertical slice.
+The complete reintroduction is specified as horizontal capability slices in
+`docs/npc-system-plan.md`. Do not restore the removed schema wholesale; it hard-coded several
+genre-specific assumptions and did not provide a complete runtime-backed player path.

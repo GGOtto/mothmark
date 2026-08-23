@@ -64,4 +64,23 @@ describe("createInitialGameState", () => {
 			texts: [{answer: "moth"}],
 		});
 	});
+
+	it("loads each room's initially blocked exits into independent runtime state", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const world = produce(scenario.world, (draft) => {
+			draft.rooms[0].initiallyBlockedExits = ["e", "out"];
+		});
+
+		const game = createInitialGameState(world, world.startRoomId);
+		const roomState = game.roomStates.find((candidate) => idValue(candidate.id) === "foyer")!;
+
+		expect(roomState.lockedExits).toEqual(["e", "out"]);
+		expect(world.rooms[0].initiallyBlockedExits).toEqual(["e", "out"]);
+
+		const changed = produce(game, (draft) => {
+			draft.roomStates[0].lockedExits.pop();
+		});
+		expect(changed.roomStates[0].lockedExits).toEqual(["e"]);
+		expect(world.rooms[0].initiallyBlockedExits).toEqual(["e", "out"]);
+	});
 });

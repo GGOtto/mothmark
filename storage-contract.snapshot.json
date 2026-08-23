@@ -16872,7 +16872,7 @@
 			}
 		}
 	},
-	"schemaSourceDigest": "6eb4dc36251c92ad9388aaefb2fe8073093f5c9adae7699acb6e46b7d4b8587c",
+	"schemaSourceDigest": "54ec941e4b1800f6cefbf013d510191f677f3a0f9ec02ed9cd73648738ddad18",
 	"world": {
 		"kind": "object",
 		"checks": [
@@ -169441,6 +169441,17 @@
 									]
 								},
 								"outputFingerprint": "transform"
+							},
+							"initiallyBlockedExits": {
+								"kind": "default",
+								"input": {
+									"kind": "array",
+									"element": {
+										"kind": "enum",
+										"entries": ["down", "e", "in", "n", "ne", "nw", "out", "s", "se", "sw", "up", "w"]
+									}
+								},
+								"defaultValue": []
 							},
 							"metadata": {
 								"kind": "object",

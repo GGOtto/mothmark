@@ -75,6 +75,12 @@ export type DirectionMultiPickerMetadata = EditorControlMetadata & {
 	features?: {
 		options?: DirectionPickerOption[];
 		optionSource?: string;
+		emptySelectionLabel?: string;
+		emptySelectionStatus?: string;
+		allSelectionLabel?: string;
+		allSelectionStatus?: string;
+		selectionNoun?: {singular: string; plural: string};
+		selectionVerb?: string;
 	};
 };
 
@@ -613,7 +619,23 @@ export function DirectionMultiPickerEditor(props: DirectionMultiPickerProps) {
 	const {value, onChange, metadata, error, warnings, disabled, readonly, context} = props;
 	const options = resolveDirectionOptions(metadata, context);
 	const unavailable = disabled || readonly || metadata.disabled || metadata.readonly;
+	const emptySelectionLabel = metadata.features?.emptySelectionLabel ?? "All directions";
+	const emptySelectionStatus =
+		metadata.features?.emptySelectionStatus ?? "Every direction is accepted.";
+	const allSelectionLabel = metadata.features?.allSelectionLabel;
+	const allSelectionStatus = metadata.features?.allSelectionStatus;
+	const selectionNoun = metadata.features?.selectionNoun ?? {
+		singular: "direction",
+		plural: "directions",
+	};
+	const selectionVerb = metadata.features?.selectionVerb ?? "accepted";
 	const selectedValues = new Set(value);
+	const selectableValues = options
+		.filter((option) => !option.disabled)
+		.map((option) => option.value);
+	const allSelected =
+		selectableValues.length > 0 &&
+		selectableValues.every((direction) => selectedValues.has(direction));
 	const compassOptions = COMPASS_DIRECTION_VALUES.flatMap((directionValue) => {
 		const direction = options.find((option) => option.value === directionValue);
 		return direction ? [direction] : [];
@@ -662,8 +684,19 @@ export function DirectionMultiPickerEditor(props: DirectionMultiPickerProps) {
 					disabled={unavailable}
 					onClick={() => onChange([])}
 				>
-					All directions
+					{emptySelectionLabel}
 				</button>
+				{allSelectionLabel ? (
+					<button
+						type="button"
+						className={allSelected ? "directionMultiPicker__all--selected" : ""}
+						aria-pressed={allSelected}
+						disabled={unavailable}
+						onClick={() => onChange(selectableValues)}
+					>
+						{allSelectionLabel}
+					</button>
+				) : null}
 				<div className="directionMultiPicker__compass" role="group" aria-label="Compass directions">
 					{compassOptions.map((direction) => directionButton(direction, true))}
 				</div>
@@ -674,8 +707,12 @@ export function DirectionMultiPickerEditor(props: DirectionMultiPickerProps) {
 				) : null}
 				<p className="directionMultiPicker__status" aria-live="polite">
 					{value.length === 0
-						? "Every direction is accepted."
-						: `${value.length} ${value.length === 1 ? "direction" : "directions"} accepted.`}
+						? emptySelectionStatus
+						: allSelected && allSelectionStatus
+							? allSelectionStatus
+							: `${value.length} ${
+									value.length === 1 ? selectionNoun.singular : selectionNoun.plural
+								} ${selectionVerb}.`}
 				</p>
 			</div>
 		</FieldShell>

@@ -113,8 +113,9 @@ export function resolveMessageEffect(world: World, game: GameState, effect: Effe
 	});
 }
 
-type EffectResolutionContext = {
+export type EffectResolutionContext = {
 	visitedRoomIdsAtStart: ReadonlySet<string>;
+	suppressAutomaticRoomMessages?: boolean;
 };
 
 export function resolveWorldEffect(game: GameState, effect: Effect): GameState {
@@ -1154,11 +1155,18 @@ export function resolveRoomEffect(game: GameState, effect: Effect): GameState {
 	});
 }
 
-export function resolveNavigationEffect(world: World, game: GameState, effect: Effect): GameState {
+export function resolveNavigationEffect(
+	world: World,
+	game: GameState,
+	effect: Effect,
+	context?: EffectResolutionContext,
+): GameState {
 	if (effect.type !== "navigation") return game;
 	switch (effect.operation) {
 		case "move-to-room":
-			return teleport(world, game, effect.roomId);
+			return teleport(world, game, effect.roomId, {
+				silent: context?.suppressAutomaticRoomMessages,
+			});
 		case "move-in-direction":
 			return silentlyMove(world, game, effect.direction);
 		case "set-facing":
@@ -1418,7 +1426,7 @@ export function resolveEffect(
 						)
 					: resolvePlayerEffect(world, draft, effect);
 			case "navigation":
-				return resolveNavigationEffect(world, draft, effect);
+				return resolveNavigationEffect(world, draft, effect, context);
 			case "event":
 				return resolveEventEffect(world, draft, effect);
 			case "control":

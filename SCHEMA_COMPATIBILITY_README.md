@@ -155,3 +155,10 @@ The `v12-to-v13-record-item-behavior-discovery-contract` migration records the r
 contract for schema-backed item behavior discovery metadata. The metadata affects authoring
 recommendations only, so retained worlds, game states, messages, and player-visible history remain
 unchanged while their rows advance to schema version 13.
+
+## Startup events and blocked exits in v15
+
+The `v14-to-v15-run-events-before-the-opening-room` migration preserves retained authored worlds;
+rooms that omit `initiallyBlockedExits` receive its neutral empty default when parsed. Retained
+playthrough turns, output messages, current state, and transcripts are replayed from the new initial
+state because wait-zero events now resolve at turn zero before the opening room description.
