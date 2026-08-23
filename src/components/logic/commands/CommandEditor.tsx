@@ -19,6 +19,7 @@ import {
 	Workflow,
 	type LucideIcon,
 } from "lucide-react";
+import {produce} from "immer";
 import {type CSSProperties, useEffect, useRef, useState} from "react";
 import {entityColorFor} from "@/components/entity-picker/entityPickerColors";
 import {useOptionalPopup} from "@/components/popup/Popup";
@@ -191,7 +192,7 @@ type CommandEditorProps = {
 	selection: CommandSelection | null;
 	onSelectionChange: (selection: CommandSelection | null) => void;
 	onOpenLogicLibrary?: (request: OpenLogicLibraryRequest) => void;
-	onOpenInspector?: (selection: CommandSelection) => void;
+	onOpenInspector?: (selection: CommandSelection, world: World) => void;
 };
 
 export function CommandEditor({
@@ -351,13 +352,18 @@ export function CommandEditor({
 
 		if (!additionScope) return;
 		const block = createBlock(type, selectedCommand);
-		updateSelected((command) => {
+		const nextWorld = produce(world, (draft) => {
+			const command = draft.commands.find(
+				(candidate) => idValue(candidate.id) === idValue(selectedCommand.id),
+			);
+			if (!command) return;
 			if (additionScope === "all") {
 				command.patterns.forEach((pattern) => pattern.blocks.push(cloneValue(block)));
 			} else {
 				command.patterns[activePatternIndex]?.blocks.push(block);
 			}
 		});
+		updateWorld(nextWorld);
 		const nextSelection: CommandSelection = {
 			kind: "block",
 			commandId: idValue(selectedCommand.id),
@@ -365,7 +371,7 @@ export function CommandEditor({
 			blockId: idValue(block.id),
 		};
 		onSelectionChange(nextSelection);
-		onOpenInspector?.(nextSelection);
+		onOpenInspector?.(nextSelection, nextWorld);
 	}
 
 	async function removeBlock(patternIndex: number, blockIndex: number) {
@@ -673,7 +679,7 @@ export function CommandEditor({
 																		blockId,
 																	};
 																	onSelectionChange(nextSelection);
-																	onOpenInspector?.(nextSelection);
+																	onOpenInspector?.(nextSelection, world);
 																}}
 															>
 																<span>

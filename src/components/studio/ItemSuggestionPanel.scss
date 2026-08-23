@@ -55,10 +55,25 @@
 }
 
 .itemSuggestionProblem {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
 	padding: 6px 7px;
 	border-radius: var(--radius-control);
 	background: var(--color-danger-bg);
 	color: var(--color-danger);
+
+	button {
+		padding: 3px 6px;
+		border: 1px solid currentColor;
+		border-radius: var(--radius-control);
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+		font: inherit;
+		font-weight: 700;
+	}
 }
 
 .itemSuggestionAliases,
