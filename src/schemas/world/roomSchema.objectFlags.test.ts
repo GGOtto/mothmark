@@ -11,6 +11,17 @@ function field(schema: typeof RoomSchema | typeof ItemInitialStateSchema, key: s
 }
 
 describe("room and item object flags", () => {
+	it("exposes a neutral direction picker for exits blocked at game start", () => {
+		const initiallyBlockedExits = field(RoomSchema, "initiallyBlockedExits");
+
+		expect(initiallyBlockedExits?.metadata).toMatchObject({
+			type: "direction-multi-picker",
+			title: "Blocked exits at game start",
+		});
+		expect(createDefaultFieldObject(RoomSchema).initiallyBlockedExits).toEqual([]);
+		expect(RoomSchema.shape.initiallyBlockedExits.parse(["n", "out"])).toEqual(["n", "out"]);
+	});
+
 	it("gives rooms permanent visited and active flags", () => {
 		const flags = field(RoomSchema, "flags");
 

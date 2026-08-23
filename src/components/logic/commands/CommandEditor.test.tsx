@@ -153,7 +153,7 @@ function CommandHarness({
 	onWorldChange,
 	startingWorld = initialWorld,
 }: {
-	onOpenInspector?: (selection: CommandSelection, world: World) => void;
+	onOpenInspector?: (selection: CommandSelection, world: World) => Promise<boolean> | boolean;
 	onWorldChange?: (world: World) => void;
 	startingWorld?: World;
 }) {
@@ -256,8 +256,9 @@ describe("CommandEditor", () => {
 		expect(say.patterns[0].blocks.some((block) => block.type === "phrase")).toBe(false);
 	});
 
-	it("opens a newly added block against the updated world snapshot", async () => {
+	it("keeps a newly added block provisional while opening its updated world snapshot", async () => {
 		const user = userEvent.setup();
+		let latestWorld = initialWorld;
 		let opened:
 			| {
 					selection: CommandSelection;
@@ -269,7 +270,9 @@ describe("CommandEditor", () => {
 				<CommandHarness
 					onOpenInspector={(selection, world) => {
 						opened = {selection, world};
+						return false;
 					}}
+					onWorldChange={(world) => void (latestWorld = world)}
 				/>
 			</PopupProvider>,
 		);
@@ -296,6 +299,11 @@ describe("CommandEditor", () => {
 		);
 		expect(screen.queryByText("Block not found")).not.toBeInTheDocument();
 		expect(screen.getByRole("heading", {name: "Target tags"})).toBeVisible();
+		expect(
+			latestWorld.commands
+				.find((command) => idValue(command.id) === "say")
+				?.patterns[0].blocks.some((block) => block.type === "target"),
+		).toBe(false);
 	});
 
 	it("allows any pattern to be deleted while more than one remains", async () => {

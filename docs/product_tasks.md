@@ -2,7 +2,7 @@
 
 Status: active implementation backlog.
 
-Last updated: 2026-08-18.
+Last updated: 2026-08-19.
 
 This replaces the old page-by-page constrained-layout audit. The plan is organized around user
 tasks and product outcomes so that each checkbox can be implemented, reviewed, tested, and closed
@@ -872,27 +872,28 @@ the full task definitions but do not imply a different sequence.
   - Add the condition through schema metadata so it appears under Time/randomness in E06, with
     focused boundary tests and player-path coverage for both outcomes.
 
-- [ ] **G05 — Add a runtime-backed NPC model and authoring workflow.**
+- [ ] **G05 — Build the complete composable NPC system.**
 
-  **Outcome:** NPCs are real world entities players can perceive and interact with, not a renamed
-  Story placeholder.
+  **Outcome:** Authors can compose static characters, conversational characters, movers, followers,
+  traders, companions, and combatants from shared NPC systems rather than hard-coded archetypes or a
+  renamed Story placeholder.
 
-  **Depends on:** E04, E06, G02.
+  **Depends on:** E04, E06, E07, G02, G03, G04.
 
   **Scope and acceptance:**
 
-  - First define the smallest coherent schema: typed NPC ID, name/aliases, description, starting
-    location, visibility, state, dialogue/interaction hooks, and referenced commands/conditions.
-  - Define movement and inventory ownership only if included in the first playable slice; do not add
-    speculative systems to make the schema look complete.
-  - Add a full-workspace NPC selector and dedicated editor derived from the schema, with placement,
-    player-facing text, behavior, commands, and identity.
-  - Add target resolution that treats absent, hidden, inaccessible, and ineligible NPCs as the same
-    unresolved result.
-  - Provide at least Examine and Talk interaction through saved commands/conditions/effects and cover
-    the complete player path through `resolveTurn`.
-  - Complete persisted-schema compatibility, export/import, issue validation, and admin inspection
-    work before exposing NPCs in production navigation.
+  - Implement the N01–N16 horizontal capability slices in `docs/npc-system-plan.md`. The slice
+    checkboxes and their acceptance criteria are the detailed source of truth for this umbrella.
+  - Keep NPC identity separate from optional conversation, possessions, schedules, following, and
+    combat capabilities. Do not add merchant, guard, enemy, or other archetype types.
+  - Use generic named NPC state instead of universal mood, trust, hostility, sleep, or death fields.
+  - Build Details, World, Conversation, Combat, and Logic as stable domain tabs, each with a scalable
+    section navigator and one focused full-canvas task.
+  - Extend generic targets, commands, conditions, effects, events, topics, item ownership, movement,
+    relationships, and deterministic combat rather than introducing command-name or NPC-name engine
+    branches.
+  - Complete every player path, authoring path, reference-integrity path, publication/hosted-play
+    path, and persisted-data compatibility gate before exposing NPCs in production navigation.
 
 ---
 

@@ -124,6 +124,7 @@ describe("resolveEditorMetadata object fields", () => {
 			"aliases",
 			"tags",
 			"flags",
+			"initiallyBlockedExits",
 			"id",
 			"metadata",
 		]);

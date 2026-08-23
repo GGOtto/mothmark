@@ -11,9 +11,10 @@ import {v10ToV11} from "./v10ToV11";
 import {v11ToV12} from "./v11ToV12";
 import {v12ToV13} from "./v12ToV13";
 import {v13ToV14} from "./v13ToV14";
+import {v14ToV15} from "./v14ToV15";
 import type {StorageMigration} from "./types";
 
-export const PERSISTED_SCHEMA_VERSION = 14;
+export const PERSISTED_SCHEMA_VERSION = 15;
 
 export const storageMigrations: readonly StorageMigration[] = [
 	v1ToV2,
@@ -29,6 +30,7 @@ export const storageMigrations: readonly StorageMigration[] = [
 	v11ToV12,
 	v12ToV13,
 	v13ToV14,
+	v14ToV15,
 ];
 
 export function validateStorageMigrationRegistry(

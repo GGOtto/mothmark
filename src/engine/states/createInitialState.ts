@@ -1,12 +1,14 @@
 import type {World} from "@/schemas/world/worldSchema";
-import {compareIds, type ID} from "@/utils/idUtils";
+import {compareIds, idValue, type ID} from "@/utils/idUtils";
 import type {GameState} from "@/schemas/states/gameStateSchemas";
+import {produce} from "immer";
 import {createRoomMessage} from "../messages/createRoomMessage";
+import {resolveEvents} from "../events/resolveEvent";
 import {getRoom} from "../utils/lookupUtils";
 import {createItemState, createRoomState} from "./createEntityState";
 
 export function createInitialGameState(world: World, startingRoomId: ID<"room">): GameState {
-	const startingRoom = getRoom(world, startingRoomId);
+	getRoom(world, startingRoomId);
 	const initiallyEquippedItemIds = world.items
 		.filter(
 			(item) =>
@@ -14,7 +16,7 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 				item.behaviors.some((behavior) => behavior.type === "equippable" && behavior.startsEquipped),
 		)
 		.map((item) => item.id);
-	const game: GameState = {
+	let game: GameState = {
 		player: {
 			currentRoom: startingRoomId,
 			facing: "n",
@@ -39,15 +41,22 @@ export function createInitialGameState(world: World, startingRoomId: ID<"room">)
 		messages: [],
 	};
 
-	return {
-		...game,
-		roomStates: game.roomStates.map((roomState) => ({
-			...roomState,
-			flags: {
-				...roomState.flags,
-				visited: compareIds(roomState.id, startingRoom.id) || roomState.flags.visited,
-			},
-		})),
-		messages: [createRoomMessage(world, startingRoom, game)],
-	};
+	game = resolveEvents(world, game, {
+		visitedRoomIdsAtStart: new Set(
+			game.roomStates
+				.filter((roomState) => roomState.flags.visited)
+				.map((roomState) => idValue(roomState.id)),
+		),
+		suppressAutomaticRoomMessages: true,
+	});
+
+	if (game.player.isDead || game.player.isEnded) return game;
+
+	const openingRoom = getRoom(world, game.player.currentRoom);
+	const openingMessage = createRoomMessage(world, openingRoom, game, {forceFullDescription: true});
+	return produce(game, (draft) => {
+		draft.messages.push(openingMessage);
+		const roomState = draft.roomStates.find((candidate) => compareIds(candidate.id, openingRoom.id));
+		if (roomState) roomState.flags.visited = true;
+	});
 }

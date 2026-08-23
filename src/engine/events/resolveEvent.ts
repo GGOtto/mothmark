@@ -3,10 +3,15 @@ import type {World} from "@/schemas/world/worldSchema";
 import {compareIds} from "@/utils/idUtils";
 import {produce} from "immer";
 import {resolveConditionBranchWithResult} from "../branches/resolveConditionBranch";
+import type {EffectResolutionContext} from "../effects/resolveEffects";
 
 export {addEvent, addEvents} from "./eventQueue";
 
-export function resolveEvents(world: World, game: GameState): GameState {
+export function resolveEvents(
+	world: World,
+	game: GameState,
+	context?: EffectResolutionContext,
+): GameState {
 	let newGameState = game;
 
 	// Only events present at the start of this pass are eligible to run. Event
@@ -23,7 +28,9 @@ export function resolveEvents(world: World, game: GameState): GameState {
 			continue;
 		}
 
-		const branchResult = resolveConditionBranchWithResult(world, newGameState, event.branch);
+		const branchResult = context
+			? resolveConditionBranchWithResult(world, newGameState, event.branch, context)
+			: resolveConditionBranchWithResult(world, newGameState, event.branch);
 		newGameState = branchResult.game;
 
 		if (branchResult.actionTaken) {

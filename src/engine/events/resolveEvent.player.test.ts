@@ -85,12 +85,85 @@ describe("events and conditions through the player path", () => {
 		});
 		const game = createInitialGameState(world, world.startRoomId);
 
-		const nextGame = resolveTurn(world, game, "help");
-
-		expect(nextGame.messages.slice(-2).map((message) => message.text)).toEqual([
+		expect(game.messages.slice(0, 2).map((message) => message.text)).toEqual([
 			"High priority.",
 			"Low priority.",
 		]);
+		expect(game.messages[2]).toMatchObject({type: "room"});
+		expect(game.player.turns).toBe(0);
+	});
+
+	it("applies startup events before the opening room message and the first turn", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const event = createPlayerTestEvent(
+			"open-gallery",
+			[
+				{
+					type: "navigation",
+					operation: "unlock-exit",
+					roomId: toID("room", "foyer"),
+					direction: "e",
+				},
+				{type: "message", operation: "show", message: "The eastern shutter rises."},
+			],
+			(draft) => {
+				draft.disposable = true;
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.rooms[0].initiallyBlockedExits = ["e"];
+			draft.rooms[0].descriptionFragments = [
+				{
+					when: {
+						type: "group",
+						operation: "all",
+						conditions: [{type: "navigation", operation: "exit-is-open", direction: "e"}],
+					},
+					text: "Daylight enters through the open passage.",
+				},
+			];
+			draft.events = [event];
+		});
+
+		const game = createInitialGameState(world, world.startRoomId);
+
+		expect(game.player.turns).toBe(0);
+		expect(game.messages.map(({type}) => type)).toEqual(["system", "room"]);
+		expect(game.messages[0].text).toBe("The eastern shutter rises.");
+		expect(game.messages[1].text).toContain("Daylight enters through the open passage.");
+		expect(game.roomStates[0].lockedExits).toEqual([]);
+		expect(game.events).toEqual([]);
+
+		const moved = resolveTurn(world, game, "east");
+		expect(moved.player.currentRoom).toEqual(toID("room", "gallery"));
+	});
+
+	it("announces only the final room after startup events move the player", () => {
+		const scenario = createPlayerTestScenario("navigation");
+		const event = createPlayerTestEvent(
+			"move-to-gallery",
+			[
+				{
+					type: "navigation",
+					operation: "move-to-room",
+					roomId: toID("room", "gallery"),
+				},
+			],
+			(draft) => {
+				draft.disposable = true;
+			},
+		);
+		const world = produce(scenario.world, (draft) => {
+			draft.events = [event];
+		});
+
+		const game = createInitialGameState(world, world.startRoomId);
+
+		expect(game.messages).toHaveLength(1);
+		expect(game.messages[0]).toMatchObject({type: "room"});
+		expect(game.messages[0].text).toContain("Test Gallery");
+		expect(game.messages[0].text).not.toContain("Test Foyer");
+		expect(game.player.currentRoom).toEqual(toID("room", "gallery"));
 	});
 
 	it("keeps a disposable conditional event until the player's action makes it true", () => {

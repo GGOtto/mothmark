@@ -2,7 +2,12 @@ import {render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type {EditorRegistries} from "@/types/editor/editorRegistryTypes";
 import type {EditorControlContext} from "@/types/universalEditorTypes";
-import {DirectionPickerEditor, type DirectionPickerMetadata} from "./SpecializedEditors";
+import {
+	DirectionMultiPickerEditor,
+	DirectionPickerEditor,
+	type DirectionMultiPickerMetadata,
+	type DirectionPickerMetadata,
+} from "./SpecializedEditors";
 
 const context: EditorControlContext = {
 	mode: "edit",
@@ -131,5 +136,83 @@ describe("DirectionPickerEditor", () => {
 
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		expect(trigger).toHaveFocus();
+	});
+});
+
+describe("DirectionMultiPickerEditor", () => {
+	it("supports field-specific empty and selection wording", async () => {
+		const user = userEvent.setup();
+		const onChange = jest.fn();
+		const blockedMetadata: DirectionMultiPickerMetadata = {
+			...metadata,
+			type: "direction-multi-picker",
+			features: {
+				...metadata.features,
+				emptySelectionLabel: "No blocked exits",
+				emptySelectionStatus: "No exits are blocked.",
+				allSelectionLabel: "All exits blocked",
+				allSelectionStatus: "All exits are blocked.",
+				selectionNoun: {singular: "exit", plural: "exits"},
+				selectionVerb: "blocked",
+			},
+		};
+		const {rerender} = render(
+			<DirectionMultiPickerEditor
+				value={[]}
+				onChange={onChange}
+				metadata={blockedMetadata}
+				path={[]}
+				context={context}
+			/>,
+		);
+
+		expect(screen.getByRole("button", {name: "No blocked exits"})).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		expect(screen.getByText("No exits are blocked.")).toBeVisible();
+		await user.click(screen.getByRole("button", {name: "All exits blocked"}));
+		expect(onChange).toHaveBeenLastCalledWith([
+			"n",
+			"ne",
+			"e",
+			"se",
+			"s",
+			"sw",
+			"w",
+			"nw",
+			"up",
+			"down",
+			"in",
+			"out",
+		]);
+		await user.click(screen.getByRole("button", {name: "East"}));
+		expect(onChange).toHaveBeenCalledWith(["e"]);
+
+		rerender(
+			<DirectionMultiPickerEditor
+				value={["e"]}
+				onChange={onChange}
+				metadata={blockedMetadata}
+				path={[]}
+				context={context}
+			/>,
+		);
+		expect(screen.getByText("1 exit blocked.")).toBeVisible();
+
+		rerender(
+			<DirectionMultiPickerEditor
+				value={blockedMetadata.features!.options!.map((option) => option.value)}
+				onChange={onChange}
+				metadata={blockedMetadata}
+				path={[]}
+				context={context}
+			/>,
+		);
+		expect(screen.getByRole("button", {name: "All exits blocked"})).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		expect(screen.getByText("All exits are blocked.")).toBeVisible();
 	});
 });

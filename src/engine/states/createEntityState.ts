@@ -69,7 +69,7 @@ export function createRoomState(room: Room): RoomState {
 		shortDescription: room.shortDescription,
 		aliases: [...room.aliases],
 		tags: [...room.tags],
-		lockedExits: [],
+		lockedExits: [...room.initiallyBlockedExits],
 		flags: {...room.flags},
 	};
 }

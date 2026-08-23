@@ -225,7 +225,7 @@ export default function EditorPage() {
 
 	const openCommandInspector = useCallback(
 		async (nextSelection: CommandSelection, sourceWorld = editorWorld) => {
-			if (!popup) return;
+			if (!popup) return false;
 			const nextWorld = await popup.open<World>(
 				({resolve, cancel}) => (
 					<CommandInspectorDialog
@@ -241,7 +241,9 @@ export default function EditorPage() {
 					className: "popupSurfaceLogicSettings",
 				},
 			);
-			if (nextWorld) updateWorld(nextWorld);
+			if (!nextWorld) return false;
+			updateWorld(nextWorld);
+			return true;
 		},
 		[editorWorld, popup, updateWorld],
 	);
@@ -660,9 +662,7 @@ export default function EditorPage() {
 						setUtilityView("play");
 						setUtilityCollapsed(true);
 					}}
-					onOpenCommandInspector={(nextSelection, sourceWorld) =>
-						void openCommandInspector(nextSelection, sourceWorld)
-					}
+					onOpenCommandInspector={openCommandInspector}
 					selectedItemId={selectedItemId}
 					itemWorkspaceTab={itemWorkspaceTab}
 					setItemWorkspaceTab={setItemWorkspaceTab}
@@ -886,7 +886,7 @@ type EditorMainPanelProps = {
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenItemCommand: (commandId: string, itemId: string) => void;
 	onReturnToItemCommands: () => void;
-	onOpenCommandInspector: (selection: CommandSelection, world?: World) => void;
+	onOpenCommandInspector: (selection: CommandSelection, world?: World) => Promise<boolean>;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
 	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;
@@ -1248,7 +1248,7 @@ type EditorWorkspaceProps = {
 	onDoneLogicLibraryDraft: (value: unknown) => void;
 	onOpenLogicUsage: (usage: LogicUsage) => void;
 	onOpenItemCommand: (commandId: string, itemId: string) => void;
-	onOpenCommandInspector: (selection: CommandSelection, world?: World) => void;
+	onOpenCommandInspector: (selection: CommandSelection, world?: World) => Promise<boolean>;
 	selectedItemId: string | null;
 	itemWorkspaceTab: ItemWorkspaceTab;
 	setItemWorkspaceTab: (tab: ItemWorkspaceTab) => void;

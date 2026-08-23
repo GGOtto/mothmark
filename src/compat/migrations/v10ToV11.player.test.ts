@@ -21,6 +21,7 @@ describe("the v10 to v11 migration through the player path", () => {
 			],
 			(draft) => {
 				draft.disposable = true;
+				draft.wait = 1;
 			},
 		);
 		const world = produce(scenario.world, (draft) => {

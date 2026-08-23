@@ -166,3 +166,10 @@ worlds remain unchanged, while retained game states and player messages are rebu
 authoritative command log because the expanded standard command catalog can intentionally change
 command resolution. Every retained row advances to version 14 so future deployments compare against
 the correct accepted contract.
+
+### Version 14 to 15: startup events and blocked exits
+
+`v14-to-v15-run-events-before-the-opening-room` leaves retained authored worlds unchanged; rooms
+that omit the new blocked-exits field receive its neutral empty default. It rebuilds retained
+playthrough state and messages from the new turn-zero startup state because wait-zero events now run
+before the opening room description and can intentionally change the state that description shows.
