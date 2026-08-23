@@ -1428,6 +1428,11 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 	await expect(newBlockSettings.getByText("Block not found", {exact: true})).toHaveCount(0);
 	await expect(newBlockSettings.getByRole("textbox", {name: /Use as/})).toBeVisible();
 	await newBlockSettings.getByRole("button", {name: "Cancel"}).click();
+	await expect(page.getByRole("button", {name: "Number <number>", exact: true})).toHaveCount(0);
+	await page.getByRole("button", {name: "Number", exact: true}).click();
+	await addNumberDialog.getByRole("button", {name: "Add to all patterns"}).click();
+	await newBlockSettings.getByRole("button", {name: "Save"}).click();
+	await expect(page.getByRole("button", {name: "Number <number>", exact: true})).toBeVisible();
 	const directionBlock = page.getByRole("button", {name: "Direction <direction>"});
 	await directionBlock.focus();
 	await page.keyboard.press("Enter");
