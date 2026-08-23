@@ -1,12 +1,18 @@
 import type {NextConfig} from "next";
 
+const wordNetRuntimeFiles = [
+	"./node_modules/wordnet-db/index.js",
+	"./node_modules/wordnet-db/package.json",
+	"./node_modules/wordnet-db/dict/**/*",
+];
+
 const nextConfig: NextConfig = {
 	devIndicators: false,
 	productionBrowserSourceMaps: false,
 	serverExternalPackages: ["knex", "pg", "wordnet-db"],
 	outputFileTracingIncludes: {
-		"/api/editor/item-suggestions": ["./node_modules/wordnet-db/dict/**/*"],
-		"/api/editor/item-icon-suggestions": ["./node_modules/wordnet-db/dict/**/*"],
+		"/api/editor/item-suggestions": wordNetRuntimeFiles,
+		"/api/editor/item-icon-suggestions": wordNetRuntimeFiles,
 	},
 	async headers() {
 		return [
