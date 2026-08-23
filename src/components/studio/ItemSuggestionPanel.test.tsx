@@ -55,44 +55,46 @@ function Harness({initialName = "Apple"}: {initialName?: string}) {
 	);
 }
 
+async function suggestionFetch(_url: RequestInfo | URL, init?: RequestInit) {
+	const request = JSON.parse(String(init?.body)) as {name: string};
+	const isHammer = request.name === "Hammer";
+	const isSatchel = request.name === "The battered leather satchel";
+	const isFood = request.name === "Toast" || request.name === "Sardines";
+	const body = {
+		data: {
+			aliases: [
+				{
+					value: isHammer ? "mallet" : isSatchel ? "bag" : "orchard apple",
+					relation: "synonym",
+					evidence: "Common player wording.",
+				},
+			],
+			concepts: [
+				{
+					tag: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
+					label: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
+					depth: 1,
+					evidence: "Language category.",
+					synsetId: "n:1",
+				},
+			],
+			version: "test",
+		},
+	};
+	return {
+		ok: true,
+		status: 200,
+		text: jest.fn().mockResolvedValue(JSON.stringify(body)),
+	} as unknown as Response;
+}
+
 describe("ItemSuggestionPanel", () => {
 	beforeEach(() => {
 		document.cookie = "mothmark_editor_csrf=csrf-token; Path=/";
 		Object.defineProperty(globalThis, "fetch", {
 			configurable: true,
 			writable: true,
-			value: jest.fn(async (_url: string, init?: RequestInit) => {
-				const request = JSON.parse(String(init?.body)) as {name: string};
-				const isHammer = request.name === "Hammer";
-				const isSatchel = request.name === "The battered leather satchel";
-				const isFood = request.name === "Toast" || request.name === "Sardines";
-				const body = {
-					data: {
-						aliases: [
-							{
-								value: isHammer ? "mallet" : isSatchel ? "bag" : "orchard apple",
-								relation: "synonym",
-								evidence: "Common player wording.",
-							},
-						],
-						concepts: [
-							{
-								tag: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
-								label: isHammer ? "tool" : isSatchel ? "container" : isFood ? "food" : "fruit",
-								depth: 1,
-								evidence: "Language category.",
-								synsetId: "n:1",
-							},
-						],
-						version: "test",
-					},
-				};
-				return {
-					ok: true,
-					status: 200,
-					text: jest.fn().mockResolvedValue(JSON.stringify(body)),
-				} as unknown as Response;
-			}),
+			value: jest.fn(suggestionFetch),
 		});
 	});
 
@@ -192,5 +194,33 @@ describe("ItemSuggestionPanel", () => {
 		const containerRows = screen.getAllByText("#container");
 		expect(containerRows).toHaveLength(1);
 		expect(within(containerRows[0]!.closest("li")!).getByText("Capability")).toBeVisible();
+	});
+
+	it("silently retries a transient suggestion request", async () => {
+		jest.mocked(global.fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+		render(<Harness />);
+
+		expect(await screen.findByText("orchard apple")).toBeVisible();
+		expect(global.fetch).toHaveBeenCalledTimes(2);
+		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+	});
+
+	it("lets the author retry after automatic retries are exhausted", async () => {
+		const user = userEvent.setup();
+		const fetchMock = jest.mocked(global.fetch);
+		fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+		render(<Harness initialName="Zibblefrump" />);
+
+		const tagSuggestions = screen.getByRole("region", {name: "Suggested tags"});
+		expect(await within(tagSuggestions).findByRole("alert")).toHaveTextContent(
+			"Suggestions could not be loaded.",
+		);
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+
+		fetchMock.mockImplementation(suggestionFetch);
+		await user.click(within(tagSuggestions).getByRole("button", {name: "Retry"}));
+
+		await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
+		await waitFor(() => expect(within(tagSuggestions).queryByRole("alert")).not.toBeInTheDocument());
 	});
 });

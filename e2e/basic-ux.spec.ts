@@ -155,6 +155,8 @@ async function useDeterministicEditorWorld(
 	let bootstrapCount = 0;
 	let saveCount = 0;
 	let saveFailuresRemaining = 0;
+	let suggestionFailuresRemaining = 0;
+	let suggestionRequestCount = 0;
 	let preferenceSaveCount = 0;
 	let editorPreferences = {itemListView: "cards", itemListSort: "updated-desc"};
 	const bootstrapRequests: BootstrapRequest[] = [];
@@ -201,6 +203,18 @@ async function useDeterministicEditorWorld(
 		});
 	});
 	await page.route("**/api/editor/item-suggestions", async (route) => {
+		suggestionRequestCount += 1;
+		if (suggestionFailuresRemaining > 0) {
+			suggestionFailuresRemaining -= 1;
+			await route.fulfill({
+				status: 503,
+				contentType: "application/json",
+				body: JSON.stringify({
+					error: {code: "INTERNAL_ERROR", message: "Suggestions are temporarily unavailable."},
+				}),
+			});
+			return;
+		}
 		const request = JSON.parse(route.request().postData() ?? "{}") as {name?: string};
 		const concepts =
 			request.name === "Toast"
@@ -494,9 +508,13 @@ async function useDeterministicEditorWorld(
 		failNextSave: () => {
 			saveFailuresRemaining += 1;
 		},
+		failNextSuggestionRequests: (count = 1) => {
+			suggestionFailuresRemaining += count;
+		},
 		preferenceSaveCount: () => preferenceSaveCount,
 		preferences: () => ({...editorPreferences}),
 		saveCount: () => saveCount,
+		suggestionRequestCount: () => suggestionRequestCount,
 		worlds: () => [...storedWorlds.values()],
 		worldStore: storedWorlds,
 		trashedWorlds: () => [...trashedWorlds.values()],
@@ -1403,6 +1421,13 @@ test("primary editor workspaces are directly reachable", async ({page}) => {
 		.getByRole("button", {name: /Travel/})
 		.first()
 		.click();
+	await page.getByRole("button", {name: "Number", exact: true}).click();
+	const addNumberDialog = page.getByRole("dialog", {name: "Add number block to all patterns?"});
+	await addNumberDialog.getByRole("button", {name: "Add to all patterns"}).click();
+	const newBlockSettings = page.getByRole("dialog", {name: "Edit command block"});
+	await expect(newBlockSettings.getByText("Block not found", {exact: true})).toHaveCount(0);
+	await expect(newBlockSettings.getByRole("textbox", {name: /Use as/})).toBeVisible();
+	await newBlockSettings.getByRole("button", {name: "Cancel"}).click();
 	const directionBlock = page.getByRole("button", {name: "Direction <direction>"});
 	await directionBlock.focus();
 	await page.keyboard.press("Enter");
@@ -1725,6 +1750,19 @@ test("an item opens as a full-workspace document and keeps its URL context", asy
 	await page.getByRole("button", {name: "Collapse editor utility panel"}).click();
 	await expect(page.locator(".editorUtilityPanel")).toHaveCount(0);
 	expect(browserErrors).toEqual([]);
+});
+
+test("item suggestions recover silently from transient service failures", async ({page}) => {
+	const browserErrors = collectBrowserErrors(page);
+	const editor = await useDeterministicEditorWorld(page);
+	editor.failNextSuggestionRequests(2);
+
+	await page.goto(`/worlds/${editor.worldSlug}?view=items&item=shop-counter`);
+	const tagSuggestions = page.getByRole("region", {name: "Suggested tags"});
+	await expect.poll(editor.suggestionRequestCount).toBe(3);
+	await expect(tagSuggestions.getByText("#surface")).toBeVisible();
+	await expect(tagSuggestions.getByRole("alert")).toHaveCount(0);
+	expect(browserErrors.filter((error) => !error.includes("status of 503"))).toEqual([]);
 });
 
 test("tag inference supplies automatic icons without authoring classification tags", async ({

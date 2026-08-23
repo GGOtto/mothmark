@@ -2,7 +2,7 @@
 
 import {Lightbulb, Link2, LoaderCircle, Plus} from "lucide-react";
 import type {Draft} from "immer";
-import {useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {readOptionalJson} from "@/auth/apiResponse";
 import {readBrowserCsrfToken} from "@/auth/browserCsrf";
 import {resolveItemIcon, resolveItemIconWithInferredTags, type ItemIconCategory} from "@/itemIcons";
@@ -35,6 +35,7 @@ export type ItemSuggestions = {
 	iconCategory: ItemIconCategory;
 	loading: boolean;
 	problem: string | null;
+	retry: () => void;
 	tagSuggestions: TagSuggestion[];
 };
 
@@ -53,19 +54,80 @@ function responseMessage(body: unknown, fallback: string): string {
 	return typeof message === "string" ? message : fallback;
 }
 
-async function loadSuggestions(requestBody: string, signal: AbortSignal) {
-	const csrfToken = readBrowserCsrfToken();
-	if (!csrfToken) throw new Error("The editor security token is missing.");
-	const response = await fetch("/api/editor/item-suggestions", {
-		method: "POST",
-		signal,
-		headers: {"content-type": "application/json", "x-csrf-token": csrfToken},
-		body: requestBody,
+const SUGGESTION_RETRY_DELAYS_MS = [150, 400] as const;
+
+class SuggestionRequestError extends Error {
+	constructor(
+		message: string,
+		readonly retryable: boolean,
+	) {
+		super(message);
+	}
+}
+
+function retryDelay(milliseconds: number, signal: AbortSignal) {
+	return new Promise<void>((resolve, reject) => {
+		if (signal.aborted) {
+			reject(new DOMException("The suggestion request was cancelled.", "AbortError"));
+			return;
+		}
+		const onAbort = () => {
+			globalThis.clearTimeout(timeout);
+			reject(new DOMException("The suggestion request was cancelled.", "AbortError"));
+		};
+		const timeout = globalThis.setTimeout(() => {
+			signal.removeEventListener("abort", onAbort);
+			resolve();
+		}, milliseconds);
+		signal.addEventListener("abort", onAbort, {once: true});
 	});
+}
+
+async function loadSuggestionsOnce(requestBody: string, signal: AbortSignal) {
+	const csrfToken = readBrowserCsrfToken();
+	if (!csrfToken) throw new SuggestionRequestError("The editor security token is missing.", false);
+	let response: Response;
+	try {
+		response = await fetch("/api/editor/item-suggestions", {
+			method: "POST",
+			signal,
+			headers: {"content-type": "application/json", "x-csrf-token": csrfToken},
+			body: requestBody,
+		});
+	} catch (error) {
+		if (signal.aborted) throw error;
+		throw new SuggestionRequestError("Suggestions could not be loaded.", true);
+	}
 	const body = await readOptionalJson<unknown>(response);
-	if (!response.ok) throw new Error(responseMessage(body, "Suggestions could not be loaded."));
-	if (body === undefined) throw new Error("The suggestion service returned an empty response.");
-	return LexicalSuggestionResponseSchema.parse(body);
+	if (!response.ok) {
+		throw new SuggestionRequestError(
+			responseMessage(body, "Suggestions could not be loaded."),
+			response.status === 408 || response.status === 429 || response.status >= 500,
+		);
+	}
+	if (body === undefined) {
+		throw new SuggestionRequestError("The suggestion service returned an empty response.", true);
+	}
+	const parsed = LexicalSuggestionResponseSchema.safeParse(body);
+	if (!parsed.success) {
+		throw new SuggestionRequestError("Suggestions could not be loaded.", true);
+	}
+	return parsed.data;
+}
+
+async function loadSuggestions(requestBody: string, signal: AbortSignal) {
+	for (let attempt = 0; ; attempt += 1) {
+		try {
+			return await loadSuggestionsOnce(requestBody, signal);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			const delay = SUGGESTION_RETRY_DELAYS_MS[attempt];
+			if (delay === undefined || (error instanceof SuggestionRequestError && !error.retryable)) {
+				throw error;
+			}
+			await retryDelay(delay, signal);
+		}
+	}
 }
 
 export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
@@ -74,6 +136,7 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 		data: LexicalSuggestionResponse["data"];
 	} | null>(null);
 	const [problem, setProblem] = useState<{key: string; message: string} | null>(null);
+	const [retryVersion, setRetryVersion] = useState(0);
 	const itemId = idValue(item.id);
 	const worldContext = useMemo(
 		() => ({
@@ -124,7 +187,12 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 			globalThis.clearTimeout(timeout);
 			controller.abort();
 		};
-	}, [item.name, requestBody]);
+	}, [item.name, requestBody, retryVersion]);
+
+	const retry = useCallback(() => {
+		setProblem((current) => (current?.key === requestBody ? null : current));
+		setRetryVersion((current) => current + 1);
+	}, [requestBody]);
 
 	const aliasSuggestions = useMemo(
 		() =>
@@ -158,6 +226,7 @@ export function useItemSuggestions(item: Item, world: World): ItemSuggestions {
 		iconCategory,
 		loading: Boolean(item.name.trim()) && !currentResult && !currentProblem,
 		problem: currentProblem,
+		retry,
 		tagSuggestions,
 	};
 }
@@ -263,9 +332,12 @@ export function ItemSuggestionList({
 				) : null}
 			</header>
 			{suggestions.problem && visibleSuggestions.length === 0 ? (
-				<p className="itemSuggestionProblem" role="alert">
-					{suggestions.problem}
-				</p>
+				<div className="itemSuggestionProblem" role="alert">
+					<span>{suggestions.problem}</span>
+					<button type="button" onClick={suggestions.retry}>
+						Retry
+					</button>
+				</div>
 			) : null}
 			{!suggestions.loading && !suggestions.problem && visibleSuggestions.length === 0 ? (
 				<p className="itemSuggestionEmpty" role="status">

@@ -149,9 +149,11 @@ const commandEditorWorld = produce(baseWorld, (draft) => {
 const initialWorld = commandEditorWorld;
 
 function CommandHarness({
+	onOpenInspector,
 	onWorldChange,
 	startingWorld = initialWorld,
 }: {
+	onOpenInspector?: (selection: CommandSelection, world: World) => void;
 	onWorldChange?: (world: World) => void;
 	startingWorld?: World;
 }) {
@@ -175,6 +177,7 @@ function CommandHarness({
 			onSelectedCommandIdChange={setCommandId}
 			selection={selection}
 			onSelectionChange={setSelection}
+			onOpenInspector={onOpenInspector}
 		/>
 	);
 }
@@ -251,6 +254,48 @@ describe("CommandEditor", () => {
 		const say = latestWorld.commands.find((command) => idValue(command.id) === "say")!;
 		expect(say.patterns[0].blocks.some((block) => block.type === "target")).toBe(true);
 		expect(say.patterns[0].blocks.some((block) => block.type === "phrase")).toBe(false);
+	});
+
+	it("opens a newly added block against the updated world snapshot", async () => {
+		const user = userEvent.setup();
+		let opened:
+			| {
+					selection: CommandSelection;
+					world: World;
+			  }
+			| undefined;
+		render(
+			<PopupProvider>
+				<CommandHarness
+					onOpenInspector={(selection, world) => {
+						opened = {selection, world};
+					}}
+				/>
+			</PopupProvider>,
+		);
+
+		await user.click(screen.getByRole("button", {name: "Target"}));
+
+		expect(opened?.selection).toMatchObject({kind: "block", commandId: "say", patternIndex: 0});
+		const selectedBlockId = opened?.selection.kind === "block" ? opened.selection.blockId : undefined;
+		expect(
+			opened?.world.commands
+				.find((command) => idValue(command.id) === "say")
+				?.patterns[0].blocks.some((block) => idValue(block.id) === selectedBlockId),
+		).toBe(true);
+
+		render(
+			<ThemeProvider>
+				<CommandInspector
+					world={opened!.world}
+					updateWorld={jest.fn()}
+					selection={opened!.selection}
+					onSelectionChange={jest.fn()}
+				/>
+			</ThemeProvider>,
+		);
+		expect(screen.queryByText("Block not found")).not.toBeInTheDocument();
+		expect(screen.getByRole("heading", {name: "Target tags"})).toBeVisible();
 	});
 
 	it("allows any pattern to be deleted while more than one remains", async () => {
