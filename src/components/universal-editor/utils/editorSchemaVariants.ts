@@ -333,7 +333,13 @@ export function createSchemaVariantDefault(
 	selection: Record<string, string | undefined>,
 ): Record<string, unknown> {
 	const variant = findEditorSchemaVariant(schema, selection);
+	const selectedValues = Object.fromEntries(
+		Object.entries(selection).filter((entry) => entry[1] !== undefined),
+	);
 	return variant
-		? (createDefaultFieldObject(variant.schema) as Record<string, unknown>)
-		: Object.fromEntries(Object.entries(selection).filter((entry) => entry[1] !== undefined));
+		? {
+				...(createDefaultFieldObject(variant.schema) as Record<string, unknown>),
+				...selectedValues,
+			}
+		: selectedValues;
 }
