@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import {resolveWordNetDatabasePaths} from "./wordnetDatabasePaths.server";
+import nextConfig from "../../../next.config";
 
 describe("WordNet database paths", () => {
 	it("uses runtime module resolution instead of the package's build-machine path", () => {
@@ -17,4 +18,15 @@ describe("WordNet database paths", () => {
 			nounDataPath: "/runtime/node_modules/wordnet-db/dict/data.noun",
 		});
 	});
+
+	it.each(["/api/editor/item-suggestions", "/api/editor/item-icon-suggestions"])(
+		"packages the runtime module and dictionary for %s",
+		(route) => {
+			expect(nextConfig.outputFileTracingIncludes?.[route]).toEqual([
+				"./node_modules/wordnet-db/index.js",
+				"./node_modules/wordnet-db/package.json",
+				"./node_modules/wordnet-db/dict/**/*",
+			]);
+		},
+	);
 });
