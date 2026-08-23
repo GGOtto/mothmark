@@ -71,6 +71,21 @@ describe("editor schema variants", () => {
 		});
 	});
 
+	it.each([
+		["effect", EffectSchema],
+		["condition", ConditionSchema],
+		["command effect", CommandEffectSchema],
+		["command condition", CommandConditionSchema],
+	] as const)("preserves every selected %s operation in its generated default", (_name, schema) => {
+		for (const option of schemaLogicOptions(schema)) {
+			if (option.operation === undefined) continue;
+			expect(option.defaultValue).toMatchObject({
+				type: option.type,
+				operation: option.operation,
+			});
+		}
+	});
+
 	it("derives condition types, operations, and defaults from ConditionSchema", () => {
 		expect(schemaTypeOptions(ConditionSchema).map((option) => option.value)).toEqual([
 			"world",
